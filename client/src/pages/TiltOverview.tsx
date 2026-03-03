@@ -229,7 +229,7 @@ export default function TiltOverview() {
               <span className="text-xs text-muted-foreground tracking-wide">Real-time AI Power Economy Dashboard</span>
             </div>
             <h1 className="text-3xl font-bold text-foreground tracking-tight">
-              The Grid is <span className="text-[#F0A500]">Tilting</span>
+              The Grid is <span className="text-[#F07800]">Tilting</span>
             </h1>
             <p className="text-muted-foreground mt-1.5 max-w-xl text-sm leading-relaxed">
               AI data centers now consume 2-3% of global electricity and accelerating. Track the economic relationship between AI compute demand, power consumption, and the financial markets positioned around it.
