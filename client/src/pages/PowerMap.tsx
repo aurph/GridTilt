@@ -58,6 +58,12 @@ const DATA_CENTERS: DataCenter[] = [
   { id: 33, name: "Amazon Puget Sound WA",           company: "Amazon",    city: "Seattle",        state: "WA", lat: 47.61,   lng: -122.33,   powerMW: 350, status: "construction", annualMWh: 3066000,  gridOperator: "BPA/WECC",          openDate: "2026 Q3" },
   { id: 34, name: "CoreWeave / NVIDIA Secaucus NJ",  company: "CoreWeave", city: "Secaucus",       state: "NJ", lat: 40.79,   lng: -74.06,    powerMW: 180, status: "operational",  annualMWh: 1576800,  gridOperator: "PJM",               openDate: "2024" },
   { id: 35, name: "Meta Forest City NC",             company: "Meta",      city: "Forest City",    state: "NC", lat: 35.67,   lng: -81.86,    powerMW: 290, status: "operational",  annualMWh: 2540400,  gridOperator: "Duke Energy/SERC",  openDate: "2022" },
+  { id: 36, name: "Google The Dalles OR",            company: "Google",    city: "The Dalles",     state: "OR", lat: 45.5946, lng: -121.1787, powerMW: 300, status: "operational",  annualMWh: 2628000,  gridOperator: "BPA/WECC",          openDate: "2006" },
+  { id: 37, name: "Meta Prineville OR Campus",       company: "Meta",      city: "Prineville",     state: "OR", lat: 44.3010, lng: -120.8347, powerMW: 380, status: "operational",  annualMWh: 3328800,  gridOperator: "PacifiCorp/WECC",   openDate: "2011" },
+  { id: 38, name: "Google Lenoir NC",                company: "Google",    city: "Lenoir",         state: "NC", lat: 35.9135, lng: -81.5440,  powerMW: 220, status: "operational",  annualMWh: 1927200,  gridOperator: "Duke Energy/SERC",  openDate: "2007" },
+  { id: 39, name: "Meta New Albany OH Campus",       company: "Meta",      city: "New Albany",     state: "OH", lat: 40.0814, lng: -82.7874,  powerMW: 360, status: "operational",  annualMWh: 3153600,  gridOperator: "AEP/PJM",           openDate: "2022" },
+  { id: 40, name: "Google Moncks Corner SC",         company: "Google",    city: "Moncks Corner",  state: "SC", lat: 33.1968, lng: -80.0081,  powerMW: 450, status: "operational",  annualMWh: 3942000,  gridOperator: "Santee Cooper/SERC", openDate: "2019" },
+  { id: 41, name: "Meta Kuna ID Campus",             company: "Meta",      city: "Kuna",           state: "ID", lat: 43.4927, lng: -116.4197, powerMW: 240, status: "operational",  annualMWh: 2102400,  gridOperator: "Idaho Power/WECC",  openDate: "2012" },
 ];
 
 const STATE_TO_RTO: Record<string, string> = {
