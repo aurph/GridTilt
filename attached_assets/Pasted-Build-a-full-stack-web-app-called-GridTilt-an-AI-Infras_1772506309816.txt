@@ -1,0 +1,34 @@
+Build a full-stack web app called "GridTilt" — an AI Infrastructure & Power Economy Dashboard.
+Core concept: The AI boom is creating a power crisis. Data centers now consume 2-3% of global electricity and that number is accelerating. GridTilt visualizes this economic tilt in real time — the relationship between AI compute demand, data center expansion, power consumption, and the financial markets positioned around it.
+Stack: React frontend, Node/Express backend, recharts for visualization, Tailwind CSS for styling. Use the Yahoo Finance unofficial API (yahoo-finance2 npm package) for market data. Use public EIA (US Energy Information Administration) API for power consumption data — it's free and open.
+Pages / Sections:
+1. The Tilt Overview (landing page)
+A hero dashboard with three live KPI cards at the top:
+
+"AI Power Demand Index" — composite metric you calculate from data center growth rates
+"Nuclear Renaissance Index" — tracks uranium spot price + top nuclear utility stocks (CEG, VST, ETR)
+"Grid Stress Score" — based on EIA power consumption trends vs capacity
+
+Below the KPIs: a full-width area chart showing US electricity demand over the last 5 years with a projected trendline to 2030, annotated with key events (ChatGPT launch, major data center announcements).
+2. The Stack (sector breakdown)
+Three columns representing the data center supply chain:
+Compute Layer — stocks like NVDA, AMD, MU, INTC. Show P/E, revenue growth YoY, and a mini sparkline for each.
+Infrastructure Layer — IREN, EQIX, DLR, AMT. Show power consumption per facility where available, stock performance vs S&P 500 over 1Y.
+Power Layer — CEG, NEE, URA (ETF), CCJ. Show the correlation coefficient between uranium spot price and CEG stock price. Render it as a scatter plot.
+3. Power Map
+An SVG-based US map (use a simple topojson or pre-built React map library) with:
+
+Dots for announced/under-construction data centers (hardcode 20-30 from public announcements — Microsoft, Google, Amazon, Meta all announced publicly)
+Color the dots by power draw (MW) — green < 100MW, yellow 100-500MW, red > 500MW
+Click a dot → sidebar appears with: company, location, planned capacity, estimated annual power consumption, and nearest power grid operator
+
+4. The Trade (financial thesis builder)
+A two-panel layout:
+
+Left: A "thesis builder" where the user inputs their assumptions (% growth in AI workloads per year, average PUE of data centers, % shift to nuclear) via sliders
+Right: Based on their inputs, the app calculates and displays projected power demand growth and surfaces the 5 most financially leveraged public companies to that scenario, ranked by revenue exposure to data center power
+
+5. Portfolio Overlay (bonus)
+Let user paste in comma-separated tickers. App fetches them, scores each one 0-100 on "AI Power Exposure" based on their business description keywords and sector, and shows a radar chart of their portfolio's exposure across: Compute / Infrastructure / Power / Cooling / Grid.
+Design: Dark mode. Color palette — deep navy (#0D1B2A), electric blue (#1E90FF), amber (#F0A500) for alerts/highlights. Clean sans-serif font (Inter). Every chart should have a one-sentence plain-English explanation below it for non-technical viewers. Add a "Why This Matters" tooltip on every section.
+Make it fully responsive. Deploy-ready on Replit. Include a README that explains the data sources.
