@@ -1,14 +1,9 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { ComposableMap, Geographies, Geography, Marker } from "react-simple-maps";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Tooltip as UITooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { X, Info, Zap, MapPin, Building2, Calendar, Activity, Globe } from "lucide-react";
+import { X, Zap, MapPin, Building2, Calendar, Activity, Globe, Network } from "lucide-react";
 
 const GEO_URL = "https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json";
 
@@ -28,32 +23,94 @@ interface DataCenter {
 }
 
 const DATA_CENTERS: DataCenter[] = [
-  { id: 1, name: "Azure Phoenix Mega Campus", company: "Microsoft", city: "Phoenix", state: "AZ", lat: 33.4484, lng: -112.074, powerMW: 600, status: "construction", annualMWh: 5256000, gridOperator: "APS / SRP", openDate: "2026 Q1" },
-  { id: 2, name: "Google Midlothian DC", company: "Google", city: "Midlothian", state: "TX", lat: 32.4827, lng: -96.9939, powerMW: 480, status: "construction", annualMWh: 4204800, gridOperator: "ERCOT", openDate: "2025 Q3" },
-  { id: 3, name: "AWS US-East-2 Expansion", company: "Amazon", city: "Columbus", state: "OH", lat: 39.9612, lng: -82.9988, powerMW: 750, status: "operational", annualMWh: 6570000, gridOperator: "PJM", openDate: "2023" },
-  { id: 4, name: "Meta DeKalb AI Campus", company: "Meta", city: "DeKalb", state: "IL", lat: 41.9295, lng: -88.7498, powerMW: 380, status: "operational", annualMWh: 3328800, gridOperator: "MISO", openDate: "2024 Q2" },
-  { id: 5, name: "Microsoft Cheyenne Campus", company: "Microsoft", city: "Cheyenne", state: "WY", lat: 41.14, lng: -104.82, powerMW: 200, status: "operational", annualMWh: 1752000, gridOperator: "WestConnect", openDate: "2022" },
-  { id: 6, name: "Google Changchun-Reno DC", company: "Google", city: "Reno", state: "NV", lat: 39.5296, lng: -119.8138, powerMW: 160, status: "operational", annualMWh: 1401600, gridOperator: "NV Energy", openDate: "2023" },
-  { id: 7, name: "Amazon QTS Atlanta", company: "Amazon", city: "Atlanta", state: "GA", lat: 33.749, lng: -84.388, powerMW: 420, status: "construction", annualMWh: 3679200, gridOperator: "Southern Co.", openDate: "2025 Q4" },
-  { id: 8, name: "Meta Gallatin TN Campus", company: "Meta", city: "Gallatin", state: "TN", lat: 36.388, lng: -86.4458, powerMW: 300, status: "operational", annualMWh: 2628000, gridOperator: "TVA", openDate: "2023" },
-  { id: 9, name: "Google Pryor Creek AI DC", company: "Google", city: "Pryor Creek", state: "OK", lat: 36.308, lng: -95.317, powerMW: 550, status: "construction", annualMWh: 4818000, gridOperator: "SECI", openDate: "2026 Q2" },
-  { id: 10, name: "Microsoft Goodyear Campus", company: "Microsoft", city: "Goodyear", state: "AZ", lat: 33.4353, lng: -112.358, powerMW: 400, status: "announced", annualMWh: 3504000, gridOperator: "APS", openDate: "2027 Q1" },
-  { id: 11, name: "AWS Virginia HQ Complex", company: "Amazon", city: "Ashburn", state: "VA", lat: 39.0438, lng: -77.4874, powerMW: 900, status: "operational", annualMWh: 7884000, gridOperator: "PJM", openDate: "2020" },
-  { id: 12, name: "Apple Maiden NC DC", company: "Apple", city: "Maiden", state: "NC", lat: 35.5779, lng: -81.2087, powerMW: 165, status: "operational", annualMWh: 1445400, gridOperator: "Duke Energy", openDate: "2012" },
-  { id: 13, name: "Meta Eagle Mountain Campus", company: "Meta", city: "Eagle Mountain", state: "UT", lat: 40.3144, lng: -112.0, powerMW: 520, status: "construction", annualMWh: 4555200, gridOperator: "Rocky Mtn. Power", openDate: "2025 Q2" },
-  { id: 14, name: "Google Corpus Christi", company: "Google", city: "Corpus Christi", state: "TX", lat: 27.8006, lng: -97.3964, powerMW: 350, status: "construction", annualMWh: 3066000, gridOperator: "ERCOT", openDate: "2026 Q3" },
-  { id: 15, name: "Microsoft Quincy WA", company: "Microsoft", city: "Quincy", state: "WA", lat: 47.2343, lng: -119.8526, powerMW: 280, status: "operational", annualMWh: 2452800, gridOperator: "BPA", openDate: "2020" },
-  { id: 16, name: "Amazon Northlake TX Hub", company: "Amazon", city: "Northlake", state: "TX", lat: 33.0001, lng: -97.2856, powerMW: 600, status: "construction", annualMWh: 5256000, gridOperator: "ERCOT", openDate: "2026 Q1" },
-  { id: 17, name: "xAI Memphis Colossus", company: "xAI", city: "Memphis", state: "TN", lat: 35.1495, lng: -90.0490, powerMW: 200, status: "operational", annualMWh: 1752000, gridOperator: "TVA", openDate: "2024 Q3" },
-  { id: 18, name: "OpenAI / CoreWeave Abilene", company: "OpenAI", city: "Abilene", state: "TX", lat: 32.4487, lng: -99.7331, powerMW: 800, status: "construction", annualMWh: 7008000, gridOperator: "ERCOT", openDate: "2026 Q2" },
-  { id: 19, name: "Google Holland MI DC", company: "Google", city: "Holland", state: "MI", lat: 42.7875, lng: -86.1089, powerMW: 240, status: "operational", annualMWh: 2102400, gridOperator: "MISO", openDate: "2021" },
-  { id: 20, name: "Microsoft Boydton VA", company: "Microsoft", city: "Boydton", state: "VA", lat: 36.6673, lng: -78.3839, powerMW: 450, status: "operational", annualMWh: 3942000, gridOperator: "PJM", openDate: "2019" },
-  { id: 21, name: "Amazon Umatilla OR", company: "Amazon", city: "Umatilla", state: "OR", lat: 45.9165, lng: -119.3403, powerMW: 300, status: "operational", annualMWh: 2628000, gridOperator: "BPA", openDate: "2022" },
-  { id: 22, name: "Meta Papillion NE Campus", company: "Meta", city: "Papillion", state: "NE", lat: 41.1533, lng: -96.0422, powerMW: 180, status: "operational", annualMWh: 1576800, gridOperator: "MISO", openDate: "2023" },
-  { id: 23, name: "Google Clarksville TN", company: "Google", city: "Clarksville", state: "TN", lat: 36.5298, lng: -87.3595, powerMW: 520, status: "announced", annualMWh: 4555200, gridOperator: "TVA", openDate: "2027 Q2" },
-  { id: 24, name: "Microsoft Mt. Pleasant WI", company: "Microsoft", city: "Mt. Pleasant", state: "WI", lat: 42.7094, lng: -87.8895, powerMW: 320, status: "announced", annualMWh: 2803200, gridOperator: "MISO", openDate: "2027 Q3" },
-  { id: 25, name: "Oracle Nashville DC", company: "Oracle", city: "Nashville", state: "TN", lat: 36.1627, lng: -86.7816, powerMW: 150, status: "operational", annualMWh: 1314000, gridOperator: "TVA", openDate: "2023" },
+  { id: 1,  name: "Azure Phoenix Mega Campus",      company: "Microsoft", city: "Phoenix",        state: "AZ", lat: 33.4484, lng: -112.074,  powerMW: 600, status: "construction", annualMWh: 5256000,  gridOperator: "APS/WECC",          openDate: "2026 Q1" },
+  { id: 2,  name: "Google Midlothian DC",            company: "Google",    city: "Midlothian",     state: "TX", lat: 32.4827, lng: -96.9939,  powerMW: 480, status: "construction", annualMWh: 4204800,  gridOperator: "ERCOT",             openDate: "2025 Q4" },
+  { id: 3,  name: "AWS US-East-2 Expansion",         company: "Amazon",    city: "Columbus",       state: "OH", lat: 39.9612, lng: -82.9988,  powerMW: 750, status: "operational",  annualMWh: 6570000,  gridOperator: "PJM",               openDate: "2023" },
+  { id: 4,  name: "Meta DeKalb AI Campus",           company: "Meta",      city: "DeKalb",         state: "IL", lat: 41.9295, lng: -88.7498,  powerMW: 380, status: "operational",  annualMWh: 3328800,  gridOperator: "MISO",              openDate: "2024 Q2" },
+  { id: 5,  name: "Microsoft Cheyenne Campus",       company: "Microsoft", city: "Cheyenne",       state: "WY", lat: 41.14,   lng: -104.82,   powerMW: 200, status: "operational",  annualMWh: 1752000,  gridOperator: "WECC",              openDate: "2022" },
+  { id: 6,  name: "Google Reno DC",                  company: "Google",    city: "Reno",           state: "NV", lat: 39.5296, lng: -119.8138, powerMW: 160, status: "operational",  annualMWh: 1401600,  gridOperator: "NV Energy/WECC",    openDate: "2023" },
+  { id: 7,  name: "Amazon QTS Atlanta",              company: "Amazon",    city: "Atlanta",        state: "GA", lat: 33.749,  lng: -84.388,   powerMW: 420, status: "operational",  annualMWh: 3679200,  gridOperator: "Southern Co./SERC", openDate: "2025 Q1" },
+  { id: 8,  name: "Meta Gallatin TN Campus",         company: "Meta",      city: "Gallatin",       state: "TN", lat: 36.388,  lng: -86.4458,  powerMW: 300, status: "operational",  annualMWh: 2628000,  gridOperator: "TVA/SERC",          openDate: "2023" },
+  { id: 9,  name: "Google Pryor Creek AI DC",        company: "Google",    city: "Pryor Creek",    state: "OK", lat: 36.308,  lng: -95.317,   powerMW: 550, status: "construction", annualMWh: 4818000,  gridOperator: "SPP",               openDate: "2026 Q2" },
+  { id: 10, name: "Microsoft Goodyear Campus",       company: "Microsoft", city: "Goodyear",       state: "AZ", lat: 33.4353, lng: -112.358,  powerMW: 400, status: "announced",   annualMWh: 3504000,  gridOperator: "APS/WECC",          openDate: "2027 Q1" },
+  { id: 11, name: "AWS Ashburn HQ Complex",          company: "Amazon",    city: "Ashburn",        state: "VA", lat: 39.0438, lng: -77.4874,  powerMW: 900, status: "operational",  annualMWh: 7884000,  gridOperator: "PJM",               openDate: "2020" },
+  { id: 12, name: "Apple Maiden NC DC",              company: "Apple",     city: "Maiden",         state: "NC", lat: 35.5779, lng: -81.2087,  powerMW: 165, status: "operational",  annualMWh: 1445400,  gridOperator: "Duke Energy/SERC",  openDate: "2012" },
+  { id: 13, name: "Meta Eagle Mountain Campus",      company: "Meta",      city: "Eagle Mountain", state: "UT", lat: 40.3144, lng: -112.0,    powerMW: 520, status: "operational",  annualMWh: 4555200,  gridOperator: "Rocky Mtn./WECC",   openDate: "2025 Q2" },
+  { id: 14, name: "Google Corpus Christi",           company: "Google",    city: "Corpus Christi", state: "TX", lat: 27.8006, lng: -97.3964,  powerMW: 350, status: "construction", annualMWh: 3066000,  gridOperator: "ERCOT",             openDate: "2026 Q3" },
+  { id: 15, name: "Microsoft Quincy WA",             company: "Microsoft", city: "Quincy",         state: "WA", lat: 47.2343, lng: -119.8526, powerMW: 280, status: "operational",  annualMWh: 2452800,  gridOperator: "BPA/WECC",          openDate: "2020" },
+  { id: 16, name: "Amazon Northlake TX Hub",         company: "Amazon",    city: "Northlake",      state: "TX", lat: 33.0001, lng: -97.2856,  powerMW: 600, status: "construction", annualMWh: 5256000,  gridOperator: "ERCOT",             openDate: "2026 Q1" },
+  { id: 17, name: "xAI Memphis Colossus Phase 1",   company: "xAI",       city: "Memphis",        state: "TN", lat: 35.1495, lng: -90.049,   powerMW: 200, status: "operational",  annualMWh: 1752000,  gridOperator: "TVA/SERC",          openDate: "2024 Q3" },
+  { id: 18, name: "Stargate Abilene (OpenAI Ph.1)", company: "OpenAI",    city: "Abilene",        state: "TX", lat: 32.4487, lng: -99.7331,  powerMW: 800, status: "construction", annualMWh: 7008000,  gridOperator: "ERCOT",             openDate: "2026 Q2" },
+  { id: 19, name: "Google Holland MI DC",            company: "Google",    city: "Holland",        state: "MI", lat: 42.7875, lng: -86.1089,  powerMW: 240, status: "operational",  annualMWh: 2102400,  gridOperator: "MISO",              openDate: "2021" },
+  { id: 20, name: "Microsoft Boydton VA",            company: "Microsoft", city: "Boydton",        state: "VA", lat: 36.6673, lng: -78.3839,  powerMW: 450, status: "operational",  annualMWh: 3942000,  gridOperator: "PJM",               openDate: "2019" },
+  { id: 21, name: "Amazon Umatilla OR",              company: "Amazon",    city: "Umatilla",       state: "OR", lat: 45.9165, lng: -119.3403, powerMW: 300, status: "operational",  annualMWh: 2628000,  gridOperator: "BPA/WECC",          openDate: "2022" },
+  { id: 22, name: "Meta Papillion NE Campus",        company: "Meta",      city: "Papillion",      state: "NE", lat: 41.1533, lng: -96.0422,  powerMW: 180, status: "operational",  annualMWh: 1576800,  gridOperator: "SPP",               openDate: "2023" },
+  { id: 23, name: "Google Clarksville TN",           company: "Google",    city: "Clarksville",    state: "TN", lat: 36.5298, lng: -87.3595,  powerMW: 520, status: "announced",   annualMWh: 4555200,  gridOperator: "TVA/SERC",          openDate: "2027 Q2" },
+  { id: 24, name: "Microsoft Mt. Pleasant WI",       company: "Microsoft", city: "Mt. Pleasant",   state: "WI", lat: 42.7094, lng: -87.8895,  powerMW: 320, status: "announced",   annualMWh: 2803200,  gridOperator: "MISO",              openDate: "2027 Q3" },
+  { id: 25, name: "Oracle Nashville DC",             company: "Oracle",    city: "Nashville",      state: "TN", lat: 36.1627, lng: -86.7816,  powerMW: 150, status: "operational",  annualMWh: 1314000,  gridOperator: "TVA/SERC",          openDate: "2023" },
+  { id: 26, name: "Stargate Abilene Phase 2",        company: "OpenAI",    city: "Abilene",        state: "TX", lat: 32.46,   lng: -99.71,    powerMW: 500, status: "announced",   annualMWh: 4380000,  gridOperator: "ERCOT",             openDate: "2027 Q1" },
+  { id: 27, name: "CoreWeave Mebane NC",             company: "CoreWeave", city: "Mebane",         state: "NC", lat: 36.10,   lng: -79.27,    powerMW: 300, status: "construction", annualMWh: 2628000,  gridOperator: "Duke Energy/SERC",  openDate: "2026 Q2" },
+  { id: 28, name: "Microsoft Altoona IA Campus",     company: "Microsoft", city: "Altoona",        state: "IA", lat: 41.65,   lng: -93.47,    powerMW: 250, status: "operational",  annualMWh: 2190000,  gridOperator: "MISO",              openDate: "2023" },
+  { id: 29, name: "Amazon Sterling VA Campus",       company: "Amazon",    city: "Sterling",       state: "VA", lat: 39.00,   lng: -77.43,    powerMW: 650, status: "operational",  annualMWh: 5694000,  gridOperator: "PJM",               openDate: "2022" },
+  { id: 30, name: "Google Council Bluffs IA",        company: "Google",    city: "Council Bluffs", state: "IA", lat: 41.26,   lng: -95.86,    powerMW: 200, status: "operational",  annualMWh: 1752000,  gridOperator: "MISO",              openDate: "2021" },
+  { id: 31, name: "xAI Memphis Phase 2",             company: "xAI",       city: "Memphis",        state: "TN", lat: 35.17,   lng: -90.07,    powerMW: 800, status: "construction", annualMWh: 7008000,  gridOperator: "TVA/SERC",          openDate: "2026 Q4" },
+  { id: 32, name: "Microsoft Racine WI Campus",      company: "Microsoft", city: "Racine",         state: "WI", lat: 42.73,   lng: -87.78,    powerMW: 450, status: "announced",   annualMWh: 3942000,  gridOperator: "MISO",              openDate: "2027 Q4" },
+  { id: 33, name: "Amazon Puget Sound WA",           company: "Amazon",    city: "Seattle",        state: "WA", lat: 47.61,   lng: -122.33,   powerMW: 350, status: "construction", annualMWh: 3066000,  gridOperator: "BPA/WECC",          openDate: "2026 Q3" },
+  { id: 34, name: "CoreWeave / NVIDIA Secaucus NJ",  company: "CoreWeave", city: "Secaucus",       state: "NJ", lat: 40.79,   lng: -74.06,    powerMW: 180, status: "operational",  annualMWh: 1576800,  gridOperator: "PJM",               openDate: "2024" },
+  { id: 35, name: "Meta Forest City NC",             company: "Meta",      city: "Forest City",    state: "NC", lat: 35.67,   lng: -81.86,    powerMW: 290, status: "operational",  annualMWh: 2540400,  gridOperator: "Duke Energy/SERC",  openDate: "2022" },
 ];
+
+const STATE_TO_RTO: Record<string, string> = {
+  Maine: "NPCC", Vermont: "NPCC", "New Hampshire": "NPCC",
+  Massachusetts: "NPCC", Connecticut: "NPCC", "Rhode Island": "NPCC", "New York": "NPCC",
+  "New Jersey": "PJM", Delaware: "PJM", Maryland: "PJM",
+  Pennsylvania: "PJM", Ohio: "PJM", "West Virginia": "PJM", Virginia: "PJM", Kentucky: "PJM",
+  Michigan: "MISO", Indiana: "MISO", Illinois: "MISO", Wisconsin: "MISO",
+  Minnesota: "MISO", Iowa: "MISO", Missouri: "MISO",
+  Arkansas: "MISO", Louisiana: "MISO", Mississippi: "MISO",
+  "North Dakota": "MISO", "South Dakota": "MISO", Montana: "MISO",
+  Texas: "ERCOT",
+  Tennessee: "SERC", "North Carolina": "SERC", "South Carolina": "SERC",
+  Georgia: "SERC", Alabama: "SERC", Florida: "SERC",
+  Nebraska: "SPP", Kansas: "SPP", Oklahoma: "SPP",
+  Washington: "WECC", Oregon: "WECC", California: "WECC",
+  Nevada: "WECC", Idaho: "WECC", Utah: "WECC", Colorado: "WECC",
+  Arizona: "WECC", "New Mexico": "WECC", Wyoming: "WECC",
+  Alaska: "WECC", Hawaii: "WECC",
+};
+
+interface RTOConfig {
+  label: string;
+  reserveMargin: number;
+  aiSignal: "Critical" | "Elevated" | "Moderate" | "Low";
+  dcColor: string;
+  stressColor: string;
+  stressBadgeClass: string;
+  legendColor: string;
+}
+
+const RTO_CONFIG: Record<string, RTOConfig> = {
+  PJM:  { label: "PJM",      reserveMargin: 18.1, aiSignal: "Elevated", dcColor: "rgba(240,165,0,0.13)",   stressColor: "rgba(234,179,8,0.25)",   stressBadgeClass: "bg-yellow-500/20 text-yellow-400", legendColor: "#F0A500" },
+  MISO: { label: "MISO",     reserveMargin: 16.7, aiSignal: "Critical", dcColor: "rgba(34,197,94,0.10)",   stressColor: "rgba(249,115,22,0.30)",  stressBadgeClass: "bg-red-500/20 text-red-400",    legendColor: "#22c55e" },
+  ERCOT:{ label: "ERCOT",    reserveMargin: 14.2, aiSignal: "Critical", dcColor: "rgba(239,68,68,0.13)",   stressColor: "rgba(239,68,68,0.35)",   stressBadgeClass: "bg-red-500/20 text-red-400",    legendColor: "#ef4444" },
+  WECC: { label: "WECC",     reserveMargin: 22.4, aiSignal: "Moderate", dcColor: "rgba(168,85,247,0.11)",  stressColor: "rgba(132,204,22,0.18)",  stressBadgeClass: "bg-green-500/20 text-green-400",legendColor: "#a855f7" },
+  SERC: { label: "SERC",     reserveMargin: 21.3, aiSignal: "Moderate", dcColor: "rgba(20,184,166,0.11)",  stressColor: "rgba(34,197,94,0.18)",   stressBadgeClass: "bg-green-500/20 text-green-400",legendColor: "#14b8a6" },
+  SPP:  { label: "SPP",      reserveMargin: 26.1, aiSignal: "Low",      dcColor: "rgba(244,63,94,0.10)",   stressColor: "rgba(34,197,94,0.12)",   stressBadgeClass: "bg-green-500/15 text-green-500",legendColor: "#f43f5e" },
+  NPCC: { label: "NPCC",     reserveMargin: 24.8, aiSignal: "Low",      dcColor: "rgba(148,163,184,0.11)", stressColor: "rgba(34,197,94,0.12)",   stressBadgeClass: "bg-green-500/15 text-green-500",legendColor: "#94a3b8" },
+};
+
+function gridOpToRTO(op: string): string {
+  const o = op.toLowerCase();
+  if (o.includes("pjm")) return "PJM";
+  if (o.includes("miso")) return "MISO";
+  if (o.includes("ercot")) return "ERCOT";
+  if (o.includes("tva") || o.includes("southern") || o.includes("duke") || o.includes("serc") || o.includes("dominion")) return "SERC";
+  if (o.includes("spp") || o.includes("seci")) return "SPP";
+  if (o.includes("bpa") || o.includes("wecc") || o.includes("nv energy") || o.includes("rocky") ||
+      o.includes("aps") || o.includes("srp") || o.includes("westconnect") || o.includes("caiso")) return "WECC";
+  if (o.includes("npcc") || o.includes("iso-ne") || o.includes("nyiso")) return "NPCC";
+  return "WECC";
+}
 
 const companyColors: Record<string, string> = {
   Microsoft: "#0078d4",
@@ -64,6 +121,7 @@ const companyColors: Record<string, string> = {
   xAI: "#f0a500",
   OpenAI: "#10a37f",
   Oracle: "#c74634",
+  CoreWeave: "#7c3aed",
 };
 
 function getDotColor(powerMW: number) {
@@ -74,43 +132,74 @@ function getDotColor(powerMW: number) {
 
 function getStatusBadge(status: DataCenter["status"]) {
   const map = {
-    operational: { label: "Operational", class: "bg-green-500/15 text-green-400" },
-    construction: { label: "Under Construction", class: "bg-yellow-500/15 text-yellow-400" },
-    announced: { label: "Announced", class: "bg-blue-500/15 text-blue-400" },
+    operational:  { label: "Operational",        class: "bg-green-500/15 text-green-400" },
+    construction: { label: "Under Construction",  class: "bg-yellow-500/15 text-yellow-400" },
+    announced:    { label: "Announced",           class: "bg-slate-500/15 text-slate-400" },
   };
   return map[status];
 }
 
+type ViewMode = "dc" | "stress";
+
 export default function PowerMap() {
   const [selected, setSelected] = useState<DataCenter | null>(null);
   const [filter, setFilter] = useState<string>("all");
+  const [viewMode, setViewMode] = useState<ViewMode>("dc");
 
-  const companies = ["all", ...Array.from(new Set(DATA_CENTERS.map((d) => d.company)))];
+  const companies = ["all", ...Array.from(new Set(DATA_CENTERS.map((d) => d.company))).sort()];
   const filtered = filter === "all" ? DATA_CENTERS : DATA_CENTERS.filter((d) => d.company === filter);
 
-  const totalMW = DATA_CENTERS.reduce((s, d) => s + d.powerMW, 0);
+  const totalMW  = DATA_CENTERS.reduce((s, d) => s + d.powerMW, 0);
   const totalTWh = (DATA_CENTERS.reduce((s, d) => s + d.annualMWh, 0) / 1_000_000).toFixed(1);
+  const opCount    = DATA_CENTERS.filter((d) => d.status === "operational").length;
+  const conCount   = DATA_CENTERS.filter((d) => d.status === "construction").length;
+  const annCount   = DATA_CENTERS.filter((d) => d.status === "announced").length;
+
+  const rtoLoadMW = useMemo(() => {
+    const m: Record<string, number> = {};
+    DATA_CENTERS.forEach((dc) => {
+      const rto = gridOpToRTO(dc.gridOperator);
+      m[rto] = (m[rto] ?? 0) + dc.powerMW;
+    });
+    return m;
+  }, []);
+
+  function getStateColor(stateName: string): string {
+    const rto = STATE_TO_RTO[stateName];
+    if (!rto || !RTO_CONFIG[rto]) return "rgba(255,255,255,0.02)";
+    return viewMode === "dc" ? RTO_CONFIG[rto].dcColor : RTO_CONFIG[rto].stressColor;
+  }
+
+  function getStateHover(stateName: string): string {
+    const rto = STATE_TO_RTO[stateName];
+    if (!rto || !RTO_CONFIG[rto]) return "rgba(255,255,255,0.06)";
+    const base = viewMode === "dc" ? RTO_CONFIG[rto].dcColor : RTO_CONFIG[rto].stressColor;
+    return base.replace(/[\d.]+\)$/, (m) => String(Math.min(parseFloat(m) * 2.2, 0.55)) + ")");
+  }
+
+  const selectedRTO = selected ? gridOpToRTO(selected.gridOperator) : null;
+  const selectedRTOCfg = selectedRTO ? RTO_CONFIG[selectedRTO] : null;
+  const selectedRTOLoad = selectedRTO ? (rtoLoadMW[selectedRTO] ?? 0) : 0;
 
   return (
     <div className="flex flex-col h-full overflow-y-auto">
-      <div className="grid-bg border-b border-border px-6 py-6">
+      {/* Header */}
+      <div className="grid-bg border-b border-border px-6 py-5">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
             <div className="flex items-center gap-2.5 mb-1">
               <h1 className="text-2xl font-bold text-foreground tracking-tight">Power Map</h1>
               <span className="text-[10px] font-mono tracking-wider px-2 py-0.5 rounded border border-border bg-muted/30 text-muted-foreground">
-                US Coverage
+                US COVERAGE
               </span>
             </div>
-            <p className="text-muted-foreground text-sm mt-0.5">
-              Announced and operating data centers by power draw. {DATA_CENTERS.length} US locations tracked.
-            </p>
-            <p className="text-xs text-muted-foreground/50 mt-1 flex items-center gap-1.5">
-              <Globe className="h-3 w-3" />
-              International coverage expanding to Europe and Southeast Asia.
+            <p className="text-muted-foreground text-sm">
+              Active and planned AI data centers by power draw. {DATA_CENTERS.length} facilities across all major grid regions.
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-3 text-xs">
+
+          {/* Size legend */}
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs">
             <div className="flex items-center gap-1.5">
               <div className="h-3 w-3 rounded-full bg-green-500" />
               <span className="text-muted-foreground">&lt;100 MW</span>
@@ -127,7 +216,7 @@ export default function PowerMap() {
         </div>
 
         {/* Summary stats */}
-        <div className="flex flex-wrap gap-4 mt-4 text-sm">
+        <div className="flex flex-wrap gap-x-5 gap-y-2 mt-3 text-sm">
           <div className="flex items-center gap-2">
             <Zap className="h-4 w-4 text-[#F0A500]" />
             <span className="text-muted-foreground">Total capacity:</span>
@@ -135,22 +224,35 @@ export default function PowerMap() {
           </div>
           <div className="flex items-center gap-2">
             <Activity className="h-4 w-4 text-muted-foreground" />
-            <span className="text-muted-foreground">Annual consumption:</span>
+            <span className="text-muted-foreground">Annual draw:</span>
             <span className="font-semibold font-mono text-foreground">{totalTWh} TWh/yr</span>
           </div>
-          <div className="flex items-center gap-2">
-            <Building2 className="h-4 w-4 text-muted-foreground" />
-            <span className="text-muted-foreground">Equivalent to powering</span>
-            <span className="font-semibold font-mono text-foreground">{Math.round(parseFloat(totalTWh) * 1000 / 10.5)}M homes</span>
+          <div className="flex items-center gap-1.5 text-xs font-mono text-muted-foreground border border-border/60 rounded px-2 py-0.5 bg-muted/20">
+            <span className="text-green-400">{opCount} operational</span>
+            <span className="opacity-40">/</span>
+            <span className="text-yellow-400">{conCount} construction</span>
+            <span className="opacity-40">/</span>
+            <span className="text-slate-400">{annCount} announced</span>
           </div>
+        </div>
+
+        {/* RTO legend */}
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-3">
+          <span className="text-[10px] font-mono text-muted-foreground/60 tracking-wider uppercase">Grid Regions:</span>
+          {Object.entries(RTO_CONFIG).map(([key, cfg]) => (
+            <div key={key} className="flex items-center gap-1.5">
+              <div className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: cfg.legendColor, opacity: 0.8 }} />
+              <span className="text-[11px] text-muted-foreground">{cfg.label}</span>
+            </div>
+          ))}
         </div>
       </div>
 
       <div className="flex-1 flex flex-col lg:flex-row">
         {/* Map area */}
-        <div className="flex-1 relative" style={{ minHeight: 400 }}>
+        <div className="flex-1 relative" style={{ minHeight: 420 }}>
           {/* Company filter */}
-          <div className="absolute top-4 left-4 z-10 flex flex-wrap gap-1.5">
+          <div className="absolute top-4 left-4 z-10 flex flex-wrap gap-1.5 max-w-[calc(100%-120px)]">
             {companies.map((c) => (
               <Button
                 key={c}
@@ -165,65 +267,94 @@ export default function PowerMap() {
             ))}
           </div>
 
+          {/* View mode toggle */}
+          <div className="absolute top-4 right-4 z-10 flex rounded-md overflow-hidden border border-border text-xs font-mono">
+            <button
+              className={`px-3 py-1.5 transition-colors ${viewMode === "dc" ? "bg-[#F0A500] text-black font-semibold" : "bg-card text-muted-foreground hover:text-foreground"}`}
+              onClick={() => setViewMode("dc")}
+              data-testid="toggle-dc-locations"
+            >
+              DC Locations
+            </button>
+            <button
+              className={`px-3 py-1.5 transition-colors ${viewMode === "stress" ? "bg-[#F0A500] text-black font-semibold" : "bg-card text-muted-foreground hover:text-foreground"}`}
+              onClick={() => setViewMode("stress")}
+              data-testid="toggle-grid-stress"
+            >
+              Grid Stress
+            </button>
+          </div>
+
+          {viewMode === "stress" && (
+            <div className="absolute bottom-10 left-4 z-10 text-[10px] font-mono text-muted-foreground/70 flex flex-col gap-0.5">
+              <div className="flex items-center gap-1.5"><div className="h-2 w-4 rounded-sm bg-red-500/60" /> Critical (&lt;16% reserve)</div>
+              <div className="flex items-center gap-1.5"><div className="h-2 w-4 rounded-sm bg-orange-500/50" /> Elevated (16-18%)</div>
+              <div className="flex items-center gap-1.5"><div className="h-2 w-4 rounded-sm bg-yellow-500/40" /> Moderate (18-21%)</div>
+              <div className="flex items-center gap-1.5"><div className="h-2 w-4 rounded-sm bg-green-500/30" /> Adequate (&gt;21%)</div>
+            </div>
+          )}
+
           <ComposableMap
             projection="geoAlbersUsa"
-            style={{ width: "100%", height: "100%", minHeight: 400 }}
+            style={{ width: "100%", height: "100%", minHeight: 420 }}
           >
             <Geographies geography={GEO_URL}>
               {({ geographies }) =>
-                geographies.map((geo) => (
-                  <Geography
-                    key={geo.rsmKey}
-                    geography={geo}
-                    fill="rgba(255,255,255,0.03)"
-                    stroke="rgba(255,255,255,0.10)"
-                    strokeWidth={0.5}
-                    style={{
-                      default: { outline: "none" },
-                      hover: { outline: "none", fill: "rgba(255,255,255,0.06)" },
-                      pressed: { outline: "none" },
-                    }}
-                  />
-                ))
+                geographies.map((geo) => {
+                  const name = geo.properties.name as string;
+                  return (
+                    <Geography
+                      key={geo.rsmKey}
+                      geography={geo}
+                      fill={getStateColor(name)}
+                      stroke="rgba(255,255,255,0.12)"
+                      strokeWidth={0.5}
+                      style={{
+                        default: { outline: "none" },
+                        hover: { outline: "none", fill: getStateHover(name) },
+                        pressed: { outline: "none" },
+                      }}
+                    />
+                  );
+                })
               }
             </Geographies>
 
-            {filtered.map((dc) => (
-              <Marker
-                key={dc.id}
-                coordinates={[dc.lng, dc.lat]}
-                onClick={() => setSelected(dc)}
-              >
-                <circle
-                  r={Math.sqrt(dc.powerMW / 30) + 4}
-                  fill={getDotColor(dc.powerMW)}
-                  fillOpacity={0.85}
-                  stroke="rgba(255,255,255,0.3)"
-                  strokeWidth={1}
-                  style={{ cursor: "pointer", transition: "all 0.2s" }}
-                  className={selected?.id === dc.id ? "opacity-100" : "opacity-75 hover:opacity-100"}
-                />
-                {selected?.id === dc.id && (
+            {filtered.map((dc) => {
+              const r = viewMode === "stress"
+                ? Math.sqrt(dc.powerMW / 30) + 2
+                : Math.sqrt(dc.powerMW / 30) + 4;
+              const opacity = viewMode === "stress" ? 0.5 : (selected?.id === dc.id ? 1 : 0.78);
+              return (
+                <Marker
+                  key={dc.id}
+                  coordinates={[dc.lng, dc.lat]}
+                  onClick={() => setSelected(dc)}
+                >
                   <circle
-                    r={Math.sqrt(dc.powerMW / 30) + 8}
-                    fill="none"
-                    stroke={getDotColor(dc.powerMW)}
-                    strokeWidth={1.5}
-                    opacity={0.5}
+                    r={r}
+                    fill={getDotColor(dc.powerMW)}
+                    fillOpacity={opacity}
+                    stroke="rgba(255,255,255,0.3)"
+                    strokeWidth={1}
+                    style={{ cursor: "pointer" }}
                   />
-                )}
-              </Marker>
-            ))}
+                  {selected?.id === dc.id && (
+                    <circle
+                      r={r + 5}
+                      fill="none"
+                      stroke={getDotColor(dc.powerMW)}
+                      strokeWidth={1.5}
+                      opacity={0.5}
+                    />
+                  )}
+                </Marker>
+              );
+            })}
           </ComposableMap>
 
-          <div className="absolute bottom-3 left-4 right-4 flex items-center justify-between gap-2">
-            <p className="text-xs text-muted-foreground">
-              Click a dot to view facility details. Dot size = power draw.
-            </p>
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground/60 bg-card/60 rounded-md px-2.5 py-1 border border-border/50 backdrop-blur-sm">
-              <Globe className="h-3 w-3" />
-              <span>International coverage expanding to Europe and Southeast Asia</span>
-            </div>
+          <div className="absolute bottom-3 left-4">
+            <p className="text-xs text-muted-foreground">Click a dot to view facility details. Dot size = power draw.</p>
           </div>
         </div>
 
@@ -245,9 +376,9 @@ export default function PowerMap() {
                 <Badge
                   className="text-xs"
                   style={{
-                    backgroundColor: `${companyColors[selected.company] ?? "#666"}20`,
+                    backgroundColor: `${companyColors[selected.company] ?? "#666"}22`,
                     color: companyColors[selected.company] ?? "#999",
-                    border: `1px solid ${companyColors[selected.company] ?? "#666"}40`,
+                    border: `1px solid ${companyColors[selected.company] ?? "#666"}44`,
                   }}
                 >
                   {selected.company}
@@ -300,6 +431,35 @@ export default function PowerMap() {
                 </div>
               </div>
 
+              {/* Grid Context block */}
+              {selectedRTOCfg && selectedRTO && (
+                <div className="rounded-md p-3 border border-border bg-muted/20 space-y-2" data-testid="grid-context-block">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Network className="h-3.5 w-3.5 text-muted-foreground" />
+                    <p className="text-xs font-semibold text-muted-foreground tracking-wide uppercase">Grid Context</p>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <div className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: selectedRTOCfg.legendColor }} />
+                      <span className="text-xs font-mono text-foreground">{selectedRTO}</span>
+                    </div>
+                    <Badge className={selectedRTOCfg.stressBadgeClass + " text-[10px]"}>
+                      {selectedRTOCfg.aiSignal}
+                    </Badge>
+                  </div>
+                  <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+                    <div>
+                      <p className="text-muted-foreground">Reserve Margin</p>
+                      <p className="font-mono font-semibold text-foreground">{selectedRTOCfg.reserveMargin}%</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">AI Load in RTO</p>
+                      <p className="font-mono font-semibold text-foreground">{selectedRTOLoad.toLocaleString()} MW</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="rounded-md p-3 border border-border bg-muted/20">
                 <p className="text-xs text-muted-foreground mb-1">Power Classification</p>
                 <div className="flex items-center gap-2">
@@ -316,10 +476,63 @@ export default function PowerMap() {
             <div>
               <MapPin className="h-8 w-8 text-muted-foreground/40 mx-auto mb-3" />
               <p className="text-sm text-muted-foreground">Click a dot on the map to view facility details</p>
-              <p className="text-xs text-muted-foreground/50 mt-2">Currently tracking US activity. International coverage expanding to Europe and Southeast Asia.</p>
+              <p className="text-xs text-muted-foreground/50 mt-2 flex items-center justify-center gap-1">
+                <Globe className="h-3 w-3" />
+                International coverage expanding to Europe and Southeast Asia
+              </p>
             </div>
           </div>
         )}
+      </div>
+
+      {/* Grid Operator Stress Table */}
+      <div className="border-t border-border px-6 py-4" data-testid="grid-stress-table">
+        <div className="flex items-center gap-2 mb-3">
+          <Network className="h-4 w-4 text-muted-foreground" />
+          <h2 className="text-xs font-semibold tracking-wider uppercase text-muted-foreground">Grid Operator Load Analysis</h2>
+          <span className="text-[10px] font-mono text-muted-foreground/50">Reserve margins: NERC 2024</span>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs font-mono">
+            <thead>
+              <tr className="border-b border-border/60">
+                <th className="text-left text-muted-foreground/60 font-normal pb-2 pr-6">RTO / ISO</th>
+                <th className="text-right text-muted-foreground/60 font-normal pb-2 pr-6">Tracked AI Load</th>
+                <th className="text-right text-muted-foreground/60 font-normal pb-2 pr-6">Reserve Margin</th>
+                <th className="text-left text-muted-foreground/60 font-normal pb-2 pr-6">AI Load Signal</th>
+                <th className="text-left text-muted-foreground/60 font-normal pb-2">Stress</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(["ERCOT", "MISO", "PJM", "SERC", "WECC", "SPP", "NPCC"] as const).map((rto) => {
+                const cfg = RTO_CONFIG[rto];
+                const loadMW = rtoLoadMW[rto] ?? 0;
+                return (
+                  <tr key={rto} className="border-b border-border/30 hover:bg-muted/10 transition-colors">
+                    <td className="py-2 pr-6">
+                      <div className="flex items-center gap-1.5">
+                        <div className="h-2 w-2 rounded-sm" style={{ backgroundColor: cfg.legendColor, opacity: 0.8 }} />
+                        <span className="text-foreground font-semibold">{rto}</span>
+                      </div>
+                    </td>
+                    <td className="py-2 pr-6 text-right text-foreground">{loadMW.toLocaleString()} MW</td>
+                    <td className="py-2 pr-6 text-right">
+                      <span className={cfg.reserveMargin < 16 ? "text-red-400" : cfg.reserveMargin < 19 ? "text-yellow-400" : "text-green-400"}>
+                        {cfg.reserveMargin}%
+                      </span>
+                    </td>
+                    <td className="py-2 pr-6 text-muted-foreground">{cfg.aiSignal}</td>
+                    <td className="py-2">
+                      <Badge className={cfg.stressBadgeClass + " text-[10px] font-mono"}>
+                        {cfg.aiSignal}
+                      </Badge>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
