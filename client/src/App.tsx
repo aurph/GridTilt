@@ -17,7 +17,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/": "Tilt Overview",
   "/stack": "The Stack",
   "/power-map": "Power Map",
-  "/trade": "The Trade",
+  "/trade": "Thesis Calculator",
   "/portfolio": "Portfolio Overlay",
 };
 

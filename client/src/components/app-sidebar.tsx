@@ -40,7 +40,7 @@ const navItems = [
     description: "US data center locations",
   },
   {
-    title: "The Trade",
+    title: "Thesis Calculator",
     url: "/trade",
     icon: TrendingUp,
     description: "Scenario analysis",
@@ -123,6 +123,9 @@ export function AppSidebar() {
         </div>
         <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
           Data: Yahoo Finance · EIA · Public Sources
+        </p>
+        <p className="text-xs text-muted-foreground/50 mt-2 leading-relaxed tracking-wide">
+          Made by <span className="text-muted-foreground/70">Jack Schwartz</span> · aurph
         </p>
       </SidebarFooter>
     </Sidebar>

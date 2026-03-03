@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -17,6 +18,7 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
+  Legend,
 } from "recharts";
 import { Cpu, Server, Zap, TrendingUp, TrendingDown, Info } from "lucide-react";
 
@@ -150,10 +152,45 @@ const CustomScatterTooltip = ({ active, payload }: any) => {
   return null;
 };
 
+// Compute OLS regression line + confidence band from scatter data
+function computeRegression(points: { uranium: number; ccj: number }[]) {
+  if (!points || points.length < 3) return { line: [], upper: [], lower: [] };
+  const n = points.length;
+  const xs = points.map((p) => p.uranium);
+  const ys = points.map((p) => p.ccj);
+  const meanX = xs.reduce((s, v) => s + v, 0) / n;
+  const meanY = ys.reduce((s, v) => s + v, 0) / n;
+  const sxx = xs.reduce((s, x) => s + (x - meanX) ** 2, 0);
+  const sxy = xs.reduce((s, x, i) => s + (x - meanX) * (ys[i] - meanY), 0);
+  const slope = sxy / sxx;
+  const intercept = meanY - slope * meanX;
+  const residuals = xs.map((x, i) => ys[i] - (slope * x + intercept));
+  const se = Math.sqrt(residuals.reduce((s, r) => s + r * r, 0) / (n - 2));
+  const minX = Math.min(...xs);
+  const maxX = Math.max(...xs);
+  const steps = 30;
+  const line = [];
+  const upper = [];
+  const lower = [];
+  for (let i = 0; i <= steps; i++) {
+    const x = minX + ((maxX - minX) * i) / steps;
+    const fit = slope * x + intercept;
+    line.push({ uranium: parseFloat(x.toFixed(2)), ccj: parseFloat(fit.toFixed(2)) });
+    upper.push({ uranium: parseFloat(x.toFixed(2)), ccj: parseFloat((fit + 1.5 * se).toFixed(2)) });
+    lower.push({ uranium: parseFloat(x.toFixed(2)), ccj: parseFloat((fit - 1.5 * se).toFixed(2)) });
+  }
+  return { line, upper, lower };
+}
+
 export default function TheStack() {
   const { data, isLoading } = useQuery<StackData>({
     queryKey: ["/api/stack"],
   });
+
+  const regression = useMemo(
+    () => computeRegression(data?.correlation ?? []),
+    [data?.correlation]
+  );
 
   const layerConfig = [
     {
@@ -287,29 +324,83 @@ export default function TheStack() {
             {isLoading ? (
               <Skeleton className="h-48 w-full" />
             ) : (
-              <ResponsiveContainer width="100%" height={220}>
-                <ScatterChart margin={{ top: 10, right: 20, bottom: 20, left: 10 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                  <XAxis
-                    dataKey="uranium"
-                    name="Uranium"
-                    tick={{ fill: "#6b7280", fontSize: 11 }}
-                    tickLine={false}
-                    axisLine={{ stroke: "rgba(255,255,255,0.08)" }}
-                    label={{ value: "Uranium Spot ($/lb)", position: "insideBottom", offset: -10, fill: "#6b7280", fontSize: 11 }}
-                  />
-                  <YAxis
-                    dataKey="ccj"
-                    name="CCJ"
-                    tick={{ fill: "#6b7280", fontSize: 11 }}
-                    tickLine={false}
-                    axisLine={false}
-                    label={{ value: "CCJ ($)", angle: -90, position: "insideLeft", offset: 10, fill: "#6b7280", fontSize: 11 }}
-                  />
-                  <Tooltip content={<CustomScatterTooltip />} />
-                  <Scatter data={data?.correlation ?? []} fill="#F0A500" opacity={0.75} />
-                </ScatterChart>
-              </ResponsiveContainer>
+              <>
+                <ResponsiveContainer width="100%" height={260}>
+                  <ScatterChart margin={{ top: 10, right: 20, bottom: 24, left: 10 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                    <XAxis
+                      dataKey="uranium"
+                      type="number"
+                      name="Uranium"
+                      domain={["auto", "auto"]}
+                      tick={{ fill: "#6b7280", fontSize: 11 }}
+                      tickLine={false}
+                      axisLine={{ stroke: "rgba(255,255,255,0.08)" }}
+                      label={{ value: "Uranium Spot ($/lb)", position: "insideBottom", offset: -10, fill: "#6b7280", fontSize: 11 }}
+                    />
+                    <YAxis
+                      dataKey="ccj"
+                      type="number"
+                      name="CCJ"
+                      domain={["auto", "auto"]}
+                      tick={{ fill: "#6b7280", fontSize: 11 }}
+                      tickLine={false}
+                      axisLine={false}
+                      label={{ value: "CCJ ($)", angle: -90, position: "insideLeft", offset: 10, fill: "#6b7280", fontSize: 11 }}
+                    />
+                    <Tooltip content={<CustomScatterTooltip />} />
+                    {/* Upper confidence band */}
+                    <Scatter
+                      data={regression.upper}
+                      fill="none"
+                      line={{ stroke: "#F0A500", strokeWidth: 1, strokeDasharray: "5 4", strokeOpacity: 0.35 }}
+                      shape={() => null as any}
+                      legendType="none"
+                      name="Upper Band"
+                    />
+                    {/* Lower confidence band */}
+                    <Scatter
+                      data={regression.lower}
+                      fill="none"
+                      line={{ stroke: "#F0A500", strokeWidth: 1, strokeDasharray: "5 4", strokeOpacity: 0.35 }}
+                      shape={() => null as any}
+                      legendType="none"
+                      name="Lower Band"
+                    />
+                    {/* OLS regression line */}
+                    <Scatter
+                      data={regression.line}
+                      fill="none"
+                      line={{ stroke: "#F0A500", strokeWidth: 2, strokeOpacity: 0.85 }}
+                      shape={() => null as any}
+                      legendType="none"
+                      name="OLS Fit"
+                    />
+                    {/* Raw scatter dots */}
+                    <Scatter
+                      data={data?.correlation ?? []}
+                      fill="#F0A500"
+                      opacity={0.65}
+                      r={4}
+                      name="Weekly Obs."
+                    />
+                  </ScatterChart>
+                </ResponsiveContainer>
+                <div className="flex items-center gap-5 text-xs text-muted-foreground mt-1 mb-1">
+                  <div className="flex items-center gap-1.5">
+                    <div className="h-2 w-2 rounded-full bg-[#F0A500] opacity-70" />
+                    <span>Weekly observation</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-6 border-t-2 border-[#F0A500]" style={{ opacity: 0.85 }} />
+                    <span>OLS trend line</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-6 border-t border-[#F0A500] border-dashed" style={{ opacity: 0.45 }} />
+                    <span>±1.5σ channel</span>
+                  </div>
+                </div>
+              </>
             )}
 
             <div className="mt-3 pt-3 border-t border-border grid grid-cols-1 md:grid-cols-2 gap-3 text-xs text-muted-foreground">

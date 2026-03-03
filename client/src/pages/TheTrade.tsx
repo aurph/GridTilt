@@ -77,19 +77,6 @@ export default function TheTrade() {
   const powerDemandIn2030 = projections[projections.length - 1]?.totalDemand ?? 0;
   const demandGrowthPct = (((powerDemandIn2030 - BASE_POWER_TWH) / BASE_POWER_TWH) * 100).toFixed(1);
   const aiShareIn2030 = ((projections[projections.length - 1]?.aiDemand / powerDemandIn2030) * 100).toFixed(1);
-  const nuclearIn2030 = ((projections[projections.length - 1]?.nuclearContrib / powerDemandIn2030) * 100).toFixed(1);
-
-  const rankedCompanies = [...TOP_COMPANIES]
-    .map((c) => ({
-      ...c,
-      adjustedExposure: c.segment === "Power"
-        ? c.dcRevenueExposure * (1 + nuclearShift[0] / 100)
-        : c.segment === "Compute"
-        ? c.dcRevenueExposure * (1 + aiGrowth[0] / 100 * 0.5)
-        : c.dcRevenueExposure * (1 + aiGrowth[0] / 100 * 0.3),
-    }))
-    .sort((a, b) => b.adjustedExposure - a.adjustedExposure)
-    .slice(0, 5);
 
   const aiGrowthLabel = aiGrowth[0] < 20 ? "Base Case" : aiGrowth[0] < 35 ? "Consensus" : "Bull Case";
   const pueLabel = pue[0] < 1.2 ? "Frontier Efficiency" : pue[0] < 1.45 ? "Industry Standard" : "Legacy Infrastructure";
@@ -100,7 +87,7 @@ export default function TheTrade() {
       <div className="grid-bg border-b border-border px-6 py-6">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
-            <h1 className="text-2xl font-bold text-foreground tracking-tight">The Trade</h1>
+            <h1 className="text-2xl font-bold text-foreground tracking-tight">Thesis Calculator</h1>
             <p className="text-muted-foreground text-sm mt-1 max-w-xl">
               Parametric demand modeling. Stress-test your macro assumptions and identify the highest-leverage positions across the AI power supply chain.
             </p>
@@ -311,58 +298,81 @@ export default function TheTrade() {
                     <Info className="h-3.5 w-3.5 text-muted-foreground" />
                   </TooltipTrigger>
                   <TooltipContent className="max-w-xs">
-                    <p className="text-xs">Companies ranked by estimated revenue exposure to AI power infrastructure, dynamically adjusted by your scenario parameters. Higher AI growth amplifies Compute names; higher nuclear share lifts Power names.</p>
+                    <p className="text-xs">All positions ranked by scenario-adjusted exposure score. Delta shows change from base estimate driven by your parameter inputs. Scores are model estimates, not financial advice.</p>
                   </TooltipContent>
                 </UITooltip>
               </div>
-              <div className="space-y-2">
-                {rankedCompanies.map((company, index) => {
-                  const SegIcon = segmentIcons[company.segment] ?? DollarSign;
-                  return (
-                    <Card key={company.ticker} className="p-3 border-card-border" data-testid={`trade-company-${company.ticker}`}>
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-7 w-7 items-center justify-center rounded-md bg-muted/40 text-xs font-bold font-mono text-muted-foreground flex-shrink-0">
-                          {index + 1}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                            <span className="font-bold text-sm text-foreground font-mono">{company.ticker}</span>
-                            <Badge
-                              className="text-xs px-1.5 py-0"
-                              style={{
-                                backgroundColor: `${company.color}20`,
-                                color: company.color,
-                                border: `1px solid ${company.color}40`,
-                              }}
+              <Card className="border-card-border overflow-hidden">
+                {/* Table header */}
+                <div className="grid grid-cols-[1.5rem_1fr_auto_auto] gap-x-3 px-3 py-2 border-b border-border bg-muted/20">
+                  <span className="text-xs text-muted-foreground font-mono">#</span>
+                  <span className="text-xs text-muted-foreground uppercase tracking-wider">Position</span>
+                  <span className="text-xs text-muted-foreground uppercase tracking-wider text-right">Exposure</span>
+                  <span className="text-xs text-muted-foreground uppercase tracking-wider text-right w-12">Delta</span>
+                </div>
+                {/* All 8 companies ranked */}
+                {[...TOP_COMPANIES]
+                  .map((c) => ({
+                    ...c,
+                    adjustedExposure: c.segment === "Power"
+                      ? c.dcRevenueExposure * (1 + nuclearShift[0] / 100)
+                      : c.segment === "Compute"
+                      ? c.dcRevenueExposure * (1 + aiGrowth[0] / 100 * 0.5)
+                      : c.dcRevenueExposure * (1 + aiGrowth[0] / 100 * 0.3),
+                    delta: c.segment === "Power"
+                      ? c.dcRevenueExposure * (nuclearShift[0] / 100)
+                      : c.segment === "Compute"
+                      ? c.dcRevenueExposure * (aiGrowth[0] / 100 * 0.5)
+                      : c.dcRevenueExposure * (aiGrowth[0] / 100 * 0.3),
+                  }))
+                  .sort((a, b) => b.adjustedExposure - a.adjustedExposure)
+                  .map((company, index) => {
+                    const SegIcon = segmentIcons[company.segment] ?? DollarSign;
+                    const cappedExposure = Math.min(company.adjustedExposure, 100);
+                    return (
+                      <div
+                        key={company.ticker}
+                        className="grid grid-cols-[1.5rem_1fr_auto_auto] gap-x-3 items-center px-3 py-2.5 border-b border-border/50 last:border-0 hover:bg-muted/10 transition-colors"
+                        data-testid={`trade-company-${company.ticker}`}
+                      >
+                        <span className="text-xs font-mono text-muted-foreground/60">{index + 1}</span>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 mb-0.5">
+                            <span className="font-bold text-sm text-foreground font-mono tracking-wide">{company.ticker}</span>
+                            <span
+                              className="text-[10px] px-1.5 py-0.5 rounded font-medium leading-none"
+                              style={{ backgroundColor: `${company.color}18`, color: company.color }}
                             >
-                              <SegIcon className="h-2.5 w-2.5 mr-1" />
+                              <SegIcon className="h-2.5 w-2.5 inline mr-0.5 -mt-0.5" />
                               {company.segment}
-                            </Badge>
+                            </span>
                           </div>
-                          <p className="text-xs text-muted-foreground truncate">{company.name}</p>
+                          <div className="flex items-center gap-2">
+                            <div className="flex-1 bg-muted/25 rounded-full h-1 max-w-[120px]">
+                              <div
+                                className="h-1 rounded-full transition-all duration-500"
+                                style={{ width: `${cappedExposure}%`, backgroundColor: company.color, opacity: 0.8 }}
+                              />
+                            </div>
+                            <span className="text-[10px] text-muted-foreground/60 font-mono">{company.name.split(" ").slice(0, 2).join(" ")}</span>
+                          </div>
                         </div>
-                        <div className="text-right flex-shrink-0">
-                          <p className="font-bold text-base font-mono" style={{ color: company.color }}>
-                            {Math.min(company.adjustedExposure, 100).toFixed(0)}%
-                          </p>
-                          <p className="text-xs text-muted-foreground">exposure</p>
+                        <div className="text-right">
+                          <span className="font-bold text-sm font-mono tabular-nums" style={{ color: company.color }}>
+                            {cappedExposure.toFixed(0)}%
+                          </span>
+                        </div>
+                        <div className="text-right w-12">
+                          <span className={`text-xs font-mono tabular-nums font-medium ${company.delta > 0 ? "text-green-400" : "text-muted-foreground/50"}`}>
+                            {company.delta > 0 ? `+${company.delta.toFixed(0)}` : "—"}
+                          </span>
                         </div>
                       </div>
-                      <div className="mt-2 bg-muted/30 rounded-full h-1.5">
-                        <div
-                          className="h-1.5 rounded-full transition-all duration-500"
-                          style={{
-                            width: `${Math.min(company.adjustedExposure, 100)}%`,
-                            backgroundColor: company.color,
-                          }}
-                        />
-                      </div>
-                    </Card>
-                  );
-                })}
-              </div>
-              <p className="text-xs text-muted-foreground mt-3 leading-relaxed">
-                Rankings update as you adjust parameters above. Exposure scores are scenario model estimates, not financial advice.
+                    );
+                  })}
+              </Card>
+              <p className="text-xs text-muted-foreground mt-2.5 leading-relaxed">
+                Delta reflects scenario-driven uplift vs. base estimate. Scenario model estimates only.
               </p>
             </div>
           </div>
