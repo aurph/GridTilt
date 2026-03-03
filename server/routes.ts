@@ -123,8 +123,10 @@ const NRI_BASE = {
 // Google advanced nuclear PPAs, several state-level nuclear support legislation packages.
 const SMR_POLICY_SCORE = 7.8;
 
-// Current U3O8 uranium spot price $/lb (approximate — spot has pulled back from Feb 2024 peak of $107)
-const URANIUM_SPOT_CURRENT = 74.0;
+// Current U3O8 uranium spot price $/lb (updated March 2026)
+// Spot rallied back to ~$101.50/lb in Jan/Feb 2026 before pulling back; currently ~$92/lb as of early Mar 2026.
+// This is now ABOVE the Jan 2024 base of $91/lb, reversing the prior drawdown.
+const URANIUM_SPOT_CURRENT = 92.0;
 
 function getStockData(tickers: string[]) {
   return tickers.map((ticker) => {
@@ -300,10 +302,10 @@ export async function registerRoutes(
     // power demand pressure on the US grid.
     //
     // Structural baseline = 72/100, derived from:
-    //   - US data center electricity share ~6-7% of national grid (Lawrence Berkeley Lab / EIA, 2025 estimate)
+    //   - US data center electricity share ~5-6% of national grid (DOE 2024 actual: 4.4% / 183 TWh)
     //   - AI-driven demand CAGR: ~35%/yr (2022-2025 actuals, EIA + utility regulatory filings)
-    //   - Hyperscaler 2025 AI capex actuals: ~$320B (MSFT $80B, GOOGL $75B, AMZN $105B, META $65B)
-    // NOTE: Structural baseline is a static hardcoded constant. Uranium spot price ($74/lb),
+    //   - Hyperscaler 2026 AI capex guidance: ~$660B Big 4 (AMZN $200B, GOOGL $180B, MSFT $120B, META $125B)
+    // NOTE: Structural baseline is a static hardcoded constant. Uranium spot price ($92/lb, Mar 2026),
     // SMR policy score (7.8/10), and electricity demand data are also static estimates.
     // Only stock prices and intraday % changes are live (Yahoo Finance).
     //   - GPU/HBM demand backlog: NVDA revenue +122% YoY (FY2025), TSM CoWoS capacity constrained

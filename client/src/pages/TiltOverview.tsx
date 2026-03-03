@@ -267,7 +267,7 @@ export default function TiltOverview() {
               unit="/ 100"
               subtitle="Structural baseline 72 from EIA data. Hover for methodology."
               color="blue"
-              methodology="Structural baseline of 72/100, anchored to three real inputs: US data center electricity share ~6-7% of the national grid (Lawrence Berkeley Lab / EIA, 2025 estimate), AI workload demand CAGR of ~35%/yr (2022-2025 actuals, EIA + utility regulatory filings), and $320B+ in hyperscaler AI capex in 2025 (MSFT $80B, GOOGL $75B, AMZN $105B, META $65B). A score of 100 would represent theoretical full-grid saturation by AI demand. Intraday momentum layer: NVDA (40%) + TSM (25%) + EQIX (20%) + MU (15%), scaled 1.2x. NVDA/TSM proxy GPU compute demand; EQIX reflects live capacity absorption; MU tracks HBM memory tightness."
+              methodology="Structural baseline of 72/100, anchored to three verified inputs: US data center electricity share ~5-6% of the national grid (DOE 2024 actual: 4.4% / 183 TWh; DOE projects 12%+ by 2028), AI workload demand CAGR of ~35%/yr (2022-2025 actuals, EIA + utility regulatory filings), and $660B+ in hyperscaler AI capex guidance for 2026 (AMZN $200B, GOOGL $180B, MSFT $120B, META $125B — nearly double 2025 levels, ~75% AI-focused). A score of 100 represents theoretical full-grid saturation by AI demand. Intraday momentum layer: NVDA (40%) + TSM (25%) + EQIX (20%) + MU (15%), scaled 1.2x."
               constituents={c && (
                 <>
                   <p className="text-xs text-muted-foreground mb-1.5 font-medium">Today's momentum signals</p>
@@ -286,7 +286,7 @@ export default function TiltOverview() {
               unit=""
               subtitle={`Anchored basket index. Base: ${kpiData?.nriBaseDate ?? "Jan 1, 2024"} = 100`}
               color="amber"
-              methodology={`Anchored basket index, base = 100 on January 1, 2024 (the inflection point when AI baseload narratives began accelerating). Six components: CEG 25%, VST 20%, CCJ 15%, NLR ETF 20%, uranium spot 10%, SMR policy tracker 10%. Policy component normalized so score 5/10 = 1.0 baseline. A separate policy multiplier (0.9-1.1) captures the regulatory regime: current score ${kpiData?.smrPolicyScore ?? 7.8}/10 (NRC Kairos/Oklo approvals, Microsoft TMI restart PPA, Amazon nuclear PPAs). Current performance vs Jan 2024: CEG +98%, VST +521%, CCJ flat, uranium spot -19% from spike.`}
+              methodology={`Anchored basket index, base = 100 on January 1, 2024 (the inflection point when AI baseload narratives began accelerating). Six components: CEG 25%, VST 20%, CCJ 15%, NLR ETF 20%, uranium spot 10%, SMR policy tracker 10%. Policy component normalized so score 5/10 = 1.0 baseline. A separate policy multiplier (0.9-1.1) captures the regulatory regime: current score ${kpiData?.smrPolicyScore ?? 7.8}/10 (NRC Kairos/Oklo approvals, Microsoft TMI restart PPA, Amazon nuclear PPAs). Current performance vs Jan 2024: CEG +98%, VST +521%, CCJ flat, uranium spot +1% (recovered to ~$92/lb in Mar 2026 after peaking at $107 in Feb 2024 and pulling back).`}
               constituents={c && (
                 <>
                   <p className="text-xs text-muted-foreground mb-1.5 font-medium">Performance vs Jan 1, 2024</p>
@@ -490,10 +490,10 @@ export default function TiltOverview() {
         {/* 4-column stat strip */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {[
-            { label: "DC Share of US Demand", value: "~6-7%", sub: "2025 estimate (Lawrence Berkeley Lab / EIA). Projected 15%+ by 2030.", color: "#a855f7" },
-            { label: "Hyperscaler AI Capex 2025", value: "$320B+", sub: "MSFT $80B + GOOGL $75B + AMZN $105B + META $65B (full-year 2025 actuals)", color: "#1E90FF" },
-            { label: "Nuclear PPAs Signed", value: "23+", sub: "Big Tech long-term nuclear deals with utilities and developers (as of Q1 2026)", color: "#F0A500" },
-            { label: "Grid Shortfall Risk", value: "2026-27", sub: "PJM/MISO capacity shortfall warnings. First regional crisis window.", color: "#F07040" },
+            { label: "DC Share of US Demand", value: "~5-6%", sub: "2024 DOE actual: 4.4% (~183 TWh). Projected 12%+ by 2028 (DOE).", color: "#a855f7" },
+            { label: "Hyperscaler AI Capex 2026", value: "$660B+", sub: "Big 4 combined guidance (AMZN $200B, GOOGL $180B, MSFT $120B, META $125B). ~75% AI-focused. Nearly doubled from 2025.", color: "#1E90FF" },
+            { label: "Nuclear Power Committed", value: "10+ GW", sub: "Big Tech nuclear PPAs, Q1 2026. Meta alone: 6.6 GW across 4 deals. Microsoft, Amazon, Google PPAs also signed.", color: "#F0A500" },
+            { label: "Grid Shortfall Risk", value: "2026-27", sub: "PJM/MISO formal capacity shortfall warnings. First regional crisis window.", color: "#F07040" },
           ].map((s) => (
             <Card key={s.label} className="p-4 border-card-border">
               <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">{s.label}</p>
