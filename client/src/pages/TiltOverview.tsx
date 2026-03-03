@@ -53,12 +53,18 @@ const annotations = [
 
 interface KpiData {
   aiPowerIndex: number;
-  nuclearIndex: number;
+  nriValue: number;
   gridStress: number;
+  smrPolicyScore: number;
+  nriBaseDate: string;
   constituents: {
-    nvdaChange: number; amdChange: number; tsmChange: number;
-    cegChange: number; vstChange: number; ccjChange: number;
-    neeChange: number; etrChange: number;
+    // AI Power Index constituents (intraday % change signals)
+    nvdaChange: number; tsmChange: number; eqixChange: number; muChange: number;
+    // NRI constituents (price performance since Jan 1, 2024 base)
+    cegPerf: number; vstPerf: number; ccjPerf: number; nlrPerf: number;
+    uPerf: number; policyPerf: number; nriPolicyMultiplier: number; nriMomentum: number;
+    // Grid Stress signals
+    vstChange: number; cegChange: number;
   };
 }
 
@@ -101,11 +107,28 @@ function ConstituentRow({ label, value }: { label: string; value: number }) {
   );
 }
 
+function PerfRow({ label, perf, base }: { label: string; perf: number; base?: string }) {
+  const pct = ((perf - 1) * 100).toFixed(1);
+  const isUp = perf >= 1;
+  return (
+    <div className="flex items-center justify-between text-xs py-0.5">
+      <span className="text-muted-foreground">{label}</span>
+      <div className="flex items-center gap-2">
+        {base && <span className="text-muted-foreground/50 font-mono">{base}</span>}
+        <span className={`font-mono font-semibold ${isUp ? "text-green-400" : "text-red-400"}`}>
+          {isUp ? "+" : ""}{pct}%
+        </span>
+      </div>
+    </div>
+  );
+}
+
 function KpiCard({
   icon: Icon,
   title,
   value,
   unit,
+  subtitle,
   color,
   methodology,
   constituents,
@@ -115,6 +138,7 @@ function KpiCard({
   title: string;
   value: number | null;
   unit: string;
+  subtitle?: string;
   color: "blue" | "amber" | "red";
   methodology: string;
   constituents?: React.ReactNode;
@@ -177,7 +201,7 @@ function KpiCard({
               <span className="text-sm text-muted-foreground mb-1.5">{unit}</span>
             </div>
             <p className="text-xs text-muted-foreground leading-snug">
-              Derived from live market signals. Hover info for methodology.
+              {subtitle ?? "Derived from live market signals. Hover for methodology."}
             </p>
           </>
         )}
@@ -241,14 +265,16 @@ export default function TiltOverview() {
               title="AI Power Demand Index"
               value={kpiData?.aiPowerIndex ?? null}
               unit="/ 100"
+              subtitle="Structural baseline 72 from EIA data. Hover for methodology."
               color="blue"
-              methodology="Structural baseline of 65 from EIA data center growth forecasts. Momentum layer: NVDA (50%) + AMD (25%) + TSM (25%) intraday signals, scaled 1.8x. Resets to baseline at market open each session."
+              methodology="Structural baseline of 72/100, anchored to three real inputs: US data center electricity share ~9.6% of the national grid (EIA 2024), AI workload CAGR of ~35%/yr (2022-2024 actuals), and $200B+ in hyperscaler AI capex committed for 2025. A score of 100 would represent theoretical full-grid saturation by AI demand. Intraday momentum layer: NVDA (40%) + TSM (25%) + EQIX (20%) + MU (15%), scaled 1.2x. NVDA/TSM proxy GPU compute demand; EQIX reflects live capacity absorption; MU tracks HBM memory tightness."
               constituents={c && (
                 <>
-                  <p className="text-xs text-muted-foreground mb-1.5 font-medium">Constituent signals</p>
-                  <ConstituentRow label="NVDA (50%)" value={c.nvdaChange} />
-                  <ConstituentRow label="AMD (25%)" value={c.amdChange} />
+                  <p className="text-xs text-muted-foreground mb-1.5 font-medium">Today's momentum signals</p>
+                  <ConstituentRow label="NVDA (40%)" value={c.nvdaChange} />
                   <ConstituentRow label="TSM (25%)" value={c.tsmChange} />
+                  <ConstituentRow label="EQIX (20%)" value={c.eqixChange} />
+                  <ConstituentRow label="MU (15%)" value={c.muChange} />
                 </>
               )}
               isLoading={isLoading}
@@ -256,16 +282,23 @@ export default function TiltOverview() {
             <KpiCard
               icon={Zap}
               title="Nuclear Renaissance Index"
-              value={kpiData?.nuclearIndex ?? null}
-              unit="/ 100"
+              value={kpiData?.nriValue ?? null}
+              unit=""
+              subtitle={`Anchored basket index. Base: ${kpiData?.nriBaseDate ?? "Jan 1, 2024"} = 100`}
               color="amber"
-              methodology="Structural baseline of 56 from utility capex announcements and nuclear PPA pipeline. Momentum: CEG (40%) + VST (35%) + CCJ as uranium proxy (25%), scaled 2.2x. CEG and VST are the primary nuclear utility beneficiaries of AI baseload demand."
+              methodology={`Anchored basket index, base = 100 on January 1, 2024 (the inflection point when AI baseload narratives began accelerating). Six components: CEG 25%, VST 20%, CCJ 15%, NLR ETF 20%, uranium spot 10%, SMR policy tracker 10%. Policy component normalized so score 5/10 = 1.0 baseline. A separate policy multiplier (0.9-1.1) captures the regulatory regime: current score ${kpiData?.smrPolicyScore ?? 7.8}/10 (NRC Kairos/Oklo approvals, Microsoft TMI restart PPA, Amazon nuclear PPAs). Current performance vs Jan 2024: CEG +98%, VST +521%, CCJ flat, uranium spot -19% from spike.`}
               constituents={c && (
                 <>
-                  <p className="text-xs text-muted-foreground mb-1.5 font-medium">Constituent signals</p>
-                  <ConstituentRow label="CEG (40%)" value={c.cegChange} />
-                  <ConstituentRow label="VST (35%)" value={c.vstChange} />
-                  <ConstituentRow label="CCJ / uranium (25%)" value={c.ccjChange} />
+                  <p className="text-xs text-muted-foreground mb-1.5 font-medium">Performance vs Jan 1, 2024</p>
+                  <PerfRow label="CEG (25%)" perf={c.cegPerf} base="base $146" />
+                  <PerfRow label="VST (20%)" perf={c.vstPerf} base="base $28.50" />
+                  <PerfRow label="CCJ (15%)" perf={c.ccjPerf} base="base $47.50" />
+                  <PerfRow label="NLR ETF (20%)" perf={c.nlrPerf} base="base $68" />
+                  <PerfRow label="Uranium spot (10%)" perf={c.uPerf} base="base $91/lb" />
+                  <div className="flex items-center justify-between text-xs py-0.5 mt-1 pt-1.5 border-t border-border/50">
+                    <span className="text-muted-foreground">Policy multiplier</span>
+                    <span className="font-mono font-semibold text-[#F0A500]">{c.nriPolicyMultiplier?.toFixed(3)}x</span>
+                  </div>
                 </>
               )}
               isLoading={isLoading}
@@ -275,13 +308,15 @@ export default function TiltOverview() {
               title="Grid Stress Score"
               value={kpiData?.gridStress ?? null}
               unit="/ 100"
+              subtitle="PJM/MISO/ERCOT reserve margin signal. Hover for methodology."
               color="red"
-              methodology="Structural baseline of 67 from EIA load forecasts projecting regional supply strain from 2026. Momentum: NEE + ETR intraday average (1.5x scalar). Rising utility stocks signal demand is being priced in, indicating worsening grid tension. Above 70 = elevated constraint risk."
+              methodology="Structural baseline of 68/100, derived from three converging pressures: PJM reserve margin declined from 27% (2020) to 20% (2024) and is projected below 15% by 2028; MISO issued formal capacity shortfall warnings for 2027-2028; ERCOT logged 900+ hours of high-price scarcity events in 2023. A score of 100 represents declared grid emergency conditions. Intraday momentum: VST (40%) + CEG (35%) as merchant power price proxies (rising = power prices tightening) + EQIX (25%) as forward DC load commitment signal. Above 75 = elevated regional constraint risk."
               constituents={c && (
                 <>
-                  <p className="text-xs text-muted-foreground mb-1.5 font-medium">Constituent signals</p>
-                  <ConstituentRow label="NEE (50%)" value={c.neeChange} />
-                  <ConstituentRow label="ETR (50%)" value={c.etrChange} />
+                  <p className="text-xs text-muted-foreground mb-1.5 font-medium">Today's momentum signals</p>
+                  <ConstituentRow label="VST (40%) merchant power" value={c.vstChange} />
+                  <ConstituentRow label="CEG (35%) nuclear utility" value={c.cegChange} />
+                  <ConstituentRow label="EQIX (25%) DC load proxy" value={c.eqixChange} />
                 </>
               )}
               isLoading={isLoading}

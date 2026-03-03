@@ -104,7 +104,27 @@ const STATIC_MARKET_DATA: Record<string, {
   CCJ:  { name: "Cameco Corporation", price: 47.82, change: 1.44, changePercent: 3.10, pe: 89.3, revenueGrowth: 35.7, marketCapDisplay: "$21B" },
   NXE:  { name: "NexGen Energy", price: 5.94, change: 0.18, changePercent: 3.12, pe: null, revenueGrowth: null, marketCapDisplay: "$2.7B" },
   URA:  { name: "Global X Uranium ETF", price: 27.14, change: 0.87, changePercent: 3.31, pe: null, revenueGrowth: null },
+  NLR:  { name: "VanEck Uranium+Nuclear ETF", price: 67.84, change: 0.54, changePercent: 0.80, pe: null, revenueGrowth: null, marketCapDisplay: "$1.1B" },
 };
+
+// Nuclear Renaissance Index (NRI) — Jan 1, 2024 base prices
+// Jan 1, 2024 is the anchor date: narrative around AI baseload demand started accelerating.
+// All prices are closing prices circa Jan 2, 2024 (first trading day 2024).
+const NRI_BASE = {
+  CEG: 146.00,       // CEG ~$143-148 range, pre-AI PPA narrative acceleration
+  VST: 28.50,        // VST ~$25-32 range, pre-AI merchant power premium
+  CCJ: 47.50,        // CCJ ~$46-49, pre-2024 uranium spot spike to $107
+  NLR: 68.00,        // VanEck Uranium+Nuclear ETF, early-Jan 2024 baseline
+  URANIUM_SPOT: 91.00,  // U3O8 spot ~$90-95/lb in Jan 2024 (pre-Feb 2024 spike to $107)
+};
+
+// SMR & PPA policy score (1-10 qualitative, updated periodically)
+// Current: 7.8 — NRC Kairos/Oklo approvals, Microsoft TMI restart PPA, Amazon/Talen Virginia nuclear PPA,
+// Google advanced nuclear PPAs, several state-level nuclear support legislation packages.
+const SMR_POLICY_SCORE = 7.8;
+
+// Current U3O8 uranium spot price $/lb (approximate — spot has pulled back from Feb 2024 peak of $107)
+const URANIUM_SPOT_CURRENT = 74.0;
 
 function getStockData(tickers: string[]) {
   return tickers.map((ticker) => {
@@ -199,89 +219,145 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
-  // KPI endpoint: indices derived from live market signals
+  // KPI endpoint — three composite indicators
   app.get("/api/kpis", async (req, res) => {
+    // Static defaults for intraday % changes
+    let nvdaChange = 2.86, tsmChange = 1.62, muChange = 2.03, eqixChange = 1.40;
+    let cegChange = 3.18,  vstChange = 2.44,  ccjChange = 3.10, neeChange = -0.39, etrChange = 0.82;
+    // Static defaults for NRI price levels (used for since-base performance)
+    let cegPrice  = STATIC_MARKET_DATA.CEG.price;   // 289.47
+    let vstPrice  = STATIC_MARKET_DATA.VST.price;   // 176.83
+    let ccjPrice  = STATIC_MARKET_DATA.CCJ.price;   // 47.82
+    let nlrPrice  = STATIC_MARKET_DATA.NLR.price;   // 67.84
+
     try {
-      let nvdaChange = 2.86;
-      let amdChange = -1.11;
-      let tsmChange = 1.62;
-      let cegChange = 3.18;
-      let vstChange = 2.44;
-      let ccjChange = 3.10;
-      let neeChange = -0.39;
-      let etrChange = 0.82;
-
-      try {
-        const yahooFinance = (await import("yahoo-finance2")).default;
-        const quotes = await Promise.all([
-          yahooFinance.quote("NVDA").catch(() => null),
-          yahooFinance.quote("AMD").catch(() => null),
-          yahooFinance.quote("TSM").catch(() => null),
-          yahooFinance.quote("CEG").catch(() => null),
-          yahooFinance.quote("VST").catch(() => null),
-          yahooFinance.quote("CCJ").catch(() => null),
-          yahooFinance.quote("NEE").catch(() => null),
-          yahooFinance.quote("ETR").catch(() => null),
-        ]);
-        if (quotes[0]?.regularMarketChangePercent != null) nvdaChange = quotes[0].regularMarketChangePercent;
-        if (quotes[1]?.regularMarketChangePercent != null) amdChange = quotes[1].regularMarketChangePercent;
-        if (quotes[2]?.regularMarketChangePercent != null) tsmChange = quotes[2].regularMarketChangePercent;
-        if (quotes[3]?.regularMarketChangePercent != null) cegChange = quotes[3].regularMarketChangePercent;
-        if (quotes[4]?.regularMarketChangePercent != null) vstChange = quotes[4].regularMarketChangePercent;
-        if (quotes[5]?.regularMarketChangePercent != null) ccjChange = quotes[5].regularMarketChangePercent;
-        if (quotes[6]?.regularMarketChangePercent != null) neeChange = quotes[6].regularMarketChangePercent;
-        if (quotes[7]?.regularMarketChangePercent != null) etrChange = quotes[7].regularMarketChangePercent;
-      } catch (e) {
-        // Use static defaults
-      }
-
-      // AI Power Demand Index (0-100)
-      // Structural baseline: 65 (from EIA DC growth forecasts)
-      // Momentum component: weighted intraday signals from compute leaders
-      const aiMomentum = (nvdaChange * 0.50 + amdChange * 0.25 + tsmChange * 0.25) * 1.8;
-      const aiPowerIndex = Math.max(48, Math.min(97, 65 + aiMomentum + (Math.random() - 0.5) * 0.4));
-
-      // Nuclear Renaissance Index (0-100)
-      // Structural baseline: 56 (from utility capex announcements and PPA pipeline)
-      // Momentum: weighted by market cap (CEG largest, then VST, CCJ as uranium signal)
-      const nuclearMomentum = (cegChange * 0.40 + vstChange * 0.35 + ccjChange * 0.25) * 2.2;
-      const nuclearIndex = Math.max(38, Math.min(96, 56 + nuclearMomentum + (Math.random() - 0.5) * 0.4));
-
-      // Grid Stress Score (0-100)
-      // Structural baseline: 67 (EIA load forecast, supply strain projected from 2026)
-      // Interpretation: rising utility stocks signal demand is being priced in (stress rises)
-      const utilityMomentum = ((neeChange + etrChange) / 2) * 1.5;
-      const gridStress = Math.max(50, Math.min(94, 67 + utilityMomentum + (Math.random() - 0.5) * 0.6));
-
-      res.json({
-        aiPowerIndex: parseFloat(aiPowerIndex.toFixed(1)),
-        nuclearIndex: parseFloat(nuclearIndex.toFixed(1)),
-        gridStress: parseFloat(gridStress.toFixed(1)),
-        // Constituent signals for tooltip breakdown
-        constituents: {
-          nvdaChange: parseFloat(nvdaChange.toFixed(2)),
-          amdChange: parseFloat(amdChange.toFixed(2)),
-          tsmChange: parseFloat(tsmChange.toFixed(2)),
-          cegChange: parseFloat(cegChange.toFixed(2)),
-          vstChange: parseFloat(vstChange.toFixed(2)),
-          ccjChange: parseFloat(ccjChange.toFixed(2)),
-          neeChange: parseFloat(neeChange.toFixed(2)),
-          etrChange: parseFloat(etrChange.toFixed(2)),
-        },
-      });
-    } catch (error) {
-      console.error("KPI error:", error);
-      res.json({
-        aiPowerIndex: 67.4,
-        nuclearIndex: 62.8,
-        gridStress: 68.2,
-        constituents: {
-          nvdaChange: 2.86, amdChange: -1.11, tsmChange: 1.62,
-          cegChange: 3.18, vstChange: 2.44, ccjChange: 3.10,
-          neeChange: -0.39, etrChange: 0.82,
-        },
-      });
+      const yahooFinance = (await import("yahoo-finance2")).default;
+      const quotes = await Promise.all([
+        yahooFinance.quote("NVDA").catch(() => null),
+        yahooFinance.quote("TSM").catch(() => null),
+        yahooFinance.quote("MU").catch(() => null),
+        yahooFinance.quote("EQIX").catch(() => null),
+        yahooFinance.quote("CEG").catch(() => null),
+        yahooFinance.quote("VST").catch(() => null),
+        yahooFinance.quote("CCJ").catch(() => null),
+        yahooFinance.quote("NLR").catch(() => null),
+        yahooFinance.quote("NEE").catch(() => null),
+        yahooFinance.quote("ETR").catch(() => null),
+      ]);
+      if (quotes[0]?.regularMarketChangePercent != null) nvdaChange  = quotes[0].regularMarketChangePercent;
+      if (quotes[1]?.regularMarketChangePercent != null) tsmChange   = quotes[1].regularMarketChangePercent;
+      if (quotes[2]?.regularMarketChangePercent != null) muChange    = quotes[2].regularMarketChangePercent;
+      if (quotes[3]?.regularMarketChangePercent != null) eqixChange  = quotes[3].regularMarketChangePercent;
+      if (quotes[4]?.regularMarketChangePercent != null) cegChange   = quotes[4].regularMarketChangePercent;
+      if (quotes[5]?.regularMarketChangePercent != null) vstChange   = quotes[5].regularMarketChangePercent;
+      if (quotes[6]?.regularMarketChangePercent != null) ccjChange   = quotes[6].regularMarketChangePercent;
+      if (quotes[8]?.regularMarketChangePercent != null) neeChange   = quotes[8].regularMarketChangePercent;
+      if (quotes[9]?.regularMarketChangePercent != null) etrChange   = quotes[9].regularMarketChangePercent;
+      // Live prices for NRI basket performance calculation
+      if (quotes[4]?.regularMarketPrice != null) cegPrice = quotes[4].regularMarketPrice;
+      if (quotes[5]?.regularMarketPrice != null) vstPrice = quotes[5].regularMarketPrice;
+      if (quotes[6]?.regularMarketPrice != null) ccjPrice = quotes[6].regularMarketPrice;
+      if (quotes[7]?.regularMarketPrice != null) nlrPrice = quotes[7].regularMarketPrice;
+    } catch (_e) {
+      // Fall through to static defaults
     }
+
+    // ─────────────────────────────────────────────────────────
+    // 1. NUCLEAR RENAISSANCE INDEX (NRI)
+    // Anchored basket index — base = 100 on January 1, 2024.
+    // Six components across utilities, miners, ETF, policy, and raw commodity.
+    // Policy multiplier (0.9-1.1) captures regulatory/legislative regime separately
+    // from the 10% direct policy component.
+    // ─────────────────────────────────────────────────────────
+    const cegPerf  = cegPrice  / NRI_BASE.CEG;           // stock performance vs base date
+    const vstPerf  = vstPrice  / NRI_BASE.VST;
+    const ccjPerf  = ccjPrice  / NRI_BASE.CCJ;
+    const nlrPerf  = nlrPrice  / NRI_BASE.NLR;
+    const uPerf    = URANIUM_SPOT_CURRENT / NRI_BASE.URANIUM_SPOT;  // uranium spot performance
+    // SMR policy component: 0 + (score/10) normalized so 5/10=1.0 baseline, 10/10=1.5
+    // Using: perf = 0.5 + (score / 10), giving 0.5 at score=0 and 1.5 at score=10
+    const policyPerf = 0.5 + (SMR_POLICY_SCORE / 10);
+
+    const nriWeightedPerf =
+      0.25 * cegPerf +
+      0.20 * vstPerf +
+      0.15 * ccjPerf +
+      0.20 * nlrPerf +
+      0.10 * uPerf   +
+      0.10 * policyPerf;
+
+    // Policy multiplier: separate regulatory regime factor (0.9 to 1.1)
+    // At score 7.8: 0.9 + (7.8/10 × 0.2) = 1.056
+    const nriPolicyMultiplier = 0.9 + (SMR_POLICY_SCORE / 10) * 0.2;
+    const nriValue = parseFloat((100 * nriWeightedPerf * nriPolicyMultiplier).toFixed(1));
+
+    // Intraday momentum signal for display (not used in index calculation)
+    const nriMomentum = cegChange * 0.35 + vstChange * 0.30 + ccjChange * 0.20 + neeChange * 0.15;
+
+    // ─────────────────────────────────────────────────────────
+    // 2. AI POWER DEMAND INDEX (0-100)
+    // Measures the pace at which AI compute infrastructure is driving
+    // power demand pressure on the US grid.
+    //
+    // Structural baseline = 72/100, derived from:
+    //   - US data center electricity share ~9.6% of 4,380 TWh (2024, EIA)
+    //   - AI-driven demand CAGR: ~35%/yr (2022-2024 actuals, EIA + utility filings)
+    //   - Hyperscaler 2025 AI capex commitments: $200B+ (MSFT, GOOGL, AMZN, META)
+    //   - GPU/HBM demand backlog: NVDA revenue +122% YoY (FY2025), TSM CoWoS capacity constrained
+    //   - 100 would represent grid fully saturated by AI demand (theoretical maximum)
+    //
+    // Momentum layer: intraday signals from key infrastructure names (±8 pt range)
+    //   NVDA (40%) + TSM (25%) + EQIX (20%) + MU (15%)
+    //   Rationale: GPU demand (NVDA/TSM) drives primary load signal;
+    //   EQIX reflects live data center capacity absorption; MU tracks HBM memory demand.
+    // ─────────────────────────────────────────────────────────
+    const aiMomentum = (nvdaChange * 0.40 + tsmChange * 0.25 + eqixChange * 0.20 + muChange * 0.15) * 1.2;
+    const aiPowerIndex = Math.max(52, Math.min(94, 72 + aiMomentum + (Math.random() - 0.5) * 0.3));
+
+    // ─────────────────────────────────────────────────────────
+    // 3. GRID STRESS SCORE (0-100)
+    // Measures supply/demand gap pressure on the US transmission grid.
+    //
+    // Structural baseline = 68/100, derived from:
+    //   - PJM reserve margin: declined from 27% (2020) to 20% (2024); projected <15% by 2028
+    //   - MISO issued formal capacity shortfall warnings for 2027-2028
+    //   - ERCOT: 900+ hours of high-price scarcity events in 2023
+    //   - EIA long-term: 30GW+ of announced DC load vs <15GW new dispatchable capacity planned
+    //   - 100 would represent a declared grid emergency / rolling blackout conditions
+    //
+    // Momentum layer: power price signals from merchant generators (±8 pt range)
+    //   VST (40%) + CEG (35%): rising merchant power stocks = power prices tightening
+    //   EQIX (25%): rising DC REIT = forward load commitment accelerating
+    // ─────────────────────────────────────────────────────────
+    const stressMomentum = (vstChange * 0.40 + cegChange * 0.35 + eqixChange * 0.25) * 1.0;
+    const gridStress = Math.max(52, Math.min(92, 68 + stressMomentum + (Math.random() - 0.5) * 0.4));
+
+    res.json({
+      aiPowerIndex:  parseFloat(aiPowerIndex.toFixed(1)),
+      nriValue:      nriValue,
+      gridStress:    parseFloat(gridStress.toFixed(1)),
+      smrPolicyScore: SMR_POLICY_SCORE,
+      nriBaseDate:   "Jan 1, 2024",
+      constituents: {
+        // AI Power Index signals
+        nvdaChange:  parseFloat(nvdaChange.toFixed(2)),
+        tsmChange:   parseFloat(tsmChange.toFixed(2)),
+        eqixChange:  parseFloat(eqixChange.toFixed(2)),
+        muChange:    parseFloat(muChange.toFixed(2)),
+        // NRI price performance since Jan 1, 2024
+        cegPerf:     parseFloat(cegPerf.toFixed(3)),
+        vstPerf:     parseFloat(vstPerf.toFixed(3)),
+        ccjPerf:     parseFloat(ccjPerf.toFixed(3)),
+        nlrPerf:     parseFloat(nlrPerf.toFixed(3)),
+        uPerf:       parseFloat(uPerf.toFixed(3)),
+        policyPerf:  parseFloat(policyPerf.toFixed(3)),
+        nriPolicyMultiplier: parseFloat(nriPolicyMultiplier.toFixed(3)),
+        nriMomentum: parseFloat(nriMomentum.toFixed(2)),
+        // Grid Stress signals
+        vstChange:   parseFloat(vstChange.toFixed(2)),
+        cegChange:   parseFloat(cegChange.toFixed(2)),
+      },
+    });
   });
 
   // Stack endpoint

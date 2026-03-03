@@ -96,9 +96,18 @@ export default function PowerMap() {
       <div className="grid-bg border-b border-border px-6 py-6">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
-            <h1 className="text-2xl font-bold text-foreground tracking-tight">Power Map</h1>
-            <p className="text-muted-foreground text-sm mt-1">
+            <div className="flex items-center gap-2.5 mb-1">
+              <h1 className="text-2xl font-bold text-foreground tracking-tight">Power Map</h1>
+              <span className="text-[10px] font-mono tracking-wider px-2 py-0.5 rounded border border-border bg-muted/30 text-muted-foreground">
+                US Coverage
+              </span>
+            </div>
+            <p className="text-muted-foreground text-sm mt-0.5">
               Announced and operating data centers by power draw. {DATA_CENTERS.length} US locations tracked.
+            </p>
+            <p className="text-xs text-muted-foreground/50 mt-1 flex items-center gap-1.5">
+              <Globe className="h-3 w-3" />
+              International coverage expanding to Europe and Southeast Asia.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3 text-xs">

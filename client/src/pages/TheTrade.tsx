@@ -21,15 +21,25 @@ import { Info, TrendingUp, Zap, Cpu, Server, DollarSign } from "lucide-react";
 const BASE_POWER_TWH = 4380;
 const BASE_YEAR = 2024;
 
+// Thesis Leverage scores (0-10 qualitative analyst ranking, not revenue attribution)
+// Rankings reflect structural positioning in the AI power supply chain.
+// NVDA: GPU monopoly on AI training compute, >80% AI accelerator share
+// EQIX: 100% data center revenue, highest power density in colocation
+// VRT: Thermal and power management for every AI DC, organic revenue +19%
+// CEG: Largest nuclear utility operator, signed first AI baseload PPA with Microsoft
+// CCJ: Pure uranium miner, highest direct spot price beta of any public name
+// TSM: Manufactures all advanced AI chips (H100, B200), CoWoS advanced packaging bottleneck
+// VST: Merchant power with nuclear+gas mix, direct beneficiary of power price tightening
+// AMD: GPU inference competitor, datacenter GPU revenue +122% YoY, second-largest player
 const TOP_COMPANIES = [
-  { ticker: "NVDA", name: "NVIDIA Corporation", segment: "Compute", dcRevenueExposure: 87, color: "#1E90FF" },
-  { ticker: "CEG", name: "Constellation Energy", segment: "Power", dcRevenueExposure: 72, color: "#F0A500" },
-  { ticker: "EQIX", name: "Equinix Inc", segment: "Infrastructure", dcRevenueExposure: 95, color: "#a855f7" },
-  { ticker: "VRT", name: "Vertiv Holdings", segment: "Infrastructure", dcRevenueExposure: 92, color: "#a855f7" },
-  { ticker: "CCJ", name: "Cameco Corporation", segment: "Power", dcRevenueExposure: 68, color: "#F0A500" },
-  { ticker: "VST", name: "Vistra Corp", segment: "Power", dcRevenueExposure: 61, color: "#F0A500" },
-  { ticker: "TSM", name: "Taiwan Semiconductor", segment: "Compute", dcRevenueExposure: 78, color: "#1E90FF" },
-  { ticker: "AMD", name: "Advanced Micro Devices", segment: "Compute", dcRevenueExposure: 55, color: "#1E90FF" },
+  { ticker: "NVDA", name: "NVIDIA Corporation", segment: "Compute", thesisScore: 9.5, rationale: "GPU monopoly, >80% AI accelerator share", color: "#1E90FF" },
+  { ticker: "EQIX", name: "Equinix Inc", segment: "Infrastructure", thesisScore: 9.0, rationale: "100% DC revenue, highest power density growth", color: "#a855f7" },
+  { ticker: "VRT", name: "Vertiv Holdings", segment: "Infrastructure", thesisScore: 8.8, rationale: "Critical thermal mgmt for every AI data center", color: "#a855f7" },
+  { ticker: "CEG", name: "Constellation Energy", segment: "Power", thesisScore: 8.2, rationale: "Largest nuclear utility + first AI baseload PPA", color: "#F0A500" },
+  { ticker: "CCJ", name: "Cameco Corporation", segment: "Power", thesisScore: 7.5, rationale: "Pure uranium miner, highest spot price beta", color: "#F0A500" },
+  { ticker: "TSM", name: "Taiwan Semiconductor", segment: "Compute", thesisScore: 7.2, rationale: "Manufactures all advanced AI chips", color: "#1E90FF" },
+  { ticker: "VST", name: "Vistra Corp", segment: "Power", thesisScore: 7.0, rationale: "Merchant power, direct power price beneficiary", color: "#F0A500" },
+  { ticker: "AMD", name: "Advanced Micro Devices", segment: "Compute", thesisScore: 6.0, rationale: "GPU inference competition, DC revenue +122% YoY", color: "#1E90FF" },
 ];
 
 const segmentIcons: Record<string, any> = {
@@ -43,7 +53,7 @@ const CustomBarTooltip = ({ active, payload, label }: any) => {
     return (
       <div className="bg-card border border-card-border rounded-lg p-3 text-xs shadow-xl">
         <p className="font-semibold text-foreground mb-1">{label}</p>
-        <p className="text-muted-foreground">Revenue Exposure: <span className="text-foreground font-mono font-medium">{payload[0]?.value?.toFixed(0)}%</span></p>
+        <p className="text-muted-foreground">Thesis Leverage: <span className="text-foreground font-mono font-medium">{payload[0]?.value?.toFixed(1)}/10</span></p>
         <p className="text-muted-foreground">Segment: <span className="text-foreground font-medium">{payload[0]?.payload?.segment}</span></p>
       </div>
     );
@@ -100,7 +110,7 @@ export default function TheTrade() {
               </Badge>
             </TooltipTrigger>
             <TooltipContent className="max-w-xs">
-              <p className="text-xs leading-relaxed">Revenue exposure scores are estimated percentages of each company's forward revenue attributable to AI power infrastructure. Slider adjustments apply segment-specific multipliers: AI growth affects Compute (0.5x leverage) and Infrastructure (0.3x); nuclear shift scales Power names directly. These are scenario estimates, not financial advice.</p>
+              <p className="text-xs leading-relaxed">Thesis Leverage scores (0-10) are qualitative analyst rankings reflecting each company's structural positioning in the AI power supply chain. They are not revenue attribution figures. Slider adjustments apply scenario-driven bumps: AI growth shifts Compute and Infrastructure scores proportionally; nuclear shift amplifies Power names. These are scenario estimates, not financial advice.</p>
             </TooltipContent>
           </UITooltip>
         </div>
@@ -307,28 +317,23 @@ export default function TheTrade() {
                 <div className="grid grid-cols-[1.5rem_1fr_auto_auto] gap-x-3 px-3 py-2 border-b border-border bg-muted/20">
                   <span className="text-xs text-muted-foreground font-mono">#</span>
                   <span className="text-xs text-muted-foreground uppercase tracking-wider">Position</span>
-                  <span className="text-xs text-muted-foreground uppercase tracking-wider text-right">Exposure</span>
-                  <span className="text-xs text-muted-foreground uppercase tracking-wider text-right w-12">Delta</span>
+                  <span className="text-xs text-muted-foreground uppercase tracking-wider text-right">Thesis Leverage</span>
+                  <span className="text-xs text-muted-foreground uppercase tracking-wider text-right w-14">Delta</span>
                 </div>
-                {/* All 8 companies ranked */}
+                {/* All 8 companies ranked by scenario-adjusted thesis leverage */}
                 {[...TOP_COMPANIES]
-                  .map((c) => ({
-                    ...c,
-                    adjustedExposure: c.segment === "Power"
-                      ? c.dcRevenueExposure * (1 + nuclearShift[0] / 100)
+                  .map((c) => {
+                    const scenarioBump = c.segment === "Power"
+                      ? c.thesisScore * (nuclearShift[0] / 100) * 0.4
                       : c.segment === "Compute"
-                      ? c.dcRevenueExposure * (1 + aiGrowth[0] / 100 * 0.5)
-                      : c.dcRevenueExposure * (1 + aiGrowth[0] / 100 * 0.3),
-                    delta: c.segment === "Power"
-                      ? c.dcRevenueExposure * (nuclearShift[0] / 100)
-                      : c.segment === "Compute"
-                      ? c.dcRevenueExposure * (aiGrowth[0] / 100 * 0.5)
-                      : c.dcRevenueExposure * (aiGrowth[0] / 100 * 0.3),
-                  }))
-                  .sort((a, b) => b.adjustedExposure - a.adjustedExposure)
+                      ? c.thesisScore * (aiGrowth[0] / 100) * 0.25
+                      : c.thesisScore * (aiGrowth[0] / 100) * 0.15;
+                    const adjustedScore = Math.min(10.0, c.thesisScore + scenarioBump);
+                    return { ...c, adjustedScore, delta: scenarioBump };
+                  })
+                  .sort((a, b) => b.adjustedScore - a.adjustedScore)
                   .map((company, index) => {
                     const SegIcon = segmentIcons[company.segment] ?? DollarSign;
-                    const cappedExposure = Math.min(company.adjustedExposure, 100);
                     return (
                       <div
                         key={company.ticker}
@@ -351,20 +356,21 @@ export default function TheTrade() {
                             <div className="flex-1 bg-muted/25 rounded-full h-1 max-w-[120px]">
                               <div
                                 className="h-1 rounded-full transition-all duration-500"
-                                style={{ width: `${cappedExposure}%`, backgroundColor: company.color, opacity: 0.8 }}
+                                style={{ width: `${(company.adjustedScore / 10) * 100}%`, backgroundColor: company.color, opacity: 0.8 }}
                               />
                             </div>
-                            <span className="text-[10px] text-muted-foreground/60 font-mono">{company.name.split(" ").slice(0, 2).join(" ")}</span>
+                            <span className="text-[10px] text-muted-foreground/60 font-mono truncate max-w-[100px]">{company.rationale}</span>
                           </div>
                         </div>
                         <div className="text-right">
                           <span className="font-bold text-sm font-mono tabular-nums" style={{ color: company.color }}>
-                            {cappedExposure.toFixed(0)}%
+                            {company.adjustedScore.toFixed(1)}
                           </span>
+                          <span className="text-xs text-muted-foreground font-mono">/10</span>
                         </div>
-                        <div className="text-right w-12">
-                          <span className={`text-xs font-mono tabular-nums font-medium ${company.delta > 0 ? "text-green-400" : "text-muted-foreground/50"}`}>
-                            {company.delta > 0 ? `+${company.delta.toFixed(0)}` : "—"}
+                        <div className="text-right w-14">
+                          <span className={`text-xs font-mono tabular-nums font-medium ${company.delta > 0.05 ? "text-green-400" : "text-muted-foreground/40"}`}>
+                            {company.delta > 0.05 ? `+${company.delta.toFixed(2)}` : "base"}
                           </span>
                         </div>
                       </div>
@@ -372,7 +378,7 @@ export default function TheTrade() {
                   })}
               </Card>
               <p className="text-xs text-muted-foreground mt-2.5 leading-relaxed">
-                Delta reflects scenario-driven uplift vs. base estimate. Scenario model estimates only.
+                Qualitative analyst ranking reflecting structural positioning in the AI power supply chain. Not revenue attribution. Delta shows scenario-driven score shift. Not financial advice.
               </p>
             </div>
           </div>
