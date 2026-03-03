@@ -18,7 +18,6 @@ import {
   TrendingUp,
   BarChart3,
   Zap,
-  Activity,
 } from "lucide-react";
 
 const navItems = [
@@ -26,7 +25,7 @@ const navItems = [
     title: "Tilt Overview",
     url: "/",
     icon: LayoutDashboard,
-    description: "Live KPIs & demand chart",
+    description: "Live KPIs and demand chart",
   },
   {
     title: "The Stack",
@@ -44,7 +43,7 @@ const navItems = [
     title: "The Trade",
     url: "/trade",
     icon: TrendingUp,
-    description: "Financial thesis builder",
+    description: "Scenario analysis",
   },
   {
     title: "Portfolio Overlay",
@@ -61,20 +60,21 @@ export function AppSidebar() {
     <Sidebar>
       <SidebarHeader className="px-4 py-5 border-b border-sidebar-border">
         <div className="flex items-center gap-3">
-          <div className="relative flex h-9 w-9 items-center justify-center rounded-md bg-primary/10 border border-primary/20">
-            <Zap className="h-5 w-5 text-primary" />
-            <Activity className="h-3 w-3 text-amber absolute -top-1 -right-1" />
+          <div className="relative flex h-9 w-9 items-center justify-center rounded-md bg-[#F07800]/12 border border-[#F07800]/25">
+            <Zap className="h-5 w-5 text-[#F07800]" fill="rgba(240,120,0,0.15)" />
           </div>
           <div>
-            <div className="font-bold text-base tracking-tight text-foreground">GridTilt</div>
-            <div className="text-xs text-muted-foreground">AI Power Economy</div>
+            <div className="font-bold text-base tracking-tight text-foreground">
+              Grid<span className="text-[#F07800]">Tilt</span>
+            </div>
+            <div className="text-xs text-muted-foreground tracking-wide">AI Power Economy</div>
           </div>
         </div>
       </SidebarHeader>
 
       <SidebarContent>
         <SidebarGroup className="pt-4">
-          <SidebarGroupLabel className="text-xs uppercase tracking-widest text-muted-foreground mb-2">
+          <SidebarGroupLabel className="text-xs uppercase tracking-widest text-muted-foreground mb-2 px-3">
             Navigation
           </SidebarGroupLabel>
           <SidebarGroupContent>
@@ -86,14 +86,20 @@ export function AppSidebar() {
                     <SidebarMenuButton
                       asChild
                       data-active={isActive}
-                      className="h-auto py-2.5 px-3 rounded-md"
+                      className="h-auto py-2.5 px-3 rounded-md relative"
                     >
                       <Link href={item.url} data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, "-")}`}>
-                        <div className={`flex h-7 w-7 items-center justify-center rounded-sm ${isActive ? "bg-primary/15 text-primary" : "text-muted-foreground"}`}>
+                        {isActive && (
+                          <span
+                            className="absolute left-0 top-2 bottom-2 w-0.5 rounded-full bg-[#F07800]"
+                            style={{ left: "0.5rem" }}
+                          />
+                        )}
+                        <div className={`flex h-7 w-7 items-center justify-center rounded-sm ml-3 ${isActive ? "text-[#F07800]" : "text-muted-foreground"}`}>
                           <item.icon className="h-4 w-4" />
                         </div>
                         <div className="flex flex-col gap-0.5 ml-1">
-                          <span className={`text-sm font-medium leading-none ${isActive ? "text-primary" : "text-foreground"}`}>
+                          <span className={`text-sm font-medium leading-none ${isActive ? "text-[#F07800]" : "text-foreground"}`}>
                             {item.title}
                           </span>
                           <span className="text-xs text-muted-foreground leading-none mt-1">{item.description}</span>

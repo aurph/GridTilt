@@ -8,7 +8,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { X, Info, Zap, MapPin, Building2, Calendar, Activity } from "lucide-react";
+import { X, Info, Zap, MapPin, Building2, Calendar, Activity, Globe } from "lucide-react";
 
 const GEO_URL = "https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json";
 
@@ -96,9 +96,9 @@ export default function PowerMap() {
       <div className="grid-bg border-b border-border px-6 py-6">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Power Map</h1>
+            <h1 className="text-2xl font-bold text-foreground tracking-tight">Power Map</h1>
             <p className="text-muted-foreground text-sm mt-1">
-              Announced & operating data centers by power draw. {DATA_CENTERS.length} locations tracked.
+              Announced and operating data centers by power draw. {DATA_CENTERS.length} US locations tracked.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3 text-xs">
@@ -108,7 +108,7 @@ export default function PowerMap() {
             </div>
             <div className="flex items-center gap-1.5">
               <div className="h-3 w-3 rounded-full bg-yellow-500" />
-              <span className="text-muted-foreground">100–500 MW</span>
+              <span className="text-muted-foreground">100-500 MW</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="h-3 w-3 rounded-full bg-red-500" />
@@ -122,17 +122,17 @@ export default function PowerMap() {
           <div className="flex items-center gap-2">
             <Zap className="h-4 w-4 text-[#F0A500]" />
             <span className="text-muted-foreground">Total capacity:</span>
-            <span className="font-semibold text-foreground">{(totalMW / 1000).toFixed(1)} GW</span>
+            <span className="font-semibold font-mono text-foreground">{(totalMW / 1000).toFixed(1)} GW</span>
           </div>
           <div className="flex items-center gap-2">
             <Activity className="h-4 w-4 text-[#1E90FF]" />
             <span className="text-muted-foreground">Annual consumption:</span>
-            <span className="font-semibold text-foreground">{totalTWh} TWh/yr</span>
+            <span className="font-semibold font-mono text-foreground">{totalTWh} TWh/yr</span>
           </div>
           <div className="flex items-center gap-2">
             <Building2 className="h-4 w-4 text-muted-foreground" />
             <span className="text-muted-foreground">Equivalent to powering</span>
-            <span className="font-semibold text-foreground">{Math.round(parseFloat(totalTWh) * 1000 / 10.5)}M homes</span>
+            <span className="font-semibold font-mono text-foreground">{Math.round(parseFloat(totalTWh) * 1000 / 10.5)}M homes</span>
           </div>
         </div>
       </div>
@@ -207,10 +207,14 @@ export default function PowerMap() {
             ))}
           </ComposableMap>
 
-          <div className="absolute bottom-3 left-4 right-4">
-            <p className="text-xs text-muted-foreground text-center">
+          <div className="absolute bottom-3 left-4 right-4 flex items-center justify-between gap-2">
+            <p className="text-xs text-muted-foreground">
               Click a dot to view facility details. Dot size = power draw.
             </p>
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground/60 bg-card/60 rounded-md px-2.5 py-1 border border-border/50 backdrop-blur-sm">
+              <Globe className="h-3 w-3" />
+              <span>International coverage expanding to Europe and Southeast Asia</span>
+            </div>
           </div>
         </div>
 
@@ -257,7 +261,7 @@ export default function PowerMap() {
                   <Zap className="h-4 w-4 text-[#F0A500] mt-0.5 flex-shrink-0" />
                   <div>
                     <p className="text-xs text-muted-foreground">Planned Capacity</p>
-                    <p className="text-sm font-bold text-[#F0A500]">{selected.powerMW} MW</p>
+                    <p className="text-sm font-bold font-mono text-[#F0A500]">{selected.powerMW} MW</p>
                   </div>
                 </div>
 
@@ -265,7 +269,7 @@ export default function PowerMap() {
                   <Activity className="h-4 w-4 text-[#1E90FF] mt-0.5 flex-shrink-0" />
                   <div>
                     <p className="text-xs text-muted-foreground">Est. Annual Power</p>
-                    <p className="text-sm font-bold text-[#1E90FF]">{(selected.annualMWh / 1_000_000).toFixed(2)} TWh/yr</p>
+                    <p className="text-sm font-bold font-mono text-[#1E90FF]">{(selected.annualMWh / 1_000_000).toFixed(2)} TWh/yr</p>
                     <p className="text-xs text-muted-foreground">{Math.round(selected.annualMWh / 10500).toLocaleString()} homes equivalent</p>
                   </div>
                 </div>
@@ -287,13 +291,12 @@ export default function PowerMap() {
                 </div>
               </div>
 
-              {/* Power classification */}
               <div className="rounded-md p-3 border border-border bg-muted/20">
                 <p className="text-xs text-muted-foreground mb-1">Power Classification</p>
                 <div className="flex items-center gap-2">
                   <div className="h-3 w-3 rounded-full" style={{ backgroundColor: getDotColor(selected.powerMW) }} />
                   <p className="text-sm font-medium text-foreground">
-                    {selected.powerMW < 100 ? "Light Load (<100 MW)" : selected.powerMW <= 500 ? "Medium Load (100–500 MW)" : "Heavy Load (>500 MW)"}
+                    {selected.powerMW < 100 ? "Light Load (<100 MW)" : selected.powerMW <= 500 ? "Medium Load (100-500 MW)" : "Heavy Load (>500 MW)"}
                   </p>
                 </div>
               </div>
@@ -304,6 +307,7 @@ export default function PowerMap() {
             <div>
               <MapPin className="h-8 w-8 text-muted-foreground/40 mx-auto mb-3" />
               <p className="text-sm text-muted-foreground">Click a dot on the map to view facility details</p>
+              <p className="text-xs text-muted-foreground/50 mt-2">Currently tracking US activity. International coverage expanding to Europe and Southeast Asia.</p>
             </div>
           </div>
         )}

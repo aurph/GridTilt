@@ -20,7 +20,7 @@ import {
   Tooltip,
 } from "recharts";
 import { apiRequest } from "@/lib/queryClient";
-import { Info, BarChart3, Search, Loader2, AlertCircle, Plus, X } from "lucide-react";
+import { Info, BarChart3, Search, Loader2, AlertCircle, Plus } from "lucide-react";
 
 interface PortfolioResult {
   ticker: string;
@@ -46,7 +46,7 @@ interface RadarDataPoint {
 const EXAMPLE_PORTFOLIOS = [
   { label: "AI Bull", tickers: "NVDA, CEG, EQIX, AMD, CCJ" },
   { label: "Tech Giant", tickers: "MSFT, GOOGL, AMZN, META, AAPL" },
-  { label: "Utility Mix", tickers: "NEE, CEG, VST, ETR, AEP" },
+  { label: "Utility Mix", tickers: "NEE, CEG, VST, ETR, XLU" },
 ];
 
 const SEGMENT_COLORS: Record<string, string> = {
@@ -62,14 +62,14 @@ const CustomRadarTooltip = ({ active, payload }: any) => {
     return (
       <div className="bg-card border border-card-border rounded-lg p-2 text-xs shadow-xl">
         <p className="text-foreground font-medium">{payload[0]?.payload?.axis}</p>
-        <p className="text-muted-foreground">Score: <span className="text-foreground">{payload[0]?.value?.toFixed(0)}/100</span></p>
+        <p className="text-muted-foreground">Score: <span className="text-foreground font-mono">{payload[0]?.value?.toFixed(0)}/100</span></p>
       </div>
     );
   }
   return null;
 };
 
-function ScoreRing({ score, ticker }: { score: number; ticker: string }) {
+function ScoreRing({ score }: { score: number }) {
   const color = score >= 70 ? "#1E90FF" : score >= 40 ? "#F0A500" : "#6b7280";
   return (
     <div className="relative flex h-14 w-14 items-center justify-center flex-shrink-0">
@@ -85,7 +85,7 @@ function ScoreRing({ score, ticker }: { score: number; ticker: string }) {
           style={{ transition: "stroke-dasharray 0.8s ease" }}
         />
       </svg>
-      <span className="text-xs font-bold text-foreground z-10">{score}</span>
+      <span className="text-xs font-bold font-mono text-foreground z-10">{score}</span>
     </div>
   );
 }
@@ -123,7 +123,6 @@ export default function PortfolioOverlay() {
     mutate(tickers);
   };
 
-  // Aggregate radar data across portfolio
   const radarData: RadarDataPoint[] = results
     ? ["Compute", "Infrastructure", "Power", "Cooling", "Grid"].map((axis) => ({
         axis,
@@ -141,20 +140,20 @@ export default function PortfolioOverlay() {
       <div className="grid-bg border-b border-border px-6 py-6">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Portfolio Overlay</h1>
+            <h1 className="text-2xl font-bold text-foreground tracking-tight">Portfolio Overlay</h1>
             <p className="text-muted-foreground text-sm mt-1">
-              Paste your tickers — get an AI Power Exposure score for each holding.
+              Enter your tickers and receive an AI Power Exposure score for each holding across five supply chain segments.
             </p>
           </div>
           <UITooltip>
             <TooltipTrigger>
               <Badge className="bg-[#1E90FF]/15 text-[#1E90FF] border-[#1E90FF]/30 cursor-help">
                 <Info className="h-3 w-3 mr-1" />
-                Why This Matters
+                Scoring Methodology
               </Badge>
             </TooltipTrigger>
             <TooltipContent className="max-w-xs">
-              <p className="text-xs">As AI infrastructure spending accelerates, companies with higher AI Power Exposure are positioned to capture disproportionate revenue from this multi-trillion dollar build-out. Score your holdings to understand your portfolio's positioning.</p>
+              <p className="text-xs leading-relaxed">As AI infrastructure spending accelerates, companies with higher AI Power Exposure are positioned to capture disproportionate revenue from this multi-trillion dollar build-out. Scores are weighted composites: Compute (30%), Infrastructure (25%), Power (25%), Cooling (10%), Grid (10%). Above 70 = direct revenue exposure. 40-70 = meaningful indirect exposure.</p>
             </TooltipContent>
           </UITooltip>
         </div>
@@ -168,7 +167,7 @@ export default function PortfolioOverlay() {
             <Input
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
-              placeholder="NVDA, CEG, EQIX, AMD, CCJ, ..."
+              placeholder="NVDA, CEG, EQIX, AMD, CCJ, VRT..."
               className="flex-1 min-w-0 font-mono"
               onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
               data-testid="input-tickers"
@@ -195,9 +194,7 @@ export default function PortfolioOverlay() {
                   size="sm"
                   variant="secondary"
                   className="h-7 text-xs"
-                  onClick={() => {
-                    setInputValue(ex.tickers);
-                  }}
+                  onClick={() => setInputValue(ex.tickers)}
                   data-testid={`example-${ex.label.toLowerCase().replace(/\s+/g, "-")}`}
                 >
                   <Plus className="h-3 w-3 mr-1" />
@@ -232,13 +229,13 @@ export default function PortfolioOverlay() {
             {/* Stock list */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                   {results.length} Holdings Scored
                 </h2>
                 {avgScore !== null && (
                   <div className="text-right">
                     <p className="text-xs text-muted-foreground">Portfolio Avg</p>
-                    <p className="text-lg font-bold text-[#1E90FF]">{avgScore}<span className="text-sm text-muted-foreground">/100</span></p>
+                    <p className="text-lg font-bold font-mono text-[#1E90FF]">{avgScore}<span className="text-sm text-muted-foreground">/100</span></p>
                   </div>
                 )}
               </div>
@@ -248,10 +245,10 @@ export default function PortfolioOverlay() {
                 .map((r) => (
                   <Card key={r.ticker} className="p-4 border-card-border" data-testid={`portfolio-card-${r.ticker}`}>
                     <div className="flex items-center gap-3">
-                      <ScoreRing score={r.score} ticker={r.ticker} />
+                      <ScoreRing score={r.score} />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap mb-1">
-                          <span className="font-bold text-sm text-foreground">{r.ticker}</span>
+                          <span className="font-bold text-sm text-foreground font-mono">{r.ticker}</span>
                           <Badge
                             className="text-xs px-1.5 py-0"
                             style={{
@@ -267,7 +264,6 @@ export default function PortfolioOverlay() {
                       </div>
                     </div>
 
-                    {/* Sector bars */}
                     <div className="mt-3 grid grid-cols-5 gap-1">
                       {Object.entries(r.sectors).map(([seg, val]) => (
                         <div key={seg} className="text-center">
@@ -289,7 +285,7 @@ export default function PortfolioOverlay() {
             <div className="space-y-4">
               <div>
                 <div className="flex items-center gap-2 mb-1">
-                  <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Portfolio Exposure Radar</h2>
+                  <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Portfolio Exposure Radar</h2>
                   <UITooltip>
                     <TooltipTrigger>
                       <Info className="h-3.5 w-3.5 text-muted-foreground" />
@@ -304,10 +300,7 @@ export default function PortfolioOverlay() {
                 <ResponsiveContainer width="100%" height={300}>
                   <RadarChart data={radarData} margin={{ top: 20, right: 30, bottom: 20, left: 30 }}>
                     <PolarGrid stroke="rgba(255,255,255,0.08)" />
-                    <PolarAngleAxis
-                      dataKey="axis"
-                      tick={{ fill: "#9ca3af", fontSize: 12 }}
-                    />
+                    <PolarAngleAxis dataKey="axis" tick={{ fill: "#9ca3af", fontSize: 12 }} />
                     <PolarRadiusAxis
                       angle={90}
                       domain={[0, 100]}
@@ -336,14 +329,13 @@ export default function PortfolioOverlay() {
                 </div>
               </Card>
 
-              {/* Interpretation */}
               <Card className="p-4 border-card-border bg-muted/10">
                 <div className="flex items-start gap-2">
                   <BarChart3 className="h-4 w-4 text-[#1E90FF] mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="text-xs font-semibold text-foreground mb-1">How to read this</p>
+                    <p className="text-xs font-semibold text-foreground mb-1">Score interpretation</p>
                     <p className="text-xs text-muted-foreground leading-relaxed">
-                      Scores run 0–100. Above 70 = direct revenue exposure to AI power buildout. 40–70 = meaningful indirect exposure. Below 40 = minimal positioning. The radar shows your portfolio's concentration across 5 supply chain segments.
+                      Scores run 0-100. Above 70 indicates direct revenue exposure to AI power buildout. 40-70 reflects meaningful indirect exposure. Below 40 indicates minimal positioning. The radar shows concentration across five supply chain segments.
                     </p>
                   </div>
                 </div>
