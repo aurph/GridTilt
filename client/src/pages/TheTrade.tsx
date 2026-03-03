@@ -32,14 +32,14 @@ const BASE_YEAR = 2024;
 // VST: Merchant power with nuclear+gas mix, direct beneficiary of power price tightening
 // AMD: GPU inference competitor, datacenter GPU revenue +122% YoY, second-largest player
 const TOP_COMPANIES = [
-  { ticker: "NVDA", name: "NVIDIA Corporation", segment: "Compute", thesisScore: 9.5, rationale: "GPU monopoly, >80% AI accelerator share", color: "#1E90FF" },
+  { ticker: "NVDA", name: "NVIDIA Corporation", segment: "Compute", thesisScore: 9.5, rationale: "GPU monopoly, >80% AI accelerator share", color: "#94a3b8" },
   { ticker: "EQIX", name: "Equinix Inc", segment: "Infrastructure", thesisScore: 9.0, rationale: "100% DC revenue, highest power density growth", color: "#a855f7" },
   { ticker: "VRT", name: "Vertiv Holdings", segment: "Infrastructure", thesisScore: 8.8, rationale: "Critical thermal mgmt for every AI data center", color: "#a855f7" },
   { ticker: "CEG", name: "Constellation Energy", segment: "Power", thesisScore: 8.2, rationale: "Largest nuclear utility + first AI baseload PPA", color: "#F0A500" },
   { ticker: "CCJ", name: "Cameco Corporation", segment: "Power", thesisScore: 7.5, rationale: "Pure uranium miner, highest spot price beta", color: "#F0A500" },
-  { ticker: "TSM", name: "Taiwan Semiconductor", segment: "Compute", thesisScore: 7.2, rationale: "Manufactures all advanced AI chips", color: "#1E90FF" },
+  { ticker: "TSM", name: "Taiwan Semiconductor", segment: "Compute", thesisScore: 7.2, rationale: "Manufactures all advanced AI chips", color: "#94a3b8" },
   { ticker: "VST", name: "Vistra Corp", segment: "Power", thesisScore: 7.0, rationale: "Merchant power, direct power price beneficiary", color: "#F0A500" },
-  { ticker: "AMD", name: "Advanced Micro Devices", segment: "Compute", thesisScore: 6.0, rationale: "GPU inference competition, DC revenue +122% YoY", color: "#1E90FF" },
+  { ticker: "AMD", name: "Advanced Micro Devices", segment: "Compute", thesisScore: 6.0, rationale: "GPU inference competition, DC revenue +122% YoY", color: "#94a3b8" },
 ];
 
 const segmentIcons: Record<string, any> = {
@@ -128,15 +128,15 @@ export default function TheTrade() {
                 <Card className="p-5 border-card-border">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center gap-2">
-                      <Cpu className="h-4 w-4 text-[#1E90FF]" />
+                      <Cpu className="h-4 w-4 text-[#F0A500]" />
                       <div>
                         <p className="text-sm font-medium text-foreground">AI Workload CAGR</p>
                         <p className="text-xs text-muted-foreground">Annual growth in AI compute demand, compounded to 2030</p>
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-2xl font-bold font-mono text-[#1E90FF]">{aiGrowth[0]}%</p>
-                      <Badge className="bg-[#1E90FF]/10 text-[#1E90FF] border-[#1E90FF]/20 text-xs mt-1">
+                      <p className="text-2xl font-bold font-mono text-[#F0A500]">{aiGrowth[0]}%</p>
+                      <Badge className="bg-[#F0A500]/10 text-[#F0A500] border-[#F0A500]/20 text-xs mt-1">
                         {aiGrowthLabel}
                       </Badge>
                     </div>
@@ -224,7 +224,7 @@ export default function TheTrade() {
                 <div className="grid grid-cols-3 gap-3">
                   {[
                     { label: "2030 Demand", value: `${(powerDemandIn2030 / 1000).toFixed(1)}k`, unit: "TWh", color: "text-foreground" },
-                    { label: "Grid Growth", value: `+${demandGrowthPct}%`, unit: "vs 2024", color: "text-[#1E90FF]" },
+                    { label: "Grid Growth", value: `+${demandGrowthPct}%`, unit: "vs 2024", color: "text-foreground" },
                     { label: "AI Grid Share", value: `${aiShareIn2030}%`, unit: "by 2030", color: "text-[#F0A500]" },
                   ].map((s) => (
                     <div key={s.label} className="rounded-md p-3 bg-muted/30 border border-border text-center">

@@ -197,7 +197,7 @@ export default function TheStack() {
       key: "compute",
       title: "Compute Layer",
       icon: Cpu,
-      color: "#1E90FF",
+      color: "#94a3b8",
       description: "GPU and semiconductor companies powering AI workloads. Ranked by market cap.",
       tooltip: "These companies supply the physical compute substrate for AI. NVIDIA's H100 GPUs consume approximately 700W each; a single training cluster can draw as much power as a small city. TSMC manufactures virtually all advanced AI chips - its capital intensity is the single largest determinant of AI compute supply.",
       showPower: false,
@@ -314,7 +314,7 @@ export default function TheStack() {
                 {data?.cegCorrelationCoeff !== undefined && (
                   <div className="text-right">
                     <p className="text-xs text-muted-foreground font-mono">CEG Pearson r</p>
-                    <p className="text-2xl font-bold font-mono text-[#1E90FF]">{data.cegCorrelationCoeff.toFixed(3)}</p>
+                    <p className="text-2xl font-bold font-mono text-foreground">{data.cegCorrelationCoeff.toFixed(3)}</p>
                     <p className="text-xs text-muted-foreground">Utility beta</p>
                   </div>
                 )}
@@ -408,7 +408,7 @@ export default function TheStack() {
                 <span className="text-[#F0A500] font-semibold">CCJ (pure miner)</span> carries higher uranium spot price beta than CEG. Its P&L moves directly with the U3O8 market, making it the highest-conviction play on uranium scarcity.
               </p>
               <p>
-                <span className="text-[#1E90FF] font-semibold">CEG (nuclear utility)</span> is influenced by electricity contract prices, capacity market dynamics, and regulated returns - providing a smoother, less volatile exposure to the nuclear renaissance.
+                <span className="text-slate-400 font-semibold">CEG (nuclear utility)</span> is influenced by electricity contract prices, capacity market dynamics, and regulated returns - providing a smoother, less volatile exposure to the nuclear renaissance.
               </p>
             </div>
           </Card>

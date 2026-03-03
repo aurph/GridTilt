@@ -1,7 +1,7 @@
 # GridTilt — AI Infrastructure & Power Economy Dashboard
 
 ## Overview
-Full-stack web application that visualizes the economic relationship between AI compute demand, power consumption, and financial markets. Dark mode only, deep navy color scheme.
+Full-stack web application that visualizes the economic relationship between AI compute demand, power consumption, and financial markets. Dark mode only, warm charcoal terminal aesthetic with orange branding.
 
 ## Architecture
 
@@ -51,10 +51,19 @@ Full-stack web application that visualizes the economic relationship between AI 
 - `tailwind.config.ts` — Extended theme with navy/electric/amber custom colors
 
 ## Color Palette
-- Background: `hsl(214 42% 7%)` ≈ `#0D1B2A`
-- Primary (Electric Blue): `#1E90FF`
-- Accent (Amber): `#F0A500`
+- Background: `hsl(20 5% 7%)` — warm dark charcoal (no blue tint)
+- Brand Orange: `#F07800` / `#F0A500` — UI chrome, badges, KPI values, radar, score rings
+- Data Viz Blue: `#1E90FF` — chart data series ONLY (Area/Line fills in demand chart, Bar fills in thesis chart)
+- Muted Foreground: `hsl(20 4% 50%)` — warm gray labels
+- Compute segment color: `#94a3b8` (slate) — section headers and segment badges
 - Font: Inter + JetBrains Mono
+
+## Visual Design Principles
+- Dark charcoal terminal aesthetic, not AI chatbot navy
+- Orange is the only brand color in UI chrome
+- Blue restricted to data visualization (chart series) only
+- KPI card borders: neutral gray (AI Power), amber (Nuclear Renaissance), orange-red (Grid Stress)
+- Card radius: 0.35rem (tighter than consumer apps, more terminal-like)
 
 ## Notes
 - No database required — portfolio scoring uses an in-memory lookup table of 30+ tickers

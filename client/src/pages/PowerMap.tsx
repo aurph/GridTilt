@@ -134,7 +134,7 @@ export default function PowerMap() {
             <span className="font-semibold font-mono text-foreground">{(totalMW / 1000).toFixed(1)} GW</span>
           </div>
           <div className="flex items-center gap-2">
-            <Activity className="h-4 w-4 text-[#1E90FF]" />
+            <Activity className="h-4 w-4 text-muted-foreground" />
             <span className="text-muted-foreground">Annual consumption:</span>
             <span className="font-semibold font-mono text-foreground">{totalTWh} TWh/yr</span>
           </div>
@@ -175,12 +175,12 @@ export default function PowerMap() {
                   <Geography
                     key={geo.rsmKey}
                     geography={geo}
-                    fill="rgba(30, 144, 255, 0.05)"
-                    stroke="rgba(30, 144, 255, 0.15)"
+                    fill="rgba(255,255,255,0.03)"
+                    stroke="rgba(255,255,255,0.10)"
                     strokeWidth={0.5}
                     style={{
                       default: { outline: "none" },
-                      hover: { outline: "none", fill: "rgba(30, 144, 255, 0.1)" },
+                      hover: { outline: "none", fill: "rgba(255,255,255,0.06)" },
                       pressed: { outline: "none" },
                     }}
                   />
@@ -275,10 +275,10 @@ export default function PowerMap() {
                 </div>
 
                 <div className="flex items-start gap-3">
-                  <Activity className="h-4 w-4 text-[#1E90FF] mt-0.5 flex-shrink-0" />
+                  <Activity className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
                   <div>
                     <p className="text-xs text-muted-foreground">Est. Annual Power</p>
-                    <p className="text-sm font-bold font-mono text-[#1E90FF]">{(selected.annualMWh / 1_000_000).toFixed(2)} TWh/yr</p>
+                    <p className="text-sm font-bold font-mono text-foreground">{(selected.annualMWh / 1_000_000).toFixed(2)} TWh/yr</p>
                     <p className="text-xs text-muted-foreground">{Math.round(selected.annualMWh / 10500).toLocaleString()} homes equivalent</p>
                   </div>
                 </div>

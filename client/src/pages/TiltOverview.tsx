@@ -48,7 +48,7 @@ const electricityData = [
 const annotations = [
   { year: "2020", label: "COVID drop", color: "rgba(239,68,68,0.4)" },
   { year: "2022", label: "IRA signed + ChatGPT", color: "rgba(240,165,0,0.4)" },
-  { year: "2024", label: "TMI restart + SMR deal", color: "rgba(30,144,255,0.4)" },
+  { year: "2024", label: "TMI restart + SMR deal", color: "rgba(240,165,0,0.5)" },
 ];
 
 interface KpiData {
@@ -71,7 +71,7 @@ interface KpiData {
 const SECTOR_DEMAND = [
   { sector: "Residential", twh: 1624, yoy: 1.2, color: "#6b7280" },
   { sector: "Commercial", twh: 1533, yoy: 2.1, color: "#8b5cf6" },
-  { sector: "Industrial", twh: 1007, yoy: -0.4, color: "#3b82f6" },
+  { sector: "Industrial", twh: 1007, yoy: -0.4, color: "#94a3b8" },
   { sector: "Data Centers", twh: 216, yoy: 35.4, color: "#f0a500" },
 ];
 
@@ -139,17 +139,17 @@ function KpiCard({
   value: number | null;
   unit: string;
   subtitle?: string;
-  color: "blue" | "amber" | "red";
+  color: "neutral" | "amber" | "red";
   methodology: string;
   constituents?: React.ReactNode;
   isLoading: boolean;
 }) {
   const colorMap = {
-    blue: {
-      icon: "text-[#1E90FF]",
-      bg: "bg-[#1E90FF]/10",
-      border: "border-[#1E90FF]/25",
-      value: "text-[#1E90FF]",
+    neutral: {
+      icon: "text-muted-foreground",
+      bg: "bg-muted/25",
+      border: "border-card-border",
+      value: "text-foreground",
     },
     amber: {
       icon: "text-[#F0A500]",
@@ -266,7 +266,7 @@ export default function TiltOverview() {
               value={kpiData?.aiPowerIndex ?? null}
               unit="/ 100"
               subtitle="Structural baseline 72 from EIA data. Hover for methodology."
-              color="blue"
+              color="neutral"
               methodology="Structural baseline of 72/100, anchored to three verified inputs: US data center electricity share ~5-6% of the national grid (DOE 2024 actual: 4.4% / 183 TWh; DOE projects 12%+ by 2028), AI workload demand CAGR of ~35%/yr (2022-2025 actuals, EIA + utility regulatory filings), and $660B+ in hyperscaler AI capex guidance for 2026 (AMZN $200B, GOOGL $180B, MSFT $120B, META $125B — nearly double 2025 levels, ~75% AI-focused). A score of 100 represents theoretical full-grid saturation by AI demand. Intraday momentum layer: NVDA (40%) + TSM (25%) + EQIX (20%) + MU (15%), scaled 1.2x."
               constituents={c && (
                 <>
@@ -482,7 +482,7 @@ export default function TiltOverview() {
           {/* Annotation key */}
           <div className="flex flex-wrap gap-4 mt-3 pt-3 border-t border-border text-xs text-muted-foreground">
             <span className="text-amber-400/80">* 2022: IRA signed + ChatGPT launch</span>
-            <span className="text-[#1E90FF]/80">* 2024: TMI restart + first commercial SMR contract</span>
+            <span className="text-amber-400/80">* 2024: TMI restart + first commercial SMR contract</span>
             <span className="text-red-400/70">--- Grid capacity ceiling</span>
           </div>
         </Card>
@@ -491,7 +491,7 @@ export default function TiltOverview() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {[
             { label: "DC Share of US Demand", value: "~5-6%", sub: "2024 DOE actual: 4.4% (~183 TWh). Projected 12%+ by 2028 (DOE).", color: "#a855f7" },
-            { label: "Hyperscaler AI Capex 2026", value: "$660B+", sub: "Big 4 combined guidance (AMZN $200B, GOOGL $180B, MSFT $120B, META $125B). ~75% AI-focused. Nearly doubled from 2025.", color: "#1E90FF" },
+            { label: "Hyperscaler AI Capex 2026", value: "$660B+", sub: "Big 4 combined guidance (AMZN $200B, GOOGL $180B, MSFT $120B, META $125B). ~75% AI-focused. Nearly doubled from 2025.", color: "#F0A500" },
             { label: "Nuclear Power Committed", value: "10+ GW", sub: "Big Tech nuclear PPAs, Q1 2026. Meta alone: 6.6 GW across 4 deals. Microsoft, Amazon, Google PPAs also signed.", color: "#F0A500" },
             { label: "Grid Shortfall Risk", value: "2026-27", sub: "PJM/MISO formal capacity shortfall warnings. First regional crisis window.", color: "#F07040" },
           ].map((s) => (
