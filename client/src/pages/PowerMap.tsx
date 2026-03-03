@@ -90,13 +90,13 @@ interface RTOConfig {
 }
 
 const RTO_CONFIG: Record<string, RTOConfig> = {
-  PJM:  { label: "PJM",      reserveMargin: 18.1, aiSignal: "Elevated", dcColor: "rgba(240,165,0,0.13)",   stressColor: "rgba(234,179,8,0.25)",   stressBadgeClass: "bg-yellow-500/20 text-yellow-400", legendColor: "#F0A500" },
-  MISO: { label: "MISO",     reserveMargin: 16.7, aiSignal: "Critical", dcColor: "rgba(34,197,94,0.10)",   stressColor: "rgba(249,115,22,0.30)",  stressBadgeClass: "bg-red-500/20 text-red-400",    legendColor: "#22c55e" },
-  ERCOT:{ label: "ERCOT",    reserveMargin: 14.2, aiSignal: "Critical", dcColor: "rgba(239,68,68,0.13)",   stressColor: "rgba(239,68,68,0.35)",   stressBadgeClass: "bg-red-500/20 text-red-400",    legendColor: "#ef4444" },
-  WECC: { label: "WECC",     reserveMargin: 22.4, aiSignal: "Moderate", dcColor: "rgba(168,85,247,0.11)",  stressColor: "rgba(132,204,22,0.18)",  stressBadgeClass: "bg-green-500/20 text-green-400",legendColor: "#a855f7" },
-  SERC: { label: "SERC",     reserveMargin: 21.3, aiSignal: "Moderate", dcColor: "rgba(20,184,166,0.11)",  stressColor: "rgba(34,197,94,0.18)",   stressBadgeClass: "bg-green-500/20 text-green-400",legendColor: "#14b8a6" },
-  SPP:  { label: "SPP",      reserveMargin: 26.1, aiSignal: "Low",      dcColor: "rgba(244,63,94,0.10)",   stressColor: "rgba(34,197,94,0.12)",   stressBadgeClass: "bg-green-500/15 text-green-500",legendColor: "#f43f5e" },
-  NPCC: { label: "NPCC",     reserveMargin: 24.8, aiSignal: "Low",      dcColor: "rgba(148,163,184,0.11)", stressColor: "rgba(34,197,94,0.12)",   stressBadgeClass: "bg-green-500/15 text-green-500",legendColor: "#94a3b8" },
+  PJM:  { label: "PJM",      reserveMargin: 17.5, aiSignal: "Elevated", dcColor: "rgba(240,165,0,0.13)",   stressColor: "rgba(234,179,8,0.28)",   stressBadgeClass: "bg-yellow-500/20 text-yellow-400", legendColor: "#F0A500" },
+  MISO: { label: "MISO",     reserveMargin: 13.4, aiSignal: "Critical", dcColor: "rgba(34,197,94,0.10)",   stressColor: "rgba(239,68,68,0.42)",   stressBadgeClass: "bg-red-500/20 text-red-400",    legendColor: "#22c55e" },
+  ERCOT:{ label: "ERCOT",    reserveMargin: 15.8, aiSignal: "Critical", dcColor: "rgba(239,68,68,0.13)",   stressColor: "rgba(239,68,68,0.32)",   stressBadgeClass: "bg-red-500/20 text-red-400",    legendColor: "#ef4444" },
+  WECC: { label: "WECC",     reserveMargin: 24.6, aiSignal: "Moderate", dcColor: "rgba(168,85,247,0.11)",  stressColor: "rgba(132,204,22,0.18)",  stressBadgeClass: "bg-green-500/20 text-green-400",legendColor: "#a855f7" },
+  SERC: { label: "SERC",     reserveMargin: 23.1, aiSignal: "Moderate", dcColor: "rgba(20,184,166,0.11)",  stressColor: "rgba(34,197,94,0.18)",   stressBadgeClass: "bg-green-500/20 text-green-400",legendColor: "#14b8a6" },
+  SPP:  { label: "SPP",      reserveMargin: 27.8, aiSignal: "Low",      dcColor: "rgba(244,63,94,0.10)",   stressColor: "rgba(34,197,94,0.12)",   stressBadgeClass: "bg-green-500/15 text-green-500",legendColor: "#f43f5e" },
+  NPCC: { label: "NPCC",     reserveMargin: 26.4, aiSignal: "Low",      dcColor: "rgba(148,163,184,0.11)", stressColor: "rgba(34,197,94,0.12)",   stressBadgeClass: "bg-green-500/15 text-green-500",legendColor: "#94a3b8" },
 };
 
 function gridOpToRTO(op: string): string {
@@ -289,8 +289,8 @@ export default function PowerMap() {
             <div className="absolute bottom-10 left-4 z-10 text-[10px] font-mono text-muted-foreground/70 flex flex-col gap-0.5">
               <div className="flex items-center gap-1.5"><div className="h-2 w-4 rounded-sm bg-red-500/60" /> Critical (&lt;16% reserve)</div>
               <div className="flex items-center gap-1.5"><div className="h-2 w-4 rounded-sm bg-orange-500/50" /> Elevated (16-18%)</div>
-              <div className="flex items-center gap-1.5"><div className="h-2 w-4 rounded-sm bg-yellow-500/40" /> Moderate (18-21%)</div>
-              <div className="flex items-center gap-1.5"><div className="h-2 w-4 rounded-sm bg-green-500/30" /> Adequate (&gt;21%)</div>
+              <div className="flex items-center gap-1.5"><div className="h-2 w-4 rounded-sm bg-yellow-500/40" /> Moderate (18-25%)</div>
+              <div className="flex items-center gap-1.5"><div className="h-2 w-4 rounded-sm bg-green-500/30" /> Low (&gt;25%)</div>
             </div>
           )}
 
@@ -490,7 +490,7 @@ export default function PowerMap() {
         <div className="flex items-center gap-2 mb-3">
           <Network className="h-4 w-4 text-muted-foreground" />
           <h2 className="text-xs font-semibold tracking-wider uppercase text-muted-foreground">Grid Operator Load Analysis</h2>
-          <span className="text-[10px] font-mono text-muted-foreground/50">Reserve margins: NERC 2024</span>
+          <span className="text-[10px] font-mono text-muted-foreground/50">Reserve margins: NERC LTRA 2025 (2026 projections)</span>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-xs font-mono">

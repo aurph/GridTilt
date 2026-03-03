@@ -87,22 +87,22 @@ const STATIC_MARKET_DATA: Record<string, {
   price: number; change: number; changePercent: number; pe: number | null;
   revenueGrowth: number | null; name: string; powerMW?: number; vs_sp500?: number; marketCapDisplay?: string;
 }> = {
-  NVDA: { name: "NVIDIA Corporation", price: 124.92, change: 3.47, changePercent: 2.86, pe: 55.2, revenueGrowth: 122.4, vs_sp500: 145.2, marketCapDisplay: "$3.1T" },
-  TSM:  { name: "Taiwan Semiconductor Mfg", price: 176.42, change: 2.81, changePercent: 1.62, pe: 22.8, revenueGrowth: 38.9, vs_sp500: 72.4, marketCapDisplay: "$920B" },
-  AMD:  { name: "Advanced Micro Devices", price: 109.34, change: -1.23, changePercent: -1.11, pe: 97.8, revenueGrowth: 17.4, vs_sp500: 22.1, marketCapDisplay: "$175B" },
-  MU:   { name: "Micron Technology", price: 92.18, change: 1.84, changePercent: 2.03, pe: 31.5, revenueGrowth: 84.7, vs_sp500: 38.9, marketCapDisplay: "$97B" },
-  INTC: { name: "Intel Corporation", price: 21.47, change: -0.38, changePercent: -1.74, pe: null, revenueGrowth: -2.1, vs_sp500: -48.2, marketCapDisplay: "$90B" },
-  EQIX: { name: "Equinix Inc", price: 891.45, change: 12.34, changePercent: 1.40, pe: 82.1, revenueGrowth: 9.8, powerMW: 1200, vs_sp500: 18.5, marketCapDisplay: "$77B" },
-  DLR:  { name: "Digital Realty Trust", price: 158.23, change: -0.87, changePercent: -0.55, pe: 73.4, revenueGrowth: 11.2, powerMW: 850, vs_sp500: 15.3, marketCapDisplay: "$45B" },
-  VRT:  { name: "Vertiv Holdings", price: 88.74, change: 2.14, changePercent: 2.47, pe: 58.2, revenueGrowth: 19.8, powerMW: 600, vs_sp500: 142.3, marketCapDisplay: "$33B" },
-  IREN: { name: "IREN Limited", price: 9.14, change: 0.32, changePercent: 3.63, pe: null, revenueGrowth: 127.8, powerMW: 1400, vs_sp500: 85.4, marketCapDisplay: "$2.4B" },
-  AMT:  { name: "American Tower Corp", price: 194.56, change: 2.11, changePercent: 1.10, pe: 45.2, revenueGrowth: 5.1, powerMW: 120, vs_sp500: -4.2, marketCapDisplay: "$40B" },
-  CEG:  { name: "Constellation Energy", price: 289.47, change: 8.92, changePercent: 3.18, pe: 38.4, revenueGrowth: 32.1, marketCapDisplay: "$69B" },
-  VST:  { name: "Vistra Corp", price: 176.83, change: 4.21, changePercent: 2.44, pe: 27.8, revenueGrowth: 68.4, marketCapDisplay: "$46B" },
-  ETR:  { name: "Entergy Corporation", price: 78.92, change: 0.64, changePercent: 0.82, pe: 18.3, revenueGrowth: 7.2 },
-  NEE:  { name: "NextEra Energy", price: 71.34, change: -0.28, changePercent: -0.39, pe: 22.1, revenueGrowth: 9.4 },
-  CCJ:  { name: "Cameco Corporation", price: 47.82, change: 1.44, changePercent: 3.10, pe: 89.3, revenueGrowth: 35.7, marketCapDisplay: "$21B" },
-  NXE:  { name: "NexGen Energy", price: 5.94, change: 0.18, changePercent: 3.12, pe: null, revenueGrowth: null, marketCapDisplay: "$2.7B" },
+  NVDA: { name: "NVIDIA Corporation", price: 178.00, change: 0.00, changePercent: 0.00, pe: 36.3, revenueGrowth: 122.4, vs_sp500: 145.2, marketCapDisplay: "$4.3T" },
+  TSM:  { name: "Taiwan Semiconductor Mfg", price: 345.00, change: 0.00, changePercent: 0.00, pe: 32.6, revenueGrowth: 38.9, vs_sp500: 72.4, marketCapDisplay: "$1.8T" },
+  AMD:  { name: "Advanced Micro Devices", price: 189.00, change: 0.00, changePercent: 0.00, pe: 72.6, revenueGrowth: 17.4, vs_sp500: 22.1, marketCapDisplay: "$305B" },
+  MU:   { name: "Micron Technology", price: 376.00, change: 0.00, changePercent: 0.00, pe: 35.8, revenueGrowth: 84.7, vs_sp500: 38.9, marketCapDisplay: "$415B" },
+  INTC: { name: "Intel Corporation", price: 21.47, change: 0.00, changePercent: 0.00, pe: null, revenueGrowth: -2.1, vs_sp500: -48.2, marketCapDisplay: "$90B" },
+  EQIX: { name: "Equinix Inc", price: 955.00, change: 0.00, changePercent: 0.00, pe: 69.5, revenueGrowth: 9.8, powerMW: 1200, vs_sp500: 18.5, marketCapDisplay: "$85B" },
+  DLR:  { name: "Digital Realty Trust", price: 175.00, change: 0.00, changePercent: 0.00, pe: 49.0, revenueGrowth: 11.2, powerMW: 850, vs_sp500: 15.3, marketCapDisplay: "$48B" },
+  VRT:  { name: "Vertiv Holdings", price: 235.00, change: 0.00, changePercent: 0.00, pe: 69.1, revenueGrowth: 19.8, powerMW: 600, vs_sp500: 142.3, marketCapDisplay: "$88B" },
+  IREN: { name: "IREN Limited", price: 37.75, change: 0.00, changePercent: 0.00, pe: null, revenueGrowth: 127.8, powerMW: 1400, vs_sp500: 85.4, marketCapDisplay: "$10B" },
+  AMT:  { name: "American Tower Corp", price: 194.56, change: 0.00, changePercent: 0.00, pe: 45.2, revenueGrowth: 5.1, powerMW: 120, vs_sp500: -4.2, marketCapDisplay: "$40B" },
+  CEG:  { name: "Constellation Energy", price: 315.00, change: 0.00, changePercent: 0.00, pe: 42.6, revenueGrowth: 32.1, marketCapDisplay: "$75B" },
+  VST:  { name: "Vistra Corp", price: 154.00, change: 0.00, changePercent: 0.00, pe: 55.7, revenueGrowth: 68.4, marketCapDisplay: "$40B" },
+  ETR:  { name: "Entergy Corporation", price: 82.50, change: 0.00, changePercent: 0.00, pe: 19.1, revenueGrowth: 7.2 },
+  NEE:  { name: "NextEra Energy", price: 74.80, change: 0.00, changePercent: 0.00, pe: 22.8, revenueGrowth: 9.4 },
+  CCJ:  { name: "Cameco Corporation", price: 113.00, change: 0.00, changePercent: 0.00, pe: 114.2, revenueGrowth: 35.7, marketCapDisplay: "$50B" },
+  NXE:  { name: "NexGen Energy", price: 11.84, change: 0.00, changePercent: 0.00, pe: null, revenueGrowth: null, marketCapDisplay: "$5.4B" },
   URA:  { name: "Global X Uranium ETF", price: 27.14, change: 0.87, changePercent: 3.31, pe: null, revenueGrowth: null },
   NLR:  { name: "VanEck Uranium+Nuclear ETF", price: 67.84, change: 0.54, changePercent: 0.80, pe: null, revenueGrowth: null, marketCapDisplay: "$1.1B" },
 };
@@ -164,7 +164,7 @@ function gaussianRandom(): number {
 }
 
 // CCJ (Cameco): pure uranium miner — tight beta to U3O8 spot, target r ≈ 0.82
-// Uranium spot range approx $45-$110 over 52-week scatter; CCJ approx $32-$62
+// Uranium spot range approx $65-$110 over 52-week scatter; CCJ approx $90-$135 (Mar 2026 price ~$113)
 function generateCCJCorrelationData() {
   const data = [];
   const targetR = 0.82;
@@ -174,19 +174,19 @@ function generateCCJCorrelationData() {
     const e = gaussianRandom(); // idiosyncratic noise
     const uStd = x;
     const cStd = targetR * x + sqrtTerm * e;
-    // Rescale: uranium mean=78, sd=12; ccj mean=47, sd=7
-    const uranium = parseFloat((78 + uStd * 12).toFixed(2));
-    const ccj = parseFloat((47 + cStd * 7).toFixed(2));
+    // Rescale: uranium mean=86, sd=11; ccj mean=112, sd=11 (2025-2026 price ranges)
+    const uranium = parseFloat((86 + uStd * 11).toFixed(2));
+    const ccj = parseFloat((112 + cStd * 11).toFixed(2));
     data.push({
-      uranium: Math.max(50, Math.min(108, uranium)),
-      ccj: Math.max(30, Math.min(65, ccj))
+      uranium: Math.max(60, Math.min(115, uranium)),
+      ccj: Math.max(82, Math.min(148, ccj))
     });
   }
   return data;
 }
 
 // CEG (Constellation Energy): nuclear utility — looser uranium beta, target r ≈ 0.65
-// CEG influenced by electricity contracts, capex, and macro beyond uranium spot
+// CEG influenced by electricity contracts, capex, and macro beyond uranium spot (Mar 2026 price ~$315)
 function generateCEGCorrelationData() {
   const data = [];
   const targetR = 0.65;
@@ -196,12 +196,12 @@ function generateCEGCorrelationData() {
     const e = gaussianRandom();
     const uStd = x;
     const cStd = targetR * x + sqrtTerm * e;
-    // Rescale: uranium mean=78, sd=12; ceg mean=220, sd=50
-    const uranium = parseFloat((78 + uStd * 12).toFixed(2));
-    const ceg = parseFloat((220 + cStd * 50).toFixed(2));
+    // Rescale: uranium mean=86, sd=11; ceg mean=310, sd=60 (2025-2026 price ranges)
+    const uranium = parseFloat((86 + uStd * 11).toFixed(2));
+    const ceg = parseFloat((310 + cStd * 60).toFixed(2));
     data.push({
-      uranium: Math.max(50, Math.min(108, uranium)),
-      ceg: Math.max(110, Math.min(360, ceg))
+      uranium: Math.max(60, Math.min(115, uranium)),
+      ceg: Math.max(160, Math.min(470, ceg))
     });
   }
   return data;
@@ -227,10 +227,10 @@ export async function registerRoutes(
     let nvdaChange = 2.86, tsmChange = 1.62, muChange = 2.03, eqixChange = 1.40;
     let cegChange = 3.18,  vstChange = 2.44,  ccjChange = 3.10, neeChange = -0.39, etrChange = 0.82;
     // Static defaults for NRI price levels (used for since-base performance)
-    let cegPrice  = STATIC_MARKET_DATA.CEG.price;   // 289.47
-    let vstPrice  = STATIC_MARKET_DATA.VST.price;   // 176.83
-    let ccjPrice  = STATIC_MARKET_DATA.CCJ.price;   // 47.82
-    let nlrPrice  = STATIC_MARKET_DATA.NLR.price;   // 67.84
+    let cegPrice  = STATIC_MARKET_DATA.CEG.price;   // ~$315 (Mar 2026 fallback)
+    let vstPrice  = STATIC_MARKET_DATA.VST.price;   // ~$154 (Mar 2026 fallback)
+    let ccjPrice  = STATIC_MARKET_DATA.CCJ.price;   // ~$113 (Mar 2026 fallback)
+    let nlrPrice  = STATIC_MARKET_DATA.NLR.price;   // ~$68 (Mar 2026 fallback)
 
     try {
       const YahooFinanceClass = (await import("yahoo-finance2")).default;

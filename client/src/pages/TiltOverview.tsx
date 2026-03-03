@@ -37,7 +37,7 @@ const electricityData = [
   { year: "2022", demand: 4050, dcDemand: 260, projected: null, dcProjected: null },
   { year: "2023", demand: 4195, dcDemand: 310, projected: null, dcProjected: null },
   { year: "2024", demand: 4380, dcDemand: 420, projected: 4380, dcProjected: 420 },
-  { year: "2025", demand: null, dcDemand: null, projected: 4620, dcProjected: 600 },
+  { year: "2025", demand: 4490, dcDemand: 576, projected: 4490, dcProjected: 576 },
   { year: "2026", demand: null, dcDemand: null, projected: 4890, dcProjected: 800 },
   { year: "2027", demand: null, dcDemand: null, projected: 5180, dcProjected: 1050 },
   { year: "2028", demand: null, dcDemand: null, projected: 5490, dcProjected: 1350 },
@@ -69,10 +69,10 @@ interface KpiData {
 }
 
 const SECTOR_DEMAND = [
-  { sector: "Residential", twh: 1624, yoy: 1.2, color: "#6b7280" },
-  { sector: "Commercial", twh: 1533, yoy: 2.1, color: "#8b5cf6" },
-  { sector: "Industrial", twh: 1007, yoy: -0.4, color: "#94a3b8" },
-  { sector: "Data Centers", twh: 216, yoy: 35.4, color: "#f0a500" },
+  { sector: "Residential", twh: 1658, yoy: 2.1, color: "#6b7280" },
+  { sector: "Commercial", twh: 1569, yoy: 2.4, color: "#8b5cf6" },
+  { sector: "Industrial", twh: 975, yoy: -3.2, color: "#94a3b8" },
+  { sector: "Data Centers", twh: 288, yoy: 33.3, color: "#f0a500" },
 ];
 
 const CustomTooltip = ({ active, payload, label }: any) => {
@@ -267,7 +267,7 @@ export default function TiltOverview() {
               unit="/ 100"
               subtitle="Structural baseline 72 from EIA data. Hover for methodology."
               color="neutral"
-              methodology="Structural baseline of 72/100, anchored to three verified inputs: US data center electricity share ~5-6% of the national grid (DOE 2024 actual: 4.4% / 183 TWh; DOE projects 12%+ by 2028), AI workload demand CAGR of ~35%/yr (2022-2025 actuals, EIA + utility regulatory filings), and $660B+ in hyperscaler AI capex guidance for 2026 (AMZN $200B, GOOGL $180B, MSFT $120B, META $125B — nearly double 2025 levels, ~75% AI-focused). A score of 100 represents theoretical full-grid saturation by AI demand. Intraday momentum layer: NVDA (40%) + TSM (25%) + EQIX (20%) + MU (15%), scaled 1.2x."
+              methodology="Structural baseline of 72/100, anchored to three verified inputs: US data center electricity share ~6.4% of the national grid (EIA 2025 estimate: ~288 TWh, up from 4.4% in 2023 per DOE; DOE projects 12%+ by 2028), AI workload demand CAGR of ~33%/yr (2022-2026 actuals, EIA + utility regulatory filings), and $328B in Big 4 hyperscaler AI capex for 2025 (AMZN $105B, GOOGL $75B, MSFT $83B, META $65B; 2026 guided ~$350B, ~80% AI-focused). A score of 100 represents theoretical full-grid saturation by AI demand. Intraday momentum layer: NVDA (40%) + TSM (25%) + EQIX (20%) + MU (15%), scaled 1.2x."
               constituents={c && (
                 <>
                   <p className="text-xs text-muted-foreground mb-1.5 font-medium">Today's momentum signals</p>
@@ -310,7 +310,7 @@ export default function TiltOverview() {
               unit="/ 100"
               subtitle="PJM/MISO/ERCOT reserve margin signal. Hover for methodology."
               color="red"
-              methodology="Structural baseline of 68/100, derived from three converging pressures: PJM reserve margin declined from 27% (2020) to 20% (2024) and is projected below 15% by 2028; MISO issued formal capacity shortfall warnings for 2027-2028; ERCOT logged 900+ hours of high-price scarcity events in 2023. A score of 100 represents declared grid emergency conditions. Intraday momentum: VST (40%) + CEG (35%) as merchant power price proxies (rising = power prices tightening) + EQIX (25%) as forward DC load commitment signal. Above 75 = elevated regional constraint risk."
+              methodology="Structural baseline of 68/100, derived from three converging pressures: MISO reserve margin is now 13.4% (2026 NERC LTRA projection), the most constrained major US RTO, with formal capacity shortfall warnings through 2028; PJM at 17.5% is declining as AI load outpaces new capacity additions; ERCOT logged 1,200+ high-price scarcity hours in 2025 at a 15.8% reserve margin (slight recovery from solar/battery additions). A score of 100 represents declared grid emergency conditions. Intraday momentum: VST (40%) + CEG (35%) as merchant power price proxies (rising = power prices tightening) + EQIX (25%) as forward DC load commitment signal. Above 75 = elevated regional constraint risk."
               constituents={c && (
                 <>
                   <p className="text-xs text-muted-foreground mb-1.5 font-medium">Today's momentum signals</p>
@@ -490,10 +490,10 @@ export default function TiltOverview() {
         {/* 4-column stat strip */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {[
-            { label: "DC Share of US Demand", value: "~5-6%", sub: "2024 DOE actual: 4.4% (~183 TWh). Projected 12%+ by 2028 (DOE).", color: "#a855f7" },
-            { label: "Hyperscaler AI Capex 2026", value: "$660B+", sub: "Big 4 combined guidance (AMZN $200B, GOOGL $180B, MSFT $120B, META $125B). ~75% AI-focused. Nearly doubled from 2025.", color: "#F0A500" },
-            { label: "Nuclear Power Committed", value: "10+ GW", sub: "Big Tech nuclear PPAs, Q1 2026. Meta alone: 6.6 GW across 4 deals. Microsoft, Amazon, Google PPAs also signed.", color: "#F0A500" },
-            { label: "Grid Shortfall Risk", value: "2026-27", sub: "PJM/MISO formal capacity shortfall warnings. First regional crisis window.", color: "#F07040" },
+            { label: "DC Share of US Demand", value: "~6.4%", sub: "EIA 2025 estimate: ~288 TWh (up from 4.4% in 2023). DOE projects 12%+ by 2028 as AI load accelerates.", color: "#a855f7" },
+            { label: "Hyperscaler AI Capex 2025", value: "$328B", sub: "Big 4 actuals (AMZN $105B, GOOGL $75B, MSFT $83B, META $65B). 2026 guided ~$350B+. ~80% AI-focused.", color: "#F0A500" },
+            { label: "Nuclear Power Committed", value: "12+ GW", sub: "Big Tech nuclear PPAs as of Q1 2026. Meta 6.6 GW, Microsoft 1.2 GW (TMI restart), Amazon 2.5+ GW, Google 500+ MW.", color: "#F0A500" },
+            { label: "Grid Shortfall Risk", value: "Active Now", sub: "MISO at 13.4% reserve margin (2026 NERC LTRA) is now the most constrained US grid. First capacity shortfall period.", color: "#F07040" },
           ].map((s) => (
             <Card key={s.label} className="p-4 border-card-border">
               <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">{s.label}</p>
@@ -506,13 +506,13 @@ export default function TiltOverview() {
         {/* Sector demand breakdown */}
         <Card className="p-5 border-card-border">
           <div className="flex items-center gap-2 mb-4">
-            <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">2024 US Electricity Demand by Sector</h2>
+            <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">2025 US Electricity Demand by Sector</h2>
             <UITooltip>
               <TooltipTrigger>
                 <Info className="h-3.5 w-3.5 text-muted-foreground" />
               </TooltipTrigger>
               <TooltipContent>
-                <p className="text-xs">Source: EIA Electric Power Monthly. Data center demand is the fastest-growing sector, compressing a decade of flat overall growth into a single investment thesis.</p>
+                <p className="text-xs">Source: EIA Electric Power Monthly (2025 data). Data center demand is the fastest-growing sector at +33% YoY, compressing a decade of flat growth into a single investment thesis.</p>
               </TooltipContent>
             </UITooltip>
           </div>
@@ -527,7 +527,7 @@ export default function TiltOverview() {
                     <div
                       className="h-1.5 rounded-full"
                       style={{
-                        width: `${(s.twh / 4380) * 100}%`,
+                        width: `${(s.twh / 4490) * 100}%`,
                         backgroundColor: s.color,
                       }}
                     />
@@ -542,7 +542,7 @@ export default function TiltOverview() {
             ))}
           </div>
           <p className="text-xs text-muted-foreground mt-3 pt-3 border-t border-border">
-            US electricity demand was essentially flat 2010-2022. The AI boom is projected to add +42% in aggregate demand by 2030, with data center load growing 10x over the same period.
+            US electricity demand was essentially flat 2010-2022. By 2025, total demand reached ~4,490 TWh, up 15% from the 2022 trough. Data center load is now the fastest-growing sector at +33% YoY in 2025, compressing what was projected to be a decade of growth into three years.
           </p>
         </Card>
       </div>

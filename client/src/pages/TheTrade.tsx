@@ -18,8 +18,8 @@ import {
 } from "recharts";
 import { Info, TrendingUp, Zap, Cpu, Server, DollarSign } from "lucide-react";
 
-const BASE_POWER_TWH = 4380;
-const BASE_YEAR = 2024;
+const BASE_POWER_TWH = 4490;
+const BASE_YEAR = 2025;
 
 // Thesis Leverage scores (0-10 qualitative analyst ranking, not revenue attribution)
 // Rankings reflect structural positioning in the AI power supply chain.
@@ -224,7 +224,7 @@ export default function TheTrade() {
                 <div className="grid grid-cols-3 gap-3">
                   {[
                     { label: "2030 Demand", value: `${(powerDemandIn2030 / 1000).toFixed(1)}k`, unit: "TWh", color: "text-foreground" },
-                    { label: "Grid Growth", value: `+${demandGrowthPct}%`, unit: "vs 2024", color: "text-foreground" },
+                    { label: "Grid Growth", value: `+${demandGrowthPct}%`, unit: "vs 2025", color: "text-foreground" },
                     { label: "AI Grid Share", value: `${aiShareIn2030}%`, unit: "by 2030", color: "text-[#F0A500]" },
                   ].map((s) => (
                     <div key={s.label} className="rounded-md p-3 bg-muted/30 border border-border text-center">

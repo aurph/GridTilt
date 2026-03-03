@@ -25,7 +25,7 @@ Full-stack web application that visualizes the economic relationship between AI 
 |-------|------|-------------|
 | `/` | TiltOverview | KPI cards + US electricity demand chart |
 | `/stack` | TheStack | Sector breakdown with live stock data |
-| `/power-map` | PowerMap | SVG US map with 25 data center locations |
+| `/power-map` | PowerMap | SVG US map with 35 data center locations, RTO choropleth, Grid Stress mode |
 | `/trade` | TheTrade | Interactive thesis builder with sliders |
 | `/portfolio` | PortfolioOverlay | AI Power Exposure scoring + radar chart |
 
@@ -43,7 +43,7 @@ Full-stack web application that visualizes the economic relationship between AI 
 - `client/src/components/app-sidebar.tsx` — Navigation sidebar
 - `client/src/pages/TiltOverview.tsx` — Landing dashboard
 - `client/src/pages/TheStack.tsx` — Sector breakdown
-- `client/src/pages/PowerMap.tsx` — Interactive US map (25 hardcoded data centers)
+- `client/src/pages/PowerMap.tsx` — Interactive US map (35 hardcoded data centers, RTO choropleth, Grid Stress mode, per-facility Grid Context sidebar)
 - `client/src/pages/TheTrade.tsx` — Thesis builder (client-side sliders, no DB needed)
 - `client/src/pages/PortfolioOverlay.tsx` — Portfolio scoring
 - `server/routes.ts` — All API routes + static market data fallbacks
@@ -67,7 +67,23 @@ Full-stack web application that visualizes the economic relationship between AI 
 
 ## Notes
 - No database required — portfolio scoring uses an in-memory lookup table of 30+ tickers
-- Yahoo Finance data has static fallbacks in `STATIC_MARKET_DATA` in routes.ts
+- Yahoo Finance data has static fallbacks in `STATIC_MARKET_DATA` in routes.ts (updated to March 2026 price levels)
 - Sparklines are generated procedurally from the base price
 - Data center locations are hardcoded from public announcements (see PowerMap.tsx)
 - vite.config.ts has `optimizeDeps.include: ["recharts", "react-simple-maps"]` for Vite compatibility
+
+## Data Freshness (as of March 2026)
+- RTO reserve margins: NERC LTRA 2025 projections (MISO 13.4%, ERCOT 15.8%, PJM 17.5%)
+- US electricity demand: 2025 EIA estimate (4,490 TWh total, 288 TWh data centers = 6.4%)
+- Sector demand table: 2025 actuals (Data Centers +33.3% YoY)
+- Hyperscaler capex: 2025 Big 4 actuals ($328B: AMZN $105B, GOOGL $75B, MSFT $83B, META $65B)
+- TheTrade demand model: BASE_YEAR=2025, BASE_POWER_TWH=4490
+- NRI base prices anchored Jan 1, 2024; uranium spot ~$92/lb (Mar 2026)
+
+## Power Map Features
+- 35 data center locations (21 operational, 9 construction, 5 announced)
+- 7 RTO/ISO regions with distinct choropleth tints on state fill
+- View mode toggle: "DC Locations" (RTO colors) | "Grid Stress" (reserve margin colors)
+- Grid stress legend overlay in stress mode with threshold labels
+- Grid Operator Load Analysis table: per-RTO MW totals, reserve margins, stress badges
+- Per-facility sidebar with Grid Context block (RTO, reserve margin, total RTO AI load, stress signal)
