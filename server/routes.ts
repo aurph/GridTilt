@@ -233,7 +233,8 @@ export async function registerRoutes(
     let nlrPrice  = STATIC_MARKET_DATA.NLR.price;   // 67.84
 
     try {
-      const yahooFinance = (await import("yahoo-finance2")).default;
+      const YahooFinanceClass = (await import("yahoo-finance2")).default;
+      const yahooFinance = new YahooFinanceClass({ suppressNotices: ["yahooSurvey"] });
       const quotes = await Promise.all([
         yahooFinance.quote("NVDA").catch(() => null),
         yahooFinance.quote("TSM").catch(() => null),
@@ -373,7 +374,8 @@ export async function registerRoutes(
       const allTickers = ["NVDA", "TSM", "AMD", "MU", "EQIX", "DLR", "VRT", "IREN", "CEG", "VST", "CCJ", "NXE"];
 
       try {
-        const yahooFinance = (await import("yahoo-finance2")).default;
+        const YahooFinanceClass = (await import("yahoo-finance2")).default;
+        const yahooFinance = new YahooFinanceClass({ suppressNotices: ["yahooSurvey"] });
         const results = await Promise.all(
           allTickers.map((t) => yahooFinance.quote(t).catch(() => null))
         );
