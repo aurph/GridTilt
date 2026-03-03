@@ -300,9 +300,12 @@ export async function registerRoutes(
     // power demand pressure on the US grid.
     //
     // Structural baseline = 72/100, derived from:
-    //   - US data center electricity share ~9.6% of 4,380 TWh (2024, EIA)
-    //   - AI-driven demand CAGR: ~35%/yr (2022-2024 actuals, EIA + utility filings)
-    //   - Hyperscaler 2025 AI capex commitments: $200B+ (MSFT, GOOGL, AMZN, META)
+    //   - US data center electricity share ~6-7% of national grid (Lawrence Berkeley Lab / EIA, 2025 estimate)
+    //   - AI-driven demand CAGR: ~35%/yr (2022-2025 actuals, EIA + utility regulatory filings)
+    //   - Hyperscaler 2025 AI capex actuals: ~$320B (MSFT $80B, GOOGL $75B, AMZN $105B, META $65B)
+    // NOTE: Structural baseline is a static hardcoded constant. Uranium spot price ($74/lb),
+    // SMR policy score (7.8/10), and electricity demand data are also static estimates.
+    // Only stock prices and intraday % changes are live (Yahoo Finance).
     //   - GPU/HBM demand backlog: NVDA revenue +122% YoY (FY2025), TSM CoWoS capacity constrained
     //   - 100 would represent grid fully saturated by AI demand (theoretical maximum)
     //

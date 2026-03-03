@@ -267,7 +267,7 @@ export default function TiltOverview() {
               unit="/ 100"
               subtitle="Structural baseline 72 from EIA data. Hover for methodology."
               color="blue"
-              methodology="Structural baseline of 72/100, anchored to three real inputs: US data center electricity share ~9.6% of the national grid (EIA 2024), AI workload CAGR of ~35%/yr (2022-2024 actuals), and $200B+ in hyperscaler AI capex committed for 2025. A score of 100 would represent theoretical full-grid saturation by AI demand. Intraday momentum layer: NVDA (40%) + TSM (25%) + EQIX (20%) + MU (15%), scaled 1.2x. NVDA/TSM proxy GPU compute demand; EQIX reflects live capacity absorption; MU tracks HBM memory tightness."
+              methodology="Structural baseline of 72/100, anchored to three real inputs: US data center electricity share ~6-7% of the national grid (Lawrence Berkeley Lab / EIA, 2025 estimate), AI workload demand CAGR of ~35%/yr (2022-2025 actuals, EIA + utility regulatory filings), and $320B+ in hyperscaler AI capex in 2025 (MSFT $80B, GOOGL $75B, AMZN $105B, META $65B). A score of 100 would represent theoretical full-grid saturation by AI demand. Intraday momentum layer: NVDA (40%) + TSM (25%) + EQIX (20%) + MU (15%), scaled 1.2x. NVDA/TSM proxy GPU compute demand; EQIX reflects live capacity absorption; MU tracks HBM memory tightness."
               constituents={c && (
                 <>
                   <p className="text-xs text-muted-foreground mb-1.5 font-medium">Today's momentum signals</p>
@@ -490,10 +490,10 @@ export default function TiltOverview() {
         {/* 4-column stat strip */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {[
-            { label: "DC Share of US Demand", value: "~5%", sub: "Projected 15%+ by 2030", color: "#a855f7" },
-            { label: "Hyperscaler Capex 2024", value: "$230B+", sub: "MSFT + GOOGL + AMZN + META combined", color: "#1E90FF" },
-            { label: "Nuclear PPAs Signed", value: "23+", sub: "Big Tech deals with nuclear operators", color: "#F0A500" },
-            { label: "Grid Shortfall Risk", value: "2026", sub: "First projected regional capacity crisis", color: "#F07040" },
+            { label: "DC Share of US Demand", value: "~6-7%", sub: "2025 estimate (Lawrence Berkeley Lab / EIA). Projected 15%+ by 2030.", color: "#a855f7" },
+            { label: "Hyperscaler AI Capex 2025", value: "$320B+", sub: "MSFT $80B + GOOGL $75B + AMZN $105B + META $65B (full-year 2025 actuals)", color: "#1E90FF" },
+            { label: "Nuclear PPAs Signed", value: "23+", sub: "Big Tech long-term nuclear deals with utilities and developers (as of Q1 2026)", color: "#F0A500" },
+            { label: "Grid Shortfall Risk", value: "2026-27", sub: "PJM/MISO capacity shortfall warnings. First regional crisis window.", color: "#F07040" },
           ].map((s) => (
             <Card key={s.label} className="p-4 border-card-border">
               <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">{s.label}</p>
