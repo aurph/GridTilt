@@ -488,12 +488,11 @@ export default function TiltOverview() {
         </Card>
 
         {/* 4-column stat strip */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {[
             { label: "DC Share of US Demand", value: "~6.4%", sub: "EIA 2025 estimate: ~288 TWh (up from 4.4% in 2023). DOE projects 12%+ by 2028 as AI load accelerates.", color: "#a855f7" },
-            { label: "Hyperscaler AI Capex 2025", value: "$328B", sub: "Big 4 actuals (AMZN $105B, GOOGL $75B, MSFT $83B, META $65B). 2026 guided ~$350B+. ~80% AI-focused.", color: "#F0A500" },
             { label: "Nuclear Power Committed", value: "12+ GW", sub: "Big Tech nuclear PPAs as of Q1 2026. Meta 6.6 GW, Microsoft 1.2 GW (TMI restart), Amazon 2.5+ GW, Google 500+ MW.", color: "#F0A500" },
-            { label: "Grid Shortfall Risk", value: "Active Now", sub: "MISO at 13.4% reserve margin (2026 NERC LTRA) is now the most constrained US grid. First capacity shortfall period.", color: "#F07040" },
+            { label: "Grid Reserve Margins", value: "Tightening", sub: "MISO at 13.4% and ERCOT at 15.8% are the most constrained major US grids per NERC LTRA 2026 projections. Formal capacity adequacy warnings through 2028.", color: "#94a3b8" },
           ].map((s) => (
             <Card key={s.label} className="p-4 border-card-border">
               <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">{s.label}</p>

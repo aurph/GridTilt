@@ -17,8 +17,8 @@ import {
   Map,
   TrendingUp,
   BarChart3,
-  Zap,
 } from "lucide-react";
+import logoPath from "@assets/Untitled_design_(4)_1772554897403.png";
 
 const navItems = [
   {
@@ -60,9 +60,11 @@ export function AppSidebar() {
     <Sidebar>
       <SidebarHeader className="px-4 py-5 border-b border-sidebar-border">
         <div className="flex items-center gap-3">
-          <div className="relative flex h-9 w-9 items-center justify-center rounded-md bg-[#F07800]/12 border border-[#F07800]/25">
-            <Zap className="h-5 w-5 text-[#F07800]" fill="rgba(240,120,0,0.15)" />
-          </div>
+          <img
+            src={logoPath}
+            alt="GridTilt logo"
+            className="h-9 w-9 rounded-md object-cover"
+          />
           <div>
             <div className="font-bold text-base tracking-tight text-foreground">
               Grid<span className="text-[#F07800]">Tilt</span>
