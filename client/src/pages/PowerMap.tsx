@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useCallback } from "react";
 import { ComposableMap, Geographies, Geography, Marker } from "react-simple-maps";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -160,6 +160,17 @@ export default function PowerMap() {
   const [selected, setSelected] = useState<DataCenter | null>(null);
   const [filter, setFilter] = useState<string>("all");
   const [viewMode, setViewMode] = useState<ViewMode>("dc");
+  const [hoveredId, setHoveredId] = useState<number | null>(null);
+  const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null);
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (!mapContainerRef.current) return;
+    const rect = mapContainerRef.current.getBoundingClientRect();
+    setTooltipPos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+  }, []);
+
+  const hoveredDC = hoveredId != null ? DATA_CENTERS.find((d) => d.id === hoveredId) ?? null : null;
 
   const companies = ["all", ...Array.from(new Set(DATA_CENTERS.map((d) => d.company))).sort()];
   const filtered = filter === "all" ? DATA_CENTERS : DATA_CENTERS.filter((d) => d.company === filter);
@@ -279,7 +290,13 @@ export default function PowerMap() {
 
       <div className="flex-1 flex flex-col lg:flex-row">
         {/* Map area */}
-        <div className="flex-1 relative" style={{ minHeight: 420 }}>
+        <div
+          className="flex-1 relative"
+          style={{ minHeight: 420 }}
+          ref={mapContainerRef}
+          onMouseMove={handleMouseMove}
+          onMouseLeave={() => { setHoveredId(null); setTooltipPos(null); }}
+        >
           {/* Company filter */}
           <div className="absolute top-4 left-4 z-10 flex flex-wrap gap-1.5 max-w-[calc(100%-130px)]">
             {companies.map((c) => (
@@ -352,6 +369,7 @@ export default function PowerMap() {
             {filtered.map((dc) => {
               const isAnnounced = dc.status === "announced";
               const isSelected = selected?.id === dc.id;
+              const isHovered = hoveredId === dc.id;
               const r = viewMode === "stress"
                 ? Math.sqrt(dc.powerMW / 30) + 2
                 : Math.sqrt(dc.powerMW / 30) + 4;
@@ -361,14 +379,14 @@ export default function PowerMap() {
                   ? 1
                   : isAnnounced
                     ? 0.28
-                    : 0.78;
+                    : isHovered ? 0.95 : 0.78;
               const dotColor = getDotColor(dc.powerMW);
 
               return (
                 <Marker
                   key={dc.id}
                   coordinates={[dc.lng, dc.lat]}
-                  onClick={() => setSelected(dc)}
+                  onClick={() => { setSelected(dc); setHoveredId(null); setTooltipPos(null); }}
                 >
                   {/* Outer dashed ring for announced */}
                   {isAnnounced && viewMode === "dc" && (
@@ -379,6 +397,7 @@ export default function PowerMap() {
                       strokeWidth={1}
                       strokeDasharray="3 2"
                       opacity={0.45}
+                      style={{ pointerEvents: "none" }}
                     />
                   )}
                   {/* Selection ring */}
@@ -389,6 +408,17 @@ export default function PowerMap() {
                       stroke={dotColor}
                       strokeWidth={1.5}
                       opacity={0.5}
+                      style={{ pointerEvents: "none" }}
+                    />
+                  )}
+                  {/* Hover ring */}
+                  {isHovered && !isSelected && (
+                    <circle
+                      r={r + 4}
+                      fill="none"
+                      stroke="rgba(255,255,255,0.35)"
+                      strokeWidth={1}
+                      style={{ pointerEvents: "none" }}
                     />
                   )}
                   <circle
@@ -396,33 +426,76 @@ export default function PowerMap() {
                     fill={dotColor}
                     fillOpacity={fillOpacity}
                     stroke={isAnnounced ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.3)"}
-                    strokeWidth={isAnnounced ? 1 : 1}
+                    strokeWidth={1}
                     strokeDasharray={isAnnounced ? "3 2" : undefined}
                     style={{ cursor: "pointer" }}
+                    onMouseEnter={() => { if (!selected) setHoveredId(dc.id); }}
+                    onMouseLeave={() => setHoveredId(null)}
                   />
-                  {/* City label — only in DC Locations mode */}
-                  {viewMode === "dc" && (
-                    <text
-                      textAnchor="middle"
-                      y={-(r + 5)}
-                      style={{
-                        fontFamily: "monospace",
-                        fontSize: "6px",
-                        fill: "rgba(255,255,255,0.55)",
-                        pointerEvents: "none",
-                        userSelect: "none",
-                      }}
-                    >
-                      {dc.city}
-                    </text>
+                  {/* Leader line + city label — only for selected dot */}
+                  {isSelected && (
+                    <>
+                      <line
+                        x1={0} y1={-(r + 1)}
+                        x2={0} y2={-(r + 10)}
+                        stroke="rgba(255,255,255,0.4)"
+                        strokeWidth={1}
+                        style={{ pointerEvents: "none" }}
+                      />
+                      <text
+                        textAnchor="middle"
+                        y={-(r + 14)}
+                        style={{
+                          fontFamily: "monospace",
+                          fontSize: "7px",
+                          fill: "rgba(255,255,255,0.92)",
+                          paintOrder: "stroke",
+                          stroke: "rgba(0,0,0,0.7)",
+                          strokeWidth: "3px",
+                          strokeLinejoin: "round",
+                          pointerEvents: "none",
+                          userSelect: "none",
+                        }}
+                      >
+                        {dc.city}
+                      </text>
+                    </>
                   )}
                 </Marker>
               );
             })}
           </ComposableMap>
 
+          {/* Hover tooltip */}
+          {hoveredDC && tooltipPos && !selected && (
+            <div
+              className="absolute z-20 pointer-events-none"
+              style={{
+                left: Math.min(tooltipPos.x + 14, (mapContainerRef.current?.clientWidth ?? 600) - 220),
+                top: Math.max(tooltipPos.y - 72, 8),
+              }}
+            >
+              <div className="bg-card border border-border rounded-md px-3 py-2 shadow-xl text-xs font-mono min-w-[180px]">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <div
+                    className="h-2 w-2 rounded-full flex-shrink-0"
+                    style={{ backgroundColor: companyColors[hoveredDC.company] ?? "#666" }}
+                  />
+                  <span className="font-semibold text-foreground leading-tight truncate">{hoveredDC.name}</span>
+                </div>
+                <div className="flex items-center justify-between gap-3 text-muted-foreground">
+                  <span className="text-[#F0A500] font-semibold">{hoveredDC.powerMW} MW</span>
+                  <span className={getStatusBadge(hoveredDC.status).class + " text-[10px] px-1.5 py-0.5 rounded-sm"}>
+                    {getStatusBadge(hoveredDC.status).label}
+                  </span>
+                </div>
+                <div className="text-[10px] text-muted-foreground/70 mt-0.5">{hoveredDC.city}, {hoveredDC.state} &middot; {hoveredDC.openDate}</div>
+              </div>
+            </div>
+          )}
+
           <div className="absolute bottom-3 left-4">
-            <p className="text-xs text-muted-foreground">Click a dot to view facility details. Dot size = power draw.</p>
+            <p className="text-xs text-muted-foreground">Hover a dot to preview. Click to pin details in sidebar.</p>
           </div>
         </div>
 
