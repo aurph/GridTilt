@@ -344,12 +344,6 @@ export default function TheTrade() {
                 </div>
               </div>
 
-              {!mixValid && (
-                <div className="text-[10px] text-red-400/80 bg-red-500/10 border border-red-500/20 rounded px-2.5 py-1.5">
-                  Mix must sum to 100%. Currently {mixSum.toFixed(0)}%. Outputs may be unreliable until corrected.
-                </div>
-              )}
-
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <div className="flex items-center gap-1.5">
