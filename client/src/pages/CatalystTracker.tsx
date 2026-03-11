@@ -3,12 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Calendar, Clock, TrendingUp, Info } from "lucide-react";
-import {
-  Tooltip as UITooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Calendar, Clock, TrendingUp } from "lucide-react";
 
 interface Catalyst {
   id: number;
@@ -93,30 +88,11 @@ export default function CatalystTracker() {
       <div className="grid-bg border-b border-border px-6 py-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2 mb-2">
-              <Badge className="bg-[#F0A500]/15 text-[#F0A500] border-[#F0A500]/30 text-xs font-mono tracking-wider">
-                CURATED
-              </Badge>
-              <span className="text-xs text-muted-foreground tracking-wide">Manually maintained event calendar</span>
-            </div>
             <h1 className="text-2xl font-bold text-foreground tracking-tight">Catalyst Tracker</h1>
             <p className="text-muted-foreground text-sm mt-1 max-w-xl">
               Upcoming events with direct impact on the AI power thesis. Earnings, regulatory decisions, policy moments, and commodity market windows.
             </p>
           </div>
-          <UITooltip>
-            <TooltipTrigger>
-              <div className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-help">
-                <Info className="h-3.5 w-3.5" />
-                <span>How to update</span>
-              </div>
-            </TooltipTrigger>
-            <TooltipContent className="max-w-xs">
-              <p className="text-xs leading-relaxed">
-                Catalysts are stored in <code className="font-mono text-[#F0A500]">server/data/catalysts.json</code>. Edit that file to add, remove, or update events without redeploying. Each entry has: date, title, category, thesisImpact, tickers.
-              </p>
-            </TooltipContent>
-          </UITooltip>
         </div>
 
         {/* Category filter strip */}

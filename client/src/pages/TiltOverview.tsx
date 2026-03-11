@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useState, useEffect, useRef } from "react";
 import {
   ComposedChart,
   Area,
@@ -20,7 +21,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Zap, TrendingUp, Activity, AlertTriangle, Info, ArrowUp, ArrowDown, Calendar, ChevronRight } from "lucide-react";
+import { Zap, TrendingUp, Activity, AlertTriangle, Info, ArrowUp, ArrowDown, Calendar, ChevronRight, ExternalLink } from "lucide-react";
 
 const electricityData = [
   { year: "2010", demand: 3879, dcDemand: 140, projected: null, dcProjected: null },
@@ -75,6 +76,22 @@ interface Catalyst {
   title: string;
   category: string;
   tickers: string[];
+}
+
+interface TopMover {
+  ticker: string;
+  name: string;
+  price: number;
+  change: number;
+  changePercent: number;
+  sector: string;
+  marketCapDisplay?: string;
+}
+
+interface SectorPulseItem {
+  sector: string;
+  label: string;
+  avgChange: number;
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -318,6 +335,343 @@ function ThesisHealthBar({ aiPower, gridStress, nri }: { aiPower: number | null;
   );
 }
 
+const SECTOR_COLORS: Record<string, string> = {
+  compute: "#94a3b8",
+  nuclear: "#F0A500",
+  uranium: "#fb923c",
+  powerHardware: "#60a5fa",
+  utilities: "#34d399",
+  dataCenters: "#a855f7",
+  construction: "#f472b6",
+  etfsBenchmarks: "#6b7280",
+};
+
+const SECTOR_LABEL_SHORT: Record<string, string> = {
+  compute: "Compute",
+  nuclear: "Nuclear",
+  uranium: "Uranium",
+  powerHardware: "Power HW",
+  utilities: "Utilities",
+  dataCenters: "Data Ctrs",
+  construction: "Construct",
+  etfsBenchmarks: "ETFs",
+};
+
+function TopMoversSection({ topMovers, isLoading }: { topMovers: TopMover[]; isLoading: boolean }) {
+  return (
+    <Card className="p-5 border-card-border">
+      <div className="flex items-center gap-2 mb-4">
+        <TrendingUp className="h-3.5 w-3.5 text-[#F0A500]" />
+        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Top Movers Today</h2>
+        <UITooltip>
+          <TooltipTrigger>
+            <Info className="h-3.5 w-3.5 text-muted-foreground" />
+          </TooltipTrigger>
+          <TooltipContent>
+            <p className="text-xs">Top 5 stocks by absolute % change across all 8 stack layers. Refreshed every 10 minutes.</p>
+          </TooltipContent>
+        </UITooltip>
+      </div>
+      <div className="space-y-2">
+        {isLoading
+          ? Array(5).fill(null).map((_, i) => (
+              <div key={i} className="flex items-center gap-3 py-1.5">
+                <Skeleton className="h-4 w-12" />
+                <Skeleton className="h-3 w-32 flex-1" />
+                <Skeleton className="h-4 w-16" />
+              </div>
+            ))
+          : topMovers.filter((m) => m.price != null && m.changePercent != null).map((m) => {
+              const isUp = m.changePercent >= 0;
+              const sc = SECTOR_COLORS[m.sector] ?? "#6b7280";
+              return (
+                <div key={m.ticker} className="flex items-center gap-3 py-1.5 border-b border-border/30 last:border-0" data-testid={`top-mover-${m.ticker}`}>
+                  <span className="font-mono font-bold text-xs text-foreground w-12 flex-shrink-0">{m.ticker}</span>
+                  <span className="text-xs text-muted-foreground flex-1 truncate min-w-0">{m.name}</span>
+                  <span
+                    className="text-[10px] font-medium px-1.5 py-0.5 rounded border flex-shrink-0"
+                    style={{ color: sc, backgroundColor: `${sc}15`, borderColor: `${sc}30` }}
+                  >
+                    {SECTOR_LABEL_SHORT[m.sector] ?? m.sector}
+                  </span>
+                  <span className="font-mono text-xs text-foreground flex-shrink-0 w-16 text-right">${m.price.toFixed(m.price < 10 ? 2 : m.price < 100 ? 2 : 2)}</span>
+                  <div className={`flex items-center gap-0.5 font-mono font-semibold text-xs flex-shrink-0 w-14 justify-end ${isUp ? "text-green-400" : "text-red-400"}`}>
+                    {isUp ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
+                    {Math.abs(m.changePercent).toFixed(2)}%
+                  </div>
+                </div>
+              );
+            })}
+      </div>
+    </Card>
+  );
+}
+
+function SectorPulseSection({ pulse, isLoading }: { pulse: SectorPulseItem[]; isLoading: boolean }) {
+  const maxAbs = Math.max(...(pulse.map((p) => Math.abs(p.avgChange))), 0.5);
+  return (
+    <Card className="p-5 border-card-border">
+      <div className="flex items-center gap-2 mb-4">
+        <Activity className="h-3.5 w-3.5 text-[#F0A500]" />
+        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Sector Pulse</h2>
+        <UITooltip>
+          <TooltipTrigger>
+            <Info className="h-3.5 w-3.5 text-muted-foreground" />
+          </TooltipTrigger>
+          <TooltipContent>
+            <p className="text-xs">Average intraday % change per stack layer. Shows which sectors are leading or lagging the broader AI power economy today.</p>
+          </TooltipContent>
+        </UITooltip>
+      </div>
+      <div className="space-y-2">
+        {isLoading
+          ? Array(8).fill(null).map((_, i) => (
+              <div key={i} className="flex items-center gap-3">
+                <Skeleton className="h-3 w-20" />
+                <Skeleton className="h-2 flex-1" />
+                <Skeleton className="h-3 w-10" />
+              </div>
+            ))
+          : [...pulse].sort((a, b) => b.avgChange - a.avgChange).map((p) => {
+              const isUp = p.avgChange >= 0;
+              const sc = SECTOR_COLORS[p.sector] ?? "#6b7280";
+              const barWidth = Math.abs(p.avgChange) / maxAbs * 100;
+              return (
+                <div key={p.sector} className="flex items-center gap-3" data-testid={`sector-pulse-${p.sector}`}>
+                  <span className="text-xs text-muted-foreground w-20 flex-shrink-0 truncate">{p.label}</span>
+                  <div className="flex-1 h-1.5 bg-muted/30 rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all duration-500"
+                      style={{
+                        width: `${barWidth}%`,
+                        backgroundColor: isUp ? sc : "#ef4444",
+                        opacity: 0.85,
+                      }}
+                    />
+                  </div>
+                  <span className={`font-mono text-xs font-semibold w-12 text-right flex-shrink-0 ${isUp ? "text-green-400" : "text-red-400"}`}>
+                    {isUp ? "+" : ""}{p.avgChange.toFixed(2)}%
+                  </span>
+                </div>
+              );
+            })}
+      </div>
+    </Card>
+  );
+}
+
+function CatalystCalendarSection({ catalysts }: { catalysts: Catalyst[] }) {
+  const today = new Date();
+  const [viewMonth, setViewMonth] = useState(today.getMonth());
+  const [viewYear, setViewYear] = useState(today.getFullYear());
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
+
+  const firstDay = new Date(viewYear, viewMonth, 1).getDay();
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+  const monthLabel = new Date(viewYear, viewMonth, 1).toLocaleDateString("en-US", { month: "long", year: "numeric" });
+
+  const catalystByDate: Record<string, Catalyst[]> = {};
+  catalysts.forEach((c) => {
+    const d = c.date.slice(0, 10);
+    if (!catalystByDate[d]) catalystByDate[d] = [];
+    catalystByDate[d].push(c);
+  });
+
+  const selectedDateKey = selectedDay;
+  const selectedCatalysts = selectedDateKey ? (catalystByDate[selectedDateKey] ?? []) : [];
+
+  const upcoming = catalysts
+    .filter((c) => daysUntil(c.date) >= 0)
+    .slice(0, 5);
+
+  return (
+    <Card className="p-5 border-card-border" data-testid="catalyst-calendar">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <Calendar className="h-3.5 w-3.5 text-[#F0A500]" />
+          <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Catalyst Calendar</h2>
+        </div>
+        <Link
+          href="/catalysts"
+          className="flex items-center gap-1 text-xs text-[#F07800] hover:text-[#F0A500] transition-colors font-medium"
+          data-testid="link-all-catalysts"
+        >
+          All Catalysts <ChevronRight className="h-3 w-3" />
+        </Link>
+      </div>
+
+      <div className="flex items-center justify-between mb-3">
+        <button
+          onClick={() => {
+            if (viewMonth === 0) { setViewMonth(11); setViewYear(y => y - 1); }
+            else setViewMonth(m => m - 1);
+          }}
+          className="text-muted-foreground hover:text-foreground text-xs px-2 py-0.5 rounded hover:bg-muted/30 transition-colors"
+          data-testid="calendar-prev"
+        >
+          &lsaquo;
+        </button>
+        <span className="text-xs font-medium text-foreground">{monthLabel}</span>
+        <button
+          onClick={() => {
+            if (viewMonth === 11) { setViewMonth(0); setViewYear(y => y + 1); }
+            else setViewMonth(m => m + 1);
+          }}
+          className="text-muted-foreground hover:text-foreground text-xs px-2 py-0.5 rounded hover:bg-muted/30 transition-colors"
+          data-testid="calendar-next"
+        >
+          &rsaquo;
+        </button>
+      </div>
+
+      <div className="grid grid-cols-7 gap-px mb-1">
+        {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((d) => (
+          <div key={d} className="text-center text-[10px] text-muted-foreground/60 py-0.5">{d}</div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-7 gap-px">
+        {Array(firstDay).fill(null).map((_, i) => <div key={`empty-${i}`} />)}
+        {Array.from({ length: daysInMonth }, (_, i) => {
+          const day = i + 1;
+          const dateKey = `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+          const dayCatalysts = catalystByDate[dateKey] ?? [];
+          const isToday = viewYear === today.getFullYear() && viewMonth === today.getMonth() && day === today.getDate();
+          const isSelected = selectedDay === dateKey;
+          const hasCatalysts = dayCatalysts.length > 0;
+
+          return (
+            <button
+              key={day}
+              onClick={() => setSelectedDay(isSelected ? null : dateKey)}
+              className={`relative flex flex-col items-center justify-center h-8 rounded text-xs transition-colors ${
+                isSelected ? "bg-[#F07800]/20 text-[#F0A500]" :
+                isToday ? "bg-muted/40 text-foreground font-semibold" :
+                "text-muted-foreground hover:bg-muted/20 hover:text-foreground"
+              }`}
+              data-testid={`calendar-day-${day}`}
+            >
+              <span>{day}</span>
+              {hasCatalysts && (
+                <div className="flex gap-0.5 mt-0.5">
+                  {dayCatalysts.slice(0, 3).map((cat, ci) => (
+                    <div
+                      key={ci}
+                      className="h-1 w-1 rounded-full"
+                      style={{ backgroundColor: CATEGORY_COLORS[cat.category] ?? "#6b7280" }}
+                    />
+                  ))}
+                </div>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {selectedCatalysts.length > 0 && (
+        <div className="mt-3 pt-3 border-t border-border space-y-2">
+          {selectedCatalysts.map((cat) => {
+            const cc = CATEGORY_COLORS[cat.category] ?? "#6b7280";
+            return (
+              <div key={cat.id} className="flex items-start gap-2">
+                <div className="h-1.5 w-1.5 rounded-full mt-1.5 flex-shrink-0" style={{ backgroundColor: cc }} />
+                <div className="min-w-0">
+                  <p className="text-xs font-medium text-foreground leading-tight">{cat.title}</p>
+                  <span className="text-[10px]" style={{ color: cc }}>{cat.category}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <div className="mt-4 pt-3 border-t border-border">
+        <p className="text-[10px] uppercase tracking-wider text-muted-foreground/60 mb-2">Next 5 Upcoming</p>
+        <div className="space-y-2">
+          {upcoming.map((catalyst) => {
+            const days = daysUntil(catalyst.date);
+            const cc = CATEGORY_COLORS[catalyst.category] ?? "#6b7280";
+            return (
+              <div key={catalyst.id} className="flex items-center gap-2" data-testid={`upcoming-catalyst-${catalyst.id}`}>
+                <span className="text-[10px] font-mono text-muted-foreground w-8 flex-shrink-0">
+                  {days === 0 ? "TODAY" : `${days}d`}
+                </span>
+                <div className="h-1 w-1 rounded-full flex-shrink-0" style={{ backgroundColor: cc }} />
+                <span className="text-xs text-foreground truncate flex-1 min-w-0">{catalyst.title}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function XFeedSection() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    const w = window as any;
+    const tryLoad = () => {
+      if (w.twttr && w.twttr.widgets) {
+        w.twttr.widgets.load(containerRef.current);
+        setLoaded(true);
+      }
+    };
+    tryLoad();
+    const timer = setTimeout(tryLoad, 1500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  return (
+    <Card className="p-5 border-card-border overflow-hidden">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <div className="h-3.5 w-3.5 flex items-center justify-center">
+            <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 fill-current text-[#F0A500]">
+              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.259 5.632zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+            </svg>
+          </div>
+          <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">@gridtilt</h2>
+        </div>
+        <a
+          href="https://x.com/gridtilt"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-1 text-xs text-[#F07800] hover:text-[#F0A500] transition-colors font-medium"
+          data-testid="link-gridtilt-x"
+        >
+          Follow <ExternalLink className="h-3 w-3" />
+        </a>
+      </div>
+      <div ref={containerRef} className="overflow-hidden rounded-md">
+        <a
+          className="twitter-timeline"
+          data-theme="dark"
+          data-tweet-limit="5"
+          data-chrome="noheader nofooter noborders transparent"
+          data-dnt="true"
+          href="https://twitter.com/gridtilt?ref_src=twsrc%5Etfw"
+        >
+          Tweets by @gridtilt
+        </a>
+      </div>
+      {!loaded && (
+        <div className="space-y-3 mt-2">
+          {Array(3).fill(null).map((_, i) => (
+            <div key={i} className="space-y-1.5">
+              <Skeleton className="h-3 w-full" />
+              <Skeleton className="h-3 w-4/5" />
+              <Skeleton className="h-3 w-2/3" />
+            </div>
+          ))}
+        </div>
+      )}
+    </Card>
+  );
+}
+
 function NextCatalystsWidget({ catalysts }: { catalysts: Catalyst[] }) {
   const upcoming = catalysts
     .filter((c) => daysUntil(c.date) >= 0)
@@ -387,7 +741,17 @@ export default function TiltOverview() {
     queryKey: ["/api/catalysts"],
   });
 
-  const upcomingCatalysts = (catalysts ?? []).filter((c) => daysUntil(c.date) >= 0);
+  const { data: earningsCalendar } = useQuery<Catalyst[]>({
+    queryKey: ["/api/earnings-calendar"],
+  });
+
+  const { data: topMovers, isLoading: topMoversLoading } = useQuery<TopMover[]>({
+    queryKey: ["/api/top-movers"],
+  });
+
+  const { data: sectorPulse, isLoading: sectorPulseLoading } = useQuery<SectorPulseItem[]>({
+    queryKey: ["/api/sector-pulse"],
+  });
 
   const c = kpiData?.constituents;
 
@@ -506,6 +870,18 @@ export default function TiltOverview() {
             nri={kpiData.nriValue}
           />
         )}
+
+        {/* Dashboard density — 2-col */}
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+          <div className="lg:col-span-3 space-y-4">
+            <TopMoversSection topMovers={topMovers ?? []} isLoading={topMoversLoading} />
+            <SectorPulseSection pulse={sectorPulse ?? []} isLoading={sectorPulseLoading} />
+          </div>
+          <div className="lg:col-span-2 space-y-4">
+            <CatalystCalendarSection catalysts={[...(catalysts ?? []), ...(earningsCalendar ?? [])].sort((a, b) => a.date.localeCompare(b.date))} />
+            <XFeedSection />
+          </div>
+        </div>
 
         {/* Main demand chart */}
         <Card className="p-6 border-card-border">
@@ -728,10 +1104,6 @@ export default function TiltOverview() {
           </p>
         </Card>
 
-        {/* Next Catalysts widget */}
-        {upcomingCatalysts.length > 0 && (
-          <NextCatalystsWidget catalysts={catalysts ?? []} />
-        )}
       </div>
     </div>
   );

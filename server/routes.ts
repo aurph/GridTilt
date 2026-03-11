@@ -32,14 +32,57 @@ const COMPANY_DATABASE: Record<string, {
   AMZN: { name: "Amazon.com Inc", primarySegment: "Infrastructure", sectors: { Compute: 55, Infrastructure: 50, Power: 20, Cooling: 18, Grid: 12 }, explanation: "AWS is the world's largest cloud provider. Amazon's AI capex is driving massive datacenter expansion across the US." },
   META: { name: "Meta Platforms Inc", primarySegment: "Compute", sectors: { Compute: 58, Infrastructure: 42, Power: 18, Cooling: 15, Grid: 10 }, explanation: "Meta's AI Llama models and recommendation systems run on massive custom datacenter infrastructure consuming approximately 4 GW globally." },
   AAPL: { name: "Apple Inc", primarySegment: "Compute", sectors: { Compute: 30, Infrastructure: 10, Power: 8, Cooling: 5, Grid: 3 }, explanation: "Apple Intelligence runs mostly on-device, reducing AI datacenter exposure. Limited direct power infrastructure play." },
-  TSLA: { name: "Tesla Inc", primarySegment: "Grid", sectors: { Compute: 25, Infrastructure: 5, Power: 15, Cooling: 5, Grid: 45 }, explanation: "Tesla's Megapack energy storage is used in utility-scale projects including datacenter backup power. Dojo supercomputer is a compute play." },
-  GE: { name: "GE Vernova", primarySegment: "Grid", sectors: { Compute: 5, Infrastructure: 10, Power: 35, Cooling: 5, Grid: 85 }, explanation: "GE Vernova makes gas turbines, wind turbines, and grid equipment. Direct beneficiary of grid expansion for AI datacenter buildout." },
-  ETN: { name: "Eaton Corporation", primarySegment: "Grid", sectors: { Compute: 5, Infrastructure: 20, Power: 20, Cooling: 35, Grid: 78 }, explanation: "Eaton makes power management, UPS systems, and electrical infrastructure for datacenters. Core supply chain for DC power delivery." },
+  TSLA: { name: "Tesla Inc", primarySegment: "ETF", sectors: { Compute: 25, Infrastructure: 5, Power: 15, Cooling: 5, Grid: 45 }, explanation: "Tesla's Megapack energy storage is used in utility-scale projects including datacenter backup power. Dojo supercomputer is a compute play." },
+  ETN: { name: "Eaton Corporation", primarySegment: "PowerHardware", sectors: { Compute: 5, Infrastructure: 20, Power: 20, Cooling: 35, Grid: 78 }, explanation: "Global leader in switchgear, transformers, and UPS systems connecting grid to data center rack. $9.5B Boyd Thermal acquisition for cooling. Running at maximum production capacity." },
   SMCI: { name: "Super Micro Computer", primarySegment: "Compute", sectors: { Compute: 82, Infrastructure: 30, Power: 8, Cooling: 45, Grid: 5 }, explanation: "AI server manufacturer. Builds the rack-scale systems that house NVIDIA GPUs. Direct datacenter compute infrastructure play." },
-  SPY: { name: "SPDR S&P 500 ETF", primarySegment: "Grid", sectors: { Compute: 25, Infrastructure: 15, Power: 12, Cooling: 10, Grid: 10 }, explanation: "Broad market ETF. AI power exposure comes from NVDA, MSFT, AMZN, GOOGL weightings (~30% combined). Diversified play." },
-  QQQ: { name: "Invesco QQQ Trust", primarySegment: "Compute", sectors: { Compute: 45, Infrastructure: 20, Power: 10, Cooling: 12, Grid: 8 }, explanation: "Nasdaq-100 ETF with approximately 50% in mega-cap tech. Heavy AI/compute exposure through NVDA, MSFT, AMZN, GOOGL, META." },
-  XLU: { name: "Utilities Select SPDR ETF", primarySegment: "Power", sectors: { Compute: 2, Infrastructure: 5, Power: 72, Cooling: 3, Grid: 40 }, explanation: "Utility sector ETF. Growing AI tailwind as datacenters sign long-term power purchase agreements with utilities." },
-  XLK: { name: "Technology Select SPDR ETF", primarySegment: "Compute", sectors: { Compute: 70, Infrastructure: 25, Power: 8, Cooling: 12, Grid: 5 }, explanation: "Technology sector ETF. High AI exposure through semiconductor and cloud infrastructure holdings." },
+  SPY: { name: "SPDR S&P 500 ETF", primarySegment: "ETF", sectors: { Compute: 25, Infrastructure: 15, Power: 12, Cooling: 10, Grid: 10 }, explanation: "Broad market ETF. AI power exposure comes from NVDA, MSFT, AMZN, GOOGL weightings (~30% combined). Diversified play." },
+  QQQ: { name: "Invesco QQQ Trust", primarySegment: "ETF", sectors: { Compute: 45, Infrastructure: 20, Power: 10, Cooling: 12, Grid: 8 }, explanation: "Nasdaq-100 ETF with approximately 50% in mega-cap tech. Heavy AI/compute exposure through NVDA, MSFT, AMZN, GOOGL, META." },
+  XLU: { name: "Utilities Select SPDR ETF", primarySegment: "ETF", sectors: { Compute: 2, Infrastructure: 5, Power: 72, Cooling: 3, Grid: 40 }, explanation: "Utility sector ETF. Growing AI tailwind as datacenters sign long-term power purchase agreements with utilities." },
+  XLK: { name: "Technology Select SPDR ETF", primarySegment: "ETF", sectors: { Compute: 70, Infrastructure: 25, Power: 8, Cooling: 12, Grid: 5 }, explanation: "Technology sector ETF. High AI exposure through semiconductor and cloud infrastructure holdings." },
+  // Nuclear Operators & Generators
+  TLN:  { name: "Talen Energy Corporation", primarySegment: "Nuclear", sectors: { Compute: 8, Infrastructure: 12, Power: 88, Cooling: 3, Grid: 32 }, explanation: "Susquehanna nuclear plant + direct Amazon/AWS behind-the-meter co-location deal. One of the clearest structural AI power beneficiaries in the sector." },
+  NRG:  { name: "NRG Energy Inc", primarySegment: "Nuclear", sectors: { Compute: 4, Infrastructure: 8, Power: 70, Cooling: 3, Grid: 28 }, explanation: "Diversified competitive power generator with nuclear fleet. Growing data center power contracts as hyperscalers seek dedicated dispatchable capacity." },
+  // Uranium Mining & Fuel Cycle
+  UEC:  { name: "Uranium Energy Corp", primarySegment: "Uranium", sectors: { Compute: 2, Infrastructure: 3, Power: 80, Cooling: 2, Grid: 8 }, explanation: "US-focused uranium miner using in-situ recovery (ISR) production. Hub-and-spoke model positions it as a low-cost domestic uranium supplier for the nuclear renaissance." },
+  LEU:  { name: "Centrus Energy Corp", primarySegment: "Uranium", sectors: { Compute: 3, Infrastructure: 5, Power: 88, Cooling: 2, Grid: 12 }, explanation: "Only US company licensed to produce HALEU (High-Assay Low-Enriched Uranium) for advanced reactors and SMRs. A critical chokepoint in the domestic nuclear fuel cycle." },
+  UUUU: { name: "Energy Fuels Inc", primarySegment: "Uranium", sectors: { Compute: 2, Infrastructure: 3, Power: 78, Cooling: 2, Grid: 8 }, explanation: "US uranium and rare earth producer. White Mesa Mill is the only operating conventional uranium mill in the US. Domestic supply chain play for nuclear renaissance." },
+  DNN:  { name: "Denison Mines Corp", primarySegment: "Uranium", sectors: { Compute: 2, Infrastructure: 3, Power: 75, Cooling: 2, Grid: 8 }, explanation: "Canadian uranium developer with Wheeler River project in the Athabasca Basin. In-situ recovery technology could make it one of the lowest-cost uranium producers globally." },
+  PALAF:{ name: "Paladin Energy Ltd", primarySegment: "Uranium", sectors: { Compute: 2, Infrastructure: 3, Power: 76, Cooling: 2, Grid: 8 }, explanation: "Australian uranium producer. Langer Heinrich mine in Namibia restarted production in 2024 after a 7-year care-and-maintenance period, adding new supply to a tight market." },
+  // SMR & Advanced Nuclear
+  OKLO: { name: "Oklo Inc", primarySegment: "SMR", sectors: { Compute: 10, Infrastructure: 18, Power: 90, Cooling: 5, Grid: 35 }, explanation: "14 GW customer pipeline, primarily hyperscalers and data centers. Sam Altman-backed advanced fission company. Received FERC approval for Aurora powerhouse design." },
+  BWXT: { name: "BWX Technologies Inc", primarySegment: "SMR", sectors: { Compute: 5, Infrastructure: 10, Power: 82, Cooling: 5, Grid: 25 }, explanation: "Sole manufacturer of US naval nuclear reactors. $7.4B backlog. Critical nuclear manufacturing infrastructure with expanding commercial SMR business." },
+  SMR:  { name: "NuScale Power Corp", primarySegment: "SMR", sectors: { Compute: 8, Infrastructure: 12, Power: 88, Cooling: 5, Grid: 30 }, explanation: "Only NRC-certified small modular reactor design in the US. VOYGR SMR plant expected ~2030. Expanding internationally with European utility partnerships." },
+  // Power Hardware & Electrical Equipment
+  GEV:  { name: "GE Vernova Inc", primarySegment: "PowerHardware", sectors: { Compute: 5, Infrastructure: 12, Power: 38, Cooling: 8, Grid: 88 }, explanation: "Gas turbines are the leading indicator of data center buildout pace. $200B projected backlog by 2028. BWRX-300 SMR development adds nuclear optionality. $41-42B revenue guidance for 2026." },
+  NVT:  { name: "nVent Electric PLC", primarySegment: "PowerHardware", sectors: { Compute: 5, Infrastructure: 22, Power: 18, Cooling: 75, Grid: 65 }, explanation: "High-density power distribution and enclosures for AI GPU workloads. 65% organic order growth from liquid cooling products. Direct picks-and-shovels play on AI rack density." },
+  CARR: { name: "Carrier Global Corp", primarySegment: "PowerHardware", sectors: { Compute: 5, Infrastructure: 15, Power: 10, Cooling: 70, Grid: 20 }, explanation: "Data center cooling systems. Building HVAC and precision cooling crossover business. Meaningful exposure to the thermal management challenge of high-density AI compute clusters." },
+  ABB:  { name: "ABB Ltd", primarySegment: "PowerHardware", sectors: { Compute: 5, Infrastructure: 18, Power: 22, Cooling: 25, Grid: 80 }, explanation: "Global power distribution, automation, and electrification leader. Major data center power supplier. Grid automation and switchgear positioned for the AI-driven capex cycle." },
+  EMR:  { name: "Emerson Electric Co", primarySegment: "PowerHardware", sectors: { Compute: 5, Infrastructure: 18, Power: 15, Cooling: 30, Grid: 60 }, explanation: "Automation and power management systems for data centers. AspenTech software embedded in critical energy infrastructure. Industrial automation exposure to the AI buildout." },
+  HUBB: { name: "Hubbell Inc", primarySegment: "PowerHardware", sectors: { Compute: 3, Infrastructure: 12, Power: 15, Cooling: 10, Grid: 72 }, explanation: "Electrical products for utility and commercial markets. Grid modernization beneficiary as transmission infrastructure must be expanded to serve new data center campuses." },
+  JCI:  { name: "Johnson Controls Int'l", primarySegment: "PowerHardware", sectors: { Compute: 3, Infrastructure: 12, Power: 8, Cooling: 65, Grid: 30 }, explanation: "Building automation and HVAC including data center cooling. Thermal management solutions for the AI era. Exposed to the retrofit market as existing facilities upgrade for AI density." },
+  SIEGY:{ name: "Siemens Energy AG", primarySegment: "PowerHardware", sectors: { Compute: 4, Infrastructure: 10, Power: 32, Cooling: 8, Grid: 82 }, explanation: "Gas turbines competing with GE Vernova for data center power generation orders. Transformer shortages have made Siemens Energy a critical bottleneck — and beneficiary — of grid expansion." },
+  BKR:  { name: "Baker Hughes Co", primarySegment: "PowerHardware", sectors: { Compute: 3, Infrastructure: 8, Power: 30, Cooling: 5, Grid: 55 }, explanation: "Gas turbine technology and LNG equipment. Industrial Energy Technology segment growing as data center operators seek efficient on-site gas generation and backup power solutions." },
+  // Utilities (AI Load Beneficiaries)
+  D:    { name: "Dominion Energy Inc", primarySegment: "Utilities", sectors: { Compute: 5, Infrastructure: 15, Power: 78, Cooling: 5, Grid: 42 }, explanation: "Serves Northern Virginia — home to 70% of global internet traffic. 40-47 GW of data center capacity in active contract discussions. $50B capex plan to serve AI-driven load growth." },
+  SO:   { name: "Southern Company", primarySegment: "Utilities", sectors: { Compute: 3, Infrastructure: 12, Power: 72, Cooling: 4, Grid: 38 }, explanation: "Georgia is the epicenter of data center growth in the Southeast. 50+ GW interconnection pipeline. Vogtle nuclear units 3 and 4 provide 24/7 baseload for hyperscaler commitments." },
+  DUK:  { name: "Duke Energy Corp", primarySegment: "Utilities", sectors: { Compute: 3, Infrastructure: 10, Power: 70, Cooling: 4, Grid: 36 }, explanation: "Carolinas and Southeast utility with growing data center interconnection requests. Multi-GW pipeline from technology companies seeking clean, reliable power in the research triangle." },
+  AEP:  { name: "American Electric Power", primarySegment: "Utilities", sectors: { Compute: 3, Infrastructure: 10, Power: 68, Cooling: 4, Grid: 42 }, explanation: "Major PJM utility. Transmission infrastructure investment is critical for connecting new data center campuses to the grid. 40 GW of new interconnection requests filed in its territory." },
+  XEL:  { name: "Xcel Energy Inc", primarySegment: "Utilities", sectors: { Compute: 3, Infrastructure: 8, Power: 65, Cooling: 3, Grid: 35 }, explanation: "Midwest utility with growing data center load growth in Minnesota and Colorado. Microsoft and Google have targeted its service territory for clean power agreements." },
+  EVRG: { name: "Evergy Inc", primarySegment: "Utilities", sectors: { Compute: 2, Infrastructure: 7, Power: 62, Cooling: 3, Grid: 30 }, explanation: "Kansas and Missouri utility seeing increased data center interest from Meta and Google. Favorable land and power costs making its territory an emerging second-tier data center market." },
+  PPL:  { name: "PPL Corporation", primarySegment: "Utilities", sectors: { Compute: 2, Infrastructure: 8, Power: 60, Cooling: 3, Grid: 30 }, explanation: "Mid-Atlantic and Kentucky utility with PJM exposure. High-voltage transmission assets and data center proximity in Pennsylvania and Kentucky service territories." },
+  PCG:  { name: "PG&E Corp", primarySegment: "Utilities", sectors: { Compute: 3, Infrastructure: 10, Power: 65, Cooling: 4, Grid: 35 }, explanation: "California utility serving Silicon Valley data center campuses. Grid modernization and reliability investments required to support hyperscaler load growth in the Bay Area." },
+  // Construction & EPC (Infrastructure Builders)
+  PWR:  { name: "Quanta Services Inc", primarySegment: "Construction", sectors: { Compute: 5, Infrastructure: 28, Power: 12, Cooling: 8, Grid: 88 }, explanation: "Largest electrical utility contractor in North America. Building the transmission lines and substations connecting data center campuses to the grid. Best-in-class backlog growth." },
+  EME:  { name: "EMCOR Group Inc", primarySegment: "Construction", sectors: { Compute: 5, Infrastructure: 35, Power: 10, Cooling: 38, Grid: 65 }, explanation: "Electrical and mechanical infrastructure for data centers. $4.3B RPO in network and communications segment. Record backlog driven by AI data center construction." },
+  MTZ:  { name: "MasTec Inc", primarySegment: "Construction", sectors: { Compute: 3, Infrastructure: 25, Power: 10, Cooling: 12, Grid: 70 }, explanation: "Infrastructure construction with rapidly growing data center revenue. EPS growth approximately 30%. Builds the electrical infrastructure backbone connecting AI facilities to the grid." },
+  STRL: { name: "Sterling Infrastructure Inc", primarySegment: "Construction", sectors: { Compute: 5, Infrastructure: 30, Power: 8, Cooling: 10, Grid: 60 }, explanation: "Data center site development with 125% YoY revenue growth from data center segment. Builds the physical foundations and civil infrastructure for hyperscaler campuses." },
+  FLR:  { name: "Fluor Corporation", primarySegment: "Construction", sectors: { Compute: 3, Infrastructure: 20, Power: 15, Cooling: 8, Grid: 55 }, explanation: "Engineering and construction for energy and infrastructure projects. AI-era buildout of power generation and grid infrastructure plays to core competencies." },
+  PRIM: { name: "Primoris Services Corp", primarySegment: "Construction", sectors: { Compute: 2, Infrastructure: 18, Power: 10, Cooling: 5, Grid: 68 }, explanation: "Utility infrastructure and power delivery services. Growing exposure to grid expansion and transmission projects required to serve new data center loads." },
+  // Sector ETFs (Benchmarks)
+  URNM: { name: "Sprott Uranium Miners ETF", primarySegment: "ETF", sectors: { Compute: 2, Infrastructure: 3, Power: 82, Cooling: 2, Grid: 10 }, explanation: "Pure-play uranium miners ETF. Tracks the uranium mining sector with no dilution from utilities or nuclear equipment makers. High-beta uranium thesis exposure." },
+  DTCR: { name: "Global X Data Center ETF", primarySegment: "ETF", sectors: { Compute: 15, Infrastructure: 85, Power: 25, Cooling: 35, Grid: 22 }, explanation: "Data center and digital infrastructure ETF. Tracks REITs, operators, and technology companies building or relying on data center infrastructure globally." },
+  GRID: { name: "First Trust Nasdaq Smart Grid ETF", primarySegment: "ETF", sectors: { Compute: 3, Infrastructure: 15, Power: 22, Cooling: 5, Grid: 85 }, explanation: "Grid infrastructure ETF tracking companies enabling the smart grid. Includes grid hardware, software, and utility companies modernizing electrical infrastructure for AI demand." },
+  PAVE: { name: "Global X US Infrastructure ETF", primarySegment: "ETF", sectors: { Compute: 3, Infrastructure: 30, Power: 12, Cooling: 8, Grid: 60 }, explanation: "US infrastructure development ETF. Tracks construction, engineering, and materials companies benefiting from data center and grid infrastructure buildout." },
 };
 
 function scorePortfolioTicker(ticker: string) {
@@ -112,6 +155,63 @@ const STATIC_MARKET_DATA: Record<string, {
   NXE:  { name: "NexGen Energy", price: 11.84, change: 0.00, changePercent: 0.00, pe: null, revenueGrowth: null, marketCapDisplay: "$5.4B" },
   URA:  { name: "Global X Uranium ETF", price: 27.14, change: 0.87, changePercent: 3.31, pe: null, revenueGrowth: null },
   NLR:  { name: "VanEck Uranium+Nuclear ETF", price: 67.84, change: 0.54, changePercent: 0.80, pe: null, revenueGrowth: null, marketCapDisplay: "$1.1B" },
+  // Compute (previously missing from static)
+  MSFT: { name: "Microsoft Corporation", price: 385.00, change: 0.00, changePercent: 0.00, pe: 34.5, revenueGrowth: 16.8, marketCapDisplay: "$2.9T" },
+  GOOGL:{ name: "Alphabet Inc", price: 168.00, change: 0.00, changePercent: 0.00, pe: 22.4, revenueGrowth: 15.2, marketCapDisplay: "$2.1T" },
+  META: { name: "Meta Platforms Inc", price: 596.00, change: 0.00, changePercent: 0.00, pe: 28.1, revenueGrowth: 21.4, marketCapDisplay: "$1.5T" },
+  AAPL: { name: "Apple Inc", price: 248.00, change: 0.00, changePercent: 0.00, pe: 32.8, revenueGrowth: 4.1, marketCapDisplay: "$3.8T" },
+  AMZN: { name: "Amazon.com Inc", price: 202.00, change: 0.00, changePercent: 0.00, pe: 38.6, revenueGrowth: 11.2, marketCapDisplay: "$2.2T" },
+  SMCI: { name: "Super Micro Computer", price: 44.00, change: 0.00, changePercent: 0.00, pe: null, revenueGrowth: 58.3, marketCapDisplay: "$25B" },
+  TSLA: { name: "Tesla Inc", price: 285.00, change: 0.00, changePercent: 0.00, pe: 110.2, revenueGrowth: 8.4, marketCapDisplay: "$915B" },
+  // ETFs (previously missing)
+  QQQ:  { name: "Invesco QQQ Trust", price: 478.00, change: 0.00, changePercent: 0.00, pe: null, revenueGrowth: null, marketCapDisplay: "$215B" },
+  XLK:  { name: "Technology Select SPDR ETF", price: 222.00, change: 0.00, changePercent: 0.00, pe: null, revenueGrowth: null, marketCapDisplay: "$72B" },
+  SPY:  { name: "SPDR S&P 500 ETF", price: 562.00, change: 0.00, changePercent: 0.00, pe: null, revenueGrowth: null, marketCapDisplay: "$572B" },
+  // Nuclear Operators
+  TLN:  { name: "Talen Energy Corporation", price: 242.00, change: 0.00, changePercent: 0.00, pe: 18.4, revenueGrowth: 42.1, marketCapDisplay: "$7.1B" },
+  NRG:  { name: "NRG Energy Inc", price: 112.00, change: 0.00, changePercent: 0.00, pe: 24.6, revenueGrowth: 12.8, marketCapDisplay: "$14B" },
+  // Uranium & Fuel Cycle
+  UEC:  { name: "Uranium Energy Corp", price: 7.60, change: 0.00, changePercent: 0.00, pe: null, revenueGrowth: null, marketCapDisplay: "$3.5B" },
+  LEU:  { name: "Centrus Energy Corp", price: 72.00, change: 0.00, changePercent: 0.00, pe: 14.2, revenueGrowth: 8.5, marketCapDisplay: "$820M" },
+  UUUU: { name: "Energy Fuels Inc", price: 6.55, change: 0.00, changePercent: 0.00, pe: null, revenueGrowth: null, marketCapDisplay: "$1.1B" },
+  DNN:  { name: "Denison Mines Corp", price: 2.48, change: 0.00, changePercent: 0.00, pe: null, revenueGrowth: null, marketCapDisplay: "$1.6B" },
+  PALAF:{ name: "Paladin Energy Ltd", price: 2.82, change: 0.00, changePercent: 0.00, pe: null, revenueGrowth: null, marketCapDisplay: "$2.0B" },
+  // SMR & Advanced Nuclear
+  OKLO: { name: "Oklo Inc", price: 52.00, change: 0.00, changePercent: 0.00, pe: null, revenueGrowth: null, marketCapDisplay: "$5.8B" },
+  BWXT: { name: "BWX Technologies Inc", price: 116.00, change: 0.00, changePercent: 0.00, pe: 38.2, revenueGrowth: 10.4, marketCapDisplay: "$8.0B" },
+  SMR:  { name: "NuScale Power Corp", price: 14.50, change: 0.00, changePercent: 0.00, pe: null, revenueGrowth: null, marketCapDisplay: "$480M" },
+  // Power Hardware
+  GEV:  { name: "GE Vernova Inc", price: 352.00, change: 0.00, changePercent: 0.00, pe: 68.4, revenueGrowth: 15.2, marketCapDisplay: "$96B" },
+  NVT:  { name: "nVent Electric PLC", price: 88.00, change: 0.00, changePercent: 0.00, pe: 24.8, revenueGrowth: 22.4, marketCapDisplay: "$14B" },
+  CARR: { name: "Carrier Global Corp", price: 74.00, change: 0.00, changePercent: 0.00, pe: 26.2, revenueGrowth: 9.8, marketCapDisplay: "$62B" },
+  ABB:  { name: "ABB Ltd", price: 56.00, change: 0.00, changePercent: 0.00, pe: 28.4, revenueGrowth: 8.2, marketCapDisplay: "$120B" },
+  EMR:  { name: "Emerson Electric Co", price: 126.00, change: 0.00, changePercent: 0.00, pe: 28.8, revenueGrowth: 7.4, marketCapDisplay: "$36B" },
+  HUBB: { name: "Hubbell Inc", price: 388.00, change: 0.00, changePercent: 0.00, pe: 22.6, revenueGrowth: 8.8, marketCapDisplay: "$21B" },
+  JCI:  { name: "Johnson Controls Int'l", price: 66.00, change: 0.00, changePercent: 0.00, pe: 22.4, revenueGrowth: 6.2, marketCapDisplay: "$44B" },
+  SIEGY:{ name: "Siemens Energy AG", price: 48.00, change: 0.00, changePercent: 0.00, pe: 32.8, revenueGrowth: 18.4, marketCapDisplay: "$60B" },
+  BKR:  { name: "Baker Hughes Co", price: 41.00, change: 0.00, changePercent: 0.00, pe: 21.4, revenueGrowth: 8.8, marketCapDisplay: "$40B" },
+  // Utilities
+  D:    { name: "Dominion Energy Inc", price: 55.00, change: 0.00, changePercent: 0.00, pe: 18.6, revenueGrowth: 4.8, marketCapDisplay: "$47B" },
+  SO:   { name: "Southern Company", price: 92.00, change: 0.00, changePercent: 0.00, pe: 20.4, revenueGrowth: 6.2, marketCapDisplay: "$103B" },
+  DUK:  { name: "Duke Energy Corp", price: 118.00, change: 0.00, changePercent: 0.00, pe: 19.8, revenueGrowth: 4.4, marketCapDisplay: "$92B" },
+  AEP:  { name: "American Electric Power", price: 108.00, change: 0.00, changePercent: 0.00, pe: 18.2, revenueGrowth: 7.4, marketCapDisplay: "$58B" },
+  XEL:  { name: "Xcel Energy Inc", price: 78.00, change: 0.00, changePercent: 0.00, pe: 18.8, revenueGrowth: 5.8, marketCapDisplay: "$42B" },
+  EVRG: { name: "Evergy Inc", price: 61.00, change: 0.00, changePercent: 0.00, pe: 16.4, revenueGrowth: 4.2, marketCapDisplay: "$9.0B" },
+  PPL:  { name: "PPL Corporation", price: 34.00, change: 0.00, changePercent: 0.00, pe: 17.8, revenueGrowth: 5.4, marketCapDisplay: "$24B" },
+  PCG:  { name: "PG&E Corp", price: 20.00, change: 0.00, changePercent: 0.00, pe: 15.8, revenueGrowth: 8.8, marketCapDisplay: "$53B" },
+  // Construction & EPC
+  PWR:  { name: "Quanta Services Inc", price: 312.00, change: 0.00, changePercent: 0.00, pe: 50.4, revenueGrowth: 18.4, marketCapDisplay: "$45B" },
+  EME:  { name: "EMCOR Group Inc", price: 382.00, change: 0.00, changePercent: 0.00, pe: 24.6, revenueGrowth: 14.8, marketCapDisplay: "$16B" },
+  MTZ:  { name: "MasTec Inc", price: 182.00, change: 0.00, changePercent: 0.00, pe: 42.4, revenueGrowth: 22.4, marketCapDisplay: "$14B" },
+  STRL: { name: "Sterling Infrastructure Inc", price: 178.00, change: 0.00, changePercent: 0.00, pe: 26.8, revenueGrowth: 42.8, marketCapDisplay: "$5.1B" },
+  FLR:  { name: "Fluor Corporation", price: 44.00, change: 0.00, changePercent: 0.00, pe: 28.4, revenueGrowth: 10.2, marketCapDisplay: "$7.2B" },
+  PRIM: { name: "Primoris Services Corp", price: 54.00, change: 0.00, changePercent: 0.00, pe: 18.6, revenueGrowth: 12.4, marketCapDisplay: "$3.0B" },
+  // Sector ETF Benchmarks
+  XLU:  { name: "Utilities Select SPDR ETF", price: 85.00, change: 0.00, changePercent: 0.00, pe: null, revenueGrowth: null, marketCapDisplay: "$14B" },
+  URNM: { name: "Sprott Uranium Miners ETF", price: 51.00, change: 0.00, changePercent: 0.00, pe: null, revenueGrowth: null },
+  DTCR: { name: "Global X Data Center ETF", price: 27.50, change: 0.00, changePercent: 0.00, pe: null, revenueGrowth: null },
+  GRID: { name: "First Trust Nasdaq Smart Grid ETF", price: 104.00, change: 0.00, changePercent: 0.00, pe: null, revenueGrowth: null },
+  PAVE: { name: "Global X US Infrastructure ETF", price: 37.00, change: 0.00, changePercent: 0.00, pe: null, revenueGrowth: null },
 };
 
 // Nuclear Renaissance Index (NRI) — Jan 1, 2024 base prices
@@ -222,6 +322,47 @@ function calculateCorrelation(xs: number[], ys: number[]) {
   const denX = Math.sqrt(xs.reduce((s, v) => s + Math.pow(v - meanX, 2), 0));
   const denY = Math.sqrt(ys.reduce((s, v) => s + Math.pow(v - meanY, 2), 0));
   return num / (denX * denY);
+}
+
+// ─── Stack + Top-Movers cache (10-min TTL per timeframe) ───────────────────
+const stackCache: Record<string, { data: Record<string, any>; timestamp: number }> = {};
+const STACK_CACHE_TTL = 10 * 60 * 1000;
+
+// All tickers tracked across every Stack layer
+const STACK_TICKERS = {
+  compute:       ["NVDA", "TSM", "AMD", "MU", "MSFT", "GOOGL", "META", "AAPL", "SMCI", "AMZN", "INTC"],
+  nuclear:       ["CEG", "VST", "TLN", "NRG", "OKLO", "BWXT", "SMR"],
+  uranium:       ["CCJ", "UEC", "LEU", "UUUU", "DNN", "NXE", "PALAF"],
+  powerHardware: ["GEV", "ETN", "VRT", "NVT", "CARR", "ABB", "EMR", "HUBB", "JCI", "SIEGY", "BKR"],
+  utilities:     ["NEE", "D", "SO", "DUK", "AEP", "XEL", "EVRG", "PPL", "PCG", "ETR"],
+  dataCenters:   ["EQIX", "DLR", "AMT", "IREN"],
+  construction:  ["PWR", "EME", "MTZ", "STRL", "FLR", "PRIM"],
+  etfsBenchmarks:["URA", "URNM", "NLR", "DTCR", "GRID", "XLU", "PAVE", "QQQ", "XLK"],
+};
+const ALL_STACK_TICKERS = Object.values(STACK_TICKERS).flat();
+
+// ─── News cache (30-min TTL) ────────────────────────────────────────────────
+interface NewsItem { headline: string; source: string; url: string; publishedAt: string; }
+let newsCache: { items: NewsItem[]; timestamp: number } | null = null;
+const EARNINGS_CACHE_TTL = 4 * 60 * 60 * 1000; // 4 hours
+let earningsCache: { items: any[]; timestamp: number } | null = null;
+const NEWS_CACHE_TTL = 30 * 60 * 1000;
+
+const NEWS_KEYWORDS = [
+  "data center", "datacenter", "hyperscaler", "AI infrastructure", "power grid",
+  "nuclear energy", "nuclear restart", "uranium", "grid stress", "interconnection",
+  "transformer shortage", "GE Vernova", "Vertiv", "Eaton", "Constellation Energy",
+  "PJM", "ERCOT", "MISO", "WECC", "utility earnings", "power demand", "megawatt",
+  "gigawatt", "behind-the-meter", "cooling system", "Quanta Services", "NuScale",
+  "SMR", "grid modernization", "energy transition", "electricity demand",
+  "baseload power", "capacity auction", "power purchase agreement", "nuclear plant",
+  "uranium mining", "Cameco", "Vistra", "NextEra", "Dominion Energy", "Duke Energy",
+  "data centre", "AI power", "clean energy", "renewable energy",
+];
+
+function isNewsRelevant(headline: string): boolean {
+  const lower = headline.toLowerCase();
+  return NEWS_KEYWORDS.some((kw) => lower.includes(kw.toLowerCase()));
 }
 
 export async function registerRoutes(
@@ -373,57 +514,64 @@ export async function registerRoutes(
     });
   });
 
-  // Stack endpoint
+  // Stack endpoint — 8 layers, 10-min cache
   app.get("/api/stack", async (req, res) => {
     try {
-      let stockData: Record<string, any> = {};
       const timeframe = (req.query.timeframe as string) || "1D";
       const spParams = sparklineParamsForTimeframe(timeframe);
+      const cacheKey = timeframe;
+      const now = Date.now();
 
-      const allTickers = ["NVDA", "TSM", "AMD", "MU", "EQIX", "DLR", "VRT", "IREN", "CEG", "VST", "CCJ", "NXE"];
+      // Serve from cache if fresh
+      let stockData: Record<string, any> = {};
+      if (stackCache[cacheKey] && (now - stackCache[cacheKey].timestamp) < STACK_CACHE_TTL) {
+        stockData = stackCache[cacheKey].data;
+      } else {
+        try {
+          const YahooFinanceClass = (await import("yahoo-finance2")).default;
+          const yahooFinance = new YahooFinanceClass({ suppressNotices: ["yahooSurvey"] });
+          const results = await Promise.all(
+            ALL_STACK_TICKERS.map((t) => yahooFinance.quote(t).catch(() => null))
+          );
+          results.forEach((r, i) => {
+            if (r?.regularMarketPrice) {
+              const ticker = ALL_STACK_TICKERS[i];
+              const staticData = STATIC_MARKET_DATA[ticker];
+              stockData[ticker] = {
+                ticker,
+                name: r.longName || r.shortName || staticData?.name || ticker,
+                price: r.regularMarketPrice,
+                change: r.regularMarketChange ?? 0,
+                changePercent: r.regularMarketChangePercent ?? 0,
+                pe: r.trailingPE ?? staticData?.pe ?? null,
+                revenueGrowth: staticData?.revenueGrowth ?? null,
+                sparkline: generateSparkline(r.regularMarketPrice, spParams.volatility, spParams.points),
+                powerMW: staticData?.powerMW,
+                vs_sp500: staticData?.vs_sp500,
+                marketCapDisplay: staticData?.marketCapDisplay,
+              };
+            }
+          });
+        } catch (e) {
+          // Fall through to static data
+        }
 
-      try {
-        const YahooFinanceClass = (await import("yahoo-finance2")).default;
-        const yahooFinance = new YahooFinanceClass({ suppressNotices: ["yahooSurvey"] });
-        const results = await Promise.all(
-          allTickers.map((t) => yahooFinance.quote(t).catch(() => null))
-        );
-        results.forEach((r, i) => {
-          if (r?.regularMarketPrice) {
-            const ticker = allTickers[i];
-            const staticData = STATIC_MARKET_DATA[ticker];
-            stockData[ticker] = {
-              ticker,
-              name: r.longName || r.shortName || staticData?.name || ticker,
-              price: r.regularMarketPrice,
-              change: r.regularMarketChange ?? 0,
-              changePercent: r.regularMarketChangePercent ?? 0,
-              pe: r.trailingPE ?? staticData?.pe ?? null,
-              revenueGrowth: staticData?.revenueGrowth ?? null,
-              sparkline: generateSparkline(r.regularMarketPrice, spParams.volatility, spParams.points),
-              powerMW: staticData?.powerMW,
-              vs_sp500: staticData?.vs_sp500,
-              marketCapDisplay: staticData?.marketCapDisplay,
-            };
+        // Fill in missing tickers with static fallback
+        ALL_STACK_TICKERS.forEach((ticker) => {
+          if (!stockData[ticker]) {
+            const s = STATIC_MARKET_DATA[ticker];
+            if (s) {
+              stockData[ticker] = {
+                ticker,
+                ...s,
+                sparkline: generateSparkline(s.price, spParams.volatility, spParams.points),
+              };
+            }
           }
         });
-      } catch (e) {
-        // Fall through to static data
-      }
 
-      // Fill in missing tickers with static data
-      allTickers.forEach((ticker) => {
-        if (!stockData[ticker]) {
-          const s = STATIC_MARKET_DATA[ticker];
-          if (s) {
-            stockData[ticker] = {
-              ticker,
-              ...s,
-              sparkline: generateSparkline(s.price, spParams.volatility, spParams.points),
-            };
-          }
-        }
-      });
+        stackCache[cacheKey] = { data: stockData, timestamp: now };
+      }
 
       const ccjCorrelationData = generateCCJCorrelationData();
       const cegCorrelationData = generateCEGCorrelationData();
@@ -437,9 +585,14 @@ export async function registerRoutes(
       );
 
       res.json({
-        compute: ["NVDA", "TSM", "AMD", "MU"].map((t) => stockData[t]).filter(Boolean),
-        infrastructure: ["EQIX", "DLR", "VRT", "IREN"].map((t) => stockData[t]).filter(Boolean),
-        power: ["CEG", "VST", "CCJ", "NXE"].map((t) => stockData[t]).filter(Boolean),
+        compute:        STACK_TICKERS.compute.map((t) => stockData[t]).filter(Boolean),
+        nuclear:        STACK_TICKERS.nuclear.map((t) => stockData[t]).filter(Boolean),
+        uranium:        STACK_TICKERS.uranium.map((t) => stockData[t]).filter(Boolean),
+        powerHardware:  STACK_TICKERS.powerHardware.map((t) => stockData[t]).filter(Boolean),
+        utilities:      STACK_TICKERS.utilities.map((t) => stockData[t]).filter(Boolean),
+        dataCenters:    STACK_TICKERS.dataCenters.map((t) => stockData[t]).filter(Boolean),
+        construction:   STACK_TICKERS.construction.map((t) => stockData[t]).filter(Boolean),
+        etfsBenchmarks: STACK_TICKERS.etfsBenchmarks.map((t) => stockData[t]).filter(Boolean),
         correlation: ccjCorrelationData,
         correlationCoeff: parseFloat(ccjR.toFixed(3)),
         cegCorrelationCoeff: parseFloat(cegR.toFixed(3)),
@@ -447,6 +600,197 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Stack error:", error);
       res.status(500).json({ error: "Failed to fetch stack data" });
+    }
+  });
+
+  // Top Movers endpoint — top 5 by absolute % change across all stack tickers
+  app.get("/api/top-movers", async (_req, res) => {
+    try {
+      const cacheKey = "1D";
+      const now = Date.now();
+      let stockData: Record<string, any> = {};
+
+      if (stackCache[cacheKey] && (now - stackCache[cacheKey].timestamp) < STACK_CACHE_TTL) {
+        stockData = stackCache[cacheKey].data;
+      } else {
+        const spParams = sparklineParamsForTimeframe("1D");
+        try {
+          const YahooFinanceClass = (await import("yahoo-finance2")).default;
+          const yahooFinance = new YahooFinanceClass({ suppressNotices: ["yahooSurvey"] });
+          const results = await Promise.all(
+            ALL_STACK_TICKERS.map((t) => yahooFinance.quote(t).catch(() => null))
+          );
+          results.forEach((r, i) => {
+            if (r?.regularMarketPrice) {
+              const ticker = ALL_STACK_TICKERS[i];
+              const staticData = STATIC_MARKET_DATA[ticker];
+              stockData[ticker] = {
+                ticker,
+                name: r.longName || r.shortName || staticData?.name || ticker,
+                price: r.regularMarketPrice,
+                change: r.regularMarketChange ?? 0,
+                changePercent: r.regularMarketChangePercent ?? 0,
+                pe: r.trailingPE ?? staticData?.pe ?? null,
+                revenueGrowth: staticData?.revenueGrowth ?? null,
+                sparkline: generateSparkline(r.regularMarketPrice, spParams.volatility, spParams.points),
+                powerMW: staticData?.powerMW,
+                vs_sp500: staticData?.vs_sp500,
+                marketCapDisplay: staticData?.marketCapDisplay,
+              };
+            }
+          });
+        } catch (_e) {}
+        ALL_STACK_TICKERS.forEach((ticker) => {
+          if (!stockData[ticker]) {
+            const s = STATIC_MARKET_DATA[ticker];
+            if (s) stockData[ticker] = { ticker, ...s, sparkline: generateSparkline(s.price, spParams.volatility, spParams.points) };
+          }
+        });
+        stackCache[cacheKey] = { data: stockData, timestamp: now };
+      }
+
+      // Determine sector for each ticker
+      const sectorMap: Record<string, string> = {};
+      Object.entries(STACK_TICKERS).forEach(([sector, tickers]) => {
+        tickers.forEach((t) => { sectorMap[t] = sector; });
+      });
+
+      const allStocks = Object.values(stockData) as any[];
+      const sorted = allStocks.sort((a, b) => Math.abs(b.changePercent) - Math.abs(a.changePercent));
+      const topMovers = sorted.slice(0, 5).map((s) => ({
+        ...s,
+        sector: sectorMap[s.ticker] ?? "other",
+      }));
+
+      res.json(topMovers);
+    } catch (error) {
+      console.error("Top movers error:", error);
+      res.status(500).json({ error: "Failed to fetch top movers" });
+    }
+  });
+
+  // Sector Pulse endpoint — avg % change per layer
+  app.get("/api/sector-pulse", async (_req, res) => {
+    try {
+      const cacheKey = "1D";
+      const now = Date.now();
+      let stockData: Record<string, any> = {};
+
+      if (stackCache[cacheKey] && (now - stackCache[cacheKey].timestamp) < STACK_CACHE_TTL) {
+        stockData = stackCache[cacheKey].data;
+      } else {
+        const spParams = sparklineParamsForTimeframe("1D");
+        try {
+          const YahooFinanceClass = (await import("yahoo-finance2")).default;
+          const yahooFinance = new YahooFinanceClass({ suppressNotices: ["yahooSurvey"] });
+          const results = await Promise.all(
+            ALL_STACK_TICKERS.map((t) => yahooFinance.quote(t).catch(() => null))
+          );
+          results.forEach((r, i) => {
+            if (r?.regularMarketPrice) {
+              const ticker = ALL_STACK_TICKERS[i];
+              const staticData = STATIC_MARKET_DATA[ticker];
+              stockData[ticker] = {
+                ticker,
+                name: r.longName || r.shortName || staticData?.name || ticker,
+                price: r.regularMarketPrice,
+                change: r.regularMarketChange ?? 0,
+                changePercent: r.regularMarketChangePercent ?? 0,
+                pe: r.trailingPE ?? staticData?.pe ?? null,
+                revenueGrowth: staticData?.revenueGrowth ?? null,
+                sparkline: generateSparkline(r.regularMarketPrice, spParams.volatility, spParams.points),
+                powerMW: staticData?.powerMW,
+                vs_sp500: staticData?.vs_sp500,
+                marketCapDisplay: staticData?.marketCapDisplay,
+              };
+            }
+          });
+        } catch (_e) {}
+        ALL_STACK_TICKERS.forEach((ticker) => {
+          if (!stockData[ticker]) {
+            const s = STATIC_MARKET_DATA[ticker];
+            if (s) stockData[ticker] = { ticker, ...s, sparkline: generateSparkline(s.price, spParams.volatility, spParams.points) };
+          }
+        });
+        stackCache[cacheKey] = { data: stockData, timestamp: now };
+      }
+
+      const SECTOR_LABELS: Record<string, string> = {
+        compute: "Compute", nuclear: "Nuclear", uranium: "Uranium",
+        powerHardware: "Power Hardware", utilities: "Utilities",
+        dataCenters: "Data Centers", construction: "Construction", etfsBenchmarks: "ETF Benchmarks",
+      };
+
+      const pulse = Object.entries(STACK_TICKERS).map(([key, tickers]) => {
+        const changes = tickers.map((t) => stockData[t]?.changePercent ?? 0);
+        const avg = changes.reduce((s, v) => s + v, 0) / changes.length;
+        return { sector: key, label: SECTOR_LABELS[key] ?? key, avgChange: parseFloat(avg.toFixed(2)) };
+      });
+
+      res.json(pulse);
+    } catch (error) {
+      console.error("Sector pulse error:", error);
+      res.status(500).json({ error: "Failed to compute sector pulse" });
+    }
+  });
+
+  // Earnings calendar endpoint — upcoming earnings dates for all stack tickers (4h cache)
+  app.get("/api/earnings-calendar", async (_req, res) => {
+    try {
+      const now = Date.now();
+      if (earningsCache && (now - earningsCache.timestamp) < EARNINGS_CACHE_TTL) {
+        return res.json(earningsCache.items);
+      }
+
+      const results: any[] = [];
+      let idCounter = 1000; // start above manual catalyst IDs
+
+      try {
+        const YahooFinanceClass = (await import("yahoo-finance2")).default;
+        const yahooFinance = new YahooFinanceClass({ suppressNotices: ["yahooSurvey"] });
+
+        const summaries = await Promise.all(
+          ALL_STACK_TICKERS.map((ticker) =>
+            yahooFinance.quoteSummary(ticker, { modules: ["calendarEvents"] }).catch(() => null)
+          )
+        );
+
+        summaries.forEach((summary, i) => {
+          const ticker = ALL_STACK_TICKERS[i];
+          const earningsDate = summary?.calendarEvents?.earnings?.earningsDate?.[0];
+          if (earningsDate) {
+            const d = new Date(earningsDate);
+            const dateStr = d.toISOString().slice(0, 10);
+            const staticData = STATIC_MARKET_DATA[ticker];
+            const name = staticData?.name ?? ticker;
+            results.push({
+              id: idCounter++,
+              date: dateStr,
+              title: `${ticker}: ${name} Earnings`,
+              category: "Earnings",
+              thesisImpact: `Watch for AI/datacenter demand commentary, power consumption guidance, and forward revenue outlook from ${name}.`,
+              tickers: [ticker],
+            });
+          }
+        });
+      } catch (_e) {
+        // Yahoo Finance failed — return empty array, manual catalysts still show
+      }
+
+      // Deduplicate by ticker (keep closest date)
+      const seen = new Set<string>();
+      const deduped = results.filter((item) => {
+        const key = item.tickers[0];
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+
+      earningsCache = { items: deduped, timestamp: now };
+      res.json(deduped);
+    } catch (error) {
+      console.error("Earnings calendar error:", error);
+      res.json([]);
     }
   });
 
@@ -469,7 +813,60 @@ export async function registerRoutes(
     }
   });
 
-  // Headlines endpoint — reads from server/data/news-headlines.json (editable without redeploying)
+  // Live news endpoint — NewsData.io primary, falls back to static JSON
+  app.get("/api/news", async (_req, res) => {
+    try {
+      const now = Date.now();
+      if (newsCache && (now - newsCache.timestamp) < NEWS_CACHE_TTL) {
+        return res.json(newsCache.items);
+      }
+
+      const apiKey = process.env.NEWSDATA_API_KEY;
+      if (apiKey) {
+        try {
+          const url = `https://newsdata.io/api/1/latest?apikey=${apiKey}&q=data+center+OR+nuclear+energy+OR+power+grid+OR+AI+infrastructure+OR+uranium&language=en&category=business,technology`;
+          const resp = await fetch(url);
+          if (resp.ok) {
+            const json = await resp.json() as any;
+            const articles = (json.results ?? []) as any[];
+            const items: NewsItem[] = articles
+              .filter((a: any) => isNewsRelevant((a.title ?? "") + " " + (a.description ?? "")))
+              .slice(0, 30)
+              .map((a: any) => ({
+                headline: a.title ?? "",
+                source: a.source_id ?? a.source_name ?? "NewsData",
+                url: a.link ?? "#",
+                publishedAt: a.pubDate ?? new Date().toISOString(),
+              }));
+            if (items.length > 0) {
+              newsCache = { items, timestamp: now };
+              return res.json(items);
+            }
+          }
+        } catch (_e) {
+          // Fall through to static
+        }
+      }
+
+      // Fallback: serve from static JSON
+      const filePath = join(process.cwd(), "server", "data", "news-headlines.json");
+      const raw = readFileSync(filePath, "utf-8");
+      const staticItems = JSON.parse(raw);
+      const mapped: NewsItem[] = staticItems.map((item: any) => ({
+        headline: item.headline ?? item.title ?? "",
+        source: item.source ?? "GridTilt",
+        url: item.url ?? "#",
+        publishedAt: item.publishedAt ?? new Date().toISOString(),
+      }));
+      newsCache = { items: mapped, timestamp: now };
+      res.json(mapped);
+    } catch (error) {
+      console.error("News error:", error);
+      res.json([]);
+    }
+  });
+
+  // Legacy headlines endpoint — keep for backward compat
   app.get("/api/headlines", (_req, res) => {
     try {
       const filePath = join(process.cwd(), "server", "data", "news-headlines.json");

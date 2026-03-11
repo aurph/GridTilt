@@ -1,25 +1,25 @@
 import { useQuery } from "@tanstack/react-query";
 
-interface Headline {
-  id: number;
+interface NewsItem {
   headline: string;
   source: string;
   url: string;
+  publishedAt: string;
 }
 
 export function NewsTicker() {
-  const { data: headlines } = useQuery<Headline[]>({
-    queryKey: ["/api/headlines"],
-    staleTime: 5 * 60 * 1000,
+  const { data: items } = useQuery<NewsItem[]>({
+    queryKey: ["/api/news"],
+    staleTime: 30 * 60 * 1000,
+    queryFn: () => fetch("/api/news").then((r) => r.json()),
   });
 
-  if (!headlines || headlines.length === 0) return null;
+  if (!items || items.length === 0) return null;
 
-  const tickerText = headlines
-    .map((h) => `${h.headline}  ·  ${h.source}`)
-    .join("   ◆   ");
-
-  const doubledText = `${tickerText}   ◆   ${tickerText}`;
+  const segments = items.map((h) => ({
+    text: `${h.source.toUpperCase()}  ${h.headline}`,
+    url: h.url,
+  }));
 
   return (
     <div
@@ -40,8 +40,26 @@ export function NewsTicker() {
         </span>
       </div>
       <div className="flex-1 overflow-hidden relative">
-        <div className="ticker-scroll whitespace-nowrap text-[11px] text-muted-foreground font-mono">
-          {doubledText}
+        <div
+          className="ticker-scroll whitespace-nowrap text-[11px] text-muted-foreground font-mono"
+          style={{ animationPlayState: "running" }}
+          onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.animationPlayState = "paused"; }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.animationPlayState = "running"; }}
+        >
+          {[...segments, ...segments].map((seg, i) => (
+            <span key={i}>
+              {i > 0 && <span className="mx-4 text-[#F07800]/40">◆</span>}
+              <a
+                href={seg.url !== "#" ? seg.url : undefined}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={seg.url !== "#" ? "hover:text-[#F0A500] transition-colors cursor-pointer" : undefined}
+                onClick={(e) => { if (seg.url === "#") e.preventDefault(); }}
+              >
+                {seg.text}
+              </a>
+            </span>
+          ))}
         </div>
       </div>
     </div>

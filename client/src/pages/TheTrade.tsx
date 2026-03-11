@@ -517,7 +517,7 @@ export default function TheTrade() {
                         const total = payload.reduce((s: number, p: any) => s + (p.value ?? 0), 0);
                         return (
                           <div className="bg-card border border-card-border rounded-lg p-3 text-xs shadow-xl">
-                            <p className="font-semibold text-foreground mb-2">{label} — {total.toFixed(1)} GW added</p>
+                            <p className="font-semibold text-foreground mb-2">{label}: {total.toFixed(1)} GW added</p>
                             {payload.map((p: any, i: number) => (
                               <p key={i} style={{ color: p.fill }} className="font-mono">
                                 {p.name}: {p.value?.toFixed(2)} GW
@@ -695,11 +695,11 @@ export default function TheTrade() {
                     <div className="space-y-2 text-muted-foreground leading-relaxed">
                       <p><span className="text-foreground font-medium">Nuclear %</span> is the single highest-leverage input for the Power stock thesis. Each 10pp increase substantially re-rates CEG, CCJ, and VST exposure scores.</p>
                       <p><span className="text-foreground font-medium">Capex per MW</span> drives total capital deployed. At 50 GW, the $7M-$12M/MW range equals a $150B swing in total required investment.</p>
-                      <p><span className="text-foreground font-medium">LPT per GW</span> (default: 4) is the most uncertain assumption in this model — academic literature ranges from 2 to 6.</p>
-                      <p><span className="text-foreground font-medium">AI CAGR</span> is the most volatile input — a 10pp change produces a ~200 TWh swing in 2030 US power demand.</p>
+                      <p><span className="text-foreground font-medium">LPT per GW</span> (default: 4) is the most uncertain assumption in this model; academic literature ranges from 2 to 6.</p>
+                      <p><span className="text-foreground font-medium">AI CAGR</span> is the most volatile input; a 10pp change produces a ~200 TWh swing in 2030 US power demand.</p>
                     </div>
                     <div className="mt-3 p-3 rounded bg-muted/20 border border-border/60 text-muted-foreground/70 leading-relaxed">
-                      All assumptions are adjustable. GridTilt provides the framework — you provide the thesis. This is a scenario analysis tool, not financial advice.
+                      All assumptions are adjustable. GridTilt provides the framework; you provide the thesis. This is a scenario analysis tool, not financial advice.
                     </div>
                   </div>
                 </div>

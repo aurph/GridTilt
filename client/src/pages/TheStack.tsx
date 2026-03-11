@@ -30,7 +30,7 @@ interface StockData {
   changePercent: number;
   pe: number | null;
   revenueGrowth: number | null;
-  sparkline: number[];
+  sparkline?: number[];
   marketCapDisplay?: string;
   powerMW?: number;
   vs_sp500?: number;
@@ -43,14 +43,20 @@ interface CorrelationPoint {
 
 interface StackData {
   compute: StockData[];
-  infrastructure: StockData[];
-  power: StockData[];
+  nuclear: StockData[];
+  uranium: StockData[];
+  powerHardware: StockData[];
+  utilities: StockData[];
+  dataCenters: StockData[];
+  construction: StockData[];
+  etfsBenchmarks: StockData[];
   correlation: CorrelationPoint[];
   correlationCoeff: number;
   cegCorrelationCoeff: number;
 }
 
-function Sparkline({ data, color }: { data: number[]; color: string }) {
+function Sparkline({ data, color }: { data: number[] | undefined; color: string }) {
+  if (!data || data.length === 0) return <div className="h-10" />;
   const chartData = data.map((v, i) => ({ i, v }));
   return (
     <ResponsiveContainer width="100%" height={40}>
@@ -62,6 +68,7 @@ function Sparkline({ data, color }: { data: number[]; color: string }) {
 }
 
 function StockCard({ stock, showPower, showVsSP500 }: { stock: StockData; showPower?: boolean; showVsSP500?: boolean }) {
+  if (!stock || stock.price == null || stock.changePercent == null) return null;
   const isUp = stock.changePercent >= 0;
   return (
     <Card className="p-4 border-card-border hover-elevate" data-testid={`stock-card-${stock.ticker}`}>
@@ -183,13 +190,7 @@ function computeRegression(points: { uranium: number; ccj: number }[]) {
 }
 
 type Timeframe = "1D" | "5D" | "1M";
-type SortBy = "change" | "marketcap" | "thesis";
-
-const THESIS_LEVERAGE: Record<string, number> = {
-  NVDA: 10, TSM: 9, AMD: 7, MU: 7,
-  EQIX: 9, DLR: 8, VRT: 10, IREN: 8,
-  CEG: 10, VST: 9, CCJ: 9, NXE: 8,
-};
+type SortBy = "change" | "marketcap";
 
 function sortStocks(stocks: StockData[], sortBy: SortBy): StockData[] {
   if (!stocks) return [];
@@ -204,7 +205,6 @@ function sortStocks(stocks: StockData[], sortBy: SortBy): StockData[] {
     };
     return parseM(b.marketCapDisplay) - parseM(a.marketCapDisplay);
   });
-  if (sortBy === "thesis") return arr.sort((a, b) => (THESIS_LEVERAGE[b.ticker] ?? 0) - (THESIS_LEVERAGE[a.ticker] ?? 0));
   return arr;
 }
 
@@ -228,30 +228,64 @@ export default function TheStack() {
       title: "Compute Layer",
       icon: Cpu,
       color: "#94a3b8",
-      description: "GPU and semiconductor companies powering AI workloads. Ranked by market cap.",
-      tooltip: "These companies supply the physical compute substrate for AI. NVIDIA's H100 GPUs consume approximately 700W each; a single training cluster can draw as much power as a small city. TSMC manufactures virtually all advanced AI chips - its capital intensity is the single largest determinant of AI compute supply.",
-      showPower: false,
-      showVsSP500: false,
+      description: "AI chips, hyperscalers, and the semiconductor foundries powering every model training run.",
+      tooltip: "NVIDIA's H100/B200 GPUs power virtually every major AI training cluster. TSMC manufactures all advanced AI chips. The hyperscalers (MSFT, GOOGL, META, AMZN) are both the largest AI compute consumers and the primary drivers of data center power demand growth.",
     },
     {
-      key: "infrastructure",
-      title: "Infrastructure Layer",
+      key: "nuclear",
+      title: "Nuclear Power",
+      icon: Zap,
+      color: "#F0A500",
+      description: "Nuclear operators, SMR developers, and advanced reactor companies. AI needs 24/7 baseload.",
+      tooltip: "AI requires uninterruptible clean power - wind and solar cannot provide it. Microsoft restarted Three Mile Island. Amazon signed a direct co-location deal with Talen Energy's Susquehanna plant. Oklo has a 14 GW data center customer pipeline. BWXT is the sole manufacturer of US naval nuclear reactors.",
+    },
+    {
+      key: "uranium",
+      title: "Uranium & Fuel Cycle",
+      icon: Zap,
+      color: "#fb923c",
+      description: "Uranium miners and fuel cycle companies supplying the nuclear renaissance.",
+      tooltip: "Uranium spot at ~$92/lb (Mar 2026). Cameco is the largest public uranium miner with direct spot beta. NexGen's Rook I deposit is the world's highest-grade undeveloped uranium resource. Centrus Energy is the only US-licensed HALEU producer for advanced reactors.",
+    },
+    {
+      key: "powerHardware",
+      title: "Power Hardware",
+      icon: Server,
+      color: "#60a5fa",
+      description: "Transformers, switchgear, cooling, and electrical equipment. The grid-to-rack supply chain.",
+      tooltip: "GE Vernova's gas turbine order book is the leading indicator of data center buildout pace. Eaton is at maximum production capacity for switchgear and transformers. Vertiv is the fastest-growing power/cooling infrastructure company by organic revenue. Transformer shortages are the primary bottleneck on data center energization timelines.",
+    },
+    {
+      key: "utilities",
+      title: "Utilities",
+      icon: Zap,
+      color: "#34d399",
+      description: "AI-load beneficiary utilities signing long-term power agreements with hyperscalers.",
+      tooltip: "Dominion Energy serves Northern Virginia - home to 70% of global internet traffic. NextEra signed a 2.5 GW deal with Meta. Southern Company's Georgia territory is the epicenter of Southeast data center growth. These regulated utilities benefit from the structural increase in electricity demand that AI is driving.",
+    },
+    {
+      key: "dataCenters",
+      title: "Data Centers",
       icon: Server,
       color: "#a855f7",
       description: "Data center REITs and colocation operators. Direct proxies for AI capacity build-out.",
-      tooltip: "These companies own the physical facilities housing AI compute. Their power contracts, PUE efficiency ratings, and land-bank position them as high-conviction proxies for AI demand growth. Vertiv is the fastest-growing operator in the sector by organic revenue.",
-      showPower: true,
-      showVsSP500: true,
+      tooltip: "Equinix operates 273 data centers across 77 markets. Digital Realty has 300+ facilities globally. IREN is pivoting from Bitcoin mining to GPU-as-a-Service. These companies own the physical facilities where AI compute runs, making their power contracts and land-bank critical metrics.",
     },
     {
-      key: "power",
-      title: "Power Layer",
-      icon: Zap,
-      color: "#F0A500",
-      description: "Nuclear utilities and uranium supply chain. AI needs 24/7 baseload - only nuclear delivers it.",
-      tooltip: "AI requires uninterruptible power - wind and solar cannot provide it. Microsoft signed a deal to restart Three Mile Island for 20 years. Google inked the first commercial SMR contract. NexGen Energy's Rook I deposit in Saskatchewan is the world's highest-grade undeveloped uranium resource, providing speculative leverage to the nuclear renaissance.",
-      showPower: false,
-      showVsSP500: false,
+      key: "construction",
+      title: "Construction & EPC",
+      icon: Server,
+      color: "#f472b6",
+      description: "Electrical contractors and engineers building the grid connections for AI campuses.",
+      tooltip: "Quanta Services is the largest electrical utility contractor in North America, building the transmission lines and substations connecting data center campuses to the grid. EMCOR has a record $4.3B backlog in network and communications infrastructure. Sterling Infrastructure has 125% YoY data center revenue growth.",
+    },
+    {
+      key: "etfsBenchmarks",
+      title: "ETF Benchmarks",
+      icon: TrendingUp,
+      color: "#6b7280",
+      description: "Sector ETFs tracking uranium, data centers, grid infrastructure, and utilities.",
+      tooltip: "Use these ETFs to benchmark sector performance. URA and URNM track the uranium mining sector. DTCR tracks data center and digital infrastructure. GRID tracks smart grid companies. XLU tracks the utility sector. Compare individual stock picks against these benchmarks to assess relative performance.",
     },
   ];
 
@@ -296,7 +330,6 @@ export default function TheStack() {
               {([
                 { id: "change", label: "% Change" },
                 { id: "marketcap", label: "Mkt Cap" },
-                { id: "thesis", label: "Thesis" },
               ] as { id: SortBy; label: string }[]).map((opt) => (
                 <button
                   key={opt.id}
@@ -351,8 +384,6 @@ export default function TheStack() {
                       <StockCard
                         key={stock.ticker}
                         stock={stock}
-                        showPower={layer.showPower}
-                        showVsSP500={layer.showVsSP500}
                       />
                     ))}
               </div>

@@ -16,6 +16,7 @@ Full-stack web application that visualizes the economic relationship between AI 
 ### Backend
 - Node.js + Express
 - Market data: yahoo-finance2 (unofficial API, no key required)
+- News: NewsData.io (optional, requires NEWSDATA_API_KEY env var) with static JSON fallback
 - All routes prefixed with `/api`
 - Falls back to static data when Yahoo Finance is unavailable
 - Editable data files: `server/data/news-headlines.json`, `server/data/catalysts.json`
@@ -24,8 +25,8 @@ Full-stack web application that visualizes the economic relationship between AI 
 
 | Route | Page | Description |
 |-------|------|-------------|
-| `/` | TiltOverview | KPI cards + Thesis Health bar + demand chart + Next Catalysts widget |
-| `/stack` | TheStack | Sector breakdown with live stock data, timeframe toggle, sort controls |
+| `/` | TiltOverview | KPI cards + Thesis Health bar + Top Movers + Sector Pulse + Catalyst Calendar + X feed + demand chart |
+| `/stack` | TheStack | 8-layer sector breakdown with live stock data, timeframe toggle, sort controls |
 | `/power-map` | PowerMap | SVG US map with 48 data center locations, multi-select filters, URL state, RTO choropleth, Grid Stress mode |
 | `/trade` | TheTrade | Thesis Calculator — preset scenarios (Conservative/Base/Aggressive/Custom), infra buildout inputs, capex/LPT outputs, methodology panel |
 | `/portfolio` | PortfolioOverlay | AI Power Exposure scoring + radar chart + shareable URL |
@@ -36,27 +37,42 @@ Full-stack web application that visualizes the economic relationship between AI 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/api/kpis` | GET | Returns AI Power Index, Nuclear Index, Grid Stress Score |
-| `/api/stack` | GET | Returns stock data for 12 tickers in 3 layers + correlation data. Accepts `?timeframe=1D\|5D\|1M` |
+| `/api/stack` | GET | Returns stock data for 60+ tickers in 8 layers + correlation data. Accepts `?timeframe=1D\|5D\|1M`. 10-min cache. |
+| `/api/top-movers` | GET | Returns top 5 tickers by absolute % change across all stack layers |
+| `/api/sector-pulse` | GET | Returns average % change per stack layer (8 sectors) |
+| `/api/news` | GET | NewsData.io live feed if key present, else static JSON. 30-min cache. |
 | `/api/portfolio-score` | POST | Scores portfolio tickers 0-100 on AI Power Exposure |
-| `/api/headlines` | GET | Returns news headlines from `server/data/news-headlines.json` |
 | `/api/catalysts` | GET | Returns upcoming catalyst events from `server/data/catalysts.json`, sorted by date |
+| `/api/earnings-calendar` | GET | Returns upcoming earnings dates for all stack tickers via Yahoo Finance. 4-hour cache. |
+| `/api/headlines` | GET | Legacy static headlines endpoint (backward compat) |
+
+## Stack Layers (8 total — TheStack page)
+
+1. **Compute** — NVDA, TSM, AMD, MU, MSFT, GOOGL, META, AAPL, SMCI, AMZN, INTC
+2. **Nuclear Power** — CEG, VST, TLN, NRG, OKLO, BWXT, SMR
+3. **Uranium & Fuel Cycle** — CCJ, UEC, LEU, UUUU, DNN, NXE, PALAF
+4. **Power Hardware** — GEV, ETN, VRT, NVT, CARR, ABB, EMR, HUBB, JCI, SIEGY, BKR
+5. **Utilities** — NEE, D, SO, DUK, AEP, XEL, EVRG, PPL, PCG, ETR
+6. **Data Centers** — EQIX, DLR, AMT, IREN
+7. **Construction & EPC** — PWR, EME, MTZ, STRL, FLR, PRIM
+8. **ETF Benchmarks** — URA, URNM, NLR, DTCR, GRID, XLU, PAVE, QQQ, XLK
 
 ## Editable Data Files (no redeploy needed)
-- `server/data/news-headlines.json` — Array of {id, headline, source, url} — edit to update the scrolling news ticker
+- `server/data/news-headlines.json` — Array of {headline, source, url, publishedAt} — edit to update news ticker
 - `server/data/catalysts.json` — Array of {id, date, title, category, thesisImpact, tickers} — edit to update Catalyst Tracker
 
 ## Key Files
 
 - `client/src/App.tsx` — Root app with SidebarProvider + Router + keyboard shortcuts (? opens modal, G+1-6 navigate)
 - `client/src/components/app-sidebar.tsx` — Navigation sidebar (6 pages)
-- `client/src/components/NewsTicker.tsx` — Scrolling orange news banner below header
-- `client/src/pages/TiltOverview.tsx` — Landing dashboard with Thesis Health bar + Next Catalysts widget
-- `client/src/pages/TheStack.tsx` — Sector breakdown with timeframe toggle (1D/5D/1M) + sort controls
+- `client/src/components/NewsTicker.tsx` — Scrolling orange news banner (uses /api/news, hover-to-pause, clickable)
+- `client/src/pages/TiltOverview.tsx` — Landing dashboard (KPIs, Thesis Health, Top Movers, Sector Pulse, Catalyst Calendar, X feed, demand chart)
+- `client/src/pages/TheStack.tsx` — 8-layer sector breakdown with timeframe toggle (1D/5D/1M) + sort controls
 - `client/src/pages/PowerMap.tsx` — Interactive US map (48 data centers, RTO choropleth, Grid Stress mode)
 - `client/src/pages/TheTrade.tsx` — Thesis builder (client-side sliders, no DB needed)
 - `client/src/pages/PortfolioOverlay.tsx` — Portfolio scoring with shareable URL (?tickers= param)
 - `client/src/pages/CatalystTracker.tsx` — Vertical timeline of upcoming market events with category filter
-- `server/routes.ts` — All API routes + static market data fallbacks + headlines/catalysts file readers
+- `server/routes.ts` — All API routes + static market data + news/catalysts file readers + 8-layer stack
 - `client/src/index.css` — Dark-mode-only CSS theme + ticker-scroll animation
 - `tailwind.config.ts` — Extended theme with custom colors
 
@@ -65,7 +81,7 @@ Full-stack web application that visualizes the economic relationship between AI 
 - Brand Orange: `#F07800` / `#F0A500` — UI chrome, badges, KPI values, radar, score rings
 - Data Viz Blue: `#1E90FF` — chart data series ONLY (Area/Line fills in demand chart)
 - Muted Foreground: `hsl(20 4% 50%)` — warm gray labels
-- Compute segment: `#94a3b8` (slate), Infrastructure: `#a855f7` (purple), Power: `#F0A500` (amber)
+- Stack layer colors: Compute #94a3b8, Nuclear #F0A500, Uranium #fb923c, Power HW #60a5fa, Utilities #34d399, Data Centers #a855f7, Construction #f472b6, ETFs #6b7280
 - Font: Inter + JetBrains Mono
 
 ## Visual Design Principles
@@ -75,23 +91,29 @@ Full-stack web application that visualizes the economic relationship between AI 
 - KPI card borders: neutral gray (AI Power), amber (Nuclear Renaissance), orange-red (Grid Stress)
 - Card radius: 0.35rem (tighter than consumer apps, more terminal-like)
 - All interactive elements have `data-testid` attributes for testing
+- No em-dashes in user-facing text
 
 ## Global UX Features
-- News ticker: CSS keyframes `ticker-scroll` animation, 90s loop, pauses on hover
+- News ticker: CSS keyframes `ticker-scroll` animation, 90s loop, pauses on hover, clickable headlines link to source
 - Keyboard shortcuts: press `?` opens modal; `G` then `1-6` navigates to pages
 - Thesis Health bar: derived from live KPI values (ACCELERATING/EXPANDING/COOLING)
-- Next Catalysts widget on TiltOverview: 3 soonest events with "View All" link
+- Top Movers: top 5 stocks by abs % change with sector color badges
+- Sector Pulse: avg % change per stack layer as horizontal bars
+- Catalyst Calendar: monthly grid with colored dots per category; click day to expand; "Next 5 Upcoming" list
+- X feed: @gridtilt Twitter timeline embedded (dark theme, 5 tweets, no chrome)
 - KPI cards: include 14-point sparklines generated from live index values
 - Portfolio share: share button copies URL with encoded tickers; ?tickers= auto-scores on load
 - 404 page: branded "Grid Signal Lost" in dark GridTilt style
-- Stack page: 1D/5D/1M timeframe toggle changes sparkline density/volatility; sort by % change, market cap, or thesis leverage
+- Stack page: 1D/5D/1M timeframe toggle changes sparkline density/volatility; sort by % change or market cap
 
 ## Notes
-- No database required — portfolio scoring uses an in-memory lookup table of 30+ tickers
+- No database required — portfolio scoring uses an in-memory lookup table of 60+ tickers
 - Yahoo Finance data has static fallbacks in `STATIC_MARKET_DATA` in routes.ts (March 2026 price levels)
 - Sparklines are generated procedurally from base price
 - Data center locations are hardcoded from public announcements (see PowerMap.tsx)
 - Catalyst dates are relative to March 11, 2026 (current session date)
+- Stack cache TTL: 10 min; News cache TTL: 30 min
+- PALAF is OTC (Paladin Energy) — live Yahoo Finance quote may not resolve; uses static fallback
 
 ## Data Freshness (as of March 2026)
 - RTO reserve margins: NERC LTRA 2026 (MISO 13.4%, ERCOT 15.8%, PJM 17.5%)
@@ -130,3 +152,4 @@ Full-stack web application that visualizes the economic relationship between AI 
 - Build: `npm run build` (esbuild outputs `dist/index.cjs`)
 - Run: `node dist/index.cjs`
 - IMPORTANT: `.replit` run command must be `node dist/index.cjs` not `dist/index.js`
+- Optional env var: `NEWSDATA_API_KEY` — enables live news from NewsData.io (https://newsdata.io)
