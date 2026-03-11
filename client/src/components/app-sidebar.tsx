@@ -17,6 +17,7 @@ import {
   Map,
   TrendingUp,
   BarChart3,
+  Calendar,
 } from "lucide-react";
 import logoPath from "@assets/Untitled_design_(4)_1772554897403.png";
 
@@ -50,6 +51,12 @@ const navItems = [
     url: "/portfolio",
     icon: BarChart3,
     description: "AI Power Exposure score",
+  },
+  {
+    title: "Catalyst Tracker",
+    url: "/catalysts",
+    icon: Calendar,
+    description: "Upcoming market events",
   },
 ];
 

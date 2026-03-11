@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -20,7 +20,8 @@ import {
   Tooltip,
 } from "recharts";
 import { apiRequest } from "@/lib/queryClient";
-import { Info, BarChart3, Search, Loader2, AlertCircle, Plus } from "lucide-react";
+import { Info, BarChart3, Search, Loader2, AlertCircle, Plus, Share2, Check } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface PortfolioResult {
   ticker: string;
@@ -94,6 +95,8 @@ export default function PortfolioOverlay() {
   const [inputValue, setInputValue] = useState("");
   const [results, setResults] = useState<PortfolioResult[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const { toast } = useToast();
 
   const { mutate, isPending } = useMutation({
     mutationFn: async (tickers: string[]) => {
@@ -109,6 +112,19 @@ export default function PortfolioOverlay() {
     },
   });
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tickerParam = params.get("tickers");
+    if (tickerParam) {
+      const decoded = decodeURIComponent(tickerParam);
+      setInputValue(decoded);
+      const tickers = decoded.split(",").map((t) => t.trim().toUpperCase()).filter(Boolean);
+      if (tickers.length > 0 && tickers.length <= 15) {
+        mutate(tickers);
+      }
+    }
+  }, []);
+
   const handleSubmit = () => {
     const tickers = inputValue
       .split(/[,\s]+/)
@@ -120,7 +136,27 @@ export default function PortfolioOverlay() {
       return;
     }
     setError(null);
+    const encoded = encodeURIComponent(tickers.join(","));
+    window.history.replaceState(null, "", `/portfolio?tickers=${encoded}`);
     mutate(tickers);
+  };
+
+  const handleShare = async () => {
+    const tickers = inputValue
+      .split(/[,\s]+/)
+      .map((t) => t.trim().toUpperCase())
+      .filter(Boolean);
+    if (tickers.length === 0) return;
+    const encoded = encodeURIComponent(tickers.join(","));
+    const url = `${window.location.origin}/portfolio?tickers=${encoded}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+      toast({ title: "Link copied", description: "Share URL copied to clipboard." });
+    } catch {
+      toast({ title: "Copy failed", description: url, variant: "destructive" });
+    }
   };
 
   const radarData: RadarDataPoint[] = results
@@ -175,6 +211,15 @@ export default function PortfolioOverlay() {
             <Button onClick={handleSubmit} disabled={isPending || !inputValue.trim()} data-testid="button-score-portfolio">
               {isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Search className="h-4 w-4 mr-2" />}
               Score Portfolio
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={handleShare}
+              disabled={!inputValue.trim()}
+              data-testid="button-share-portfolio"
+              title="Copy shareable link"
+            >
+              {copied ? <Check className="h-4 w-4" /> : <Share2 className="h-4 w-4" />}
             </Button>
           </div>
 

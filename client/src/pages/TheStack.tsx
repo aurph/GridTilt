@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -182,9 +182,39 @@ function computeRegression(points: { uranium: number; ccj: number }[]) {
   return { line, upper, lower };
 }
 
+type Timeframe = "1D" | "5D" | "1M";
+type SortBy = "change" | "marketcap" | "thesis";
+
+const THESIS_LEVERAGE: Record<string, number> = {
+  NVDA: 10, TSM: 9, AMD: 7, MU: 7,
+  EQIX: 9, DLR: 8, VRT: 10, IREN: 8,
+  CEG: 10, VST: 9, CCJ: 9, NXE: 8,
+};
+
+function sortStocks(stocks: StockData[], sortBy: SortBy): StockData[] {
+  if (!stocks) return [];
+  const arr = [...stocks];
+  if (sortBy === "change") return arr.sort((a, b) => b.changePercent - a.changePercent);
+  if (sortBy === "marketcap") return arr.sort((a, b) => {
+    const parseM = (s?: string) => {
+      if (!s) return 0;
+      const n = parseFloat(s);
+      if (s.includes("T")) return n * 1000;
+      return n;
+    };
+    return parseM(b.marketCapDisplay) - parseM(a.marketCapDisplay);
+  });
+  if (sortBy === "thesis") return arr.sort((a, b) => (THESIS_LEVERAGE[b.ticker] ?? 0) - (THESIS_LEVERAGE[a.ticker] ?? 0));
+  return arr;
+}
+
 export default function TheStack() {
+  const [timeframe, setTimeframe] = useState<Timeframe>("1D");
+  const [sortBy, setSortBy] = useState<SortBy>("change");
+
   const { data, isLoading } = useQuery<StackData>({
-    queryKey: ["/api/stack"],
+    queryKey: ["/api/stack", timeframe],
+    queryFn: () => fetch(`/api/stack?timeframe=${timeframe}`).then((r) => r.json()),
   });
 
   const regression = useMemo(
@@ -237,6 +267,53 @@ export default function TheStack() {
             Yahoo Finance · Live
           </Badge>
         </div>
+
+        <div className="flex flex-wrap items-center gap-4 mt-4">
+          {/* Timeframe toggle */}
+          <div className="flex items-center gap-1 bg-muted/30 rounded-md p-0.5 border border-card-border">
+            {(["1D", "5D", "1M"] as Timeframe[]).map((tf) => (
+              <button
+                key={tf}
+                onClick={() => setTimeframe(tf)}
+                data-testid={`timeframe-${tf.toLowerCase()}`}
+                className={`px-3 py-1 text-xs font-mono font-semibold rounded transition-all ${
+                  timeframe === tf
+                    ? "bg-[#F07800] text-white"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {tf}
+              </button>
+            ))}
+          </div>
+
+          <div className="w-px h-5 bg-border" />
+
+          {/* Sort toggle */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">Sort by</span>
+            <div className="flex items-center gap-1 bg-muted/30 rounded-md p-0.5 border border-card-border">
+              {([
+                { id: "change", label: "% Change" },
+                { id: "marketcap", label: "Mkt Cap" },
+                { id: "thesis", label: "Thesis" },
+              ] as { id: SortBy; label: string }[]).map((opt) => (
+                <button
+                  key={opt.id}
+                  onClick={() => setSortBy(opt.id)}
+                  data-testid={`sort-${opt.id}`}
+                  className={`px-3 py-1 text-xs font-medium rounded transition-all ${
+                    sortBy === opt.id
+                      ? "bg-muted text-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="flex-1 p-6 space-y-8">
@@ -270,7 +347,7 @@ export default function TheStack() {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 {isLoading
                   ? Array(4).fill(null).map((_, i) => <StockCardSkeleton key={i} />)
-                  : stocks?.map((stock) => (
+                  : sortStocks(stocks ?? [], sortBy).map((stock) => (
                       <StockCard
                         key={stock.ticker}
                         stock={stock}

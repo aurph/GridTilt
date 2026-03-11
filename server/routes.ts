@@ -1,5 +1,7 @@
 import type { Express } from "express";
 import { type Server } from "http";
+import { readFileSync } from "fs";
+import { join } from "path";
 
 // Known company data for portfolio scoring
 const COMPANY_DATABASE: Record<string, {
@@ -72,14 +74,19 @@ function scorePortfolioTicker(ticker: string) {
 }
 
 // Generate realistic sparkline data
-function generateSparkline(basePrice: number, volatility: number = 0.02): number[] {
-  const points = 30;
+function generateSparkline(basePrice: number, volatility: number = 0.02, points: number = 30): number[] {
   const data: number[] = [basePrice];
   for (let i = 1; i < points; i++) {
     const change = data[i - 1] * (1 + (Math.random() - 0.5) * volatility * 2);
     data.push(parseFloat(change.toFixed(2)));
   }
   return data;
+}
+
+function sparklineParamsForTimeframe(tf: string): { points: number; volatility: number } {
+  if (tf === "5D") return { points: 30, volatility: 0.025 };
+  if (tf === "1M") return { points: 60, volatility: 0.035 };
+  return { points: 20, volatility: 0.015 }; // 1D default
 }
 
 // Static market data (fallback when Yahoo Finance is unavailable)
@@ -370,6 +377,8 @@ export async function registerRoutes(
   app.get("/api/stack", async (req, res) => {
     try {
       let stockData: Record<string, any> = {};
+      const timeframe = (req.query.timeframe as string) || "1D";
+      const spParams = sparklineParamsForTimeframe(timeframe);
 
       const allTickers = ["NVDA", "TSM", "AMD", "MU", "EQIX", "DLR", "VRT", "IREN", "CEG", "VST", "CCJ", "NXE"];
 
@@ -391,7 +400,7 @@ export async function registerRoutes(
               changePercent: r.regularMarketChangePercent ?? 0,
               pe: r.trailingPE ?? staticData?.pe ?? null,
               revenueGrowth: staticData?.revenueGrowth ?? null,
-              sparkline: generateSparkline(r.regularMarketPrice),
+              sparkline: generateSparkline(r.regularMarketPrice, spParams.volatility, spParams.points),
               powerMW: staticData?.powerMW,
               vs_sp500: staticData?.vs_sp500,
               marketCapDisplay: staticData?.marketCapDisplay,
@@ -410,7 +419,7 @@ export async function registerRoutes(
             stockData[ticker] = {
               ticker,
               ...s,
-              sparkline: generateSparkline(s.price),
+              sparkline: generateSparkline(s.price, spParams.volatility, spParams.points),
             };
           }
         }
@@ -457,6 +466,34 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Portfolio score error:", error);
       res.status(500).json({ error: "Failed to score portfolio" });
+    }
+  });
+
+  // Headlines endpoint — reads from server/data/news-headlines.json (editable without redeploying)
+  app.get("/api/headlines", (_req, res) => {
+    try {
+      const filePath = join(process.cwd(), "server", "data", "news-headlines.json");
+      const raw = readFileSync(filePath, "utf-8");
+      res.json(JSON.parse(raw));
+    } catch (error) {
+      console.error("Headlines read error:", error);
+      res.json([]);
+    }
+  });
+
+  // Catalysts endpoint — reads from server/data/catalysts.json (editable without redeploying)
+  app.get("/api/catalysts", (_req, res) => {
+    try {
+      const filePath = join(process.cwd(), "server", "data", "catalysts.json");
+      const raw = readFileSync(filePath, "utf-8");
+      const catalysts = JSON.parse(raw);
+      const sorted = catalysts.sort((a: any, b: any) =>
+        new Date(a.date).getTime() - new Date(b.date).getTime()
+      );
+      res.json(sorted);
+    } catch (error) {
+      console.error("Catalysts read error:", error);
+      res.json([]);
     }
   });
 

@@ -1,0 +1,58 @@
+[
+  {
+    "id": 1,
+    "date": "2026-03-19",
+    "title": "NVIDIA Q1 FY2027 Earnings",
+    "category": "Earnings",
+    "thesisImpact": "Blackwell Ultra ramp confirmation is the single biggest near-term signal for the entire AI power supply chain. A beat + forward guidance upgrade accelerates datacenter power procurement timelines at every hyperscaler.",
+    "tickers": ["NVDA", "TSM", "EQIX", "VRT", "CEG"]
+  },
+  {
+    "id": 2,
+    "date": "2026-03-25",
+    "title": "NRC Advanced Reactor Design Review — Oklo Aurora 15 MW Decision",
+    "category": "Regulatory",
+    "thesisImpact": "A full design approval for Oklo's Aurora microreactor would be the first commercial fast spectrum reactor certification in US history. Unlocks tech-company direct ownership of on-site nuclear power plants.",
+    "tickers": ["OKLO", "CEG", "CCJ", "NXE"]
+  },
+  {
+    "id": 3,
+    "date": "2026-04-10",
+    "title": "Constellation Energy Q1 2026 Earnings + Nuclear PPA Update",
+    "category": "Earnings",
+    "thesisImpact": "CEG will disclose progress on Three Mile Island restart timeline and any new hyperscaler nuclear offtake negotiations. Watch for Meta 6.6 GW RFP bid disclosure — a win would be transformative.",
+    "tickers": ["CEG", "NLR", "VST"]
+  },
+  {
+    "id": 4,
+    "date": "2026-04-22",
+    "title": "IRS Section 45U Nuclear Production Tax Credit Final Rules",
+    "category": "Policy",
+    "thesisImpact": "The IRA's $15/MWh nuclear production tax credit final implementation rules determine the economic viability of existing nuclear fleet restarts and new SMR projects. Strong rules significantly lower the cost of power for hyperscaler PPAs.",
+    "tickers": ["CEG", "VST", "ETR", "OKLO", "NXE"]
+  },
+  {
+    "id": 5,
+    "date": "2026-05-06",
+    "title": "MISO 2026/2027 Planning Year Capacity Auction Results",
+    "category": "Market",
+    "thesisImpact": "MISO's most constrained auction in years. Clearing prices directly determine merchant power profitability across the Midwest grid, which serves the largest concentration of US hyperscaler datacenters. A price spike confirms the grid stress thesis.",
+    "tickers": ["VST", "ETR", "CEG", "GE"]
+  },
+  {
+    "id": 6,
+    "date": "2026-05-20",
+    "title": "Uranium Spot Contracting Window Opens — Utility Long-Term Book Build",
+    "category": "Market",
+    "thesisImpact": "US and European utilities typically open 3-5 year uranium supply contracts in Q2. If AI-driven nuclear restarts accelerate new contracting, supply tightness pushes uranium spot above $100/lb, catalyzing CCJ and NXE significantly.",
+    "tickers": ["CCJ", "NXE", "URA", "NLR"]
+  },
+  {
+    "id": 7,
+    "date": "2026-06-15",
+    "title": "DOE National Transmission Planning Study — Grid Capacity Buildout Roadmap",
+    "category": "Policy",
+    "thesisImpact": "The DOE's quadrennial grid study sets the federal investment framework for transmission expansion. AI datacenter load growth has made this the highest-stakes energy planning document since the 1970s oil crisis.",
+    "tickers": ["GE", "ETN", "TSLA", "NEE"]
+  }
+]

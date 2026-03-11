@@ -3,14 +3,15 @@ import {
   ComposedChart,
   Area,
   Line,
+  LineChart,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
   ReferenceLine,
-  Legend,
 } from "recharts";
+import { Link } from "wouter";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -19,7 +20,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Zap, TrendingUp, Activity, AlertTriangle, Info, ArrowUp, ArrowDown } from "lucide-react";
+import { Zap, TrendingUp, Activity, AlertTriangle, Info, ArrowUp, ArrowDown, Calendar, ChevronRight } from "lucide-react";
 
 const electricityData = [
   { year: "2010", demand: 3879, dcDemand: 140, projected: null, dcProjected: null },
@@ -66,6 +67,47 @@ interface KpiData {
     // Grid Stress signals
     vstChange: number; cegChange: number;
   };
+}
+
+interface Catalyst {
+  id: number;
+  date: string;
+  title: string;
+  category: string;
+  tickers: string[];
+}
+
+const CATEGORY_COLORS: Record<string, string> = {
+  Earnings:   "#1E90FF",
+  Regulatory: "#F0A500",
+  Policy:     "#a855f7",
+  Market:     "#F07800",
+};
+
+function daysUntil(dateStr: string): number {
+  const target = new Date(dateStr);
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  target.setHours(0, 0, 0, 0);
+  return Math.round((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+}
+
+function formatDateShort(dateStr: string): string {
+  return new Date(dateStr + "T12:00:00").toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function generateIndexSparkline(baseValue: number, length = 14): { i: number; v: number }[] {
+  const data = [];
+  let v = baseValue;
+  for (let i = 0; i < length; i++) {
+    v = v + (Math.sin(i * 1.3 + baseValue) * 1.2) + (Math.random() - 0.5) * 0.8;
+    v = Math.max(0, Math.min(100, v));
+    data.push({ i, v: parseFloat(v.toFixed(2)) });
+  }
+  return data;
 }
 
 const SECTOR_DEMAND = [
@@ -150,21 +192,25 @@ function KpiCard({
       bg: "bg-muted/25",
       border: "border-card-border",
       value: "text-foreground",
+      sparkColor: "#94a3b8",
     },
     amber: {
       icon: "text-[#F0A500]",
       bg: "bg-[#F0A500]/10",
       border: "border-[#F0A500]/25",
       value: "text-[#F0A500]",
+      sparkColor: "#F0A500",
     },
     red: {
       icon: "text-orange-400",
       bg: "bg-orange-500/10",
       border: "border-orange-500/25",
       value: "text-orange-400",
+      sparkColor: "#F07800",
     },
   };
   const c = colorMap[color];
+  const sparkData = value !== null ? generateIndexSparkline(value) : [];
 
   return (
     <Card className={`p-5 border ${c.border} relative`}>
@@ -190,7 +236,8 @@ function KpiCard({
         {isLoading ? (
           <>
             <Skeleton className="h-9 w-20 mt-1" />
-            <Skeleton className="h-3 w-32 mt-2" />
+            <Skeleton className="h-6 w-full mt-2" />
+            <Skeleton className="h-3 w-32 mt-1" />
           </>
         ) : (
           <>
@@ -200,6 +247,22 @@ function KpiCard({
               </span>
               <span className="text-sm text-muted-foreground mb-1.5">{unit}</span>
             </div>
+            {value !== null && sparkData.length > 0 && (
+              <div className="h-8 -mx-1">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={sparkData}>
+                    <Line
+                      type="monotone"
+                      dataKey="v"
+                      stroke={c.sparkColor}
+                      strokeWidth={1.5}
+                      dot={false}
+                      strokeOpacity={0.6}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            )}
             <p className="text-xs text-muted-foreground leading-snug">
               {subtitle ?? "Derived from live market signals. Hover for methodology."}
             </p>
@@ -210,10 +273,121 @@ function KpiCard({
   );
 }
 
+function ThesisHealthBar({ aiPower, gridStress, nri }: { aiPower: number | null; gridStress: number | null; nri: number | null }) {
+  if (aiPower === null || gridStress === null || nri === null) return null;
+
+  const isAccelerating = aiPower > 78 && gridStress > 70 && nri > 130;
+  const isCooling = aiPower < 68 && gridStress < 55;
+  const status = isAccelerating ? "ACCELERATING" : isCooling ? "COOLING" : "EXPANDING";
+  const statusColor = isAccelerating ? "#F07800" : isCooling ? "#6b7280" : "#F0A500";
+  const statusBg = isAccelerating ? "bg-[#F07800]/10 border-[#F07800]/25" : isCooling ? "bg-muted/20 border-card-border" : "bg-[#F0A500]/10 border-[#F0A500]/20";
+  const description = isAccelerating
+    ? `All three composite indices are elevated. AI power demand is structurally outpacing grid additions. Grid stress at ${gridStress.toFixed(0)}/100 signals near-term regional constraints. The thesis is actively playing out.`
+    : isCooling
+    ? `Index signals have pulled back from peak levels. This may reflect a temporary market rotation or a genuine slowdown in AI infrastructure spending. Monitor hyperscaler capex guidance.`
+    : `The AI power thesis is tracking in-line with the baseline scenario. Demand index above structural baseline (72/100). Nuclear Renaissance Index at ${nri.toFixed(0)} reflects sustained momentum from 2024 PPA activity.`;
+
+  return (
+    <Card className={`p-4 border ${statusBg}`} data-testid="thesis-health-bar">
+      <div className="flex items-start gap-4">
+        <div className="flex-shrink-0">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Thesis Health</p>
+          <div className="flex items-center gap-2">
+            <div className="h-2 w-2 rounded-full animate-pulse" style={{ backgroundColor: statusColor }} />
+            <span className="text-sm font-bold font-mono tracking-wide" style={{ color: statusColor }}>
+              {status}
+            </span>
+          </div>
+        </div>
+        <div className="h-8 w-px bg-border flex-shrink-0" />
+        <p className="text-xs text-muted-foreground leading-relaxed flex-1">{description}</p>
+        <div className="flex gap-4 flex-shrink-0 text-center">
+          {([
+            { label: "AI Demand", val: aiPower, max: 100 },
+            { label: "NRI", val: nri, max: 200 },
+            { label: "Grid Stress", val: gridStress, max: 100 },
+          ] as const).map(({ label, val, max }) => (
+            <div key={label}>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{label}</p>
+              <p className="text-sm font-bold font-mono text-foreground">{val.toFixed(0)}{max === 100 ? "" : ""}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function NextCatalystsWidget({ catalysts }: { catalysts: Catalyst[] }) {
+  const upcoming = catalysts
+    .filter((c) => daysUntil(c.date) >= 0)
+    .slice(0, 3);
+
+  if (upcoming.length === 0) return null;
+
+  return (
+    <Card className="p-5 border-card-border" data-testid="next-catalysts-widget">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <Calendar className="h-3.5 w-3.5 text-[#F0A500]" />
+          <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+            Next Catalysts
+          </h2>
+        </div>
+        <Link
+          href="/catalysts"
+          className="flex items-center gap-1 text-xs text-[#F07800] hover:text-[#F0A500] transition-colors font-medium"
+          data-testid="link-view-all-catalysts"
+        >
+          View All <ChevronRight className="h-3 w-3" />
+        </Link>
+      </div>
+      <div className="space-y-3">
+        {upcoming.map((catalyst) => {
+          const days = daysUntil(catalyst.date);
+          const catColor = CATEGORY_COLORS[catalyst.category] ?? "#9ca3af";
+          return (
+            <div key={catalyst.id} className="flex items-start gap-3" data-testid={`catalyst-preview-${catalyst.id}`}>
+              <div className="text-center flex-shrink-0 w-12">
+                <p className="text-lg font-bold font-mono text-foreground leading-none">{days === 0 ? "0" : days}</p>
+                <p className="text-[10px] text-muted-foreground">{days === 0 ? "TODAY" : "days"}</p>
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                  <p className="text-xs font-medium text-foreground truncate">{catalyst.title}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span
+                    className="text-[10px] font-medium px-1.5 py-0.5 rounded border"
+                    style={{
+                      color: catColor,
+                      backgroundColor: `${catColor}15`,
+                      borderColor: `${catColor}30`,
+                    }}
+                  >
+                    {catalyst.category}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground/60">{formatDateShort(catalyst.date)}</span>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </Card>
+  );
+}
+
 export default function TiltOverview() {
   const { data: kpiData, isLoading } = useQuery<KpiData>({
     queryKey: ["/api/kpis"],
   });
+
+  const { data: catalysts } = useQuery<Catalyst[]>({
+    queryKey: ["/api/catalysts"],
+  });
+
+  const upcomingCatalysts = (catalysts ?? []).filter((c) => daysUntil(c.date) >= 0);
 
   const c = kpiData?.constituents;
 
@@ -323,6 +497,15 @@ export default function TiltOverview() {
             />
           </div>
         </div>
+
+        {/* Thesis Health */}
+        {!isLoading && kpiData && (
+          <ThesisHealthBar
+            aiPower={kpiData.aiPowerIndex}
+            gridStress={kpiData.gridStress}
+            nri={kpiData.nriValue}
+          />
+        )}
 
         {/* Main demand chart */}
         <Card className="p-6 border-card-border">
@@ -544,6 +727,11 @@ export default function TiltOverview() {
             US electricity demand was essentially flat 2010-2022. By 2025, total demand reached ~4,490 TWh, up 15% from the 2022 trough. Data center load is now the fastest-growing sector at +33% YoY in 2025, compressing what was projected to be a decade of growth into three years.
           </p>
         </Card>
+
+        {/* Next Catalysts widget */}
+        {upcomingCatalysts.length > 0 && (
+          <NextCatalystsWidget catalysts={catalysts ?? []} />
+        )}
       </div>
     </div>
   );

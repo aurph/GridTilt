@@ -180,6 +180,20 @@ html {
   animation: count-up 0.6s ease-out forwards;
 }
 
+/* News ticker scroll animation */
+@keyframes ticker-scroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.ticker-scroll {
+  display: inline-block;
+  animation: ticker-scroll 90s linear infinite;
+  padding-left: 1rem;
+}
+.ticker-scroll:hover {
+  animation-play-state: paused;
+}
+
 /**
  * Elevation system
  */

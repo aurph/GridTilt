@@ -1,0 +1,442 @@
+# GridTilt Replit Overhaul Prompt
+
+Copy everything below the line into Replit.
+
+---
+
+## GRIDTILT FULL OVERHAUL — BRANDING, UX POLISH, NEW FEATURES, AND NEXT-LEVEL REFINEMENT
+
+You have full context of the GridTilt codebase and everything currently live at gridtilt.com. This is a comprehensive overhaul prompt. I want you to work through this methodically — section by section, in the order listed. Do not skip ahead. Ask me if anything is ambiguous about the current codebase before building. When you finish each section, confirm what you did before moving to the next.
+
+This is not a redesign from scratch. The bones are good. This is about taking what exists and making it feel like a serious, polished product that an investor would trust with their thesis. Think: the jump from "impressive side project" to "this feels like a real tool."
+
+---
+
+## SECTION 1: BRANDING & VISUAL IDENTITY TIGHTENING
+
+The current design works but needs tightening to feel more cohesive and intentional. The goal is: dark, data-dense, trustworthy, fast. Think Bloomberg Terminal meets a modern SaaS dashboard. Not playful, not startup-y. Professional and information-dense.
+
+**1.1 Color System Audit & Lock**
+
+Review every color currently used across the entire app. Then standardize to a strict palette:
+
+- **Primary background**: The current dark background is good. Lock it in. Make sure it's consistent across every page/tool — no slight variations between pages.
+- **Secondary background**: For cards, panels, sidebars. Should be a slightly lighter shade of the primary. Consistent everywhere.
+- **Accent color (orange)**: GridTilt's orange should be THE accent. Use it for: active states, selected tabs, key data highlights, the news banner (Section 5), hover states, and primary CTAs. Define one exact hex value and use it everywhere. No close-but-not-quite oranges on different pages.
+- **Text hierarchy**:
+  - Primary text (headings, key numbers): White or near-white
+  - Secondary text (labels, descriptions): A muted gray that's clearly readable but not competing with primary text
+  - Tertiary text (timestamps, footnotes): Even more muted
+- **Positive/negative indicators**: Green for up/positive. Red for down/negative. Use the same exact green and red everywhere — stock prices, index movements, grid stress indicators. No mixing of shades.
+- **Borders and dividers**: Subtle. Very subtle. Use opacity-based borders (like `rgba(255,255,255,0.08)`) rather than solid colors. The grid lines should organize content without being visible design elements.
+
+Audit every single page and component. Fix any color inconsistencies. I want someone to be able to screenshot any part of GridTilt and it looks like it belongs to the same product.
+
+**1.2 Typography Tightening**
+
+- Lock in a single font stack for the entire app. Whatever we're using now, make sure it's consistent. No mixing.
+- Numbers should use a tabular/monospace variant or font-feature-settings so columns of numbers align properly. This matters a lot on The Stack and Tilt Overview.
+- Establish a clear type scale: page titles, section headers, card headers, body text, labels, small text. Use it consistently. No arbitrary font sizes.
+
+**1.3 Spacing & Layout Consistency**
+
+- Define a spacing unit (8px base recommended) and use multiples of it everywhere. Padding inside cards, margins between sections, gaps in grids — all should be multiples of the base unit.
+- Every card/panel should have the same border-radius, the same internal padding, the same shadow treatment (if any). No card-by-card variations.
+- Page-level layout should have consistent left/right margins and max-width across all tools.
+
+**1.4 Logo & Header Polish**
+
+- The "GridTilt" wordmark in the header/nav should be clean and recognizable. If it's just text, make sure it's properly weighted and spaced.
+- Navigation between the five tools (Tilt Overview, The Stack, Power Map, Thesis Calculator, Portfolio Overlay) should be crystal clear, well-spaced, and show an active state (orange underline or highlight) for the current page.
+- The header should be fixed/sticky on scroll. It should not take up too much vertical space — data density matters.
+
+---
+
+## SECTION 2: GLOBAL UX IMPROVEMENTS
+
+These apply across the entire app, not to any single tool.
+
+**2.1 Loading States**
+
+Every data-dependent component should have a proper loading state. No blank screens while data loads. Use skeleton loaders (gray shimmer rectangles in the shape of the content) or a minimal spinner. Match the design system.
+
+**2.2 Transitions & Micro-Animations**
+
+Add subtle transitions throughout the app. Nothing flashy. Just polish:
+
+- Page transitions: slight fade or slide when switching between tools
+- Card hover: cards should have a subtle lift effect (slight scale + shadow change) on hover. Not dramatic — 1-2px translate and a slightly stronger shadow. This applies to stock cards on The Stack, facility cards on the Power Map, index cards on Tilt Overview.
+- Number changes: when live prices or index values update, the number should briefly flash or color-pulse (green flash for increase, red for decrease) then settle. Not a full animation — a 200-300ms color transition.
+- Tab/filter selection: smooth transition when switching views, selecting filters, toggling modes.
+- Tooltips: should fade in, not pop. 150ms transition.
+
+**2.3 Hover States (Global)**
+
+Everything that's interactive should have a visible hover state:
+
+- Buttons: slight color shift or brightness change
+- Stock tickers on The Stack: row highlight on hover, maybe slight left-border color accent
+- Map pins on Power Map: see Section 4 for detailed hover behavior
+- Links: color change on hover
+- Cards: lift effect as described above
+- Index cards on Tilt Overview: hover should show a subtle border glow or accent
+
+**2.4 Responsive Polish**
+
+Go through every tool on a mobile viewport (375px width). Fix anything that breaks, overflows, or looks cramped. Specific things to check:
+
+- The Stack table: does it scroll horizontally properly? Are columns prioritized (ticker and price always visible, less important columns scroll)?
+- Power Map: is it usable on mobile? Can you tap pins and see details?
+- Thesis Calculator: do the inputs stack properly? Are sliders usable on touch?
+- Navigation: should collapse to a hamburger or bottom tab bar on mobile.
+
+**2.5 Footer**
+
+Add a clean, minimal footer to every page:
+
+- Left: "GridTilt © 2026 — Power-grid data, at a glance."
+- Right: Links to "About" (can be a simple modal for now), "X/Twitter" (@gridtilt), methodology page
+- Keep it very simple. One line. Muted colors.
+
+---
+
+## SECTION 3: TILT OVERVIEW UPGRADES
+
+**3.1 Index Explainers**
+
+Each of the three composite indices (AI Demand Pressure, Nuclear Renaissance Momentum, Grid Stress) should have a clickable "How is this calculated?" link or info icon. Clicking it opens a panel or modal that explains:
+
+- What data feeds into the index
+- How the weighting works
+- What would cause the index to move up or down
+- A plain-English summary: "This index tracks X by measuring Y, weighted by Z"
+- Source citations for any external data
+
+This is critical for trust. Investors don't use tools they can't verify.
+
+**3.2 Index Trend Indicators**
+
+Each index card should show:
+
+- Current value (large, prominent)
+- Change from previous close (absolute and percentage, colored green/red)
+- A small sparkline or mini-chart showing the last 30 days of the index
+- A subtle arrow indicator (up/down/flat) next to the value
+
+**3.3 "Thesis Health" Summary**
+
+Below the three index cards, add a single-line summary that reads like:
+
+> "Thesis Status: **Accelerating** — 2 of 3 indices trending up over 30 days"
+
+Or: "Thesis Status: **Stable** — indices mixed, no clear directional signal"
+
+Or: "Thesis Status: **Cooling** — 2 of 3 indices trending down over 30 days"
+
+This gives users the instant answer they came for. Color-code the status word (green/yellow/red).
+
+---
+
+## SECTION 4: POWER MAP OVERHAUL
+
+The Power Map is the most differentiated feature. It needs to feel incredible.
+
+**4.1 Hover Effects on Map Pins**
+
+When hovering over a data center pin on the map:
+
+- The pin should scale up slightly (1.2x) and gain a glow effect in the GridTilt orange
+- A tooltip card should appear near the pin showing:
+  - Facility name
+  - Operator (Google, Amazon, Meta, Microsoft, Oracle, etc.)
+  - Location (city, state)
+  - Estimated capacity (MW) — or "Capacity TBD" if unknown
+  - Grid region/RTO (PJM, ERCOT, WECC, etc.)
+  - Status: Operational / Under Construction / Planned (if we have this data)
+- The tooltip should have a subtle drop shadow, match the design system, and disappear smoothly when the mouse moves away
+- On mobile, this should trigger on tap instead of hover. Tapping a pin shows the card; tapping elsewhere dismisses it.
+
+**4.2 Click Behavior**
+
+Clicking a pin (after hovering) could either:
+- Expand the tooltip into a larger detail panel on the side, OR
+- Keep the tooltip but make it "sticky" (stays visible until user clicks elsewhere)
+
+Use your judgment on which feels better. The key: users should be able to explore facility details without the tooltips flickering in and out annoyingly.
+
+**4.3 Filtering System**
+
+Add a filter panel. This can be a sidebar on desktop or a top bar — whatever fits the current layout best. Filters:
+
+- **By operator**: Google, Meta/Facebook, Amazon/AWS, Microsoft/Azure, Oracle, Other. Multi-select checkboxes. Show facility count next to each operator name (e.g., "Google (8)").
+- **By grid region/RTO**: PJM, MISO, ERCOT, WECC, SERC, SPP, NPCC. Multi-select. Counts next to each.
+- **By capacity range**: <100 MW, 100-500 MW, 500+ MW. Or a range slider.
+- **"Clear All"** button to reset.
+- **"Showing X of Y facilities"** counter that updates dynamically.
+
+When filters are applied:
+- Filtered-out pins should fade to ~15% opacity (not disappear entirely — users should still see the full landscape but with filtered pins highlighted)
+- Map should auto-fit to the visible (non-filtered) pins
+- Grid Stress mode should work independently alongside filters
+
+**4.4 URL State for Sharing**
+
+Encode filter state in URL query params so filtered views are shareable:
+`gridtilt.com/power-map?operator=google,amazon&region=pjm`
+
+This is important for content marketing — I want to link to specific filtered views in tweets and LinkedIn posts.
+
+**4.5 Power Map Legend**
+
+Make sure there's a clear, always-visible legend explaining what the pin colors mean (especially in Grid Stress mode). The legend should be compact and not obstruct the map.
+
+---
+
+## SECTION 5: ORANGE NEWS / CATALYST BANNER
+
+This is a new feature. Add a persistent, horizontally-scrolling news ticker/banner at the top of the app (below the main navigation, above the page content). Design:
+
+- **Background**: GridTilt orange (the accent color). This makes it visually distinct and immediately noticeable.
+- **Text**: White, clean, readable. Scrolls horizontally from right to left at a comfortable reading speed.
+- **Content**: Data center and AI infrastructure news headlines. For now, this can be populated from:
+  - An RSS feed from relevant sources (Utility Dive, DatacenterDynamics, Reuters Energy, etc.)
+  - Or manually curated headlines that I update periodically
+  - Or a simple JSON/CMS that I can edit without touching code
+
+  Start with the easiest approach that lets me update headlines without redeploying. A simple admin-editable JSON file or a lightweight CMS/database table works.
+
+- **Format per headline**: "[Source] Headline text — [date]" with a separator (like " | " or " • ") between headlines
+- **Behavior**:
+  - Continuously scrolls. Pauses on hover so users can read.
+  - Clicking a headline opens the source article in a new tab.
+  - On mobile: same scrolling behavior but slightly smaller text.
+  - The banner should be dismissible (small X on the right side). Once dismissed, it stays hidden for the session. But it comes back on the next visit.
+- **Fallback**: If there are no headlines loaded, the banner should not render at all (don't show an empty orange bar).
+
+This serves two purposes: it makes GridTilt feel alive and real-time (not a static dashboard), and it surfaces the news flow that drives the thesis.
+
+---
+
+## SECTION 6: CATALYST TRACKER
+
+New feature. Add a "Catalysts" section — this can be its own page accessible from the nav, or it can be a prominent section on the Tilt Overview page below the indices. My preference is a dedicated section on Tilt Overview, but if it makes the page too long, give it its own nav item.
+
+**What it is**: A timeline or list of upcoming events that could move the AI power thesis. Think of it as an earnings calendar but for the infrastructure theme.
+
+**Content structure per catalyst:**
+
+- **Date** (or date range): When is this expected?
+- **Event name**: What is it? (e.g., "NRC Review of Palisades Nuclear Restart", "PJM Capacity Auction Results", "GE Vernova Q1 Earnings")
+- **Category tag**: One of [Regulatory, Earnings, Policy, Infrastructure, Market]. Color-coded tag.
+- **Thesis impact**: Brief one-line description of why this matters for the AI power thesis. (e.g., "Palisades restart sets precedent for nuclear-AI co-location deals")
+- **Affected stocks/sectors**: Which tickers or Stack sectors are most impacted (e.g., "$CEG, $VST — Nuclear sector")
+
+**Design:**
+
+- Display as a vertical timeline (upcoming events at top, past events below/collapsed)
+- Or display as a clean card list sorted by date
+- Each catalyst card should be compact but informative
+- Past catalysts should show what actually happened (outcome) vs. what was expected — this builds a track record
+
+**Data management:**
+
+- For now, this needs to be manually curated (I'll add catalysts myself)
+- Build a simple way for me to add/edit/remove catalysts without touching code. A simple admin panel, a markdown file that renders, or a database table with a basic form — whatever's fastest.
+- Eventually this could be automated (scraping SEC filings, earnings calendars, NRC dockets), but not now. Manual first.
+
+**Bonus if feasible**: A small "Upcoming Catalysts" widget on the Tilt Overview page showing the next 3-5 catalysts with countdown timers ("PJM Auction Results — 12 days").
+
+---
+
+## SECTION 7: THESIS CALCULATOR OVERHAUL
+
+**7.1 Preset Scenarios**
+
+Add three preset buttons at the top of the calculator: **Conservative | Base Case | Aggressive | Custom**
+
+When a preset is selected, ALL input fields populate with internally consistent assumptions:
+
+**Conservative (35 GW new AI DC capacity by 2030):**
+- Total new capacity: 35 GW
+- Capex per MW: $10-12M (higher cost, tighter supply chain)
+- Generation mix: 60% gas, 15% nuclear, 15% renewables, 10% grid purchases
+- Annual buildout pace: ~5.8 GW/year (derived)
+- Grid interconnection timeline: 4-5 year average
+- Implied transformer demand: derived from GW × units per GW
+
+**Base Case (50 GW):**
+- Total new capacity: 50 GW
+- Capex per MW: $8-10M
+- Generation mix: 50% gas, 25% nuclear, 15% renewables, 10% grid
+- Annual buildout pace: ~8.3 GW/year
+- Interconnection timeline: 3-4 years
+- Transformer demand: derived
+
+**Aggressive (75 GW):**
+- Total new capacity: 75 GW
+- Capex per MW: $7-9M (economies of scale)
+- Generation mix: 40% gas, 35% nuclear, 15% renewables, 10% grid
+- Annual buildout pace: ~12.5 GW/year
+- Interconnection timeline: 2-3 years (assumes regulatory streamlining)
+- Transformer demand: derived
+
+**Validate these numbers** against real data sources. The defaults should be defensible. If you find better numbers from IEA, EIA, McKinsey, DOE, or hyperscaler earnings calls, use those and tell me what you changed and why.
+
+**7.2 Methodology Transparency Panel**
+
+Add a collapsible "Methodology" section below or beside the calculator:
+
+- Where each default number comes from (named sources)
+- How the output calculations work (formulas in plain English)
+- Key sensitivities (which inputs move outputs the most)
+- A note: "All assumptions are adjustable. GridTilt provides the framework — you provide the thesis."
+
+**7.3 Output Improvements**
+
+Calculator outputs should include:
+- Total implied capex for the scenario (GW × $/MW)
+- Implied power generation buildout by type (GW of gas, nuclear, renewables)
+- Transformer/grid hardware demand vs. current US manufacturing capacity (~60 LPTs/year domestic)
+- A simple bar chart showing year-by-year buildout (2025-2030)
+- Clear labeling: what's calculated vs. what's user input
+
+**7.4 UX Details**
+
+- When user modifies any preset field, label changes to "Custom (modified from Base Case)"
+- Input validation: no negative GW, generation mix must sum to 100%, sensible min/max ranges
+- Mobile-responsive — sliders and inputs should work on touch
+- Preset selection should recalculate everything immediately, no "Apply" button needed
+
+---
+
+## SECTION 8: THE STACK IMPROVEMENTS
+
+**8.1 Row Hover Effects**
+
+When hovering over a stock row in The Stack:
+- Row should highlight with a subtle background color change
+- A left-side accent border (orange) should appear
+- Price change should become slightly more prominent
+
+**8.2 Timeframe Toggle**
+
+Add a toggle above The Stack: **1D | 1W | 1M | 3M | YTD | 1Y**
+
+This changes the performance column to show returns over the selected period. Default: 1D.
+
+**8.3 Sparklines**
+
+Add a tiny sparkline chart (30-day price history) to each stock row. This should be small — maybe 60-80px wide. Just enough to show the trend shape. No axis labels needed on the sparkline itself.
+
+**8.4 Sector Headers**
+
+Make sure the sector grouping headers (Nuclear, Uranium, Data Center, Power Hardware, etc.) are visually distinct — slightly larger, maybe with a subtle background tint. They should clearly separate the groups.
+
+**8.5 Sort Options**
+
+Allow sorting by: ticker name, price, daily change %, market cap (if available). Small sort arrows in the column headers.
+
+---
+
+## SECTION 9: PORTFOLIO OVERLAY POLISH
+
+**9.1 Better Input Experience**
+
+- The ticker input should have autocomplete/suggestions as you type
+- After scoring, the result should animate in (not just appear)
+- The thesis score should be large, prominent, and color-coded (high score = green gradient, low = red gradient)
+
+**9.2 Score Breakdown**
+
+Below the headline score, show a breakdown of what contributed to it:
+- Which thesis segments the stock maps to
+- How strong the correlation is to each index
+- A one-line plain-English interpretation: "VST scores 87/100 — strong alignment with the nuclear renaissance thesis due to fleet restart optionality and baseload AI power contracts"
+
+**9.3 Share Card**
+
+After scoring, show a "Share this score" button that generates a clean, branded image/card:
+- GridTilt branding
+- Ticker + score
+- One-line summary
+- "gridtilt.com" watermark
+
+This is designed for social sharing. It should be downloadable as an image or copy-to-clipboard ready. This is a growth feature — people will screenshot these and post them.
+
+---
+
+## SECTION 10: PERFORMANCE & TECHNICAL POLISH
+
+**10.1 Page Load Speed**
+
+Audit the current load time of every page. Target: under 2 seconds for initial meaningful paint on a typical connection. If anything is slow:
+- Lazy-load below-the-fold content
+- Optimize images (if any)
+- Make sure map tiles load progressively
+- Use suspense/skeleton states while data loads
+
+**10.2 SEO Basics**
+
+Make sure every page has:
+- A unique, descriptive `<title>` tag (e.g., "Power Map — AI Data Center Locations by Grid Region | GridTilt")
+- Meta description
+- Open Graph tags for social sharing (when someone shares gridtilt.com on Twitter/LinkedIn, it should show a clean preview card with title, description, and a screenshot image)
+- Proper heading hierarchy (one H1 per page)
+
+**10.3 Open Graph / Social Preview**
+
+This is important for content marketing. When gridtilt.com is shared on social media, the preview card should look professional:
+- Title: "GridTilt — Power-grid data, at a glance"
+- Description: "Track the AI power infrastructure buildout. Live stock prices, data center mapping, scenario modeling, and thesis scoring."
+- Image: A clean, branded screenshot of the Tilt Overview or Power Map (I can provide this, or generate a static OG image). Ideally 1200x630px.
+
+Do the same for each tool page (Power Map, The Stack, etc.) with page-specific OG tags.
+
+**10.4 Error States**
+
+If any data feed fails or API errors out:
+- Don't show a blank component. Show a clean error state: "Data temporarily unavailable. Refreshing..." with an auto-retry
+- Log errors (if Sentry is set up, send them there; if not, console.error is fine for now)
+
+---
+
+## SECTION 11: SMALL BUT IMPORTANT DETAILS
+
+These are quick wins that add up to a much more polished feel:
+
+- **Favicon**: Make sure GridTilt has a proper favicon. If it's just the default Next.js/Replit favicon, replace it with a small GridTilt-branded icon (can be a simple "GT" or a stylized tilt icon in orange on dark).
+- **404 page**: If someone hits a bad URL, show a branded 404 page, not the default. Keep it simple: "Page not found. Back to dashboard." with GridTilt branding.
+- **Keyboard shortcuts** (nice-to-have): If feasible, add shortcuts for power users. `1` for Tilt Overview, `2` for The Stack, `3` for Power Map, etc. Show these in a small "?" help modal.
+- **Last updated timestamps**: Show when data was last refreshed on data-dependent components. "Prices as of 3:42 PM EST" or "Map data updated March 10, 2026."
+- **Smooth scroll**: If any page has internal navigation or anchor links, use smooth scrolling.
+
+---
+
+## BUILD ORDER
+
+Work through these sections in this order:
+
+1. **Section 1** (Branding/Visual) — Do this first because everything else builds on a consistent design system
+2. **Section 2** (Global UX) — Hover states, transitions, loading states. This makes the whole app feel better immediately.
+3. **Section 5** (News Banner) — Quick, high-impact, makes the app feel alive
+4. **Section 3** (Tilt Overview) — Index explainers and thesis health summary
+5. **Section 4** (Power Map) — Hover effects, filtering, URL state
+6. **Section 7** (Thesis Calculator) — Presets, methodology, outputs
+7. **Section 8** (The Stack) — Timeframe toggle, sparklines, sort
+8. **Section 6** (Catalyst Tracker) — New feature, build after existing tools are polished
+9. **Section 9** (Portfolio Overlay) — Share card, score breakdown
+10. **Section 10** (Performance/SEO) — Technical polish pass
+11. **Section 11** (Details) — Favicon, 404, timestamps, etc.
+
+After each section, confirm what you built, flag any issues, and move to the next. If any section will take more than 2-3 hours of work, break it into sub-tasks and check in with me at each checkpoint.
+
+---
+
+## GENERAL RULES
+
+- **Match existing patterns.** Don't introduce new frameworks, libraries, or architectural patterns unless there's a strong reason. Extend what's there.
+- **Mobile matters.** Test every change on a 375px viewport before calling it done.
+- **Performance matters.** Don't add animations or effects that cause jank. Everything should be GPU-accelerated CSS (transform, opacity) where possible.
+- **Data gaps are okay.** If some facilities don't have operator info or MW capacity, use "Unknown" or "TBD." Don't let missing data block the build.
+- **Ask before deciding.** If you're choosing between two approaches and neither is clearly better, ask me. Don't guess.
+- **No placeholder content in production.** If a feature needs real data I haven't provided yet (like catalyst events or news headlines), build the component and wire it to a simple data source I can edit, then leave a clear comment telling me how to add content.
