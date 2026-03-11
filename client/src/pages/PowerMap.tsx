@@ -1,8 +1,11 @@
-import { useState, useMemo, useRef, useCallback } from "react";
+import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import { ComposableMap, Geographies, Geography, Marker } from "react-simple-maps";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { X, Zap, MapPin, Building2, Calendar, Activity, Globe, Network } from "lucide-react";
+import {
+  X, Zap, MapPin, Building2, Calendar, Activity, Globe, Network,
+  SlidersHorizontal, ChevronDown,
+} from "lucide-react";
 
 const GEO_URL = "https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json";
 
@@ -22,54 +25,54 @@ interface DataCenter {
 }
 
 const DATA_CENTERS: DataCenter[] = [
-  { id: 1,  name: "Azure Phoenix Mega Campus",      company: "Microsoft", city: "Phoenix",        state: "AZ", lat: 33.4484, lng: -112.074,  powerMW: 600,  status: "construction", annualMWh: 5256000,  gridOperator: "APS/WECC",           openDate: "2026 Q1" },
-  { id: 2,  name: "Google Midlothian DC",            company: "Google",    city: "Midlothian",     state: "TX", lat: 32.4827, lng: -96.9939,  powerMW: 480,  status: "construction", annualMWh: 4204800,  gridOperator: "ERCOT",              openDate: "2025 Q4" },
-  { id: 3,  name: "AWS US-East-2 Expansion",         company: "Amazon",    city: "Columbus",       state: "OH", lat: 39.9612, lng: -82.9988,  powerMW: 750,  status: "operational",  annualMWh: 6570000,  gridOperator: "PJM",                openDate: "2023" },
-  { id: 4,  name: "Meta DeKalb AI Campus",           company: "Meta",      city: "DeKalb",         state: "IL", lat: 41.9295, lng: -88.7498,  powerMW: 380,  status: "operational",  annualMWh: 3328800,  gridOperator: "MISO",               openDate: "2024 Q2" },
-  { id: 5,  name: "Microsoft Cheyenne Campus",       company: "Microsoft", city: "Cheyenne",       state: "WY", lat: 41.14,   lng: -104.82,   powerMW: 200,  status: "operational",  annualMWh: 1752000,  gridOperator: "WECC",               openDate: "2022" },
-  { id: 6,  name: "Google Reno DC",                  company: "Google",    city: "Reno",           state: "NV", lat: 39.5296, lng: -119.8138, powerMW: 160,  status: "operational",  annualMWh: 1401600,  gridOperator: "NV Energy/WECC",     openDate: "2023" },
-  { id: 7,  name: "Amazon QTS Atlanta",              company: "Amazon",    city: "Atlanta",        state: "GA", lat: 33.749,  lng: -84.388,   powerMW: 420,  status: "operational",  annualMWh: 3679200,  gridOperator: "Southern Co./SERC",  openDate: "2025 Q1" },
-  { id: 8,  name: "Meta Gallatin TN Campus",         company: "Meta",      city: "Gallatin",       state: "TN", lat: 36.388,  lng: -86.4458,  powerMW: 300,  status: "operational",  annualMWh: 2628000,  gridOperator: "TVA/SERC",           openDate: "2023" },
-  { id: 9,  name: "Google Pryor Creek AI DC",        company: "Google",    city: "Pryor Creek",    state: "OK", lat: 36.308,  lng: -95.317,   powerMW: 550,  status: "construction", annualMWh: 4818000,  gridOperator: "SPP",                openDate: "2026 Q2" },
-  { id: 10, name: "Microsoft Goodyear Campus",       company: "Microsoft", city: "Goodyear",       state: "AZ", lat: 33.4353, lng: -112.358,  powerMW: 400,  status: "announced",    annualMWh: 3504000,  gridOperator: "APS/WECC",           openDate: "2027 Q1" },
-  { id: 11, name: "AWS Ashburn HQ Complex",          company: "Amazon",    city: "Ashburn",        state: "VA", lat: 39.09,   lng: -77.52,    powerMW: 900,  status: "operational",  annualMWh: 7884000,  gridOperator: "PJM",                openDate: "2020" },
-  { id: 12, name: "Apple Maiden NC DC",              company: "Apple",     city: "Maiden",         state: "NC", lat: 35.5779, lng: -81.2087,  powerMW: 165,  status: "operational",  annualMWh: 1445400,  gridOperator: "Duke Energy/SERC",   openDate: "2012" },
-  { id: 13, name: "Meta Eagle Mountain Campus",      company: "Meta",      city: "Eagle Mountain", state: "UT", lat: 40.3144, lng: -112.0,    powerMW: 520,  status: "operational",  annualMWh: 4555200,  gridOperator: "Rocky Mtn./WECC",    openDate: "2025 Q2" },
-  { id: 14, name: "Google Corpus Christi",           company: "Google",    city: "Corpus Christi", state: "TX", lat: 27.8006, lng: -97.3964,  powerMW: 350,  status: "construction", annualMWh: 3066000,  gridOperator: "ERCOT",              openDate: "2026 Q3" },
-  { id: 15, name: "Microsoft Quincy WA",             company: "Microsoft", city: "Quincy",         state: "WA", lat: 47.2343, lng: -119.8526, powerMW: 280,  status: "operational",  annualMWh: 2452800,  gridOperator: "BPA/WECC",           openDate: "2020" },
-  { id: 16, name: "Amazon Northlake TX Hub",         company: "Amazon",    city: "Northlake",      state: "TX", lat: 33.0001, lng: -97.2856,  powerMW: 600,  status: "construction", annualMWh: 5256000,  gridOperator: "ERCOT",              openDate: "2026 Q1" },
-  { id: 17, name: "xAI Memphis Colossus Phase 1",   company: "xAI",       city: "Memphis",        state: "TN", lat: 35.1495, lng: -90.049,   powerMW: 200,  status: "operational",  annualMWh: 1752000,  gridOperator: "TVA/SERC",           openDate: "2024 Q3" },
-  { id: 18, name: "Stargate Abilene (OpenAI Ph.1)", company: "OpenAI",    city: "Abilene",        state: "TX", lat: 32.4487, lng: -99.7331,  powerMW: 800,  status: "construction", annualMWh: 7008000,  gridOperator: "ERCOT",              openDate: "2026 Q2" },
-  { id: 19, name: "Google Holland MI DC",            company: "Google",    city: "Holland",        state: "MI", lat: 42.7875, lng: -86.1089,  powerMW: 240,  status: "operational",  annualMWh: 2102400,  gridOperator: "MISO",               openDate: "2021" },
-  { id: 20, name: "Microsoft Boydton VA",            company: "Microsoft", city: "Boydton",        state: "VA", lat: 36.6673, lng: -78.3839,  powerMW: 450,  status: "operational",  annualMWh: 3942000,  gridOperator: "PJM",                openDate: "2019" },
-  { id: 21, name: "Amazon Umatilla OR",              company: "Amazon",    city: "Umatilla",       state: "OR", lat: 45.9165, lng: -119.3403, powerMW: 300,  status: "operational",  annualMWh: 2628000,  gridOperator: "BPA/WECC",           openDate: "2022" },
-  { id: 22, name: "Meta Papillion NE Campus",        company: "Meta",      city: "Papillion",      state: "NE", lat: 41.1533, lng: -96.0422,  powerMW: 180,  status: "operational",  annualMWh: 1576800,  gridOperator: "SPP",                openDate: "2023" },
-  { id: 23, name: "Google Clarksville TN",           company: "Google",    city: "Clarksville",    state: "TN", lat: 36.5298, lng: -87.3595,  powerMW: 520,  status: "announced",    annualMWh: 4555200,  gridOperator: "TVA/SERC",           openDate: "2027 Q2" },
-  { id: 24, name: "Microsoft Mt. Pleasant WI",       company: "Microsoft", city: "Mt. Pleasant",   state: "WI", lat: 42.7094, lng: -87.8895,  powerMW: 320,  status: "announced",    annualMWh: 2803200,  gridOperator: "MISO",               openDate: "2027 Q3" },
-  { id: 25, name: "Oracle Nashville DC",             company: "Oracle",    city: "Nashville",      state: "TN", lat: 36.1627, lng: -86.7816,  powerMW: 150,  status: "operational",  annualMWh: 1314000,  gridOperator: "TVA/SERC",           openDate: "2023" },
-  { id: 26, name: "Stargate Abilene Phase 2",        company: "OpenAI",    city: "Abilene",        state: "TX", lat: 32.46,   lng: -99.71,    powerMW: 500,  status: "announced",    annualMWh: 4380000,  gridOperator: "ERCOT",              openDate: "2027 Q1" },
-  { id: 27, name: "CoreWeave Mebane NC",             company: "CoreWeave", city: "Mebane",         state: "NC", lat: 36.10,   lng: -79.27,    powerMW: 300,  status: "construction", annualMWh: 2628000,  gridOperator: "Duke Energy/SERC",   openDate: "2026 Q2" },
-  { id: 28, name: "Microsoft Altoona IA Campus",     company: "Microsoft", city: "Altoona",        state: "IA", lat: 41.65,   lng: -93.47,    powerMW: 250,  status: "operational",  annualMWh: 2190000,  gridOperator: "MISO",               openDate: "2023" },
-  { id: 29, name: "Amazon Sterling VA Campus",       company: "Amazon",    city: "Sterling",       state: "VA", lat: 38.97,   lng: -77.39,    powerMW: 650,  status: "operational",  annualMWh: 5694000,  gridOperator: "PJM",                openDate: "2022" },
-  { id: 30, name: "Google Council Bluffs IA",        company: "Google",    city: "Council Bluffs", state: "IA", lat: 41.26,   lng: -95.86,    powerMW: 200,  status: "operational",  annualMWh: 1752000,  gridOperator: "MISO",               openDate: "2021" },
-  { id: 31, name: "xAI Memphis Phase 2",             company: "xAI",       city: "Memphis",        state: "TN", lat: 35.17,   lng: -90.07,    powerMW: 800,  status: "construction", annualMWh: 7008000,  gridOperator: "TVA/SERC",           openDate: "2026 Q4" },
-  { id: 32, name: "Microsoft Racine WI Campus",      company: "Microsoft", city: "Racine",         state: "WI", lat: 42.73,   lng: -87.78,    powerMW: 450,  status: "announced",    annualMWh: 3942000,  gridOperator: "MISO",               openDate: "2027 Q4" },
-  { id: 33, name: "Amazon Puget Sound WA",           company: "Amazon",    city: "Seattle",        state: "WA", lat: 47.61,   lng: -122.33,   powerMW: 350,  status: "construction", annualMWh: 3066000,  gridOperator: "BPA/WECC",           openDate: "2026 Q3" },
-  { id: 34, name: "CoreWeave / NVIDIA Secaucus NJ",  company: "CoreWeave", city: "Secaucus",       state: "NJ", lat: 40.79,   lng: -74.06,    powerMW: 180,  status: "operational",  annualMWh: 1576800,  gridOperator: "PJM",                openDate: "2024" },
-  { id: 35, name: "Meta Forest City NC",             company: "Meta",      city: "Forest City",    state: "NC", lat: 35.67,   lng: -81.86,    powerMW: 290,  status: "operational",  annualMWh: 2540400,  gridOperator: "Duke Energy/SERC",   openDate: "2022" },
-  { id: 36, name: "Google The Dalles OR",            company: "Google",    city: "The Dalles",     state: "OR", lat: 45.5946, lng: -121.1787, powerMW: 300,  status: "operational",  annualMWh: 2628000,  gridOperator: "BPA/WECC",           openDate: "2006" },
-  { id: 37, name: "Meta Prineville OR Campus",       company: "Meta",      city: "Prineville",     state: "OR", lat: 44.3010, lng: -120.8347, powerMW: 380,  status: "operational",  annualMWh: 3328800,  gridOperator: "PacifiCorp/WECC",    openDate: "2011" },
-  { id: 38, name: "Google Lenoir NC",                company: "Google",    city: "Lenoir",         state: "NC", lat: 35.9135, lng: -81.5440,  powerMW: 220,  status: "operational",  annualMWh: 1927200,  gridOperator: "Duke Energy/SERC",   openDate: "2007" },
-  { id: 39, name: "Meta New Albany OH Campus",       company: "Meta",      city: "New Albany",     state: "OH", lat: 40.0814, lng: -82.7874,  powerMW: 360,  status: "operational",  annualMWh: 3153600,  gridOperator: "AEP/PJM",            openDate: "2022" },
-  { id: 40, name: "Google Moncks Corner SC",         company: "Google",    city: "Moncks Corner",  state: "SC", lat: 33.1968, lng: -80.0081,  powerMW: 450,  status: "operational",  annualMWh: 3942000,  gridOperator: "Santee Cooper/SERC", openDate: "2019" },
-  { id: 41, name: "Meta Kuna ID Campus",             company: "Meta",      city: "Kuna",           state: "ID", lat: 43.4927, lng: -116.4197, powerMW: 240,  status: "operational",  annualMWh: 2102400,  gridOperator: "Idaho Power/WECC",   openDate: "2012" },
-  { id: 42, name: "Nebius Vineland NJ",              company: "Nebius",    city: "Vineland",       state: "NJ", lat: 39.4868, lng: -75.0256,  powerMW: 300,  status: "operational",  annualMWh: 2628000,  gridOperator: "PJM",                openDate: "2025" },
-  { id: 43, name: "Nebius Independence MO",          company: "Nebius",    city: "Independence",   state: "MO", lat: 39.0917, lng: -94.4140,  powerMW: 800,  status: "construction", annualMWh: 7008000,  gridOperator: "MISO/KCP&L",         openDate: "2027 Q1" },
-  { id: 44, name: "Meta Hyperion Louisiana",         company: "Meta",      city: "Richland Parish", state: "LA", lat: 32.4680, lng: -91.6100,  powerMW: 1000, status: "construction", annualMWh: 8760000,  gridOperator: "Entergy/SERC",       openDate: "2028" },
-  { id: 45, name: "AWS Project Rainier",             company: "Amazon",    city: "New Carlisle",   state: "IN", lat: 41.7017, lng: -86.5039,  powerMW: 800,  status: "construction", annualMWh: 7008000,  gridOperator: "NIPSCO/MISO",        openDate: "2026 Q4" },
-  { id: 46, name: "CoreWeave Ellendale ND",          company: "CoreWeave", city: "Ellendale",      state: "ND", lat: 46.0026, lng: -98.5274,  powerMW: 400,  status: "construction", annualMWh: 3504000,  gridOperator: "MISO",               openDate: "2026 Q2" },
+  { id: 1,  name: "Azure Phoenix Mega Campus",      company: "Microsoft", city: "Phoenix",        state: "AZ", lat: 33.4484, lng: -112.074,  powerMW: 600,  status: "construction", annualMWh: 5256000,  gridOperator: "APS/WECC",              openDate: "2026 Q1" },
+  { id: 2,  name: "Google Midlothian DC",            company: "Google",    city: "Midlothian",     state: "TX", lat: 32.4827, lng: -96.9939,  powerMW: 480,  status: "construction", annualMWh: 4204800,  gridOperator: "ERCOT",                 openDate: "2025 Q4" },
+  { id: 3,  name: "AWS US-East-2 Expansion",         company: "Amazon",    city: "Columbus",       state: "OH", lat: 39.9612, lng: -82.9988,  powerMW: 750,  status: "operational",  annualMWh: 6570000,  gridOperator: "PJM",                   openDate: "2023" },
+  { id: 4,  name: "Meta DeKalb AI Campus",           company: "Meta",      city: "DeKalb",         state: "IL", lat: 41.9295, lng: -88.7498,  powerMW: 380,  status: "operational",  annualMWh: 3328800,  gridOperator: "MISO",                  openDate: "2024 Q2" },
+  { id: 5,  name: "Microsoft Cheyenne Campus",       company: "Microsoft", city: "Cheyenne",       state: "WY", lat: 41.14,   lng: -104.82,   powerMW: 200,  status: "operational",  annualMWh: 1752000,  gridOperator: "WECC",                  openDate: "2022" },
+  { id: 6,  name: "Google Reno DC",                  company: "Google",    city: "Reno",           state: "NV", lat: 39.5296, lng: -119.8138, powerMW: 160,  status: "operational",  annualMWh: 1401600,  gridOperator: "NV Energy/WECC",        openDate: "2023" },
+  { id: 7,  name: "Amazon QTS Atlanta",              company: "Amazon",    city: "Atlanta",        state: "GA", lat: 33.749,  lng: -84.388,   powerMW: 420,  status: "operational",  annualMWh: 3679200,  gridOperator: "Southern Co./SERC",     openDate: "2025 Q1" },
+  { id: 8,  name: "Meta Gallatin TN Campus",         company: "Meta",      city: "Gallatin",       state: "TN", lat: 36.388,  lng: -86.4458,  powerMW: 300,  status: "operational",  annualMWh: 2628000,  gridOperator: "TVA/SERC",              openDate: "2023" },
+  { id: 9,  name: "Google Pryor Creek AI DC",        company: "Google",    city: "Pryor Creek",    state: "OK", lat: 36.308,  lng: -95.317,   powerMW: 550,  status: "construction", annualMWh: 4818000,  gridOperator: "SPP",                   openDate: "2026 Q2" },
+  { id: 10, name: "Microsoft Goodyear Campus",       company: "Microsoft", city: "Goodyear",       state: "AZ", lat: 33.4353, lng: -112.358,  powerMW: 400,  status: "announced",    annualMWh: 3504000,  gridOperator: "APS/WECC",              openDate: "2027 Q1" },
+  { id: 11, name: "AWS Ashburn HQ Complex",          company: "Amazon",    city: "Ashburn",        state: "VA", lat: 39.09,   lng: -77.52,    powerMW: 900,  status: "operational",  annualMWh: 7884000,  gridOperator: "PJM",                   openDate: "2020" },
+  { id: 12, name: "Apple Maiden NC DC",              company: "Apple",     city: "Maiden",         state: "NC", lat: 35.5779, lng: -81.2087,  powerMW: 165,  status: "operational",  annualMWh: 1445400,  gridOperator: "Duke Energy/SERC",      openDate: "2012" },
+  { id: 13, name: "Meta Eagle Mountain Campus",      company: "Meta",      city: "Eagle Mountain", state: "UT", lat: 40.3144, lng: -112.0,    powerMW: 520,  status: "operational",  annualMWh: 4555200,  gridOperator: "Rocky Mtn./WECC",       openDate: "2025 Q2" },
+  { id: 14, name: "Google Corpus Christi",           company: "Google",    city: "Corpus Christi", state: "TX", lat: 27.8006, lng: -97.3964,  powerMW: 350,  status: "construction", annualMWh: 3066000,  gridOperator: "ERCOT",                 openDate: "2026 Q3" },
+  { id: 15, name: "Microsoft Quincy WA",             company: "Microsoft", city: "Quincy",         state: "WA", lat: 47.2343, lng: -119.8526, powerMW: 280,  status: "operational",  annualMWh: 2452800,  gridOperator: "BPA/WECC",              openDate: "2020" },
+  { id: 16, name: "Amazon Northlake TX Hub",         company: "Amazon",    city: "Northlake",      state: "TX", lat: 33.0001, lng: -97.2856,  powerMW: 600,  status: "construction", annualMWh: 5256000,  gridOperator: "ERCOT",                 openDate: "2026 Q1" },
+  { id: 17, name: "xAI Memphis Colossus Phase 1",   company: "xAI",       city: "Memphis",        state: "TN", lat: 35.1495, lng: -90.049,   powerMW: 200,  status: "operational",  annualMWh: 1752000,  gridOperator: "TVA/SERC",              openDate: "2024 Q3" },
+  { id: 18, name: "Stargate Abilene (OpenAI Ph.1)", company: "OpenAI",    city: "Abilene",        state: "TX", lat: 32.4487, lng: -99.7331,  powerMW: 800,  status: "construction", annualMWh: 7008000,  gridOperator: "ERCOT",                 openDate: "2026 Q2" },
+  { id: 19, name: "Google Holland MI DC",            company: "Google",    city: "Holland",        state: "MI", lat: 42.7875, lng: -86.1089,  powerMW: 240,  status: "operational",  annualMWh: 2102400,  gridOperator: "MISO",                  openDate: "2021" },
+  { id: 20, name: "Microsoft Boydton VA",            company: "Microsoft", city: "Boydton",        state: "VA", lat: 36.6673, lng: -78.3839,  powerMW: 450,  status: "operational",  annualMWh: 3942000,  gridOperator: "PJM",                   openDate: "2019" },
+  { id: 21, name: "Amazon Umatilla OR",              company: "Amazon",    city: "Umatilla",       state: "OR", lat: 45.9165, lng: -119.3403, powerMW: 300,  status: "operational",  annualMWh: 2628000,  gridOperator: "BPA/WECC",              openDate: "2022" },
+  { id: 22, name: "Meta Papillion NE Campus",        company: "Meta",      city: "Papillion",      state: "NE", lat: 41.1533, lng: -96.0422,  powerMW: 180,  status: "operational",  annualMWh: 1576800,  gridOperator: "SPP",                   openDate: "2023" },
+  { id: 23, name: "Google Clarksville TN",           company: "Google",    city: "Clarksville",    state: "TN", lat: 36.5298, lng: -87.3595,  powerMW: 520,  status: "announced",    annualMWh: 4555200,  gridOperator: "TVA/SERC",              openDate: "2027 Q2" },
+  { id: 24, name: "Microsoft Mt. Pleasant WI",       company: "Microsoft", city: "Mt. Pleasant",   state: "WI", lat: 42.7094, lng: -87.8895,  powerMW: 320,  status: "announced",    annualMWh: 2803200,  gridOperator: "MISO",                  openDate: "2027 Q3" },
+  { id: 25, name: "Oracle Nashville DC",             company: "Oracle",    city: "Nashville",      state: "TN", lat: 36.1627, lng: -86.7816,  powerMW: 150,  status: "operational",  annualMWh: 1314000,  gridOperator: "TVA/SERC",              openDate: "2023" },
+  { id: 26, name: "Stargate Abilene Phase 2",        company: "OpenAI",    city: "Abilene",        state: "TX", lat: 32.46,   lng: -99.71,    powerMW: 500,  status: "announced",    annualMWh: 4380000,  gridOperator: "ERCOT",                 openDate: "2027 Q1" },
+  { id: 27, name: "CoreWeave Mebane NC",             company: "CoreWeave", city: "Mebane",         state: "NC", lat: 36.10,   lng: -79.27,    powerMW: 300,  status: "construction", annualMWh: 2628000,  gridOperator: "Duke Energy/SERC",      openDate: "2026 Q2" },
+  { id: 28, name: "Microsoft Altoona IA Campus",     company: "Microsoft", city: "Altoona",        state: "IA", lat: 41.65,   lng: -93.47,    powerMW: 250,  status: "operational",  annualMWh: 2190000,  gridOperator: "MISO",                  openDate: "2023" },
+  { id: 29, name: "Amazon Sterling VA Campus",       company: "Amazon",    city: "Sterling",       state: "VA", lat: 38.97,   lng: -77.39,    powerMW: 650,  status: "operational",  annualMWh: 5694000,  gridOperator: "PJM",                   openDate: "2022" },
+  { id: 30, name: "Google Council Bluffs IA",        company: "Google",    city: "Council Bluffs", state: "IA", lat: 41.26,   lng: -95.86,    powerMW: 200,  status: "operational",  annualMWh: 1752000,  gridOperator: "MISO",                  openDate: "2021" },
+  { id: 31, name: "xAI Memphis Phase 2",             company: "xAI",       city: "Memphis",        state: "TN", lat: 35.17,   lng: -90.07,    powerMW: 800,  status: "construction", annualMWh: 7008000,  gridOperator: "TVA/SERC",              openDate: "2026 Q4" },
+  { id: 32, name: "Microsoft Racine WI Campus",      company: "Microsoft", city: "Racine",         state: "WI", lat: 42.73,   lng: -87.78,    powerMW: 450,  status: "announced",    annualMWh: 3942000,  gridOperator: "MISO",                  openDate: "2027 Q4" },
+  { id: 33, name: "Amazon Puget Sound WA",           company: "Amazon",    city: "Seattle",        state: "WA", lat: 47.61,   lng: -122.33,   powerMW: 350,  status: "construction", annualMWh: 3066000,  gridOperator: "BPA/WECC",              openDate: "2026 Q3" },
+  { id: 34, name: "CoreWeave / NVIDIA Secaucus NJ",  company: "CoreWeave", city: "Secaucus",       state: "NJ", lat: 40.79,   lng: -74.06,    powerMW: 180,  status: "operational",  annualMWh: 1576800,  gridOperator: "PJM",                   openDate: "2024" },
+  { id: 35, name: "Meta Forest City NC",             company: "Meta",      city: "Forest City",    state: "NC", lat: 35.67,   lng: -81.86,    powerMW: 290,  status: "operational",  annualMWh: 2540400,  gridOperator: "Duke Energy/SERC",      openDate: "2022" },
+  { id: 36, name: "Google The Dalles OR",            company: "Google",    city: "The Dalles",     state: "OR", lat: 45.5946, lng: -121.1787, powerMW: 300,  status: "operational",  annualMWh: 2628000,  gridOperator: "BPA/WECC",              openDate: "2006" },
+  { id: 37, name: "Meta Prineville OR Campus",       company: "Meta",      city: "Prineville",     state: "OR", lat: 44.3010, lng: -120.8347, powerMW: 380,  status: "operational",  annualMWh: 3328800,  gridOperator: "PacifiCorp/WECC",       openDate: "2011" },
+  { id: 38, name: "Google Lenoir NC",                company: "Google",    city: "Lenoir",         state: "NC", lat: 35.9135, lng: -81.5440,  powerMW: 220,  status: "operational",  annualMWh: 1927200,  gridOperator: "Duke Energy/SERC",      openDate: "2007" },
+  { id: 39, name: "Meta New Albany OH Campus",       company: "Meta",      city: "New Albany",     state: "OH", lat: 40.0814, lng: -82.7874,  powerMW: 360,  status: "operational",  annualMWh: 3153600,  gridOperator: "AEP/PJM",               openDate: "2022" },
+  { id: 40, name: "Google Moncks Corner SC",         company: "Google",    city: "Moncks Corner",  state: "SC", lat: 33.1968, lng: -80.0081,  powerMW: 450,  status: "operational",  annualMWh: 3942000,  gridOperator: "Santee Cooper/SERC",    openDate: "2019" },
+  { id: 41, name: "Meta Kuna ID Campus",             company: "Meta",      city: "Kuna",           state: "ID", lat: 43.4927, lng: -116.4197, powerMW: 240,  status: "operational",  annualMWh: 2102400,  gridOperator: "Idaho Power/WECC",      openDate: "2012" },
+  { id: 42, name: "Nebius Vineland NJ",              company: "Nebius",    city: "Vineland",       state: "NJ", lat: 39.4868, lng: -75.0256,  powerMW: 300,  status: "operational",  annualMWh: 2628000,  gridOperator: "PJM",                   openDate: "2025" },
+  { id: 43, name: "Nebius Independence MO",          company: "Nebius",    city: "Independence",   state: "MO", lat: 39.0917, lng: -94.4140,  powerMW: 800,  status: "construction", annualMWh: 7008000,  gridOperator: "MISO/KCP&L",            openDate: "2027 Q1" },
+  { id: 44, name: "Meta Hyperion Louisiana",         company: "Meta",      city: "Richland Parish", state: "LA", lat: 32.4680, lng: -91.6100, powerMW: 1000, status: "construction", annualMWh: 8760000,  gridOperator: "Entergy/SERC",          openDate: "2028" },
+  { id: 45, name: "AWS Project Rainier",             company: "Amazon",    city: "New Carlisle",   state: "IN", lat: 41.7017, lng: -86.5039,  powerMW: 800,  status: "construction", annualMWh: 7008000,  gridOperator: "NIPSCO/MISO",           openDate: "2026 Q4" },
+  { id: 46, name: "CoreWeave Ellendale ND",          company: "CoreWeave", city: "Ellendale",      state: "ND", lat: 46.0026, lng: -98.5274,  powerMW: 400,  status: "construction", annualMWh: 3504000,  gridOperator: "MISO",                  openDate: "2026 Q2" },
   { id: 47, name: "Stargate Santa Teresa NM",        company: "OpenAI",    city: "Santa Teresa",   state: "NM", lat: 31.9176, lng: -106.7118, powerMW: 500,  status: "construction", annualMWh: 4380000,  gridOperator: "El Paso Electric/WECC", openDate: "2027 Q1" },
-  { id: 48, name: "AWS Susquehanna PA",              company: "Amazon",    city: "Salem Township", state: "PA", lat: 41.0570, lng: -76.3488,  powerMW: 800,  status: "construction", annualMWh: 7008000,  gridOperator: "PPL/PJM",            openDate: "2026 Q3" },
+  { id: 48, name: "AWS Susquehanna PA",              company: "Amazon",    city: "Salem Township", state: "PA", lat: 41.0570, lng: -76.3488,  powerMW: 800,  status: "construction", annualMWh: 7008000,  gridOperator: "PPL/PJM",               openDate: "2026 Q3" },
 ];
 
 const STATE_TO_RTO: Record<string, string> = {
@@ -113,7 +116,7 @@ const RTO_CONFIG: Record<string, RTOConfig> = {
 
 function gridOpToRTO(op: string): string {
   const o = op.toLowerCase();
-  if (o.includes("pjm") || o.includes("ppl")) return "PJM";
+  if (o.includes("pjm") || o.includes("ppl") || o.includes("aep")) return "PJM";
   if (o.includes("miso") || o.includes("nipsco") || o.includes("kcp")) return "MISO";
   if (o.includes("ercot")) return "ERCOT";
   if (o.includes("tva") || o.includes("southern") || o.includes("duke") || o.includes("serc") ||
@@ -154,14 +157,43 @@ function getStatusBadge(status: DataCenter["status"]) {
   return map[status];
 }
 
+function parseFiltersFromURL(): { companies: string[]; rtos: string[]; capacity: string } {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    return {
+      companies: params.get("companies")?.split(",").filter(Boolean) ?? [],
+      rtos:      params.get("rtos")?.split(",").filter(Boolean) ?? [],
+      capacity:  params.get("capacity") ?? "all",
+    };
+  } catch {
+    return { companies: [], rtos: [], capacity: "all" };
+  }
+}
+
+function pushFiltersToURL(companies: string[], rtos: string[], capacity: string) {
+  try {
+    const params = new URLSearchParams();
+    if (companies.length) params.set("companies", companies.join(","));
+    if (rtos.length) params.set("rtos", rtos.join(","));
+    if (capacity !== "all") params.set("capacity", capacity);
+    const qs = params.toString();
+    window.history.replaceState(null, "", qs ? `?${qs}` : window.location.pathname);
+  } catch {}
+}
+
 type ViewMode = "dc" | "stress";
 
 export default function PowerMap() {
-  const [selected, setSelected] = useState<DataCenter | null>(null);
-  const [filter, setFilter] = useState<string>("all");
-  const [viewMode, setViewMode] = useState<ViewMode>("dc");
-  const [hoveredId, setHoveredId] = useState<number | null>(null);
-  const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null);
+  const initialFilters = useMemo(() => parseFiltersFromURL(), []);
+
+  const [selected, setSelected]           = useState<DataCenter | null>(null);
+  const [viewMode, setViewMode]           = useState<ViewMode>("dc");
+  const [hoveredId, setHoveredId]         = useState<number | null>(null);
+  const [tooltipPos, setTooltipPos]       = useState<{ x: number; y: number } | null>(null);
+  const [filterCompanies, setFilterCompanies] = useState<string[]>(initialFilters.companies);
+  const [filterRTOs, setFilterRTOs]       = useState<string[]>(initialFilters.rtos);
+  const [filterCapacity, setFilterCapacity]   = useState<string>(initialFilters.capacity);
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const mapContainerRef = useRef<HTMLDivElement>(null);
 
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
@@ -172,8 +204,77 @@ export default function PowerMap() {
 
   const hoveredDC = hoveredId != null ? DATA_CENTERS.find((d) => d.id === hoveredId) ?? null : null;
 
-  const companies = ["all", ...Array.from(new Set(DATA_CENTERS.map((d) => d.company))).sort()];
-  const filtered = filter === "all" ? DATA_CENTERS : DATA_CENTERS.filter((d) => d.company === filter);
+  function passesFilter(dc: DataCenter): boolean {
+    if (filterCompanies.length > 0 && !filterCompanies.includes(dc.company)) return false;
+    if (filterRTOs.length > 0 && !filterRTOs.includes(gridOpToRTO(dc.gridOperator))) return false;
+    if (filterCapacity === "small"  && dc.powerMW >= 100) return false;
+    if (filterCapacity === "medium" && (dc.powerMW < 100 || dc.powerMW > 500)) return false;
+    if (filterCapacity === "large"  && dc.powerMW <= 500) return false;
+    return true;
+  }
+
+  function toggleCompany(c: string) {
+    const next = filterCompanies.includes(c)
+      ? filterCompanies.filter((x) => x !== c)
+      : [...filterCompanies, c];
+    setFilterCompanies(next);
+    pushFiltersToURL(next, filterRTOs, filterCapacity);
+  }
+
+  function toggleRTO(rto: string) {
+    const next = filterRTOs.includes(rto)
+      ? filterRTOs.filter((x) => x !== rto)
+      : [...filterRTOs, rto];
+    setFilterRTOs(next);
+    pushFiltersToURL(filterCompanies, next, filterCapacity);
+  }
+
+  function setCapacity(cap: string) {
+    setFilterCapacity(cap);
+    pushFiltersToURL(filterCompanies, filterRTOs, cap);
+  }
+
+  function clearAllFilters() {
+    setFilterCompanies([]);
+    setFilterRTOs([]);
+    setFilterCapacity("all");
+    pushFiltersToURL([], [], "all");
+    setMobileFiltersOpen(false);
+  }
+
+  const activeFilterCount = filterCompanies.length + filterRTOs.length + (filterCapacity !== "all" ? 1 : 0);
+  const anyFilterActive = activeFilterCount > 0;
+
+  const filteredCount = useMemo(() => {
+    return DATA_CENTERS.filter((dc) => {
+      if (filterCompanies.length > 0 && !filterCompanies.includes(dc.company)) return false;
+      if (filterRTOs.length > 0 && !filterRTOs.includes(gridOpToRTO(dc.gridOperator))) return false;
+      if (filterCapacity === "small"  && dc.powerMW >= 100) return false;
+      if (filterCapacity === "medium" && (dc.powerMW < 100 || dc.powerMW > 500)) return false;
+      if (filterCapacity === "large"  && dc.powerMW <= 500) return false;
+      return true;
+    }).length;
+  }, [filterCompanies, filterRTOs, filterCapacity]);
+
+  const allCompanies = useMemo(
+    () => [...new Set(DATA_CENTERS.map((d) => d.company))].sort(),
+    []
+  );
+
+  const companyCounts = useMemo(() => {
+    const m: Record<string, number> = {};
+    DATA_CENTERS.forEach((dc) => { m[dc.company] = (m[dc.company] ?? 0) + 1; });
+    return m;
+  }, []);
+
+  const rtoCounts = useMemo(() => {
+    const m: Record<string, number> = {};
+    DATA_CENTERS.forEach((dc) => {
+      const rto = gridOpToRTO(dc.gridOperator);
+      m[rto] = (m[rto] ?? 0) + 1;
+    });
+    return m;
+  }, []);
 
   const announced = DATA_CENTERS.filter((d) => d.status === "announced");
 
@@ -205,9 +306,11 @@ export default function PowerMap() {
     return base.replace(/[\d.]+\)$/, (m) => String(Math.min(parseFloat(m) * 2.2, 0.55)) + ")");
   }
 
-  const selectedRTO    = selected ? gridOpToRTO(selected.gridOperator) : null;
-  const selectedRTOCfg = selectedRTO ? RTO_CONFIG[selectedRTO] : null;
+  const selectedRTO     = selected ? gridOpToRTO(selected.gridOperator) : null;
+  const selectedRTOCfg  = selectedRTO ? RTO_CONFIG[selectedRTO] : null;
   const selectedRTOLoad = selectedRTO ? (rtoLoadMW[selectedRTO] ?? 0) : 0;
+
+  const ALL_RTOS = ["PJM", "MISO", "ERCOT", "WECC", "SERC", "SPP", "NPCC"] as const;
 
   return (
     <div className="flex flex-col h-full overflow-y-auto">
@@ -288,6 +391,129 @@ export default function PowerMap() {
         </div>
       </div>
 
+      {/* ── FILTER BAR (desktop) ── */}
+      <div className="border-b border-border bg-card/40 px-4 py-2.5 hidden lg:block" data-testid="filter-bar-desktop">
+        <div className="flex items-start gap-4 flex-wrap">
+          {/* Operator filter */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-wider whitespace-nowrap">Operator</span>
+            {allCompanies.map((c) => {
+              const active = filterCompanies.includes(c);
+              const color = companyColors[c] ?? "#666";
+              return (
+                <button
+                  key={c}
+                  data-testid={`filter-company-${c.toLowerCase().replace(/\s+/g, "-")}`}
+                  onClick={() => toggleCompany(c)}
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-[11px] font-medium border transition-all ${
+                    active
+                      ? "border-[#F0A500]/60 bg-[#F0A500]/10 text-foreground"
+                      : "border-border/50 bg-muted/20 text-muted-foreground hover:text-foreground hover:border-border"
+                  }`}
+                >
+                  <div className="h-1.5 w-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
+                  {c}
+                  <span className="text-[10px] font-mono opacity-60">({companyCounts[c] ?? 0})</span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="w-px h-5 bg-border/50 self-center hidden xl:block" />
+
+          {/* RTO filter */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-wider whitespace-nowrap">Grid Region</span>
+            {ALL_RTOS.map((rto) => {
+              const active = filterRTOs.includes(rto);
+              const color = RTO_CONFIG[rto]?.legendColor ?? "#666";
+              return (
+                <button
+                  key={rto}
+                  data-testid={`filter-rto-${rto.toLowerCase()}`}
+                  onClick={() => toggleRTO(rto)}
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-[11px] font-medium border transition-all ${
+                    active
+                      ? "border-[#F0A500]/60 bg-[#F0A500]/10 text-foreground"
+                      : "border-border/50 bg-muted/20 text-muted-foreground hover:text-foreground hover:border-border"
+                  }`}
+                >
+                  <div className="h-1.5 w-1.5 rounded-sm flex-shrink-0" style={{ backgroundColor: color, opacity: 0.85 }} />
+                  {rto}
+                  <span className="text-[10px] font-mono opacity-60">({rtoCounts[rto] ?? 0})</span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="w-px h-5 bg-border/50 self-center hidden xl:block" />
+
+          {/* Capacity filter */}
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-wider whitespace-nowrap">Capacity</span>
+            {[
+              { key: "all",    label: "All" },
+              { key: "small",  label: "<100 MW" },
+              { key: "medium", label: "100-500 MW" },
+              { key: "large",  label: "500+ MW" },
+            ].map(({ key, label }) => (
+              <button
+                key={key}
+                data-testid={`filter-capacity-${key}`}
+                onClick={() => setCapacity(key)}
+                className={`px-2.5 py-1 rounded text-[11px] font-medium border transition-all ${
+                  filterCapacity === key
+                    ? "border-[#F0A500]/60 bg-[#F0A500]/10 text-foreground"
+                    : "border-border/50 bg-muted/20 text-muted-foreground hover:text-foreground hover:border-border"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {/* Count + Clear */}
+          <div className="flex items-center gap-3 ml-auto flex-shrink-0">
+            <span
+              className={`text-[11px] font-mono ${anyFilterActive ? "text-[#F0A500]" : "text-muted-foreground/60"}`}
+              data-testid="filter-count-label"
+            >
+              {anyFilterActive ? `Showing ${filteredCount} of ${DATA_CENTERS.length}` : `All ${DATA_CENTERS.length} facilities`}
+            </span>
+            {anyFilterActive && (
+              <button
+                onClick={clearAllFilters}
+                data-testid="filter-clear-all"
+                className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground border border-border/60 rounded px-2 py-1 transition-colors"
+              >
+                <X className="h-3 w-3" />
+                Clear
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ── FILTER BAR (mobile) ── */}
+      <div className="border-b border-border bg-card/40 px-4 py-2.5 flex items-center justify-between lg:hidden">
+        <button
+          data-testid="filter-mobile-toggle"
+          onClick={() => setMobileFiltersOpen(true)}
+          className="flex items-center gap-2 text-xs text-muted-foreground border border-border/60 rounded px-3 py-1.5 bg-muted/20"
+        >
+          <SlidersHorizontal className="h-3.5 w-3.5" />
+          Filters
+          {activeFilterCount > 0 && (
+            <span className="bg-[#F0A500] text-black text-[10px] font-bold rounded-full px-1.5 py-0.5 leading-none">
+              {activeFilterCount}
+            </span>
+          )}
+        </button>
+        <span className="text-[11px] font-mono text-muted-foreground/60" data-testid="filter-count-label-mobile">
+          {anyFilterActive ? `${filteredCount} of ${DATA_CENTERS.length}` : `${DATA_CENTERS.length} facilities`}
+        </span>
+      </div>
+
       <div className="flex-1 flex flex-col lg:flex-row">
         {/* Map area */}
         <div
@@ -297,22 +523,6 @@ export default function PowerMap() {
           onMouseMove={handleMouseMove}
           onMouseLeave={() => { setHoveredId(null); setTooltipPos(null); }}
         >
-          {/* Company filter */}
-          <div className="absolute top-4 left-4 z-10 flex flex-wrap gap-1.5 max-w-[calc(100%-130px)]">
-            {companies.map((c) => (
-              <Button
-                key={c}
-                size="sm"
-                variant={filter === c ? "default" : "secondary"}
-                className="h-7 text-xs px-2.5"
-                onClick={() => setFilter(c)}
-                data-testid={`filter-${c}`}
-              >
-                {c === "all" ? "All" : c}
-              </Button>
-            ))}
-          </div>
-
           {/* View mode toggle */}
           <div className="absolute top-4 right-4 z-10 flex rounded-md overflow-hidden border border-border text-xs font-mono">
             <button
@@ -366,30 +576,33 @@ export default function PowerMap() {
               }
             </Geographies>
 
-            {filtered.map((dc) => {
+            {DATA_CENTERS.map((dc) => {
+              const passes = passesFilter(dc);
               const isAnnounced = dc.status === "announced";
               const isSelected = selected?.id === dc.id;
               const isHovered = hoveredId === dc.id;
               const r = viewMode === "stress"
                 ? Math.sqrt(dc.powerMW / 30) + 2
                 : Math.sqrt(dc.powerMW / 30) + 4;
-              const fillOpacity = viewMode === "stress"
-                ? (isAnnounced ? 0.22 : 0.5)
-                : isSelected
-                  ? 1
-                  : isAnnounced
-                    ? 0.28
-                    : isHovered ? 0.95 : 0.78;
+
+              const fillOpacity = !passes
+                ? 0.12
+                : viewMode === "stress"
+                  ? (isAnnounced ? 0.22 : 0.5)
+                  : isSelected ? 1 : isAnnounced ? 0.28 : isHovered ? 0.95 : 0.78;
+
               const dotColor = getDotColor(dc.powerMW);
 
               return (
                 <Marker
                   key={dc.id}
                   coordinates={[dc.lng, dc.lat]}
-                  onClick={() => { setSelected(dc); setHoveredId(null); setTooltipPos(null); }}
+                  onClick={() => {
+                    if (passes) { setSelected(dc); setHoveredId(null); setTooltipPos(null); }
+                  }}
                 >
                   {/* Outer dashed ring for announced */}
-                  {isAnnounced && viewMode === "dc" && (
+                  {isAnnounced && viewMode === "dc" && passes && (
                     <circle
                       r={r + 4}
                       fill="none"
@@ -401,7 +614,7 @@ export default function PowerMap() {
                     />
                   )}
                   {/* Selection ring */}
-                  {isSelected && (
+                  {isSelected && passes && (
                     <circle
                       r={r + 5}
                       fill="none"
@@ -412,7 +625,7 @@ export default function PowerMap() {
                     />
                   )}
                   {/* Hover ring */}
-                  {isHovered && !isSelected && (
+                  {isHovered && !isSelected && passes && (
                     <circle
                       r={r + 4}
                       fill="none"
@@ -425,15 +638,15 @@ export default function PowerMap() {
                     r={r}
                     fill={dotColor}
                     fillOpacity={fillOpacity}
-                    stroke={isAnnounced ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.3)"}
+                    stroke={!passes ? "rgba(255,255,255,0.08)" : isAnnounced ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.3)"}
                     strokeWidth={1}
-                    strokeDasharray={isAnnounced ? "3 2" : undefined}
-                    style={{ cursor: "pointer" }}
-                    onMouseEnter={() => { if (!selected) setHoveredId(dc.id); }}
+                    strokeDasharray={isAnnounced && passes ? "3 2" : undefined}
+                    style={{ cursor: passes ? "pointer" : "default" }}
+                    onMouseEnter={() => { if (!selected && passes) setHoveredId(dc.id); }}
                     onMouseLeave={() => setHoveredId(null)}
                   />
-                  {/* Leader line + city label — only for selected dot */}
-                  {isSelected && (
+                  {/* Leader line + city label — only for selected */}
+                  {isSelected && passes && (
                     <>
                       <line
                         x1={0} y1={-(r + 1)}
@@ -489,7 +702,9 @@ export default function PowerMap() {
                     {getStatusBadge(hoveredDC.status).label}
                   </span>
                 </div>
-                <div className="text-[10px] text-muted-foreground/70 mt-0.5">{hoveredDC.city}, {hoveredDC.state} &middot; {hoveredDC.openDate}</div>
+                <div className="text-[10px] text-muted-foreground/70 mt-0.5">
+                  {hoveredDC.city}, {hoveredDC.state} &middot; {hoveredDC.openDate}
+                </div>
               </div>
             </div>
           )}
@@ -537,7 +752,6 @@ export default function PowerMap() {
                     <p className="text-sm font-medium text-foreground">{selected.city}, {selected.state}</p>
                   </div>
                 </div>
-
                 <div className="flex items-start gap-3">
                   <Zap className="h-4 w-4 text-[#F0A500] mt-0.5 flex-shrink-0" />
                   <div>
@@ -545,7 +759,6 @@ export default function PowerMap() {
                     <p className="text-sm font-bold font-mono text-[#F0A500]">{selected.powerMW} MW</p>
                   </div>
                 </div>
-
                 <div className="flex items-start gap-3">
                   <Activity className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
                   <div>
@@ -554,7 +767,6 @@ export default function PowerMap() {
                     <p className="text-xs text-muted-foreground">{Math.round(selected.annualMWh / 10500).toLocaleString()} homes equivalent</p>
                   </div>
                 </div>
-
                 <div className="flex items-start gap-3">
                   <Building2 className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
                   <div>
@@ -562,7 +774,6 @@ export default function PowerMap() {
                     <p className="text-sm font-medium text-foreground">{selected.gridOperator}</p>
                   </div>
                 </div>
-
                 <div className="flex items-start gap-3">
                   <Calendar className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
                   <div>
@@ -572,7 +783,6 @@ export default function PowerMap() {
                 </div>
               </div>
 
-              {/* Grid Context block */}
               {selectedRTOCfg && selectedRTO && (
                 <div className="rounded-md p-3 border border-border bg-muted/20 space-y-2" data-testid="grid-context-block">
                   <div className="flex items-center gap-2 mb-1">
@@ -716,6 +926,109 @@ export default function PowerMap() {
           </table>
         </div>
       </div>
+
+      {/* Mobile filter sheet */}
+      {mobileFiltersOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <div className="absolute inset-0 bg-black/60" onClick={() => setMobileFiltersOpen(false)} />
+          <div className="absolute bottom-0 left-0 right-0 bg-card border-t border-border rounded-t-xl p-5 max-h-[80vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
+                <span className="font-semibold text-sm text-foreground">Filters</span>
+                {anyFilterActive && (
+                  <span className="text-[10px] font-mono text-[#F0A500]">{filteredCount} of {DATA_CENTERS.length}</span>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                {anyFilterActive && (
+                  <button onClick={clearAllFilters} className="text-xs text-muted-foreground border border-border/60 rounded px-2 py-1">
+                    Clear all
+                  </button>
+                )}
+                <button onClick={() => setMobileFiltersOpen(false)} className="p-1.5 rounded hover:bg-muted/20">
+                  <X className="h-4 w-4 text-muted-foreground" />
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-5">
+              <div>
+                <p className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-wider mb-2">Operator</p>
+                <div className="flex flex-wrap gap-2">
+                  {allCompanies.map((c) => {
+                    const active = filterCompanies.includes(c);
+                    const color = companyColors[c] ?? "#666";
+                    return (
+                      <button
+                        key={c}
+                        onClick={() => toggleCompany(c)}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium border transition-all ${
+                          active ? "border-[#F0A500]/60 bg-[#F0A500]/10 text-foreground" : "border-border/50 bg-muted/20 text-muted-foreground"
+                        }`}
+                      >
+                        <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: color }} />
+                        {c} ({companyCounts[c] ?? 0})
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div>
+                <p className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-wider mb-2">Grid Region</p>
+                <div className="flex flex-wrap gap-2">
+                  {ALL_RTOS.map((rto) => {
+                    const active = filterRTOs.includes(rto);
+                    const color = RTO_CONFIG[rto]?.legendColor ?? "#666";
+                    return (
+                      <button
+                        key={rto}
+                        onClick={() => toggleRTO(rto)}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium border transition-all ${
+                          active ? "border-[#F0A500]/60 bg-[#F0A500]/10 text-foreground" : "border-border/50 bg-muted/20 text-muted-foreground"
+                        }`}
+                      >
+                        <div className="h-1.5 w-1.5 rounded-sm" style={{ backgroundColor: color, opacity: 0.85 }} />
+                        {rto} ({rtoCounts[rto] ?? 0})
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div>
+                <p className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-wider mb-2">Capacity</p>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { key: "all",    label: "All Sizes" },
+                    { key: "small",  label: "<100 MW" },
+                    { key: "medium", label: "100-500 MW" },
+                    { key: "large",  label: "500+ MW" },
+                  ].map(({ key, label }) => (
+                    <button
+                      key={key}
+                      onClick={() => setCapacity(key)}
+                      className={`px-3 py-1.5 rounded text-xs font-medium border transition-all ${
+                        filterCapacity === key ? "border-[#F0A500]/60 bg-[#F0A500]/10 text-foreground" : "border-border/50 bg-muted/20 text-muted-foreground"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setMobileFiltersOpen(false)}
+              className="w-full mt-5 py-2.5 rounded-md bg-[#F07800] text-black text-sm font-semibold"
+            >
+              Apply Filters
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

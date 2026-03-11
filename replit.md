@@ -25,8 +25,8 @@ Full-stack web application that visualizes the economic relationship between AI 
 |-------|------|-------------|
 | `/` | TiltOverview | KPI cards + US electricity demand chart |
 | `/stack` | TheStack | Sector breakdown with live stock data |
-| `/power-map` | PowerMap | SVG US map with 35 data center locations, RTO choropleth, Grid Stress mode |
-| `/trade` | TheTrade | Interactive thesis builder with sliders |
+| `/power-map` | PowerMap | SVG US map with 48 data center locations, multi-select filters (operator/RTO/capacity), URL state, RTO choropleth, Grid Stress mode |
+| `/trade` | TheTrade | Thesis Calculator — preset scenarios (Conservative/Base/Aggressive/Custom), infra buildout inputs, capex/LPT outputs, methodology panel |
 | `/portfolio` | PortfolioOverlay | AI Power Exposure scoring + radar chart |
 
 ## API Endpoints
@@ -81,9 +81,26 @@ Full-stack web application that visualizes the economic relationship between AI 
 - NRI base prices anchored Jan 1, 2024; uranium spot ~$92/lb (Mar 2026)
 
 ## Power Map Features
-- 35 data center locations (21 operational, 9 construction, 5 announced)
+- 48 data center locations (hardcoded from public announcements)
+- Multi-select filter bar: by operator (10 companies), by RTO/ISO (7 regions), by capacity (<100/100-500/500+ MW)
+- Filter state encoded in URL query params (?companies=Google&rtos=PJM&capacity=large) for shareable links
+- Dimmed (opacity 0.12) vs active (opacity 0.78) dots on filtered views — all 48 always rendered
+- Dynamic "Showing X of 48 facilities" count with Clear All button
+- Mobile filter bottom sheet (hamburger toggle on small screens)
+- Hover tooltip (name, MW, status, city, ETA) — suppressed when sidebar open
+- Selected dot: leader line + city label with dark outline; click to pin
 - 7 RTO/ISO regions with distinct choropleth tints on state fill
 - View mode toggle: "DC Locations" (RTO colors) | "Grid Stress" (reserve margin colors)
-- Grid stress legend overlay in stress mode with threshold labels
 - Grid Operator Load Analysis table: per-RTO MW totals, reserve margins, stress badges
 - Per-facility sidebar with Grid Context block (RTO, reserve margin, total RTO AI load, stress signal)
+- Upcoming Projects horizontal scroll strip (announced facilities)
+
+## Thesis Calculator Features
+- Three presets: Conservative (35 GW), Base (50 GW), Aggressive (75 GW) — pre-populate all inputs
+- Inputs: new AI DC capacity (GW), capex per MW ($M), generation mix % (gas/nuclear/renewables/grid), LPT per GW, AI CAGR, PUE
+- Auto-switches to "Custom" badge when any input is modified from a preset
+- Generation mix validation: warning + color if sum != 100%
+- Output cards: Total Capex ($B), Annual LPTs vs 60/yr domestic capacity (color-coded), Nuclear GW, Interconnect timeline
+- Stacked bar buildout chart (2025-2030): gas/nuclear/renewables/grid by year
+- Company rankings (8 positions): score adjusted by nuclearPct and aiCagrPct
+- Collapsible Methodology panel: sources (IEA/EIA/McKinsey/DOE/hyperscalers), formulas, key sensitivities, disclaimer
