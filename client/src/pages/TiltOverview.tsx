@@ -21,7 +21,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Zap, TrendingUp, Activity, AlertTriangle, Info, ArrowUp, ArrowDown, Calendar, ChevronRight, ExternalLink } from "lucide-react";
+import { Zap, TrendingUp, Activity, AlertTriangle, Info, ArrowUp, ArrowDown, Calendar, ChevronRight, ExternalLink, ChevronDown, ChevronUp, Cpu, Plug, BarChart3 } from "lucide-react";
 
 const electricityData = [
   { year: "2010", demand: 3879, dcDemand: 140, projected: null, dcProjected: null },
@@ -732,6 +732,82 @@ function NextCatalystsWidget({ catalysts }: { catalysts: Catalyst[] }) {
   );
 }
 
+function WhatAmILookingAt() {
+  const [open, setOpen] = useState(() => {
+    try { return localStorage.getItem("gridtilt_wtail_collapsed") !== "1"; } catch { return true; }
+  });
+
+  const toggle = () => {
+    const next = !open;
+    setOpen(next);
+    try { localStorage.setItem("gridtilt_wtail_collapsed", next ? "0" : "1"); } catch { /* ignore */ }
+  };
+
+  const tiles = [
+    {
+      icon: Cpu,
+      title: "The Big Idea",
+      body: "AI models are extraordinarily power-hungry. A single large AI training run can consume as much electricity as 1,000 homes use in a year. The data centers being built right now need so much power that major tech companies are signing 20-year contracts with nuclear plants and investing billions in new grid infrastructure. That build-out is the investment thesis.",
+    },
+    {
+      icon: Plug,
+      title: "The 3 Numbers at the Top",
+      body: "The AI Power Demand Index measures how fast AI is eating the grid (72+ = structurally elevated). The Nuclear Renaissance Index tracks how the nuclear revival is playing out in markets, anchored to Jan 1, 2024 = 100. Grid Stress measures how tight US electricity supply is right now. Together they tell you whether the thesis is accelerating or cooling.",
+    },
+    {
+      icon: BarChart3,
+      title: "The Stack",
+      body: "Below this dashboard is 'The Stack' — 60+ publicly traded companies organized into 8 layers of the AI power supply chain: chip makers, nuclear operators, uranium miners, power hardware suppliers, utilities, data center REITs, construction firms, and benchmark ETFs. If you wanted to invest in the AI power buildout, these are the companies doing it.",
+    },
+  ];
+
+  return (
+    <div className="border border-border/60 rounded-[0.35rem] overflow-hidden" data-testid="what-am-i-looking-at">
+      <button
+        onClick={toggle}
+        className="w-full flex items-center justify-between px-5 py-3.5 bg-muted/20 hover:bg-muted/30 transition-colors text-left"
+        data-testid="wtail-toggle"
+      >
+        <div className="flex items-center gap-2.5">
+          <span className="text-sm font-semibold text-foreground">What am I looking at?</span>
+          <Badge className="bg-[#F07800]/10 text-[#F07800] border-[#F07800]/25 text-[10px] font-mono tracking-wider py-0">NEW TO GRIDTILT</Badge>
+        </div>
+        {open
+          ? <ChevronUp className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+          : <ChevronDown className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+        }
+      </button>
+
+      {open && (
+        <div className="px-5 pb-5 pt-4 bg-muted/5">
+          <p className="text-sm text-muted-foreground leading-relaxed mb-4 max-w-3xl">
+            GridTilt tracks the <span className="text-foreground font-medium">AI Infrastructure & Power Economy</span> — the financial markets around the companies building, powering, and supplying the infrastructure that AI runs on. Here is a plain-English breakdown of what everything means.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {tiles.map((tile) => {
+              const Icon = tile.icon;
+              return (
+                <div key={tile.title} className="p-4 rounded-[0.35rem] border border-border/50 bg-card">
+                  <div className="flex items-center gap-2 mb-2.5">
+                    <div className="h-6 w-6 rounded flex items-center justify-center bg-[#F07800]/10 flex-shrink-0">
+                      <Icon className="h-3.5 w-3.5 text-[#F07800]" />
+                    </div>
+                    <h3 className="text-xs font-semibold text-foreground uppercase tracking-wider">{tile.title}</h3>
+                  </div>
+                  <p className="text-xs text-muted-foreground leading-relaxed">{tile.body}</p>
+                </div>
+              );
+            })}
+          </div>
+          <p className="text-[11px] text-muted-foreground/50 mt-4">
+            Collapse this panel once you know what you're looking at. It will stay hidden.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function TiltOverview() {
   const { data: kpiData, isLoading } = useQuery<KpiData>({
     queryKey: ["/api/kpis"],
@@ -784,6 +860,9 @@ export default function TiltOverview() {
       </div>
 
       <div className="flex-1 p-6 space-y-6">
+        {/* Layman explainer */}
+        <WhatAmILookingAt />
+
         {/* KPI Cards */}
         <div>
           <div className="flex items-center gap-2 mb-4">
