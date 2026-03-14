@@ -304,29 +304,47 @@ function ThesisHealthBar({ aiPower, gridStress, nri }: { aiPower: number | null;
     ? `Index signals have pulled back from peak levels. This may reflect a temporary market rotation or a genuine slowdown in AI infrastructure spending. Monitor hyperscaler capex guidance.`
     : `The AI power thesis is tracking in-line with the baseline scenario. Demand index above structural baseline (72/100). Nuclear Renaissance Index at ${nri.toFixed(0)} reflects sustained momentum from 2024 PPA activity.`;
 
+  const numbers = [
+    { label: "AI Demand", val: aiPower },
+    { label: "NRI", val: nri },
+    { label: "Grid Stress", val: gridStress },
+  ] as const;
+
   return (
     <Card className={`p-4 border ${statusBg}`} data-testid="thesis-health-bar">
-      <div className="flex items-start gap-4">
-        <div className="flex-shrink-0">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Thesis Health</p>
-          <div className="flex items-center gap-2">
-            <div className="h-2 w-2 rounded-full animate-pulse" style={{ backgroundColor: statusColor }} />
-            <span className="text-sm font-bold font-mono tracking-wide" style={{ color: statusColor }}>
-              {status}
-            </span>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-4">
+        {/* Status + numbers row on mobile, status only on desktop */}
+        <div className="flex items-start justify-between sm:block flex-shrink-0">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Thesis Health</p>
+            <div className="flex items-center gap-2">
+              <div className="h-2 w-2 rounded-full animate-pulse flex-shrink-0" style={{ backgroundColor: statusColor }} />
+              <span className="text-sm font-bold font-mono tracking-wide" style={{ color: statusColor }}>{status}</span>
+            </div>
+          </div>
+          {/* Mini numbers shown beside status on mobile */}
+          <div className="flex gap-3 sm:hidden text-right">
+            {numbers.map(({ label, val }) => (
+              <div key={label}>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wide whitespace-nowrap">{label}</p>
+                <p className="text-sm font-bold font-mono text-foreground">{val.toFixed(0)}</p>
+              </div>
+            ))}
           </div>
         </div>
-        <div className="h-8 w-px bg-border flex-shrink-0" />
+
+        {/* Vertical divider — desktop only */}
+        <div className="hidden sm:block h-8 w-px bg-border flex-shrink-0" />
+
+        {/* Description */}
         <p className="text-xs text-muted-foreground leading-relaxed flex-1">{description}</p>
-        <div className="flex gap-4 flex-shrink-0 text-center">
-          {([
-            { label: "AI Demand", val: aiPower, max: 100 },
-            { label: "NRI", val: nri, max: 200 },
-            { label: "Grid Stress", val: gridStress, max: 100 },
-          ] as const).map(({ label, val, max }) => (
+
+        {/* Mini numbers — desktop only (shown inline on mobile) */}
+        <div className="hidden sm:flex gap-4 flex-shrink-0 text-center">
+          {numbers.map(({ label, val }) => (
             <div key={label}>
               <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{label}</p>
-              <p className="text-sm font-bold font-mono text-foreground">{val.toFixed(0)}{max === 100 ? "" : ""}</p>
+              <p className="text-sm font-bold font-mono text-foreground">{val.toFixed(0)}</p>
             </div>
           ))}
         </div>
@@ -389,7 +407,7 @@ function TopMoversSection({ topMovers, isLoading }: { topMovers: TopMover[]; isL
                   <span className="font-mono font-bold text-xs text-foreground w-12 flex-shrink-0">{m.ticker}</span>
                   <span className="text-xs text-muted-foreground flex-1 truncate min-w-0">{m.name}</span>
                   <span
-                    className="text-[10px] font-medium px-1.5 py-0.5 rounded border flex-shrink-0"
+                    className="hidden sm:inline text-[10px] font-medium px-1.5 py-0.5 rounded border flex-shrink-0"
                     style={{ color: sc, backgroundColor: `${sc}15`, borderColor: `${sc}30` }}
                   >
                     {SECTOR_LABEL_SHORT[m.sector] ?? m.sector}
@@ -768,9 +786,9 @@ function WhatAmILookingAt() {
         className="w-full flex items-center justify-between px-5 py-3.5 bg-muted/20 hover:bg-muted/30 transition-colors text-left"
         data-testid="wtail-toggle"
       >
-        <div className="flex items-center gap-2.5">
-          <span className="text-sm font-semibold text-foreground">What am I looking at?</span>
-          <Badge className="bg-[#F07800]/10 text-[#F07800] border-[#F07800]/25 text-[10px] font-mono tracking-wider py-0">NEW TO GRIDTILT</Badge>
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-sm font-semibold text-foreground whitespace-nowrap">What am I looking at?</span>
+          <Badge className="bg-[#F07800]/10 text-[#F07800] border-[#F07800]/25 text-[10px] font-mono tracking-wider py-0 hidden xs:inline-flex sm:inline-flex">NEW TO GRIDTILT</Badge>
         </div>
         {open
           ? <ChevronUp className="h-4 w-4 text-muted-foreground flex-shrink-0" />
@@ -833,7 +851,7 @@ export default function TiltOverview() {
 
   return (
     <div className="flex flex-col h-full overflow-y-auto">
-      <div className="grid-bg border-b border-border px-6 py-8">
+      <div className="grid-bg border-b border-border px-4 sm:px-6 py-6 sm:py-8">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-2">
@@ -842,7 +860,7 @@ export default function TiltOverview() {
               </Badge>
               <span className="text-xs text-muted-foreground tracking-wide">Real-time AI Power Economy Dashboard</span>
             </div>
-            <h1 className="text-3xl font-bold text-foreground tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
               The Grid is <span className="text-[#F07800]">Tilting</span>
             </h1>
             <p className="text-muted-foreground mt-1.5 max-w-xl text-sm leading-relaxed">
@@ -859,7 +877,7 @@ export default function TiltOverview() {
         </div>
       </div>
 
-      <div className="flex-1 p-6 space-y-6">
+      <div className="flex-1 p-4 sm:p-6 space-y-4 sm:space-y-6">
         {/* Layman explainer */}
         <WhatAmILookingAt />
 
