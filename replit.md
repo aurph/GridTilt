@@ -16,7 +16,7 @@ Full-stack web application that visualizes the economic relationship between AI 
 ### Backend
 - Node.js + Express
 - Market data: yahoo-finance2 (unofficial API, no key required)
-- News: NewsData.io (optional, requires NEWSDATA_API_KEY env var) with static JSON fallback
+- News: RSS feeds (Utility Dive, Data Center Dynamics, World Nuclear News, Power Engineering — no key needed, 1hr cache) → NewsData.io (if NEWSDATA_API_KEY set) → static JSON fallback
 - All routes prefixed with `/api`
 - Falls back to static data when Yahoo Finance is unavailable
 - Editable data files: `server/data/news-headlines.json`, `server/data/catalysts.json`

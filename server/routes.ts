@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { type Server } from "http";
 import { readFileSync } from "fs";
 import { join } from "path";
+import RSSParser from "rss-parser";
 
 // Known company data for portfolio scoring
 const COMPANY_DATABASE: Record<string, {
@@ -341,12 +342,57 @@ const STACK_TICKERS = {
 };
 const ALL_STACK_TICKERS = Object.values(STACK_TICKERS).flat();
 
-// ─── News cache (30-min TTL) ────────────────────────────────────────────────
+// ─── News cache (1-hour TTL) ────────────────────────────────────────────────
 interface NewsItem { headline: string; source: string; url: string; publishedAt: string; }
 let newsCache: { items: NewsItem[]; timestamp: number } | null = null;
 const EARNINGS_CACHE_TTL = 4 * 60 * 60 * 1000; // 4 hours
 let earningsCache: { items: any[]; timestamp: number } | null = null;
-const NEWS_CACHE_TTL = 30 * 60 * 1000;
+const NEWS_CACHE_TTL = 60 * 60 * 1000; // 1 hour — safe for RSS and NewsData.io
+
+// RSS feeds: AI infrastructure, power grid, nuclear, datacenters
+const RSS_FEEDS: Array<{ url: string; sourceName: string }> = [
+  { url: "https://www.utilitydive.com/feeds/news/", sourceName: "Utility Dive" },
+  { url: "https://www.datacenterdynamics.com/en/rss/", sourceName: "Data Center Dynamics" },
+  { url: "https://www.world-nuclear-news.org/rss", sourceName: "World Nuclear News" },
+  { url: "https://www.power-eng.com/feed/", sourceName: "Power Engineering" },
+  { url: "https://nuclearenergynow.org/feed/", sourceName: "Nuclear Energy Now" },
+];
+
+async function fetchRSSNews(): Promise<NewsItem[]> {
+  const parser = new RSSParser({ timeout: 8000 });
+  const allItems: NewsItem[] = [];
+
+  await Promise.allSettled(
+    RSS_FEEDS.map(async ({ url, sourceName }) => {
+      try {
+        const feed = await parser.parseURL(url);
+        for (const item of feed.items ?? []) {
+          const title = item.title ?? "";
+          const desc = item.contentSnippet ?? item.content ?? "";
+          if (!title || !isNewsRelevant(title + " " + desc)) continue;
+          allItems.push({
+            headline: title,
+            source: feed.title ? feed.title.replace(/\s*\|.*$/, "").trim() : sourceName,
+            url: item.link ?? item.guid ?? "#",
+            publishedAt: item.isoDate ?? item.pubDate ?? new Date().toISOString(),
+          });
+        }
+      } catch (_e) {
+        // Feed failed — skip silently
+      }
+    })
+  );
+
+  // Sort newest first, deduplicate by headline prefix
+  allItems.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+  const seen = new Set<string>();
+  return allItems.filter((item) => {
+    const key = item.headline.slice(0, 60).toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  }).slice(0, 30);
+}
 
 const NEWS_KEYWORDS = [
   "data center", "datacenter", "hyperscaler", "AI infrastructure", "power grid",
@@ -813,7 +859,7 @@ export async function registerRoutes(
     }
   });
 
-  // Live news endpoint — NewsData.io primary, falls back to static JSON
+  // Live news endpoint — priority: 1) NewsData.io  2) RSS feeds  3) static JSON
   app.get("/api/news", async (_req, res) => {
     try {
       const now = Date.now();
@@ -821,6 +867,7 @@ export async function registerRoutes(
         return res.json(newsCache.items);
       }
 
+      // Priority 1: NewsData.io (if key configured)
       const apiKey = process.env.NEWSDATA_API_KEY;
       if (apiKey) {
         try {
@@ -844,11 +891,22 @@ export async function registerRoutes(
             }
           }
         } catch (_e) {
-          // Fall through to static
+          // Fall through to RSS
         }
       }
 
-      // Fallback: serve from static JSON
+      // Priority 2: RSS feeds — live, no API key required, updates hourly
+      try {
+        const rssItems = await fetchRSSNews();
+        if (rssItems.length >= 3) {
+          newsCache = { items: rssItems, timestamp: now };
+          return res.json(rssItems);
+        }
+      } catch (_e) {
+        // Fall through to static
+      }
+
+      // Priority 3: static JSON fallback
       const filePath = join(process.cwd(), "server", "data", "news-headlines.json");
       const raw = readFileSync(filePath, "utf-8");
       const staticItems = JSON.parse(raw);
