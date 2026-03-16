@@ -12,6 +12,12 @@ import PowerMap from "@/pages/PowerMap";
 import TheTrade from "@/pages/TheTrade";
 import PortfolioOverlay from "@/pages/PortfolioOverlay";
 import CatalystTracker from "@/pages/CatalystTracker";
+import StockPage from "@/pages/StockPage";
+import SectorPage from "@/pages/SectorPage";
+import RegionPage from "@/pages/RegionPage";
+import OperatorPage from "@/pages/OperatorPage";
+import BlogIndex from "@/pages/BlogIndex";
+import BlogPost from "@/pages/BlogPost";
 import { NewsTicker } from "@/components/NewsTicker";
 import { useLocation } from "wouter";
 import { useState, useEffect } from "react";
@@ -24,6 +30,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/trade": "Thesis Calculator",
   "/portfolio": "Portfolio Overlay",
   "/catalysts": "Catalyst Tracker",
+  "/blog": "Analysis",
 };
 
 const SHORTCUTS = [
@@ -120,6 +127,12 @@ function Router() {
       <Route path="/trade" component={TheTrade} />
       <Route path="/portfolio" component={PortfolioOverlay} />
       <Route path="/catalysts" component={CatalystTracker} />
+      <Route path="/stock/:ticker" component={StockPage} />
+      <Route path="/sector/:slug" component={SectorPage} />
+      <Route path="/region/:slug" component={RegionPage} />
+      <Route path="/operator/:slug" component={OperatorPage} />
+      <Route path="/blog" component={BlogIndex} />
+      <Route path="/blog/:slug" component={BlogPost} />
       <Route component={NotFound} />
     </Switch>
   );

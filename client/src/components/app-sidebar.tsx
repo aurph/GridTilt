@@ -18,6 +18,7 @@ import {
   TrendingUp,
   BarChart3,
   Calendar,
+  FileText,
 } from "lucide-react";
 import logoPath from "@assets/Untitled_design_(4)_1772554897403.png";
 
@@ -57,6 +58,12 @@ const navItems = [
     url: "/catalysts",
     icon: Calendar,
     description: "Upcoming market events",
+  },
+  {
+    title: "Analysis",
+    url: "/blog",
+    icon: FileText,
+    description: "Research and data",
   },
 ];
 

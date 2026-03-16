@@ -38,6 +38,12 @@ Full-stack web application that visualizes the economic relationship between AI 
 | `/trade` | TheTrade | Thesis Calculator — preset scenarios (Conservative/Base/Aggressive/Custom), infra buildout inputs, capex/LPT outputs, methodology panel |
 | `/portfolio` | PortfolioOverlay | AI Power Exposure scoring + radar chart + shareable URL |
 | `/catalysts` | CatalystTracker | Upcoming market events — earnings, regulatory, policy, commodity windows |
+| `/stock/:ticker` | StockPage | Per-stock thesis analysis with price, thesis score, sector context |
+| `/sector/:slug` | SectorPage | Sector overview with stock cards and performance stats |
+| `/region/:slug` | RegionPage | Grid region profile with description and map link |
+| `/operator/:slug` | OperatorPage | Hyperscaler data center operator profile |
+| `/blog` | BlogIndex | Analysis articles listing |
+| `/blog/:slug` | BlogPost | Full article with TOC, share buttons, internal links |
 
 ## API Endpoints
 
@@ -71,7 +77,7 @@ Full-stack web application that visualizes the economic relationship between AI 
 ## Key Files
 
 - `client/src/App.tsx` — Root app with SidebarProvider + Router + keyboard shortcuts (? opens modal, G+1-6 navigate)
-- `client/src/components/app-sidebar.tsx` — Navigation sidebar (6 pages)
+- `client/src/components/app-sidebar.tsx` — Navigation sidebar (7 pages including Analysis/blog)
 - `client/src/components/NewsTicker.tsx` — Scrolling orange news banner (uses /api/news, hover-to-pause, clickable)
 - `client/src/pages/TiltOverview.tsx` — Landing dashboard (KPIs, Thesis Health, Top Movers, Sector Pulse, Catalyst Calendar, X feed, demand chart)
 - `client/src/pages/TheStack.tsx` — 8-layer sector breakdown with timeframe toggle (1D/5D/1M) + sort controls
@@ -159,6 +165,58 @@ Full-stack web application that visualizes the economic relationship between AI 
 - Stacked bar buildout chart (2025-2030): gas/nuclear/renewables/grid by year
 - Company rankings (8 positions): score adjusted by nuclearPct and aiCagrPct
 - Collapsible Methodology panel: sources (IEA/EIA/McKinsey/DOE/hyperscalers), formulas, key sensitivities, disclaimer
+
+## SEO & Marketing Infrastructure
+
+### Programmatic SEO Pages
+| Route | Page | Description |
+|-------|------|-------------|
+| `/stock/:ticker` | StockPage | Per-stock thesis analysis page with price, thesis score, sector context, related stocks, catalysts |
+| `/sector/:slug` | SectorPage | Sector overview with all stocks, avg performance, best/worst performers |
+| `/region/:slug` | RegionPage | Grid region info with description, map link, related regions |
+| `/operator/:slug` | OperatorPage | Hyperscaler profile with strategy, map link, other operators |
+| `/blog` | BlogIndex | Article listing page |
+| `/blog/:slug` | BlogPost | Full article with markdown rendering, TOC, share buttons |
+
+### SEO Endpoints
+| Endpoint | Description |
+|----------|-------------|
+| `/sitemap.xml` | Dynamic sitemap (103 URLs: static pages + stocks + sectors + regions + operators + blog) |
+| `/robots.txt` | Crawler rules (allow all except /api/) |
+| `/humans.txt` | Attribution (Jack Schwartz / aurph) |
+| `/.well-known/security.txt` | Security contact |
+| `/api/og` | Dynamic OG image generation via satori (Inter font, 1200x630 PNG) |
+| `/manifest.json` | PWA manifest (standalone, dark theme) |
+| `/feed.xml` | Blog RSS feed (8 articles) |
+| `/catalysts/rss.xml` | Catalyst events RSS feed |
+| `/news/rss.xml` | News headlines RSS feed |
+| `/api/blog` | Blog article index API |
+| `/api/blog/:slug` | Blog article detail API |
+| `/api/stock/:ticker` | Stock data API (thesis score, related stocks, catalysts) |
+| `/api/sectors` | Sector metadata API |
+| `/api/export/daily` | Daily data export API |
+| `/api/social/generate` | Social post generation API |
+
+### Server-Side SEO
+- `server/seo.ts` — Centralized SEO config with `getPageMeta()` for per-route titles, descriptions, OG tags
+- JSON-LD schemas: WebSite, Organization, Dataset, FAQ, BreadcrumbList, FinancialProduct, Article
+- Server-side meta tag injection for crawlers via `server/vite.ts` and `server/static.ts`
+- OG image generation uses `satori` + `@resvg/resvg-js` with Inter font (`server/fonts/Inter-Regular.ttf`)
+
+### Blog System
+- 8 seed articles in `content/blog/articles.json`
+- Topics: AI data center power, infrastructure stocks, nuclear energy, PJM queues, data center map, transformer shortage, uranium stocks, behind-the-meter power
+- Markdown rendering in BlogPost.tsx (headings, bold, links, ordered lists, TOC)
+
+### URL Redirects (301)
+- /stocks -> /stack, /map -> /power-map, /calculator -> /trade, /score -> /portfolio
+- /catalyst-tracker -> /catalysts, /the-stack -> /stack, /thesis-calculator -> /trade, /portfolio-overlay -> /portfolio
+
+### Key SEO Files
+- `server/seo.ts` — Page metadata, JSON-LD, sitemap config
+- `server/fonts/Inter-Regular.ttf` — Font for OG image generation
+- `content/blog/articles.json` — Blog article content
+- `client/index.html` — PWA manifest link, apple-touch-icon, theme-color
 
 ## Deployment
 - Autoscale deployment on Replit

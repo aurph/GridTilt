@@ -1,0 +1,706 @@
+You have full context of the GridTilt codebase. This prompt covers advanced SEO infrastructure, programmatic landing pages, Google Search Console integration, social sharing optimization, content automation, and marketing infrastructure. This is a significant amount of work. Take your time and build everything properly.
+ 
+---
+ 
+## SECTION 1: TECHNICAL SEO FOUNDATION
+ 
+### 1A. Metadata System
+ 
+Build a centralized metadata/SEO config that generates proper tags for every page. Every single page on gridtilt.com needs:
+ 
+- Unique `<title>` tag (under 60 characters, keyword-rich)
+- Unique `<meta name="description">` (under 155 characters, compelling)
+- Canonical URL (`<link rel="canonical">`)
+- `<meta name="robots" content="index, follow">`
+- Proper heading hierarchy (exactly one `<h1>` per page, logical `<h2>`/`<h3>` nesting)
+ 
+Page-specific titles and descriptions:
+ 
+| Page | Title | Description |
+|------|-------|-------------|
+| Home/Tilt Overview | GridTilt — AI Power Infrastructure Dashboard | Track the AI power buildout. Live stock data, data center mapping, and thesis modeling for 60+ companies across 9 sectors. |
+| The Stack | AI Power Stocks by Sector — GridTilt | Live prices for 60+ stocks across nuclear, uranium, construction, utilities, data centers, and power hardware. Updated every 15 minutes. |
+| Power Map | AI Data Center Map — Locations by Grid Region — GridTilt | 48 AI data center facilities mapped by operator, grid region, and capacity. Filter by Google, Amazon, Meta, Microsoft. |
+| Thesis Calculator | AI Power Demand Scenario Calculator — GridTilt | Model AI electricity demand through 2030. Three preset scenarios with adjustable assumptions. Free scenario analysis tool. |
+| Portfolio Overlay | AI Power Thesis Score — Rate Any Stock — GridTilt | Score any ticker against the AI power infrastructure thesis. See how stocks align with nuclear, grid stress, and demand pressure indices. |
+| Catalyst Tracker | AI Power Earnings Calendar and Catalyst Events — GridTilt | Upcoming earnings dates, regulatory decisions, and policy events for AI infrastructure stocks. Auto-updated catalyst calendar. |
+ 
+### 1B. Open Graph and Social Meta Tags
+ 
+Every page needs full Open Graph and Twitter Card meta tags:
+ 
+```html
+<meta property="og:title" content="[page title]">
+<meta property="og:description" content="[page description]">
+<meta property="og:image" content="https://gridtilt.com/og/[page-slug].png">
+<meta property="og:url" content="https://gridtilt.com/[page-slug]">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="GridTilt">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@gridtilt">
+<meta name="twitter:creator" content="@gridtilt">
+<meta name="twitter:title" content="[page title]">
+<meta name="twitter:description" content="[page description]">
+<meta name="twitter:image" content="https://gridtilt.com/og/[page-slug].png">
+```
+ 
+### 1C. Dynamic OG Image Generation
+ 
+Build a dynamic OG image generator. When someone shares a GridTilt page on X, LinkedIn, or anywhere else, it should show a clean, branded preview card. NOT a generic screenshot. A designed image.
+ 
+Use `@vercel/og` or `satori` to generate OG images server-side. Create an API route at `/api/og` that accepts parameters and returns a 1200x630 PNG.
+ 
+**Default OG image** (for homepage/Tilt Overview):
+- Dark background matching GridTilt's color scheme
+- GridTilt logo top-left
+- "The Grid is Tilting" headline
+- The three index values (AI Demand: 74.1, Nuclear: 279.1, Grid Stress: 69.6) displayed prominently
+- "gridtilt.com" bottom-right
+- Subtle grid/line pattern in background
+ 
+**Power Map OG image:**
+- Mini version of the US map with colored dots
+- "48 AI Data Center Facilities Mapped"
+- "gridtilt.com/power-map"
+ 
+**The Stack OG image:**
+- "60+ AI Power Stocks — Live Data"
+- Show 3-4 top movers with ticker + % change
+- "gridtilt.com/the-stack"
+ 
+**Stock-specific OG images** (for programmatic pages, see Section 3):
+- `/api/og?ticker=CEG` generates an image with:
+  - Constellation Energy ($CEG) header
+  - Current price + daily change
+  - Thesis score from Portfolio Overlay
+  - Sector tag (Nuclear Power)
+  - "gridtilt.com"
+ 
+**Catalyst-specific OG images:**
+- `/api/og?catalyst=oklo-earnings` generates:
+  - "OKLO Q1 Earnings — March 16, 2026"
+  - Sector tag, affected tickers
+  - "gridtilt.com/catalysts"
+ 
+These dynamic images are critical for social sharing and content marketing. Every link shared on X or LinkedIn should have a rich, custom preview.
+ 
+### 1D. Sitemap and Robots.txt
+ 
+**Dynamic XML Sitemap** at `/sitemap.xml`:
+ 
+Generate this programmatically. It should include:
+- All static pages (tilt-overview, the-stack, power-map, thesis-calculator, portfolio-overlay, catalyst-tracker)
+- All programmatic stock pages (see Section 3): `/stock/CEG`, `/stock/VRT`, etc. for every ticker in The Stack
+- All programmatic sector pages: `/sector/nuclear`, `/sector/uranium`, `/sector/construction`, etc.
+- All programmatic grid region pages: `/region/pjm`, `/region/ercot`, `/region/wecc`, etc.
+- All programmatic operator pages: `/operator/google`, `/operator/amazon`, etc.
+- Blog/analysis pages if they exist
+ 
+Each URL should include `<lastmod>`, `<changefreq>`, and `<priority>`:
+- Main pages: priority 1.0, changefreq daily
+- Stock pages: priority 0.8, changefreq daily
+- Sector/region/operator pages: priority 0.7, changefreq weekly
+ 
+**Robots.txt** at `/robots.txt`:
+```
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /admin/
+Sitemap: https://gridtilt.com/sitemap.xml
+```
+ 
+### 1E. Structured Data / Schema Markup (JSON-LD)
+ 
+Add JSON-LD structured data to every page. This is critical for Google rich results and AI search engines (Google AI Overviews, Perplexity, ChatGPT search).
+ 
+**Homepage — WebSite + Organization schema:**
+```json
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "GridTilt",
+  "url": "https://gridtilt.com",
+  "description": "AI power infrastructure investment dashboard",
+  "potentialAction": {
+    "@type": "SearchAction",
+    "target": "https://gridtilt.com/stock/{search_term_string}",
+    "query-input": "required name=search_term_string"
+  }
+}
+```
+ 
+**Stock pages — FinancialProduct + Dataset schema:**
+```json
+{
+  "@context": "https://schema.org",
+  "@type": "FinancialProduct",
+  "name": "Constellation Energy (CEG) — AI Power Thesis Analysis",
+  "description": "Live price data, thesis alignment score, and sector analysis for CEG on GridTilt",
+  "url": "https://gridtilt.com/stock/CEG",
+  "provider": {
+    "@type": "Organization",
+    "name": "GridTilt"
+  }
+}
+```
+ 
+**Power Map — Dataset schema:**
+```json
+{
+  "@context": "https://schema.org",
+  "@type": "Dataset",
+  "name": "AI Data Center Locations — United States",
+  "description": "48 active and planned AI data center facilities mapped by operator, grid region, capacity, and status",
+  "url": "https://gridtilt.com/power-map",
+  "creator": {"@type": "Organization", "name": "GridTilt"},
+  "temporalCoverage": "2024/..",
+  "spatialCoverage": "United States",
+  "variableMeasured": ["capacity_mw", "grid_region", "operator", "status"]
+}
+```
+ 
+**Catalyst Tracker — Event schema for each catalyst:**
+```json
+{
+  "@context": "https://schema.org",
+  "@type": "Event",
+  "name": "Oklo Inc Earnings Report",
+  "startDate": "2026-03-16",
+  "description": "OKLO Q1 FY2027 earnings report. SMR developer with 14 GW customer pipeline.",
+  "organizer": {"@type": "Organization", "name": "Oklo Inc"},
+  "url": "https://gridtilt.com/catalysts"
+}
+```
+ 
+**FAQ schema on key pages** (boosts featured snippet eligibility):
+ 
+Add FAQ structured data to the Thesis Calculator and Tilt Overview pages. Generate 5-8 Q&A pairs per page. Examples:
+ 
+Thesis Calculator FAQ:
+- Q: "How much electricity do AI data centers use?" A: "AI data centers currently consume 2-3% of US electricity. Under base case projections, this could grow to 50 GW of new capacity by 2030."
+- Q: "What is the AI power demand thesis?" A: "The thesis holds that companies building power infrastructure for AI data centers will benefit from multi-year demand driven by physical construction bottlenecks."
+- Q: "How many AI data centers are being built?" A: "GridTilt tracks 48 AI data center facilities across the US, including 28 operational, 15 under construction, and 5 announced."
+ 
+Generate similar FAQ schema for each main page. Keep answers factual, concise, and rich with the keywords people actually search for.
+ 
+### 1F. Core Web Vitals Optimization
+ 
+Run a full performance audit and optimize for Google's Core Web Vitals:
+ 
+**Largest Contentful Paint (LCP) — target under 2.5s:**
+- Preload critical fonts
+- Optimize the hero section to render without waiting for API data (show layout immediately, fill numbers when data arrives)
+- If the Power Map uses heavy tile images, lazy-load them
+- Add `priority` to the first meaningful image on each page
+ 
+**First Input Delay / Interaction to Next Paint (INP) — target under 200ms:**
+- Make sure filter clicks on the Power Map respond instantly (client-side filtering, no API calls for 48 facilities)
+- Debounce any search inputs (Portfolio Overlay ticker search)
+- Ensure hover effects use CSS transforms/opacity only (GPU-accelerated, no layout thrashing)
+ 
+**Cumulative Layout Shift (CLS) — target under 0.1:**
+- Set explicit width/height or aspect-ratio on all images and charts
+- Reserve space for the news ticker, index cards, and sector pulse so they don't shift when data loads
+- The skeleton/loading states must be the exact same dimensions as the loaded content
+ 
+**Additional performance:**
+- Enable gzip/brotli compression on all responses
+- Set proper `Cache-Control` headers: static assets = 1 year, API responses = 5-15 minutes
+- Implement `next/dynamic` for below-fold components (US Electricity Demand chart, Catalyst Calendar)
+- Prefetch data for pages the user is likely to visit next (from Tilt Overview, prefetch The Stack data)
+ 
+### 1G. Crawlability
+ 
+- Make sure the app is fully server-side rendered (SSR) or statically generated (SSG) for all pages Google needs to crawl. If any pages are client-side only, convert them.
+- All page content must be in the initial HTML response, not loaded via client-side JavaScript after hydration. Google crawls the initial HTML.
+- Internal links between pages must be real `<a href>` tags, not JavaScript `onClick` navigation. The sidebar nav links must be crawlable anchor tags.
+- Add breadcrumb navigation to sub-pages (stock pages, sector pages) with BreadcrumbList schema.
+ 
+---
+ 
+## SECTION 2: GOOGLE SEARCH CONSOLE AND ANALYTICS SETUP
+ 
+### 2A. Google Search Console Verification
+ 
+Add Google Search Console verification to the site. The user (Jack) will need to provide the verification code, but prepare the infrastructure:
+ 
+- Add a `<meta name="google-site-verification" content="VERIFICATION_CODE_HERE">` tag to the `<head>` of every page via the layout component
+- Leave a clear comment in the code: `// REPLACE WITH YOUR GOOGLE SEARCH CONSOLE VERIFICATION CODE`
+- Create a `/google[verification-code].html` static file placeholder as an alternative verification method
+- Add documentation in a `SEO_SETUP.md` file at the project root explaining:
+  1. How to get the verification code from Google Search Console
+  2. Where to paste it in the codebase
+  3. How to submit the sitemap
+  4. How to request indexing for key pages
+ 
+### 2B. Google Analytics / Tag Manager
+ 
+Add Google Analytics 4 (GA4) integration:
+ 
+- Add the GA4 script tag in the layout `<head>` with a placeholder measurement ID: `G-XXXXXXXXXX`
+- Track page views automatically on route changes
+- Add custom events for key user actions:
+  - `filter_applied` (Power Map filter interaction) with params: filter_type, filter_value
+  - `calculator_preset_selected` with params: preset_name
+  - `calculator_assumption_changed` with params: field_name, old_value, new_value
+  - `stock_card_clicked` with params: ticker, sector
+  - `catalyst_clicked` with params: event_name, event_type
+  - `portfolio_score_generated` with params: ticker, score
+  - `share_card_generated` with params: ticker, score
+  - `news_headline_clicked` with params: headline, source
+  - `map_pin_clicked` with params: facility_name, operator, region
+- Leave a clear comment: `// REPLACE G-XXXXXXXXXX WITH YOUR GA4 MEASUREMENT ID`
+- Add instructions in `SEO_SETUP.md`
+ 
+### 2C. Bing Webmaster Tools
+ 
+Same pattern as Google — add meta verification placeholder and document the setup process. Bing matters for AI search (Copilot uses Bing's index).
+ 
+---
+ 
+## SECTION 3: PROGRAMMATIC SEO PAGES
+ 
+This is the big one. Build auto-generated landing pages that target long-tail search keywords. These pages are generated from GridTilt's existing data, not written manually. This is how you turn 6 pages into 200+ indexable pages.
+ 
+### 3A. Individual Stock Pages — `/stock/[ticker]`
+ 
+Create a dynamic route that generates a page for EVERY ticker in The Stack. For example:
+- `gridtilt.com/stock/CEG` — Constellation Energy
+- `gridtilt.com/stock/VRT` — Vertiv Holdings
+- `gridtilt.com/stock/CCJ` — Cameco Corp
+- etc. for all 60+ tickers
+ 
+**Each stock page should include:**
+ 
+1. **Header:** Company name, ticker, current price, daily change (color-coded), sector tag
+2. **Thesis Relevance:** The Portfolio Overlay thesis score for this ticker, with the breakdown (which thesis segments it maps to, correlation to each index)
+3. **Sector Context:** Which Stack sector this belongs to, with a one-line description of why this sector matters for the AI power thesis
+4. **Key Metrics:** P/E ratio, market cap, revenue growth YoY, 52-week range (whatever data you have access to)
+5. **Price Chart:** A simple line chart showing available price history
+6. **Related Stocks:** 4-6 other tickers in the same sector, with prices and changes (internal links to their stock pages)
+7. **Catalysts:** Upcoming catalysts that affect this ticker (pulled from Catalyst Tracker)
+8. **News:** Recent news headlines from the news API that mention this ticker or company name
+9. **FAQ section** with schema markup. Generate 3-5 questions per stock:
+   - "Is [Company] involved in AI data center power?"
+   - "What sector does [Ticker] belong to in the AI power thesis?"
+   - "What is [Company]'s thesis alignment score on GridTilt?"
+ 
+**SEO per stock page:**
+- Title: `[Company Name] ($[TICKER]) — AI Power Thesis Analysis | GridTilt`
+- Description: `[Company] analysis for the AI power infrastructure thesis. Live price, thesis score [X]/100, [sector] sector. Track [ticker] on GridTilt.`
+- Dynamic OG image (from Section 1C)
+- FinancialProduct JSON-LD schema
+- Breadcrumb: GridTilt > The Stack > [Sector] > [Ticker]
+ 
+### 3B. Sector Pages — `/sector/[sector-slug]`
+ 
+Create a page for each Stack sector:
+- `/sector/nuclear-power`
+- `/sector/uranium`
+- `/sector/compute`
+- `/sector/power-hardware`
+- `/sector/utilities`
+- `/sector/data-center-reits`
+- `/sector/construction-epc`
+- `/sector/natural-gas-generation`
+- `/sector/smr-advanced-nuclear`
+- `/sector/etf-benchmarks`
+- `/sector/cooling-thermal`
+ 
+**Each sector page should include:**
+ 
+1. **Sector overview:** 2-3 sentences explaining what this sector is and why it matters for the AI power thesis. Write these in GridTilt's voice (short, direct, no em dashes, no AI fluff).
+2. **All stocks in this sector:** Full card layout from The Stack, but only for this sector
+3. **Sector performance:** Aggregate stats — average daily change, best/worst performer, sector trend
+4. **Sector-specific thesis context:** What drives this sector? What are the key bottlenecks? What catalysts matter most?
+5. **Related sectors:** Links to adjacent sectors (Nuclear links to Uranium, Construction links to Power Hardware, etc.)
+6. **FAQ schema** with sector-specific questions:
+   - "What are the best nuclear energy stocks for AI infrastructure?"
+   - "Which construction companies benefit from data center buildout?"
+   - "What uranium stocks are connected to the AI power thesis?"
+ 
+**SEO per sector page:**
+- Title: `[Sector Name] Stocks for AI Power Infrastructure | GridTilt`
+- Description: `Track [X] [sector] stocks tied to the AI power buildout. Live prices, thesis analysis, and sector performance on GridTilt.`
+ 
+### 3C. Grid Region Pages — `/region/[region-slug]`
+ 
+Create a page for each RTO/grid region:
+- `/region/pjm`
+- `/region/ercot`
+- `/region/miso`
+- `/region/wecc`
+- `/region/serc`
+- `/region/spp`
+- `/region/npcc`
+ 
+**Each region page should include:**
+ 
+1. **Region overview:** Where it covers geographically, how much AI DC capacity it hosts
+2. **Embedded Power Map** pre-filtered to this region
+3. **Facilities list:** All data centers in this region with operator, capacity, status
+4. **Grid stress data:** Current stress level for this region from the Grid Stress index
+5. **Key stats:** Total capacity, number of facilities, dominant operators
+6. **Related regions:** Links to other regions
+ 
+**SEO per region page:**
+- Title: `[Region] Grid Region — AI Data Center Locations | GridTilt`
+- Description: `[X] AI data center facilities in the [Region] grid region. [Y] GW total capacity. See operators, locations, and grid stress on GridTilt.`
+ 
+### 3D. Operator Pages — `/operator/[operator-slug]`
+ 
+Create a page for each major operator:
+- `/operator/google`
+- `/operator/amazon`
+- `/operator/meta`
+- `/operator/microsoft`
+- `/operator/oracle`
+- `/operator/coreweave`
+- `/operator/xai`
+- `/operator/openai`
+ 
+**Each operator page should include:**
+ 
+1. **Operator profile:** Number of facilities, total capacity, geographic strategy
+2. **Embedded Power Map** pre-filtered to this operator
+3. **Facilities list:** All this operator's data centers with location, capacity, region, status
+4. **Geographic analysis:** Which grid regions this operator favors and why
+5. **Related operators:** Links to other operators for comparison
+ 
+**SEO per operator page:**
+- Title: `[Operator] AI Data Centers — Locations and Capacity | GridTilt`
+- Description: `[Operator] operates [X] AI data center facilities tracked on GridTilt. [Y] GW total capacity across [regions]. Map, capacity data, and grid analysis.`
+ 
+### 3E. Internal Linking Strategy
+ 
+Every programmatic page should link to related pages:
+- Stock pages link to their sector page and other stocks in the same sector
+- Sector pages link to all stock pages within them
+- Region pages link to operator pages for operators present in that region
+- Operator pages link to region pages where they have facilities
+- All pages link back to the main tools (Tilt Overview, The Stack, Power Map)
+ 
+This internal linking web is critical for SEO. Google discovers pages through links. Build this thoroughly.
+ 
+---
+ 
+## SECTION 4: BLOG / ANALYSIS INFRASTRUCTURE
+ 
+### 4A. Blog System
+ 
+Build a lightweight blog at `/blog` or `/analysis`. This is for SEO content that targets informational search queries. The blog should:
+ 
+- Support markdown or MDX content files in a `/content/blog/` directory
+- Auto-generate pages from content files
+- Each blog post gets proper metadata, OG tags, and Article schema
+- Blog index page at `/blog` showing all posts in reverse chronological order
+- Clean, readable typography (dark background, light text, good line-height and max-width)
+- Match GridTilt's design system
+ 
+### 4B. Seed Content Pages
+ 
+Create the following initial blog/analysis pages. These target high-value search keywords. Write the content directly (500-800 words each, factual, data-driven, linking to GridTilt tools where relevant). NO AI VOICE. Write these like the @gridtilt X account would write a long post.
+ 
+1. **`/blog/ai-data-center-power-demand`**
+   - Title: "How Much Power Do AI Data Centers Actually Need?"
+   - Target keywords: AI data center power, AI electricity consumption, data center energy demand
+   - Content: the 35-75 GW range, what drives the variance, link to Thesis Calculator
+ 
+2. **`/blog/ai-power-infrastructure-stocks`**
+   - Title: "AI Power Infrastructure Stocks: The Complete Guide"
+   - Target keywords: AI power stocks, AI infrastructure stocks, data center stocks
+   - Content: overview of all 9 sectors, top picks in each, link to The Stack
+ 
+3. **`/blog/nuclear-energy-ai-data-centers`**
+   - Title: "Nuclear Energy and AI Data Centers: Why It Matters"
+   - Target keywords: nuclear energy AI, nuclear data center, nuclear power stocks AI
+   - Content: the baseload argument, restart timelines, key stocks (CEG, VST, CCJ), link to sector page
+ 
+4. **`/blog/pjm-interconnection-queue`**
+   - Title: "The PJM Interconnection Queue: AI's Biggest Bottleneck"
+   - Target keywords: PJM interconnection queue, PJM data centers, grid interconnection backlog
+   - Content: what PJM is, why the queue matters, how it affects the thesis, link to Power Map
+ 
+5. **`/blog/ai-data-center-locations-map`**
+   - Title: "Where Are AI Data Centers Being Built? A Map"
+   - Target keywords: AI data center locations, data center map, where are data centers
+   - Content: geographic patterns, operator strategies, link to Power Map
+ 
+6. **`/blog/transformer-shortage-ai`**
+   - Title: "The Transformer Shortage That Could Slow AI"
+   - Target keywords: transformer shortage, power transformer backlog, grid hardware shortage
+   - Content: 60 LPTs/year vs demand, lead times, companies benefiting, link to Calculator
+ 
+7. **`/blog/uranium-stocks-ai-demand`**
+   - Title: "Uranium Stocks and AI: The Supply Chain Connection"
+   - Target keywords: uranium stocks AI, uranium demand data centers, nuclear fuel stocks
+   - Content: fuel cycle, restart demand, key miners, link to sector page
+ 
+8. **`/blog/behind-the-meter-power-data-centers`**
+   - Title: "Behind-the-Meter Power: Why Hyperscalers Are Building Their Own Plants"
+   - Target keywords: behind the meter data center, self-generation data center
+   - Content: Amazon/Meta/Microsoft strategies, what it means for grid stocks
+ 
+Each blog post should:
+- Have proper Article schema markup
+- Include 2-3 internal links to relevant GridTilt tools/pages
+- Include a "Track this on GridTilt" CTA at the bottom linking to the most relevant tool
+- Have a table of contents if longer than 600 words
+- Be fully SSR/SSG for crawlability
+ 
+---
+ 
+## SECTION 5: RSS FEEDS
+ 
+Create RSS feeds that can be consumed by news aggregators, feed readers, and automated marketing tools:
+ 
+### 5A. Main RSS Feed — `/rss.xml` or `/feed.xml`
+- Includes blog posts in reverse chronological order
+- Standard RSS 2.0 format
+- Include full post content in `<description>` or `<content:encoded>`
+ 
+### 5B. Catalyst RSS Feed — `/catalysts/rss.xml`
+- Each catalyst event as an RSS item
+- Upcoming events sorted by date
+- This lets people subscribe to GridTilt catalysts in their feed reader
+ 
+### 5C. News RSS Feed — `/news/rss.xml`
+- Re-syndicate the filtered news headlines that appear in the news ticker
+- This makes GridTilt a curated news source for AI infrastructure, not just a dashboard
+ 
+---
+ 
+## SECTION 6: PWA AND INSTALLABILITY
+ 
+Make GridTilt installable as a Progressive Web App:
+ 
+### 6A. Web App Manifest — `/manifest.json`
+```json
+{
+  "name": "GridTilt — AI Power Infrastructure Dashboard",
+  "short_name": "GridTilt",
+  "description": "Track the AI power buildout",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1A1A2E",
+  "theme_color": "#E8722A",
+  "icons": [
+    {"src": "/icon-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "/icon-512.png", "sizes": "512x512", "type": "image/png"}
+  ]
+}
+```
+ 
+### 6B. Service Worker
+- Cache the app shell (HTML, CSS, JS) for offline-capable loading
+- Cache API responses with a network-first strategy (show cached data while fetching fresh)
+- The app should load instantly on repeat visits
+ 
+### 6C. App Icons
+- Generate proper app icons at 192x192 and 512x512
+- Use GridTilt's orange on dark background
+- Apple touch icon for iOS
+ 
+---
+ 
+## SECTION 7: SOCIAL SHARING INFRASTRUCTURE
+ 
+### 7A. Share Buttons on Programmatic Pages
+ 
+Every stock page, sector page, region page, and operator page should have share buttons:
+- "Share on X" — pre-populated tweet: "[Company] ($[TICKER]) scores [X]/100 on the AI power thesis. [sector] sector. See the full analysis on @gridtilt: gridtilt.com/stock/[ticker]"
+- "Copy Link" — copies the URL to clipboard with a small toast confirmation
+- "Share Card" — downloads or copies the dynamic OG image as a shareable card
+ 
+### 7B. Portfolio Overlay Share Card Enhancement
+ 
+When a user scores a ticker in Portfolio Overlay:
+- Generate a clean share card image (use the OG image generator with custom params)
+- Show: ticker, score, one-line interpretation, GridTilt branding
+- "Share on X" button with pre-populated tweet
+- "Download Image" button
+- This is the viral mechanic. Make it smooth and instant.
+ 
+### 7C. Embeddable Widgets
+ 
+Create lightweight embeddable widgets that people can put on their own sites or blogs:
+ 
+**Thesis Health Widget:**
+```html
+<iframe src="https://gridtilt.com/embed/thesis-health" width="400" height="200"></iframe>
+```
+- Shows the 3 index values + thesis status in a compact card
+- Dark themed to match GridTilt
+- Links back to gridtilt.com
+ 
+**Stock Ticker Widget:**
+```html
+<iframe src="https://gridtilt.com/embed/stock/CEG" width="300" height="150"></iframe>
+```
+- Shows ticker, price, change, thesis score in a small card
+- Links to the full stock page
+ 
+These embeds create backlinks and drive referral traffic.
+ 
+---
+ 
+## SECTION 8: AUTOMATED CONTENT GENERATION HOOKS
+ 
+Build the infrastructure that allows automated content creation and social posting (the actual automation will be set up separately, this section builds the API endpoints and data exports):
+ 
+### 8A. Daily Data Export API — `/api/export/daily`
+ 
+Create an authenticated API endpoint that returns a JSON payload with:
+```json
+{
+  "date": "2026-03-16",
+  "thesis_status": "Expanding",
+  "indices": {
+    "ai_demand": {"value": 74.1, "change": +1.2, "trend": "up"},
+    "nuclear_renaissance": {"value": 279.1, "change": -3.4, "trend": "stable"},
+    "grid_stress": {"value": 69.6, "change": +0.8, "trend": "up"}
+  },
+  "top_movers": [
+    {"ticker": "IREN", "name": "IREN Limited", "change_pct": 8.08, "sector": "Data Centers"},
+    ...
+  ],
+  "sector_pulse": {
+    "construction": +3.54,
+    "data_centers": +2.66,
+    ...
+  },
+  "upcoming_catalysts": [...],
+  "facility_count": 48,
+  "total_capacity_gw": 20.7
+}
+```
+ 
+This endpoint will be consumed by marketing automation tools (Zapier, Make, n8n) to auto-generate social posts, email content, etc.
+ 
+### 8B. Weekly Digest Export — `/api/export/weekly`
+ 
+Returns a weekly summary:
+- Best and worst performing sectors
+- Biggest movers of the week
+- New catalysts added
+- Any new facilities added to the map
+- Thesis status trend (expanding/stable/cooling over the week)
+ 
+This feeds into the weekly email newsletter (GridTilt Brief).
+ 
+### 8C. Social Post Templates — `/api/social/generate`
+ 
+An endpoint that generates ready-to-post social content based on the day's data:
+ 
+```json
+POST /api/social/generate
+{
+  "platform": "twitter",
+  "type": "daily_movers"
+}
+```
+ 
+Response:
+```json
+{
+  "text": "top movers on gridtilt today\n\n$IREN +8.08%\n$PRIM +5.88%\n$BWXT +5.43%\n$STRL +4.93%\n$DNN +4.19%\n\nconstruction and nuclear leading. thesis status: expanding\n\ngridtilt.com",
+  "has_image": true,
+  "image_url": "/api/og?type=daily_movers&date=2026-03-16"
+}
+```
+ 
+Support these template types:
+- `daily_movers` — top 5 movers with % changes
+- `sector_pulse` — which sectors up/down today
+- `thesis_status` — index readings + status
+- `catalyst_preview` — next 3 upcoming catalysts
+- `weekly_recap` — week summary stats
+ 
+All text output must match the @gridtilt voice: lowercase, no periods at end of lines, no em dashes, short and direct.
+ 
+### 8D. Webhook on Catalyst Events
+ 
+Set up a webhook system that fires when:
+- A catalyst event date arrives (earnings day)
+- A significant index movement occurs (>3% daily change on any index)
+- A new facility is added to the Power Map
+ 
+The webhook POSTs to a configurable URL with the event data. This lets marketing automation tools react in real-time.
+ 
+---
+ 
+## SECTION 9: TECHNICAL INFRASTRUCTURE
+ 
+### 9A. Proper 404 Page
+- Branded 404 page matching GridTilt's design
+- "Page not found. Here's what you might be looking for:" with links to main tools
+- Do NOT use the default Next.js or Replit 404
+ 
+### 9B. Proper Favicon Set
+- favicon.ico (16x16 and 32x32)
+- apple-touch-icon.png (180x180)
+- icon-192.png and icon-512.png (for PWA manifest)
+- Use GridTilt branding (orange on dark, "GT" or the tilt logo mark)
+ 
+### 9C. Humans.txt and Security.txt
+```
+# /humans.txt
+Built by Jack Schwartz (@aurph)
+Site: gridtilt.com
+Twitter: @gridtilt
+```
+ 
+```
+# /.well-known/security.txt
+Contact: mailto:jack@gridtilt.com
+Preferred-Languages: en
+```
+ 
+### 9D. Redirects
+- `/stocks` redirects to `/the-stack`
+- `/map` redirects to `/power-map`
+- `/calculator` redirects to `/thesis-calculator`
+- `/score` redirects to `/portfolio-overlay`
+- `/catalysts` redirects to `/catalyst-tracker`
+ 
+Catch common URL variations so inbound links don't 404.
+ 
+---
+ 
+## SECTION 10: SEO SETUP DOCUMENTATION
+ 
+Create a file at the project root called `SEO_SETUP.md` with complete instructions for:
+ 
+1. How to verify the site with Google Search Console (step-by-step with screenshots description)
+2. How to submit the sitemap to Google
+3. How to verify with Bing Webmaster Tools
+4. How to set up the GA4 measurement ID
+5. How to request indexing for specific pages
+6. How to check Core Web Vitals in PageSpeed Insights
+7. How to monitor search performance in GSC
+8. Where all the SEO-related code lives in the codebase (meta tags, schema, sitemap, robots.txt, OG images)
+9. How to add a new blog post
+10. How to add a new stock page (when adding tickers to The Stack)
+ 
+This document should be thorough enough that someone with basic technical knowledge can complete the full SEO setup without asking questions.
+ 
+---
+ 
+## BUILD ORDER
+ 
+Work through these in order. Each section is substantial. Do not rush.
+ 
+1. **Section 1** (Technical SEO) — metadata, OG images, sitemap, schema, Core Web Vitals
+2. **Section 9** (Infrastructure) — 404, favicons, redirects
+3. **Section 3** (Programmatic Pages) — stock, sector, region, operator pages with full SEO
+4. **Section 4** (Blog) — blog system + 8 seed articles
+5. **Section 5** (RSS Feeds) — main, catalyst, and news feeds
+6. **Section 2** (Google/Analytics Setup) — verification placeholders, GA4, event tracking
+7. **Section 6** (PWA) — manifest, service worker, icons
+8. **Section 7** (Social Sharing) — share buttons, cards, embeddable widgets
+9. **Section 8** (Automation Hooks) — API endpoints, social templates, webhooks
+10. **Section 10** (Documentation) — SEO setup guide
+ 
+After completing each section, summarize what was built and confirm before moving to the next.
+ 

@@ -3,6 +3,13 @@ import { type Server } from "http";
 import { readFileSync } from "fs";
 import { join } from "path";
 import RSSParser from "rss-parser";
+import {
+  BASE_URL,
+  SITEMAP_STATIC_PAGES,
+  SITEMAP_SECTOR_SLUGS,
+  SITEMAP_REGION_SLUGS,
+  SITEMAP_OPERATOR_SLUGS,
+} from "./seo";
 
 // Known company data for portfolio scoring
 const COMPANY_DATABASE: Record<string, {
@@ -952,5 +959,554 @@ export async function registerRoutes(
     }
   });
 
+  // ─── SEO: Sitemap.xml ───────────────────────────────────────────────────
+  app.get("/sitemap.xml", (_req, res) => {
+    const today = new Date().toISOString().split("T")[0];
+    const urls: Array<{ loc: string; priority: string; changefreq: string }> = [];
+
+    for (const p of SITEMAP_STATIC_PAGES) {
+      urls.push({
+        loc: `${BASE_URL}${p === "/" ? "" : p}`,
+        priority: "1.0",
+        changefreq: "daily",
+      });
+    }
+
+    for (const ticker of ALL_STACK_TICKERS) {
+      urls.push({
+        loc: `${BASE_URL}/stock/${ticker}`,
+        priority: "0.8",
+        changefreq: "daily",
+      });
+    }
+
+    for (const slug of SITEMAP_SECTOR_SLUGS) {
+      urls.push({
+        loc: `${BASE_URL}/sector/${slug}`,
+        priority: "0.7",
+        changefreq: "weekly",
+      });
+    }
+
+    for (const slug of SITEMAP_REGION_SLUGS) {
+      urls.push({
+        loc: `${BASE_URL}/region/${slug}`,
+        priority: "0.7",
+        changefreq: "weekly",
+      });
+    }
+
+    for (const slug of SITEMAP_OPERATOR_SLUGS) {
+      urls.push({
+        loc: `${BASE_URL}/operator/${slug}`,
+        priority: "0.7",
+        changefreq: "weekly",
+      });
+    }
+
+    try {
+      const blogPath = join(process.cwd(), "content", "blog", "articles.json");
+      const blogRaw = readFileSync(blogPath, "utf-8");
+      const blogArticles = JSON.parse(blogRaw);
+      for (const article of blogArticles) {
+        urls.push({
+          loc: `${BASE_URL}/blog/${article.slug}`,
+          priority: "0.6",
+          changefreq: "monthly",
+        });
+      }
+    } catch {}
+
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${urls.map((u) => `  <url>
+    <loc>${u.loc}</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>${u.changefreq}</changefreq>
+    <priority>${u.priority}</priority>
+  </url>`).join("\n")}
+</urlset>`;
+    res.set("Content-Type", "application/xml").send(xml);
+  });
+
+  // ─── SEO: Robots.txt ───────────────────────────────────────────────────
+  app.get("/robots.txt", (_req, res) => {
+    res.set("Content-Type", "text/plain").send(`User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /admin/
+Sitemap: ${BASE_URL}/sitemap.xml
+`);
+  });
+
+  // ─── SEO: humans.txt ───────────────────────────────────────────────────
+  app.get("/humans.txt", (_req, res) => {
+    res.set("Content-Type", "text/plain").send(`Built by Jack Schwartz (@aurph)
+Site: gridtilt.com
+Twitter: @gridtilt
+`);
+  });
+
+  // ─── SEO: security.txt ─────────────────────────────────────────────────
+  app.get("/.well-known/security.txt", (_req, res) => {
+    res.set("Content-Type", "text/plain").send(`Contact: mailto:jack@gridtilt.com
+Preferred-Languages: en
+`);
+  });
+
+  // ─── SEO: Dynamic OG Image Generation ──────────────────────────────────
+  app.get("/api/og", async (req, res) => {
+    try {
+      const satori = (await import("satori")).default;
+      const { Resvg } = await import("@resvg/resvg-js");
+      const fontData = readFileSync(join(process.cwd(), "server", "fonts", "Inter-Regular.ttf"));
+
+      const page = (req.query.page as string) || "home";
+      const ticker = req.query.ticker as string | undefined;
+      const name = req.query.name as string | undefined;
+
+      let title = "The Grid is Tilting";
+      let subtitle = "AI Power Infrastructure Dashboard";
+      let stats: Array<{ label: string; value: string }> = [];
+
+      if (ticker) {
+        const companyInfo = COMPANY_DATABASE[ticker.toUpperCase()];
+        title = companyInfo ? `${companyInfo.name} ($${ticker.toUpperCase()})` : `$${ticker.toUpperCase()}`;
+        subtitle = companyInfo ? `${companyInfo.primarySegment} Sector` : "AI Power Thesis Analysis";
+        stats = [{ label: "Sector", value: companyInfo?.primarySegment || "Unknown" }];
+      } else if (page === "stack") {
+        title = "60+ AI Power Stocks";
+        subtitle = "Live Data Across 8 Sectors";
+      } else if (page === "power-map") {
+        title = "48 AI Data Centers Mapped";
+        subtitle = "Locations by Grid Region and Operator";
+      } else if (page === "sector" && name) {
+        title = `${name} Sector`;
+        subtitle = "AI Power Infrastructure Stocks";
+      } else if (page === "region" && name) {
+        title = `${name} Grid Region`;
+        subtitle = "AI Data Center Locations";
+      } else if (page === "operator" && name) {
+        title = `${name} AI Data Centers`;
+        subtitle = "Locations and Capacity";
+      }
+
+      const svg = await satori(
+        {
+          type: "div",
+          props: {
+            style: {
+              width: "1200px",
+              height: "630px",
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "space-between",
+              padding: "60px",
+              background: "linear-gradient(135deg, #121110 0%, #1a1917 50%, #121110 100%)",
+              fontFamily: "Inter, sans-serif",
+              color: "#ffffff",
+            },
+            children: [
+              {
+                type: "div",
+                props: {
+                  style: { display: "flex", flexDirection: "column", gap: "16px" },
+                  children: [
+                    {
+                      type: "div",
+                      props: {
+                        style: { display: "flex", alignItems: "center", gap: "12px" },
+                        children: [
+                          {
+                            type: "div",
+                            props: {
+                              style: {
+                                width: "8px",
+                                height: "32px",
+                                backgroundColor: "#F07800",
+                                borderRadius: "4px",
+                              },
+                            },
+                          },
+                          {
+                            type: "div",
+                            props: {
+                              style: { fontSize: "28px", fontWeight: "700", color: "#F07800", letterSpacing: "2px" },
+                              children: "GRIDTILT",
+                            },
+                          },
+                        ],
+                      },
+                    },
+                    {
+                      type: "div",
+                      props: {
+                        style: { fontSize: "52px", fontWeight: "800", lineHeight: "1.1", maxWidth: "900px" },
+                        children: title,
+                      },
+                    },
+                    {
+                      type: "div",
+                      props: {
+                        style: { fontSize: "24px", color: "#9ca3af", maxWidth: "800px" },
+                        children: subtitle,
+                      },
+                    },
+                  ],
+                },
+              },
+              {
+                type: "div",
+                props: {
+                  style: { display: "flex", justifyContent: "space-between", alignItems: "flex-end" },
+                  children: [
+                    {
+                      type: "div",
+                      props: {
+                        style: { display: "flex", gap: "40px" },
+                        children: (stats.length > 0 ? stats : [
+                          { label: "AI Demand", value: "74" },
+                          { label: "Nuclear", value: "279" },
+                          { label: "Grid Stress", value: "70" },
+                        ]).map((s) => ({
+                          type: "div",
+                          props: {
+                            style: { display: "flex", flexDirection: "column", gap: "4px" },
+                            children: [
+                              { type: "div", props: { style: { fontSize: "14px", color: "#6b7280", textTransform: "uppercase", letterSpacing: "2px" }, children: s.label } },
+                              { type: "div", props: { style: { fontSize: "40px", fontWeight: "700", color: "#F0A500", fontFamily: "monospace" }, children: s.value } },
+                            ],
+                          },
+                        })),
+                      },
+                    },
+                    {
+                      type: "div",
+                      props: {
+                        style: { fontSize: "18px", color: "#6b7280" },
+                        children: "gridtilt.com",
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        },
+        {
+          width: 1200,
+          height: 630,
+          fonts: [{ name: "Inter", data: fontData, weight: 400, style: "normal" as const }],
+        },
+      );
+
+      const resvg = new Resvg(svg, { fitTo: { mode: "width", value: 1200 } });
+      const png = resvg.render().asPng();
+
+      res.set({
+        "Content-Type": "image/png",
+        "Cache-Control": "public, max-age=3600, s-maxage=86400",
+      }).send(Buffer.from(png));
+    } catch (error) {
+      console.error("OG image generation error:", error);
+      res.status(500).json({ error: "Failed to generate OG image" });
+    }
+  });
+
+  // ─── SEO: Manifest.json (PWA) ──────────────────────────────────────────
+  app.get("/manifest.json", (_req, res) => {
+    res.json({
+      name: "GridTilt \u2014 AI Power Infrastructure Dashboard",
+      short_name: "GridTilt",
+      description: "Track the AI power buildout",
+      start_url: "/",
+      display: "standalone",
+      background_color: "#121110",
+      theme_color: "#F07800",
+      icons: [
+        { src: "/favicon.png", sizes: "192x192", type: "image/png" },
+        { src: "/favicon.png", sizes: "512x512", type: "image/png" },
+      ],
+    });
+  });
+
+  // ─── SEO: URL Redirects ─────────────────────────────────────────────────
+  app.get("/stocks", (_req, res) => res.redirect(301, "/stack"));
+  app.get("/map", (_req, res) => res.redirect(301, "/power-map"));
+  app.get("/calculator", (_req, res) => res.redirect(301, "/trade"));
+  app.get("/score", (_req, res) => res.redirect(301, "/portfolio"));
+  app.get("/catalyst-tracker", (_req, res) => res.redirect(301, "/catalysts"));
+  app.get("/the-stack", (_req, res) => res.redirect(301, "/stack"));
+  app.get("/thesis-calculator", (_req, res) => res.redirect(301, "/trade"));
+  app.get("/portfolio-overlay", (_req, res) => res.redirect(301, "/portfolio"));
+
+  // ─── Content Export APIs ────────────────────────────────────────────────
+  app.get("/api/export/daily", async (_req, res) => {
+    try {
+      const cached = stackCache["1D"];
+      const topMoversData: any[] = [];
+      if (cached?.data) {
+        const allStocks: any[] = [];
+        for (const layer of Object.values(cached.data)) {
+          if (Array.isArray(layer)) allStocks.push(...layer);
+        }
+        allStocks
+          .filter((s: any) => s?.changePercent != null)
+          .sort((a: any, b: any) => Math.abs(b.changePercent) - Math.abs(a.changePercent))
+          .slice(0, 5)
+          .forEach((s: any) => {
+            topMoversData.push({
+              ticker: s.ticker,
+              name: s.name,
+              change_pct: parseFloat(s.changePercent.toFixed(2)),
+              sector: s.sector || "Unknown",
+            });
+          });
+      }
+
+      res.json({
+        date: new Date().toISOString().split("T")[0],
+        thesis_status: "Expanding",
+        indices: {
+          ai_demand: { value: 74, trend: "up" },
+          nuclear_renaissance: { value: 279, trend: "stable" },
+          grid_stress: { value: 70, trend: "up" },
+        },
+        top_movers: topMoversData,
+        facility_count: 48,
+        total_capacity_gw: 20.7,
+      });
+    } catch (error) {
+      console.error("Daily export error:", error);
+      res.status(500).json({ error: "Failed to generate daily export" });
+    }
+  });
+
+  app.post("/api/social/generate", (req, res) => {
+    const { platform, type } = req.body || {};
+    const templates: Record<string, string> = {
+      thesis_status: "gridtilt thesis status\n\nai demand: 74\nnuclear renaissance: 279\ngrid stress: 70\n\nstatus: expanding\n\ngridtilt.com",
+      daily_movers: "top movers on gridtilt today\n\ncheck the live dashboard for today's AI power infrastructure movers\n\ngridtilt.com/stack",
+      sector_pulse: "sector pulse\n\nconstruction and data centers leading today\nnuclear and uranium tracking\n\ngridtilt.com",
+      catalyst_preview: "upcoming catalysts\n\ncheck gridtilt.com/catalysts for the full calendar\n\nearnings, regulatory decisions, and policy events",
+    };
+
+    const text = templates[type || "thesis_status"] || templates.thesis_status;
+    res.json({
+      text,
+      platform: platform || "twitter",
+      has_image: true,
+      image_url: `/api/og?page=${type || "home"}`,
+    });
+  });
+
+  // ─── RSS Feeds ──────────────────────────────────────────────────────────
+  app.get("/feed.xml", async (_req, res) => {
+    try {
+      const filePath = join(process.cwd(), "content", "blog", "articles.json");
+      const raw = readFileSync(filePath, "utf-8");
+      const articles = JSON.parse(raw);
+      articles.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      const items = articles.map((a: any) => `    <item>
+      <title>${escapeXml(a.title)}</title>
+      <link>${BASE_URL}/blog/${a.slug}</link>
+      <description>${escapeXml(a.description)}</description>
+      <pubDate>${new Date(a.date).toUTCString()}</pubDate>
+      <guid>${BASE_URL}/blog/${a.slug}</guid>
+    </item>`).join("\n");
+
+      res.set("Content-Type", "application/rss+xml").send(`<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>GridTilt Analysis</title>
+    <link>${BASE_URL}/blog</link>
+    <description>Research and analysis on the AI power infrastructure thesis</description>
+    <language>en-us</language>
+    <atom:link href="${BASE_URL}/feed.xml" rel="self" type="application/rss+xml" />
+${items}
+  </channel>
+</rss>`);
+    } catch (error) {
+      console.error("Blog RSS error:", error);
+      res.status(500).send("Error generating RSS feed");
+    }
+  });
+
+  app.get("/catalysts/rss.xml", (_req, res) => {
+    try {
+      const filePath = join(process.cwd(), "server", "data", "catalysts.json");
+      const raw = readFileSync(filePath, "utf-8");
+      const catalysts = JSON.parse(raw);
+      const sorted = catalysts.sort((a: any, b: any) =>
+        new Date(a.date).getTime() - new Date(b.date).getTime()
+      );
+      const items = sorted.map((c: any) => `    <item>
+      <title>${escapeXml(c.title)}</title>
+      <description>${escapeXml(c.thesisImpact)}</description>
+      <pubDate>${new Date(c.date).toUTCString()}</pubDate>
+      <guid>${BASE_URL}/catalysts#${c.id}</guid>
+      <category>${escapeXml(c.category)}</category>
+    </item>`).join("\n");
+
+      res.set("Content-Type", "application/rss+xml").send(`<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>GridTilt Catalyst Tracker</title>
+    <link>${BASE_URL}/catalysts</link>
+    <description>Upcoming earnings, regulatory decisions, and policy events for AI infrastructure stocks</description>
+    <language>en-us</language>
+    <atom:link href="${BASE_URL}/catalysts/rss.xml" rel="self" type="application/rss+xml" />
+${items}
+  </channel>
+</rss>`);
+    } catch (error) {
+      console.error("Catalysts RSS error:", error);
+      res.status(500).send("Error generating RSS feed");
+    }
+  });
+
+  app.get("/news/rss.xml", async (_req, res) => {
+    try {
+      const items = newsCache?.items || [];
+      const rssItems = items.map((n) => `    <item>
+      <title>${escapeXml(n.headline)}</title>
+      <link>${escapeXml(n.url)}</link>
+      <description>${escapeXml(n.headline)} via ${escapeXml(n.source)}</description>
+      <pubDate>${new Date(n.publishedAt).toUTCString()}</pubDate>
+      <source url="${escapeXml(n.url)}">${escapeXml(n.source)}</source>
+      <guid>${escapeXml(n.url)}</guid>
+    </item>`).join("\n");
+
+      res.set("Content-Type", "application/rss+xml").send(`<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>GridTilt AI Infrastructure News</title>
+    <link>${BASE_URL}</link>
+    <description>Curated news feed for AI power infrastructure and data center developments</description>
+    <language>en-us</language>
+    <atom:link href="${BASE_URL}/news/rss.xml" rel="self" type="application/rss+xml" />
+${rssItems}
+  </channel>
+</rss>`);
+    } catch (error) {
+      console.error("News RSS error:", error);
+      res.status(500).send("Error generating RSS feed");
+    }
+  });
+
+  // ─── Stock Data API (for programmatic pages) ───────────────────────────
+  app.get("/api/stock/:ticker", async (req, res) => {
+    const ticker = req.params.ticker.toUpperCase();
+    const companyInfo = COMPANY_DATABASE[ticker];
+    if (!companyInfo) {
+      return res.status(404).json({ error: "Ticker not found" });
+    }
+
+    let layerKey = "";
+    for (const [key, tickers] of Object.entries(STACK_TICKERS)) {
+      if (tickers.includes(ticker)) {
+        layerKey = key;
+        break;
+      }
+    }
+
+    const cached = stackCache["1D"];
+    let stockData: any = null;
+    if (cached?.data && layerKey) {
+      const layerData = (cached.data as any)[layerKey];
+      if (Array.isArray(layerData)) {
+        stockData = layerData.find((s: any) => s.ticker === ticker);
+      }
+    }
+
+    const sectorStocks = layerKey ? STACK_TICKERS[layerKey as keyof typeof STACK_TICKERS] : [];
+    const relatedTickers = sectorStocks.filter((t) => t !== ticker).slice(0, 6);
+
+    const catalystsPath = join(process.cwd(), "server", "data", "catalysts.json");
+    let relatedCatalysts: any[] = [];
+    try {
+      const raw = readFileSync(catalystsPath, "utf-8");
+      relatedCatalysts = JSON.parse(raw)
+        .filter((c: any) => c.tickers?.includes(ticker))
+        .slice(0, 5);
+    } catch {}
+
+    const score = computeThesisScore(companyInfo);
+
+    res.json({
+      ticker,
+      name: companyInfo.name,
+      primarySegment: companyInfo.primarySegment,
+      sectors: companyInfo.sectors,
+      explanation: companyInfo.explanation,
+      thesisScore: score,
+      layerKey,
+      stockData,
+      relatedTickers,
+      relatedCatalysts,
+    });
+  });
+
+  // ─── Sector/Region/Operator metadata endpoints ─────────────────────────
+  app.get("/api/sectors", (_req, res) => {
+    const sectorLabels: Record<string, string> = {
+      compute: "Compute", nuclear: "Nuclear Power", uranium: "Uranium & Fuel Cycle",
+      powerHardware: "Power Hardware", utilities: "Utilities", dataCenters: "Data Center REITs",
+      construction: "Construction & EPC", etfsBenchmarks: "ETF Benchmarks",
+    };
+    const sectors = Object.entries(STACK_TICKERS).map(([key, tickers]) => ({
+      key,
+      name: sectorLabels[key] || key,
+      tickerCount: tickers.length,
+      tickers,
+    }));
+    res.json(sectors);
+  });
+
+  // ─── Blog API ────────────────────────────────────────────────────────
+  app.get("/api/blog", (_req, res) => {
+    try {
+      const filePath = join(process.cwd(), "content", "blog", "articles.json");
+      const raw = readFileSync(filePath, "utf-8");
+      const articles = JSON.parse(raw).map((a: any) => ({
+        slug: a.slug,
+        title: a.title,
+        description: a.description,
+        date: a.date,
+        keywords: a.keywords,
+      }));
+      articles.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      res.json(articles);
+    } catch (error) {
+      console.error("Blog index error:", error);
+      res.json([]);
+    }
+  });
+
+  app.get("/api/blog/:slug", (req, res) => {
+    try {
+      const filePath = join(process.cwd(), "content", "blog", "articles.json");
+      const raw = readFileSync(filePath, "utf-8");
+      const articles = JSON.parse(raw);
+      const article = articles.find((a: any) => a.slug === req.params.slug);
+      if (!article) {
+        return res.status(404).json({ error: "Article not found" });
+      }
+      res.json(article);
+    } catch (error) {
+      console.error("Blog post error:", error);
+      res.status(500).json({ error: "Failed to load article" });
+    }
+  });
+
   return httpServer;
+}
+
+function computeThesisScore(company: { sectors: { Compute: number; Infrastructure: number; Power: number; Cooling: number; Grid: number } }): number {
+  const { Compute, Infrastructure, Power, Cooling, Grid } = company.sectors;
+  return Math.round((Compute * 0.25 + Infrastructure * 0.25 + Power * 0.2 + Cooling * 0.15 + Grid * 0.15));
+}
+
+function escapeXml(str: string): string {
+  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&apos;");
 }
