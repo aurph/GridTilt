@@ -90,7 +90,7 @@ export default function CatalystTracker() {
           <div>
             <h1 className="text-2xl font-bold text-foreground tracking-tight">Catalyst Tracker</h1>
             <p className="text-muted-foreground text-sm mt-1 max-w-xl">
-              Upcoming events that move the AI power thesis. Earnings, regulatory, policy, and commodity catalysts.
+              Upcoming earnings, NRC decisions, FERC filings, PJM auctions, and commodity windows relevant to the AI power thesis.
             </p>
           </div>
         </div>

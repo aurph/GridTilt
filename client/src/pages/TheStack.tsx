@@ -300,7 +300,7 @@ export default function TheStack() {
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
             <h1 className="text-2xl font-bold text-foreground tracking-tight">The Stack</h1>
-            <p className="text-muted-foreground text-sm mt-1">Silicon to socket. Live market data across compute, infrastructure, and power.</p>
+            <p className="text-muted-foreground text-sm mt-1">60+ equities across 8 layers of the AI power supply chain. Intraday prices via Yahoo Finance.</p>
           </div>
           <Badge className="bg-[#F0A500]/15 text-[#F0A500] border-[#F0A500]/30 font-mono text-xs">
             Yahoo Finance · Live

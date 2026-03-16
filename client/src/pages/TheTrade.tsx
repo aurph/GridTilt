@@ -233,7 +233,7 @@ export default function TheTrade() {
           <div>
             <h1 className="text-2xl font-bold text-foreground tracking-tight">Thesis Calculator</h1>
             <p className="text-muted-foreground text-sm mt-1 max-w-xl">
-              Model the AI power buildout. Pick a scenario, adjust assumptions, see capital and grid implications.
+              50 GW of new AI datacenter capacity is projected by 2030. Model capex, grid interconnect timelines, and power supply mix under different assumptions.
             </p>
           </div>
           <UITooltip>

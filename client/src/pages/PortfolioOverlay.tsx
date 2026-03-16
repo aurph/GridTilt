@@ -178,7 +178,7 @@ export default function PortfolioOverlay() {
           <div>
             <h1 className="text-2xl font-bold text-foreground tracking-tight">Portfolio Overlay</h1>
             <p className="text-muted-foreground text-sm mt-1">
-              Score your holdings for AI power exposure across five supply chain segments.
+              Measure portfolio concentration across five AI power supply chain segments: compute, nuclear, uranium, utilities, and infrastructure.
             </p>
           </div>
           <UITooltip>

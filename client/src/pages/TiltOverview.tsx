@@ -764,18 +764,18 @@ function WhatAmILookingAt() {
   const tiles = [
     {
       icon: Cpu,
-      title: "The Big Idea",
-      body: "AI training runs burn enormous amounts of electricity. Big Tech is signing 20-year nuclear contracts and spending billions on new grid capacity. That buildout is the investment thesis.",
+      title: "The Thesis",
+      body: "AI datacenter load reached ~288 TWh in 2025 (~6.4% of the US grid) and is projected to double by 2028. Big Tech has committed $328B+ in 2025 capex and signed 12+ GW of nuclear PPAs. The infrastructure required to deliver that power is the investable thesis.",
     },
     {
       icon: Plug,
-      title: "The 3 Numbers at the Top",
-      body: "AI Power Demand measures how fast AI is consuming the grid (72+ = elevated). Nuclear Renaissance tracks nuclear stocks vs. a Jan 2024 baseline of 100. Grid Stress shows how tight US electricity supply is. Together they tell you if the thesis is accelerating or cooling.",
+      title: "The 3 Indices",
+      body: "AI Power Demand Index: composite score anchored to EIA datacenter load data (baseline 72/100). Nuclear Renaissance Index: weighted basket of CEG, VST, CCJ, NLR, uranium spot, and policy score, rebased to Jan 2024 = 100. Grid Stress Score: PJM/MISO/ERCOT reserve margin signal (68/100 baseline).",
     },
     {
       icon: BarChart3,
       title: "The Stack",
-      body: "The Stack organizes 60+ public companies into 8 layers of the AI power supply chain: chips, nuclear, uranium, power hardware, utilities, data centers, construction, and ETFs. These are the companies building the buildout.",
+      body: "60+ public equities organized into 8 supply chain layers: compute (NVDA, TSM, AMD), nuclear (CEG, VST, OKLO), uranium (CCJ, UEC), power hardware (GEV, ETN, VRT), utilities (NEE, D, SO), data centers (EQIX, DLR), construction (PWR, EME), and ETF benchmarks.",
     },
   ];
 
@@ -799,7 +799,7 @@ function WhatAmILookingAt() {
       {open && (
         <div className="px-5 pb-5 pt-4 bg-muted/5">
           <p className="text-sm text-muted-foreground leading-relaxed mb-4 max-w-3xl">
-            GridTilt tracks the <span className="text-foreground font-medium">AI Infrastructure & Power Economy</span>: the companies building, powering, and supplying the infrastructure AI runs on. Here's what everything means.
+            GridTilt tracks the <span className="text-foreground font-medium">AI Infrastructure & Power Economy</span>: the public equities, grid operators, and supply chain segments exposed to accelerating datacenter power demand.
           </p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {tiles.map((tile) => {
@@ -864,7 +864,7 @@ export default function TiltOverview() {
                 </Badge>
               </div>
               <p className="text-muted-foreground text-xs sm:text-sm max-w-lg">
-                AI is eating the power grid. Track the stocks, data centers, and infrastructure behind the buildout.
+                US datacenter load hit ~6.4% of grid capacity in 2025 and is accelerating. Live equities, infrastructure, and power data across 60+ tickers.
               </p>
             </div>
           </div>
