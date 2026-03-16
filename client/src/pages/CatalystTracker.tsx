@@ -15,7 +15,7 @@ interface Catalyst {
 }
 
 const CATEGORY_STYLES: Record<string, { bg: string; text: string; border: string }> = {
-  Earnings:   { bg: "bg-[#1E90FF]/10",  text: "text-[#1E90FF]",  border: "border-[#1E90FF]/25" },
+  Earnings:   { bg: "bg-blue-400/10",    text: "text-blue-400",    border: "border-blue-400/25" },
   Regulatory: { bg: "bg-[#F0A500]/10",  text: "text-[#F0A500]",  border: "border-[#F0A500]/25" },
   Policy:     { bg: "bg-purple-500/10", text: "text-purple-400",  border: "border-purple-500/25" },
   Market:     { bg: "bg-[#F07800]/10",  text: "text-[#F07800]",  border: "border-[#F07800]/25" },
@@ -23,10 +23,15 @@ const CATEGORY_STYLES: Record<string, { bg: string; text: string; border: string
 
 const TICKER_COLORS: Record<string, string> = {
   NVDA: "#76b900", TSM: "#e5143d", CEG: "#005a8b", VST: "#ef4444",
-  CCJ: "#6366f1", NXE: "#8b5cf6", GE: "#0088ce", ETN: "#e4002b",
+  CCJ: "#6366f1", NXE: "#8b5cf6", GEV: "#0088ce", ETN: "#e4002b",
   MSFT: "#00a4ef", GOOGL: "#4285f4", AMZN: "#ff9900", META: "#0866ff",
   OKLO: "#F0A500", NLR: "#22c55e", URA: "#a855f7", TSLA: "#cc0000",
-  NEE: "#009900", ETR: "#005587",
+  NEE: "#009900", ETR: "#005587", BWXT: "#60a5fa", SMR: "#34d399",
+  VRT: "#f472b6", EQIX: "#a855f7", DLR: "#8b5cf6", PWR: "#fb923c",
+  EME: "#f59e0b", TLN: "#ef4444", NRG: "#94a3b8", HUBB: "#60a5fa",
+  UEC: "#fb923c", AAPL: "#a2aaad", INTC: "#0071c5", AMD: "#ed1c24",
+  MU: "#003da5", SMCI: "#22c55e", D: "#005a8b", SO: "#34d399",
+  PCG: "#60a5fa", PPL: "#22c55e", IREN: "#F0A500", MTZ: "#f472b6",
 };
 
 function daysUntil(dateStr: string): number {
@@ -72,8 +77,9 @@ type FilterOption = typeof FILTER_OPTIONS[number];
 export default function CatalystTracker() {
   const [activeFilter, setActiveFilter] = useState<FilterOption>("All");
 
-  const { data: catalysts, isLoading } = useQuery<Catalyst[]>({
+  const { data: catalysts, isLoading, isError } = useQuery<Catalyst[]>({
     queryKey: ["/api/catalysts"],
+    refetchInterval: 900000,
   });
 
   const filtered = catalysts?.filter(
@@ -151,7 +157,14 @@ export default function CatalystTracker() {
           </div>
         )}
 
-        {!isLoading && upcoming.length === 0 && past.length === 0 && (
+        {isError && (
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <Calendar className="h-12 w-12 text-muted-foreground/30 mb-4" />
+            <p className="text-sm text-muted-foreground">Unable to load catalyst data</p>
+          </div>
+        )}
+
+        {!isLoading && !isError && upcoming.length === 0 && past.length === 0 && (
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <Calendar className="h-12 w-12 text-muted-foreground/30 mb-4" />
             <p className="text-sm text-muted-foreground">No catalysts found for this filter</p>
@@ -184,7 +197,7 @@ export default function CatalystTracker() {
               </span>
               <div className="h-px flex-1 bg-border" />
             </div>
-            <div className="space-y-3 opacity-50">
+            <div className="space-y-3 opacity-65">
               {past.map((catalyst) => (
                 <CatalystCard key={catalyst.id} catalyst={catalyst} dimmed />
               ))}
@@ -201,7 +214,7 @@ function CatalystCard({ catalyst, dimmed }: { catalyst: Catalyst; dimmed?: boole
 
   return (
     <Card
-      className={`p-5 border-card-border hover-elevate ${dimmed ? "opacity-60" : ""}`}
+      className="p-5 border-card-border hover-elevate"
       data-testid={`catalyst-card-${catalyst.id}`}
     >
       <div className="flex gap-4">

@@ -217,9 +217,10 @@ export default function TheStack() {
   const [timeframe, setTimeframe] = useState<Timeframe>("1D");
   const [sortBy, setSortBy] = useState<SortBy>("change");
 
-  const { data, isLoading } = useQuery<StackData>({
+  const { data, isLoading, isError } = useQuery<StackData>({
     queryKey: ["/api/stack", timeframe],
     queryFn: () => fetch(`/api/stack?timeframe=${timeframe}`).then((r) => r.json()),
+    refetchInterval: 900000,
   });
 
   const regression = useMemo(
@@ -383,9 +384,18 @@ export default function TheStack() {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                {isLoading
+                {isError ? (
+                  <div className="col-span-full flex items-center gap-2 py-8 justify-center">
+                    <Info className="h-4 w-4 text-muted-foreground/50" />
+                    <p className="text-xs text-muted-foreground">Unable to load equities data</p>
+                  </div>
+                ) : isLoading
                   ? Array(4).fill(null).map((_, i) => <StockCardSkeleton key={i} />)
-                  : sortStocks(stocks ?? [], sortBy).map((stock) => (
+                  : (stocks ?? []).length === 0 ? (
+                    <div className="col-span-full py-4">
+                      <p className="text-xs text-muted-foreground text-center">No equities in this layer</p>
+                    </div>
+                  ) : sortStocks(stocks ?? [], sortBy).map((stock) => (
                       <StockCard
                         key={stock.ticker}
                         stock={stock}

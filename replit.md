@@ -116,11 +116,17 @@ Full-stack web application that visualizes the economic relationship between AI 
 ## Notes
 - No database required — portfolio scoring uses an in-memory lookup table of 60+ tickers
 - Yahoo Finance data has static fallbacks in `STATIC_MARKET_DATA` in routes.ts (March 2026 price levels)
-- Sparklines are generated procedurally from base price
+- Sparklines are generated procedurally from base price (seeded pseudo-random, deterministic)
 - Data center locations are hardcoded from public announcements (see PowerMap.tsx)
 - Catalyst dates are relative to March 11, 2026 (current session date)
 - Stack cache TTL: 10 min; News cache TTL: 30 min
 - PALAF is OTC (Paladin Energy) — live Yahoo Finance quote may not resolve; uses static fallback
+- All useQuery hooks have error states with AlertTriangle UI fallback
+- Empty states handled for top movers, sector pulse, and stack layers
+- Live queries refresh every 15 minutes (refetchInterval: 900000)
+- X/Twitter feed has 6-second timeout fallback with external link
+- All subtitles are statistics-led (lead with specific data points, not slogans)
+- Earnings category color: blue-400 (#60a5fa) — NOT #1E90FF (reserved for chart series)
 
 ## Data Freshness (as of March 2026)
 - RTO reserve margins: NERC LTRA 2026 (MISO 13.4%, ERCOT 15.8%, PJM 17.5%)

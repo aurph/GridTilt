@@ -95,7 +95,7 @@ interface SectorPulseItem {
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
-  Earnings:   "#1E90FF",
+  Earnings:   "#60a5fa",
   Regulatory: "#F0A500",
   Policy:     "#a855f7",
   Market:     "#F07800",
@@ -118,9 +118,11 @@ function formatDateShort(dateStr: string): string {
 
 function generateIndexSparkline(baseValue: number, length = 14): { i: number; v: number }[] {
   const data = [];
-  let v = baseValue;
+  let v = baseValue * 0.92;
+  const seed = Math.floor(baseValue * 100);
   for (let i = 0; i < length; i++) {
-    v = v + (Math.sin(i * 1.3 + baseValue) * 1.2) + (Math.random() - 0.5) * 0.8;
+    const pseudoRandom = Math.sin(seed * 9301 + i * 49297) * 0.5 + 0.5;
+    v = v + (baseValue - v) * 0.12 + (pseudoRandom - 0.45) * 1.2;
     v = Math.max(0, Math.min(100, v));
     data.push({ i, v: parseFloat(v.toFixed(2)) });
   }
@@ -131,7 +133,7 @@ const SECTOR_DEMAND = [
   { sector: "Residential", twh: 1658, yoy: 2.1, color: "#6b7280" },
   { sector: "Commercial", twh: 1569, yoy: 2.4, color: "#8b5cf6" },
   { sector: "Industrial", twh: 975, yoy: -3.2, color: "#94a3b8" },
-  { sector: "Data Centers", twh: 288, yoy: 33.3, color: "#f0a500" },
+  { sector: "Data Centers", twh: 288, yoy: 33.3, color: "#a855f7" },
 ];
 
 const CustomTooltip = ({ active, payload, label }: any) => {
@@ -375,7 +377,16 @@ const SECTOR_LABEL_SHORT: Record<string, string> = {
   etfsBenchmarks: "ETFs",
 };
 
-function TopMoversSection({ topMovers, isLoading }: { topMovers: TopMover[]; isLoading: boolean }) {
+function ErrorCard({ label }: { label: string }) {
+  return (
+    <div className="flex items-center gap-2 py-8 justify-center">
+      <AlertTriangle className="h-4 w-4 text-muted-foreground/50" />
+      <p className="text-xs text-muted-foreground">{label}</p>
+    </div>
+  );
+}
+
+function TopMoversSection({ topMovers, isLoading, isError }: { topMovers: TopMover[]; isLoading: boolean; isError?: boolean }) {
   return (
     <Card className="p-5 border-card-border">
       <div className="flex items-center gap-2 mb-4">
@@ -391,7 +402,7 @@ function TopMoversSection({ topMovers, isLoading }: { topMovers: TopMover[]; isL
         </UITooltip>
       </div>
       <div className="space-y-2">
-        {isLoading
+        {isError ? <ErrorCard label="Unable to load movers" /> : isLoading
           ? Array(5).fill(null).map((_, i) => (
               <div key={i} className="flex items-center gap-3 py-1.5">
                 <Skeleton className="h-4 w-12" />
@@ -399,7 +410,7 @@ function TopMoversSection({ topMovers, isLoading }: { topMovers: TopMover[]; isL
                 <Skeleton className="h-4 w-16" />
               </div>
             ))
-          : topMovers.filter((m) => m.price != null && m.changePercent != null).map((m) => {
+          : topMovers.length === 0 ? <ErrorCard label="No movers data available" /> : topMovers.filter((m) => m.price != null && m.changePercent != null).map((m) => {
               const isUp = m.changePercent >= 0;
               const sc = SECTOR_COLORS[m.sector] ?? "#6b7280";
               return (
@@ -425,7 +436,7 @@ function TopMoversSection({ topMovers, isLoading }: { topMovers: TopMover[]; isL
   );
 }
 
-function SectorPulseSection({ pulse, isLoading }: { pulse: SectorPulseItem[]; isLoading: boolean }) {
+function SectorPulseSection({ pulse, isLoading, isError }: { pulse: SectorPulseItem[]; isLoading: boolean; isError?: boolean }) {
   const maxAbs = Math.max(...(pulse.map((p) => Math.abs(p.avgChange))), 0.5);
   return (
     <Card className="p-5 border-card-border">
@@ -442,7 +453,7 @@ function SectorPulseSection({ pulse, isLoading }: { pulse: SectorPulseItem[]; is
         </UITooltip>
       </div>
       <div className="space-y-2">
-        {isLoading
+        {isError ? <ErrorCard label="Unable to load sector data" /> : isLoading
           ? Array(8).fill(null).map((_, i) => (
               <div key={i} className="flex items-center gap-3">
                 <Skeleton className="h-3 w-20" />
@@ -450,7 +461,7 @@ function SectorPulseSection({ pulse, isLoading }: { pulse: SectorPulseItem[]; is
                 <Skeleton className="h-3 w-10" />
               </div>
             ))
-          : [...pulse].sort((a, b) => b.avgChange - a.avgChange).map((p) => {
+          : pulse.length === 0 ? <ErrorCard label="No sector data available" /> : [...pulse].sort((a, b) => b.avgChange - a.avgChange).map((p) => {
               const isUp = p.avgChange >= 0;
               const sc = SECTOR_COLORS[p.sector] ?? "#6b7280";
               const barWidth = Math.abs(p.avgChange) / maxAbs * 100;
@@ -638,8 +649,11 @@ function XFeedSection() {
       }
     };
     tryLoad();
-    const timer = setTimeout(tryLoad, 1500);
-    return () => clearTimeout(timer);
+    const timer = setTimeout(tryLoad, 2000);
+    const fallback = setTimeout(() => {
+      if (!w.twttr || !w.twttr.widgets) setLoaded(true);
+    }, 6000);
+    return () => { clearTimeout(timer); clearTimeout(fallback); };
   }, []);
 
   return (
@@ -684,6 +698,19 @@ function XFeedSection() {
               <Skeleton className="h-3 w-2/3" />
             </div>
           ))}
+        </div>
+      )}
+      {loaded && !(window as any).twttr?.widgets && (
+        <div className="text-center py-6">
+          <p className="text-xs text-muted-foreground mb-2">Feed unavailable (blocked or loading)</p>
+          <a
+            href="https://x.com/gridtilt"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-[#F07800] hover:text-[#F0A500] transition-colors font-medium"
+          >
+            View @gridtilt on X
+          </a>
         </div>
       )}
     </Card>
@@ -827,24 +854,29 @@ function WhatAmILookingAt() {
 }
 
 export default function TiltOverview() {
-  const { data: kpiData, isLoading } = useQuery<KpiData>({
+  const { data: kpiData, isLoading, isError: kpiError } = useQuery<KpiData>({
     queryKey: ["/api/kpis"],
+    refetchInterval: 900000,
   });
 
-  const { data: catalysts } = useQuery<Catalyst[]>({
+  const { data: catalysts, isError: catalystsError } = useQuery<Catalyst[]>({
     queryKey: ["/api/catalysts"],
+    refetchInterval: 900000,
   });
 
-  const { data: earningsCalendar } = useQuery<Catalyst[]>({
+  const { data: earningsCalendar, isError: earningsError } = useQuery<Catalyst[]>({
     queryKey: ["/api/earnings-calendar"],
+    refetchInterval: 900000,
   });
 
-  const { data: topMovers, isLoading: topMoversLoading } = useQuery<TopMover[]>({
+  const { data: topMovers, isLoading: topMoversLoading, isError: topMoversError } = useQuery<TopMover[]>({
     queryKey: ["/api/top-movers"],
+    refetchInterval: 900000,
   });
 
-  const { data: sectorPulse, isLoading: sectorPulseLoading } = useQuery<SectorPulseItem[]>({
+  const { data: sectorPulse, isLoading: sectorPulseLoading, isError: sectorPulseError } = useQuery<SectorPulseItem[]>({
     queryKey: ["/api/sector-pulse"],
+    refetchInterval: 900000,
   });
 
   const c = kpiData?.constituents;
@@ -884,6 +916,11 @@ export default function TiltOverview() {
         <div>
           <div className="flex items-center gap-2 mb-4">
             <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Composite Indicators</h2>
+            {kpiError && (
+              <span className="flex items-center gap-1 text-xs text-red-400">
+                <AlertTriangle className="h-3 w-3" /> Data unavailable
+              </span>
+            )}
             <UITooltip>
               <TooltipTrigger>
                 <Info className="h-3.5 w-3.5 text-muted-foreground" />
@@ -972,11 +1009,18 @@ export default function TiltOverview() {
         {/* Dashboard density - 2-col */}
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
           <div className="lg:col-span-3 space-y-4">
-            <TopMoversSection topMovers={topMovers ?? []} isLoading={topMoversLoading} />
-            <SectorPulseSection pulse={sectorPulse ?? []} isLoading={sectorPulseLoading} />
+            <TopMoversSection topMovers={topMovers ?? []} isLoading={topMoversLoading} isError={topMoversError} />
+            <SectorPulseSection pulse={sectorPulse ?? []} isLoading={sectorPulseLoading} isError={sectorPulseError} />
           </div>
           <div className="lg:col-span-2 space-y-4">
-            <CatalystCalendarSection catalysts={[...(catalysts ?? []), ...(earningsCalendar ?? [])].sort((a, b) => a.date.localeCompare(b.date))} />
+            {(catalystsError && earningsError) ? (
+              <Card className="p-5 border-card-border flex items-center gap-2 text-sm text-muted-foreground">
+                <AlertTriangle className="h-4 w-4 text-red-400 flex-shrink-0" />
+                <span>Unable to load catalyst calendar.</span>
+              </Card>
+            ) : (
+              <CatalystCalendarSection catalysts={[...(catalysts ?? []), ...(earningsCalendar ?? [])].sort((a, b) => a.date.localeCompare(b.date))} />
+            )}
             <XFeedSection />
           </div>
         </div>
