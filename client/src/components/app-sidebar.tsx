@@ -100,8 +100,8 @@ export function AppSidebar() {
                       <Link href={item.url} data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, "-")}`}>
                         {isActive && (
                           <span
-                            className="absolute left-0 top-2 bottom-2 w-0.5 rounded-full bg-[#F07800]"
-                            style={{ left: "0.5rem" }}
+                            className="absolute left-0 top-2 bottom-2 w-[3px] rounded-full bg-[#F07800]"
+                            style={{ left: "0.5rem", boxShadow: "0 0 8px rgba(240,120,0,0.6), 0 0 16px rgba(240,120,0,0.2)" }}
                           />
                         )}
                         <div className={`flex h-7 w-7 items-center justify-center rounded-sm ml-3 ${isActive ? "text-[#F07800]" : "text-muted-foreground"}`}>
@@ -124,17 +124,20 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="px-4 py-3 border-t border-sidebar-border">
-        <div className="flex items-center gap-2">
-          <div className="relative h-2 w-2">
-            <div className="h-2 w-2 rounded-full bg-green-500 live-pulse" />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="relative h-2 w-2">
+              <div className="h-2 w-2 rounded-full bg-green-500 live-pulse" />
+            </div>
+            <span className="text-[11px] font-mono text-green-400/80">Live</span>
           </div>
-          <span className="text-xs text-muted-foreground">Live market data</span>
+          <span className="text-[10px] font-mono text-muted-foreground/50">15-min refresh</span>
         </div>
-        <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
-          Data: Yahoo Finance · EIA · Public Sources
+        <p className="text-[10px] text-muted-foreground/40 mt-2">
+          Yahoo Finance · EIA · Public Sources
         </p>
-        <p className="text-xs text-muted-foreground/50 mt-2 leading-relaxed tracking-wide">
-          Made by <span className="text-muted-foreground/70">Jack Schwartz</span> · aurph
+        <p className="text-[10px] text-muted-foreground/35 mt-1.5 tracking-wide">
+          Made by <span className="text-muted-foreground/50">Jack Schwartz</span> · aurph
         </p>
       </SidebarFooter>
     </Sidebar>

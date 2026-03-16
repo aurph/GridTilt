@@ -1,0 +1,207 @@
+You have full context of GridTilt. I'm going to describe exactly what I'm seeing on the live site right now and what needs to change. This is a polish and refinement pass. The features are built. Now I need this to feel like a product people come back to every day, not a project. Work through each section in order. No shortcuts.
+
+---
+
+## 1. KILL THE AI VOICE EVERYWHERE
+
+This is the most important thing in this entire prompt. Go through EVERY piece of text on the entire site and rewrite anything that sounds like it was written by an AI. Specifically:
+
+**What to remove/replace:**
+- Em dashes. Get rid of every single one. Replace with commas, periods, or just restructure the sentence. No em dashes anywhere on the site. Zero.
+- Overly long compound sentences. If a sentence has two commas and connects three ideas, break it up.
+- Phrases like "the companies building, powering, and supplying the infrastructure that AI runs on" — that's AI cadence. Make it shorter and more direct.
+- Any sentence that uses "Track the economic relationship between AI compute demand, power consumption, and the financial markets positioned around it" — that is textbook AI writing. Rewrite it to sound like a person talking.
+
+**What the voice should sound like:**
+- Short sentences. Direct.
+- Like a smart person explaining something at a whiteboard, not a marketing page.
+- The @gridtilt X account tone: casual, lowercase energy, factual, no fluff.
+- If a description takes more than 2 short sentences, it's too long.
+
+**Specific text I can see that needs rewriting RIGHT NOW:**
+
+The hero section currently says:
+> "The Grid is Tilting"
+> "AI data centers now consume 2-3% of global electricity and accelerating. Track the economic relationship between AI compute demand, power consumption, and the financial markets positioned around it."
+
+Rewrite this. Something like:
+> "The Grid is Tilting"
+> "AI is eating the power grid. Track the stocks, data centers, and infrastructure behind the buildout."
+
+That's it. Two short sentences. Done.
+
+The "What am I looking at?" section has THREE cards with dense paragraphs:
+- "THE BIG IDEA" card: "AI models are extraordinarily power-hungry. A single large AI training run can consume as much electricity as 1,000 homes use in a year. The data centers being built right now need so much power that major tech companies are signing 20-year contracts with nuclear plants and investing billions in new grid infrastructure. That build-out is the investment thesis." — This is way too much text. Cut it to: "AI needs massive power. The companies building that power infrastructure are the investment thesis."
+- "THE 3 NUMBERS AT THE TOP" card: Wall of text explaining the indices. Cut it down hard. "Three indices that tell you if the thesis is accelerating or cooling. AI demand, nuclear momentum, and grid stress."
+- "THE STACK" card: Same problem. "60+ companies across the AI power supply chain. From chip makers to uranium miners to construction firms."
+
+Go through every single page — The Stack sector descriptions, Power Map descriptions, Thesis Calculator labels, Portfolio Overlay explanations — and do the same thing. Short. Direct. No em dashes. No compound AI sentences.
+
+---
+
+## 2. TILT OVERVIEW / DASHBOARD CLEANUP
+
+I can see the current layout. Here's what needs to change:
+
+**2A. The "What am I looking at?" section is eating prime real estate.**
+
+Right now it sits ABOVE the composite indicators, which means the actual data (the 3 index numbers) is pushed way down the page. The most important information on the entire site — "is the thesis expanding or cooling" — requires scrolling past an explainer section.
+
+Fix: The explainer should be COLLAPSED by default. Show just a small, subtle "New here? See how GridTilt works" link that expands it. Or move it to a dedicated /about or /guide page entirely. First-time visitors can click it. Returning users (95% of visits) should see the indices immediately without scrolling past a tutorial.
+
+The indices (74.1, 279.1, 69.6) should be the first thing you see below the hero line. Period.
+
+**2B. The hero area is too tall.**
+
+"LIVE · Real-time AI Power Economy Dashboard" + "The Grid is Tilting" + subtitle + the explainer section together push all the actual data too far down. Compress this:
+
+- The "LIVE" badge and "Markets updating every 15 min" are good. Keep those but make them smaller/more subtle.
+- "The Grid is Tilting" is a great headline. Keep it. But the subtitle underneath it needs to be one short line, not a paragraph.
+- The total vertical space from the top of the page to the start of the index cards should be as small as possible. Every pixel of vertical space above the data is wasted space for a returning user.
+
+**2C. Below the fold looks good but needs tightening.**
+
+Top Movers, Sector Pulse, Catalyst Calendar, and @gridtilt feed layout is solid. A few things:
+
+- Sector Pulse bars: the truncated labels ("Power Hard...", "ETF Bench...") look broken. Either make the label column wider or use abbreviations that don't truncate. Never show "..." in a shipped product.
+- The Catalyst Calendar is clean. Good.
+- The @gridtilt feed section just says "Tweets by @gridtilt" with no actual tweets showing in the screenshot. Make sure the embed actually loads content. If X embeds are unreliable, consider pulling recent posts via API and rendering them natively in GridTilt's design.
+- The US Electricity Demand chart at the bottom is a great feature. But the chart labels are small and hard to read. Increase the font size of the axis labels and the legend.
+
+---
+
+## 3. NAVIGATION — MAKE IT MORE DISTINCTIVE
+
+The sidebar navigation works but it's generic. Every dark SaaS app has this exact sidebar. Make it feel more like GridTilt:
+
+**Ideas (pick the approach that fits best):**
+
+- Add a subtle orange left-border glow on the active nav item (not just the text color change)
+- Add a very faint pulse or glow effect on the "Live market data" indicator at the bottom of the sidebar — it should feel alive, like a heartbeat
+- Consider adding tiny sparklines or micro-indicators next to each nav item. Example: next to "Tilt Overview" show a tiny up/down arrow based on thesis health. Next to "The Stack" show a small green/red dot based on whether more sectors are up or down today. Next to "Power Map" show the facility count (48). These make the nav itself informative, not just navigational.
+- The nav icons are good. Make sure they're perfectly aligned and consistently sized.
+
+**The top-right area** currently shows "GridTilt · AI Infrastructure and Power Economy · Live" — this is redundant with the sidebar branding. Either remove it or replace it with something useful (like a compact mini-status: "Thesis: Expanding · 48 facilities · 60+ stocks")
+
+---
+
+## 4. POWER MAP — VISUAL AND INTERACTION OVERHAUL
+
+The map is the most differentiated feature and it needs to look exceptional. Right now it's functional but visually busy and the overlays compete with each other.
+
+**4A. Reduce visual clutter above the map.**
+
+Currently above the map there's:
+- "Power Map" title + "US COVERAGE" badge
+- Subtitle paragraph
+- Total capacity stats line
+- "28 operational / 15 construction / 5 announced" status line
+- Grid region legend (colored dots)
+- Operator filter chips (full row)
+- Grid region filter chips (full row)
+- Capacity filter chips
+- DC Locations / Grid Stress toggle
+
+That's 8-9 rows of controls and info before you even see the map. The map itself is pushed down significantly. Compress this:
+
+- The title + stats can be one compact line: "Power Map · 48 facilities · 20.7 GW · 181.6 TWh/yr"
+- The status badges (operational/construction/announced) can be part of the legend, not a separate line
+- The grid region legend is redundant with the grid region filter chips — remove the standalone legend, the filter chips already have colored dots
+- The operator and grid region filter chips should be in a collapsible filter panel, not always expanded. Show a "Filters" button that expands them. Or put them in a slim dropdown/popover. They don't all need to be visible at all times.
+- The capacity filter and DC Locations/Grid Stress toggle can be on the same line
+
+Goal: cut the space above the map in half. The map should dominate the page.
+
+**4B. The right-side panel is wasted space.**
+
+Currently the right side shows "Click a dot on the map to view facility details" and "International coverage expanding to Europe and Southeast Asia." This is placeholder text taking up 20% of the map viewport. Remove this entirely until a pin is actually clicked. When no pin is selected, the map should use the full width. When a pin is clicked, THEN a detail panel slides in from the right.
+
+**4C. Map visual improvements:**
+
+- The RTO region coloring (purple for MISO, green for WECC, etc.) is good conceptually but the colors are too saturated and compete with the pin colors. Reduce the opacity of the region fills significantly — maybe 15-20% opacity. The regions should be barely visible background tinting, not bold color blocks. The pins should be the visual focus, not the regions.
+- Pin sizes look good (scaled by MW). But the pins are flat circles. Add a subtle inner glow or gradient to make them feel more like data points on a premium dashboard, not colored dots on a school project.
+- In Grid Stress mode, make the visual difference between the two modes more dramatic. The toggle between "DC Locations" and "Grid Stress" should feel like switching lenses — a noticeable visual shift.
+
+**4D. Hover behavior on pins:**
+
+When hovering over a pin:
+- Pin should scale up smoothly (1.15x) with a soft orange glow
+- A tooltip should appear showing: Operator, Location, Capacity, Grid Region, Status
+- The tooltip should feel premium — slight backdrop blur, clean typography, subtle shadow
+- Other pins should dim slightly (reduce opacity to 50%) so the hovered pin stands out
+- The transition should be smooth (150-200ms), not instant
+
+**4E. Filter interaction:**
+
+When a filter is selected:
+- Filtered-out pins should fade to 15% opacity, not disappear
+- The map should smoothly animate to fit the remaining pins
+- The "48 facilities" counter should update: "Showing 10 of 48 facilities"
+- Selecting a filter chip should give it a filled/active state (orange background, white text) instead of just an outline change
+
+---
+
+## 5. THE STACK — CARD LAYOUT REFINEMENT
+
+The Stack looks decent but the card layout is a bit generic. It looks like a standard component library grid.
+
+**5A. Card design:**
+
+- The cards currently show: Ticker, Name, Price, Change, Sparkline, P/E, Rev Growth YoY. Good data density.
+- The sparklines are tiny and barely readable. Either make them taller (at least 40px) or remove them and replace with a simple colored bar showing relative performance within the sector.
+- The green percentage badges (+3.68%, etc.) are good. But when a stock is down, the red should be more visually distinct — maybe a slightly different shade or a subtle red background tint on the whole card.
+- Cards should have a hover effect: slight lift (2px translateY), subtle border glow, and the sparkline could become slightly more prominent on hover.
+
+**5B. Sector headers:**
+
+- "Compute Layer" with the icon and description paragraph is fine but the descriptions are too long and AI-sounding. "AI chips, hyperscalers, and the semiconductor foundries powering every model training run." — rewrite to: "Chips and hyperscalers. The compute side of the stack."
+- Same for Nuclear Power description, and every other sector. Short. Direct.
+
+**5C. Sort options:**
+
+- The 1D / 5D / 1M toggle is great. Keep it.
+- "Sort by: % Change | Mkt Cap" — keep these, remove any thesis sort if it still exists.
+
+**5D. Card interaction:**
+
+- Clicking a card should do something. Either expand it to show more detail (52-week range, volume, full sparkline, analyst target, thesis relevance score from Portfolio Overlay) or link to a detail view. Static cards that don't respond to clicks feel like a dead end.
+
+---
+
+## 6. GLOBAL TEXT SWEEP
+
+After all the above changes, do one final pass through every page and every component. Look for:
+
+- Any remaining em dashes. Replace them all.
+- Any sentence longer than ~20 words. Break it up.
+- Any paragraph of explanatory text longer than 2-3 sentences. Cut it.
+- Any description that reads like a ChatGPT product description rather than a human writing. Rewrite it.
+- Labels that truncate with "...". Fix the layout so they don't.
+- Tooltip text, modal text, explainer text, placeholder text — all of it. Everything should sound like a person, not a language model.
+
+Test the voice by reading every piece of text out loud. If it sounds like a pitch deck or a product page, rewrite it. If it sounds like someone explaining their side project to a friend, keep it.
+
+---
+
+## 7. FINAL VISUAL CONSISTENCY PASS
+
+After everything above:
+
+- Make sure every card, panel, and container has the same border-radius, padding, and shadow treatment. No card-by-card variations.
+- Make sure the orange accent color is the exact same hex everywhere. I'm seeing slight variations between the news ticker orange, the nav active state orange, and the filter chip orange. Lock one value and use it globally.
+- Make sure all number displays (prices, percentages, index values) use the same font and alignment. Numbers should align in columns where applicable.
+- Check that nothing overlaps on any viewport width between 1280px and 1920px. And do a mobile pass at 375px.
+
+---
+
+## BUILD ORDER
+
+1. Section 1 (Kill AI voice) — go page by page rewriting all text first
+2. Section 2 (Dashboard) — collapse explainer, compress hero, fix truncation
+3. Section 4 (Power Map) — compress controls, full-width map, improve pins and hover
+4. Section 5 (The Stack) — card polish, sector header rewrites, hover states
+5. Section 3 (Navigation) — add micro-indicators, improve active states
+6. Section 6 (Text sweep) — final pass
+7. Section 7 (Visual consistency) — final pass
+
+After each section, tell me what you changed. If anything requires a judgment call between two approaches, ask me first.

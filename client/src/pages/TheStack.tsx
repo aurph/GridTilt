@@ -70,8 +70,13 @@ function Sparkline({ data, color }: { data: number[] | undefined; color: string 
 function StockCard({ stock, showPower, showVsSP500 }: { stock: StockData; showPower?: boolean; showVsSP500?: boolean }) {
   if (!stock || stock.price == null || stock.changePercent == null) return null;
   const isUp = stock.changePercent >= 0;
+  const isDown = stock.changePercent < -2;
   return (
-    <Card className="p-4 border-card-border hover-elevate" data-testid={`stock-card-${stock.ticker}`}>
+    <Card
+      className={`p-4 border-card-border transition-all duration-200 cursor-pointer hover:-translate-y-0.5 hover:shadow-lg ${isDown ? "border-red-500/20 bg-red-950/5" : ""}`}
+      style={{ boxShadow: isDown ? "inset 0 0 20px rgba(239,68,68,0.04)" : undefined }}
+      data-testid={`stock-card-${stock.ticker}`}
+    >
       <div className="flex items-start justify-between mb-2">
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
@@ -228,16 +233,16 @@ export default function TheStack() {
       title: "Compute Layer",
       icon: Cpu,
       color: "#94a3b8",
-      description: "AI chips, hyperscalers, and the semiconductor foundries powering every model training run.",
-      tooltip: "NVIDIA's H100/B200 GPUs power virtually every major AI training cluster. TSMC manufactures all advanced AI chips. The hyperscalers (MSFT, GOOGL, META, AMZN) are both the largest AI compute consumers and the primary drivers of data center power demand growth.",
+      description: "AI chips, hyperscalers, and the foundries powering model training.",
+      tooltip: "NVIDIA's H100/B200 GPUs power virtually every major AI training cluster. TSMC manufactures all advanced AI chips. Hyperscalers (MSFT, GOOGL, META, AMZN) are both the largest compute consumers and primary drivers of data center power demand.",
     },
     {
       key: "nuclear",
       title: "Nuclear Power",
       icon: Zap,
       color: "#F0A500",
-      description: "Nuclear operators, SMR developers, and advanced reactor companies. AI needs 24/7 baseload.",
-      tooltip: "AI requires uninterruptible clean power - wind and solar cannot provide it. Microsoft restarted Three Mile Island. Amazon signed a direct co-location deal with Talen Energy's Susquehanna plant. Oklo has a 14 GW data center customer pipeline. BWXT is the sole manufacturer of US naval nuclear reactors.",
+      description: "Nuclear operators, SMR developers, and advanced reactor companies.",
+      tooltip: "AI requires uninterruptible clean baseload. Microsoft restarted Three Mile Island. Amazon co-located with Talen's Susquehanna plant. Oklo has a 14 GW DC customer pipeline. BWXT is the sole US naval reactor manufacturer.",
     },
     {
       key: "uranium",
@@ -245,47 +250,47 @@ export default function TheStack() {
       icon: Zap,
       color: "#fb923c",
       description: "Uranium miners and fuel cycle companies supplying the nuclear renaissance.",
-      tooltip: "Uranium spot at ~$92/lb (Mar 2026). Cameco is the largest public uranium miner with direct spot beta. NexGen's Rook I deposit is the world's highest-grade undeveloped uranium resource. Centrus Energy is the only US-licensed HALEU producer for advanced reactors.",
+      tooltip: "Uranium spot ~$92/lb (Mar 2026). Cameco is the largest public miner with direct spot beta. NexGen's Rook I is the highest-grade undeveloped uranium deposit. Centrus is the only US-licensed HALEU producer.",
     },
     {
       key: "powerHardware",
       title: "Power Hardware",
       icon: Server,
       color: "#60a5fa",
-      description: "Transformers, switchgear, cooling, and electrical equipment. The grid-to-rack supply chain.",
-      tooltip: "GE Vernova's gas turbine order book is the leading indicator of data center buildout pace. Eaton is at maximum production capacity for switchgear and transformers. Vertiv is the fastest-growing power/cooling infrastructure company by organic revenue. Transformer shortages are the primary bottleneck on data center energization timelines.",
+      description: "Transformers, switchgear, cooling, and electrical equipment.",
+      tooltip: "GE Vernova's turbine order book leads DC buildout pace. Eaton is at max switchgear/transformer capacity. Vertiv is the fastest-growing power/cooling infrastructure company. Transformer shortages remain the primary bottleneck on DC energization.",
     },
     {
       key: "utilities",
       title: "Utilities",
       icon: Zap,
       color: "#34d399",
-      description: "AI-load beneficiary utilities signing long-term power agreements with hyperscalers.",
-      tooltip: "Dominion Energy serves Northern Virginia - home to 70% of global internet traffic. NextEra signed a 2.5 GW deal with Meta. Southern Company's Georgia territory is the epicenter of Southeast data center growth. These regulated utilities benefit from the structural increase in electricity demand that AI is driving.",
+      description: "Utilities signing long-term power agreements with hyperscalers.",
+      tooltip: "Dominion serves Northern Virginia (70% of global internet traffic). NextEra signed a 2.5 GW deal with Meta. Southern Company's Georgia territory is the center of Southeast DC growth. Regulated utilities benefit from structurally rising electricity demand.",
     },
     {
       key: "dataCenters",
       title: "Data Centers",
       icon: Server,
       color: "#a855f7",
-      description: "Data center REITs and colocation operators. Direct proxies for AI capacity build-out.",
-      tooltip: "Equinix operates 273 data centers across 77 markets. Digital Realty has 300+ facilities globally. IREN is pivoting from Bitcoin mining to GPU-as-a-Service. These companies own the physical facilities where AI compute runs, making their power contracts and land-bank critical metrics.",
+      description: "REITs and colocation operators. Direct proxies for AI capacity buildout.",
+      tooltip: "Equinix operates 273 data centers across 77 markets. Digital Realty has 300+ facilities globally. IREN is pivoting from Bitcoin mining to GPU-as-a-Service. Power contracts and land-bank are the critical metrics.",
     },
     {
       key: "construction",
       title: "Construction & EPC",
       icon: Server,
       color: "#f472b6",
-      description: "Electrical contractors and engineers building the grid connections for AI campuses.",
-      tooltip: "Quanta Services is the largest electrical utility contractor in North America, building the transmission lines and substations connecting data center campuses to the grid. EMCOR has a record $4.3B backlog in network and communications infrastructure. Sterling Infrastructure has 125% YoY data center revenue growth.",
+      description: "Electrical contractors and engineers building grid connections for AI campuses.",
+      tooltip: "Quanta is the largest electrical utility contractor in North America, building transmission lines and substations for DC campuses. EMCOR has a record $4.3B backlog. Sterling Infrastructure has 125% YoY DC revenue growth.",
     },
     {
       key: "etfsBenchmarks",
       title: "ETF Benchmarks",
       icon: TrendingUp,
       color: "#6b7280",
-      description: "Sector ETFs tracking uranium, data centers, grid infrastructure, and utilities.",
-      tooltip: "Use these ETFs to benchmark sector performance. URA and URNM track the uranium mining sector. DTCR tracks data center and digital infrastructure. GRID tracks smart grid companies. XLU tracks the utility sector. Compare individual stock picks against these benchmarks to assess relative performance.",
+      description: "Sector ETFs for uranium, data centers, grid infrastructure, and utilities.",
+      tooltip: "URA and URNM track uranium mining. DTCR tracks data center/digital infrastructure. GRID tracks smart grid companies. XLU tracks utilities. Compare individual picks against these benchmarks.",
     },
   ];
 
@@ -295,7 +300,7 @@ export default function TheStack() {
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
             <h1 className="text-2xl font-bold text-foreground tracking-tight">The Stack</h1>
-            <p className="text-muted-foreground text-sm mt-1">Data center supply chain from silicon to socket. Live market data across compute, infrastructure, and power.</p>
+            <p className="text-muted-foreground text-sm mt-1">Silicon to socket. Live market data across compute, infrastructure, and power.</p>
           </div>
           <Badge className="bg-[#F0A500]/15 text-[#F0A500] border-[#F0A500]/30 font-mono text-xs">
             Yahoo Finance · Live
@@ -403,7 +408,7 @@ export default function TheStack() {
                       <Info className="h-3.5 w-3.5 text-muted-foreground" />
                     </TooltipTrigger>
                     <TooltipContent className="max-w-xs">
-                      <p className="text-xs leading-relaxed">Cameco (CCJ) is the world's largest publicly traded uranium miner. As a pure miner, its stock price carries the highest direct uranium spot price beta of any large-cap name. The comparison with CEG (utility) below shows this distinction: CCJ's Pearson r is typically tighter because CEG's price is also influenced by electricity contracts, regulated returns, and macro utility factors. Both are valid plays on the nuclear renaissance, but they represent different risk profiles: CCJ is a commodity bet, CEG is an infrastructure bet.</p>
+                      <p className="text-xs leading-relaxed">CCJ is the largest public uranium miner with the highest direct spot price beta. CEG (utility) is influenced by electricity contracts and regulated returns. CCJ = commodity bet, CEG = infrastructure bet.</p>
                     </TooltipContent>
                   </UITooltip>
                 </div>
@@ -513,10 +518,10 @@ export default function TheStack() {
 
             <div className="mt-3 pt-3 border-t border-border grid grid-cols-1 md:grid-cols-2 gap-3 text-xs text-muted-foreground">
               <p>
-                <span className="text-[#F0A500] font-semibold">CCJ (pure miner)</span> carries higher uranium spot price beta than CEG. Its P&L moves directly with the U3O8 market, making it the highest-conviction play on uranium scarcity.
+                <span className="text-[#F0A500] font-semibold">CCJ (pure miner)</span> has higher uranium spot beta. Its P&L moves directly with U3O8 pricing.
               </p>
               <p>
-                <span className="text-slate-400 font-semibold">CEG (nuclear utility)</span> is influenced by electricity contract prices, capacity market dynamics, and regulated returns - providing a smoother, less volatile exposure to the nuclear renaissance.
+                <span className="text-slate-400 font-semibold">CEG (nuclear utility)</span> is influenced by electricity contracts and regulated returns. Smoother, less volatile nuclear exposure.
               </p>
             </div>
           </Card>

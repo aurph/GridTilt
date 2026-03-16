@@ -178,7 +178,7 @@ export default function PortfolioOverlay() {
           <div>
             <h1 className="text-2xl font-bold text-foreground tracking-tight">Portfolio Overlay</h1>
             <p className="text-muted-foreground text-sm mt-1">
-              Enter your tickers and receive an AI Power Exposure score for each holding across five supply chain segments.
+              Score your holdings for AI power exposure across five supply chain segments.
             </p>
           </div>
           <UITooltip>
@@ -189,7 +189,7 @@ export default function PortfolioOverlay() {
               </Badge>
             </TooltipTrigger>
             <TooltipContent className="max-w-xs">
-              <p className="text-xs leading-relaxed">As AI infrastructure spending accelerates, companies with higher AI Power Exposure are positioned to capture disproportionate revenue from this multi-trillion dollar build-out. Scores are weighted composites: Compute (30%), Infrastructure (25%), Power (25%), Cooling (10%), Grid (10%). Above 70 = direct revenue exposure. 40-70 = meaningful indirect exposure.</p>
+              <p className="text-xs leading-relaxed">Weighted composite: Compute 30%, Infrastructure 25%, Power 25%, Cooling 10%, Grid 10%. Above 70 = direct revenue exposure. 40-70 = meaningful indirect exposure.</p>
             </TooltipContent>
           </UITooltip>
         </div>
@@ -336,7 +336,7 @@ export default function PortfolioOverlay() {
                       <Info className="h-3.5 w-3.5 text-muted-foreground" />
                     </TooltipTrigger>
                     <TooltipContent className="max-w-xs">
-                      <p className="text-xs">Average exposure across your portfolio for each segment of the AI power supply chain. A balanced portfolio covers multiple segments; a concentrated portfolio makes a stronger directional bet.</p>
+                      <p className="text-xs">Average exposure per segment. Balanced = multi-segment coverage. Concentrated = stronger directional bet.</p>
                     </TooltipContent>
                   </UITooltip>
                 </div>
@@ -380,7 +380,7 @@ export default function PortfolioOverlay() {
                   <div>
                     <p className="text-xs font-semibold text-foreground mb-1">Score interpretation</p>
                     <p className="text-xs text-muted-foreground leading-relaxed">
-                      Scores run 0-100. Above 70 indicates direct revenue exposure to AI power buildout. 40-70 reflects meaningful indirect exposure. Below 40 indicates minimal positioning. The radar shows concentration across five supply chain segments.
+                      0-100 scale. Above 70 = direct revenue exposure. 40-70 = meaningful indirect exposure. Below 40 = minimal positioning.
                     </p>
                   </div>
                 </div>

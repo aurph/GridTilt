@@ -281,7 +281,7 @@ function KpiCard({
               </div>
             )}
             <p className="text-xs text-muted-foreground leading-snug">
-              {subtitle ?? "Derived from live market signals. Hover for methodology."}
+              {subtitle ?? "Live market signals. Tap info for methodology."}
             </p>
           </>
         )}
@@ -299,10 +299,10 @@ function ThesisHealthBar({ aiPower, gridStress, nri }: { aiPower: number | null;
   const statusColor = isAccelerating ? "#F07800" : isCooling ? "#6b7280" : "#F0A500";
   const statusBg = isAccelerating ? "bg-[#F07800]/10 border-[#F07800]/25" : isCooling ? "bg-muted/20 border-card-border" : "bg-[#F0A500]/10 border-[#F0A500]/20";
   const description = isAccelerating
-    ? `All three composite indices are elevated. AI power demand is structurally outpacing grid additions. Grid stress at ${gridStress.toFixed(0)}/100 signals near-term regional constraints. The thesis is actively playing out.`
+    ? `All three indices elevated. AI power demand is outpacing grid additions. Grid stress at ${gridStress.toFixed(0)}/100 signals regional constraints. The thesis is playing out.`
     : isCooling
-    ? `Index signals have pulled back from peak levels. This may reflect a temporary market rotation or a genuine slowdown in AI infrastructure spending. Monitor hyperscaler capex guidance.`
-    : `The AI power thesis is tracking in-line with the baseline scenario. Demand index above structural baseline (72/100). Nuclear Renaissance Index at ${nri.toFixed(0)} reflects sustained momentum from 2024 PPA activity.`;
+    ? `Indices have pulled back from peaks. Could be rotation or a real slowdown. Watch hyperscaler capex guidance.`
+    : `Tracking the baseline scenario. Demand index above structural baseline (72/100). NRI at ${nri.toFixed(0)} reflects sustained momentum from 2024 PPA activity.`;
 
   const numbers = [
     { label: "AI Demand", val: aiPower },
@@ -333,13 +333,13 @@ function ThesisHealthBar({ aiPower, gridStress, nri }: { aiPower: number | null;
           </div>
         </div>
 
-        {/* Vertical divider — desktop only */}
+        {/* Vertical divider - desktop only */}
         <div className="hidden sm:block h-8 w-px bg-border flex-shrink-0" />
 
         {/* Description */}
         <p className="text-xs text-muted-foreground leading-relaxed flex-1">{description}</p>
 
-        {/* Mini numbers — desktop only (shown inline on mobile) */}
+        {/* Mini numbers - desktop only (shown inline on mobile) */}
         <div className="hidden sm:flex gap-4 flex-shrink-0 text-center">
           {numbers.map(({ label, val }) => (
             <div key={label}>
@@ -386,7 +386,7 @@ function TopMoversSection({ topMovers, isLoading }: { topMovers: TopMover[]; isL
             <Info className="h-3.5 w-3.5 text-muted-foreground" />
           </TooltipTrigger>
           <TooltipContent>
-            <p className="text-xs">Top 5 stocks by absolute % change across all 8 stack layers. Refreshed every 10 minutes.</p>
+            <p className="text-xs">Top 5 stocks by absolute % change across all 8 stack layers. Refreshes every 10 min.</p>
           </TooltipContent>
         </UITooltip>
       </div>
@@ -437,7 +437,7 @@ function SectorPulseSection({ pulse, isLoading }: { pulse: SectorPulseItem[]; is
             <Info className="h-3.5 w-3.5 text-muted-foreground" />
           </TooltipTrigger>
           <TooltipContent>
-            <p className="text-xs">Average intraday % change per stack layer. Shows which sectors are leading or lagging the broader AI power economy today.</p>
+            <p className="text-xs">Average intraday % change per stack layer. Shows which sectors are leading or lagging today.</p>
           </TooltipContent>
         </UITooltip>
       </div>
@@ -456,7 +456,7 @@ function SectorPulseSection({ pulse, isLoading }: { pulse: SectorPulseItem[]; is
               const barWidth = Math.abs(p.avgChange) / maxAbs * 100;
               return (
                 <div key={p.sector} className="flex items-center gap-3" data-testid={`sector-pulse-${p.sector}`}>
-                  <span className="text-xs text-muted-foreground w-20 flex-shrink-0 truncate">{p.label}</span>
+                  <span className="text-xs text-muted-foreground w-24 flex-shrink-0 truncate">{p.label}</span>
                   <div className="flex-1 h-1.5 bg-muted/30 rounded-full overflow-hidden">
                     <div
                       className="h-full rounded-full transition-all duration-500"
@@ -752,30 +752,30 @@ function NextCatalystsWidget({ catalysts }: { catalysts: Catalyst[] }) {
 
 function WhatAmILookingAt() {
   const [open, setOpen] = useState(() => {
-    try { return localStorage.getItem("gridtilt_wtail_collapsed") !== "1"; } catch { return true; }
+    try { return localStorage.getItem("gridtilt_wtail_open") === "1"; } catch { return false; }
   });
 
   const toggle = () => {
     const next = !open;
     setOpen(next);
-    try { localStorage.setItem("gridtilt_wtail_collapsed", next ? "0" : "1"); } catch { /* ignore */ }
+    try { localStorage.setItem("gridtilt_wtail_open", next ? "1" : "0"); } catch { /* ignore */ }
   };
 
   const tiles = [
     {
       icon: Cpu,
       title: "The Big Idea",
-      body: "AI models are extraordinarily power-hungry. A single large AI training run can consume as much electricity as 1,000 homes use in a year. The data centers being built right now need so much power that major tech companies are signing 20-year contracts with nuclear plants and investing billions in new grid infrastructure. That build-out is the investment thesis.",
+      body: "AI training runs burn enormous amounts of electricity. Big Tech is signing 20-year nuclear contracts and spending billions on new grid capacity. That buildout is the investment thesis.",
     },
     {
       icon: Plug,
       title: "The 3 Numbers at the Top",
-      body: "The AI Power Demand Index measures how fast AI is eating the grid (72+ = structurally elevated). The Nuclear Renaissance Index tracks how the nuclear revival is playing out in markets, anchored to Jan 1, 2024 = 100. Grid Stress measures how tight US electricity supply is right now. Together they tell you whether the thesis is accelerating or cooling.",
+      body: "AI Power Demand measures how fast AI is consuming the grid (72+ = elevated). Nuclear Renaissance tracks nuclear stocks vs. a Jan 2024 baseline of 100. Grid Stress shows how tight US electricity supply is. Together they tell you if the thesis is accelerating or cooling.",
     },
     {
       icon: BarChart3,
       title: "The Stack",
-      body: "Below this dashboard is 'The Stack' — 60+ publicly traded companies organized into 8 layers of the AI power supply chain: chip makers, nuclear operators, uranium miners, power hardware suppliers, utilities, data center REITs, construction firms, and benchmark ETFs. If you wanted to invest in the AI power buildout, these are the companies doing it.",
+      body: "The Stack organizes 60+ public companies into 8 layers of the AI power supply chain: chips, nuclear, uranium, power hardware, utilities, data centers, construction, and ETFs. These are the companies building the buildout.",
     },
   ];
 
@@ -783,23 +783,23 @@ function WhatAmILookingAt() {
     <div className="border border-border/60 rounded-[0.35rem] overflow-hidden" data-testid="what-am-i-looking-at">
       <button
         onClick={toggle}
-        className="w-full flex items-center justify-between px-5 py-3.5 bg-muted/20 hover:bg-muted/30 transition-colors text-left"
+        className="w-full flex items-center justify-between px-4 py-2.5 bg-muted/15 hover:bg-muted/25 transition-colors text-left"
         data-testid="wtail-toggle"
       >
         <div className="flex items-center gap-2 min-w-0">
-          <span className="text-sm font-semibold text-foreground whitespace-nowrap">What am I looking at?</span>
-          <Badge className="bg-[#F07800]/10 text-[#F07800] border-[#F07800]/25 text-[10px] font-mono tracking-wider py-0 hidden xs:inline-flex sm:inline-flex">NEW TO GRIDTILT</Badge>
+          <Info className="h-3.5 w-3.5 text-[#F07800] flex-shrink-0" />
+          <span className="text-xs text-muted-foreground">New here? <span className="text-[#F07800] font-medium">What am I looking at?</span></span>
         </div>
         {open
-          ? <ChevronUp className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-          : <ChevronDown className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+          ? <ChevronUp className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+          : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
         }
       </button>
 
       {open && (
         <div className="px-5 pb-5 pt-4 bg-muted/5">
           <p className="text-sm text-muted-foreground leading-relaxed mb-4 max-w-3xl">
-            GridTilt tracks the <span className="text-foreground font-medium">AI Infrastructure & Power Economy</span> — the financial markets around the companies building, powering, and supplying the infrastructure that AI runs on. Here is a plain-English breakdown of what everything means.
+            GridTilt tracks the <span className="text-foreground font-medium">AI Infrastructure & Power Economy</span>: the companies building, powering, and supplying the infrastructure AI runs on. Here's what everything means.
           </p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {tiles.map((tile) => {
@@ -818,7 +818,7 @@ function WhatAmILookingAt() {
             })}
           </div>
           <p className="text-[11px] text-muted-foreground/50 mt-4">
-            Collapse this panel once you know what you're looking at. It will stay hidden.
+            Collapse this panel anytime. Your preference is saved.
           </p>
         </div>
       )}
@@ -851,35 +851,34 @@ export default function TiltOverview() {
 
   return (
     <div className="flex flex-col h-full overflow-y-auto">
-      <div className="grid-bg border-b border-border px-4 sm:px-6 py-6 sm:py-8">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <Badge className="bg-[#F0A500]/15 text-[#F0A500] border-[#F0A500]/30 text-xs font-mono tracking-wider">
-                LIVE
-              </Badge>
-              <span className="text-xs text-muted-foreground tracking-wide">Real-time AI Power Economy Dashboard</span>
+      <div className="grid-bg border-b border-border px-4 sm:px-6 py-4 sm:py-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div>
+              <div className="flex items-center gap-2 mb-0.5">
+                <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">
+                  The Grid is <span className="text-[#F07800]">Tilting</span>
+                </h1>
+                <Badge className="bg-[#F0A500]/15 text-[#F0A500] border-[#F0A500]/30 text-[10px] font-mono tracking-wider py-0">
+                  LIVE
+                </Badge>
+              </div>
+              <p className="text-muted-foreground text-xs sm:text-sm max-w-lg">
+                AI is eating the power grid. Track the stocks, data centers, and infrastructure behind the buildout.
+              </p>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
-              The Grid is <span className="text-[#F07800]">Tilting</span>
-            </h1>
-            <p className="text-muted-foreground mt-1.5 max-w-xl text-sm leading-relaxed">
-              AI data centers now consume 2-3% of global electricity and accelerating. Track the economic relationship between AI compute demand, power consumption, and the financial markets positioned around it.
-            </p>
           </div>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <div className="relative flex h-2 w-2">
               <div className="h-2 w-2 rounded-full bg-green-500" />
               <div className="animate-ping absolute h-2 w-2 rounded-full bg-green-500 opacity-75" />
             </div>
-            <span>Markets updating every 15 min</span>
+            <span className="font-mono text-[11px]">15-min refresh</span>
           </div>
         </div>
       </div>
 
-      <div className="flex-1 p-4 sm:p-6 space-y-4 sm:space-y-6">
-        {/* Layman explainer */}
-        <WhatAmILookingAt />
+      <div className="flex-1 p-4 sm:p-6 space-y-4 sm:space-y-5">
 
         {/* KPI Cards */}
         <div>
@@ -890,7 +889,7 @@ export default function TiltOverview() {
                 <Info className="h-3.5 w-3.5 text-muted-foreground" />
               </TooltipTrigger>
               <TooltipContent>
-                <p className="text-xs">Each index is derived from live intraday price signals of constituent securities, anchored to a structural baseline from EIA and utility industry data.</p>
+                <p className="text-xs">Each index uses live intraday price signals anchored to an EIA/utility industry baseline.</p>
               </TooltipContent>
             </UITooltip>
           </div>
@@ -900,9 +899,9 @@ export default function TiltOverview() {
               title="AI Power Demand Index"
               value={kpiData?.aiPowerIndex ?? null}
               unit="/ 100"
-              subtitle="Structural baseline 72 from EIA data. Hover for methodology."
+              subtitle="Baseline 72 from EIA data. Tap info for methodology."
               color="neutral"
-              methodology="Structural baseline of 72/100, anchored to three verified inputs: US data center electricity share ~6.4% of the national grid (EIA 2025 estimate: ~288 TWh, up from 4.4% in 2023 per DOE; DOE projects 12%+ by 2028), AI workload demand CAGR of ~33%/yr (2022-2026 actuals, EIA + utility regulatory filings), and $328B in Big 4 hyperscaler AI capex for 2025 (AMZN $105B, GOOGL $75B, MSFT $83B, META $65B; 2026 guided ~$350B, ~80% AI-focused). A score of 100 represents theoretical full-grid saturation by AI demand. Intraday momentum layer: NVDA (40%) + TSM (25%) + EQIX (20%) + MU (15%), scaled 1.2x."
+              methodology="Baseline 72/100 from three inputs: DC electricity share ~6.4% of US grid (EIA 2025, ~288 TWh), AI workload CAGR ~33%/yr (EIA + utility filings), and $328B Big 4 hyperscaler capex for 2025. Score of 100 = theoretical full-grid AI saturation. Intraday momentum: NVDA 40%, TSM 25%, EQIX 20%, MU 15%, scaled 1.2x."
               constituents={c && (
                 <>
                   <p className="text-xs text-muted-foreground mb-1.5 font-medium">Today's momentum signals</p>
@@ -921,7 +920,7 @@ export default function TiltOverview() {
               unit=""
               subtitle={`Anchored basket index. Base: ${kpiData?.nriBaseDate ?? "Jan 1, 2024"} = 100`}
               color="amber"
-              methodology={`Anchored basket index, base = 100 on January 1, 2024 (the inflection point when AI baseload narratives began accelerating). Six components: CEG 25%, VST 20%, CCJ 15%, NLR ETF 20%, uranium spot 10%, SMR policy tracker 10%. Policy component normalized so score 5/10 = 1.0 baseline. A separate policy multiplier (0.9-1.1) captures the regulatory regime: current score ${kpiData?.smrPolicyScore ?? 7.8}/10 (NRC Kairos/Oklo approvals, Microsoft TMI restart PPA, Amazon nuclear PPAs). Current performance vs Jan 2024: CEG +98%, VST +521%, CCJ flat, uranium spot +1% (recovered to ~$92/lb in Mar 2026 after peaking at $107 in Feb 2024 and pulling back).`}
+              methodology={`Basket index, base = 100 on Jan 1, 2024. Six components: CEG 25%, VST 20%, CCJ 15%, NLR ETF 20%, uranium spot 10%, SMR policy 10%. Policy multiplier (0.9-1.1) captures regulatory regime: current ${kpiData?.smrPolicyScore ?? 7.8}/10 (NRC approvals, TMI restart, Amazon nuclear PPAs). Performance vs Jan 2024: CEG +98%, VST +521%, CCJ flat, uranium +1%.`}
               constituents={c && (
                 <>
                   <p className="text-xs text-muted-foreground mb-1.5 font-medium">Performance vs Jan 1, 2024</p>
@@ -943,9 +942,9 @@ export default function TiltOverview() {
               title="Grid Stress Score"
               value={kpiData?.gridStress ?? null}
               unit="/ 100"
-              subtitle="PJM/MISO/ERCOT reserve margin signal. Hover for methodology."
+              subtitle="PJM/MISO/ERCOT reserve margin signal. Tap info for methodology."
               color="red"
-              methodology="Structural baseline of 68/100, derived from three converging pressures: MISO reserve margin is now 13.4% (2026 NERC LTRA projection), the most constrained major US RTO, with formal capacity shortfall warnings through 2028; PJM at 17.5% is declining as AI load outpaces new capacity additions; ERCOT logged 1,200+ high-price scarcity hours in 2025 at a 15.8% reserve margin (slight recovery from solar/battery additions). A score of 100 represents declared grid emergency conditions. Intraday momentum: VST (40%) + CEG (35%) as merchant power price proxies (rising = power prices tightening) + EQIX (25%) as forward DC load commitment signal. Above 75 = elevated regional constraint risk."
+              methodology="Baseline 68/100 from three pressures: MISO reserve margin 13.4% (NERC 2026, most constrained US RTO), PJM 17.5% declining as AI load grows, ERCOT 15.8% with 1,200+ scarcity hours in 2025. Score of 100 = grid emergency. Intraday momentum: VST 40%, CEG 35% (merchant power proxies), EQIX 25% (DC load signal). Above 75 = elevated constraint risk."
               constituents={c && (
                 <>
                   <p className="text-xs text-muted-foreground mb-1.5 font-medium">Today's momentum signals</p>
@@ -959,6 +958,8 @@ export default function TiltOverview() {
           </div>
         </div>
 
+        <WhatAmILookingAt />
+
         {/* Thesis Health */}
         {!isLoading && kpiData && (
           <ThesisHealthBar
@@ -968,7 +969,7 @@ export default function TiltOverview() {
           />
         )}
 
-        {/* Dashboard density — 2-col */}
+        {/* Dashboard density - 2-col */}
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
           <div className="lg:col-span-3 space-y-4">
             <TopMoversSection topMovers={topMovers ?? []} isLoading={topMoversLoading} />
@@ -991,11 +992,11 @@ export default function TiltOverview() {
                     <Info className="h-3.5 w-3.5 text-muted-foreground" />
                   </TooltipTrigger>
                   <TooltipContent className="max-w-xs">
-                    <p className="text-xs">US electricity demand was flat for a decade. AI data centers are reversing this trend for the first time since the industrial era, driving a structural upward shift utilities and grid operators were not prepared for.</p>
+                    <p className="text-xs">US electricity demand was flat for a decade. AI data centers are reversing that trend, driving a structural shift utilities were not prepared for.</p>
                   </TooltipContent>
                 </UITooltip>
               </div>
-              <p className="text-xs text-muted-foreground">Historical EIA data (TWh) + AI-era projection to 2030, with data center subset</p>
+              <p className="text-xs text-muted-foreground">Historical EIA data (TWh) + AI-era projection to 2030. Data center subset on right axis.</p>
             </div>
             <div className="flex flex-wrap items-center gap-4 text-xs">
               <div className="flex items-center gap-1.5">
@@ -1032,29 +1033,29 @@ export default function TiltOverview() {
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
               <XAxis
                 dataKey="year"
-                tick={{ fill: "#6b7280", fontSize: 10 }}
+                tick={{ fill: "#9ca3af", fontSize: 11 }}
                 tickLine={false}
                 axisLine={{ stroke: "rgba(255,255,255,0.08)" }}
                 interval={2}
               />
               <YAxis
                 yAxisId="total"
-                tick={{ fill: "#6b7280", fontSize: 10 }}
+                tick={{ fill: "#9ca3af", fontSize: 11 }}
                 tickLine={false}
                 axisLine={false}
                 tickFormatter={(v) => `${(v / 1000).toFixed(1)}k`}
                 domain={[3600, 6600]}
-                width={40}
+                width={42}
               />
               <YAxis
                 yAxisId="dc"
                 orientation="right"
-                tick={{ fill: "#6b7280", fontSize: 10 }}
+                tick={{ fill: "#9ca3af", fontSize: 11 }}
                 tickLine={false}
                 axisLine={false}
                 tickFormatter={(v) => `${v}`}
                 domain={[0, 2500]}
-                width={40}
+                width={42}
               />
               <Tooltip content={<CustomTooltip />} />
 
@@ -1146,9 +1147,9 @@ export default function TiltOverview() {
         {/* 4-column stat strip */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {[
-            { label: "DC Share of US Demand", value: "~6.4%", sub: "EIA 2025 estimate: ~288 TWh (up from 4.4% in 2023). DOE projects 12%+ by 2028 as AI load accelerates.", color: "#a855f7" },
-            { label: "Nuclear Power Committed", value: "12+ GW", sub: "Big Tech nuclear PPAs as of Q1 2026. Meta 6.6 GW, Microsoft 1.2 GW (TMI restart), Amazon 2.5+ GW, Google 500+ MW.", color: "#F0A500" },
-            { label: "Grid Reserve Margins", value: "Tightening", sub: "MISO at 13.4% and ERCOT at 15.8% are the most constrained major US grids per NERC LTRA 2026 projections. Formal capacity adequacy warnings through 2028.", color: "#94a3b8" },
+            { label: "DC Share of US Demand", value: "~6.4%", sub: "EIA 2025: ~288 TWh, up from 4.4% in 2023. DOE projects 12%+ by 2028.", color: "#a855f7" },
+            { label: "Nuclear Power Committed", value: "12+ GW", sub: "Big Tech nuclear PPAs as of Q1 2026. Meta 6.6 GW, Microsoft 1.2 GW, Amazon 2.5+ GW, Google 500+ MW.", color: "#F0A500" },
+            { label: "Grid Reserve Margins", value: "Tightening", sub: "MISO 13.4%, ERCOT 15.8% per NERC 2026. Capacity adequacy warnings through 2028.", color: "#94a3b8" },
           ].map((s) => (
             <Card key={s.label} className="p-4 border-card-border">
               <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">{s.label}</p>
@@ -1167,7 +1168,7 @@ export default function TiltOverview() {
                 <Info className="h-3.5 w-3.5 text-muted-foreground" />
               </TooltipTrigger>
               <TooltipContent>
-                <p className="text-xs">Source: EIA Electric Power Monthly (2025 data). Data center demand is the fastest-growing sector at +33% YoY, compressing a decade of flat growth into a single investment thesis.</p>
+                <p className="text-xs">Source: EIA Electric Power Monthly (2025). Data centers are the fastest-growing sector at +33% YoY.</p>
               </TooltipContent>
             </UITooltip>
           </div>
@@ -1197,7 +1198,7 @@ export default function TiltOverview() {
             ))}
           </div>
           <p className="text-xs text-muted-foreground mt-3 pt-3 border-t border-border">
-            US electricity demand was essentially flat 2010-2022. By 2025, total demand reached ~4,490 TWh, up 15% from the 2022 trough. Data center load is now the fastest-growing sector at +33% YoY in 2025, compressing what was projected to be a decade of growth into three years.
+            US electricity demand was flat 2010-2022. By 2025 it hit ~4,490 TWh, up 15% from the 2022 trough. Data center load is now +33% YoY, compressing a decade of projected growth into three years.
           </p>
         </Card>
 

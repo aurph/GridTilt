@@ -61,10 +61,10 @@ const COMPANY_DATABASE: Record<string, {
   EMR:  { name: "Emerson Electric Co", primarySegment: "PowerHardware", sectors: { Compute: 5, Infrastructure: 18, Power: 15, Cooling: 30, Grid: 60 }, explanation: "Automation and power management systems for data centers. AspenTech software embedded in critical energy infrastructure. Industrial automation exposure to the AI buildout." },
   HUBB: { name: "Hubbell Inc", primarySegment: "PowerHardware", sectors: { Compute: 3, Infrastructure: 12, Power: 15, Cooling: 10, Grid: 72 }, explanation: "Electrical products for utility and commercial markets. Grid modernization beneficiary as transmission infrastructure must be expanded to serve new data center campuses." },
   JCI:  { name: "Johnson Controls Int'l", primarySegment: "PowerHardware", sectors: { Compute: 3, Infrastructure: 12, Power: 8, Cooling: 65, Grid: 30 }, explanation: "Building automation and HVAC including data center cooling. Thermal management solutions for the AI era. Exposed to the retrofit market as existing facilities upgrade for AI density." },
-  SIEGY:{ name: "Siemens Energy AG", primarySegment: "PowerHardware", sectors: { Compute: 4, Infrastructure: 10, Power: 32, Cooling: 8, Grid: 82 }, explanation: "Gas turbines competing with GE Vernova for data center power generation orders. Transformer shortages have made Siemens Energy a critical bottleneck — and beneficiary — of grid expansion." },
+  SIEGY:{ name: "Siemens Energy AG", primarySegment: "PowerHardware", sectors: { Compute: 4, Infrastructure: 10, Power: 32, Cooling: 8, Grid: 82 }, explanation: "Gas turbines competing with GE Vernova for data center power generation orders. Transformer shortages have made Siemens Energy a critical bottleneck and beneficiary of grid expansion." },
   BKR:  { name: "Baker Hughes Co", primarySegment: "PowerHardware", sectors: { Compute: 3, Infrastructure: 8, Power: 30, Cooling: 5, Grid: 55 }, explanation: "Gas turbine technology and LNG equipment. Industrial Energy Technology segment growing as data center operators seek efficient on-site gas generation and backup power solutions." },
   // Utilities (AI Load Beneficiaries)
-  D:    { name: "Dominion Energy Inc", primarySegment: "Utilities", sectors: { Compute: 5, Infrastructure: 15, Power: 78, Cooling: 5, Grid: 42 }, explanation: "Serves Northern Virginia — home to 70% of global internet traffic. 40-47 GW of data center capacity in active contract discussions. $50B capex plan to serve AI-driven load growth." },
+  D:    { name: "Dominion Energy Inc", primarySegment: "Utilities", sectors: { Compute: 5, Infrastructure: 15, Power: 78, Cooling: 5, Grid: 42 }, explanation: "Serves Northern Virginia, home to 70% of global internet traffic. 40-47 GW of data center capacity in active contract discussions. $50B capex plan for AI-driven load growth." },
   SO:   { name: "Southern Company", primarySegment: "Utilities", sectors: { Compute: 3, Infrastructure: 12, Power: 72, Cooling: 4, Grid: 38 }, explanation: "Georgia is the epicenter of data center growth in the Southeast. 50+ GW interconnection pipeline. Vogtle nuclear units 3 and 4 provide 24/7 baseload for hyperscaler commitments." },
   DUK:  { name: "Duke Energy Corp", primarySegment: "Utilities", sectors: { Compute: 3, Infrastructure: 10, Power: 70, Cooling: 4, Grid: 36 }, explanation: "Carolinas and Southeast utility with growing data center interconnection requests. Multi-GW pipeline from technology companies seeking clean, reliable power in the research triangle." },
   AEP:  { name: "American Electric Power", primarySegment: "Utilities", sectors: { Compute: 3, Infrastructure: 10, Power: 68, Cooling: 4, Grid: 42 }, explanation: "Major PJM utility. Transmission infrastructure investment is critical for connecting new data center campuses to the grid. 40 GW of new interconnection requests filed in its territory." },
@@ -215,7 +215,7 @@ const STATIC_MARKET_DATA: Record<string, {
   PAVE: { name: "Global X US Infrastructure ETF", price: 37.00, change: 0.00, changePercent: 0.00, pe: null, revenueGrowth: null },
 };
 
-// Nuclear Renaissance Index (NRI) — Jan 1, 2024 base prices
+// Nuclear Renaissance Index (NRI) - Jan 1, 2024 base prices
 // Jan 1, 2024 is the anchor date: narrative around AI baseload demand started accelerating.
 // All prices are closing prices circa Jan 2, 2024 (first trading day 2024).
 const NRI_BASE = {
@@ -227,7 +227,7 @@ const NRI_BASE = {
 };
 
 // SMR & PPA policy score (1-10 qualitative, updated periodically)
-// Current: 7.8 — NRC Kairos/Oklo approvals, Microsoft TMI restart PPA, Amazon/Talen Virginia nuclear PPA,
+// Current: 7.8 - NRC Kairos/Oklo approvals, Microsoft TMI restart PPA, Amazon/Talen Virginia nuclear PPA,
 // Google advanced nuclear PPAs, several state-level nuclear support legislation packages.
 const SMR_POLICY_SCORE = 7.8;
 
@@ -271,7 +271,7 @@ function gaussianRandom(): number {
   return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
 }
 
-// CCJ (Cameco): pure uranium miner — tight beta to U3O8 spot, target r ≈ 0.82
+// CCJ (Cameco): pure uranium miner - tight beta to U3O8 spot, target r ~ 0.82
 // Uranium spot range approx $65-$110 over 52-week scatter; CCJ approx $90-$135 (Mar 2026 price ~$113)
 function generateCCJCorrelationData() {
   const data = [];
@@ -293,7 +293,7 @@ function generateCCJCorrelationData() {
   return data;
 }
 
-// CEG (Constellation Energy): nuclear utility — looser uranium beta, target r ≈ 0.65
+// CEG (Constellation Energy): nuclear utility - looser uranium beta, target r ~ 0.65
 // CEG influenced by electricity contracts, capex, and macro beyond uranium spot (Mar 2026 price ~$315)
 function generateCEGCorrelationData() {
   const data = [];
@@ -347,7 +347,7 @@ interface NewsItem { headline: string; source: string; url: string; publishedAt:
 let newsCache: { items: NewsItem[]; timestamp: number } | null = null;
 const EARNINGS_CACHE_TTL = 4 * 60 * 60 * 1000; // 4 hours
 let earningsCache: { items: any[]; timestamp: number } | null = null;
-const NEWS_CACHE_TTL = 60 * 60 * 1000; // 1 hour — safe for RSS and NewsData.io
+const NEWS_CACHE_TTL = 60 * 60 * 1000; // 1 hour - safe for RSS and NewsData.io
 
 // RSS feeds: AI infrastructure, power grid, nuclear, datacenters
 const RSS_FEEDS: Array<{ url: string; sourceName: string }> = [
@@ -378,7 +378,7 @@ async function fetchRSSNews(): Promise<NewsItem[]> {
           });
         }
       } catch (_e) {
-        // Feed failed — skip silently
+        // Feed failed - skip silently
       }
     })
   );
@@ -415,7 +415,7 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
-  // KPI endpoint — three composite indicators
+  // KPI endpoint - three composite indicators
   app.get("/api/kpis", async (req, res) => {
     // Static defaults for intraday % changes
     let nvdaChange = 2.86, tsmChange = 1.62, muChange = 2.03, eqixChange = 1.40;
@@ -461,7 +461,7 @@ export async function registerRoutes(
 
     // ─────────────────────────────────────────────────────────
     // 1. NUCLEAR RENAISSANCE INDEX (NRI)
-    // Anchored basket index — base = 100 on January 1, 2024.
+    // Anchored basket index - base = 100 on January 1, 2024.
     // Six components across utilities, miners, ETF, policy, and raw commodity.
     // Policy multiplier (0.9-1.1) captures regulatory/legislative regime separately
     // from the 10% direct policy component.
@@ -560,7 +560,7 @@ export async function registerRoutes(
     });
   });
 
-  // Stack endpoint — 8 layers, 10-min cache
+  // Stack endpoint - 8 layers, 10-min cache
   app.get("/api/stack", async (req, res) => {
     try {
       const timeframe = (req.query.timeframe as string) || "1D";
@@ -649,7 +649,7 @@ export async function registerRoutes(
     }
   });
 
-  // Top Movers endpoint — top 5 by absolute % change across all stack tickers
+  // Top Movers endpoint - top 5 by absolute % change across all stack tickers
   app.get("/api/top-movers", async (_req, res) => {
     try {
       const cacheKey = "1D";
@@ -715,7 +715,7 @@ export async function registerRoutes(
     }
   });
 
-  // Sector Pulse endpoint — avg % change per layer
+  // Sector Pulse endpoint - avg % change per layer
   app.get("/api/sector-pulse", async (_req, res) => {
     try {
       const cacheKey = "1D";
@@ -763,8 +763,8 @@ export async function registerRoutes(
 
       const SECTOR_LABELS: Record<string, string> = {
         compute: "Compute", nuclear: "Nuclear", uranium: "Uranium",
-        powerHardware: "Power Hardware", utilities: "Utilities",
-        dataCenters: "Data Centers", construction: "Construction", etfsBenchmarks: "ETF Benchmarks",
+        powerHardware: "Power HW", utilities: "Utilities",
+        dataCenters: "Data Ctrs", construction: "Constr.", etfsBenchmarks: "ETFs",
       };
 
       const pulse = Object.entries(STACK_TICKERS).map(([key, tickers]) => {
@@ -780,7 +780,7 @@ export async function registerRoutes(
     }
   });
 
-  // Earnings calendar endpoint — upcoming earnings dates for all stack tickers (4h cache)
+  // Earnings calendar endpoint - upcoming earnings dates for all stack tickers (4h cache)
   app.get("/api/earnings-calendar", async (_req, res) => {
     try {
       const now = Date.now();
@@ -820,7 +820,7 @@ export async function registerRoutes(
           }
         });
       } catch (_e) {
-        // Yahoo Finance failed — return empty array, manual catalysts still show
+        // Yahoo Finance failed - return empty array, manual catalysts still show
       }
 
       // Deduplicate by ticker (keep closest date)
@@ -859,7 +859,7 @@ export async function registerRoutes(
     }
   });
 
-  // Live news endpoint — priority: 1) NewsData.io  2) RSS feeds  3) static JSON
+  // Live news endpoint - priority: 1) NewsData.io  2) RSS feeds  3) static JSON
   app.get("/api/news", async (_req, res) => {
     try {
       const now = Date.now();
@@ -895,7 +895,7 @@ export async function registerRoutes(
         }
       }
 
-      // Priority 2: RSS feeds — live, no API key required, updates hourly
+      // Priority 2: RSS feeds - live, no API key required, updates hourly
       try {
         const rssItems = await fetchRSSNews();
         if (rssItems.length >= 3) {
@@ -924,7 +924,7 @@ export async function registerRoutes(
     }
   });
 
-  // Legacy headlines endpoint — keep for backward compat
+  // Legacy headlines endpoint - keep for backward compat
   app.get("/api/headlines", (_req, res) => {
     try {
       const filePath = join(process.cwd(), "server", "data", "news-headlines.json");
@@ -936,7 +936,7 @@ export async function registerRoutes(
     }
   });
 
-  // Catalysts endpoint — reads from server/data/catalysts.json (editable without redeploying)
+  // Catalysts endpoint - reads from server/data/catalysts.json (editable without redeploying)
   app.get("/api/catalysts", (_req, res) => {
     try {
       const filePath = join(process.cwd(), "server", "data", "catalysts.json");

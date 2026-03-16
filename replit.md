@@ -1,7 +1,14 @@
-# GridTilt — AI Infrastructure & Power Economy Dashboard
+# GridTilt | AI Infrastructure & Power Economy Dashboard
 
 ## Overview
 Full-stack web application that visualizes the economic relationship between AI compute demand, power consumption, and financial markets. Dark mode only, warm charcoal terminal aesthetic with orange branding. Made by Jack Schwartz / aurph (gridtilt.com).
+
+## Brand
+- Primary orange: #F07800
+- Amber KPIs: #F0A500
+- Blue #1E90FF: STRICTLY for chart data series only
+- No em dashes anywhere in the codebase
+- Text style: short, direct sentences. No compound AI-sounding phrasing.
 
 ## Architecture
 

@@ -233,7 +233,7 @@ export default function TheTrade() {
           <div>
             <h1 className="text-2xl font-bold text-foreground tracking-tight">Thesis Calculator</h1>
             <p className="text-muted-foreground text-sm mt-1 max-w-xl">
-              Infrastructure buildout scenarios for the AI power economy. Select a preset, adjust any assumption, and see the capital and grid implications in real time.
+              Model the AI power buildout. Pick a scenario, adjust assumptions, see capital and grid implications.
             </p>
           </div>
           <UITooltip>
@@ -244,7 +244,7 @@ export default function TheTrade() {
               </Badge>
             </TooltipTrigger>
             <TooltipContent className="max-w-xs">
-              <p className="text-xs leading-relaxed">All default assumptions trace to named sources: IEA, EIA, DOE, McKinsey, and hyperscaler earnings calls. Open the Methodology panel below for full citations and formulas.</p>
+              <p className="text-xs leading-relaxed">All defaults trace to named sources: IEA, EIA, DOE, McKinsey, hyperscaler earnings calls. See Methodology panel for citations.</p>
             </TooltipContent>
           </UITooltip>
         </div>
@@ -420,7 +420,7 @@ export default function TheTrade() {
                     <Info className="h-3 w-3 text-muted-foreground/60" />
                   </TooltipTrigger>
                   <TooltipContent className="max-w-xs">
-                    <p className="text-xs">Powers the AI grid share estimate. CAGR = compound annual growth rate of AI compute demand. PUE = Power Usage Effectiveness (overhead multiplier on compute load).</p>
+                    <p className="text-xs">CAGR = annual growth rate of AI compute demand. PUE = Power Usage Effectiveness (overhead multiplier on compute load).</p>
                   </TooltipContent>
                 </UITooltip>
               </div>
@@ -501,7 +501,7 @@ export default function TheTrade() {
                     <Info className="h-3.5 w-3.5 text-muted-foreground/60" />
                   </TooltipTrigger>
                   <TooltipContent className="max-w-xs">
-                    <p className="text-xs">GW of new AI data center capacity commissioned each year, broken down by power source. Stacked bars show generation mix applied to that year's buildout rate.</p>
+                    <p className="text-xs">GW of new AI DC capacity per year, broken down by power source.</p>
                   </TooltipContent>
                 </UITooltip>
               </div>
@@ -558,7 +558,7 @@ export default function TheTrade() {
                     <Info className="h-3.5 w-3.5 text-muted-foreground/60" />
                   </TooltipTrigger>
                   <TooltipContent className="max-w-xs">
-                    <p className="text-xs">Qualitative thesis leverage scores (0-10), adjusted by your scenario inputs. Higher nuclear % boosts Power names; higher AI CAGR boosts Compute and Infrastructure. Not financial advice.</p>
+                    <p className="text-xs">Thesis leverage scores (0-10) adjusted by your scenario inputs. Higher nuclear % boosts Power names; higher CAGR boosts Compute. Not financial advice.</p>
                   </TooltipContent>
                 </UITooltip>
               </div>
@@ -693,8 +693,8 @@ export default function TheTrade() {
                   <div className="space-y-3">
                     <p className="font-semibold text-foreground uppercase tracking-wider text-[10px]">Key Sensitivities</p>
                     <div className="space-y-2 text-muted-foreground leading-relaxed">
-                      <p><span className="text-foreground font-medium">Nuclear %</span> is the single highest-leverage input for the Power stock thesis. Each 10pp increase substantially re-rates CEG, CCJ, and VST exposure scores.</p>
-                      <p><span className="text-foreground font-medium">Capex per MW</span> drives total capital deployed. At 50 GW, the $7M-$12M/MW range equals a $150B swing in total required investment.</p>
+                      <p><span className="text-foreground font-medium">Nuclear %</span> is the highest-leverage input. Each 10pp increase re-rates CEG, CCJ, and VST scores.</p>
+                      <p><span className="text-foreground font-medium">Capex per MW</span> drives total capital deployed. At 50 GW, the $7M-$12M range = $150B swing.</p>
                       <p><span className="text-foreground font-medium">LPT per GW</span> (default: 4) is the most uncertain assumption in this model; academic literature ranges from 2 to 6.</p>
                       <p><span className="text-foreground font-medium">AI CAGR</span> is the most volatile input; a 10pp change produces a ~200 TWh swing in 2030 US power demand.</p>
                     </div>

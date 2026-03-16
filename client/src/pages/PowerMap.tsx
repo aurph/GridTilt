@@ -3,7 +3,7 @@ import { ComposableMap, Geographies, Geography, Marker } from "react-simple-maps
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  X, Zap, MapPin, Building2, Calendar, Activity, Globe, Network,
+  X, Zap, MapPin, Building2, Calendar, Activity, Network,
   SlidersHorizontal, ChevronDown,
 } from "lucide-react";
 
@@ -194,6 +194,7 @@ export default function PowerMap() {
   const [filterRTOs, setFilterRTOs]       = useState<string[]>(initialFilters.rtos);
   const [filterCapacity, setFilterCapacity]   = useState<string>(initialFilters.capacity);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [filtersExpanded, setFiltersExpanded] = useState(false);
   const mapContainerRef = useRef<HTMLDivElement>(null);
 
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
@@ -314,86 +315,65 @@ export default function PowerMap() {
 
   return (
     <div className="flex flex-col h-full overflow-y-auto">
-      {/* Header */}
-      <div className="grid-bg border-b border-border px-6 py-5">
-        <div className="flex items-start justify-between gap-4 flex-wrap">
-          <div>
-            <div className="flex items-center gap-2.5 mb-1">
-              <h1 className="text-2xl font-bold text-foreground tracking-tight">Power Map</h1>
-              <span className="text-[10px] font-mono tracking-wider px-2 py-0.5 rounded border border-border bg-muted/30 text-muted-foreground">
-                US COVERAGE
-              </span>
-            </div>
-            <p className="text-muted-foreground text-sm">
-              Active and planned AI data centers by power draw. {DATA_CENTERS.length} facilities across all major grid regions.
-            </p>
-          </div>
-
-          {/* Size + style legend */}
-          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs">
-            <div className="flex flex-col gap-1">
-              <div className="flex items-center gap-1.5">
-                <div className="h-3 w-3 rounded-full bg-green-500" />
-                <span className="text-muted-foreground">&lt;100 MW</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <div className="h-3 w-3 rounded-full bg-yellow-500" />
-                <span className="text-muted-foreground">100-500 MW</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <div className="h-3 w-3 rounded-full bg-red-500" />
-                <span className="text-muted-foreground">&gt;500 MW</span>
-              </div>
-            </div>
-            <div className="flex flex-col gap-1 border-l border-border/40 pl-4">
-              <div className="flex items-center gap-1.5">
-                <svg width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="5" fill="#eab308" fillOpacity="0.8" stroke="rgba(255,255,255,0.3)" strokeWidth="1.5" /></svg>
-                <span className="text-muted-foreground">Operational / Building</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <svg width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="5" fill="#eab308" fillOpacity="0.28" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" strokeDasharray="3 2" /></svg>
-                <span className="text-muted-foreground">Announced / Planned</span>
-              </div>
+      {/* Header - compressed single line */}
+      <div className="grid-bg border-b border-border px-4 sm:px-6 py-3">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-3">
+            <h1 className="text-lg sm:text-xl font-bold text-foreground tracking-tight">Power Map</h1>
+            <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground">
+              <span className="text-[#F0A500] font-semibold">{(totalMW / 1000).toFixed(1)} GW</span>
+              <span className="opacity-40">|</span>
+              <span>{totalTWh} TWh/yr</span>
+              <span className="opacity-40">|</span>
+              <span className="text-green-400">{opCount}</span>
+              <span className="opacity-25">/</span>
+              <span className="text-yellow-400">{conCount}</span>
+              <span className="opacity-25">/</span>
+              <span className="text-slate-400">{annCount}</span>
             </div>
           </div>
-        </div>
-
-        {/* Summary stats */}
-        <div className="flex flex-wrap gap-x-5 gap-y-2 mt-3 text-sm">
-          <div className="flex items-center gap-2">
-            <Zap className="h-4 w-4 text-[#F0A500]" />
-            <span className="text-muted-foreground">Total capacity:</span>
-            <span className="font-semibold font-mono text-foreground">{(totalMW / 1000).toFixed(1)} GW</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Activity className="h-4 w-4 text-muted-foreground" />
-            <span className="text-muted-foreground">Annual draw:</span>
-            <span className="font-semibold font-mono text-foreground">{totalTWh} TWh/yr</span>
-          </div>
-          <div className="flex items-center gap-1.5 text-xs font-mono text-muted-foreground border border-border/60 rounded px-2 py-0.5 bg-muted/20">
-            <span className="text-green-400">{opCount} operational</span>
-            <span className="opacity-40">/</span>
-            <span className="text-yellow-400">{conCount} construction</span>
-            <span className="opacity-40">/</span>
-            <span className="text-slate-400">{annCount} announced</span>
-          </div>
-        </div>
-
-        {/* RTO legend */}
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-3">
-          <span className="text-[10px] font-mono text-muted-foreground/60 tracking-wider uppercase">Grid Regions:</span>
-          {Object.entries(RTO_CONFIG).map(([key, cfg]) => (
-            <div key={key} className="flex items-center gap-1.5">
-              <div className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: cfg.legendColor, opacity: 0.8 }} />
-              <span className="text-[11px] text-muted-foreground">{cfg.label}</span>
+          <div className="flex items-center gap-3 text-[10px]">
+            <div className="hidden sm:flex items-center gap-2.5">
+              {Object.entries(RTO_CONFIG).map(([key, cfg]) => (
+                <div key={key} className="flex items-center gap-1">
+                  <div className="h-2 w-2 rounded-sm" style={{ backgroundColor: cfg.legendColor, opacity: 0.8 }} />
+                  <span className="text-muted-foreground/70">{cfg.label}</span>
+                </div>
+              ))}
             </div>
-          ))}
+            <div className="flex items-center gap-2 text-muted-foreground/60">
+              <div className="flex items-center gap-1"><div className="h-2 w-2 rounded-full bg-green-500" />&lt;100</div>
+              <div className="flex items-center gap-1"><div className="h-2 w-2 rounded-full bg-yellow-500" />100-500</div>
+              <div className="flex items-center gap-1"><div className="h-2 w-2 rounded-full bg-red-500" />500+ MW</div>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* ── FILTER BAR (desktop) ── */}
-      <div className="border-b border-border bg-card/40 px-4 py-2.5 hidden lg:block" data-testid="filter-bar-desktop">
-        <div className="flex items-start gap-4 flex-wrap">
+      <div className="border-b border-border bg-card/40 px-4 hidden lg:block" data-testid="filter-bar-desktop">
+        <button
+          onClick={() => setFiltersExpanded(!filtersExpanded)}
+          className="w-full flex items-center justify-between py-2 text-left"
+          data-testid="filter-bar-toggle"
+        >
+          <div className="flex items-center gap-2">
+            <SlidersHorizontal className="h-3 w-3 text-muted-foreground/60" />
+            <span className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-wider">Filters</span>
+            {anyFilterActive && (
+              <span className="bg-[#F0A500] text-black text-[10px] font-bold rounded-full px-1.5 py-0.5 leading-none">
+                {activeFilterCount}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-3">
+            <span className={`text-[11px] font-mono ${anyFilterActive ? "text-[#F0A500]" : "text-muted-foreground/60"}`}>
+              {anyFilterActive ? `${filteredCount} of ${DATA_CENTERS.length}` : `${DATA_CENTERS.length} facilities`}
+            </span>
+            <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground/50 transition-transform ${filtersExpanded ? "rotate-180" : ""}`} />
+          </div>
+        </button>
+        {filtersExpanded && (<div className="flex items-start gap-4 flex-wrap pb-2.5">
           {/* Operator filter */}
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-wider whitespace-nowrap">Operator</span>
@@ -472,26 +452,17 @@ export default function PowerMap() {
             ))}
           </div>
 
-          {/* Count + Clear */}
-          <div className="flex items-center gap-3 ml-auto flex-shrink-0">
-            <span
-              className={`text-[11px] font-mono ${anyFilterActive ? "text-[#F0A500]" : "text-muted-foreground/60"}`}
-              data-testid="filter-count-label"
+          {anyFilterActive && (
+            <button
+              onClick={clearAllFilters}
+              data-testid="filter-clear-all"
+              className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground border border-border/60 rounded px-2 py-1 transition-colors ml-auto"
             >
-              {anyFilterActive ? `Showing ${filteredCount} of ${DATA_CENTERS.length}` : `All ${DATA_CENTERS.length} facilities`}
-            </span>
-            {anyFilterActive && (
-              <button
-                onClick={clearAllFilters}
-                data-testid="filter-clear-all"
-                className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground border border-border/60 rounded px-2 py-1 transition-colors"
-              >
-                <X className="h-3 w-3" />
-                Clear
-              </button>
-            )}
-          </div>
-        </div>
+              <X className="h-3 w-3" />
+              Clear all
+            </button>
+          )}
+        </div>)}
       </div>
 
       {/* ── FILTER BAR (mobile) ── */}
@@ -645,7 +616,7 @@ export default function PowerMap() {
                     onMouseEnter={() => { if (!selected && passes) setHoveredId(dc.id); }}
                     onMouseLeave={() => setHoveredId(null)}
                   />
-                  {/* Leader line + city label — only for selected */}
+                  {/* Leader line + city label - only for selected */}
                   {isSelected && passes && (
                     <>
                       <line
@@ -710,7 +681,7 @@ export default function PowerMap() {
           )}
 
           <div className="absolute bottom-3 left-4">
-            <p className="text-xs text-muted-foreground">Hover a dot to preview. Click to pin details in sidebar.</p>
+            <p className="text-[10px] font-mono text-muted-foreground/50">Click a pin for details</p>
           </div>
         </div>
 
@@ -822,18 +793,7 @@ export default function PowerMap() {
               </div>
             </div>
           </div>
-        ) : (
-          <div className="hidden lg:flex w-80 border-l border-border items-center justify-center p-8 text-center">
-            <div>
-              <MapPin className="h-8 w-8 text-muted-foreground/40 mx-auto mb-3" />
-              <p className="text-sm text-muted-foreground">Click a dot on the map to view facility details</p>
-              <p className="text-xs text-muted-foreground/50 mt-2 flex items-center justify-center gap-1">
-                <Globe className="h-3 w-3" />
-                International coverage expanding to Europe and Southeast Asia
-              </p>
-            </div>
-          </div>
-        )}
+        ) : null}
       </div>
 
       {/* Upcoming Projects Section */}

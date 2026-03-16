@@ -71,7 +71,7 @@
   --font-serif: Georgia, serif;
   --font-mono: "JetBrains Mono", monospace;
 
-  /* Slightly sharper corners than before — more terminal, less consumer app */
+  /* Slightly sharper corners - more terminal, less consumer app */
   --radius: 0.35rem;
 
   /* Shadows (deeper for dark charcoal bg) */
@@ -133,7 +133,7 @@ html {
   background: hsl(var(--muted-foreground));
 }
 
-/* Grid background pattern — very faint orange tint, not blue */
+/* Grid background pattern - very faint orange tint, not blue */
 .grid-bg {
   background-image: 
     linear-gradient(rgba(240, 120, 0, 0.03) 1px, transparent 1px),
