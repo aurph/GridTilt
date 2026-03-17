@@ -1,0 +1,450 @@
+# GridTilt Feature Build Prompt — Max Mode / No Constraints
+
+Paste everything below the line into Replit. This is a large scope prompt covering a major new feature, fixes to existing features, expanded ticker coverage, email capture, and newsletter infrastructure. Work through each section fully in order.
+
+---
+
+You have full context of the GridTilt codebase. This prompt covers: (1) a brand new headline feature called the Supply Chain Tracker, (2) Power Map visual overhaul, (3) article/blog scroll fixes, (4) massively expanded ticker coverage, (5) email capture and automated newsletter, and (6) miscellaneous fixes. Build everything in order.
+
+---
+
+## SECTION 1: SUPPLY CHAIN TRACKER — NEW HEADLINE FEATURE
+
+This is GridTilt's next major feature. It replaces the Thesis Calculator in the nav (keep the calculator accessible via a link but it's no longer a primary nav item). The Supply Chain Tracker visualizes how power flows from raw materials to the GPU. It's the visual storytelling feature that makes GridTilt unique.
+
+### 1A. Concept
+
+An interactive, animated flow diagram showing the AI power supply chain as connected nodes:
+
+```
+RAW MATERIALS → GENERATION → TRANSMISSION → DISTRIBUTION → END USE
+(uranium, gas,   (nuclear,     (transformers,  (switchgear,    (data centers,
+ copper, steel,   gas turbines,  HV cables,      substations,    hyperscalers,
+ rare earth)      solar, wind)   transmission     power mgmt)     AI compute)
+                                 lines)
+```
+
+Each stage is a visual node/column. Lines/arrows flow between them showing the supply chain connections. The whole thing should feel like an interactive infographic, not a static chart.
+
+### 1B. Visual Design
+
+**Layout:** Horizontal flow, left to right, filling the main content area. On mobile, it can stack vertically or scroll horizontally.
+
+**Each stage (node) should display:**
+- Stage name (large, bold): "Raw Materials", "Generation", "Transmission", "Distribution", "End Use"
+- A one-line tagline: "Where it comes from", "How it's made", "How it moves", "How it connects", "Where it goes"
+- Number of tracked companies in this stage
+- Aggregate sector performance today (green/red percentage)
+- A bottleneck indicator: a small badge showing the current constraint level for this stage. Use a simple 3-level system:
+  - Green: "Flowing" (no major constraint)
+  - Orange: "Tightening" (lead times growing, demand outpacing supply)
+  - Red: "Bottlenecked" (multi-year backlogs, critical shortage)
+- For now, hardcode the bottleneck status per stage. I'll update them manually. Make it easy to change (a simple config object or JSON file).
+
+**Flow lines between stages:**
+- Animated dashed lines or flowing particle effects connecting the stages left to right
+- The lines should pulse subtly to feel alive
+- Line thickness or color could reflect flow health (green = healthy, orange = constrained)
+- Use CSS animations or a lightweight canvas/SVG approach. No heavy libraries.
+
+**Color scheme:**
+- Match GridTilt's dark theme
+- Each stage could have a subtle colored accent/glow: copper/brown for Raw Materials, orange for Generation, blue for Transmission, green for Distribution, purple for End Use
+- Or keep them all in the GridTilt orange family. Use your judgment on what looks best.
+
+### 1C. Interaction — Expanding a Stage
+
+Clicking (or hovering on desktop) a stage node expands it to reveal the companies inside. This is the key interaction.
+
+**Expanded view shows:**
+- All companies tracked in this stage, displayed as compact stock cards (ticker, price, daily change %)
+- The bottleneck detail: a 2-3 sentence explanation of the current constraint at this stage. Examples:
+  - Raw Materials: "Copper prices above $14,000/ton. Uranium spot at $93/lb. Electrical steel lead times at 8-12 months. Demand from AI data centers could require 475,000 additional tons of copper annually by 2026."
+  - Transmission: "Large power transformer lead times at 18-36 months. US domestic production ~60 units/year against estimated demand of 200-500 over 5 years. This is the tightest bottleneck in the chain."
+  - End Use: "48 tracked facilities. 28 operational, 15 under construction, 5 announced. Total tracked capacity: 20.7 GW."
+- Key metric for this stage: a single headline number that captures the bottleneck. Examples:
+  - Raw Materials: "Copper: $14,200/ton" or "Uranium: $93/lb"
+  - Generation: "GE Vernova backlog: $200B+"
+  - Transmission: "Transformer lead time: 18-36 months"
+  - Distribution: "Eaton order backlog: 2-3 years"
+  - End Use: "48 facilities / 20.7 GW tracked"
+
+**Hardcode these bottleneck descriptions and metrics for now.** Put them in a config file (`supply-chain-config.json` or similar) that I can easily edit. The key metrics can be updated to pull from live data later.
+
+**Clicking a stock card within an expanded stage** should link to the `/stock/[ticker]` page.
+
+### 1D. The Companies Per Stage
+
+Here is the complete mapping. Add any of these tickers that aren't already in The Stack:
+
+**RAW MATERIALS (Mining, Fuel, Base Metals)**
+
+| Ticker | Company | Sub-category |
+|--------|---------|-------------|
+| CCJ | Cameco Corp | Uranium mining |
+| UEC | Uranium Energy Corp | Uranium mining |
+| NXE | NexGen Energy | Uranium mining |
+| DNN | Denison Mines | Uranium mining |
+| UUUU | Energy Fuels | Uranium + rare earth |
+| LEU | Centrus Energy | Uranium enrichment (HALEU) |
+| FCX | Freeport-McMoRan | Copper mining (world's largest public copper producer) |
+| SCCO | Southern Copper | Copper mining |
+| TECK | Teck Resources | Copper + zinc mining |
+| HBM | Hudbay Minerals | Copper mining |
+| LUN.TO | Lundin Mining | Copper mining (if exchange available, otherwise skip) |
+| NUE | Nucor Corp | Steel (electrical steel for transformers) |
+| STLD | Steel Dynamics | Steel production |
+| CLF | Cleveland-Cliffs | Steel (grain-oriented electrical steel) |
+| X | United States Steel | Steel production |
+| MP | MP Materials | Rare earth mining (NdPr oxide for generators/motors) |
+| USAR | USA Rare Earth | Rare earth processing |
+| BHP | BHP Group | Diversified mining (copper, iron) |
+| RIO | Rio Tinto | Diversified mining (copper, aluminum) |
+| VALE | Vale SA | Iron ore + copper + nickel |
+| AR | Antero Resources | Natural gas production |
+| EQT | EQT Corporation | Largest US natural gas producer |
+| RRC | Range Resources | Natural gas production |
+| SWN | Southwestern Energy | Natural gas production |
+| LNG | Cheniere Energy | LNG export (gas supply chain) |
+| COPX | Global X Copper Miners ETF | Copper sector benchmark |
+
+**GENERATION (Power Plants, Turbines, Reactors)**
+
+| Ticker | Company | Sub-category |
+|--------|---------|-------------|
+| CEG | Constellation Energy | Nuclear fleet operator (22 GW) |
+| VST | Vistra Corp | Nuclear + gas generation |
+| TLN | Talen Energy | Nuclear (Susquehanna, Amazon deal) |
+| NRG | NRG Energy | Diversified generation |
+| GEV | GE Vernova | Gas turbines + BWRX-300 SMR |
+| SIEGY | Siemens Energy | Gas turbines (competitor to GEV) |
+| BKR | Baker Hughes | Gas turbine technology |
+| SMR | NuScale Power | Small modular reactor |
+| OKLO | Oklo Inc | Advanced reactor (Sam Altman backed) |
+| BWXT | BWX Technologies | Naval reactor manufacturer, SMR components |
+| NEE | NextEra Energy | Largest renewable generator, Meta deal |
+| AES | AES Corp | Renewable + gas generation |
+| FSLR | First Solar | Solar panel manufacturing for utility-scale |
+| ENPH | Enphase Energy | Solar microinverters |
+| SEDG | SolarEdge Technologies | Solar inverters |
+| SO | Southern Company | Nuclear + gas utility (Vogtle plant) |
+| DUK | Duke Energy | Large utility, generation fleet |
+| AEP | American Electric Power | Large utility, generation + transmission |
+
+**TRANSMISSION (Transformers, HV Cable, Transmission Lines)**
+
+| Ticker | Company | Sub-category |
+|--------|---------|-------------|
+| ETN | Eaton Corp | Transformers + switchgear (global leader) |
+| ABB | ABB Ltd | Power transformers + grid automation |
+| PWR | Quanta Services | Transmission line construction (largest private HV workforce in NA) |
+| EMR | Emerson Electric | Grid automation + power management |
+| HUBB | Hubbell Inc | Electrical products for utilities |
+| AYI | Acuity Brands | Electrical infrastructure + lighting |
+| GE | GE Aerospace | Grid solutions (spun from GE Vernova but still grid-adjacent) |
+| WIRE | Encore Wire | Copper wire + cable manufacturing |
+| AOS | A.O. Smith | Electrical equipment |
+| GNRC | Generac Holdings | Backup power + grid services |
+| IDA | IDACORP | Utility focused on transmission buildout |
+| NVT | nVent Electric | High-density power distribution, liquid cooling connectors |
+
+**DISTRIBUTION (Switchgear, Substations, Power Management, Cooling)**
+
+| Ticker | Company | Sub-category |
+|--------|---------|-------------|
+| VRT | Vertiv Holdings | Data center power + cooling (picks and shovels) |
+| CARR | Carrier Global | Data center cooling systems |
+| JCI | Johnson Controls | Building automation + HVAC cooling |
+| ETN | Eaton Corp | (also here) Switchgear + UPS systems |
+| ABB | ABB Ltd | (also here) LV distribution + automation |
+| SNDR | Schneider National | Logistics (skip, wrong Schneider) |
+| EME | EMCOR Group | Electrical + mechanical DC installation |
+| MTZ | MasTec Inc | Infrastructure construction |
+| STRL | Sterling Infrastructure | DC site development (125% YoY growth) |
+| FLR | Fluor Corporation | Engineering/construction |
+| J | Jacobs Solutions | Engineering services |
+| ACM | AECOM | Infrastructure consulting |
+| PRIM | Primoris Services | Utility infrastructure |
+
+**END USE (Data Centers, Hyperscalers, Compute)**
+
+| Ticker | Company | Sub-category |
+|--------|---------|-------------|
+| EQIX | Equinix | Largest DC REIT (273 data centers) |
+| DLR | Digital Realty | Largest DC REIT by portfolio |
+| AMT | American Tower | Cell towers + DC colocation |
+| NVDA | NVIDIA | GPU compute |
+| AMD | Advanced Micro Devices | GPU + CPU compute |
+| AVGO | Broadcom | Networking + custom AI chips |
+| TSM | Taiwan Semiconductor | Chip fabrication |
+| MU | Micron Technology | Memory for AI workloads |
+| INTC | Intel Corp | CPU + foundry |
+| SMCI | Super Micro Computer | AI server assembly |
+| META | Meta Platforms | Hyperscaler |
+| AMZN | Amazon | Hyperscaler (AWS) |
+| MSFT | Microsoft | Hyperscaler (Azure) |
+| GOOGL | Alphabet/Google | Hyperscaler (GCP) |
+| AAPL | Apple | Compute infrastructure |
+| IREN | IREN Limited | Bitcoin/AI data center operator |
+| CLSK | CleanSpark | Bitcoin mining / DC operator |
+| MARA | Marathon Digital | Bitcoin mining / DC infrastructure |
+
+**NOTE TO REPLIT:** Some tickers appear in multiple stages (ETN in both Transmission and Distribution, ABB in both, etc.). In the Supply Chain Tracker, show them in BOTH stages. In The Stack, keep them in their primary sector and add a tag/badge showing "Also in: Transmission, Distribution" or similar. Do not duplicate the stock card, just show cross-references.
+
+**Total new tickers to add (approximate):** ~40-50 that aren't already in The Stack. This brings the total well above 100 tracked companies.
+
+### 1E. Navigation
+
+- Replace "Thesis Calculator" in the primary sidebar nav with "Supply Chain" (or "Supply Chain Tracker" if it fits)
+- Use a flow/diagram icon (or a chain link icon)
+- The Thesis Calculator should still be accessible via a link from the Supply Chain page or from the Tilt Overview, but it's no longer a top-level nav item
+- The supply chain page URL should be `/supply-chain`
+
+### 1F. Summary Bar
+
+At the top of the Supply Chain page, show a summary bar:
+
+"5 stages / [X] companies tracked / Tightest bottleneck: **Transmission** (18-36 month transformer lead times)"
+
+This gives the instant takeaway before someone even interacts with the diagram.
+
+### 1G. Responsiveness
+
+- Desktop: horizontal flow, all 5 stages visible
+- Tablet: horizontal scroll if needed, or slightly compressed
+- Mobile: vertical stack (stages flow top to bottom) or horizontal scroll with snap points
+
+---
+
+## SECTION 2: POWER MAP VISUAL OVERHAUL
+
+The map needs to look substantially better and the interactive features need to actually work.
+
+### 2A. Facility Names Visible on Map
+
+Add facility name labels directly on the map, visible at reasonable zoom levels:
+- At full US zoom-out: show only the largest facilities (500+ MW) with small labels
+- As user zooms in: progressively show more labels
+- Labels should be small, white text with a subtle dark background/shadow so they're readable over any map region color
+- Position labels slightly offset from the pin (not overlapping it)
+- If two labels would overlap, hide the smaller facility's label until the user zooms in more
+
+### 2B. Pin Visual Upgrade
+
+- Pins should have a subtle gradient or inner glow, not flat circles
+- Add a soft pulsing animation on operational facilities (very subtle, just enough to feel alive)
+- Under-construction facilities should have a dashed ring around them
+- Announced/planned facilities should be slightly transparent (60% opacity)
+- On hover: pin scales to 1.2x with an orange glow, other pins dim to 40% opacity, and the tooltip appears
+
+### 2C. Tooltip on Hover
+
+When hovering a pin, show a premium tooltip card:
+- Facility name (bold)
+- Operator (with operator's color dot)
+- Location (city, state)
+- Capacity: X MW (or "TBD")
+- Grid region: PJM / ERCOT / etc.
+- Status: Operational / Under Construction / Announced
+- If the user clicks, the tooltip stays pinned. Click elsewhere to dismiss.
+
+### 2D. Region Overlay Fix
+
+The RTO region color fills are too saturated and compete with the pins. Reduce region fill opacity to 10-15%. The regions should be barely-visible background tinting. Pins are the focus.
+
+### 2E. Filter Panel Cleanup
+
+The operator and grid region filter chips take up too much vertical space above the map. Collapse them:
+- Show a single "Filters" button/bar that expands to reveal the filter chips
+- Or put the filters in a compact sidebar/drawer on the left
+- The map should take up maximum vertical space
+- Keep the "Showing X of Y facilities" counter always visible
+- When filters are active, show the active filter as a small badge: "Operator: Google, Amazon" that can be clicked to clear
+
+### 2F. Remove Right-Side Placeholder
+
+If there's still a "Click a dot on the map to view facility details" placeholder panel on the right side, remove it entirely. The map should use the full width. The tooltip handles facility details.
+
+---
+
+## SECTION 3: ARTICLE / BLOG SCROLL FIX
+
+The blog articles don't scroll properly. Fix this:
+
+### 3A. Scroll Issues
+
+- Make sure the blog post page (`/blog/:slug`) scrolls normally within the main content area
+- If the sidebar is fixed, the content area should scroll independently
+- Test every blog post to make sure long content (the articles are 500-800 words each) scrolls to the bottom without getting cut off
+- The table of contents links should smooth-scroll to the correct heading
+- Make sure the blog index page (`/blog`) also scrolls properly if there are more articles than fit on screen
+
+### 3B. Blog Reading Experience
+
+- Content max-width should be around 680-720px for comfortable reading
+- Line height should be 1.6-1.7 for body text
+- Paragraphs should have clear spacing between them
+- Code blocks or data callouts should have a slightly different background
+- The "Back to articles" link should be sticky at the top or clearly accessible
+
+---
+
+## SECTION 4: EMAIL CAPTURE AND AUTOMATED NEWSLETTER
+
+### 4A. Email Capture — Use Resend
+
+Implement email capture using Resend (resend.com). Free tier: 3,000 emails/month, more than enough to start.
+
+**Backend:**
+- Create an API route: `POST /api/subscribe` that accepts `{ email: string }`
+- Validate email format server-side
+- Store emails in a database table (or a JSON file if no DB — whatever the current stack supports)
+- Also add the email to a Resend audience via their API (for later sending)
+- Handle duplicates gracefully: return success message "You're already subscribed" instead of an error
+- Rate limit: max 5 subscribe attempts per IP per hour
+
+**Placements (3 locations):**
+
+1. **Bottom of Tilt Overview** — after the Sector Pulse section, a full-width bar:
+   - Left side: "Get the GridTilt Brief. Thesis health, top movers, new facilities. One email per month."
+   - Right side: email input + "Subscribe" button
+   - Style: subtle background (slightly lighter than page bg), orange accent on the button
+
+2. **Scroll-triggered banner** — appears after user scrolls 70% down any page:
+   - Small bar that slides up from the bottom (not a popup/modal that blocks content)
+   - Same copy and input
+   - Dismissible with X. Once dismissed, don't show again for 7 days (use localStorage)
+   - On mobile: make sure it doesn't block map interaction or nav
+
+3. **Dedicated /subscribe page** — for linking from X bio, LinkedIn posts:
+   - Clean page with headline, 3 value props, email input, subscribe button
+   - "The GridTilt Brief: thesis health check, top movers, new facilities, one data insight. Monthly. No spam."
+   - Success state: "You're in. First brief arrives next month." with a checkmark
+   - This becomes the CTA landing page for all content marketing
+
+**Success/error states:**
+- Success: input clears, green checkmark, "You're in"
+- Already subscribed: "You're already on the list"
+- Invalid email: "That doesn't look like an email" (client-side validation first)
+- Error: "Something went wrong, try again"
+
+**Environment variable needed:** `RESEND_API_KEY` — leave a clear comment explaining where to get this (resend.com dashboard) and where to set it.
+
+### 4B. Monthly Newsletter — GridTilt Brief
+
+Build the infrastructure for a monthly automated email. This uses the `/api/export/weekly` endpoint (repurposed for monthly) and Resend's sending API.
+
+**Email template:**
+Build an HTML email template that matches GridTilt's brand (dark background, orange accents, clean typography). The template should include:
+
+1. **Header:** GridTilt logo + "The GridTilt Brief — [Month Year]"
+2. **Thesis Health:** The 3 index values + thesis status (Expanding/Stable/Cooling), with colored indicators
+3. **Top Movers This Month:** Top 5 stocks by monthly % change with ticker, name, sector, and change
+4. **Sector Pulse:** Which sectors outperformed/underperformed this month
+5. **Power Map Update:** New facilities added this month (if any), total count
+6. **New on GridTilt:** Brief mention of any new features shipped
+7. **One Insight:** A placeholder section where I can manually add a 2-3 sentence data observation
+8. **CTA:** "Explore the full dashboard at gridtilt.com"
+9. **Footer:** "You're receiving this because you subscribed at gridtilt.com. Unsubscribe: [link]"
+
+**Sending mechanism:**
+- Create an API route: `POST /api/newsletter/send` (protected, requires auth or a secret key)
+- This route:
+  1. Calls `/api/export/daily` to get current data
+  2. Populates the email template with the data
+  3. Sends to all subscribers via Resend's batch send API
+  4. Logs the send (date, subscriber count, any errors)
+
+- Also create `GET /api/newsletter/preview` that returns the rendered HTML template with current data so I can preview the email before sending
+
+**Unsubscribe:**
+- Each email includes an unsubscribe link: `gridtilt.com/unsubscribe?token=[hashed_email]`
+- Clicking it removes the email from the subscriber list and shows a confirmation page
+- This is legally required (CAN-SPAM)
+
+### 4C. Subscriber Admin
+
+Build a simple protected page at `/admin/subscribers` (protect with a secret key in the URL or a simple password) that shows:
+- Total subscriber count
+- List of emails with subscribe date
+- A "Send Newsletter" button that triggers `/api/newsletter/send`
+- A "Preview Newsletter" button that opens the preview
+- Ability to remove individual subscribers
+
+---
+
+## SECTION 5: EXPANDED TICKER COVERAGE
+
+Add ALL tickers from the Supply Chain Tracker mapping in Section 1D that aren't already in The Stack. This includes:
+
+**New sectors/categories to add to The Stack:**
+
+- **Raw Materials — Mining & Metals**: FCX, SCCO, TECK, HBM, NUE, STLD, CLF, X, MP, BHP, RIO, VALE, COPX
+- **Raw Materials — Natural Gas Producers**: AR, EQT, RRC, SWN, LNG
+- **Advanced Nuclear / SMR** (if not already a sector): SMR, OKLO, BWXT (may already exist)
+- **Renewable Generation**: FSLR, ENPH, SEDG, AES
+- **Transmission & Grid Hardware**: WIRE, GNRC, AYI, AOS, IDA, NVT
+- **Crypto/AI Data Center Operators**: IREN, CLSK, MARA (if not already tracked)
+
+The Stack should now have **100+ tickers** across expanded sectors. Update sector groupings and descriptions accordingly.
+
+**Sector descriptions** — keep them short, no em dashes:
+- Raw Materials: "Copper, uranium, steel, and rare earth. Where the supply chain starts."
+- Natural Gas Producers: "The bridge fuel for AI data centers. Gas powers the buildout while nuclear catches up."
+- Renewable Generation: "Solar and wind. Growing share of DC power, especially paired with storage."
+- Transmission & Grid Hardware: "Transformers, cables, and the infrastructure that moves power from plant to rack."
+
+**IMPORTANT:** When adding new tickers, make sure each one has live price data working. If a ticker can't be fetched from the data source (Yahoo Finance or whatever the backend uses), flag it to me rather than showing broken/empty cards.
+
+---
+
+## SECTION 6: MISCELLANEOUS FIXES
+
+### 6A. Text Cleanup — Final Pass
+
+Go through every piece of visible text on the site one more time. Remove:
+- Any remaining em dashes (replace with commas or periods)
+- Any sentence longer than ~20 words (break it up)
+- Any paragraph longer than 3 sentences in a description/explainer context
+- Sector descriptions that sound like ChatGPT wrote them
+
+### 6B. Thesis Calculator Demotion
+
+- Remove Thesis Calculator from the primary sidebar nav
+- Add a link to it from:
+  - The Supply Chain Tracker page (maybe a "Model the demand scenarios" link)
+  - The Tilt Overview page (near the indices)
+- The calculator still works, it's just not a headline feature anymore
+- URL can stay the same
+
+### 6C. The Stack — Sorting
+
+Remove the thesis sort option if it still exists. Keep: % Change, Mkt Cap, and alphabetical by ticker.
+
+### 6D. Loading States
+
+Make sure every data-loading component has a proper skeleton loader. No blank screens while waiting for API responses. The Supply Chain Tracker especially needs loading states since it pulls data for 100+ tickers.
+
+### 6E. Navigation Update
+
+Sidebar should now show:
+1. Tilt Overview
+2. The Stack
+3. Power Map
+4. Supply Chain (NEW — replaces Thesis Calculator)
+5. Portfolio Overlay
+6. Catalyst Tracker
+7. Analysis (blog)
+
+---
+
+## BUILD ORDER
+
+1. **Section 5** — Add all new tickers first. The Supply Chain Tracker needs them.
+2. **Section 1** — Build the Supply Chain Tracker (the headline feature)
+3. **Section 2** — Power Map visual overhaul
+4. **Section 3** — Fix article scroll
+5. **Section 4** — Email capture + newsletter infrastructure
+6. **Section 6** — Miscellaneous fixes, nav update, text cleanup
+
+After each section, confirm what was built and flag any issues before moving to the next.

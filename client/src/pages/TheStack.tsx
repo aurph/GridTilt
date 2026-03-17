@@ -49,6 +49,11 @@ interface StackData {
   utilities: StockData[];
   dataCenters: StockData[];
   construction: StockData[];
+  rawMaterialsMining: StockData[];
+  rawMaterialsNatGas: StockData[];
+  renewableGeneration: StockData[];
+  transmissionGrid: StockData[];
+  cryptoAIDC: StockData[];
   etfsBenchmarks: StockData[];
   correlation: CorrelationPoint[];
   correlationCoeff: number;
@@ -195,12 +200,13 @@ function computeRegression(points: { uranium: number; ccj: number }[]) {
 }
 
 type Timeframe = "1D" | "5D" | "1M";
-type SortBy = "change" | "marketcap";
+type SortBy = "change" | "marketcap" | "alpha";
 
 function sortStocks(stocks: StockData[], sortBy: SortBy): StockData[] {
   if (!stocks) return [];
   const arr = [...stocks];
   if (sortBy === "change") return arr.sort((a, b) => b.changePercent - a.changePercent);
+  if (sortBy === "alpha") return arr.sort((a, b) => a.ticker.localeCompare(b.ticker));
   if (sortBy === "marketcap") return arr.sort((a, b) => {
     const parseM = (s?: string) => {
       if (!s) return 0;
@@ -286,6 +292,46 @@ export default function TheStack() {
       tooltip: "Quanta is the largest electrical utility contractor in North America, building transmission lines and substations for DC campuses. EMCOR has a record $4.3B backlog. Sterling Infrastructure has 125% YoY DC revenue growth.",
     },
     {
+      key: "rawMaterialsMining",
+      title: "Raw Materials - Mining & Metals",
+      icon: Server,
+      color: "#d97706",
+      description: "Copper, steel, and rare earth producers supplying data center and grid buildout.",
+      tooltip: "Copper is the essential conductor in every transformer, busbar, and cable connecting grid to rack. Steel is the structural backbone of data center campuses. Rare earths power wind turbines and EV motors in the energy transition.",
+    },
+    {
+      key: "rawMaterialsNatGas",
+      title: "Raw Materials - Natural Gas",
+      icon: Zap,
+      color: "#0ea5e9",
+      description: "Natural gas producers fueling bridge power generation for data centers.",
+      tooltip: "Gas-fired generation is the bridge fuel while nuclear and renewables scale. Appalachian and Haynesville producers benefit from rising gas demand as hyperscalers seek reliable, dispatchable power generation capacity.",
+    },
+    {
+      key: "renewableGeneration",
+      title: "Renewable Generation",
+      icon: Zap,
+      color: "#10b981",
+      description: "Solar manufacturers and renewable energy companies powering clean data center commitments.",
+      tooltip: "Hyperscalers have committed to 100% renewable energy targets. First Solar is the largest US panel maker. AES has signed multi-GW PPAs with Google and Microsoft. Solar and wind are the fastest-growing power sources for data center operations.",
+    },
+    {
+      key: "transmissionGrid",
+      title: "Transmission & Grid Hardware",
+      icon: Server,
+      color: "#8b5cf6",
+      description: "Wire, generators, and grid equipment connecting power to data center campuses.",
+      tooltip: "Every data center requires extensive copper wiring (Encore Wire), backup generators (Generac), and electrical infrastructure. Grid interconnection is the bottleneck for new data center energization timelines.",
+    },
+    {
+      key: "cryptoAIDC",
+      title: "Crypto/AI DC Operators",
+      icon: Cpu,
+      color: "#ec4899",
+      description: "Bitcoin miners pivoting infrastructure and power contracts toward AI/HPC hosting.",
+      tooltip: "CleanSpark and MARA Holdings are the largest public Bitcoin miners exploring AI/HPC hosting. Their existing power contracts, cooling infrastructure, and facility footprints are directly transferable to GPU-as-a-Service operations.",
+    },
+    {
       key: "etfsBenchmarks",
       title: "ETF Benchmarks",
       icon: TrendingUp,
@@ -301,7 +347,7 @@ export default function TheStack() {
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
             <h1 className="text-2xl font-bold text-foreground tracking-tight">The Stack</h1>
-            <p className="text-muted-foreground text-sm mt-1">60+ equities across 8 layers of the AI power supply chain. Intraday prices via Yahoo Finance.</p>
+            <p className="text-muted-foreground text-sm mt-1">100+ equities across 13 layers of the AI power supply chain. Intraday prices via Yahoo Finance.</p>
           </div>
           <Badge className="bg-[#F0A500]/15 text-[#F0A500] border-[#F0A500]/30 font-mono text-xs">
             Yahoo Finance · Live
@@ -336,6 +382,7 @@ export default function TheStack() {
               {([
                 { id: "change", label: "% Change" },
                 { id: "marketcap", label: "Mkt Cap" },
+                { id: "alpha", label: "Alphabetical" },
               ] as { id: SortBy; label: string }[]).map((opt) => (
                 <button
                   key={opt.id}

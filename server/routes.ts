@@ -91,6 +91,45 @@ const COMPANY_DATABASE: Record<string, {
   DTCR: { name: "Global X Data Center ETF", primarySegment: "ETF", sectors: { Compute: 15, Infrastructure: 85, Power: 25, Cooling: 35, Grid: 22 }, explanation: "Data center and digital infrastructure ETF. Tracks REITs, operators, and technology companies building or relying on data center infrastructure globally." },
   GRID: { name: "First Trust Nasdaq Smart Grid ETF", primarySegment: "ETF", sectors: { Compute: 3, Infrastructure: 15, Power: 22, Cooling: 5, Grid: 85 }, explanation: "Grid infrastructure ETF tracking companies enabling the smart grid. Includes grid hardware, software, and utility companies modernizing electrical infrastructure for AI demand." },
   PAVE: { name: "Global X US Infrastructure ETF", primarySegment: "ETF", sectors: { Compute: 3, Infrastructure: 30, Power: 12, Cooling: 8, Grid: 60 }, explanation: "US infrastructure development ETF. Tracks construction, engineering, and materials companies benefiting from data center and grid infrastructure buildout." },
+  // Raw Materials - Mining & Metals
+  FCX:  { name: "Freeport-McMoRan Inc", primarySegment: "RawMaterials", sectors: { Compute: 3, Infrastructure: 10, Power: 8, Cooling: 5, Grid: 45 }, explanation: "World's largest publicly traded copper producer. Copper is the essential conductor in every data center power distribution system, transformer, and grid interconnection." },
+  SCCO: { name: "Southern Copper Corp", primarySegment: "RawMaterials", sectors: { Compute: 2, Infrastructure: 8, Power: 7, Cooling: 4, Grid: 42 }, explanation: "Major copper miner with operations in Mexico and Peru. Growing copper demand from data center electrification and grid expansion is a structural tailwind." },
+  TECK: { name: "Teck Resources Ltd", primarySegment: "RawMaterials", sectors: { Compute: 2, Infrastructure: 8, Power: 6, Cooling: 3, Grid: 38 }, explanation: "Diversified miner transitioning to a pure-play copper producer after selling coal assets. Copper exposure aligned with AI-driven grid buildout." },
+  HBM:  { name: "Hudbay Minerals Inc", primarySegment: "RawMaterials", sectors: { Compute: 2, Infrastructure: 6, Power: 5, Cooling: 3, Grid: 35 }, explanation: "Mid-tier copper and gold miner with operations in Peru, Manitoba, and Arizona. Copper Flat expansion adds supply into a tightening copper market." },
+  NUE:  { name: "Nucor Corporation", primarySegment: "RawMaterials", sectors: { Compute: 2, Infrastructure: 25, Power: 5, Cooling: 3, Grid: 30 }, explanation: "Largest steel producer in North America using electric arc furnaces. Data center construction requires massive structural steel for campus buildings and rack infrastructure." },
+  STLD: { name: "Steel Dynamics Inc", primarySegment: "RawMaterials", sectors: { Compute: 2, Infrastructure: 22, Power: 4, Cooling: 3, Grid: 28 }, explanation: "Electric arc furnace steelmaker with growing exposure to data center construction demand. Structural steel and rebar volumes benefit from hyperscaler campus buildout." },
+  CLF:  { name: "Cleveland-Cliffs Inc", primarySegment: "RawMaterials", sectors: { Compute: 2, Infrastructure: 20, Power: 4, Cooling: 3, Grid: 25 }, explanation: "Largest flat-rolled steel producer in North America. Supplies steel for data center shells, grid infrastructure, and transmission tower construction." },
+  X:    { name: "United States Steel Corp", primarySegment: "RawMaterials", sectors: { Compute: 2, Infrastructure: 18, Power: 4, Cooling: 3, Grid: 24 }, explanation: "Integrated steel producer with plate and structural steel products used in data center construction and grid infrastructure projects." },
+  MP:   { name: "MP Materials Corp", primarySegment: "RawMaterials", sectors: { Compute: 5, Infrastructure: 8, Power: 10, Cooling: 3, Grid: 20 }, explanation: "Only integrated rare earth mining and processing operation in the Western Hemisphere. Rare earths are critical for permanent magnets in wind turbines and EV motors supporting the energy transition." },
+  BHP:  { name: "BHP Group Ltd", primarySegment: "RawMaterials", sectors: { Compute: 2, Infrastructure: 12, Power: 8, Cooling: 3, Grid: 40 }, explanation: "World's largest mining company by market cap. Major copper producer with growing exposure to electrification and grid expansion demand from AI data center buildout." },
+  RIO:  { name: "Rio Tinto Group", primarySegment: "RawMaterials", sectors: { Compute: 2, Infrastructure: 12, Power: 7, Cooling: 3, Grid: 38 }, explanation: "Global mining giant with significant copper and aluminum production. Both metals are essential for electrical infrastructure serving data center campuses." },
+  VALE: { name: "Vale S.A.", primarySegment: "RawMaterials", sectors: { Compute: 2, Infrastructure: 10, Power: 6, Cooling: 3, Grid: 35 }, explanation: "World's largest nickel producer and major copper producer. Nickel is critical for battery storage systems providing backup power at data center facilities." },
+  COPX: { name: "Global X Copper Miners ETF", primarySegment: "ETF", sectors: { Compute: 2, Infrastructure: 8, Power: 6, Cooling: 3, Grid: 42 }, explanation: "ETF tracking copper mining companies globally. Pure-play exposure to rising copper demand from data center electrification and grid modernization." },
+  // Raw Materials - Natural Gas
+  AR:   { name: "Antero Resources Corp", primarySegment: "NatGas", sectors: { Compute: 2, Infrastructure: 5, Power: 55, Cooling: 2, Grid: 15 }, explanation: "Appalachian natural gas producer. Gas-fired generation is the bridge fuel for data center power as nuclear and renewables scale. Growing Marcellus/Utica production." },
+  EQT:  { name: "EQT Corporation", primarySegment: "NatGas", sectors: { Compute: 2, Infrastructure: 5, Power: 58, Cooling: 2, Grid: 18 }, explanation: "Largest natural gas producer in the United States. Data center operators are signing long-term gas supply agreements to ensure reliable power generation capacity." },
+  RRC:  { name: "Range Resources Corp", primarySegment: "NatGas", sectors: { Compute: 2, Infrastructure: 5, Power: 52, Cooling: 2, Grid: 14 }, explanation: "Appalachian natural gas and NGL producer. Benefits from rising gas demand for data center power generation in PJM and Southeast markets." },
+  SWN:  { name: "Southwestern Energy Co", primarySegment: "NatGas", sectors: { Compute: 2, Infrastructure: 5, Power: 50, Cooling: 2, Grid: 14 }, explanation: "Natural gas producer focused on Appalachia and Haynesville. Gas demand growth from data center power generation is a structural demand tailwind." },
+  LNG:  { name: "Cheniere Energy Inc", primarySegment: "NatGas", sectors: { Compute: 2, Infrastructure: 8, Power: 48, Cooling: 2, Grid: 20 }, explanation: "Largest US LNG exporter. While primarily an export play, domestic gas price support from LNG demand indirectly benefits gas-fired data center power economics." },
+  // Renewable Generation
+  FSLR: { name: "First Solar Inc", primarySegment: "Renewables", sectors: { Compute: 3, Infrastructure: 12, Power: 65, Cooling: 3, Grid: 30 }, explanation: "Largest US solar panel manufacturer. Hyperscalers are signing massive solar PPAs to meet clean energy commitments for data center operations." },
+  ENPH: { name: "Enphase Energy Inc", primarySegment: "Renewables", sectors: { Compute: 3, Infrastructure: 8, Power: 55, Cooling: 3, Grid: 25 }, explanation: "Microinverter technology for solar installations. Distributed generation complements utility-scale solar supporting data center renewable energy targets." },
+  SEDG: { name: "SolarEdge Technologies", primarySegment: "Renewables", sectors: { Compute: 3, Infrastructure: 8, Power: 52, Cooling: 3, Grid: 22 }, explanation: "Solar inverter and power optimizer manufacturer. Enabling distributed solar generation that feeds into grids increasingly strained by data center load growth." },
+  AES:  { name: "AES Corporation", primarySegment: "Renewables", sectors: { Compute: 3, Infrastructure: 15, Power: 68, Cooling: 4, Grid: 35 }, explanation: "Global power company with a large renewable energy portfolio. Signed multi-GW renewable PPAs with hyperscalers including Google and Microsoft for data center power." },
+  // Transmission & Grid Hardware
+  WIRE: { name: "Encore Wire Corp", primarySegment: "TransmissionGrid", sectors: { Compute: 2, Infrastructure: 15, Power: 10, Cooling: 3, Grid: 72 }, explanation: "Copper and aluminum wire manufacturer. Every data center requires extensive copper wiring for power distribution from grid interconnection to server rack." },
+  GNRC: { name: "Generac Holdings Inc", primarySegment: "TransmissionGrid", sectors: { Compute: 2, Infrastructure: 12, Power: 20, Cooling: 3, Grid: 55 }, explanation: "Backup power generator manufacturer. Data centers require redundant backup power systems and Generac's commercial/industrial segment is growing from DC demand." },
+  AYI:  { name: "Acuity Brands Inc", primarySegment: "TransmissionGrid", sectors: { Compute: 2, Infrastructure: 10, Power: 5, Cooling: 3, Grid: 45 }, explanation: "Intelligent lighting and building management systems. Data center facilities require advanced lighting controls and electrical infrastructure management." },
+  AOS:  { name: "A.O. Smith Corporation", primarySegment: "TransmissionGrid", sectors: { Compute: 2, Infrastructure: 8, Power: 8, Cooling: 35, Grid: 30 }, explanation: "Water heating and treatment technology. Data center cooling systems increasingly rely on water-based thermal management including evaporative cooling and water treatment." },
+  IDA:  { name: "IDACORP Inc", primarySegment: "TransmissionGrid", sectors: { Compute: 2, Infrastructure: 10, Power: 60, Cooling: 3, Grid: 45 }, explanation: "Idaho utility with significant hydroelectric generation. Meta and other hyperscalers have targeted Idaho for data centers due to low-cost, clean hydroelectric power." },
+  // Crypto/AI DC Operators
+  CLSK: { name: "CleanSpark Inc", primarySegment: "CryptoAIDC", sectors: { Compute: 20, Infrastructure: 60, Power: 35, Cooling: 25, Grid: 15 }, explanation: "Bitcoin miner with growing data center infrastructure. Pivoting excess power and facility capacity toward AI/HPC hosting as GPU demand outstrips crypto mining economics." },
+  MARA: { name: "MARA Holdings Inc", primarySegment: "CryptoAIDC", sectors: { Compute: 18, Infrastructure: 55, Power: 30, Cooling: 22, Grid: 12 }, explanation: "Largest publicly traded Bitcoin miner by hash rate. Exploring AI/HPC hosting to monetize data center infrastructure and power contracts beyond cryptocurrency mining." },
+  // Additional Compute (AI Networking & Servers)
+  AVGO: { name: "Broadcom Inc", primarySegment: "Compute", sectors: { Compute: 75, Infrastructure: 20, Power: 8, Cooling: 10, Grid: 5 }, explanation: "Custom AI accelerators (TPU for Google, proprietary ASICs) and dominant networking silicon (Memory fabric, PCIe switches). Critical to data center interconnect at scale." },
+  DELL: { name: "Dell Technologies Inc", primarySegment: "Compute", sectors: { Compute: 55, Infrastructure: 35, Power: 8, Cooling: 15, Grid: 5 }, explanation: "Enterprise server and storage manufacturer with PowerEdge AI server line. Growing AI infrastructure revenue as enterprises build private AI compute capacity." },
+  ANET: { name: "Arista Networks Inc", primarySegment: "Compute", sectors: { Compute: 40, Infrastructure: 30, Power: 5, Cooling: 8, Grid: 5 }, explanation: "Data center networking switches and software. Every AI training cluster requires high-bandwidth, low-latency networking. Arista dominates cloud titan network deployments." },
+  MRVL: { name: "Marvell Technology Inc", primarySegment: "Compute", sectors: { Compute: 65, Infrastructure: 18, Power: 5, Cooling: 8, Grid: 5 }, explanation: "Custom AI accelerator and data center networking silicon. Electro-optics and custom compute for hyperscaler AI infrastructure deployments." },
 };
 
 function scorePortfolioTicker(ticker: string) {
@@ -220,6 +259,45 @@ const STATIC_MARKET_DATA: Record<string, {
   DTCR: { name: "Global X Data Center ETF", price: 27.50, change: 0.00, changePercent: 0.00, pe: null, revenueGrowth: null },
   GRID: { name: "First Trust Nasdaq Smart Grid ETF", price: 104.00, change: 0.00, changePercent: 0.00, pe: null, revenueGrowth: null },
   PAVE: { name: "Global X US Infrastructure ETF", price: 37.00, change: 0.00, changePercent: 0.00, pe: null, revenueGrowth: null },
+  // Raw Materials - Mining & Metals
+  FCX:  { name: "Freeport-McMoRan Inc", price: 44.00, change: 0.00, changePercent: 0.00, pe: 22.4, revenueGrowth: 12.8, marketCapDisplay: "$63B" },
+  SCCO: { name: "Southern Copper Corp", price: 98.00, change: 0.00, changePercent: 0.00, pe: 28.6, revenueGrowth: 18.4, marketCapDisplay: "$76B" },
+  TECK: { name: "Teck Resources Ltd", price: 42.00, change: 0.00, changePercent: 0.00, pe: 14.8, revenueGrowth: 8.2, marketCapDisplay: "$22B" },
+  HBM:  { name: "Hudbay Minerals Inc", price: 8.50, change: 0.00, changePercent: 0.00, pe: 12.4, revenueGrowth: 15.6, marketCapDisplay: "$3.4B" },
+  NUE:  { name: "Nucor Corporation", price: 142.00, change: 0.00, changePercent: 0.00, pe: 11.2, revenueGrowth: -8.4, marketCapDisplay: "$33B" },
+  STLD: { name: "Steel Dynamics Inc", price: 118.00, change: 0.00, changePercent: 0.00, pe: 9.8, revenueGrowth: -6.2, marketCapDisplay: "$18B" },
+  CLF:  { name: "Cleveland-Cliffs Inc", price: 14.50, change: 0.00, changePercent: 0.00, pe: null, revenueGrowth: -12.4, marketCapDisplay: "$7.2B" },
+  X:    { name: "United States Steel Corp", price: 38.00, change: 0.00, changePercent: 0.00, pe: 18.6, revenueGrowth: -4.8, marketCapDisplay: "$8.5B" },
+  MP:   { name: "MP Materials Corp", price: 18.00, change: 0.00, changePercent: 0.00, pe: null, revenueGrowth: 22.4, marketCapDisplay: "$3.0B" },
+  BHP:  { name: "BHP Group Ltd", price: 56.00, change: 0.00, changePercent: 0.00, pe: 18.2, revenueGrowth: 4.8, marketCapDisplay: "$140B" },
+  RIO:  { name: "Rio Tinto Group", price: 64.00, change: 0.00, changePercent: 0.00, pe: 9.4, revenueGrowth: 2.8, marketCapDisplay: "$105B" },
+  VALE: { name: "Vale S.A.", price: 10.50, change: 0.00, changePercent: 0.00, pe: 5.8, revenueGrowth: -2.4, marketCapDisplay: "$45B" },
+  COPX: { name: "Global X Copper Miners ETF", price: 42.00, change: 0.00, changePercent: 0.00, pe: null, revenueGrowth: null, marketCapDisplay: "$2.8B" },
+  // Raw Materials - Natural Gas
+  AR:   { name: "Antero Resources Corp", price: 32.00, change: 0.00, changePercent: 0.00, pe: 8.4, revenueGrowth: 28.6, marketCapDisplay: "$9.2B" },
+  EQT:  { name: "EQT Corporation", price: 42.00, change: 0.00, changePercent: 0.00, pe: 14.8, revenueGrowth: 32.4, marketCapDisplay: "$22B" },
+  RRC:  { name: "Range Resources Corp", price: 34.00, change: 0.00, changePercent: 0.00, pe: 10.2, revenueGrowth: 18.8, marketCapDisplay: "$8.0B" },
+  SWN:  { name: "Southwestern Energy Co", price: 6.80, change: 0.00, changePercent: 0.00, pe: 8.6, revenueGrowth: 22.4, marketCapDisplay: "$7.5B" },
+  LNG:  { name: "Cheniere Energy Inc", price: 198.00, change: 0.00, changePercent: 0.00, pe: 12.8, revenueGrowth: 8.4, marketCapDisplay: "$45B" },
+  // Renewable Generation
+  FSLR: { name: "First Solar Inc", price: 178.00, change: 0.00, changePercent: 0.00, pe: 16.4, revenueGrowth: 28.2, marketCapDisplay: "$19B" },
+  ENPH: { name: "Enphase Energy Inc", price: 68.00, change: 0.00, changePercent: 0.00, pe: 32.8, revenueGrowth: -18.4, marketCapDisplay: "$9.2B" },
+  SEDG: { name: "SolarEdge Technologies", price: 16.00, change: 0.00, changePercent: 0.00, pe: null, revenueGrowth: -42.8, marketCapDisplay: "$920M" },
+  AES:  { name: "AES Corporation", price: 18.00, change: 0.00, changePercent: 0.00, pe: 8.4, revenueGrowth: 4.8, marketCapDisplay: "$12B" },
+  // Transmission & Grid Hardware
+  WIRE: { name: "Encore Wire Corp", price: 312.00, change: 0.00, changePercent: 0.00, pe: 18.6, revenueGrowth: 14.8, marketCapDisplay: "$6.2B" },
+  GNRC: { name: "Generac Holdings Inc", price: 148.00, change: 0.00, changePercent: 0.00, pe: 24.2, revenueGrowth: 8.4, marketCapDisplay: "$9.0B" },
+  AYI:  { name: "Acuity Brands Inc", price: 268.00, change: 0.00, changePercent: 0.00, pe: 22.8, revenueGrowth: 6.2, marketCapDisplay: "$8.5B" },
+  AOS:  { name: "A.O. Smith Corporation", price: 82.00, change: 0.00, changePercent: 0.00, pe: 20.4, revenueGrowth: 4.8, marketCapDisplay: "$11B" },
+  IDA:  { name: "IDACORP Inc", price: 108.00, change: 0.00, changePercent: 0.00, pe: 21.6, revenueGrowth: 6.8, marketCapDisplay: "$5.8B" },
+  // Crypto/AI DC Operators
+  CLSK: { name: "CleanSpark Inc", price: 12.50, change: 0.00, changePercent: 0.00, pe: null, revenueGrowth: 145.2, marketCapDisplay: "$3.2B" },
+  MARA: { name: "MARA Holdings Inc", price: 18.00, change: 0.00, changePercent: 0.00, pe: null, revenueGrowth: 78.4, marketCapDisplay: "$5.5B" },
+  // Additional Compute
+  AVGO: { name: "Broadcom Inc", price: 178.00, change: 0.00, changePercent: 0.00, pe: 32.4, revenueGrowth: 44.2, marketCapDisplay: "$830B" },
+  DELL: { name: "Dell Technologies Inc", price: 112.00, change: 0.00, changePercent: 0.00, pe: 18.6, revenueGrowth: 12.8, marketCapDisplay: "$78B" },
+  ANET: { name: "Arista Networks Inc", price: 82.00, change: 0.00, changePercent: 0.00, pe: 38.4, revenueGrowth: 24.6, marketCapDisplay: "$105B" },
+  MRVL: { name: "Marvell Technology Inc", price: 88.00, change: 0.00, changePercent: 0.00, pe: 48.2, revenueGrowth: 18.4, marketCapDisplay: "$76B" },
 };
 
 // Nuclear Renaissance Index (NRI) - Jan 1, 2024 base prices
@@ -338,14 +416,19 @@ const STACK_CACHE_TTL = 10 * 60 * 1000;
 
 // All tickers tracked across every Stack layer
 const STACK_TICKERS = {
-  compute:       ["NVDA", "TSM", "AMD", "MU", "MSFT", "GOOGL", "META", "AAPL", "SMCI", "AMZN", "INTC"],
-  nuclear:       ["CEG", "VST", "TLN", "NRG", "OKLO", "BWXT", "SMR"],
-  uranium:       ["CCJ", "UEC", "LEU", "UUUU", "DNN", "NXE", "PALAF"],
-  powerHardware: ["GEV", "ETN", "VRT", "NVT", "CARR", "ABB", "EMR", "HUBB", "JCI", "SIEGY", "BKR"],
-  utilities:     ["NEE", "D", "SO", "DUK", "AEP", "XEL", "EVRG", "PPL", "PCG", "ETR"],
-  dataCenters:   ["EQIX", "DLR", "AMT", "IREN"],
-  construction:  ["PWR", "EME", "MTZ", "STRL", "FLR", "PRIM"],
-  etfsBenchmarks:["URA", "URNM", "NLR", "DTCR", "GRID", "XLU", "PAVE", "QQQ", "XLK"],
+  compute:            ["NVDA", "TSM", "AMD", "MU", "MSFT", "GOOGL", "META", "AAPL", "SMCI", "AMZN", "INTC", "AVGO", "DELL", "ANET", "MRVL"],
+  nuclear:            ["CEG", "VST", "TLN", "NRG", "OKLO", "BWXT", "SMR"],
+  uranium:            ["CCJ", "UEC", "LEU", "UUUU", "DNN", "NXE", "PALAF"],
+  powerHardware:      ["GEV", "ETN", "VRT", "NVT", "CARR", "ABB", "EMR", "HUBB", "JCI", "SIEGY", "BKR"],
+  utilities:          ["NEE", "D", "SO", "DUK", "AEP", "XEL", "EVRG", "PPL", "PCG", "ETR"],
+  dataCenters:        ["EQIX", "DLR", "AMT", "IREN"],
+  construction:       ["PWR", "EME", "MTZ", "STRL", "FLR", "PRIM"],
+  rawMaterialsMining: ["FCX", "SCCO", "TECK", "HBM", "NUE", "STLD", "CLF", "X", "MP", "BHP", "RIO", "VALE", "COPX"],
+  rawMaterialsNatGas: ["AR", "EQT", "RRC", "SWN", "LNG"],
+  renewableGeneration:["FSLR", "ENPH", "SEDG", "AES"],
+  transmissionGrid:   ["WIRE", "GNRC", "AYI", "AOS", "IDA"],
+  cryptoAIDC:         ["CLSK", "MARA"],
+  etfsBenchmarks:     ["URA", "URNM", "NLR", "DTCR", "GRID", "XLU", "PAVE", "QQQ", "XLK", "SPY", "TSLA"],
 };
 const ALL_STACK_TICKERS = Object.values(STACK_TICKERS).flat();
 
@@ -638,14 +721,19 @@ export async function registerRoutes(
       );
 
       res.json({
-        compute:        STACK_TICKERS.compute.map((t) => stockData[t]).filter(Boolean),
-        nuclear:        STACK_TICKERS.nuclear.map((t) => stockData[t]).filter(Boolean),
-        uranium:        STACK_TICKERS.uranium.map((t) => stockData[t]).filter(Boolean),
-        powerHardware:  STACK_TICKERS.powerHardware.map((t) => stockData[t]).filter(Boolean),
-        utilities:      STACK_TICKERS.utilities.map((t) => stockData[t]).filter(Boolean),
-        dataCenters:    STACK_TICKERS.dataCenters.map((t) => stockData[t]).filter(Boolean),
-        construction:   STACK_TICKERS.construction.map((t) => stockData[t]).filter(Boolean),
-        etfsBenchmarks: STACK_TICKERS.etfsBenchmarks.map((t) => stockData[t]).filter(Boolean),
+        compute:             STACK_TICKERS.compute.map((t) => stockData[t]).filter(Boolean),
+        nuclear:             STACK_TICKERS.nuclear.map((t) => stockData[t]).filter(Boolean),
+        uranium:             STACK_TICKERS.uranium.map((t) => stockData[t]).filter(Boolean),
+        powerHardware:       STACK_TICKERS.powerHardware.map((t) => stockData[t]).filter(Boolean),
+        utilities:           STACK_TICKERS.utilities.map((t) => stockData[t]).filter(Boolean),
+        dataCenters:         STACK_TICKERS.dataCenters.map((t) => stockData[t]).filter(Boolean),
+        construction:        STACK_TICKERS.construction.map((t) => stockData[t]).filter(Boolean),
+        rawMaterialsMining:  STACK_TICKERS.rawMaterialsMining.map((t) => stockData[t]).filter(Boolean),
+        rawMaterialsNatGas:  STACK_TICKERS.rawMaterialsNatGas.map((t) => stockData[t]).filter(Boolean),
+        renewableGeneration: STACK_TICKERS.renewableGeneration.map((t) => stockData[t]).filter(Boolean),
+        transmissionGrid:    STACK_TICKERS.transmissionGrid.map((t) => stockData[t]).filter(Boolean),
+        cryptoAIDC:          STACK_TICKERS.cryptoAIDC.map((t) => stockData[t]).filter(Boolean),
+        etfsBenchmarks:      STACK_TICKERS.etfsBenchmarks.map((t) => stockData[t]).filter(Boolean),
         correlation: ccjCorrelationData,
         correlationCoeff: parseFloat(ccjR.toFixed(3)),
         cegCorrelationCoeff: parseFloat(cegR.toFixed(3)),
@@ -771,7 +859,10 @@ export async function registerRoutes(
       const SECTOR_LABELS: Record<string, string> = {
         compute: "Compute", nuclear: "Nuclear", uranium: "Uranium",
         powerHardware: "Power HW", utilities: "Utilities",
-        dataCenters: "Data Ctrs", construction: "Constr.", etfsBenchmarks: "ETFs",
+        dataCenters: "Data Ctrs", construction: "Constr.",
+        rawMaterialsMining: "Mining", rawMaterialsNatGas: "Nat Gas",
+        renewableGeneration: "Renewables", transmissionGrid: "Grid HW",
+        cryptoAIDC: "Crypto DC", etfsBenchmarks: "ETFs",
       };
 
       const pulse = Object.entries(STACK_TICKERS).map(([key, tickers]) => {

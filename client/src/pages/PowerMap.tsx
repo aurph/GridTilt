@@ -1,13 +1,13 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from "react";
-import { ComposableMap, Geographies, Geography, Marker } from "react-simple-maps";
+import { MapContainer, TileLayer, useMap, useMapEvents } from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   X, Zap, MapPin, Building2, Calendar, Activity, Network,
   SlidersHorizontal, ChevronDown,
 } from "lucide-react";
-
-const GEO_URL = "https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json";
 
 interface DataCenter {
   id: number;
@@ -75,25 +75,6 @@ const DATA_CENTERS: DataCenter[] = [
   { id: 48, name: "AWS Susquehanna PA",              company: "Amazon",    city: "Salem Township", state: "PA", lat: 41.0570, lng: -76.3488,  powerMW: 800,  status: "construction", annualMWh: 7008000,  gridOperator: "PPL/PJM",               openDate: "2026 Q3" },
 ];
 
-const STATE_TO_RTO: Record<string, string> = {
-  Maine: "NPCC", Vermont: "NPCC", "New Hampshire": "NPCC",
-  Massachusetts: "NPCC", Connecticut: "NPCC", "Rhode Island": "NPCC", "New York": "NPCC",
-  "New Jersey": "PJM", Delaware: "PJM", Maryland: "PJM",
-  Pennsylvania: "PJM", Ohio: "PJM", "West Virginia": "PJM", Virginia: "PJM", Kentucky: "PJM",
-  Michigan: "MISO", Indiana: "MISO", Illinois: "MISO", Wisconsin: "MISO",
-  Minnesota: "MISO", Iowa: "MISO", Missouri: "MISO",
-  Arkansas: "MISO", Louisiana: "MISO", Mississippi: "MISO",
-  "North Dakota": "MISO", "South Dakota": "MISO", Montana: "MISO",
-  Texas: "ERCOT",
-  Tennessee: "SERC", "North Carolina": "SERC", "South Carolina": "SERC",
-  Georgia: "SERC", Alabama: "SERC", Florida: "SERC",
-  Nebraska: "SPP", Kansas: "SPP", Oklahoma: "SPP",
-  Washington: "WECC", Oregon: "WECC", California: "WECC",
-  Nevada: "WECC", Idaho: "WECC", Utah: "WECC", Colorado: "WECC",
-  Arizona: "WECC", "New Mexico": "WECC", Wyoming: "WECC",
-  Alaska: "WECC", Hawaii: "WECC",
-};
-
 interface RTOConfig {
   label: string;
   reserveMargin: number;
@@ -105,13 +86,13 @@ interface RTOConfig {
 }
 
 const RTO_CONFIG: Record<string, RTOConfig> = {
-  PJM:  { label: "PJM",  reserveMargin: 17.5, aiSignal: "Elevated", dcColor: "rgba(240,165,0,0.13)",   stressColor: "rgba(234,179,8,0.28)",  stressBadgeClass: "bg-yellow-500/20 text-yellow-400", legendColor: "#F0A500" },
-  MISO: { label: "MISO", reserveMargin: 13.4, aiSignal: "Critical", dcColor: "rgba(34,197,94,0.10)",   stressColor: "rgba(239,68,68,0.42)",  stressBadgeClass: "bg-red-500/20 text-red-400",       legendColor: "#22c55e" },
-  ERCOT:{ label: "ERCOT",reserveMargin: 15.8, aiSignal: "Critical", dcColor: "rgba(239,68,68,0.13)",   stressColor: "rgba(239,68,68,0.32)",  stressBadgeClass: "bg-red-500/20 text-red-400",       legendColor: "#ef4444" },
-  WECC: { label: "WECC", reserveMargin: 24.6, aiSignal: "Moderate", dcColor: "rgba(168,85,247,0.11)",  stressColor: "rgba(132,204,22,0.18)", stressBadgeClass: "bg-green-500/20 text-green-400",   legendColor: "#a855f7" },
-  SERC: { label: "SERC", reserveMargin: 23.1, aiSignal: "Moderate", dcColor: "rgba(20,184,166,0.11)",  stressColor: "rgba(34,197,94,0.18)",  stressBadgeClass: "bg-green-500/20 text-green-400",   legendColor: "#14b8a6" },
-  SPP:  { label: "SPP",  reserveMargin: 27.8, aiSignal: "Low",      dcColor: "rgba(244,63,94,0.10)",   stressColor: "rgba(34,197,94,0.12)", stressBadgeClass: "bg-green-500/15 text-green-500",   legendColor: "#f43f5e" },
-  NPCC: { label: "NPCC", reserveMargin: 26.4, aiSignal: "Low",      dcColor: "rgba(148,163,184,0.11)", stressColor: "rgba(34,197,94,0.12)", stressBadgeClass: "bg-green-500/15 text-green-500",   legendColor: "#94a3b8" },
+  PJM:  { label: "PJM",  reserveMargin: 17.5, aiSignal: "Elevated", dcColor: "rgba(240,165,0,0.12)",   stressColor: "rgba(234,179,8,0.28)",  stressBadgeClass: "bg-yellow-500/20 text-yellow-400", legendColor: "#F0A500" },
+  MISO: { label: "MISO", reserveMargin: 13.4, aiSignal: "Critical", dcColor: "rgba(34,197,94,0.08)",   stressColor: "rgba(239,68,68,0.42)",  stressBadgeClass: "bg-red-500/20 text-red-400",       legendColor: "#22c55e" },
+  ERCOT:{ label: "ERCOT",reserveMargin: 15.8, aiSignal: "Critical", dcColor: "rgba(239,68,68,0.10)",   stressColor: "rgba(239,68,68,0.32)",  stressBadgeClass: "bg-red-500/20 text-red-400",       legendColor: "#ef4444" },
+  WECC: { label: "WECC", reserveMargin: 24.6, aiSignal: "Moderate", dcColor: "rgba(168,85,247,0.08)",  stressColor: "rgba(132,204,22,0.18)", stressBadgeClass: "bg-green-500/20 text-green-400",   legendColor: "#a855f7" },
+  SERC: { label: "SERC", reserveMargin: 23.1, aiSignal: "Moderate", dcColor: "rgba(20,184,166,0.08)",  stressColor: "rgba(34,197,94,0.18)",  stressBadgeClass: "bg-green-500/20 text-green-400",   legendColor: "#14b8a6" },
+  SPP:  { label: "SPP",  reserveMargin: 27.8, aiSignal: "Low",      dcColor: "rgba(244,63,94,0.07)",   stressColor: "rgba(34,197,94,0.12)", stressBadgeClass: "bg-green-500/15 text-green-500",   legendColor: "#f43f5e" },
+  NPCC: { label: "NPCC", reserveMargin: 26.4, aiSignal: "Low",      dcColor: "rgba(148,163,184,0.08)", stressColor: "rgba(34,197,94,0.12)", stressBadgeClass: "bg-green-500/15 text-green-500",   legendColor: "#94a3b8" },
 };
 
 function gridOpToRTO(op: string): string {
@@ -141,12 +122,6 @@ const companyColors: Record<string, string> = {
   CoreWeave: "#7c3aed",
   Nebius:    "#00b4d8",
 };
-
-function getDotColor(powerMW: number) {
-  if (powerMW < 100) return "#22c55e";
-  if (powerMW <= 500) return "#eab308";
-  return "#ef4444";
-}
 
 function getStatusBadge(status: DataCenter["status"]) {
   const map = {
@@ -183,12 +158,167 @@ function pushFiltersToURL(companies: string[], rtos: string[], capacity: string)
 
 type ViewMode = "dc" | "stress";
 
+function pinRadius(powerMW: number): number {
+  if (powerMW >= 500) return 10;
+  if (powerMW >= 100) return 8;
+  return 6;
+}
+
+function pinColor(status: DataCenter["status"]): string {
+  if (status === "operational") return "#F07800";
+  if (status === "construction") return "#F0A500";
+  return "rgba(255,255,255,0.6)";
+}
+
+function stressColorForRTO(dc: DataCenter): string {
+  const rto = gridOpToRTO(dc.gridOperator);
+  const cfg = RTO_CONFIG[rto];
+  if (!cfg) return "#22c55e";
+  if (cfg.aiSignal === "Critical") return "#ef4444";
+  if (cfg.aiSignal === "Elevated") return "#eab308";
+  if (cfg.aiSignal === "Moderate") return "#22c55e";
+  return "#4ade80";
+}
+
+function createGlowIcon(dc: DataCenter, passes: boolean, dimmed: boolean, viewMode: ViewMode): L.DivIcon {
+  const r = pinRadius(dc.powerMW);
+  const color = viewMode === "stress" ? stressColorForRTO(dc) : pinColor(dc.status);
+  const size = (r + 12) * 2;
+  const center = size / 2;
+
+  const baseOpacity = !passes ? 0.12 : dimmed ? 0.3 : dc.status === "announced" && viewMode === "dc" ? 0.6 : 1;
+  const glowOpacity = !passes ? 0 : dimmed ? 0.1 : viewMode === "stress" ? 0.45 : 0.3;
+
+  let animClass = "";
+  if (passes && !dimmed && viewMode === "dc") {
+    if (dc.status === "operational") animClass = "pin-pulse";
+    else if (dc.status === "construction") animClass = "pin-construction";
+  }
+
+  const svg = `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="${center}" cy="${center}" r="${r + 8}" fill="${color}" opacity="${glowOpacity}" class="${animClass}-glow" />
+    <circle cx="${center}" cy="${center}" r="${r}" fill="${color}" opacity="${baseOpacity}" />
+  </svg>`;
+
+  return L.divIcon({
+    html: `<div class="pin-wrapper ${animClass}" style="opacity:${baseOpacity}">${svg}</div>`,
+    className: "leaflet-pin-icon",
+    iconSize: [size, size],
+    iconAnchor: [center, center],
+  });
+}
+
+function FacilityMarkers({
+  viewMode,
+  filterCompanies,
+  filterRTOs,
+  filterCapacity,
+  hoveredId,
+  setHoveredId,
+  selected,
+  setSelected,
+  setTooltipDC,
+  setTooltipPos,
+}: {
+  viewMode: ViewMode;
+  filterCompanies: string[];
+  filterRTOs: string[];
+  filterCapacity: string;
+  hoveredId: number | null;
+  setHoveredId: (id: number | null) => void;
+  selected: DataCenter | null;
+  setSelected: (dc: DataCenter | null) => void;
+  setTooltipDC: (dc: DataCenter | null) => void;
+  setTooltipPos: (pos: { x: number; y: number } | null) => void;
+}) {
+  const map = useMap();
+  const markersRef = useRef<Record<number, L.Marker>>({});
+  const layerRef = useRef<L.LayerGroup | null>(null);
+
+  const passesFilter = useCallback((dc: DataCenter): boolean => {
+    if (filterCompanies.length > 0 && !filterCompanies.includes(dc.company)) return false;
+    if (filterRTOs.length > 0 && !filterRTOs.includes(gridOpToRTO(dc.gridOperator))) return false;
+    if (filterCapacity === "small" && dc.powerMW >= 100) return false;
+    if (filterCapacity === "medium" && (dc.powerMW < 100 || dc.powerMW > 500)) return false;
+    if (filterCapacity === "large" && dc.powerMW <= 500) return false;
+    return true;
+  }, [filterCompanies, filterRTOs, filterCapacity]);
+
+  useEffect(() => {
+    if (layerRef.current) {
+      layerRef.current.clearLayers();
+    } else {
+      layerRef.current = L.layerGroup().addTo(map);
+    }
+
+    const markers: Record<number, L.Marker> = {};
+
+    DATA_CENTERS.forEach((dc) => {
+      const passes = passesFilter(dc);
+      const dimmed = hoveredId !== null && hoveredId !== dc.id && selected?.id !== dc.id;
+      const icon = createGlowIcon(dc, passes, dimmed, viewMode);
+
+      const marker = L.marker([dc.lat, dc.lng], {
+        icon,
+        interactive: passes,
+        zIndexOffset: dc.status === "operational" ? 100 : dc.status === "construction" ? 50 : 0,
+      });
+
+      marker.on("mouseover", (e) => {
+        if (!passes) return;
+        setHoveredId(dc.id);
+        setTooltipDC(dc);
+        const point = map.latLngToContainerPoint(e.latlng);
+        setTooltipPos({ x: point.x, y: point.y });
+      });
+
+      marker.on("mouseout", () => {
+        setHoveredId(null);
+        setTooltipDC(null);
+        setTooltipPos(null);
+      });
+
+      marker.on("click", (e) => {
+        if (!passes) return;
+        setSelected(dc);
+        setHoveredId(null);
+        setTooltipDC(null);
+        const point = map.latLngToContainerPoint(e.latlng);
+        setTooltipPos({ x: point.x, y: point.y });
+      });
+
+      marker.addTo(layerRef.current!);
+      markers[dc.id] = marker;
+    });
+
+    markersRef.current = markers;
+
+    return () => {
+      if (layerRef.current) {
+        layerRef.current.clearLayers();
+      }
+    };
+  }, [map, passesFilter, hoveredId, selected, viewMode]);
+
+  return null;
+}
+
+function MapClickHandler({ onMapClick }: { onMapClick: () => void }) {
+  useMapEvents({
+    click: () => {
+      onMapClick();
+    },
+  });
+  return null;
+}
+
 export default function PowerMap() {
   const initialFilters = useMemo(() => parseFiltersFromURL(), []);
 
   const [selected, setSelected]           = useState<DataCenter | null>(null);
   const [viewMode, setViewMode]           = useState<ViewMode>("dc");
   const [hoveredId, setHoveredId]         = useState<number | null>(null);
+  const [tooltipDC, setTooltipDC]         = useState<DataCenter | null>(null);
   const [tooltipPos, setTooltipPos]       = useState<{ x: number; y: number } | null>(null);
   const [filterCompanies, setFilterCompanies] = useState<string[]>(initialFilters.companies);
   const [filterRTOs, setFilterRTOs]       = useState<string[]>(initialFilters.rtos);
@@ -196,14 +326,6 @@ export default function PowerMap() {
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
   const mapContainerRef = useRef<HTMLDivElement>(null);
-
-  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (!mapContainerRef.current) return;
-    const rect = mapContainerRef.current.getBoundingClientRect();
-    setTooltipPos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
-  }, []);
-
-  const hoveredDC = hoveredId != null ? DATA_CENTERS.find((d) => d.id === hoveredId) ?? null : null;
 
   function passesFilter(dc: DataCenter): boolean {
     if (filterCompanies.length > 0 && !filterCompanies.includes(dc.company)) return false;
@@ -243,6 +365,23 @@ export default function PowerMap() {
     setMobileFiltersOpen(false);
   }
 
+  function removeCompanyFilter(c: string) {
+    const next = filterCompanies.filter((x) => x !== c);
+    setFilterCompanies(next);
+    pushFiltersToURL(next, filterRTOs, filterCapacity);
+  }
+
+  function removeRTOFilter(rto: string) {
+    const next = filterRTOs.filter((x) => x !== rto);
+    setFilterRTOs(next);
+    pushFiltersToURL(filterCompanies, next, filterCapacity);
+  }
+
+  function removeCapacityFilter() {
+    setFilterCapacity("all");
+    pushFiltersToURL(filterCompanies, filterRTOs, "all");
+  }
+
   const activeFilterCount = filterCompanies.length + filterRTOs.length + (filterCapacity !== "all" ? 1 : 0);
   const anyFilterActive = activeFilterCount > 0;
 
@@ -258,7 +397,7 @@ export default function PowerMap() {
   }, [filterCompanies, filterRTOs, filterCapacity]);
 
   const allCompanies = useMemo(
-    () => [...new Set(DATA_CENTERS.map((d) => d.company))].sort(),
+    () => Array.from(new Set(DATA_CENTERS.map((d) => d.company))).sort(),
     []
   );
 
@@ -294,509 +433,426 @@ export default function PowerMap() {
     return m;
   }, []);
 
-  function getStateColor(stateName: string): string {
-    const rto = STATE_TO_RTO[stateName];
-    if (!rto || !RTO_CONFIG[rto]) return "rgba(255,255,255,0.02)";
-    return viewMode === "dc" ? RTO_CONFIG[rto].dcColor : RTO_CONFIG[rto].stressColor;
-  }
-
-  function getStateHover(stateName: string): string {
-    const rto = STATE_TO_RTO[stateName];
-    if (!rto || !RTO_CONFIG[rto]) return "rgba(255,255,255,0.06)";
-    const base = viewMode === "dc" ? RTO_CONFIG[rto].dcColor : RTO_CONFIG[rto].stressColor;
-    return base.replace(/[\d.]+\)$/, (m) => String(Math.min(parseFloat(m) * 2.2, 0.55)) + ")");
-  }
-
   const selectedRTO     = selected ? gridOpToRTO(selected.gridOperator) : null;
   const selectedRTOCfg  = selectedRTO ? RTO_CONFIG[selectedRTO] : null;
   const selectedRTOLoad = selectedRTO ? (rtoLoadMW[selectedRTO] ?? 0) : 0;
 
   const ALL_RTOS = ["PJM", "MISO", "ERCOT", "WECC", "SERC", "SPP", "NPCC"] as const;
 
+  const capacityLabels: Record<string, string> = {
+    small: "<100 MW",
+    medium: "100-500 MW",
+    large: "500+ MW",
+  };
+
+  const displayDC = selected || tooltipDC;
+  const showTooltip = displayDC && tooltipPos;
+
   return (
     <div className="flex flex-col h-full overflow-y-auto">
-      {/* Header - compressed single line */}
-      <div className="grid-bg border-b border-border px-4 sm:px-6 py-3">
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <div className="flex items-center gap-3">
-            <h1 className="text-lg sm:text-xl font-bold text-foreground tracking-tight">Power Map</h1>
-            <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground">
-              <span className="text-[#F0A500] font-semibold">{(totalMW / 1000).toFixed(1)} GW</span>
-              <span className="opacity-40">|</span>
-              <span>{totalTWh} TWh/yr</span>
-              <span className="opacity-40">|</span>
-              <span className="text-green-400">{opCount}</span>
-              <span className="opacity-25">/</span>
-              <span className="text-yellow-400">{conCount}</span>
-              <span className="opacity-25">/</span>
-              <span className="text-slate-400">{annCount}</span>
-            </div>
-          </div>
-          <div className="flex items-center gap-3 text-[10px]">
-            <div className="hidden sm:flex items-center gap-2.5">
-              {Object.entries(RTO_CONFIG).map(([key, cfg]) => (
-                <div key={key} className="flex items-center gap-1">
-                  <div className="h-2 w-2 rounded-sm" style={{ backgroundColor: cfg.legendColor, opacity: 0.8 }} />
-                  <span className="text-muted-foreground/70">{cfg.label}</span>
-                </div>
-              ))}
-            </div>
-            <div className="flex items-center gap-2 text-muted-foreground/60">
-              <div className="flex items-center gap-1"><div className="h-2 w-2 rounded-full bg-green-500" />&lt;100</div>
-              <div className="flex items-center gap-1"><div className="h-2 w-2 rounded-full bg-yellow-500" />100-500</div>
-              <div className="flex items-center gap-1"><div className="h-2 w-2 rounded-full bg-red-500" />500+ MW</div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <style>{`
+        .leaflet-pin-icon {
+          background: none !important;
+          border: none !important;
+        }
+        .leaflet-container {
+          background: #0d0d14 !important;
+          font-family: inherit;
+        }
+        .leaflet-control-zoom {
+          border: none !important;
+          margin-bottom: 16px !important;
+          margin-right: 16px !important;
+        }
+        .leaflet-control-zoom a {
+          background: rgba(26, 26, 46, 0.9) !important;
+          color: rgba(255,255,255,0.7) !important;
+          border: 1px solid rgba(255,255,255,0.1) !important;
+          width: 28px !important;
+          height: 28px !important;
+          line-height: 28px !important;
+          font-size: 14px !important;
+          backdrop-filter: blur(8px);
+        }
+        .leaflet-control-zoom a:hover {
+          background: rgba(26, 26, 46, 1) !important;
+          color: #F07800 !important;
+        }
+        .leaflet-control-zoom-in {
+          border-radius: 6px 6px 0 0 !important;
+          border-bottom: none !important;
+        }
+        .leaflet-control-zoom-out {
+          border-radius: 0 0 6px 6px !important;
+        }
+        .leaflet-control-attribution {
+          background: transparent !important;
+          color: rgba(255,255,255,0.2) !important;
+          font-size: 9px !important;
+        }
+        .leaflet-control-attribution a {
+          color: rgba(255,255,255,0.25) !important;
+        }
+        .pin-wrapper {
+          transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+        }
+        .pin-wrapper:hover {
+          transform: scale(1.3);
+          filter: brightness(1.3);
+        }
+        @keyframes pin-pulse-glow {
+          0%, 100% { transform: scale(1); opacity: 0.3; }
+          50% { transform: scale(1.15); opacity: 0.15; }
+        }
+        @keyframes pin-construction-rotate {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        .pin-pulse svg circle:first-child {
+          animation: pin-pulse-glow 3s ease-in-out infinite;
+          transform-origin: center;
+        }
+        .pin-construction svg circle:first-child {
+          stroke-dasharray: 4 3;
+          stroke: #F0A500;
+          stroke-width: 1;
+          fill: none !important;
+          animation: pin-construction-rotate 8s linear infinite;
+          transform-origin: center;
+        }
+        .power-map-tooltip {
+          animation: tooltip-fade-in 150ms ease-out;
+        }
+        @keyframes tooltip-fade-in {
+          from { opacity: 0; transform: translateY(4px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
 
-      {/* ── FILTER BAR (desktop) ── */}
-      <div className="border-b border-border bg-card/40 px-4 hidden lg:block" data-testid="filter-bar-desktop">
-        <button
-          onClick={() => setFiltersExpanded(!filtersExpanded)}
-          className="w-full flex items-center justify-between py-2 text-left"
-          data-testid="filter-bar-toggle"
-        >
-          <div className="flex items-center gap-2">
-            <SlidersHorizontal className="h-3 w-3 text-muted-foreground/60" />
-            <span className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-wider">Filters</span>
-            {anyFilterActive && (
-              <span className="bg-[#F0A500] text-black text-[10px] font-bold rounded-full px-1.5 py-0.5 leading-none">
-                {activeFilterCount}
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-3">
-            <span className={`text-[11px] font-mono ${anyFilterActive ? "text-[#F0A500]" : "text-muted-foreground/60"}`}>
-              {anyFilterActive ? `${filteredCount} of ${DATA_CENTERS.length}` : `${DATA_CENTERS.length} facilities`}
-            </span>
-            <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground/50 transition-transform ${filtersExpanded ? "rotate-180" : ""}`} />
-          </div>
-        </button>
-        {filtersExpanded && (<div className="flex items-start gap-4 flex-wrap pb-2.5">
-          {/* Operator filter */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-wider whitespace-nowrap">Operator</span>
-            {allCompanies.map((c) => {
-              const active = filterCompanies.includes(c);
-              const color = companyColors[c] ?? "#666";
-              return (
-                <button
-                  key={c}
-                  data-testid={`filter-company-${c.toLowerCase().replace(/\s+/g, "-")}`}
-                  onClick={() => toggleCompany(c)}
-                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-[11px] font-medium border transition-all ${
-                    active
-                      ? "border-[#F0A500]/60 bg-[#F0A500]/10 text-foreground"
-                      : "border-border/50 bg-muted/20 text-muted-foreground hover:text-foreground hover:border-border"
-                  }`}
-                >
-                  <div className="h-1.5 w-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
-                  {c}
-                  <span className="text-[10px] font-mono opacity-60">({companyCounts[c] ?? 0})</span>
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="w-px h-5 bg-border/50 self-center hidden xl:block" />
-
-          {/* RTO filter */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-wider whitespace-nowrap">Grid Region</span>
-            {ALL_RTOS.map((rto) => {
-              const active = filterRTOs.includes(rto);
-              const color = RTO_CONFIG[rto]?.legendColor ?? "#666";
-              return (
-                <button
-                  key={rto}
-                  data-testid={`filter-rto-${rto.toLowerCase()}`}
-                  onClick={() => toggleRTO(rto)}
-                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-[11px] font-medium border transition-all ${
-                    active
-                      ? "border-[#F0A500]/60 bg-[#F0A500]/10 text-foreground"
-                      : "border-border/50 bg-muted/20 text-muted-foreground hover:text-foreground hover:border-border"
-                  }`}
-                >
-                  <div className="h-1.5 w-1.5 rounded-sm flex-shrink-0" style={{ backgroundColor: color, opacity: 0.85 }} />
-                  {rto}
-                  <span className="text-[10px] font-mono opacity-60">({rtoCounts[rto] ?? 0})</span>
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="w-px h-5 bg-border/50 self-center hidden xl:block" />
-
-          {/* Capacity filter */}
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-wider whitespace-nowrap">Capacity</span>
-            {[
-              { key: "all",    label: "All" },
-              { key: "small",  label: "<100 MW" },
-              { key: "medium", label: "100-500 MW" },
-              { key: "large",  label: "500+ MW" },
-            ].map(({ key, label }) => (
-              <button
-                key={key}
-                data-testid={`filter-capacity-${key}`}
-                onClick={() => setCapacity(key)}
-                className={`px-2.5 py-1 rounded text-[11px] font-medium border transition-all ${
-                  filterCapacity === key
-                    ? "border-[#F0A500]/60 bg-[#F0A500]/10 text-foreground"
-                    : "border-border/50 bg-muted/20 text-muted-foreground hover:text-foreground hover:border-border"
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-
-          {anyFilterActive && (
-            <button
-              onClick={clearAllFilters}
-              data-testid="filter-clear-all"
-              className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground border border-border/60 rounded px-2 py-1 transition-colors ml-auto"
-            >
-              <X className="h-3 w-3" />
-              Clear all
-            </button>
-          )}
-        </div>)}
-      </div>
-
-      {/* ── FILTER BAR (mobile) ── */}
-      <div className="border-b border-border bg-card/40 px-4 py-2.5 flex items-center justify-between lg:hidden">
-        <button
-          data-testid="filter-mobile-toggle"
-          onClick={() => setMobileFiltersOpen(true)}
-          className="flex items-center gap-2 text-xs text-muted-foreground border border-border/60 rounded px-3 py-1.5 bg-muted/20"
-        >
-          <SlidersHorizontal className="h-3.5 w-3.5" />
-          Filters
-          {activeFilterCount > 0 && (
-            <span className="bg-[#F0A500] text-black text-[10px] font-bold rounded-full px-1.5 py-0.5 leading-none">
-              {activeFilterCount}
-            </span>
-          )}
-        </button>
-        <span className="text-[11px] font-mono text-muted-foreground/60" data-testid="filter-count-label-mobile">
-          {anyFilterActive ? `${filteredCount} of ${DATA_CENTERS.length}` : `${DATA_CENTERS.length} facilities`}
-        </span>
-      </div>
-
-      <div className="flex-1 flex flex-col lg:flex-row">
-        {/* Map area */}
+      <div className="flex-1 flex flex-col">
         <div
           className="flex-1 relative"
-          style={{ minHeight: 420 }}
+          style={{ minHeight: 520 }}
           ref={mapContainerRef}
-          onMouseMove={handleMouseMove}
-          onMouseLeave={() => { setHoveredId(null); setTooltipPos(null); }}
         >
-          {/* View mode toggle */}
-          <div className="absolute top-4 right-4 z-10 flex rounded-md overflow-hidden border border-border text-xs font-mono">
+          <div className="absolute top-3 left-3 z-[1000] pointer-events-auto" data-testid="stats-overlay">
+            <div className="bg-[#1A1A2E]/90 backdrop-blur-md border border-white/[0.06] rounded-lg px-4 py-3 shadow-xl">
+              <div className="flex items-center gap-2 mb-2">
+                <Zap className="h-3.5 w-3.5 text-[#F07800]" />
+                <span className="text-xs font-semibold text-white/90 tracking-tight">Power Map</span>
+                <span className="text-[10px] font-mono text-white/40">{DATA_CENTERS.length} facilities</span>
+              </div>
+              <div className="flex items-center gap-3 text-[11px] font-mono">
+                <span className="text-[#F0A500] font-bold">{(totalMW / 1000).toFixed(1)} GW</span>
+                <span className="text-white/20">|</span>
+                <span className="text-white/50">{totalTWh} TWh/yr</span>
+                <span className="text-white/20">|</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-[#F07800] inline-block" /><span className="text-white/60">{opCount}</span></span>
+                  <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-[#F0A500] inline-block" /><span className="text-white/60">{conCount}</span></span>
+                  <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-white/50 inline-block" /><span className="text-white/60">{annCount}</span></span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="absolute top-3 right-3 z-[1000] flex flex-col gap-2 pointer-events-auto">
+            <div className="flex rounded-md overflow-hidden border border-white/[0.08] text-xs font-mono shadow-lg">
+              <button
+                className={`px-3 py-1.5 transition-all duration-500 ${viewMode === "dc" ? "bg-[#F07800] text-black font-semibold" : "bg-[#1A1A2E]/90 text-white/60 hover:text-white/90 backdrop-blur-md"}`}
+                onClick={() => setViewMode("dc")}
+                data-testid="toggle-dc-locations"
+              >
+                DC Locations
+              </button>
+              <button
+                className={`px-3 py-1.5 transition-all duration-500 ${viewMode === "stress" ? "bg-[#F07800] text-black font-semibold" : "bg-[#1A1A2E]/90 text-white/60 hover:text-white/90 backdrop-blur-md"}`}
+                onClick={() => setViewMode("stress")}
+                data-testid="toggle-grid-stress"
+              >
+                Grid Stress
+              </button>
+            </div>
+
             <button
-              className={`px-3 py-1.5 transition-colors ${viewMode === "dc" ? "bg-[#F0A500] text-black font-semibold" : "bg-card text-muted-foreground hover:text-foreground"}`}
-              onClick={() => setViewMode("dc")}
-              data-testid="toggle-dc-locations"
+              onClick={() => {
+                const isMobile = window.innerWidth < 768;
+                if (isMobile) {
+                  setMobileFiltersOpen(true);
+                } else {
+                  setFiltersExpanded(!filtersExpanded);
+                }
+              }}
+              className="flex items-center gap-2 bg-[#1A1A2E]/90 backdrop-blur-md border border-white/[0.08] rounded-md px-3 py-1.5 text-xs font-mono text-white/60 hover:text-white/90 transition-colors shadow-lg"
+              data-testid="filter-bar-toggle"
             >
-              DC Locations
-            </button>
-            <button
-              className={`px-3 py-1.5 transition-colors ${viewMode === "stress" ? "bg-[#F0A500] text-black font-semibold" : "bg-card text-muted-foreground hover:text-foreground"}`}
-              onClick={() => setViewMode("stress")}
-              data-testid="toggle-grid-stress"
-            >
-              Grid Stress
+              <SlidersHorizontal className="h-3 w-3" />
+              <span>Filters</span>
+              {anyFilterActive && (
+                <span className="bg-[#F07800] text-black text-[10px] font-bold rounded-full px-1.5 py-0.5 leading-none">
+                  {activeFilterCount}
+                </span>
+              )}
+              <span className="text-[10px] text-white/40 ml-1">{anyFilterActive ? `${filteredCount}/${DATA_CENTERS.length}` : `${DATA_CENTERS.length}`}</span>
+              <ChevronDown className={`h-3 w-3 transition-transform ${filtersExpanded ? "rotate-180" : ""}`} />
             </button>
           </div>
+
+          {filtersExpanded && (
+            <div className="absolute top-[88px] right-3 z-[1000] pointer-events-auto" data-testid="filter-panel">
+              <div className="bg-[#1A1A2E]/95 backdrop-blur-md border border-white/[0.08] rounded-lg p-4 shadow-2xl w-[320px] max-h-[60vh] overflow-y-auto">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-semibold text-white/80">Filter Facilities</span>
+                  {anyFilterActive && (
+                    <button onClick={clearAllFilters} className="text-[10px] text-white/40 hover:text-white/70 underline underline-offset-2" data-testid="filter-clear-all">
+                      Clear all
+                    </button>
+                  )}
+                </div>
+
+                {anyFilterActive && (
+                  <div className="flex flex-wrap gap-1.5 mb-3 pb-3 border-b border-white/[0.06]">
+                    {filterCompanies.map((c) => (
+                      <Badge key={c} className="bg-[#F07800]/15 text-[#F07800] border-[#F07800]/30 text-[10px] font-mono gap-1 cursor-pointer hover:bg-[#F07800]/25" onClick={() => removeCompanyFilter(c)}>
+                        <div className="h-1.5 w-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: companyColors[c] ?? "#666" }} />
+                        {c}
+                        <X className="h-2.5 w-2.5" />
+                      </Badge>
+                    ))}
+                    {filterRTOs.map((rto) => (
+                      <Badge key={rto} className="bg-[#F07800]/15 text-[#F07800] border-[#F07800]/30 text-[10px] font-mono gap-1 cursor-pointer hover:bg-[#F07800]/25" onClick={() => removeRTOFilter(rto)}>
+                        {rto}
+                        <X className="h-2.5 w-2.5" />
+                      </Badge>
+                    ))}
+                    {filterCapacity !== "all" && (
+                      <Badge className="bg-[#F07800]/15 text-[#F07800] border-[#F07800]/30 text-[10px] font-mono gap-1 cursor-pointer hover:bg-[#F07800]/25" onClick={removeCapacityFilter}>
+                        {capacityLabels[filterCapacity]}
+                        <X className="h-2.5 w-2.5" />
+                      </Badge>
+                    )}
+                  </div>
+                )}
+
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-[10px] font-mono text-white/40 uppercase tracking-wider mb-2">Operator</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {allCompanies.map((c) => {
+                        const active = filterCompanies.includes(c);
+                        const color = companyColors[c] ?? "#666";
+                        return (
+                          <button
+                            key={c}
+                            data-testid={`filter-company-${c.toLowerCase().replace(/\s+/g, "-")}`}
+                            onClick={() => toggleCompany(c)}
+                            className={`flex items-center gap-1.5 px-2 py-1 rounded text-[10px] font-medium transition-all ${
+                              active
+                                ? "bg-[#F07800]/20 text-[#F07800] border border-[#F07800]/40"
+                                : "bg-white/[0.04] text-white/50 border border-white/[0.06] hover:text-white/80 hover:bg-white/[0.08]"
+                            }`}
+                          >
+                            <div className="h-1.5 w-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
+                            {c}
+                            <span className="text-[9px] opacity-50">({companyCounts[c] ?? 0})</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-[10px] font-mono text-white/40 uppercase tracking-wider mb-2">Grid Region</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {ALL_RTOS.map((rto) => {
+                        const active = filterRTOs.includes(rto);
+                        const color = RTO_CONFIG[rto]?.legendColor ?? "#666";
+                        return (
+                          <button
+                            key={rto}
+                            data-testid={`filter-rto-${rto.toLowerCase()}`}
+                            onClick={() => toggleRTO(rto)}
+                            className={`flex items-center gap-1.5 px-2 py-1 rounded text-[10px] font-medium transition-all ${
+                              active
+                                ? "bg-[#F07800]/20 text-[#F07800] border border-[#F07800]/40"
+                                : "bg-white/[0.04] text-white/50 border border-white/[0.06] hover:text-white/80 hover:bg-white/[0.08]"
+                            }`}
+                          >
+                            <div className="h-1.5 w-1.5 rounded-sm flex-shrink-0" style={{ backgroundColor: color, opacity: 0.85 }} />
+                            {rto}
+                            <span className="text-[9px] opacity-50">({rtoCounts[rto] ?? 0})</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-[10px] font-mono text-white/40 uppercase tracking-wider mb-2">Capacity</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {[
+                        { key: "all",    label: "All" },
+                        { key: "small",  label: "<100 MW" },
+                        { key: "medium", label: "100-500" },
+                        { key: "large",  label: "500+ MW" },
+                      ].map(({ key, label }) => (
+                        <button
+                          key={key}
+                          data-testid={`filter-capacity-${key}`}
+                          onClick={() => setCapacity(key)}
+                          className={`px-2 py-1 rounded text-[10px] font-medium transition-all ${
+                            filterCapacity === key
+                              ? "bg-[#F07800]/20 text-[#F07800] border border-[#F07800]/40"
+                              : "bg-white/[0.04] text-white/50 border border-white/[0.06] hover:text-white/80 hover:bg-white/[0.08]"
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {viewMode === "stress" && (
-            <div className="absolute bottom-10 left-4 z-10 text-[10px] font-mono text-muted-foreground/70 flex flex-col gap-0.5">
-              <div className="flex items-center gap-1.5"><div className="h-2 w-4 rounded-sm bg-red-500/60" /> Critical (&lt;16% reserve)</div>
-              <div className="flex items-center gap-1.5"><div className="h-2 w-4 rounded-sm bg-orange-500/50" /> Elevated (16-18%)</div>
-              <div className="flex items-center gap-1.5"><div className="h-2 w-4 rounded-sm bg-yellow-500/40" /> Moderate (18-25%)</div>
-              <div className="flex items-center gap-1.5"><div className="h-2 w-4 rounded-sm bg-green-500/30" /> Low (&gt;25%)</div>
+            <div className="absolute bottom-10 left-3 z-[1000] pointer-events-none">
+              <div className="bg-[#1A1A2E]/90 backdrop-blur-md border border-white/[0.06] rounded-lg px-3 py-2.5 shadow-lg">
+                <p className="text-[9px] font-mono text-white/40 uppercase tracking-wider mb-1.5">Grid Stress</p>
+                <div className="space-y-1 text-[10px] font-mono text-white/60">
+                  <div className="flex items-center gap-1.5"><div className="h-2 w-4 rounded-sm bg-red-500/60" /> Critical (&lt;16%)</div>
+                  <div className="flex items-center gap-1.5"><div className="h-2 w-4 rounded-sm bg-orange-500/50" /> Elevated (16-18%)</div>
+                  <div className="flex items-center gap-1.5"><div className="h-2 w-4 rounded-sm bg-yellow-500/40" /> Moderate (18-25%)</div>
+                  <div className="flex items-center gap-1.5"><div className="h-2 w-4 rounded-sm bg-green-500/30" /> Low (&gt;25%)</div>
+                </div>
+              </div>
             </div>
           )}
 
-          <ComposableMap
-            projection="geoAlbersUsa"
-            style={{ width: "100%", height: "100%", minHeight: 420 }}
+          {viewMode === "dc" && (
+            <div className="absolute bottom-3 left-3 z-[1000] pointer-events-none">
+              <div className="bg-[#1A1A2E]/90 backdrop-blur-md border border-white/[0.06] rounded-lg px-3 py-2 shadow-lg">
+                <div className="flex items-center gap-3 text-[10px] font-mono text-white/50">
+                  <div className="flex items-center gap-1.5"><div className="h-2 w-2 rounded-full bg-[#F07800]" />Operational</div>
+                  <div className="flex items-center gap-1.5"><div className="h-2 w-2 rounded-full bg-[#F0A500]" />Construction</div>
+                  <div className="flex items-center gap-1.5"><div className="h-2 w-2 rounded-full bg-white/50" />Announced</div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <MapContainer
+            center={[39.5, -98.5]}
+            zoom={4}
+            minZoom={3}
+            maxZoom={12}
+            zoomControl={true}
+            attributionControl={true}
+            style={{ width: "100%", height: "100%", minHeight: 520, background: "#0d0d14" }}
+            className="rounded-none"
           >
-            <Geographies geography={GEO_URL}>
-              {({ geographies }) =>
-                geographies.map((geo) => {
-                  const name = geo.properties.name as string;
-                  return (
-                    <Geography
-                      key={geo.rsmKey}
-                      geography={geo}
-                      fill={getStateColor(name)}
-                      stroke="rgba(255,255,255,0.12)"
-                      strokeWidth={0.5}
-                      style={{
-                        default: { outline: "none" },
-                        hover: { outline: "none", fill: getStateHover(name) },
-                        pressed: { outline: "none" },
-                      }}
-                    />
-                  );
-                })
-              }
-            </Geographies>
+            <TileLayer
+              url="https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png"
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
+              subdomains="abcd"
+              maxZoom={19}
+            />
+            <FacilityMarkers
+              viewMode={viewMode}
+              filterCompanies={filterCompanies}
+              filterRTOs={filterRTOs}
+              filterCapacity={filterCapacity}
+              hoveredId={hoveredId}
+              setHoveredId={setHoveredId}
+              selected={selected}
+              setSelected={setSelected}
+              setTooltipDC={setTooltipDC}
+              setTooltipPos={setTooltipPos}
+            />
+            <MapClickHandler onMapClick={() => { setSelected(null); setTooltipDC(null); setTooltipPos(null); }} />
+          </MapContainer>
 
-            {DATA_CENTERS.map((dc) => {
-              const passes = passesFilter(dc);
-              const isAnnounced = dc.status === "announced";
-              const isSelected = selected?.id === dc.id;
-              const isHovered = hoveredId === dc.id;
-              const r = viewMode === "stress"
-                ? Math.sqrt(dc.powerMW / 30) + 2
-                : Math.sqrt(dc.powerMW / 30) + 4;
-
-              const fillOpacity = !passes
-                ? 0.12
-                : viewMode === "stress"
-                  ? (isAnnounced ? 0.22 : 0.5)
-                  : isSelected ? 1 : isAnnounced ? 0.28 : isHovered ? 0.95 : 0.78;
-
-              const dotColor = getDotColor(dc.powerMW);
-
-              return (
-                <Marker
-                  key={dc.id}
-                  coordinates={[dc.lng, dc.lat]}
-                  onClick={() => {
-                    if (passes) { setSelected(dc); setHoveredId(null); setTooltipPos(null); }
-                  }}
-                >
-                  {/* Outer dashed ring for announced */}
-                  {isAnnounced && viewMode === "dc" && passes && (
-                    <circle
-                      r={r + 4}
-                      fill="none"
-                      stroke={dotColor}
-                      strokeWidth={1}
-                      strokeDasharray="3 2"
-                      opacity={0.45}
-                      style={{ pointerEvents: "none" }}
-                    />
-                  )}
-                  {/* Selection ring */}
-                  {isSelected && passes && (
-                    <circle
-                      r={r + 5}
-                      fill="none"
-                      stroke={dotColor}
-                      strokeWidth={1.5}
-                      opacity={0.5}
-                      style={{ pointerEvents: "none" }}
-                    />
-                  )}
-                  {/* Hover ring */}
-                  {isHovered && !isSelected && passes && (
-                    <circle
-                      r={r + 4}
-                      fill="none"
-                      stroke="rgba(255,255,255,0.35)"
-                      strokeWidth={1}
-                      style={{ pointerEvents: "none" }}
-                    />
-                  )}
-                  <circle
-                    r={r}
-                    fill={dotColor}
-                    fillOpacity={fillOpacity}
-                    stroke={!passes ? "rgba(255,255,255,0.08)" : isAnnounced ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.3)"}
-                    strokeWidth={1}
-                    strokeDasharray={isAnnounced && passes ? "3 2" : undefined}
-                    style={{ cursor: passes ? "pointer" : "default" }}
-                    onMouseEnter={() => { if (!selected && passes) setHoveredId(dc.id); }}
-                    onMouseLeave={() => setHoveredId(null)}
-                  />
-                  {/* Leader line + city label - only for selected */}
-                  {isSelected && passes && (
-                    <>
-                      <line
-                        x1={0} y1={-(r + 1)}
-                        x2={0} y2={-(r + 10)}
-                        stroke="rgba(255,255,255,0.4)"
-                        strokeWidth={1}
-                        style={{ pointerEvents: "none" }}
-                      />
-                      <text
-                        textAnchor="middle"
-                        y={-(r + 14)}
-                        style={{
-                          fontFamily: "monospace",
-                          fontSize: "7px",
-                          fill: "rgba(255,255,255,0.92)",
-                          paintOrder: "stroke",
-                          stroke: "rgba(0,0,0,0.7)",
-                          strokeWidth: "3px",
-                          strokeLinejoin: "round",
-                          pointerEvents: "none",
-                          userSelect: "none",
-                        }}
-                      >
-                        {dc.city}
-                      </text>
-                    </>
-                  )}
-                </Marker>
-              );
-            })}
-          </ComposableMap>
-
-          {/* Hover tooltip */}
-          {hoveredDC && tooltipPos && !selected && (
+          {showTooltip && (
             <div
-              className="absolute z-20 pointer-events-none"
+              className="absolute z-[1001] pointer-events-none power-map-tooltip"
               style={{
-                left: Math.min(tooltipPos.x + 14, (mapContainerRef.current?.clientWidth ?? 600) - 220),
-                top: Math.max(tooltipPos.y - 72, 8),
+                left: Math.min(Math.max((tooltipPos?.x ?? 0) + 16, 8), (mapContainerRef.current?.clientWidth ?? 600) - 296),
+                top: Math.max((tooltipPos?.y ?? 0) - 180, 8),
               }}
             >
-              <div className="bg-card border border-border rounded-md px-3 py-2 shadow-xl text-xs font-mono min-w-[180px]">
-                <div className="flex items-center gap-1.5 mb-1">
-                  <div
-                    className="h-2 w-2 rounded-full flex-shrink-0"
-                    style={{ backgroundColor: companyColors[hoveredDC.company] ?? "#666" }}
-                  />
-                  <span className="font-semibold text-foreground leading-tight truncate">{hoveredDC.name}</span>
+              <div
+                className="border rounded-lg shadow-2xl text-xs font-mono min-w-[260px] max-w-[280px] overflow-hidden"
+                style={{
+                  background: "#1A1A2E",
+                  borderColor: "rgba(240, 120, 0, 0.3)",
+                  boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
+                  backdropFilter: "blur(8px)",
+                }}
+                data-testid="pin-detail-tooltip"
+              >
+                <div className="px-4 pt-3 pb-2 border-b" style={{ borderColor: "rgba(255,255,255,0.06)" }}>
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="font-bold text-white text-[14px] leading-tight">{displayDC.name}</p>
+                    <span
+                      className="text-[10px] px-2 py-0.5 rounded-full font-medium whitespace-nowrap"
+                      style={{
+                        backgroundColor: displayDC.status === "operational" ? "rgba(34,197,94,0.15)" : displayDC.status === "construction" ? "rgba(240,165,0,0.15)" : "rgba(148,163,184,0.15)",
+                        color: displayDC.status === "operational" ? "#4ade80" : displayDC.status === "construction" ? "#F0A500" : "#94a3b8",
+                      }}
+                    >
+                      {getStatusBadge(displayDC.status).label}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex items-center justify-between gap-3 text-muted-foreground">
-                  <span className="text-[#F0A500] font-semibold">{hoveredDC.powerMW} MW</span>
-                  <span className={getStatusBadge(hoveredDC.status).class + " text-[10px] px-1.5 py-0.5 rounded-sm"}>
-                    {getStatusBadge(hoveredDC.status).label}
-                  </span>
-                </div>
-                <div className="text-[10px] text-muted-foreground/70 mt-0.5">
-                  {hoveredDC.city}, {hoveredDC.state} &middot; {hoveredDC.openDate}
+                <div className="px-4 py-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-white/40 text-[12px]">Operator</span>
+                    <div className="flex items-center gap-1.5">
+                      <div className="h-2 w-2 rounded-full" style={{ backgroundColor: companyColors[displayDC.company] ?? "#666" }} />
+                      <span className="text-white text-[12px]">{displayDC.company}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-white/40 text-[12px]">Location</span>
+                    <span className="text-white text-[12px]">{displayDC.city}, {displayDC.state}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-white/40 text-[12px]">Capacity</span>
+                    <span className="text-[#F0A500] font-bold text-[13px]">{displayDC.powerMW} MW</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-white/40 text-[12px]">Grid Region</span>
+                    <span className="text-white text-[12px]">{gridOpToRTO(displayDC.gridOperator)}</span>
+                  </div>
+                  {selected && (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <span className="text-white/40 text-[12px]">Annual Power</span>
+                        <span className="text-white text-[12px]">{(displayDC.annualMWh / 1_000_000).toFixed(2)} TWh</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-white/40 text-[12px]">Online</span>
+                        <span className="text-white text-[12px]">{displayDC.openDate}</span>
+                      </div>
+                    </>
+                  )}
+                  <div className="pt-1.5 mt-1" style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+                    <a
+                      href="/stack"
+                      className="text-[11px] text-[#F07800] hover:text-[#F0A500] transition-colors pointer-events-auto"
+                      data-testid="link-view-in-stack"
+                    >
+                      View in The Stack &rarr;
+                    </a>
+                  </div>
                 </div>
               </div>
             </div>
           )}
-
-          <div className="absolute bottom-3 left-4">
-            <p className="text-[10px] font-mono text-muted-foreground/50">Click a pin for details</p>
-          </div>
         </div>
-
-        {/* Sidebar panel */}
-        {selected ? (
-          <div className="w-full lg:w-80 border-t lg:border-t-0 lg:border-l border-border bg-card/60 animate-slide-in-right" data-testid="datacenter-sidebar">
-            <div className="p-5 border-b border-border flex items-start justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground mb-1">Selected Facility</p>
-                <h3 className="font-semibold text-foreground leading-tight">{selected.name}</h3>
-              </div>
-              <Button size="icon" variant="ghost" onClick={() => setSelected(null)} data-testid="button-close-sidebar">
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-
-            <div className="p-5 space-y-4">
-              <div className="flex items-center gap-2 flex-wrap">
-                <Badge
-                  className="text-xs"
-                  style={{
-                    backgroundColor: `${companyColors[selected.company] ?? "#666"}22`,
-                    color: companyColors[selected.company] ?? "#999",
-                    border: `1px solid ${companyColors[selected.company] ?? "#666"}44`,
-                  }}
-                >
-                  {selected.company}
-                </Badge>
-                <Badge className={getStatusBadge(selected.status).class + " text-xs"}>
-                  {getStatusBadge(selected.status).label}
-                </Badge>
-              </div>
-
-              <div className="space-y-3">
-                <div className="flex items-start gap-3">
-                  <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="text-xs text-muted-foreground">Location</p>
-                    <p className="text-sm font-medium text-foreground">{selected.city}, {selected.state}</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <Zap className="h-4 w-4 text-[#F0A500] mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="text-xs text-muted-foreground">Planned Capacity</p>
-                    <p className="text-sm font-bold font-mono text-[#F0A500]">{selected.powerMW} MW</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <Activity className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="text-xs text-muted-foreground">Est. Annual Power</p>
-                    <p className="text-sm font-bold font-mono text-foreground">{(selected.annualMWh / 1_000_000).toFixed(2)} TWh/yr</p>
-                    <p className="text-xs text-muted-foreground">{Math.round(selected.annualMWh / 10500).toLocaleString()} homes equivalent</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <Building2 className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="text-xs text-muted-foreground">Grid Operator</p>
-                    <p className="text-sm font-medium text-foreground">{selected.gridOperator}</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <Calendar className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="text-xs text-muted-foreground">Online Date</p>
-                    <p className="text-sm font-medium text-foreground">{selected.openDate}</p>
-                  </div>
-                </div>
-              </div>
-
-              {selectedRTOCfg && selectedRTO && (
-                <div className="rounded-md p-3 border border-border bg-muted/20 space-y-2" data-testid="grid-context-block">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Network className="h-3.5 w-3.5 text-muted-foreground" />
-                    <p className="text-xs font-semibold text-muted-foreground tracking-wide uppercase">Grid Context</p>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5">
-                      <div className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: selectedRTOCfg.legendColor }} />
-                      <span className="text-xs font-mono text-foreground">{selectedRTO}</span>
-                    </div>
-                    <Badge className={selectedRTOCfg.stressBadgeClass + " text-[10px]"}>
-                      {selectedRTOCfg.aiSignal}
-                    </Badge>
-                  </div>
-                  <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
-                    <div>
-                      <p className="text-muted-foreground">Reserve Margin</p>
-                      <p className="font-mono font-semibold text-foreground">{selectedRTOCfg.reserveMargin}%</p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground">AI Load in RTO</p>
-                      <p className="font-mono font-semibold text-foreground">{selectedRTOLoad.toLocaleString()} MW</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <div className="rounded-md p-3 border border-border bg-muted/20">
-                <p className="text-xs text-muted-foreground mb-1">Power Classification</p>
-                <div className="flex items-center gap-2">
-                  <div className="h-3 w-3 rounded-full" style={{ backgroundColor: getDotColor(selected.powerMW) }} />
-                  <p className="text-sm font-medium text-foreground">
-                    {selected.powerMW < 100 ? "Light Load (<100 MW)" : selected.powerMW <= 500 ? "Medium Load (100-500 MW)" : "Heavy Load (>500 MW)"}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : null}
       </div>
 
-      {/* Upcoming Projects Section */}
       <div className="border-t border-border px-6 py-4" data-testid="upcoming-projects-section">
         <div className="flex items-center gap-2 mb-3">
           <Calendar className="h-4 w-4 text-muted-foreground" />
@@ -811,7 +867,7 @@ export default function PowerMap() {
             return (
               <button
                 key={dc.id}
-                onClick={() => setSelected(dc)}
+                onClick={() => { setSelected(dc); setTooltipPos(null); }}
                 data-testid={`upcoming-card-${dc.id}`}
                 className="flex-shrink-0 w-52 rounded-md border border-dashed border-border/70 bg-muted/10 p-3 text-left hover:bg-muted/20 hover:border-border transition-colors"
               >
@@ -837,7 +893,6 @@ export default function PowerMap() {
         </div>
       </div>
 
-      {/* Grid Operator Stress Table */}
       <div className="border-t border-border px-6 py-4" data-testid="grid-stress-table">
         <div className="flex items-center gap-2 mb-3">
           <Network className="h-4 w-4 text-muted-foreground" />
@@ -887,34 +942,33 @@ export default function PowerMap() {
         </div>
       </div>
 
-      {/* Mobile filter sheet */}
       {mobileFiltersOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div className="absolute inset-0 bg-black/60" onClick={() => setMobileFiltersOpen(false)} />
-          <div className="absolute bottom-0 left-0 right-0 bg-card border-t border-border rounded-t-xl p-5 max-h-[80vh] overflow-y-auto">
+          <div className="absolute bottom-0 left-0 right-0 bg-[#1A1A2E] border-t border-white/[0.08] rounded-t-xl p-5 max-h-[80vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
-                <span className="font-semibold text-sm text-foreground">Filters</span>
+                <SlidersHorizontal className="h-4 w-4 text-white/60" />
+                <span className="font-semibold text-sm text-white">Filters</span>
                 {anyFilterActive && (
-                  <span className="text-[10px] font-mono text-[#F0A500]">{filteredCount} of {DATA_CENTERS.length}</span>
+                  <span className="text-[10px] font-mono text-[#F07800]">{filteredCount} of {DATA_CENTERS.length}</span>
                 )}
               </div>
               <div className="flex items-center gap-2">
                 {anyFilterActive && (
-                  <button onClick={clearAllFilters} className="text-xs text-muted-foreground border border-border/60 rounded px-2 py-1">
+                  <button onClick={clearAllFilters} className="text-xs text-white/40 border border-white/[0.1] rounded px-2 py-1">
                     Clear all
                   </button>
                 )}
-                <button onClick={() => setMobileFiltersOpen(false)} className="p-1.5 rounded hover:bg-muted/20">
-                  <X className="h-4 w-4 text-muted-foreground" />
+                <button onClick={() => setMobileFiltersOpen(false)} className="p-1.5 rounded hover:bg-white/10">
+                  <X className="h-4 w-4 text-white/60" />
                 </button>
               </div>
             </div>
 
             <div className="space-y-5">
               <div>
-                <p className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-wider mb-2">Operator</p>
+                <p className="text-[10px] font-mono text-white/40 uppercase tracking-wider mb-2">Operator</p>
                 <div className="flex flex-wrap gap-2">
                   {allCompanies.map((c) => {
                     const active = filterCompanies.includes(c);
@@ -923,8 +977,8 @@ export default function PowerMap() {
                       <button
                         key={c}
                         onClick={() => toggleCompany(c)}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium border transition-all ${
-                          active ? "border-[#F0A500]/60 bg-[#F0A500]/10 text-foreground" : "border-border/50 bg-muted/20 text-muted-foreground"
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium transition-all ${
+                          active ? "bg-[#F07800]/20 text-[#F07800] border border-[#F07800]/40" : "bg-white/[0.04] text-white/50 border border-white/[0.06]"
                         }`}
                       >
                         <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: color }} />
@@ -936,7 +990,7 @@ export default function PowerMap() {
               </div>
 
               <div>
-                <p className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-wider mb-2">Grid Region</p>
+                <p className="text-[10px] font-mono text-white/40 uppercase tracking-wider mb-2">Grid Region</p>
                 <div className="flex flex-wrap gap-2">
                   {ALL_RTOS.map((rto) => {
                     const active = filterRTOs.includes(rto);
@@ -945,8 +999,8 @@ export default function PowerMap() {
                       <button
                         key={rto}
                         onClick={() => toggleRTO(rto)}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium border transition-all ${
-                          active ? "border-[#F0A500]/60 bg-[#F0A500]/10 text-foreground" : "border-border/50 bg-muted/20 text-muted-foreground"
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium transition-all ${
+                          active ? "bg-[#F07800]/20 text-[#F07800] border border-[#F07800]/40" : "bg-white/[0.04] text-white/50 border border-white/[0.06]"
                         }`}
                       >
                         <div className="h-1.5 w-1.5 rounded-sm" style={{ backgroundColor: color, opacity: 0.85 }} />
@@ -958,7 +1012,7 @@ export default function PowerMap() {
               </div>
 
               <div>
-                <p className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-wider mb-2">Capacity</p>
+                <p className="text-[10px] font-mono text-white/40 uppercase tracking-wider mb-2">Capacity</p>
                 <div className="flex flex-wrap gap-2">
                   {[
                     { key: "all",    label: "All Sizes" },
@@ -969,8 +1023,8 @@ export default function PowerMap() {
                     <button
                       key={key}
                       onClick={() => setCapacity(key)}
-                      className={`px-3 py-1.5 rounded text-xs font-medium border transition-all ${
-                        filterCapacity === key ? "border-[#F0A500]/60 bg-[#F0A500]/10 text-foreground" : "border-border/50 bg-muted/20 text-muted-foreground"
+                      className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
+                        filterCapacity === key ? "bg-[#F07800]/20 text-[#F07800] border border-[#F07800]/40" : "bg-white/[0.04] text-white/50 border border-white/[0.06]"
                       }`}
                     >
                       {label}

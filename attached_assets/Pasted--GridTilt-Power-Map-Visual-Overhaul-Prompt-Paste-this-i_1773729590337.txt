@@ -1,0 +1,186 @@
+# GridTilt Power Map — Visual Overhaul Prompt
+
+Paste this into Replit. This is ONLY about the Power Map visual quality. Nothing else.
+
+---
+
+The Power Map needs to look like it belongs on a Bloomberg terminal or a high-end data visualization studio, not a 2002 web app. The current map has ugly gradients, flat pins, oversaturated region fills, and too much clutter above the map. Fix all of it.
+
+## 1. MAP BASE LAYER
+
+**Kill any gradient backgrounds on or around the map.** No linear gradients, no radial gradients on the map container, no gradient overlays. The map background should be a clean, dark tile layer. Period.
+
+**Tile layer options (pick the best looking one):**
+
+- **CartoDB Dark Matter**: `https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png` — this is the gold standard for dark data visualization maps. Clean, minimal, dark gray landmass on near-black ocean. No distracting labels.
+- **CartoDB Dark Matter (no labels)**: `https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png` — even cleaner, we add our own labels.
+- **Mapbox Dark**: If using Mapbox GL, use the `mapbox://styles/mapbox/dark-v11` style.
+
+If currently using a different tile provider or a custom style that has those ugly gradients, REPLACE IT with one of the above. The tile layer should be dark, muted, and minimal. The DATA (pins, regions, labels) should be the only colorful elements.
+
+**Do NOT use:**
+- Any map style with visible terrain/elevation gradients
+- Bright blue ocean
+- Visible road networks (unless at very high zoom)
+- Satellite imagery
+- Any style where the base map competes visually with the data layer
+
+## 2. RTO REGION OVERLAYS
+
+The colored region fills (PJM = one color, ERCOT = another, etc.) are WAY too saturated. They dominate the map and make the pins hard to see.
+
+**Fix:**
+- Reduce ALL region fill opacity to **8-12%**. They should be barely perceptible tints, not color blocks.
+- Region borders: thin (1px), white or light gray, opacity 15-20%. Just enough to show boundaries.
+- When a region is hovered or filtered, its fill can increase to 20-25% opacity temporarily. But the default is near-invisible.
+- The region colors themselves should be muted/desaturated versions, not bright primaries. Think: muted teal for WECC, muted slate blue for PJM, muted warm gray for ERCOT, etc. NOT bright green, bright purple, bright red.
+
+## 3. FACILITY PINS — COMPLETE REDESIGN
+
+The current pins look flat and generic. Redesign them:
+
+**Pin style: glowing dots, not flat circles.**
+
+Each pin should be rendered as an SVG or CSS element with:
+- A solid center circle (6-10px radius depending on capacity)
+- A soft radial glow/halo around it (same color as center, ~30% opacity, extending 4-6px beyond the center)
+- NO hard borders. No outlines. Just the glowing dot.
+
+**Size by capacity:**
+- <100 MW: 6px center radius
+- 100-500 MW: 8px center radius
+- 500+ MW: 10px center radius
+
+**Color by status:**
+- Operational: GridTilt orange (#F07800) with orange glow
+- Under Construction: Amber/yellow (#F0A500) with amber glow
+- Announced/Planned: White with subtle white glow, 60% opacity
+
+**Pin animation:**
+- Operational facilities: very subtle pulse animation. The glow expands and contracts by ~2px on a 3-second cycle. Barely noticeable but makes the map feel alive. Use CSS `@keyframes` with `transform: scale()` and `opacity` on the glow layer only (not the center dot).
+- Under Construction: no pulse, but a slow rotating dashed ring around the pin (CSS animation, 8-second rotation). Very subtle.
+- Announced: static, no animation. They're not active yet.
+
+**Hover state:**
+- Pin center scales to 1.3x
+- Glow intensifies (opacity goes from 30% to 60%)
+- All OTHER pins dim to 30% opacity
+- Transition: 200ms ease-out
+- On mobile: tap triggers the hover state
+
+**DO NOT use:**
+- Drop shadows that look like they're from a 2010 Google Maps tutorial
+- 3D-looking pins or marker icons
+- Built-in Leaflet/Mapbox default marker icons
+- Any gradient fills inside the pins themselves
+- Thick outlines or borders on pins
+
+## 4. FACILITY LABELS ON MAP
+
+Show facility name labels directly on the map at appropriate zoom levels:
+
+**Zoom behavior:**
+- Full US view (zoom ~4): NO labels, just the glowing dots. Clean.
+- Medium zoom (~6-7): Show labels only for 500+ MW facilities
+- Close zoom (~8+): Show labels for all visible facilities
+
+**Label style:**
+- Font: system sans-serif, 10-11px, white
+- Background: dark semi-transparent pill behind the text (`rgba(0,0,0,0.7)`, 4px padding, 3px border-radius)
+- Position: offset slightly above and to the right of the pin. Never overlapping the pin itself.
+- If two labels would collide, hide the smaller facility's label. Only show labels that have room.
+
+## 5. TOOLTIP ON HOVER/CLICK
+
+When hovering (desktop) or tapping (mobile) a pin, show a detail card:
+
+**Tooltip design:**
+- Background: `#1A1A2E` (GridTilt dark background), NOT black, not a gradient
+- Border: 1px solid `rgba(240, 120, 0, 0.3)` (very subtle orange border)
+- Border-radius: 8px
+- Padding: 16px
+- Box-shadow: `0 8px 32px rgba(0,0,0,0.5)` (deep but soft shadow)
+- Max-width: 280px
+- Backdrop-filter: `blur(8px)` if the browser supports it (gives that frosted glass effect on the map behind it)
+
+**Tooltip content layout:**
+```
+FACILITY NAME                    [Status badge]
+Operator: Google                 [operator color dot]
+Location: The Dalles, OR
+Capacity: 600 MW
+Grid Region: WECC
+─────────────────────────────────
+[View in The Stack →]
+```
+
+- Facility name: 14px, bold, white
+- Status badge: small pill, colored (green for Operational, amber for Construction, gray for Announced)
+- Other fields: 12px, gray text for labels, white for values
+- Divider: subtle line, 8% opacity white
+- "View in The Stack" link: 11px, GridTilt orange, links to the relevant stock page or operator page
+- The tooltip should fade in (opacity 0→1, 150ms) and fade out when mouse leaves
+
+**Positioning:** The tooltip should appear above or to the side of the pin, never overlapping it. Use smart positioning that keeps the tooltip within the map viewport (flip direction if near an edge).
+
+## 6. FILTER PANEL — COMPRESS AND CLEAN
+
+Currently the operator chips, region chips, and capacity filter take up 3+ rows above the map. Compress:
+
+**Option A (preferred): Collapsible filter bar**
+- Show a single compact bar: `Filters: All 48 facilities` with a small expand/collapse arrow
+- When expanded, show the filter chips in a clean grid
+- When collapsed, only show active filters as small badges: `Google (10) × | PJM (8) ×`
+- Default state: collapsed
+
+**Option B: Filter drawer**
+- A narrow left-side drawer that overlays on the map (not pushing it)
+- Contains all filters in a vertical list
+- Toggle button to show/hide
+- Semi-transparent dark background so the map is still partially visible behind it
+
+Either way: the map should occupy **maximum possible screen height**. The controls should take up as little vertical space as possible.
+
+**Active filter state for chips:**
+- Inactive: dark background, muted text, subtle border
+- Active: orange background (#F07800), white text, no border
+- Transition: 150ms background-color change
+
+## 7. REMOVE DEAD SPACE
+
+If there's any panel, sidebar, or placeholder to the right of the map that says "Click a dot" or "International coverage expanding" or anything like that, REMOVE IT. The map goes full width. When a pin is clicked, the tooltip handles the detail display.
+
+## 8. GRID STRESS MODE
+
+When switching from "DC Locations" to "Grid Stress":
+
+- The visual transition should be noticeable. Not just swapping region colors.
+- In Grid Stress mode: region fills increase to 20-30% opacity and use a green→yellow→red color scale based on stress level
+- Pins stay the same (they're facility data, not stress data)
+- The legend updates to show the stress color scale
+- Add a smooth CSS transition (500ms) when toggling between modes so it feels like switching a camera filter, not a hard cut
+
+## 9. MAP CONTROLS
+
+- Zoom +/- buttons: small, dark, bottom-right corner of the map. Match the GridTilt dark theme. Not the default white Leaflet/Mapbox controls.
+- Attribution: keep it but make it tiny and muted (legal requirement for tile providers)
+- No minimap, no scale bar, no compass unless you think it genuinely helps. Less is more.
+
+## 10. OVERALL MAP CONTAINER
+
+- The map container should have NO outer border, NO outer shadow, NO outer gradient. It should bleed to the edges of the content area.
+- If the page has a title/header above the map ("Power Map · 48 facilities · 20.7 GW"), keep it minimal: one line, compact, small text. Not a big hero section.
+- The stats (total capacity, annual draw, operational/construction/announced counts) should be in a small floating overlay card in the top-left corner of the map itself, not above it. Semi-transparent dark background, compact text. Saves vertical space.
+
+## WHAT SUCCESS LOOKS LIKE
+
+When this is done, the Power Map should look like:
+- A dark, clean base map with barely-visible region tinting
+- Glowing orange/amber/white dots scattered across the US
+- The dots subtly pulsing
+- Hovering a dot reveals a clean, frosted-glass tooltip with facility details
+- Filters are tucked away until needed
+- The map fills the viewport
+- It looks like something from a Bloomberg terminal or a defense contractor's situation room, not a college project
+
+Test on desktop (1440px+) and mobile (375px). Make sure pinch-to-zoom works on mobile and tooltips trigger on tap.
