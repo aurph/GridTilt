@@ -25,6 +25,8 @@ The backend is a Node.js and Express application. It fetches market data using `
 - **CatalystTracker**: Tracks upcoming market events.
 - **Stock, Sector, Region, Operator Pages**: Dedicated pages for detailed analysis of individual stocks, sectors, grid regions, and hyperscaler operators.
 - **Blog**: Features analysis articles on AI infrastructure and power economy topics.
+- **SupplyChain**: 5-stage interactive flow diagram (Raw Materials > Generation > Transmission > Distribution > End Use) with live sector data, bottleneck indicators, and click-to-expand stock cards.
+- **Subscribe / Email Capture**: Email newsletter signup at /subscribe, inline capture at bottom of TiltOverview, scroll-triggered banner. Backend stores subscribers in JSON file (server/data/subscribers.json). Newsletter send via Resend (needs RESEND_API_KEY). Unsubscribe tokens use HMAC-SHA256 with SESSION_SECRET.
 
 ### Visual Design
 The application features a dark charcoal terminal aesthetic with orange as the primary brand color for UI chrome, badges, and KPIs. Blue (`#1E90FF`) is strictly reserved for chart data series. The UI emphasizes short, direct sentences and avoids complex phrasing. Card radius is set to 0.35rem for a terminal-like appearance.

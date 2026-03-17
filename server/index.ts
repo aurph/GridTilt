@@ -48,7 +48,9 @@ app.use((req, res, next) => {
     const duration = Date.now() - start;
     if (path.startsWith("/api")) {
       let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
+      const sensitiveRoutes = ["/api/admin/subscribers", "/api/subscribe", "/api/unsubscribe"];
+      const isSensitive = sensitiveRoutes.some((r) => path.startsWith(r));
+      if (capturedJsonResponse && !isSensitive) {
         logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
       }
 

@@ -21,7 +21,8 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Zap, TrendingUp, Activity, AlertTriangle, Info, ArrowUp, ArrowDown, Calendar, ChevronRight, ExternalLink, ChevronDown, ChevronUp, Cpu, Plug, BarChart3 } from "lucide-react";
+import { Zap, TrendingUp, Activity, AlertTriangle, Info, ArrowUp, ArrowDown, Calendar, ChevronRight, ExternalLink, ChevronDown, ChevronUp, Cpu, Plug, BarChart3, Calculator } from "lucide-react";
+import { EmailCapture, ScrollTriggeredBanner } from "@/components/EmailCapture";
 
 const electricityData = [
   { year: "2010", demand: 3879, dcDemand: 140, projected: null, dcProjected: null },
@@ -1246,7 +1247,25 @@ export default function TiltOverview() {
           </p>
         </Card>
 
+        <Link href="/trade">
+          <Card className="p-4 border-card-border hover:border-[#F07800]/30 transition-colors cursor-pointer group" data-testid="link-thesis-calculator">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Calculator className="h-4 w-4 text-[#F0A500]" />
+                <div>
+                  <span className="text-sm font-medium text-foreground group-hover:text-[#F07800] transition-colors">Thesis Calculator</span>
+                  <p className="text-xs text-muted-foreground">Model scenarios and test your conviction</p>
+                </div>
+              </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-[#F07800] transition-colors" />
+            </div>
+          </Card>
+        </Link>
+
+        <EmailCapture variant="inline" />
+
       </div>
+      <ScrollTriggeredBanner />
     </div>
   );
 }

@@ -15,7 +15,7 @@ import {
   LayoutDashboard,
   Layers,
   Map,
-  TrendingUp,
+  Link2,
   BarChart3,
   Calendar,
   FileText,
@@ -42,10 +42,10 @@ const navItems = [
     description: "US data center locations",
   },
   {
-    title: "Thesis Calculator",
-    url: "/trade",
-    icon: TrendingUp,
-    description: "Scenario analysis",
+    title: "Supply Chain",
+    url: "/supply-chain",
+    icon: Link2,
+    description: "Power flow bottlenecks",
   },
   {
     title: "Portfolio Overlay",

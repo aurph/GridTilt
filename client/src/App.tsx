@@ -18,6 +18,8 @@ import RegionPage from "@/pages/RegionPage";
 import OperatorPage from "@/pages/OperatorPage";
 import BlogIndex from "@/pages/BlogIndex";
 import BlogPost from "@/pages/BlogPost";
+import SupplyChain from "@/pages/SupplyChain";
+import Subscribe from "@/pages/Subscribe";
 import { NewsTicker } from "@/components/NewsTicker";
 import { useLocation } from "wouter";
 import { useState, useEffect } from "react";
@@ -27,17 +29,19 @@ const PAGE_TITLES: Record<string, string> = {
   "/": "Tilt Overview",
   "/stack": "The Stack",
   "/power-map": "Power Map",
+  "/supply-chain": "Supply Chain",
   "/trade": "Thesis Calculator",
   "/portfolio": "Portfolio Overlay",
   "/catalysts": "Catalyst Tracker",
   "/blog": "Analysis",
+  "/subscribe": "Subscribe",
 };
 
 const SHORTCUTS = [
   { keys: ["G", "1"], description: "Go to Tilt Overview", path: "/" },
   { keys: ["G", "2"], description: "Go to The Stack", path: "/stack" },
   { keys: ["G", "3"], description: "Go to Power Map", path: "/power-map" },
-  { keys: ["G", "4"], description: "Go to Thesis Calculator", path: "/trade" },
+  { keys: ["G", "4"], description: "Go to Supply Chain", path: "/supply-chain" },
   { keys: ["G", "5"], description: "Go to Portfolio Overlay", path: "/portfolio" },
   { keys: ["G", "6"], description: "Go to Catalyst Tracker", path: "/catalysts" },
   { keys: ["?"], description: "Show this keyboard shortcuts panel", path: null },
@@ -124,6 +128,7 @@ function Router() {
       <Route path="/" component={TiltOverview} />
       <Route path="/stack" component={TheStack} />
       <Route path="/power-map" component={PowerMap} />
+      <Route path="/supply-chain" component={SupplyChain} />
       <Route path="/trade" component={TheTrade} />
       <Route path="/portfolio" component={PortfolioOverlay} />
       <Route path="/catalysts" component={CatalystTracker} />
@@ -133,6 +138,7 @@ function Router() {
       <Route path="/operator/:slug" component={OperatorPage} />
       <Route path="/blog" component={BlogIndex} />
       <Route path="/blog/:slug" component={BlogPost} />
+      <Route path="/subscribe" component={Subscribe} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -166,7 +172,7 @@ function App() {
       if (gPressed) {
         const routes: Record<string, string> = {
           "1": "/", "2": "/stack", "3": "/power-map",
-          "4": "/trade", "5": "/portfolio", "6": "/catalysts",
+          "4": "/supply-chain", "5": "/portfolio", "6": "/catalysts",
         };
         if (routes[e.key]) {
           navigate(routes[e.key]);

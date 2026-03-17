@@ -1,7 +1,8 @@
-import type { Express } from "express";
+import type { Express, Request } from "express";
 import { type Server } from "http";
-import { readFileSync } from "fs";
+import { readFileSync, writeFileSync, existsSync } from "fs";
 import { join } from "path";
+import { createHash, createHmac } from "crypto";
 import RSSParser from "rss-parser";
 import {
   BASE_URL,
@@ -876,6 +877,411 @@ export async function registerRoutes(
       console.error("Sector pulse error:", error);
       res.status(500).json({ error: "Failed to compute sector pulse" });
     }
+  });
+
+  const SUPPLY_CHAIN_STAGES = {
+    rawMaterials: {
+      name: "Raw Materials",
+      tagline: "Where it comes from",
+      color: "#CD7F32",
+      bottleneckStatus: "Tightening" as const,
+      bottleneckDetail: "Copper prices above $10,000/ton. Uranium spot at $80+/lb. Electrical steel lead times at 8-12 months. Demand from AI data centers could require 475,000 additional tons of copper annually by 2028.",
+      keyMetric: "Copper: $10,200/ton",
+      tickers: ["CCJ", "UEC", "NXE", "DNN", "UUUU", "LEU", "FCX", "SCCO", "TECK", "HBM", "NUE", "STLD", "CLF", "X", "MP", "BHP", "RIO", "VALE", "AR", "EQT", "RRC", "SWN", "LNG", "COPX"],
+    },
+    generation: {
+      name: "Generation",
+      tagline: "How it's made",
+      color: "#F07800",
+      bottleneckStatus: "Tightening" as const,
+      bottleneckDetail: "GE Vernova gas turbine backlog exceeds 3 years. Nuclear fleet operating near capacity limits. Constellation, Vistra, and Talen are signing long-term PPAs with hyperscalers at premium rates. SMR deployment timeline remains 2028-2030 at earliest.",
+      keyMetric: "GEV backlog: $100B+",
+      tickers: ["CEG", "VST", "TLN", "NRG", "GEV", "SIEGY", "BKR", "SMR", "OKLO", "BWXT", "NEE", "AES", "FSLR", "ENPH", "SEDG", "SO", "DUK", "AEP"],
+    },
+    transmission: {
+      name: "Transmission",
+      tagline: "How it moves",
+      color: "#1E90FF",
+      bottleneckStatus: "Bottlenecked" as const,
+      bottleneckDetail: "Large power transformer lead times at 18-36 months. US domestic production approximately 60 units/year against estimated demand of 200-500 over 5 years. This is the tightest bottleneck in the chain. PJM interconnection queue exceeds 250 GW of pending projects with 4+ year wait times.",
+      keyMetric: "LPT lead time: 18-36 months",
+      tickers: ["ETN", "ABB", "PWR", "EMR", "HUBB", "AYI", "WIRE", "AOS", "GNRC", "IDA", "NVT"],
+    },
+    distribution: {
+      name: "Distribution",
+      tagline: "How it connects",
+      color: "#22c55e",
+      bottleneckStatus: "Tightening" as const,
+      bottleneckDetail: "Data center switchgear and UPS systems face 12-18 month lead times. Liquid cooling demand growing 40%+ annually as GPU power density increases. Eaton and Vertiv order backlogs at record levels. Site development constrained by permitting delays in key markets.",
+      keyMetric: "Eaton backlog: 2-3 years",
+      tickers: ["VRT", "CARR", "JCI", "ETN", "ABB", "EME", "MTZ", "STRL", "FLR", "PRIM"],
+    },
+    endUse: {
+      name: "End Use",
+      tagline: "Where it goes",
+      color: "#a855f7",
+      bottleneckStatus: "Flowing" as const,
+      bottleneckDetail: "48 tracked facilities. 28 operational, 15 under construction, 5 announced. Total tracked capacity: 20.7 GW. Hyperscaler capex commitments exceed $200B over the next 3 years. GPU compute demand continues to outpace supply.",
+      keyMetric: "48 facilities / 20.7 GW",
+      tickers: ["EQIX", "DLR", "AMT", "NVDA", "AMD", "AVGO", "TSM", "MU", "INTC", "SMCI", "META", "AMZN", "MSFT", "GOOGL", "AAPL", "IREN", "CLSK", "MARA", "DELL", "ANET", "MRVL"],
+    },
+  };
+
+  app.get("/api/supply-chain", async (_req, res) => {
+    try {
+      const cacheKey = "supply-chain";
+      const now = Date.now();
+      const cached = stackCache[cacheKey];
+      if (cached && now - cached.timestamp < 5 * 60 * 1000) {
+        const stockData = cached.data;
+        const stages = Object.entries(SUPPLY_CHAIN_STAGES).map(([key, stage]) => {
+          const stocks = stage.tickers
+            .map((t) => stockData[t])
+            .filter(Boolean);
+          const avgChange = stocks.length > 0
+            ? parseFloat((stocks.reduce((s, st) => s + (st.changePercent ?? 0), 0) / stocks.length).toFixed(2))
+            : 0;
+          return {
+            key,
+            name: stage.name,
+            tagline: stage.tagline,
+            color: stage.color,
+            companyCount: stocks.length,
+            avgChange,
+            bottleneckStatus: stage.bottleneckStatus,
+            bottleneckDetail: stage.bottleneckDetail,
+            keyMetric: stage.keyMetric,
+            stocks: stocks.map((s) => ({
+              ticker: s.ticker,
+              name: s.name,
+              price: s.price,
+              change: s.change,
+              changePercent: s.changePercent,
+              marketCapDisplay: s.marketCapDisplay,
+            })),
+          };
+        });
+        return res.json({ stages, tightestBottleneck: "Transmission" });
+      }
+
+      const stockData: Record<string, any> = {};
+      const allTickers = [...new Set(Object.values(SUPPLY_CHAIN_STAGES).flatMap((s) => s.tickers))];
+      try {
+        const results = await Promise.all(
+          allTickers.map((t) => yahooFinance.quote(t).catch(() => null))
+        );
+        results.forEach((r, i) => {
+          if (r?.regularMarketPrice) {
+            const ticker = allTickers[i];
+            const staticData = STATIC_MARKET_DATA[ticker];
+            stockData[ticker] = {
+              ticker,
+              name: r.shortName || r.longName || staticData?.name || ticker,
+              price: r.regularMarketPrice,
+              change: r.regularMarketChange ?? 0,
+              changePercent: r.regularMarketChangePercent ?? 0,
+              marketCapDisplay: staticData?.marketCapDisplay || "",
+            };
+          }
+        });
+      } catch {
+        // fall through to static
+      }
+
+      allTickers.forEach((ticker) => {
+        if (!stockData[ticker]) {
+          const s = STATIC_MARKET_DATA[ticker];
+          if (s) stockData[ticker] = { ticker, name: s.name, price: s.price, change: s.change, changePercent: s.changePercent, marketCapDisplay: s.marketCapDisplay };
+        }
+      });
+
+      stackCache[cacheKey] = { data: stockData, timestamp: now };
+
+      const stages = Object.entries(SUPPLY_CHAIN_STAGES).map(([key, stage]) => {
+        const stocks = stage.tickers.map((t) => stockData[t]).filter(Boolean);
+        const avgChange = stocks.length > 0
+          ? parseFloat((stocks.reduce((s, st) => s + (st.changePercent ?? 0), 0) / stocks.length).toFixed(2))
+          : 0;
+        return {
+          key,
+          name: stage.name,
+          tagline: stage.tagline,
+          color: stage.color,
+          companyCount: stocks.length,
+          avgChange,
+          bottleneckStatus: stage.bottleneckStatus,
+          bottleneckDetail: stage.bottleneckDetail,
+          keyMetric: stage.keyMetric,
+          stocks: stocks.map((s) => ({
+            ticker: s.ticker,
+            name: s.name,
+            price: s.price,
+            change: s.change,
+            changePercent: s.changePercent,
+            marketCapDisplay: s.marketCapDisplay,
+          })),
+        };
+      });
+
+      res.json({ stages, tightestBottleneck: "Transmission" });
+    } catch (error) {
+      console.error("Supply chain error:", error);
+      res.status(500).json({ error: "Failed to fetch supply chain data" });
+    }
+  });
+
+  const SUBSCRIBERS_FILE = join(process.cwd(), "server", "data", "subscribers.json");
+  interface Subscriber { email: string; subscribedAt: string; }
+
+  function loadSubscribers(): Subscriber[] {
+    try {
+      if (existsSync(SUBSCRIBERS_FILE)) {
+        return JSON.parse(readFileSync(SUBSCRIBERS_FILE, "utf8"));
+      }
+    } catch {}
+    return [];
+  }
+
+  function saveSubscribers(subs: Subscriber[]) {
+    writeFileSync(SUBSCRIBERS_FILE, JSON.stringify(subs, null, 2));
+  }
+
+  const UNSUB_SECRET = process.env.SESSION_SECRET || "gridtilt-unsub-fallback";
+  function makeUnsubToken(email: string): string {
+    return createHmac("sha256", UNSUB_SECRET).update(email).digest("hex");
+  }
+
+  const subscribeRateLimit = new Map<string, { count: number; resetAt: number }>();
+
+  app.post("/api/subscribe", async (req: Request, res) => {
+    try {
+      const { email } = req.body;
+      if (!email || typeof email !== "string") {
+        return res.status(400).json({ error: "Email is required" });
+      }
+
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return res.status(400).json({ error: "That doesn't look like an email" });
+      }
+
+      const ip = req.ip || "unknown";
+      const now = Date.now();
+      const limit = subscribeRateLimit.get(ip);
+      if (limit && now < limit.resetAt && limit.count >= 5) {
+        return res.status(429).json({ error: "Too many attempts. Try again later." });
+      }
+      if (!limit || now >= (limit?.resetAt ?? 0)) {
+        subscribeRateLimit.set(ip, { count: 1, resetAt: now + 3600000 });
+      } else {
+        limit.count++;
+      }
+
+      const subscribers = loadSubscribers();
+      const normalizedEmail = email.toLowerCase().trim();
+
+      if (subscribers.some((s) => s.email === normalizedEmail)) {
+        return res.json({ message: "You're already on the list", status: "exists" });
+      }
+
+      subscribers.push({ email: normalizedEmail, subscribedAt: new Date().toISOString() });
+      saveSubscribers(subscribers);
+
+      if (process.env.RESEND_API_KEY) {
+        try {
+          const resendRes = await fetch("https://api.resend.com/audiences", {
+            method: "GET",
+            headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}` },
+          });
+          const audiences = await resendRes.json();
+          const audienceId = audiences?.data?.[0]?.id;
+          if (audienceId) {
+            await fetch(`https://api.resend.com/audiences/${audienceId}/contacts`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+              },
+              body: JSON.stringify({ email: normalizedEmail }),
+            });
+          }
+        } catch (e) {
+          console.error("Resend sync error:", e);
+        }
+      }
+
+      res.json({ message: "You're in", status: "subscribed" });
+    } catch (error) {
+      console.error("Subscribe error:", error);
+      res.status(500).json({ error: "Something went wrong, try again" });
+    }
+  });
+
+  app.get("/api/unsubscribe", (req, res) => {
+    const { token } = req.query;
+    if (!token || typeof token !== "string") {
+      return res.status(400).send("Invalid unsubscribe link");
+    }
+
+    const subscribers = loadSubscribers();
+    const remaining = subscribers.filter((s) => {
+      return makeUnsubToken(s.email) !== token;
+    });
+
+    if (remaining.length < subscribers.length) {
+      saveSubscribers(remaining);
+      return res.send(`
+        <html><head><title>Unsubscribed</title><style>body{background:#0d0d14;color:#fff;font-family:system-ui;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;}
+        .card{text-align:center;padding:2rem;}.check{color:#22c55e;font-size:3rem;}</style></head>
+        <body><div class="card"><div class="check">&#10003;</div><h2>Unsubscribed</h2><p style="color:#888;">You've been removed from the GridTilt mailing list.</p></div></body></html>
+      `);
+    }
+
+    res.send(`
+      <html><head><title>Unsubscribe</title><style>body{background:#0d0d14;color:#fff;font-family:system-ui;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;}
+      .card{text-align:center;padding:2rem;}</style></head>
+      <body><div class="card"><h2>Not Found</h2><p style="color:#888;">This email was not found in our subscriber list.</p></div></body></html>
+    `);
+  });
+
+  app.get("/api/newsletter/preview", async (req, res) => {
+    try {
+      const subscribers = loadSubscribers();
+      const subscriberCount = subscribers.length;
+
+      let stockData: Record<string, any> = {};
+      try {
+        const cacheKey = "supply-chain";
+        const cached = stackCache[cacheKey];
+        if (cached) stockData = cached.data;
+      } catch {}
+
+      const topMovers = Object.values(stockData)
+        .filter((s: any) => s?.changePercent)
+        .sort((a: any, b: any) => Math.abs(b.changePercent) - Math.abs(a.changePercent))
+        .slice(0, 5);
+
+      const monthYear = new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" });
+
+      const html = `
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>The GridTilt Brief</title></head>
+<body style="margin:0;padding:0;background:#0d0d14;font-family:system-ui,-apple-system,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#0d0d14;"><tr><td align="center" style="padding:40px 20px;">
+<table width="600" cellpadding="0" cellspacing="0" style="background:#151520;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,0.06);">
+<tr><td style="padding:32px;border-bottom:1px solid rgba(240,120,0,0.15);">
+<div style="font-size:22px;font-weight:800;color:#fff;">Grid<span style="color:#F07800;">Tilt</span></div>
+<div style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:4px;font-family:monospace;">The GridTilt Brief / ${monthYear}</div>
+</td></tr>
+<tr><td style="padding:32px;">
+<div style="font-size:14px;font-weight:700;color:#F0A500;margin-bottom:16px;text-transform:uppercase;letter-spacing:1px;">Top Movers</div>
+${topMovers.map((s: any) => `
+<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.04);">
+<span style="color:#fff;font-size:13px;font-weight:600;">${s.ticker}</span>
+<span style="color:#fff;font-size:12px;">${s.name}</span>
+<span style="color:${s.changePercent >= 0 ? '#22c55e' : '#ef4444'};font-size:12px;font-family:monospace;">${s.changePercent >= 0 ? '+' : ''}${s.changePercent.toFixed(2)}%</span>
+</div>
+`).join("")}
+</td></tr>
+<tr><td style="padding:32px;background:#0d0d14;border-top:1px solid rgba(255,255,255,0.04);">
+<div style="text-align:center;">
+<a href="${BASE_URL}" style="display:inline-block;padding:12px 32px;background:#F07800;color:#000;text-decoration:none;font-weight:700;font-size:13px;border-radius:6px;">Explore the Dashboard</a>
+</div>
+<div style="text-align:center;margin-top:20px;font-size:11px;color:rgba(255,255,255,0.3);">
+Sent to ${subscriberCount} subscribers. You're receiving this because you subscribed at gridtilt.com.<br>
+<a href="${BASE_URL}/api/unsubscribe?token=PREVIEW" style="color:rgba(255,255,255,0.4);">Unsubscribe</a>
+</div>
+</td></tr>
+</table>
+</td></tr></table>
+</body></html>`;
+
+      res.type("html").send(html);
+    } catch (error) {
+      console.error("Newsletter preview error:", error);
+      res.status(500).json({ error: "Failed to generate preview" });
+    }
+  });
+
+  app.post("/api/newsletter/send", async (req, res) => {
+    const authKey = req.headers["x-admin-key"];
+    if (authKey !== process.env.SESSION_SECRET) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    if (!process.env.RESEND_API_KEY) {
+      return res.status(400).json({ error: "RESEND_API_KEY not configured" });
+    }
+
+    try {
+      const subscribers = loadSubscribers();
+      if (subscribers.length === 0) {
+        return res.json({ message: "No subscribers", sent: 0 });
+      }
+
+      const previewUrl = `http://localhost:${process.env.PORT || 5000}/api/newsletter/preview`;
+      const previewRes = await fetch(previewUrl);
+      const htmlTemplate = await previewRes.text();
+
+      let sent = 0;
+      let errors = 0;
+      for (const sub of subscribers) {
+        const token = makeUnsubToken(sub.email);
+        const personalizedHtml = htmlTemplate.replace(
+          "token=PREVIEW",
+          `token=${token}`
+        );
+
+        try {
+          const sendRes = await fetch("https://api.resend.com/emails", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+            },
+            body: JSON.stringify({
+              from: "GridTilt <brief@gridtilt.com>",
+              to: sub.email,
+              subject: `The GridTilt Brief - ${new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" })}`,
+              html: personalizedHtml,
+            }),
+          });
+          if (sendRes.ok) {
+            sent++;
+          } else {
+            errors++;
+          }
+        } catch {
+          errors++;
+        }
+      }
+
+      res.json({ message: `Newsletter sent`, sent, errors, total: subscribers.length });
+    } catch (error) {
+      console.error("Newsletter send error:", error);
+      res.status(500).json({ error: "Failed to send newsletter" });
+    }
+  });
+
+  app.get("/api/admin/subscribers", (req, res) => {
+    const authKey = req.headers["x-admin-key"];
+    if (authKey !== process.env.SESSION_SECRET) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+    const subscribers = loadSubscribers();
+    res.json({ count: subscribers.length, subscribers });
+  });
+
+  app.delete("/api/admin/subscribers/:email", (req, res) => {
+    const authKey = req.headers["x-admin-key"];
+    if (authKey !== process.env.SESSION_SECRET) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+    const emailToRemove = decodeURIComponent(req.params.email).toLowerCase();
+    const subscribers = loadSubscribers();
+    const remaining = subscribers.filter((s) => s.email !== emailToRemove);
+    saveSubscribers(remaining);
+    res.json({ message: "Removed", count: remaining.length });
   });
 
   // Earnings calendar endpoint - upcoming earnings dates for all stack tickers (4h cache)

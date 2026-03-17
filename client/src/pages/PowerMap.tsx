@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from "react";
-import { MapContainer, TileLayer, useMap, useMapEvents } from "react-leaflet";
+import { MapContainer, TileLayer, ZoomControl, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { Badge } from "@/components/ui/badge";
@@ -206,6 +206,193 @@ function createGlowIcon(dc: DataCenter, passes: boolean, dimmed: boolean, viewMo
     iconSize: [size, size],
     iconAnchor: [center, center],
   });
+}
+
+const STATE_TO_RTO: Record<string, string> = {
+  Maine: "NPCC", Vermont: "NPCC", "New Hampshire": "NPCC",
+  Massachusetts: "NPCC", Connecticut: "NPCC", "Rhode Island": "NPCC", "New York": "NPCC",
+  "New Jersey": "PJM", Delaware: "PJM", Maryland: "PJM",
+  Pennsylvania: "PJM", Ohio: "PJM", "West Virginia": "PJM", Virginia: "PJM", Kentucky: "PJM",
+  Michigan: "MISO", Indiana: "MISO", Illinois: "MISO", Wisconsin: "MISO",
+  Minnesota: "MISO", Iowa: "MISO", Missouri: "MISO",
+  Arkansas: "MISO", Louisiana: "MISO", Mississippi: "MISO",
+  "North Dakota": "MISO", "South Dakota": "MISO", Montana: "MISO",
+  Texas: "ERCOT",
+  Tennessee: "SERC", "North Carolina": "SERC", "South Carolina": "SERC",
+  Georgia: "SERC", Alabama: "SERC", Florida: "SERC",
+  Nebraska: "SPP", Kansas: "SPP", Oklahoma: "SPP",
+  Washington: "WECC", Oregon: "WECC", California: "WECC",
+  Nevada: "WECC", Idaho: "WECC", Utah: "WECC", Colorado: "WECC",
+  Arizona: "WECC", "New Mexico": "WECC", Wyoming: "WECC",
+  Alaska: "WECC", Hawaii: "WECC",
+};
+
+const RTO_MUTED_COLORS: Record<string, string> = {
+  PJM: "#7B8FA1",
+  MISO: "#6B8E6B",
+  ERCOT: "#A18072",
+  WECC: "#7B8BA0",
+  SERC: "#6B9E9E",
+  SPP: "#9B8B7B",
+  NPCC: "#8B8B9B",
+};
+
+const RTO_STRESS_COLORS: Record<string, string> = {
+  PJM: "#eab308",
+  MISO: "#ef4444",
+  ERCOT: "#ef4444",
+  WECC: "#84cc16",
+  SERC: "#22c55e",
+  SPP: "#4ade80",
+  NPCC: "#4ade80",
+};
+
+const GEO_URL = "https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json";
+
+function RTORegions({ viewMode }: { viewMode: ViewMode }) {
+  const map = useMap();
+  const layerRef = useRef<L.GeoJSON | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadGeo() {
+      try {
+        const topoResp = await fetch(GEO_URL);
+        const topo = await topoResp.json();
+        if (cancelled) return;
+
+        const topojsonModule = await import("topojson-client");
+        const geoData = topojsonModule.feature(topo, topo.objects.states) as any;
+
+        const stateNames: Record<string, string> = {};
+        if (topo.objects.states.geometries) {
+          topo.objects.states.geometries.forEach((g: any) => {
+            if (g.properties?.name) stateNames[g.id] = g.properties.name;
+          });
+        }
+
+        if (layerRef.current) {
+          map.removeLayer(layerRef.current);
+        }
+
+        const isDC = viewMode === "dc";
+
+        layerRef.current = L.geoJSON(geoData, {
+          style: (feature) => {
+            const stateId = feature?.id as string;
+            const stateName = stateNames[stateId] || feature?.properties?.name || "";
+            const rto = STATE_TO_RTO[stateName];
+            if (!rto) {
+              return { fillColor: "#ffffff", fillOpacity: 0.02, color: "rgba(255,255,255,0.08)", weight: 0.5 };
+            }
+            const fillColor = isDC ? (RTO_MUTED_COLORS[rto] || "#888") : (RTO_STRESS_COLORS[rto] || "#22c55e");
+            const fillOpacity = isDC ? 0.08 : 0.22;
+            return {
+              fillColor,
+              fillOpacity,
+              color: "rgba(255,255,255,0.15)",
+              weight: 1,
+            };
+          },
+          onEachFeature: (_feature, layer) => {
+            layer.on({
+              mouseover: (e) => {
+                const l = e.target;
+                l.setStyle({ fillOpacity: isDC ? 0.18 : 0.32 });
+              },
+              mouseout: (e) => {
+                const l = e.target;
+                l.setStyle({ fillOpacity: isDC ? 0.08 : 0.22 });
+              },
+            });
+          },
+          interactive: true,
+        }).addTo(map);
+
+        layerRef.current.bringToBack();
+      } catch (err) {
+        console.error("Failed to load GeoJSON:", err);
+      }
+    }
+
+    loadGeo();
+
+    return () => {
+      cancelled = true;
+      if (layerRef.current) {
+        map.removeLayer(layerRef.current);
+        layerRef.current = null;
+      }
+    };
+  }, [map, viewMode]);
+
+  return null;
+}
+
+function FacilityLabels({ viewMode, filterCompanies, filterRTOs, filterCapacity }: {
+  viewMode: ViewMode;
+  filterCompanies: string[];
+  filterRTOs: string[];
+  filterCapacity: string;
+}) {
+  const map = useMap();
+  const labelsRef = useRef<L.LayerGroup | null>(null);
+
+  const passesFilter = useCallback((dc: DataCenter): boolean => {
+    if (filterCompanies.length > 0 && !filterCompanies.includes(dc.company)) return false;
+    if (filterRTOs.length > 0 && !filterRTOs.includes(gridOpToRTO(dc.gridOperator))) return false;
+    if (filterCapacity === "small" && dc.powerMW >= 100) return false;
+    if (filterCapacity === "medium" && (dc.powerMW < 100 || dc.powerMW > 500)) return false;
+    if (filterCapacity === "large" && dc.powerMW <= 500) return false;
+    return true;
+  }, [filterCompanies, filterRTOs, filterCapacity]);
+
+  useEffect(() => {
+    function updateLabels() {
+      if (labelsRef.current) {
+        labelsRef.current.clearLayers();
+      } else {
+        labelsRef.current = L.layerGroup().addTo(map);
+      }
+
+      const zoom = map.getZoom();
+      if (zoom < 6 || viewMode !== "dc") return;
+
+      const minMW = zoom >= 8 ? 0 : 500;
+
+      DATA_CENTERS.forEach((dc) => {
+        if (!passesFilter(dc)) return;
+        if (dc.powerMW < minMW) return;
+
+        const truncName = dc.name.length > 20 ? dc.name.slice(0, 18) + ".." : dc.name;
+        const label = L.marker([dc.lat, dc.lng], {
+          icon: L.divIcon({
+            html: `<div class="map-label">${truncName}</div>`,
+            className: "leaflet-label-icon",
+            iconSize: [120, 16],
+            iconAnchor: [-8, 20],
+          }),
+          interactive: false,
+          zIndexOffset: -10,
+        });
+
+        label.addTo(labelsRef.current!);
+      });
+    }
+
+    updateLabels();
+    map.on("zoomend", updateLabels);
+
+    return () => {
+      map.off("zoomend", updateLabels);
+      if (labelsRef.current) {
+        labelsRef.current.clearLayers();
+      }
+    };
+  }, [map, viewMode, passesFilter]);
+
+  return null;
 }
 
 function FacilityMarkers({
@@ -527,6 +714,46 @@ export default function PowerMap() {
           from { opacity: 0; transform: translateY(4px); }
           to { opacity: 1; transform: translateY(0); }
         }
+        .leaflet-label-icon {
+          background: none !important;
+          border: none !important;
+        }
+        .map-label {
+          font-family: system-ui, -apple-system, sans-serif;
+          font-size: 10px;
+          color: #fff;
+          background: rgba(0,0,0,0.7);
+          padding: 2px 5px;
+          border-radius: 3px;
+          white-space: nowrap;
+          pointer-events: none;
+          line-height: 1.3;
+        }
+        .leaflet-control-zoom {
+          border: none !important;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.5) !important;
+        }
+        .leaflet-control-zoom a {
+          background: #1A1A2E !important;
+          color: rgba(255,255,255,0.7) !important;
+          border: 1px solid rgba(255,255,255,0.08) !important;
+          width: 28px !important;
+          height: 28px !important;
+          line-height: 28px !important;
+          font-size: 14px !important;
+        }
+        .leaflet-control-zoom a:hover {
+          background: #252540 !important;
+          color: #F07800 !important;
+        }
+        .leaflet-control-attribution {
+          background: rgba(0,0,0,0.4) !important;
+          color: rgba(255,255,255,0.3) !important;
+          font-size: 9px !important;
+        }
+        .leaflet-control-attribution a {
+          color: rgba(255,255,255,0.4) !important;
+        }
       `}</style>
 
       <div className="flex-1 flex flex-col">
@@ -747,7 +974,7 @@ export default function PowerMap() {
             zoom={4}
             minZoom={3}
             maxZoom={12}
-            zoomControl={true}
+            zoomControl={false}
             attributionControl={true}
             style={{ width: "100%", height: "100%", minHeight: 520, background: "#0d0d14" }}
             className="rounded-none"
@@ -758,6 +985,7 @@ export default function PowerMap() {
               subdomains="abcd"
               maxZoom={19}
             />
+            <RTORegions viewMode={viewMode} />
             <FacilityMarkers
               viewMode={viewMode}
               filterCompanies={filterCompanies}
@@ -770,7 +998,14 @@ export default function PowerMap() {
               setTooltipDC={setTooltipDC}
               setTooltipPos={setTooltipPos}
             />
+            <FacilityLabels
+              viewMode={viewMode}
+              filterCompanies={filterCompanies}
+              filterRTOs={filterRTOs}
+              filterCapacity={filterCapacity}
+            />
             <MapClickHandler onMapClick={() => { setSelected(null); setTooltipDC(null); setTooltipPos(null); }} />
+            <ZoomControl position="bottomright" />
           </MapContainer>
 
           {showTooltip && (
