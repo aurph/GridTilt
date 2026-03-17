@@ -267,3 +267,54 @@ html {
     inset: -1px;
   }
 }
+
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes barGrow {
+  from { width: 0; }
+}
+
+@keyframes flowDash {
+  to { stroke-dashoffset: -28; }
+}
+
+.stage-node-card {
+  background: #1A1A2E;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 20px;
+  cursor: pointer;
+  transition: width 0.4s ease-out, border-color 0.3s ease, box-shadow 0.3s ease, transform 0.2s ease;
+}
+
+.stage-node-card:hover {
+  border-color: rgba(240, 120, 0, 0.4);
+  box-shadow: 0 0 20px rgba(240, 120, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.stock-mini-card {
+  background: #1E1E32;
+  border-radius: 6px;
+  padding: 8px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stock-mini-card:hover {
+  border-color: var(--accent, rgba(240, 120, 0, 0.4));
+  box-shadow: 0 0 8px color-mix(in srgb, var(--accent, #F07800) 20%, transparent);
+}
+
+.custom-scrollbar::-webkit-scrollbar { width: 4px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+.react-flow__node { z-index: 1 !important; }
+.react-flow__edge { z-index: 0 !important; }
+.react-flow__background { opacity: 0.5; }
+.react-flow__panel { display: none; }

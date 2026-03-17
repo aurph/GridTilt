@@ -1,0 +1,456 @@
+# Supply Chain Tracker — VISUAL REBUILD PROMPT
+
+Paste this into Replit. This replaces whatever you built for the Supply Chain Tracker. The current implementation is a flat screener/table with stock cards organized by category. That is NOT what this feature is. Tear it out and rebuild it as described below. Every single section matters.
+
+---
+
+## WHAT THIS IS (READ THIS FIRST)
+
+The Supply Chain Tracker is an **interactive flow diagram**. NOT a screener. NOT a table. NOT a list of stocks grouped by category. It is a VISUAL, ANIMATED, EDUCATIONAL diagram that shows how power flows from raw materials to GPUs. Think: an interactive infographic you'd see on Bloomberg or the New York Times data team. Think: a Sankey diagram meets an animated system architecture diagram.
+
+If the end result looks like a stock screener with category headers, you have built the wrong thing. The stocks are INSIDE the diagram nodes — they are revealed on interaction, not displayed by default.
+
+---
+
+## RENDERING APPROACH
+
+Use **React Flow** (`@xyflow/react`, formerly `reactflow`). Install it:
+
+```
+npm install @xyflow/react
+```
+
+React Flow gives us: draggable nodes, animated edges, zoom/pan, custom node rendering, and edge animations — all out of the box. This is the foundation.
+
+If React Flow causes conflicts with the existing stack, fall back to **custom SVG rendering** using inline `<svg>` elements with React. Do NOT fall back to a table or card grid. The output MUST be a node-and-edge diagram.
+
+---
+
+## LAYOUT — THE FLOW DIAGRAM
+
+### Structure
+
+5 stage nodes arranged **horizontally left-to-right** in a pipeline:
+
+```
+┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+│             │    │             │    │             │    │             │    │             │
+│    RAW      │───▶│  GENERATION │───▶│ TRANSMISSION│───▶│ DISTRIBUTION│───▶│   END USE   │
+│  MATERIALS  │    │             │    │             │    │             │    │             │
+│             │    │             │    │             │    │             │    │             │
+└─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
+```
+
+This is the default view. 5 nodes. 4 connecting edges. That's it. Clean.
+
+### Node Positioning (React Flow coordinates)
+
+```javascript
+const stagePositions = [
+  { id: 'raw-materials',  position: { x: 0,    y: 200 } },
+  { id: 'generation',     position: { x: 350,  y: 200 } },
+  { id: 'transmission',   position: { x: 700,  y: 200 } },
+  { id: 'distribution',   position: { x: 1050, y: 200 } },
+  { id: 'end-use',        position: { x: 1400, y: 200 } },
+];
+```
+
+Adjust x-spacing so all 5 fit within the viewport on a 1440px screen with ~40px padding on each side. On smaller screens, allow horizontal scroll/pan (React Flow handles this).
+
+### Viewport
+
+The diagram container should be **full width of the content area** and **at least 70vh tall** (minimum 500px). Give React Flow's `<ReactFlow>` component `fitView` prop so it auto-fits the 5 nodes on load. Enable `panOnDrag`, `zoomOnScroll`, and `zoomOnPinch` for mobile.
+
+Background: use React Flow's `<Background>` component with `variant="dots"`, color `#333`, gap `20`, size `1`. This gives a subtle dot grid on the dark background — looks technical and clean.
+
+---
+
+## EACH STAGE NODE — CUSTOM NODE COMPONENT
+
+Create a custom React Flow node component called `StageNode`. Each node renders as a **card** (NOT a default React Flow node). The card is the main visual unit of the diagram.
+
+### Default (Collapsed) State — What the user sees on load:
+
+```
+┌──────────────────────────────────┐
+│  ⬡  RAW MATERIALS                │  ← stage name, 16px bold white
+│  Where it comes from             │  ← tagline, 12px, #888
+│                                  │
+│  ████████░░  Tightening          │  ← bottleneck bar + label
+│                                  │
+│  23 companies                    │  ← company count, 12px, #aaa
+│  ▲ +1.2% today                   │  ← aggregate sector perf, green/red
+│                                  │
+│  Copper: $14,200/ton             │  ← key metric, 13px, orange
+│                                  │
+│  ▼ Click to explore              │  ← CTA, 11px, #666, with down arrow
+└──────────────────────────────────┘
+```
+
+### Node Card Styling:
+
+```css
+.stage-node {
+  width: 260px;
+  min-height: 180px;
+  background: #1A1A2E;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.stage-node:hover {
+  border-color: rgba(240, 120, 0, 0.4);
+  box-shadow: 0 0 20px rgba(240, 120, 0, 0.1);
+  transform: translateY(-2px);
+}
+```
+
+### Bottleneck Indicator Bar
+
+Inside each node, render a small horizontal progress-style bar that visually shows the constraint level:
+
+- **Flowing** (green): bar is mostly filled, `#22C55E`, label "Flowing"
+- **Tightening** (orange): bar is ~60% filled, `#F0A500`, label "Tightening"
+- **Bottlenecked** (red): bar is nearly full, `#EF4444`, label "Bottlenecked"
+
+The bar should be 100% width of the card interior, 6px tall, rounded, with a dark track behind it (`#2A2A3E`). The fill portion uses the status color. The label sits to the right of the bar or below it.
+
+### Stage Icons
+
+Each stage gets a small icon (use Lucide React icons since they're already in the stack):
+
+- Raw Materials: `<Pickaxe />` or `<Mountain />`
+- Generation: `<Zap />` or `<Factory />`
+- Transmission: `<Cable />` or `<ArrowRightLeft />`
+- Distribution: `<Network />` or `<GitBranch />`
+- End Use: `<Server />` or `<Cpu />`
+
+Icon: 18px, placed inline with the stage name, colored with the stage's accent color.
+
+### Stage Accent Colors (subtle, used for icon + glow on hover):
+
+```javascript
+const stageColors = {
+  'raw-materials':  '#C87533', // copper/bronze
+  'generation':     '#F07800', // gridtilt orange
+  'transmission':   '#3B82F6', // blue
+  'distribution':   '#22C55E', // green
+  'end-use':        '#A855F7', // purple
+};
+```
+
+---
+
+## CONNECTING EDGES — ANIMATED FLOW LINES
+
+This is what makes it feel like a flow diagram instead of 5 cards sitting next to each other. The edges are critical.
+
+### Edge Configuration
+
+4 edges connecting the stages left to right:
+
+```javascript
+const edges = [
+  { id: 'e1', source: 'raw-materials', target: 'generation',   animated: true },
+  { id: 'e2', source: 'generation',    target: 'transmission', animated: true },
+  { id: 'e3', source: 'transmission',  target: 'distribution', animated: true },
+  { id: 'e4', source: 'distribution',  target: 'end-use',      animated: true },
+];
+```
+
+### Edge Styling
+
+React Flow's `animated: true` gives a basic marching-ants dashed line. Enhance it:
+
+```javascript
+const edgeStyle = {
+  stroke: 'rgba(240, 120, 0, 0.4)',  // GridTilt orange, semi-transparent
+  strokeWidth: 2,
+};
+```
+
+Use `type: 'smoothstep'` for the edges so they curve slightly — looks more polished than straight lines.
+
+### Custom Animated Edge (if React Flow's default animation isn't impressive enough)
+
+Create a custom edge component that renders an SVG path with **flowing dots/particles** along it:
+
+```jsx
+// Render 3 small circles that travel along the edge path using CSS animation
+// Each dot is 4px, orange (#F07800), 60% opacity
+// Animation: move along the path over 3 seconds, staggered start times
+// Use SVG <animateMotion> or CSS offset-path
+```
+
+The flowing particles represent power/energy flowing through the supply chain. This is the visual metaphor that makes the feature memorable.
+
+### Edge Color by Health
+
+Optionally, color each edge segment based on the bottleneck status of the TARGET stage:
+
+- Edge into a "Flowing" stage: greenish tint
+- Edge into a "Tightening" stage: orange (default)
+- Edge into a "Bottlenecked" stage: reddish tint, slightly thicker (3px)
+
+This lets users instantly see where the chain is stressed just by looking at the edge colors.
+
+---
+
+## EXPANDED STATE — CLICKING A STAGE NODE
+
+When a user clicks a stage node, it EXPANDS to reveal the companies and educational content inside. This is the core interaction.
+
+### How Expansion Works
+
+**Option A (preferred): The node itself grows.**
+
+When clicked, the node smoothly animates from 260px wide / ~180px tall to **400px wide / auto height** (enough to fit the expanded content). The other nodes shift to make room (React Flow handles repositioning if you update the node data). Transition: 400ms ease-out.
+
+**Option B (fallback): A detail panel slides in.**
+
+If expanding the node in-place causes layout issues, instead show a **slide-in panel** below the flow diagram (or to the right on wide screens) that contains the expanded content. The clicked node gets a highlighted border (orange) and the panel shows its details. The flow diagram stays intact above.
+
+Either way: the flow diagram with its animated edges MUST remain visible at all times. The expanded content supplements it, never replaces it.
+
+### Expanded Content — 3 Sections Inside Each Stage
+
+#### Section A: Educational Context (THE LEARNING COMPONENT)
+
+This is what makes users UNDERSTAND the supply chain, not just see stock tickers.
+
+A 3-5 sentence paragraph explaining what this stage does, why it matters, and what the current situation is. Written in plain English, not financial jargon.
+
+Example for Transmission:
+> "After electricity is generated, it needs to travel hundreds of miles to reach data centers. That requires high-voltage transmission lines and large power transformers — and this is where the AI power buildout hits its tightest bottleneck. The US manufactures roughly 60 large power transformers per year, but the AI buildout alone could require 200-500 over the next five years. Lead times have stretched to 18-36 months, and companies in this stage have multi-year order backlogs with significant pricing power."
+
+**Styling:** 13px, line-height 1.6, color #ccc, max-width 360px. A subtle left border in the stage's accent color (3px, 30% opacity).
+
+Hardcode these descriptions. Put them in a config file. I will refine them later.
+
+#### Section B: Key Metrics (2-3 headline numbers)
+
+Displayed as large stat blocks:
+
+```
+┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐
+│  18-36 months   │  │  ~60/year       │  │  200-500        │
+│  Transformer    │  │  US LPT         │  │  Needed over    │
+│  lead time      │  │  production     │  │  next 5 years   │
+└─────────────────┘  └─────────────────┘  └─────────────────┘
+```
+
+- Number: 20px, bold, white
+- Label: 11px, #888, 2 lines max
+- Card: dark background (#222238), 8px border-radius, 12px padding
+- Arrange horizontally, wrap if needed
+
+Hardcode these metrics per stage.
+
+#### Section C: Companies (stock cards, scrollable)
+
+The tracked companies in this stage, displayed as **compact stock mini-cards** in a grid (2-3 columns):
+
+```
+┌───────────────────┐
+│  CCJ    ▲ +2.3%   │
+│  Cameco Corp      │
+│  Uranium mining   │
+└───────────────────┘
+```
+
+- Ticker: 13px, bold, white
+- Daily change: 12px, green (#22C55E) or red (#EF4444)
+- Company name: 11px, #888
+- Sub-category: 10px, #666
+- Card: `#1E1E32` background, 6px border-radius, 8px padding
+- On hover: subtle border glow in stage accent color
+- On click: navigate to `/stock/[ticker]`
+
+If a stage has 15+ companies, show the first 8-10 and add a "Show all X companies ▼" toggle. Don't overwhelm with a massive list.
+
+### Close/Collapse
+
+Clicking the expanded node again (or clicking a "✕ Close" button in the expanded view, or clicking a different stage) collapses it back to default size. Smooth transition.
+
+---
+
+## SUMMARY BAR — ABOVE THE DIAGRAM
+
+A single compact line at the top of the page:
+
+```
+Supply Chain Tracker  ·  5 stages  ·  103 companies  ·  Tightest bottleneck: Transmission (18-36 mo lead times)
+```
+
+- Full width, 48px height, `#12121E` background
+- "Supply Chain Tracker" in 16px bold white
+- Rest in 13px #aaa
+- "Transmission" in orange with the bottleneck badge color
+- Below this bar: the full-height React Flow diagram. Nothing else between them.
+
+---
+
+## CONFIG FILE
+
+Create `client/src/data/supply-chain-config.ts` (or `.json`) with this structure:
+
+```typescript
+export const supplyChainConfig = {
+  stages: [
+    {
+      id: 'raw-materials',
+      name: 'Raw Materials',
+      tagline: 'Where it comes from',
+      icon: 'Pickaxe',
+      accentColor: '#C87533',
+      bottleneck: {
+        status: 'tightening', // 'flowing' | 'tightening' | 'bottlenecked'
+        barFill: 0.6, // 0-1 for the visual bar
+      },
+      description: 'The AI power buildout starts here — with the raw inputs needed to build and fuel power infrastructure. Copper wiring, uranium fuel, steel for transformers, and rare earth elements for generators. Copper prices have climbed above $14,000/ton, uranium spot is at $93/lb, and electrical steel lead times sit at 8-12 months. Mining capacity takes years to expand, creating persistent tightness.',
+      keyMetrics: [
+        { value: '$14,200/ton', label: 'Copper price' },
+        { value: '$93/lb', label: 'Uranium spot' },
+        { value: '8-12 mo', label: 'Electrical steel lead time' },
+      ],
+      companies: [
+        // array of { ticker, name, subcategory } — populated from the existing ticker data
+      ],
+    },
+    {
+      id: 'generation',
+      name: 'Generation',
+      tagline: 'How it\'s made',
+      icon: 'Zap',
+      accentColor: '#F07800',
+      bottleneck: {
+        status: 'tightening',
+        barFill: 0.55,
+      },
+      description: 'Once raw materials are sourced, they feed into power generation — nuclear plants, gas turbines, solar farms, and the next generation of small modular reactors. Gas turbine order books are at record highs. Nuclear restarts (Three Mile Island, Palisades) are being fast-tracked for the first time in decades. GE Vernova alone has a $200B+ backlog. The bottleneck here is time — building new generation capacity takes 3-7 years.',
+      keyMetrics: [
+        { value: '$200B+', label: 'GEV order backlog' },
+        { value: '3-7 years', label: 'New plant build time' },
+        { value: '22 GW', label: 'CEG nuclear fleet' },
+      ],
+      companies: [],
+    },
+    {
+      id: 'transmission',
+      name: 'Transmission',
+      tagline: 'How it moves',
+      icon: 'Cable',
+      accentColor: '#3B82F6',
+      bottleneck: {
+        status: 'bottlenecked',
+        barFill: 0.9,
+      },
+      description: 'After electricity is generated, it needs to travel hundreds of miles over high-voltage transmission lines and through large power transformers to reach demand centers. This is the tightest bottleneck in the entire AI power chain. The US manufactures roughly 60 large power transformers per year. The AI buildout alone could require 200-500 over the next five years. Lead times have stretched to 18-36 months. Companies here have multi-year backlogs and significant pricing power.',
+      keyMetrics: [
+        { value: '18-36 mo', label: 'Transformer lead time' },
+        { value: '~60/yr', label: 'US LPT production' },
+        { value: '200-500', label: 'Needed over 5 years' },
+      ],
+      companies: [],
+    },
+    {
+      id: 'distribution',
+      name: 'Distribution',
+      tagline: 'How it connects',
+      icon: 'Network',
+      accentColor: '#22C55E',
+      bottleneck: {
+        status: 'tightening',
+        barFill: 0.5,
+      },
+      description: 'Distribution is the last mile — getting power from the transmission network into the data center. This stage includes switchgear, substations, uninterruptible power supplies, cooling systems, and the physical construction of data center facilities. Switchgear backlogs have grown to 2-3 years. Cooling demand is surging as AI chip power density increases. The construction pipeline for data center infrastructure is the largest in history.',
+      keyMetrics: [
+        { value: '2-3 years', label: 'Switchgear backlog' },
+        { value: '125% YoY', label: 'DC construction growth' },
+        { value: '$40B+', label: 'Annual DC capex' },
+      ],
+      companies: [],
+    },
+    {
+      id: 'end-use',
+      name: 'End Use',
+      tagline: 'Where it goes',
+      icon: 'Server',
+      accentColor: '#A855F7',
+      bottleneck: {
+        status: 'flowing',
+        barFill: 0.3,
+      },
+      description: 'This is where the power is consumed — hyperscale data centers operated by Amazon, Microsoft, Google, and Meta, along with colocation providers like Equinix and Digital Realty, and specialized AI/crypto operators. Demand here is effectively unlimited. The constraint isn\'t willingness to build — it\'s getting power to the site. 48 tracked facilities representing 20.7 GW of capacity, with more announced monthly.',
+      keyMetrics: [
+        { value: '48', label: 'Tracked facilities' },
+        { value: '20.7 GW', label: 'Total capacity' },
+        { value: '273', label: 'Equinix DCs worldwide' },
+      ],
+      companies: [],
+    },
+  ],
+};
+```
+
+**Populate the `companies` arrays** from the existing ticker data in the codebase. Every company that's already tracked in The Stack should be mapped to its supply chain stage(s). Use the mappings from the existing supply chain implementation (the one you're replacing).
+
+---
+
+## MOBILE RESPONSIVENESS
+
+- **Desktop (1024px+):** Horizontal flow, all 5 nodes visible, React Flow fitView
+- **Tablet (768-1023px):** Horizontal flow, may need slight zoom out, pinch to zoom works
+- **Mobile (<768px):** Switch to a **vertical layout**. Stack the 5 nodes top-to-bottom with vertical edges connecting them. The flow becomes top-down instead of left-right. React Flow handles this if you update node positions based on viewport width.
+
+Mobile vertical positions:
+```javascript
+const mobilePositions = [
+  { id: 'raw-materials',  position: { x: 50, y: 0 } },
+  { id: 'generation',     position: { x: 50, y: 300 } },
+  { id: 'transmission',   position: { x: 50, y: 600 } },
+  { id: 'distribution',   position: { x: 50, y: 900 } },
+  { id: 'end-use',        position: { x: 50, y: 1200 } },
+];
+```
+
+---
+
+## ANIMATIONS CHECKLIST
+
+1. **Edge flow particles**: dots moving along edges continuously (CSS or SVG animateMotion)
+2. **Node hover**: subtle glow + lift (`translateY(-2px)`, `box-shadow` change), 200ms
+3. **Node expand/collapse**: smooth height/width transition, 400ms ease-out
+4. **Initial load**: nodes fade in one by one, left to right, 150ms stagger between each
+5. **Bottleneck bar**: animate the fill width on load (from 0 to target), 800ms ease-out, staggered per node
+
+---
+
+## WHAT SUCCESS LOOKS LIKE
+
+When this is done, the Supply Chain page should look like:
+
+- A dark canvas with a subtle dot grid background
+- 5 card-shaped nodes arranged left to right (or top to bottom on mobile)
+- Glowing orange animated connection lines flowing between the nodes with particles moving along them
+- Each node shows: stage name, tagline, bottleneck bar, company count, key metric
+- Clicking a node expands it to reveal: educational paragraph, key stat blocks, and a grid of stock mini-cards
+- The whole thing feels like an interactive data visualization — something you'd see at a Bloomberg terminal or on a NYT interactive story
+- It does NOT look like a stock screener, a table, a list, or a categorized card grid
+
+If someone screenshots this feature, it should be immediately obvious that it's a FLOW DIAGRAM showing connected stages, not a list.
+
+---
+
+## DO NOT
+
+- Do NOT render this as a table or flat card grid
+- Do NOT show all stock tickers visible by default — they're revealed on click
+- Do NOT use a basic HTML layout with flexbox for the stage arrangement — use React Flow (or SVG) so there are actual drawn connection lines between nodes
+- Do NOT skip the animated edges — they are the single most important visual element
+- Do NOT make the expanded state replace the diagram — the diagram stays visible
+- Do NOT use heavy libraries beyond React Flow (no D3 Sankey, no vis.js, no cytoscape)
+- Do NOT build a screener and call it a tracker

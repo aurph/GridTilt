@@ -25,6 +25,7 @@ export default defineConfig({
       "@shared": path.resolve(import.meta.dirname, "shared"),
       "@assets": path.resolve(import.meta.dirname, "attached_assets"),
     },
+    dedupe: ["d3-selection", "d3-transition", "d3-zoom", "d3-drag", "d3-interpolate"],
   },
   root: path.resolve(import.meta.dirname, "client"),
   build: {

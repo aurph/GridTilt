@@ -25,7 +25,7 @@ The backend is a Node.js and Express application. It fetches market data using `
 - **CatalystTracker**: Tracks upcoming market events.
 - **Stock, Sector, Region, Operator Pages**: Dedicated pages for detailed analysis of individual stocks, sectors, grid regions, and hyperscaler operators.
 - **Blog**: Features analysis articles on AI infrastructure and power economy topics.
-- **SupplyChain**: 5-stage interactive flow diagram (Raw Materials > Generation > Transmission > Distribution > End Use) with live sector data, bottleneck indicators, and click-to-expand stock cards.
+- **SupplyChain**: 5-stage interactive React Flow diagram (Raw Materials > Generation > Transmission > Distribution > End Use) with live sector data, animated edge particles, bottleneck indicators, and click-to-expand stock cards. Uses `@xyflow/react` v12. The d3-transition/d3-selection compatibility is resolved via `resolve.dedupe` in vite.config.ts and a side-effect `import "d3-transition"` in main.tsx.
 - **Subscribe / Email Capture**: Email newsletter signup at /subscribe, inline capture at bottom of TiltOverview, scroll-triggered banner. Backend stores subscribers in JSON file (server/data/subscribers.json). Newsletter send via Resend (needs RESEND_API_KEY). Unsubscribe tokens use HMAC-SHA256 with SESSION_SECRET.
 
 ### Visual Design
@@ -46,4 +46,5 @@ Includes a scrolling news ticker, keyboard shortcuts (`?` for modal, `G+1-6` for
 - **Node.js**: Backend runtime environment.
 - **Express**: Web application framework for the backend.
 - **satori** and **@resvg/resvg-js**: For dynamic OG image generation.
+- **@xyflow/react**: For the interactive Supply Chain flow diagram (React Flow v12).
 - **RSS feeds**: Utility Dive, Data Center Dynamics, World Nuclear News, Power Engineering for news aggregation.
