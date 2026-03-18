@@ -1,138 +1,106 @@
 [
   {
     "id": 1,
-    "date": "2026-03-19",
-    "title": "NVIDIA Q1 FY2027 Earnings",
+    "date": "2026-03-25",
+    "title": "Micron Technology Q2 FY2026 Earnings",
     "category": "Earnings",
-    "thesisImpact": "Blackwell Ultra ramp confirmation is the single biggest near-term signal for the entire AI power supply chain. A beat + forward guidance upgrade accelerates datacenter power procurement timelines at every hyperscaler.",
-    "tickers": ["NVDA", "TSM", "EQIX", "VRT", "CEG"]
+    "thesisImpact": "Micron reports memory chip revenue and demand trends relevant to datacenter and AI server buildouts. HBM (high-bandwidth memory) shipment volumes indicate GPU production pace.",
+    "tickers": ["MU", "NVDA", "TSM"]
   },
   {
     "id": 2,
-    "date": "2026-03-25",
-    "title": "NRC Advanced Reactor Design Review: Oklo Aurora 15 MW Decision",
-    "category": "Regulatory",
-    "thesisImpact": "A full design approval for Oklo's Aurora microreactor would be the first commercial fast spectrum reactor certification in US history. Unlocks tech-company direct ownership of on-site nuclear power plants.",
-    "tickers": ["OKLO", "CEG", "CCJ", "NXE"]
+    "date": "2026-04-10",
+    "title": "Constellation Energy Q1 2026 Earnings",
+    "category": "Earnings",
+    "thesisImpact": "Constellation operates the largest US nuclear fleet. Earnings include updates on the Three Mile Island Unit 1 restart process and any new datacenter power purchase agreements.",
+    "tickers": ["CEG", "VST"]
   },
   {
     "id": 3,
-    "date": "2026-04-10",
-    "title": "Constellation Energy Q1 2026 Earnings + Nuclear PPA Update",
-    "category": "Earnings",
-    "thesisImpact": "CEG will disclose progress on Three Mile Island restart timeline and any new hyperscaler nuclear offtake negotiations. Watch for Meta 6.6 GW RFP bid disclosure; a win would be transformative.",
-    "tickers": ["CEG", "NLR", "VST"]
+    "date": "2026-04-15",
+    "title": "NRC Palisades Nuclear Restart Review",
+    "category": "Regulatory",
+    "thesisImpact": "NRC review of Holtec's application to restart the 800 MW Palisades plant in Michigan. If approved, it would be the first US nuclear plant restarted from decommissioned status.",
+    "tickers": ["CEG", "VST", "TLN"]
   },
   {
     "id": 4,
     "date": "2026-04-16",
     "title": "Eaton Corporation Q1 2026 Earnings",
     "category": "Earnings",
-    "thesisImpact": "Eaton's electrical segment is the single best bellwether for datacenter power hardware demand. Order intake for switchgear, PDUs, and transformer systems directly reflects hyperscaler capex deployment pace. Backlog guidance is the key number.",
+    "thesisImpact": "Eaton's electrical segment reports order intake for switchgear, power distribution units, and transformer systems used in datacenter construction. Backlog levels reflect infrastructure demand.",
     "tickers": ["ETN", "GEV", "HUBB", "VRT"]
   },
   {
     "id": 5,
     "date": "2026-04-22",
-    "title": "IRS Section 45U Nuclear Production Tax Credit Final Rules",
-    "category": "Policy",
-    "thesisImpact": "The IRA's $15/MWh nuclear production tax credit final implementation rules determine the economic viability of existing nuclear fleet restarts and new SMR projects. Strong rules significantly lower the cost of power for hyperscaler PPAs.",
-    "tickers": ["CEG", "VST", "ETR", "OKLO", "NXE"]
+    "title": "GE Vernova Q1 2026 Earnings",
+    "category": "Earnings",
+    "thesisImpact": "GE Vernova reports on gas turbine orders, grid equipment backlog, and transformer lead times. Order book data reflects utility-scale power infrastructure spending levels.",
+    "tickers": ["GEV", "ETN", "NEE", "VST"]
   },
   {
     "id": 6,
     "date": "2026-04-29",
-    "title": "GE Vernova Q1 2026 Earnings",
+    "title": "Meta and Microsoft Q1 2026 Earnings",
     "category": "Earnings",
-    "thesisImpact": "GEV's gas turbine and grid equipment order book is the clearest signal of utility-scale power infrastructure spend. Transformer lead times (currently 4+ years) and turbine backlog reveal how tight the supply chain actually is.",
-    "tickers": ["GEV", "ETN", "NEE", "VST"]
+    "thesisImpact": "Meta and Microsoft report quarterly capital expenditure figures for AI infrastructure and datacenter expansion. Capex guidance updates indicate downstream demand for power and cooling equipment.",
+    "tickers": ["META", "MSFT", "AMZN", "GOOGL"]
   },
   {
     "id": 7,
-    "date": "2026-05-06",
-    "title": "MISO 2026/2027 Planning Year Capacity Auction Results",
+    "date": "2026-05-01",
+    "title": "PJM Capacity Auction Results",
     "category": "Market",
-    "thesisImpact": "MISO's most constrained auction in years. Clearing prices directly determine merchant power profitability across the Midwest grid, which serves the largest concentration of US hyperscaler datacenters. A price spike confirms the grid stress thesis.",
-    "tickers": ["VST", "ETR", "CEG", "GEV"]
+    "thesisImpact": "PJM Interconnection holds annual capacity auctions for its 13-state service territory. Clearing prices determine forward revenue for generators and reflect supply-demand balance on the largest US grid.",
+    "tickers": ["VST", "CEG", "NRG", "TLN"]
   },
   {
     "id": 8,
-    "date": "2026-05-14",
-    "title": "Cameco Q1 2026 Earnings + Uranium Market Update",
+    "date": "2026-05-06",
+    "title": "Vertiv Holdings Q1 2026 Earnings",
     "category": "Earnings",
-    "thesisImpact": "CCJ's commentary on utility contracting activity, Cigar Lake production, and Kazakh import risk sets the tone for the entire uranium sector. Any mention of new long-term contract signings tied to nuclear restarts is a direct thesis accelerator.",
-    "tickers": ["CCJ", "NXE", "UEC", "URA", "NLR"]
+    "thesisImpact": "Vertiv supplies thermal management and power infrastructure for datacenters. Order growth and backlog figures reflect datacenter construction activity and cooling demand for high-density AI racks.",
+    "tickers": ["VRT", "CARR", "ETN"]
   },
   {
     "id": 9,
-    "date": "2026-05-20",
-    "title": "Uranium Spot Contracting Window Opens: Utility Long-Term Book Build",
-    "category": "Market",
-    "thesisImpact": "US and European utilities typically open 3-5 year uranium supply contracts in Q2. If AI-driven nuclear restarts accelerate new contracting, supply tightness pushes uranium spot above $100/lb, catalyzing CCJ and NXE significantly.",
-    "tickers": ["CCJ", "NXE", "URA", "NLR"]
+    "date": "2026-05-28",
+    "title": "NVIDIA Q1 FY2027 Earnings",
+    "category": "Earnings",
+    "thesisImpact": "NVIDIA reports datacenter GPU revenue and forward guidance. Shipment volumes and next-generation product ramp timelines affect downstream power and cooling infrastructure procurement.",
+    "tickers": ["NVDA", "TSM", "EQIX", "VRT"]
   },
   {
     "id": 10,
-    "date": "2026-06-15",
-    "title": "DOE National Transmission Planning Study: Grid Capacity Buildout Roadmap",
-    "category": "Policy",
-    "thesisImpact": "The DOE's quadrennial grid study sets the federal investment framework for transmission expansion. AI datacenter load growth has made this the highest-stakes energy planning document since the 1970s oil crisis.",
-    "tickers": ["GEV", "ETN", "TSLA", "NEE"]
+    "date": "2026-06-01",
+    "title": "FERC Order 1920 Implementation",
+    "category": "Regulatory",
+    "thesisImpact": "FERC Order 1920 (issued May 2024) requires regional transmission organizations to conduct 20-year forward-looking planning. Compliance filings and planning studies are ongoing through 2026.",
+    "tickers": ["GEV", "ETN", "PWR", "EMR"]
   },
   {
     "id": 11,
-    "date": "2026-06-22",
-    "title": "PJM 2026/2027 Capacity Auction Results",
-    "category": "Market",
-    "thesisImpact": "PJM serves the largest electricity market in North America. After record 2025 clearing prices ($270/MW-day), the 2026 auction will reveal whether new supply is coming online fast enough to meet AI-driven load additions. A second consecutive price spike would be a watershed moment for merchant power stocks.",
-    "tickers": ["VST", "CEG", "ETR", "NRG", "TLN"]
-  },
-  {
-    "id": 12,
-    "date": "2026-07-09",
-    "title": "FERC Order 1920 Regional Transmission Planning: First Filing Deadline",
-    "category": "Regulatory",
-    "thesisImpact": "Order 1920 mandates long-range transmission planning for the first time in a decade. Regional utilities must file 20-year transmission expansion plans aligned with projected load growth. Strong filings that acknowledge AI datacenter demand unlock hundreds of billions in grid infrastructure spend.",
-    "tickers": ["GEV", "ETN", "NEE", "PWR", "EME"]
-  },
-  {
-    "id": 13,
-    "date": "2026-07-22",
-    "title": "Constellation Energy Q2 2026 Earnings",
-    "category": "Earnings",
-    "thesisImpact": "Six months into the post-Crane restart, CEG will update on output and any new PPA signings. The critical question: has the Meta 6.6 GW RFP been awarded? Any nuclear capacity announcement tied to an AI customer is a re-rating event for the entire nuclear utility sector.",
-    "tickers": ["CEG", "VST", "NLR", "OKLO"]
-  },
-  {
-    "id": 14,
-    "date": "2026-08-05",
-    "title": "Vistra Corp Q2 2026 Earnings",
-    "category": "Earnings",
-    "thesisImpact": "VST is the largest competitive power generator in the US, with 41 GW of capacity. Q2 commentary on forward power prices, retail electricity margins, and any new hyperscaler power contracts is a direct read on merchant power fundamentals.",
-    "tickers": ["VST", "TLN", "NRG", "CEG"]
-  },
-  {
-    "id": 15,
-    "date": "2026-08-19",
-    "title": "DOE Loan Programs Office: Advanced Nuclear SMR Awards",
+    "date": "2026-06-15",
+    "title": "DOE Loan Programs Office Disbursements",
     "category": "Policy",
-    "thesisImpact": "The DOE LPO has $20B+ in conditional loan commitments for advanced nuclear. Final award decisions for TerraPower, X-energy, and Kairos Power projects would provide non-dilutive capital that unlocks private co-investment. Directly de-risks the SMR development timeline by 2-3 years.",
+    "thesisImpact": "The DOE Loan Programs Office has authority to issue loans and loan guarantees for nuclear, grid, and clean energy projects. Disbursement decisions affect project financing timelines.",
     "tickers": ["OKLO", "BWXT", "CEG", "CCJ"]
   },
   {
-    "id": 16,
-    "date": "2026-09-02",
-    "title": "NVIDIA Q2 FY2027 Earnings",
-    "category": "Earnings",
-    "thesisImpact": "The first full quarter of Blackwell Ultra (B300) volume shipments. Revenue per GPU and rack-level power draw are the two most important numbers. Rising power density per rack (now 120 kW) is the central mechanical driver of datacenter power procurement acceleration.",
-    "tickers": ["NVDA", "TSM", "VRT", "CEG", "EQIX"]
+    "id": 12,
+    "date": "2026-07-01",
+    "title": "Large Power Transformer Trade Policy Review",
+    "category": "Market",
+    "thesisImpact": "US trade policy on large power transformer imports affects domestic supply availability. The US imports a significant share of LPTs, and tariff changes impact grid equipment procurement timelines.",
+    "tickers": ["ETN", "ABB", "PWR"]
   },
   {
-    "id": 17,
-    "date": "2026-09-24",
-    "title": "NRC Kairos Power FluoRi-20 Construction Permit Decision",
-    "category": "Regulatory",
-    "thesisImpact": "If approved, this would be the first fluoride salt-cooled reactor construction permit in US history. Google has contracted output from this facility. An NRC approval would validate the entire non-light-water reactor regulatory pathway and accelerate tech-company nuclear procurement strategies.",
-    "tickers": ["OKLO", "BWXT", "CEG", "CCJ", "NXE"]
+    "id": 13,
+    "date": "2026-08-01",
+    "title": "Three Mile Island Unit 1 Restart Progress",
+    "category": "Infrastructure",
+    "thesisImpact": "Constellation Energy is pursuing restart of TMI Unit 1 (837 MW) under a power purchase agreement with Microsoft. NRC review and regulatory approvals are required before restart operations can begin.",
+    "tickers": ["CEG", "MSFT"]
   }
 ]

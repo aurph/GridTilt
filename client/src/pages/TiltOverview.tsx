@@ -739,7 +739,6 @@ interface MergedCatalystItem {
 
 interface AllCatalystsResponse {
   items: MergedCatalystItem[];
-  earningsSource: "finnhub" | "seed";
 }
 
 const MERGED_CATEGORY_COLORS: Record<string, string> = {

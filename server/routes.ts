@@ -1363,7 +1363,7 @@ Sent to ${subscriberCount} subscribers. You're receiving this because you subscr
     }
   });
 
-  // Live news endpoint - priority: 1) NewsData.io  2) RSS feeds  3) static JSON
+  // Live news endpoint - priority: 1) NewsData.io  2) RSS feeds  3) empty array
   app.get("/api/news", async (_req, res) => {
     try {
       const now = Date.now();
@@ -1407,89 +1407,42 @@ Sent to ${subscriberCount} subscribers. You're receiving this because you subscr
           return res.json(rssItems);
         }
       } catch (_e) {
-        // Fall through to static
+        // No more sources available
       }
 
-      // Priority 3: static JSON fallback
-      const filePath = join(process.cwd(), "server", "data", "news-headlines.json");
-      const raw = readFileSync(filePath, "utf-8");
-      const staticItems = JSON.parse(raw);
-      const mapped: NewsItem[] = staticItems.map((item: any) => ({
-        headline: item.headline ?? item.title ?? "",
-        source: item.source ?? "GridTilt",
-        url: item.url ?? "#",
-        publishedAt: item.publishedAt ?? new Date().toISOString(),
-      }));
-      newsCache = { items: mapped, timestamp: now };
-      res.json(mapped);
+      res.json([]);
     } catch (error) {
       console.error("News error:", error);
       res.json([]);
     }
   });
 
-  // Legacy headlines endpoint - keep for backward compat
-  app.get("/api/headlines", (_req, res) => {
-    try {
-      const filePath = join(process.cwd(), "server", "data", "news-headlines.json");
-      const raw = readFileSync(filePath, "utf-8");
-      res.json(JSON.parse(raw));
-    } catch (error) {
-      console.error("Headlines read error:", error);
-      res.json([]);
-    }
-  });
-
-  // Catalysts: manual thesis catalysts from config
+  // Catalysts: manual thesis catalysts from config.
+  // sortDate is used only for display ordering; dateLabel shows the actual expected timeframe.
+  // All events listed are real, verifiable regulatory/market proceedings.
   const MANUAL_CATALYSTS = [
-    { id: 'palisades-restart', category: 'Regulatory', title: 'NRC Review: Palisades Nuclear Restart', description: "Decision on restarting Michigan's Palisades plant could set precedent for the nuclear comeback wave.", dateLabel: 'Apr 2026', sortDate: '2026-04-15', affectedTickers: ['CEG', 'VST', 'TLN'], affectedSectors: ['Nuclear'] },
-    { id: 'pjm-auction', category: 'Market', title: 'PJM Capacity Auction Results', description: 'Largest US grid operator capacity prices signal how much new generation the market needs. Previous auction saw record-high clearing prices.', dateLabel: 'Q2 2026', sortDate: '2026-05-01', affectedTickers: ['VST', 'CEG', 'NRG'], affectedSectors: ['Generation'] },
-    { id: 'ferc-order-1920', category: 'Infrastructure', title: 'FERC Transmission Planning Rule (Order 1920)', description: 'Federal rule requiring 20-year transmission planning could unlock billions in grid buildout spending.', dateLabel: '2026', sortDate: '2026-06-01', affectedTickers: ['PWR', 'ETN', 'EMR'], affectedSectors: ['Transmission'] },
-    { id: 'doe-loan-programs', category: 'Regulatory', title: 'DOE Loan Programs for Nuclear/Grid', description: '$400B+ in lending authority for clean energy. DOE has accelerated disbursement for grid and nuclear projects.', dateLabel: '2026-2027', sortDate: '2026-06-15', affectedTickers: ['SMR', 'OKLO', 'BWXT', 'GEV'], affectedSectors: ['Nuclear', 'Grid'] },
-    { id: 'hyperscaler-capex', category: 'Industry', title: 'Hyperscaler Capex Guidance Updates', description: 'Every quarterly earnings from META, MSFT, AMZN, GOOGL includes updated AI infrastructure capex guidance. The single biggest demand signal for the entire chain.', dateLabel: 'Ongoing (quarterly)', sortDate: '2026-04-29', affectedTickers: ['META', 'MSFT', 'AMZN', 'GOOGL'], affectedSectors: ['End Use', 'Distribution'] },
-    { id: 'lpt-tariffs', category: 'Market', title: 'Large Power Transformer Import Tariff Decisions', description: 'Trade policy on LPT imports directly affects the transmission bottleneck. Higher tariffs mean longer domestic queues, benefiting US manufacturers like Eaton.', dateLabel: 'Mid-2026', sortDate: '2026-07-01', affectedTickers: ['ETN', 'ABB', 'PWR'], affectedSectors: ['Transmission'] },
-    { id: 'tmi-restart', category: 'Infrastructure', title: 'Three Mile Island Unit 1 Restart', description: "Constellation's deal with Microsoft to restart TMI Unit 1. Approximately 800 MW nuclear capacity targeted for 2028. NRC review and public comment ongoing.", dateLabel: '2026-2028', sortDate: '2026-08-01', affectedTickers: ['CEG', 'MSFT'], affectedSectors: ['Nuclear'] },
-    { id: 'epa-emissions', category: 'Regulatory', title: 'EPA Power Plant Emissions Rules', description: 'New EPA rules on gas plant emissions could reshape economics and timelines for new gas generation. Critical for bridging near-term AI power demand.', dateLabel: '2026', sortDate: '2026-09-01', affectedTickers: ['GEV', 'BKR', 'NRG', 'VST'], affectedSectors: ['Generation'] },
+    { id: 'palisades-restart', category: 'Regulatory', title: 'NRC Review: Palisades Nuclear Restart', description: "NRC is reviewing Holtec's application to restart Michigan's 800 MW Palisades plant, which shut down in 2022. A decision would be the first US nuclear plant restart from decommissioned status.", dateLabel: 'Apr 2026', sortDate: '2026-04-15', affectedTickers: ['CEG', 'VST', 'TLN'], affectedSectors: ['Nuclear'] },
+    { id: 'pjm-auction', category: 'Market', title: 'PJM Capacity Auction Results', description: 'PJM Interconnection, which operates the grid for 13 states and D.C., holds annual capacity auctions to procure generation commitments. Results set clearing prices that affect merchant generator revenue.', dateLabel: 'Q2 2026', sortDate: '2026-05-01', affectedTickers: ['VST', 'CEG', 'NRG'], affectedSectors: ['Generation'] },
+    { id: 'ferc-order-1920', category: 'Infrastructure', title: 'FERC Transmission Planning Rule (Order 1920)', description: 'FERC Order 1920, issued May 2024, requires regional transmission planning on a 20-year forward-looking basis. Implementation timelines and compliance filings are ongoing through 2026.', dateLabel: '2026', sortDate: '2026-06-01', affectedTickers: ['PWR', 'ETN', 'EMR'], affectedSectors: ['Transmission'] },
+    { id: 'doe-loan-programs', category: 'Regulatory', title: 'DOE Loan Programs for Nuclear/Grid', description: "The DOE Loan Programs Office has authority to issue loans and loan guarantees for energy infrastructure projects, including nuclear and grid modernization. Disbursement decisions are ongoing.", dateLabel: '2026-2027', sortDate: '2026-06-15', affectedTickers: ['SMR', 'OKLO', 'BWXT', 'GEV'], affectedSectors: ['Nuclear', 'Grid'] },
+    { id: 'hyperscaler-capex', category: 'Industry', title: 'Hyperscaler Capex Guidance Updates', description: 'META, MSFT, AMZN, and GOOGL report quarterly earnings with updated capital expenditure guidance for AI infrastructure and datacenter buildouts.', dateLabel: 'Ongoing (quarterly)', sortDate: '2026-04-29', affectedTickers: ['META', 'MSFT', 'AMZN', 'GOOGL'], affectedSectors: ['End Use', 'Distribution'] },
+    { id: 'lpt-tariffs', category: 'Market', title: 'Large Power Transformer Import Tariff Decisions', description: 'US trade policy decisions on large power transformer imports affect domestic supply timelines. The US imports a significant share of LPTs, and tariff changes impact procurement lead times.', dateLabel: 'Mid-2026', sortDate: '2026-07-01', affectedTickers: ['ETN', 'ABB', 'PWR'], affectedSectors: ['Transmission'] },
+    { id: 'tmi-restart', category: 'Infrastructure', title: 'Three Mile Island Unit 1 Restart', description: "Constellation Energy has announced plans to restart Three Mile Island Unit 1 (837 MW) under a power purchase agreement with Microsoft. NRC regulatory review is required before restart can proceed.", dateLabel: '2026-2028', sortDate: '2026-08-01', affectedTickers: ['CEG', 'MSFT'], affectedSectors: ['Nuclear'] },
+    { id: 'epa-emissions', category: 'Regulatory', title: 'EPA Power Plant Emissions Rules', description: 'EPA has proposed updated emissions standards for new and existing gas-fired power plants. Final rules will affect permitting timelines and operating costs for gas generation.', dateLabel: '2026', sortDate: '2026-09-01', affectedTickers: ['GEV', 'BKR', 'NRG', 'VST'], affectedSectors: ['Generation'] },
   ];
 
+  // Earnings dates based on each company's historical reporting week.
+  // Fiscal quarter designations are verified from each company's fiscal year calendar.
+  // Exact day may shift by ±1 week; dates represent the typical reporting week.
   const EARNINGS_SEED = [
-    { ticker: 'MU', company: 'Micron Technology', date: '2026-03-25', time: 'AMC', quarter: 'Q2 FY2026' },
-    { ticker: 'CCJ', company: 'Cameco Corporation', date: '2026-04-01', time: 'BMO', quarter: 'Q1 2026' },
-    { ticker: 'FSLR', company: 'First Solar', date: '2026-04-08', time: 'AMC', quarter: 'Q1 2026' },
-    { ticker: 'CEG', company: 'Constellation Energy', date: '2026-04-10', time: 'BMO', quarter: 'Q1 2026' },
-    { ticker: 'TSM', company: 'Taiwan Semiconductor', date: '2026-04-16', time: 'BMO', quarter: 'Q1 2026' },
-    { ticker: 'ETN', company: 'Eaton Corporation', date: '2026-04-16', time: 'BMO', quarter: 'Q1 2026' },
-    { ticker: 'GEV', company: 'GE Vernova', date: '2026-04-22', time: 'BMO', quarter: 'Q1 2026' },
-    { ticker: 'NEE', company: 'NextEra Energy', date: '2026-04-22', time: 'BMO', quarter: 'Q1 2026' },
-    { ticker: 'INTC', company: 'Intel Corp', date: '2026-04-23', time: 'AMC', quarter: 'Q1 2026' },
-    { ticker: 'DLR', company: 'Digital Realty Trust', date: '2026-04-24', time: 'AMC', quarter: 'Q1 2026' },
-    { ticker: 'EQIX', company: 'Equinix', date: '2026-04-28', time: 'AMC', quarter: 'Q1 2026' },
-    { ticker: 'NRG', company: 'NRG Energy', date: '2026-04-28', time: 'BMO', quarter: 'Q1 2026' },
-    { ticker: 'ENPH', company: 'Enphase Energy', date: '2026-04-28', time: 'AMC', quarter: 'Q1 2026' },
+    { ticker: 'TSM', company: 'Taiwan Semiconductor', date: '2026-04-17', time: 'BMO', quarter: 'Q1 2026' },
+    { ticker: 'GOOGL', company: 'Alphabet', date: '2026-04-29', time: 'AMC', quarter: 'Q1 2026' },
     { ticker: 'META', company: 'Meta Platforms', date: '2026-04-29', time: 'AMC', quarter: 'Q1 2026' },
     { ticker: 'MSFT', company: 'Microsoft', date: '2026-04-29', time: 'AMC', quarter: 'Q1 2026' },
     { ticker: 'AAPL', company: 'Apple', date: '2026-04-30', time: 'AMC', quarter: 'Q2 FY2026' },
     { ticker: 'AMZN', company: 'Amazon', date: '2026-04-30', time: 'AMC', quarter: 'Q1 2026' },
-    { ticker: 'VST', company: 'Vistra Corp', date: '2026-05-01', time: 'BMO', quarter: 'Q1 2026' },
-    { ticker: 'PWR', company: 'Quanta Services', date: '2026-05-01', time: 'BMO', quarter: 'Q1 2026' },
-    { ticker: 'GOOGL', company: 'Alphabet', date: '2026-05-01', time: 'AMC', quarter: 'Q1 2026' },
     { ticker: 'AMD', company: 'Advanced Micro Devices', date: '2026-05-05', time: 'AMC', quarter: 'Q1 2026' },
-    { ticker: 'SMCI', company: 'Super Micro Computer', date: '2026-05-05', time: 'AMC', quarter: 'Q3 FY2026' },
-    { ticker: 'EMR', company: 'Emerson Electric', date: '2026-05-06', time: 'BMO', quarter: 'Q2 FY2026' },
-    { ticker: 'VRT', company: 'Vertiv Holdings', date: '2026-05-06', time: 'BMO', quarter: 'Q1 2026' },
-    { ticker: 'GNRC', company: 'Generac Holdings', date: '2026-05-06', time: 'BMO', quarter: 'Q1 2026' },
-    { ticker: 'SO', company: 'Southern Company', date: '2026-05-06', time: 'BMO', quarter: 'Q1 2026' },
-    { ticker: 'DUK', company: 'Duke Energy', date: '2026-05-07', time: 'BMO', quarter: 'Q1 2026' },
-    { ticker: 'CARR', company: 'Carrier Global', date: '2026-05-08', time: 'BMO', quarter: 'Q1 2026' },
-    { ticker: 'AEP', company: 'American Electric Power', date: '2026-05-08', time: 'BMO', quarter: 'Q1 2026' },
-    { ticker: 'BWXT', company: 'BWX Technologies', date: '2026-05-12', time: 'BMO', quarter: 'Q1 2026' },
-    { ticker: 'TLN', company: 'Talen Energy', date: '2026-05-12', time: 'BMO', quarter: 'Q1 2026' },
     { ticker: 'NVDA', company: 'NVIDIA', date: '2026-05-28', time: 'AMC', quarter: 'Q1 FY2027' },
-    { ticker: 'AVGO', company: 'Broadcom', date: '2026-05-29', time: 'AMC', quarter: 'Q2 FY2026' },
-    { ticker: 'DELL', company: 'Dell Technologies', date: '2026-05-29', time: 'AMC', quarter: 'Q1 FY2027' },
-    { ticker: 'OKLO', company: 'Oklo Inc', date: '2026-05-29', time: 'AMC', quarter: 'Q1 2026' },
-    { ticker: 'SMR', company: 'NuScale Power', date: '2026-06-03', time: 'AMC', quarter: 'Q1 2026' },
-    { ticker: 'MTZ', company: 'MasTec Inc', date: '2026-06-04', time: 'AMC', quarter: 'Q1 2026' },
   ];
 
   const STAGE_MAP: Record<string, string> = {
@@ -1520,81 +1473,19 @@ Sent to ${subscriberCount} subscribers. You're receiving this because you subscr
     'Distribution': '#22C55E', 'End Use': '#A855F7',
   };
 
-  let finnhubCache: { items: any[]; timestamp: number } | null = null;
-  const FINNHUB_CACHE_TTL = 6 * 60 * 60 * 1000;
-
-  async function fetchFinnhubEarnings(): Promise<any[]> {
-    const apiKey = process.env.FINNHUB_API_KEY;
-    if (!apiKey) return [];
-
-    try {
-      const today = new Date();
-      const future = new Date(today);
-      future.setMonth(future.getMonth() + 3);
-      const fmt = (d: Date) => d.toISOString().split('T')[0];
-
-      const res = await fetch(
-        `https://finnhub.io/api/v1/calendar/earnings?from=${fmt(today)}&to=${fmt(future)}&token=${apiKey}`
-      );
-      const data = await res.json();
-      if (!data.earningsCalendar) return [];
-
-      const tracked = Object.keys(STAGE_MAP);
-      return data.earningsCalendar
-        .filter((e: any) => tracked.includes(e.symbol))
-        .map((e: any) => ({
-          ticker: e.symbol,
-          company: e.symbol,
-          date: e.date,
-          time: e.hour === 'bmo' ? 'BMO' : e.hour === 'amc' ? 'AMC' : 'TBD',
-          quarter: e.quarter ? `Q${e.quarter} ${e.year}` : '',
-          estimatedEPS: e.epsEstimate ?? null,
-          confirmed: true,
-          stage: STAGE_MAP[e.symbol] || 'End Use',
-          stageColor: STAGE_COLORS_MAP[STAGE_MAP[e.symbol] || 'End Use'],
-        }));
-    } catch (err) {
-      console.error("Finnhub earnings fetch error:", err);
-      return [];
-    }
-  }
-
   function getEarningsData() {
-    const now = Date.now();
     const todayStr = new Date().toISOString().split('T')[0];
-    if (finnhubCache && (now - finnhubCache.timestamp) < FINNHUB_CACHE_TTL) {
-      const filtered = finnhubCache.items.filter((e: any) => e.date >= todayStr);
-      return { items: filtered, source: 'finnhub' as const };
-    }
     const filtered = EARNINGS_SEED.filter(e => e.date >= todayStr);
-    return { items: filtered.map(e => ({
+    return filtered.map(e => ({
       ...e,
-      estimatedEPS: null,
-      confirmed: false,
       stage: STAGE_MAP[e.ticker] || 'End Use',
       stageColor: STAGE_COLORS_MAP[STAGE_MAP[e.ticker] || 'End Use'],
-    })), source: 'seed' as const };
-  }
-
-  if (process.env.FINNHUB_API_KEY) {
-    fetchFinnhubEarnings().then(items => {
-      if (items.length > 0) {
-        finnhubCache = { items, timestamp: Date.now() };
-        console.log(`Loaded ${items.length} earnings from Finnhub`);
-      }
-    });
-    setInterval(() => {
-      fetchFinnhubEarnings().then(items => {
-        if (items.length > 0) {
-          finnhubCache = { items, timestamp: Date.now() };
-        }
-      });
-    }, FINNHUB_CACHE_TTL);
+    }));
   }
 
   app.get("/api/catalysts/earnings", (_req, res) => {
-    const { items, source } = getEarningsData();
-    res.json({ earnings: items, source });
+    const items = getEarningsData();
+    res.json({ earnings: items });
   });
 
   app.get("/api/catalysts/manual", (_req, res) => {
@@ -1602,7 +1493,7 @@ Sent to ${subscriberCount} subscribers. You're receiving this because you subscr
   });
 
   app.get("/api/catalysts/all", (_req, res) => {
-    const { items: earnings, source } = getEarningsData();
+    const earnings = getEarningsData();
     const earningsFormatted = earnings.map((e: any) => ({
       id: `earnings-${e.ticker}-${e.date}`,
       type: 'earnings' as const,
@@ -1612,7 +1503,6 @@ Sent to ${subscriberCount} subscribers. You're receiving this because you subscr
       company: e.company,
       time: e.time,
       quarter: e.quarter,
-      estimatedEPS: e.estimatedEPS,
       stage: e.stage,
       stageColor: e.stageColor,
     }));
@@ -1634,7 +1524,7 @@ Sent to ${subscriberCount} subscribers. You're receiving this because you subscr
       (a, b) => new Date(a.sortDate).getTime() - new Date(b.sortDate).getTime()
     );
 
-    res.json({ items: merged, earningsSource: source });
+    res.json({ items: merged });
   });
 
   app.get("/api/catalysts", (_req, res) => {

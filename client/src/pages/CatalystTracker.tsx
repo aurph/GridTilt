@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useLocation, Link } from "wouter";
 import {
   CalendarDays, ChevronLeft, ChevronRight, Clock,
-  TrendingUp, AlertTriangle, ArrowRight, Eye, EyeOff,
+  TrendingUp, ArrowRight, Eye, EyeOff,
 } from "lucide-react";
 import {
   catalystCategoryColors,
@@ -21,7 +21,6 @@ interface EarningsItem {
   company: string;
   time: string;
   quarter: string;
-  estimatedEPS: number | null;
   stage: string;
   stageColor: string;
 }
@@ -43,7 +42,6 @@ type MergedItem = EarningsItem | CatalystItem;
 
 interface AllCatalystsResponse {
   items: MergedItem[];
-  earningsSource: "finnhub" | "seed";
 }
 
 function daysUntil(dateStr: string): number {
@@ -235,7 +233,6 @@ function DayDetailCard({ item }: { item: MergedItem }) {
             {e.stage}
           </span>
           {e.quarter && <span>{e.quarter}</span>}
-          {e.estimatedEPS !== null && <span>Est. EPS: ${e.estimatedEPS}</span>}
         </div>
         <button
           className="flex items-center gap-1 mt-2 text-[12px] transition-colors"
@@ -338,11 +335,6 @@ function UpcomingTimeline({ items }: { items: MergedItem[] }) {
                   >
                     {e.time}
                   </span>
-                  {e.estimatedEPS !== null && (
-                    <span className="text-[11px]" style={{ color: "#666" }}>
-                      Est. ${e.estimatedEPS}
-                    </span>
-                  )}
                 </div>
               </div>
             );
@@ -487,7 +479,6 @@ export default function CatalystTracker() {
   });
 
   const items = data?.items || [];
-  const earningsSource = data?.earningsSource || "seed";
 
   const earnings = items.filter((i): i is EarningsItem => i.type === "earnings");
   const catalysts = items.filter((i): i is CatalystItem => i.type === "catalyst");
@@ -509,17 +500,6 @@ export default function CatalystTracker() {
           {catalysts.length} thesis catalysts
         </span>
       </div>
-
-      {earningsSource === "seed" && (
-        <div
-          className="flex items-center gap-2 px-4 md:px-8 py-2 text-[12px]"
-          style={{ background: "#1C1B18", borderBottom: "1px solid rgba(255,255,255,0.04)", color: "#F0A500" }}
-          data-testid="seed-data-banner"
-        >
-          <AlertTriangle style={{ width: 14, height: 14, flexShrink: 0 }} />
-          Showing estimated dates. Add FINNHUB_API_KEY for live earnings data.
-        </div>
-      )}
 
       <div className="px-4 md:px-8 py-6 max-w-[1100px] mx-auto space-y-10">
         {isLoading ? (
