@@ -743,7 +743,7 @@ export default function PowerMap() {
           font-size: 14px !important;
         }
         .leaflet-control-zoom a:hover {
-          background: #252540 !important;
+          background: #252420 !important;
           color: #F07800 !important;
         }
         .leaflet-control-attribution {

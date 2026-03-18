@@ -56,7 +56,7 @@ export default function Subscribe() {
             { icon: BarChart3, label: "Top Movers", desc: "Best and worst performers by sector" },
             { icon: Map, label: "Power Map", desc: "New facilities and capacity updates" },
           ].map(({ icon: Icon, label, desc }) => (
-            <div key={label} className="bg-[#151520]/80 border border-white/[0.06] rounded-lg p-3 text-center">
+            <div key={label} className="bg-[#161614]/80 border border-white/[0.06] rounded-lg p-3 text-center">
               <Icon className="h-4 w-4 text-[#F0A500] mx-auto mb-1.5" />
               <div className="text-[11px] font-semibold text-white/80">{label}</div>
               <div className="text-[10px] text-white/30 mt-0.5 leading-tight">{desc}</div>
@@ -84,7 +84,7 @@ export default function Subscribe() {
                 value={email}
                 onChange={(e) => { setEmail(e.target.value); setStatus("idle"); }}
                 placeholder="you@example.com"
-                className="flex-1 bg-[#151520] border border-white/[0.08] rounded-lg px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-[#F07800]/40 transition-colors"
+                className="flex-1 bg-[#161614] border border-white/[0.08] rounded-lg px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-[#F07800]/40 transition-colors"
                 data-testid="input-email"
               />
               <Button

@@ -45,7 +45,7 @@ export function EmailCapture({ variant = "inline" }: EmailCaptureProps) {
 
   if (variant === "inline") {
     return (
-      <div className="bg-[#151520]/80 border border-white/[0.06] rounded-lg p-5" data-testid="email-capture-inline">
+      <div className="bg-[#161614]/80 border border-white/[0.06] rounded-lg p-5" data-testid="email-capture-inline">
         <div className="flex items-start gap-3 mb-3">
           <div className="h-8 w-8 rounded-lg bg-[#F07800]/10 border border-[#F07800]/20 flex items-center justify-center flex-shrink-0">
             <Mail className="h-4 w-4 text-[#F07800]" />
@@ -61,7 +61,7 @@ export function EmailCapture({ variant = "inline" }: EmailCaptureProps) {
             value={email}
             onChange={(e) => { setEmail(e.target.value); setStatus("idle"); }}
             placeholder="you@example.com"
-            className="flex-1 bg-[#0d0d14] border border-white/[0.08] rounded-md px-3 py-2 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-[#F07800]/40 transition-colors"
+            className="flex-1 bg-[#0E0E0C] border border-white/[0.08] rounded-md px-3 py-2 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-[#F07800]/40 transition-colors"
             data-testid="input-email-inline"
           />
           <Button
@@ -81,7 +81,7 @@ export function EmailCapture({ variant = "inline" }: EmailCaptureProps) {
 
   return (
     <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-lg" data-testid="email-capture-banner">
-      <div className="bg-[#151520]/95 backdrop-blur-md border border-white/[0.08] rounded-xl p-4 shadow-2xl shadow-black/60">
+      <div className="bg-[#161614]/95 backdrop-blur-md border border-white/[0.08] rounded-xl p-4 shadow-2xl shadow-black/60">
         <button
           onClick={() => { setDismissed(true); sessionStorage.setItem("gridtilt-banner-dismissed", "1"); }}
           className="absolute top-2 right-2 text-white/30 hover:text-white/60 transition-colors"
@@ -100,7 +100,7 @@ export function EmailCapture({ variant = "inline" }: EmailCaptureProps) {
             value={email}
             onChange={(e) => { setEmail(e.target.value); setStatus("idle"); }}
             placeholder="you@example.com"
-            className="flex-1 bg-[#0d0d14] border border-white/[0.08] rounded-md px-3 py-2 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-[#F07800]/40 transition-colors"
+            className="flex-1 bg-[#0E0E0C] border border-white/[0.08] rounded-md px-3 py-2 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-[#F07800]/40 transition-colors"
             data-testid="input-email-banner"
           />
           <Button

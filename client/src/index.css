@@ -141,6 +141,17 @@ html {
   background-size: 40px 40px;
 }
 
+/* Sidebar nav hover */
+.sidebar-nav-link:not(.sidebar-nav-active):hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+.sidebar-nav-link:not(.sidebar-nav-active):hover .sidebar-nav-icon-box {
+  background: rgba(255, 255, 255, 0.06);
+}
+.sidebar-nav-link:not(.sidebar-nav-active):hover .sidebar-nav-title {
+  color: #fff;
+}
+
 /* Glow effects */
 .glow-amber {
   box-shadow: 0 0 20px rgba(240, 165, 0, 0.2), 0 0 40px rgba(240, 165, 0, 0.1);

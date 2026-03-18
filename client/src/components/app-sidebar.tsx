@@ -97,14 +97,14 @@ export function AppSidebar() {
                     <Link
                       href={item.url}
                       data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, "-")}`}
-                      className="flex items-center gap-3 px-3 py-2.5 no-underline"
+                      className={`sidebar-nav-link flex items-center gap-3 px-3 py-2.5 no-underline ${isActive ? "sidebar-nav-active" : ""}`}
                       style={{
                         background: isActive ? "rgba(240, 120, 0, 0.08)" : "transparent",
                         borderLeft: isActive ? "3px solid #F07800" : "3px solid transparent",
                       }}
                     >
                       <div
-                        className="flex items-center justify-center flex-shrink-0"
+                        className="sidebar-nav-icon-box flex items-center justify-center flex-shrink-0"
                         style={{
                           width: 34,
                           height: 34,
@@ -122,7 +122,7 @@ export function AppSidebar() {
                       </div>
                       <div className="flex flex-col gap-0.5 min-w-0">
                         <span
-                          className="text-[13px] font-medium leading-tight"
+                          className="sidebar-nav-title text-[13px] font-medium leading-tight"
                           style={{ color: isActive ? "#F07800" : "#d4d4d4" }}
                         >
                           {item.title}
