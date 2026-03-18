@@ -1284,60 +1284,68 @@ Sent to ${subscriberCount} subscribers. You're receiving this because you subscr
     res.json({ message: "Removed", count: remaining.length });
   });
 
+  async function refreshEarningsCache(): Promise<any[]> {
+    const now = Date.now();
+    if (earningsCache && (now - earningsCache.timestamp) < EARNINGS_CACHE_TTL) {
+      return earningsCache.items;
+    }
+
+    const results: any[] = [];
+    let idCounter = 1000;
+
+    try {
+      const YahooFinanceClass = (await import("yahoo-finance2")).default;
+      const yahooFinance = new YahooFinanceClass({ suppressNotices: ["yahooSurvey"] });
+
+      const summaries = await Promise.all(
+        ALL_STACK_TICKERS.map((ticker) =>
+          yahooFinance.quoteSummary(ticker, { modules: ["calendarEvents"] }).catch(() => null)
+        )
+      );
+
+      summaries.forEach((summary, i) => {
+        const ticker = ALL_STACK_TICKERS[i];
+        const earningsDate = summary?.calendarEvents?.earnings?.earningsDate?.[0];
+        if (earningsDate) {
+          const d = new Date(earningsDate);
+          const dateStr = d.toISOString().slice(0, 10);
+          const staticData = STATIC_MARKET_DATA[ticker];
+          const name = staticData?.name ?? ticker;
+          results.push({
+            id: idCounter++,
+            date: dateStr,
+            title: `${ticker}: ${name} Earnings`,
+            category: "Earnings",
+            thesisImpact: `Watch for AI/datacenter demand commentary, power consumption guidance, and forward revenue outlook from ${name}.`,
+            tickers: [ticker],
+          });
+        }
+      });
+    } catch (_e) {
+      // Yahoo Finance failed
+    }
+
+    const seen = new Set<string>();
+    const deduped = results.filter((item) => {
+      const key = item.tickers[0];
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    if (deduped.length > 0) {
+      earningsCache = { items: deduped, timestamp: now };
+    }
+    return deduped;
+  }
+
+  refreshEarningsCache().catch(() => {});
+
   // Earnings calendar endpoint - upcoming earnings dates for all stack tickers (4h cache)
   app.get("/api/earnings-calendar", async (_req, res) => {
     try {
-      const now = Date.now();
-      if (earningsCache && (now - earningsCache.timestamp) < EARNINGS_CACHE_TTL) {
-        return res.json(earningsCache.items);
-      }
-
-      const results: any[] = [];
-      let idCounter = 1000; // start above manual catalyst IDs
-
-      try {
-        const YahooFinanceClass = (await import("yahoo-finance2")).default;
-        const yahooFinance = new YahooFinanceClass({ suppressNotices: ["yahooSurvey"] });
-
-        const summaries = await Promise.all(
-          ALL_STACK_TICKERS.map((ticker) =>
-            yahooFinance.quoteSummary(ticker, { modules: ["calendarEvents"] }).catch(() => null)
-          )
-        );
-
-        summaries.forEach((summary, i) => {
-          const ticker = ALL_STACK_TICKERS[i];
-          const earningsDate = summary?.calendarEvents?.earnings?.earningsDate?.[0];
-          if (earningsDate) {
-            const d = new Date(earningsDate);
-            const dateStr = d.toISOString().slice(0, 10);
-            const staticData = STATIC_MARKET_DATA[ticker];
-            const name = staticData?.name ?? ticker;
-            results.push({
-              id: idCounter++,
-              date: dateStr,
-              title: `${ticker}: ${name} Earnings`,
-              category: "Earnings",
-              thesisImpact: `Watch for AI/datacenter demand commentary, power consumption guidance, and forward revenue outlook from ${name}.`,
-              tickers: [ticker],
-            });
-          }
-        });
-      } catch (_e) {
-        // Yahoo Finance failed - return empty array, manual catalysts still show
-      }
-
-      // Deduplicate by ticker (keep closest date)
-      const seen = new Set<string>();
-      const deduped = results.filter((item) => {
-        const key = item.tickers[0];
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      });
-
-      earningsCache = { items: deduped, timestamp: now };
-      res.json(deduped);
+      const items = await refreshEarningsCache();
+      res.json(items);
     } catch (error) {
       console.error("Earnings calendar error:", error);
       res.json([]);
@@ -1475,7 +1483,24 @@ Sent to ${subscriberCount} subscribers. You're receiving this because you subscr
 
   function getEarningsData() {
     const todayStr = new Date().toISOString().split('T')[0];
-    const filtered = EARNINGS_SEED.filter(e => e.date >= todayStr);
+
+    const yahooDateMap: Record<string, string> = {};
+    if (earningsCache?.items) {
+      for (const item of earningsCache.items) {
+        const ticker = item.tickers?.[0];
+        if (ticker) yahooDateMap[ticker] = item.date;
+      }
+    }
+
+    const seedTickers = EARNINGS_SEED.map(e => e.ticker);
+    const entries = seedTickers.map(ticker => {
+      const seed = EARNINGS_SEED.find(e => e.ticker === ticker)!;
+      const liveDate = yahooDateMap[ticker];
+      const date = (liveDate && liveDate >= todayStr) ? liveDate : seed.date;
+      return { ...seed, date };
+    });
+
+    const filtered = entries.filter(e => e.date >= todayStr);
     return filtered.map(e => ({
       ...e,
       stage: STAGE_MAP[e.ticker] || 'End Use',
@@ -1483,7 +1508,8 @@ Sent to ${subscriberCount} subscribers. You're receiving this because you subscr
     }));
   }
 
-  app.get("/api/catalysts/earnings", (_req, res) => {
+  app.get("/api/catalysts/earnings", async (_req, res) => {
+    await refreshEarningsCache().catch(() => {});
     const items = getEarningsData();
     res.json({ earnings: items });
   });
@@ -1492,7 +1518,8 @@ Sent to ${subscriberCount} subscribers. You're receiving this because you subscr
     res.json(MANUAL_CATALYSTS);
   });
 
-  app.get("/api/catalysts/all", (_req, res) => {
+  app.get("/api/catalysts/all", async (_req, res) => {
+    await refreshEarningsCache().catch(() => {});
     const earnings = getEarningsData();
     const earningsFormatted = earnings.map((e: any) => ({
       id: `earnings-${e.ticker}-${e.date}`,
