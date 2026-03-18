@@ -901,7 +901,7 @@ export async function registerRoutes(
     transmission: {
       name: "Transmission",
       tagline: "How it moves",
-      color: "#1E90FF",
+      color: "#F0A500",
       bottleneckStatus: "Bottlenecked" as const,
       bottleneckDetail: "Large power transformer lead times at 18-36 months. US domestic production approximately 60 units/year against estimated demand of 200-500 over 5 years. This is the tightest bottleneck in the chain. PJM interconnection queue exceeds 250 GW of pending projects with 4+ year wait times.",
       keyMetric: "LPT lead time: 18-36 months",
@@ -1453,24 +1453,43 @@ Sent to ${subscriberCount} subscribers. You're receiving this because you subscr
   ];
 
   const EARNINGS_SEED = [
-    { ticker: 'MU', company: 'Micron Technology', date: '2026-03-18', time: 'AMC', quarter: 'Q2 FY2026' },
+    { ticker: 'MU', company: 'Micron Technology', date: '2026-03-25', time: 'AMC', quarter: 'Q2 FY2026' },
+    { ticker: 'CCJ', company: 'Cameco Corporation', date: '2026-04-01', time: 'BMO', quarter: 'Q1 2026' },
+    { ticker: 'FSLR', company: 'First Solar', date: '2026-04-08', time: 'AMC', quarter: 'Q1 2026' },
+    { ticker: 'CEG', company: 'Constellation Energy', date: '2026-04-10', time: 'BMO', quarter: 'Q1 2026' },
     { ticker: 'TSM', company: 'Taiwan Semiconductor', date: '2026-04-16', time: 'BMO', quarter: 'Q1 2026' },
+    { ticker: 'ETN', company: 'Eaton Corporation', date: '2026-04-16', time: 'BMO', quarter: 'Q1 2026' },
     { ticker: 'GEV', company: 'GE Vernova', date: '2026-04-22', time: 'BMO', quarter: 'Q1 2026' },
+    { ticker: 'NEE', company: 'NextEra Energy', date: '2026-04-22', time: 'BMO', quarter: 'Q1 2026' },
     { ticker: 'INTC', company: 'Intel Corp', date: '2026-04-23', time: 'AMC', quarter: 'Q1 2026' },
-    { ticker: 'DLR', company: 'Digital Realty Trust', date: '2026-04-23', time: 'AMC', quarter: 'Q1 2026' },
-    { ticker: 'NEE', company: 'NextEra Energy', date: '2026-04-28', time: 'BMO', quarter: 'Q1 2026' },
+    { ticker: 'DLR', company: 'Digital Realty Trust', date: '2026-04-24', time: 'AMC', quarter: 'Q1 2026' },
+    { ticker: 'EQIX', company: 'Equinix', date: '2026-04-28', time: 'AMC', quarter: 'Q1 2026' },
+    { ticker: 'NRG', company: 'NRG Energy', date: '2026-04-28', time: 'BMO', quarter: 'Q1 2026' },
     { ticker: 'ENPH', company: 'Enphase Energy', date: '2026-04-28', time: 'AMC', quarter: 'Q1 2026' },
     { ticker: 'META', company: 'Meta Platforms', date: '2026-04-29', time: 'AMC', quarter: 'Q1 2026' },
     { ticker: 'MSFT', company: 'Microsoft', date: '2026-04-29', time: 'AMC', quarter: 'Q1 2026' },
     { ticker: 'AAPL', company: 'Apple', date: '2026-04-30', time: 'AMC', quarter: 'Q2 FY2026' },
     { ticker: 'AMZN', company: 'Amazon', date: '2026-04-30', time: 'AMC', quarter: 'Q1 2026' },
+    { ticker: 'VST', company: 'Vistra Corp', date: '2026-05-01', time: 'BMO', quarter: 'Q1 2026' },
+    { ticker: 'PWR', company: 'Quanta Services', date: '2026-05-01', time: 'BMO', quarter: 'Q1 2026' },
+    { ticker: 'GOOGL', company: 'Alphabet', date: '2026-05-01', time: 'AMC', quarter: 'Q1 2026' },
     { ticker: 'AMD', company: 'Advanced Micro Devices', date: '2026-05-05', time: 'AMC', quarter: 'Q1 2026' },
-    { ticker: 'ETN', company: 'Eaton Corporation', date: '2026-05-05', time: 'BMO', quarter: 'Q1 2026' },
-    { ticker: 'FSLR', company: 'First Solar', date: '2026-05-05', time: 'AMC', quarter: 'Q1 2026' },
+    { ticker: 'SMCI', company: 'Super Micro Computer', date: '2026-05-05', time: 'AMC', quarter: 'Q3 FY2026' },
+    { ticker: 'EMR', company: 'Emerson Electric', date: '2026-05-06', time: 'BMO', quarter: 'Q2 FY2026' },
+    { ticker: 'VRT', company: 'Vertiv Holdings', date: '2026-05-06', time: 'BMO', quarter: 'Q1 2026' },
     { ticker: 'GNRC', company: 'Generac Holdings', date: '2026-05-06', time: 'BMO', quarter: 'Q1 2026' },
-    { ticker: 'NRG', company: 'NRG Energy', date: '2026-05-11', time: 'BMO', quarter: 'Q1 2026' },
-    { ticker: 'VST', company: 'Vistra Corp', date: '2026-05-13', time: 'BMO', quarter: 'Q1 2026' },
-    { ticker: 'NVDA', company: 'NVIDIA', date: '2026-05-20', time: 'AMC', quarter: 'Q1 FY2027' },
+    { ticker: 'SO', company: 'Southern Company', date: '2026-05-06', time: 'BMO', quarter: 'Q1 2026' },
+    { ticker: 'DUK', company: 'Duke Energy', date: '2026-05-07', time: 'BMO', quarter: 'Q1 2026' },
+    { ticker: 'CARR', company: 'Carrier Global', date: '2026-05-08', time: 'BMO', quarter: 'Q1 2026' },
+    { ticker: 'AEP', company: 'American Electric Power', date: '2026-05-08', time: 'BMO', quarter: 'Q1 2026' },
+    { ticker: 'BWXT', company: 'BWX Technologies', date: '2026-05-12', time: 'BMO', quarter: 'Q1 2026' },
+    { ticker: 'TLN', company: 'Talen Energy', date: '2026-05-12', time: 'BMO', quarter: 'Q1 2026' },
+    { ticker: 'NVDA', company: 'NVIDIA', date: '2026-05-28', time: 'AMC', quarter: 'Q1 FY2027' },
+    { ticker: 'AVGO', company: 'Broadcom', date: '2026-05-29', time: 'AMC', quarter: 'Q2 FY2026' },
+    { ticker: 'DELL', company: 'Dell Technologies', date: '2026-05-29', time: 'AMC', quarter: 'Q1 FY2027' },
+    { ticker: 'OKLO', company: 'Oklo Inc', date: '2026-05-29', time: 'AMC', quarter: 'Q1 2026' },
+    { ticker: 'SMR', company: 'NuScale Power', date: '2026-06-03', time: 'AMC', quarter: 'Q1 2026' },
+    { ticker: 'MTZ', company: 'MasTec Inc', date: '2026-06-04', time: 'AMC', quarter: 'Q1 2026' },
   ];
 
   const STAGE_MAP: Record<string, string> = {
@@ -1497,7 +1516,7 @@ Sent to ${subscriberCount} subscribers. You're receiving this because you subscr
   };
 
   const STAGE_COLORS_MAP: Record<string, string> = {
-    'Raw Materials': '#C87533', 'Generation': '#F07800', 'Transmission': '#3B82F6',
+    'Raw Materials': '#C87533', 'Generation': '#F07800', 'Transmission': '#F0A500',
     'Distribution': '#22C55E', 'End Use': '#A855F7',
   };
 
@@ -1542,10 +1561,13 @@ Sent to ${subscriberCount} subscribers. You're receiving this because you subscr
 
   function getEarningsData() {
     const now = Date.now();
+    const todayStr = new Date().toISOString().split('T')[0];
     if (finnhubCache && (now - finnhubCache.timestamp) < FINNHUB_CACHE_TTL) {
-      return { items: finnhubCache.items, source: 'finnhub' as const };
+      const filtered = finnhubCache.items.filter((e: any) => e.date >= todayStr);
+      return { items: filtered, source: 'finnhub' as const };
     }
-    return { items: EARNINGS_SEED.map(e => ({
+    const filtered = EARNINGS_SEED.filter(e => e.date >= todayStr);
+    return { items: filtered.map(e => ({
       ...e,
       estimatedEPS: null,
       confirmed: false,

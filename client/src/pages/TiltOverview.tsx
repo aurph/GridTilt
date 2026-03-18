@@ -96,7 +96,7 @@ interface SectorPulseItem {
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
-  Earnings:   "#60a5fa",
+  Earnings:   "#F0A500",
   Regulatory: "#F0A500",
   Policy:     "#a855f7",
   Market:     "#F07800",
@@ -360,7 +360,7 @@ const SECTOR_COLORS: Record<string, string> = {
   compute: "#94a3b8",
   nuclear: "#F0A500",
   uranium: "#fb923c",
-  powerHardware: "#60a5fa",
+  powerHardware: "#F0A500",
   utilities: "#34d399",
   dataCenters: "#a855f7",
   construction: "#f472b6",
@@ -743,7 +743,7 @@ interface AllCatalystsResponse {
 }
 
 const MERGED_CATEGORY_COLORS: Record<string, string> = {
-  Earnings:       "#60a5fa",
+  Earnings:       "#F0A500",
   Regulatory:     "#F0A500",
   Policy:         "#a855f7",
   Infrastructure: "#22C55E",
@@ -787,7 +787,7 @@ function NextCatalystsWidget() {
           const label = isEarnings ? `${item.ticker} Earnings` : (item.title || "");
           const catLabel = isEarnings ? item.stage || "Earnings" : item.category || "Event";
           const catColor = isEarnings
-            ? (item.stageColor || "#60a5fa")
+            ? (item.stageColor || "#F0A500")
             : (MERGED_CATEGORY_COLORS[item.category || ""] ?? "#9ca3af");
 
           return (

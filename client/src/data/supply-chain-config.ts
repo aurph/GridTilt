@@ -133,7 +133,7 @@ export const supplyChainConfig: { stages: StageConfig[] } = {
       name: "Transmission",
       tagline: "How it moves",
       icon: "Cable",
-      accentColor: "#3B82F6",
+      accentColor: "#F0A500",
       bottleneck: {
         status: "bottlenecked",
         barFill: 0.9,

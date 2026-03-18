@@ -263,7 +263,7 @@ export default function TheStack() {
       key: "powerHardware",
       title: "Power Hardware",
       icon: Server,
-      color: "#60a5fa",
+      color: "#F0A500",
       description: "Transformers, switchgear, cooling, and electrical equipment.",
       tooltip: "GE Vernova's turbine order book leads DC buildout pace. Eaton is at max switchgear/transformer capacity. Vertiv is the fastest-growing power/cooling infrastructure company. Transformer shortages remain the primary bottleneck on DC energization.",
     },

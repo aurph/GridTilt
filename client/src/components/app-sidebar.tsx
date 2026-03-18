@@ -4,7 +4,6 @@ import {
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -89,12 +88,9 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent>
-        <SidebarGroup className="pt-4">
-          <SidebarGroupLabel className="text-xs uppercase tracking-widest text-muted-foreground mb-2 px-3">
-            Navigation
-          </SidebarGroupLabel>
+        <SidebarGroup className="pt-3 px-2">
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="space-y-1">
               {navItems.map((item) => {
                 const isActive = location === item.url || (item.url !== "/" && location.startsWith(item.url));
                 return (
@@ -102,23 +98,44 @@ export function AppSidebar() {
                     <SidebarMenuButton
                       asChild
                       data-active={isActive}
-                      className="h-auto py-2.5 px-3 rounded-md relative"
+                      className="h-auto py-0 px-0 rounded-lg relative"
                     >
-                      <Link href={item.url} data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, "-")}`}>
-                        {isActive && (
-                          <span
-                            className="absolute left-0 top-2 bottom-2 w-[3px] rounded-full bg-[#F07800]"
-                            style={{ left: "0.5rem", boxShadow: "0 0 8px rgba(240,120,0,0.6), 0 0 16px rgba(240,120,0,0.2)" }}
+                      <Link
+                        href={item.url}
+                        data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, "-")}`}
+                        className="flex items-center gap-3 px-3 py-3 rounded-lg transition-colors"
+                        style={{
+                          background: isActive ? "rgba(240, 120, 0, 0.08)" : "transparent",
+                          borderLeft: isActive ? "3px solid #F07800" : "3px solid transparent",
+                        }}
+                      >
+                        <div
+                          className="flex items-center justify-center flex-shrink-0"
+                          style={{
+                            width: 36,
+                            height: 36,
+                            borderRadius: 8,
+                            background: isActive ? "rgba(240, 120, 0, 0.12)" : "rgba(255, 255, 255, 0.03)",
+                          }}
+                        >
+                          <item.icon
+                            style={{
+                              width: 22,
+                              height: 22,
+                              color: isActive ? "#F07800" : "#888",
+                            }}
                           />
-                        )}
-                        <div className={`flex h-7 w-7 items-center justify-center rounded-sm ml-3 ${isActive ? "text-[#F07800]" : "text-muted-foreground"}`}>
-                          <item.icon className="h-4 w-4" />
                         </div>
-                        <div className="flex flex-col gap-0.5 ml-1">
-                          <span className={`text-sm font-medium leading-none ${isActive ? "text-[#F07800]" : "text-foreground"}`}>
+                        <div className="flex flex-col gap-0.5 min-w-0">
+                          <span
+                            className="text-[13px] font-semibold leading-tight"
+                            style={{ color: isActive ? "#F07800" : "#e0e0e0" }}
+                          >
                             {item.title}
                           </span>
-                          <span className="text-xs text-muted-foreground leading-none mt-1">{item.description}</span>
+                          <span className="text-[11px] leading-tight text-muted-foreground truncate">
+                            {item.description}
+                          </span>
                         </div>
                       </Link>
                     </SidebarMenuButton>
