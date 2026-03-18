@@ -46,7 +46,7 @@ export default function Subscribe() {
             The GridTilt Brief
           </h1>
           <p className="text-sm text-white/50 max-w-md mx-auto leading-relaxed">
-            Thesis health check, top movers, new facilities, one data insight. Monthly. No spam.
+            Thesis health, top movers, new facilities, one data point. Monthly. No spam.
           </p>
         </div>
 

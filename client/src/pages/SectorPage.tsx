@@ -8,42 +8,42 @@ import { ArrowLeft, AlertTriangle, TrendingUp, TrendingDown } from "lucide-react
 const SECTOR_META: Record<string, { key: string; name: string; description: string; related: string[] }> = {
   "nuclear-power": {
     key: "nuclear", name: "Nuclear Power",
-    description: "Nuclear generators provide the 24/7 baseload power AI data centers require. Constellation Energy, Vistra, and Talen own the existing fleet. Oklo and NuScale are building next-generation SMRs. This sector benefits directly from hyperscaler power purchase agreements and nuclear restart policies.",
+    description: "Nuclear generators provide 24/7 baseload for AI data centers. CEG, VST, and TLN own the existing fleet. Oklo and NuScale are developing SMRs.",
     related: ["uranium", "utilities"],
   },
   "uranium": {
     key: "uranium", name: "Uranium & Fuel Cycle",
-    description: "Every nuclear reactor requires enriched uranium fuel. As AI-driven nuclear restarts and new builds accelerate, uranium demand is rising against constrained supply. Cameco, NexGen, and Uranium Energy Corp are the primary Western miners.",
+    description: "Every nuclear reactor requires enriched uranium fuel. Nuclear restarts are raising demand against constrained supply. Cameco, NexGen, and UEC are the primary Western miners.",
     related: ["nuclear-power", "etf-benchmarks"],
   },
   "compute": {
     key: "compute", name: "Compute",
-    description: "GPU and semiconductor companies building the silicon that drives AI training and inference. NVIDIA dominates with 80%+ market share in AI accelerators. Every GPU sold eventually requires power infrastructure to operate.",
+    description: "GPU and semiconductor companies powering AI training and inference. NVIDIA holds 80%+ market share in AI accelerators. Each GPU requires power infrastructure to operate.",
     related: ["power-hardware", "data-center-reits"],
   },
   "power-hardware": {
     key: "powerHardware", name: "Power Hardware",
-    description: "Electrical equipment manufacturers supplying transformers, switchgear, cooling systems, and power distribution units for data centers. GE Vernova, Eaton, and Vertiv are seeing multi-year backlogs as data center construction accelerates.",
+    description: "Manufacturers of transformers, switchgear, cooling, and PDUs for data centers. GE Vernova, Eaton, and Vertiv have multi-year backlogs.",
     related: ["construction-epc", "utilities"],
   },
   "utilities": {
     key: "utilities", name: "Utilities",
-    description: "Regulated and merchant utilities providing grid power to data center clusters. NextEra, Dominion, and Southern Company are negotiating long-term power purchase agreements with hyperscalers. Grid interconnection queues are 4+ years.",
+    description: "Regulated and merchant utilities supplying grid power to data centers. NextEra, Dominion, and Southern Company are signing long-term PPAs. Grid queue times exceed 4 years.",
     related: ["nuclear-power", "power-hardware"],
   },
   "data-center-reits": {
     key: "dataCenters", name: "Data Center REITs",
-    description: "Real estate investment trusts owning and operating the physical facilities where AI compute runs. Equinix and Digital Realty control the majority of US colocation capacity. IREN is a pure-play AI compute facility operator.",
+    description: "REITs that own and operate data center facilities. Equinix and Digital Realty hold most US colocation capacity. IREN operates AI-focused compute facilities.",
     related: ["compute", "construction-epc"],
   },
   "construction-epc": {
     key: "construction", name: "Construction & EPC",
-    description: "Engineering, procurement, and construction firms building data centers and grid infrastructure. Quanta Services, EMCOR, and MasTec are seeing record backlogs driven by both data center and transmission line construction.",
+    description: "Firms building data centers and grid infrastructure. Quanta, EMCOR, and MasTec have record backlogs from data center and transmission projects.",
     related: ["power-hardware", "utilities"],
   },
   "etf-benchmarks": {
     key: "etfsBenchmarks", name: "ETF Benchmarks",
-    description: "Exchange-traded funds benchmarking exposure to uranium, nuclear, grid infrastructure, and technology sectors. URA and URNM track uranium miners. GRID and PAVE track grid and infrastructure construction.",
+    description: "ETFs tracking uranium, nuclear, grid, and technology sectors. URA and URNM cover uranium miners. GRID and PAVE cover grid and construction.",
     related: ["uranium", "compute"],
   },
 };

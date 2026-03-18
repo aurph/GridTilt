@@ -302,10 +302,10 @@ function ThesisHealthBar({ aiPower, gridStress, nri }: { aiPower: number | null;
   const statusColor = isAccelerating ? "#F07800" : isCooling ? "#6b7280" : "#F0A500";
   const statusBg = isAccelerating ? "bg-[#F07800]/10 border-[#F07800]/25" : isCooling ? "bg-muted/20 border-card-border" : "bg-[#F0A500]/10 border-[#F0A500]/20";
   const description = isAccelerating
-    ? `All three indices elevated. AI power demand is outpacing grid additions. Grid stress at ${gridStress.toFixed(0)}/100 signals regional constraints. The thesis is playing out.`
+    ? `All three indices elevated. AI power demand is outpacing grid additions. Grid stress at ${gridStress.toFixed(0)}/100 signals regional capacity constraints.`
     : isCooling
-    ? `Indices have pulled back from peaks. Could be rotation or a real slowdown. Watch hyperscaler capex guidance.`
-    : `Tracking the baseline scenario. Demand index above structural baseline (72/100). NRI at ${nri.toFixed(0)} reflects sustained momentum from 2024 PPA activity.`;
+    ? `Indices have pulled back from peaks. Could be sector rotation or reduced procurement activity. Watch hyperscaler capex guidance.`
+    : `Tracking the baseline scenario. Demand index above structural baseline (72/100). NRI at ${nri.toFixed(0)} reflects continued momentum from 2024 PPA signings.`;
 
   const numbers = [
     { label: "AI Demand", val: aiPower },
@@ -839,17 +839,17 @@ function WhatAmILookingAt() {
     {
       icon: Cpu,
       title: "The Thesis",
-      body: "AI datacenter load reached ~288 TWh in 2025 (~6.4% of the US grid) and is projected to double by 2028. Big Tech has committed $328B+ in 2025 capex and signed 12+ GW of nuclear PPAs. The infrastructure required to deliver that power is the investable thesis.",
+      body: "AI datacenter load reached ~288 TWh in 2025, about 6.4% of the US grid. Big Tech committed $328B+ in 2025 capex and signed 12+ GW of nuclear PPAs. The physical infrastructure to deliver that power is the investable layer.",
     },
     {
       icon: Plug,
       title: "The 3 Indices",
-      body: "AI Power Demand Index: composite score anchored to EIA datacenter load data (baseline 72/100). Nuclear Renaissance Index: weighted basket of CEG, VST, CCJ, NLR, uranium spot, and policy score, rebased to Jan 2024 = 100. Grid Stress Score: PJM/MISO/ERCOT reserve margin signal (68/100 baseline).",
+      body: "AI Power Demand Index: composite score from EIA datacenter load data (baseline 72/100). Nuclear Renaissance Index: weighted basket of CEG, VST, CCJ, NLR, uranium spot, rebased to Jan 2024 = 100. Grid Stress Score: reserve margin signal from PJM, MISO, ERCOT (baseline 68/100).",
     },
     {
       icon: BarChart3,
       title: "The Stack",
-      body: "60+ public equities organized into 8 supply chain layers: compute (NVDA, TSM, AMD), nuclear (CEG, VST, OKLO), uranium (CCJ, UEC), power hardware (GEV, ETN, VRT), utilities (NEE, D, SO), data centers (EQIX, DLR), construction (PWR, EME), and ETF benchmarks.",
+      body: "60+ public equities in 8 supply chain layers. Includes compute, nuclear, uranium, power hardware, utilities, data centers, construction, and ETF benchmarks.",
     },
   ];
 
@@ -943,7 +943,7 @@ export default function TiltOverview() {
                 </Badge>
               </div>
               <p className="text-muted-foreground text-xs sm:text-sm max-w-lg">
-                US datacenter load hit ~6.4% of grid capacity in 2025 and is accelerating. Live equities, infrastructure, and power data across 60+ tickers.
+                US datacenter load hit ~6.4% of grid capacity in 2025. Live equities, infrastructure, and power data across 60+ tickers.
               </p>
             </div>
           </div>
@@ -985,7 +985,7 @@ export default function TiltOverview() {
               unit="/ 100"
               subtitle="Baseline 72 from EIA data. Tap info for methodology."
               color="neutral"
-              methodology="Baseline 72/100 from three inputs: DC electricity share ~6.4% of US grid (EIA 2025, ~288 TWh), AI workload CAGR ~33%/yr (EIA + utility filings), and $328B Big 4 hyperscaler capex for 2025. Score of 100 = theoretical full-grid AI saturation. Intraday momentum: NVDA 40%, TSM 25%, EQIX 20%, MU 15%, scaled 1.2x."
+              methodology="Baseline 72/100. Three inputs: DC electricity ~6.4% (EIA 2025), AI CAGR ~33%/yr, $328B Big 4 capex. 100 = full-grid saturation. Intraday: NVDA 40%, TSM 25%, EQIX 20%, MU 15%, scaled 1.2x."
               constituents={c && (
                 <>
                   <p className="text-xs text-muted-foreground mb-1.5 font-medium">Today's momentum signals</p>
@@ -1004,7 +1004,7 @@ export default function TiltOverview() {
               unit=""
               subtitle={`Anchored basket index. Base: ${kpiData?.nriBaseDate ?? "Jan 1, 2024"} = 100`}
               color="amber"
-              methodology={`Basket index, base = 100 on Jan 1, 2024. Six components: CEG 25%, VST 20%, CCJ 15%, NLR ETF 20%, uranium spot 10%, SMR policy 10%. Policy multiplier (0.9-1.1) captures regulatory regime: current ${kpiData?.smrPolicyScore ?? 7.8}/10 (NRC approvals, TMI restart, Amazon nuclear PPAs). Performance vs Jan 2024: CEG +98%, VST +521%, CCJ flat, uranium +1%.`}
+              methodology={`Basket index, base = 100 on Jan 1 2024. Weights: CEG 25%, VST 20%, CCJ 15%, NLR 20%, uranium 10%, policy 10%. Policy multiplier 0.9-1.1, current ${kpiData?.smrPolicyScore ?? 7.8}/10. Since Jan 2024: CEG +98%, VST +521%, CCJ flat, uranium +1%.`}
               constituents={c && (
                 <>
                   <p className="text-xs text-muted-foreground mb-1.5 font-medium">Performance vs Jan 1, 2024</p>
@@ -1028,7 +1028,7 @@ export default function TiltOverview() {
               unit="/ 100"
               subtitle="PJM/MISO/ERCOT reserve margin signal. Tap info for methodology."
               color="red"
-              methodology="Baseline 68/100 from three pressures: MISO reserve margin 13.4% (NERC 2026, most constrained US RTO), PJM 17.5% declining as AI load grows, ERCOT 15.8% with 1,200+ scarcity hours in 2025. Score of 100 = grid emergency. Intraday momentum: VST 40%, CEG 35% (merchant power proxies), EQIX 25% (DC load signal). Above 75 = elevated constraint risk."
+              methodology="Baseline 68/100. Pressures: MISO 13.4%, PJM 17.5%, ERCOT 15.8% (NERC 2026 est.). 100 = grid emergency. Intraday: VST 40%, CEG 35%, EQIX 25%. Above 75 = elevated risk."
               constituents={c && (
                 <>
                   <p className="text-xs text-muted-foreground mb-1.5 font-medium">Today's momentum signals</p>
@@ -1084,11 +1084,11 @@ export default function TiltOverview() {
                     <Info className="h-3.5 w-3.5 text-muted-foreground" />
                   </TooltipTrigger>
                   <TooltipContent className="max-w-xs">
-                    <p className="text-xs">US electricity demand was flat for a decade. AI data centers are reversing that trend, driving a structural shift utilities were not prepared for.</p>
+                    <p className="text-xs">US electricity demand was flat for a decade. AI data centers are now driving load growth that utilities did not plan for.</p>
                   </TooltipContent>
                 </UITooltip>
               </div>
-              <p className="text-xs text-muted-foreground">Historical EIA data (TWh) + AI-era projection to 2030. Data center subset on right axis.</p>
+              <p className="text-xs text-muted-foreground">Historical EIA data (TWh) through 2025. Dashed lines are GridTilt projections (2026-2030), not forecasts. Data center subset on right axis.</p>
             </div>
             <div className="flex flex-wrap items-center gap-4 text-xs">
               <div className="flex items-center gap-1.5">
@@ -1097,7 +1097,7 @@ export default function TiltOverview() {
               </div>
               <div className="flex items-center gap-1.5">
                 <div className="h-2 w-4 rounded-sm bg-[#F0A500]" />
-                <span className="text-muted-foreground">AI-Era Projection</span>
+                <span className="text-muted-foreground">GridTilt Projection (2026-2030)</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <div className="h-2 w-4 rounded-sm" style={{ backgroundColor: "#a855f7" }} />
@@ -1240,8 +1240,8 @@ export default function TiltOverview() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {[
             { label: "DC Share of US Demand", value: "~6.4%", sub: "EIA 2025: ~288 TWh, up from 4.4% in 2023. DOE projects 12%+ by 2028.", color: "#a855f7" },
-            { label: "Nuclear Power Committed", value: "12+ GW", sub: "Big Tech nuclear PPAs as of Q1 2026. Meta 6.6 GW, Microsoft 1.2 GW, Amazon 2.5+ GW, Google 500+ MW.", color: "#F0A500" },
-            { label: "Grid Reserve Margins", value: "Tightening", sub: "MISO 13.4%, ERCOT 15.8% per NERC 2026. Capacity adequacy warnings through 2028.", color: "#94a3b8" },
+            { label: "Nuclear Power Committed", value: "12+ GW", sub: "Big Tech nuclear PPAs as of Q1 2026. Meta 6.6 GW, Microsoft 1.2 GW, Amazon 2.5+ GW.", color: "#F0A500" },
+            { label: "Grid Reserve Margins", value: "Tightening", sub: "MISO 13.4%, ERCOT 15.8% per NERC 2026. Capacity warnings through 2028.", color: "#94a3b8" },
           ].map((s) => (
             <Card key={s.label} className="p-4 border-card-border">
               <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">{s.label}</p>
@@ -1290,7 +1290,7 @@ export default function TiltOverview() {
             ))}
           </div>
           <p className="text-xs text-muted-foreground mt-3 pt-3 border-t border-border">
-            US electricity demand was flat 2010-2022. By 2025 it hit ~4,490 TWh, up 15% from the 2022 trough. Data center load is now +33% YoY, compressing a decade of projected growth into three years.
+            US electricity demand was flat from 2010-2022. By 2025 it reached ~4,490 TWh, up 15% from the 2022 low. Data center load is now +33% YoY.
           </p>
         </Card>
 

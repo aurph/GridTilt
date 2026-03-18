@@ -6,43 +6,43 @@ import { AlertTriangle, Building2 } from "lucide-react";
 const OPERATOR_META: Record<string, { name: string; description: string; strategy: string }> = {
   "google": {
     name: "Google",
-    description: "Google operates one of the largest hyperscale data center portfolios globally, with significant US facilities across Oregon, South Carolina, Nevada, and Virginia. Google has been an early mover in nuclear power procurement, contracting with Kairos Power for a fluoride salt-cooled reactor.",
-    strategy: "Google favors locations near hydroelectric and renewable power sources. Their Dalles, Oregon campus leverages Columbia River hydropower. Recent expansion focuses on the Southeast (Georgia, South Carolina) with direct utility partnerships.",
+    description: "Google operates one of the largest hyperscale data center portfolios globally. Major US facilities span Oregon, South Carolina, Nevada, and Virginia. Google contracted with Kairos Power for a fluoride salt-cooled reactor.",
+    strategy: "Google favors locations near hydroelectric and renewable power. Their Dalles, Oregon campus uses Columbia River hydropower. Southeast expansion (Georgia, South Carolina) relies on direct utility partnerships.",
   },
   "amazon": {
     name: "Amazon",
-    description: "Amazon Web Services (AWS) is the largest cloud infrastructure provider, operating dozens of data centers across the US. AWS has committed to $105B in 2025 capex, the largest of any hyperscaler, driven by AI compute demand.",
-    strategy: "AWS clusters facilities in Northern Virginia (us-east-1), Oregon (us-west-2), and Ohio. Recent expansion into Mississippi and Indiana targets lower-cost power markets. AWS has signed nuclear power agreements with Talen Energy.",
+    description: "AWS is the largest cloud infrastructure provider. It operates dozens of US data centers. AWS committed $105B in 2025 capex, driven by AI compute demand.",
+    strategy: "AWS clusters facilities in Northern Virginia, Oregon, and Ohio. Expansion into Mississippi and Indiana targets lower-cost power. AWS signed nuclear agreements with Talen Energy.",
   },
   "meta": {
     name: "Meta",
-    description: "Meta Platforms operates hyperscale data centers supporting AI training infrastructure, with $65B committed in 2025 capex. Meta issued a 6.6 GW nuclear power RFP, the largest single corporate nuclear procurement in history.",
-    strategy: "Meta concentrates facilities in Iowa, Oregon, and Georgia, favoring locations with renewable energy access. The 6.6 GW nuclear RFP signals a strategic shift toward baseload power procurement at unprecedented scale.",
+    description: "Meta operates hyperscale data centers for AI training with $65B in 2025 capex. Meta issued a 6.6 GW nuclear RFP, the largest corporate nuclear procurement to date.",
+    strategy: "Meta concentrates facilities in Iowa, Oregon, and Georgia near renewable sources. The 6.6 GW nuclear RFP marks a shift toward baseload procurement.",
   },
   "microsoft": {
     name: "Microsoft",
-    description: "Microsoft Azure operates a global cloud infrastructure with $83B in 2025 capex. Microsoft has signed the most high-profile nuclear power agreement in the sector, contracting with Constellation Energy to restart Three Mile Island Unit 1.",
-    strategy: "Microsoft's data center portfolio spans Virginia, Iowa, Arizona, and Texas. The Three Mile Island restart deal with Constellation Energy represents 835 MW of carbon-free baseload power, setting a precedent for hyperscaler nuclear procurement.",
+    description: "Microsoft Azure has $83B in 2025 capex. Microsoft contracted with Constellation Energy to restart Three Mile Island Unit 1 for dedicated nuclear baseload power.",
+    strategy: "Microsoft's data centers span Virginia, Iowa, Arizona, and Texas. The TMI restart provides 835 MW of carbon-free baseload to Azure operations.",
   },
   "oracle": {
     name: "Oracle",
-    description: "Oracle Cloud Infrastructure (OCI) is rapidly expanding AI data center capacity, with multiple large-scale facilities under construction. Oracle has partnered with SMR developers for next-generation power solutions.",
-    strategy: "Oracle targets secondary markets with available power and land. Recent facility announcements in Texas, Mississippi, and Georgia focus on 100+ MW campus designs optimized for AI training workloads.",
+    description: "Oracle Cloud Infrastructure (OCI) is expanding AI data center capacity. Multiple large facilities are under construction. Oracle has partnered with SMR developers for power solutions.",
+    strategy: "Oracle targets secondary markets with available power and land. Recent sites in Texas, Mississippi, and Georgia focus on 100+ MW campus designs.",
   },
   "coreweave": {
     name: "CoreWeave",
-    description: "CoreWeave is a pure-play AI cloud infrastructure provider specializing in GPU compute. The company has raised over $12B in funding and is building out a network of GPU-dense data centers optimized for AI workloads.",
-    strategy: "CoreWeave builds purpose-built AI compute facilities with high power density (40+ kW per rack). Facilities are concentrated in the Midwest and Northeast, with a focus on regions with available grid capacity.",
+    description: "CoreWeave is a pure-play AI cloud provider specializing in GPU compute. The company has raised over $12B and is building GPU-dense data centers.",
+    strategy: "CoreWeave builds high power density facilities (40+ kW per rack). Sites are concentrated in the Midwest and Northeast near available grid capacity.",
   },
   "xai": {
     name: "xAI",
-    description: "xAI, founded by Elon Musk, is building one of the largest AI training clusters in the world. The Colossus facility in Memphis, Tennessee runs 100,000+ NVIDIA H100 GPUs and consumes over 150 MW of power.",
-    strategy: "xAI's strategy prioritizes raw compute density over geographic diversification. The Memphis Colossus facility was built in record time (119 days) using gas turbine generators for initial power while grid interconnection is completed.",
+    description: "xAI is building one of the largest AI training clusters. The Colossus facility in Memphis runs 100,000+ H100 GPUs and consumes over 150 MW.",
+    strategy: "xAI prioritizes compute density over geographic diversification. Colossus was built in 119 days using gas turbines while awaiting grid interconnection.",
   },
   "openai": {
     name: "OpenAI",
-    description: "OpenAI, the creator of ChatGPT, relies on Microsoft Azure for the majority of its compute infrastructure. OpenAI has announced plans for its own data center facilities through the Stargate joint venture with SoftBank.",
-    strategy: "OpenAI's Stargate project, a $100B+ joint venture with SoftBank, plans to build dedicated AI data center campuses across the US. Initial sites are planned in Texas and other power-rich markets.",
+    description: "OpenAI relies on Microsoft Azure for most of its compute. The Stargate joint venture with SoftBank will build dedicated AI data center campuses.",
+    strategy: "Stargate is a $100B+ venture planning dedicated AI campuses across the US. Initial sites target Texas and other power-rich markets.",
   },
 };
 
