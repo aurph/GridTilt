@@ -646,36 +646,12 @@ export default function PowerMap() {
           background: #0E0E0C !important;
           font-family: inherit;
         }
-        .leaflet-control-zoom {
-          border: none !important;
-          margin-bottom: 16px !important;
-          margin-right: 16px !important;
-        }
-        .leaflet-control-zoom a {
-          background: rgba(26, 26, 46, 0.9) !important;
-          color: rgba(255,255,255,0.7) !important;
-          border: 1px solid rgba(255,255,255,0.1) !important;
-          width: 28px !important;
-          height: 28px !important;
-          line-height: 28px !important;
-          font-size: 14px !important;
-          backdrop-filter: blur(8px);
-        }
-        .leaflet-control-zoom a:hover {
-          background: rgba(26, 26, 46, 1) !important;
-          color: #F07800 !important;
-        }
         .leaflet-control-zoom-in {
           border-radius: 6px 6px 0 0 !important;
           border-bottom: none !important;
         }
         .leaflet-control-zoom-out {
           border-radius: 0 0 6px 6px !important;
-        }
-        .leaflet-control-attribution {
-          background: transparent !important;
-          color: rgba(255,255,255,0.2) !important;
-          font-size: 9px !important;
         }
         .leaflet-control-attribution a {
           color: rgba(255,255,255,0.25) !important;
@@ -732,6 +708,8 @@ export default function PowerMap() {
         .leaflet-control-zoom {
           border: none !important;
           box-shadow: 0 2px 8px rgba(0,0,0,0.5) !important;
+          margin-bottom: 16px !important;
+          margin-right: 16px !important;
         }
         .leaflet-control-zoom a {
           background: #1A1917 !important;
