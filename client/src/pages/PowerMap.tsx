@@ -643,7 +643,7 @@ export default function PowerMap() {
           border: none !important;
         }
         .leaflet-container {
-          background: #0d0d14 !important;
+          background: #0E0E0C !important;
           font-family: inherit;
         }
         .leaflet-control-zoom {
@@ -976,7 +976,7 @@ export default function PowerMap() {
             maxZoom={12}
             zoomControl={false}
             attributionControl={true}
-            style={{ width: "100%", height: "100%", minHeight: 520, background: "#0d0d14" }}
+            style={{ width: "100%", height: "100%", minHeight: 520, background: "#0E0E0C" }}
             className="rounded-none"
           >
             <TileLayer
