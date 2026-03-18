@@ -22,10 +22,10 @@ The backend is a Node.js and Express application. It fetches market data using `
 - **PowerMap**: An interactive Leaflet map with CartoDB Dark Matter tiles displaying 48 data center locations with glowing animated pins, frosted-glass tooltips, floating stats overlay, collapsible filter panel, and a Grid Stress mode.
 - **TheTrade**: A Thesis Calculator offering preset and custom scenarios for infrastructure buildout, capex, and LPT outputs.
 - **PortfolioOverlay**: Provides AI Power Exposure scoring and a radar chart for portfolios.
-- **CatalystTracker**: Tracks upcoming market events.
+- **CatalystTracker**: Monthly calendar grid with colored event dots, upcoming earnings timeline with stage-colored nodes, thesis catalyst cards with category badges. Merged API (`/api/catalysts/all`) combines seed earnings data (or live Finnhub when FINNHUB_API_KEY is set) with manual thesis catalysts. Warning banner when using seed data. Dashboard "Next 5 Catalysts" widget on TiltOverview.
 - **Stock, Sector, Region, Operator Pages**: Dedicated pages for detailed analysis of individual stocks, sectors, grid regions, and hyperscaler operators.
 - **Blog**: Features analysis articles on AI infrastructure and power economy topics.
-- **SupplyChain**: 5-stage interactive React Flow diagram (Raw Materials > Generation > Transmission > Distribution > End Use) with live sector data, animated edge particles, bottleneck indicators, and click-to-expand stock cards. Uses `@xyflow/react` v12. The d3-transition/d3-selection compatibility is resolved via `resolve.dedupe` in vite.config.ts and a side-effect `import "d3-transition"` in main.tsx.
+- **SupplyChain**: 5-stage scrollable vertical infographic (Raw Materials > Generation > Transmission > Distribution > End Use) with live sector data, SVG connection lines with animated dots, bottleneck status bars, sub-category icon tiles, scroll-triggered IntersectionObserver animations, and click-to-expand stock company cards. Staggered left/right/center layout. CSS-based (no React Flow).
 - **Subscribe / Email Capture**: Email newsletter signup at /subscribe, inline capture at bottom of TiltOverview, scroll-triggered banner. Backend stores subscribers in JSON file (server/data/subscribers.json). Newsletter send via Resend (needs RESEND_API_KEY). Unsubscribe tokens use HMAC-SHA256 with SESSION_SECRET.
 
 ### Visual Design
@@ -46,5 +46,5 @@ Includes a scrolling news ticker, keyboard shortcuts (`?` for modal, `G+1-6` for
 - **Node.js**: Backend runtime environment.
 - **Express**: Web application framework for the backend.
 - **satori** and **@resvg/resvg-js**: For dynamic OG image generation.
-- **@xyflow/react**: For the interactive Supply Chain flow diagram (React Flow v12).
+- **Finnhub API**: (Optional, with FINNHUB_API_KEY) For live earnings calendar data in Catalyst Tracker.
 - **RSS feeds**: Utility Dive, Data Center Dynamics, World Nuclear News, Power Engineering for news aggregation.

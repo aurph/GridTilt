@@ -1,29 +1,23 @@
-import { useState, useCallback, useEffect, useMemo, memo } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import {
-  ReactFlow,
-  Background,
-  Handle,
-  Position,
-  type Node,
-  type Edge,
-  type NodeProps,
-  useReactFlow,
-  ReactFlowProvider,
-  getBezierPath,
-  type EdgeProps,
-  BaseEdge,
-} from "@xyflow/react";
-import "@xyflow/react/dist/style.css";
-import {
   Mountain, Zap, Cable, Network, Server,
-  ChevronDown, ChevronUp, TrendingUp, TrendingDown, X as XIcon, ArrowRight,
+  ChevronDown, ChevronUp, TrendingUp, TrendingDown,
+  Atom, CircleDot, Wrench, Cog, Radiation, Flame, Sun, FlaskConical,
+  Plug, Construction, Snowflake, Building2,
+  Monitor, BarChart3, Cpu, Pickaxe,
 } from "lucide-react";
 import { supplyChainConfig, type StageConfig, type BottleneckStatus } from "@/data/supply-chain-config";
 
 const STAGE_ICONS: Record<string, typeof Mountain> = {
   Mountain, Zap, Cable, Network, Server,
+};
+
+const SUB_ICONS: Record<string, typeof Mountain> = {
+  Atom, CircleDot, Wrench, Cog, Radiation, Flame, Sun, FlaskConical,
+  Zap, Plug, Construction, Snowflake, Building2,
+  Monitor, BarChart3, Cpu, Pickaxe,
 };
 
 const BOTTLENECK_COLORS: Record<BottleneckStatus, string> = {
@@ -52,78 +46,136 @@ interface StageApiData {
   stocks: StockData[];
 }
 
-function AnimatedEdge({
-  id,
-  sourceX,
-  sourceY,
-  targetX,
-  targetY,
-  sourcePosition,
-  targetPosition,
-  data,
-}: EdgeProps) {
-  const [edgePath] = getBezierPath({
-    sourceX,
-    sourceY,
-    targetX,
-    targetY,
-    sourcePosition,
-    targetPosition,
-  });
+function ConnectionLines({ stageRefs }: { stageRefs: React.RefObject<(HTMLDivElement | null)[]> }) {
+  const [paths, setPaths] = useState<{ d: string; color: string }[]>([]);
+  const svgRef = useRef<SVGSVGElement>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
 
-  const status = (data?.bottleneckStatus as BottleneckStatus) || "tightening";
-  const color = BOTTLENECK_COLORS[status];
-  const strokeWidth = status === "bottlenecked" ? 3 : 2;
+  useEffect(() => {
+    const recalc = () => {
+      const refs = stageRefs.current;
+      if (!refs || !containerRef.current) return;
+      const container = containerRef.current.parentElement;
+      if (!container) return;
+      const containerRect = container.getBoundingClientRect();
+
+      const newPaths: { d: string; color: string }[] = [];
+      for (let i = 0; i < refs.length - 1; i++) {
+        const from = refs[i];
+        const to = refs[i + 1];
+        if (!from || !to) continue;
+
+        const fromRect = from.getBoundingClientRect();
+        const toRect = to.getBoundingClientRect();
+
+        const isFromLeft = i % 2 === 0;
+
+        let sx: number, sy: number, ex: number, ey: number;
+
+        if (isFromLeft) {
+          sx = fromRect.right - containerRect.left;
+          sy = fromRect.bottom - containerRect.top - 40;
+          ex = toRect.left - containerRect.left + 40;
+          ey = toRect.top - containerRect.top + 20;
+        } else {
+          sx = fromRect.left - containerRect.left + 40;
+          sy = fromRect.bottom - containerRect.top - 40;
+          ex = toRect.right - containerRect.left;
+          ey = toRect.top - containerRect.top + 20;
+        }
+
+        const midY = (sy + ey) / 2;
+        const d = `M ${sx} ${sy} C ${sx} ${midY}, ${ex} ${midY}, ${ex} ${ey}`;
+
+        const targetStage = supplyChainConfig.stages[i + 1];
+        const color = BOTTLENECK_COLORS[targetStage.bottleneck.status];
+        newPaths.push({ d, color });
+      }
+      setPaths(newPaths);
+    };
+
+    containerRef.current = svgRef.current?.parentElement as HTMLDivElement;
+    recalc();
+    const timer = setTimeout(recalc, 600);
+    window.addEventListener("resize", recalc);
+
+    const refs = stageRefs.current;
+    let ro: ResizeObserver | null = null;
+    if (refs) {
+      ro = new ResizeObserver(() => recalc());
+      refs.forEach((el) => { if (el) ro!.observe(el); });
+    }
+
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("resize", recalc);
+      if (ro) ro.disconnect();
+    };
+  }, [stageRefs]);
 
   return (
-    <>
-      <BaseEdge
-        id={id}
-        path={edgePath}
-        style={{ stroke: color, strokeWidth, opacity: 0.35 }}
-      />
-      <BaseEdge
-        id={`${id}-dash`}
-        path={edgePath}
-        style={{
-          stroke: color,
-          strokeWidth: strokeWidth - 0.5,
-          strokeDasharray: "6 8",
-          strokeDashoffset: 0,
-          opacity: 0.5,
-          animation: "flowDash 1.5s linear infinite",
-        }}
-      />
-      {[0, 1, 2].map((i) => (
-        <circle key={i} r="3" fill={color} opacity="0.7">
-          <animateMotion
-            dur="3s"
-            repeatCount="indefinite"
-            begin={`${i * 1}s`}
-            path={edgePath}
+    <svg
+      ref={svgRef}
+      className="connection-overlay"
+      style={{
+        position: "absolute",
+        top: 0,
+        left: 0,
+        width: "100%",
+        height: "100%",
+        pointerEvents: "none",
+        zIndex: 1,
+      }}
+    >
+      {paths.map((path, i) => (
+        <g key={i}>
+          <path
+            d={path.d}
+            stroke={path.color}
+            strokeWidth={2.5}
+            fill="none"
+            strokeDasharray="8 4"
+            opacity={0.25}
           />
-        </circle>
+          {[0, 1, 2].map((j) => (
+            <circle key={j} r="4" fill={path.color} opacity={0.6}>
+              <animateMotion
+                dur="3s"
+                repeatCount="indefinite"
+                path={path.d}
+                begin={`${j * 1}s`}
+              />
+            </circle>
+          ))}
+        </g>
       ))}
-    </>
+    </svg>
   );
 }
 
-const StageNode = memo(function StageNode({ data }: NodeProps) {
-  const stage = data.stage as StageConfig;
-  const apiData = data.apiData as StageApiData | undefined;
-  const expanded = data.expanded as boolean;
-  const onToggle = data.onToggle as () => void;
-  const onNavigate = data.onNavigate as (path: string) => void;
-  const animIndex = data.animIndex as number;
-  const isMobile = data.isMobile as boolean;
-
+function StageCard({
+  stage,
+  apiData,
+  index,
+  onNavigate,
+  cardRef,
+}: {
+  stage: StageConfig;
+  apiData: StageApiData | undefined;
+  index: number;
+  onNavigate: (path: string) => void;
+  cardRef: (el: HTMLDivElement | null) => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
   const [showAll, setShowAll] = useState(false);
+  const [visible, setVisible] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
   const IconComp = STAGE_ICONS[stage.icon] || Zap;
   const bottleneckColor = BOTTLENECK_COLORS[stage.bottleneck.status];
 
   const stocks = apiData?.stocks || [];
   const avgChange = apiData?.avgChange ?? 0;
-  const companyCount = stage.companies.length;
 
   const stockMap = useMemo(() => {
     const m: Record<string, StockData> = {};
@@ -131,233 +183,221 @@ const StageNode = memo(function StageNode({ data }: NodeProps) {
     return m;
   }, [stocks]);
 
-  const displayCompanies = showAll ? stage.companies : stage.companies.slice(0, 8);
-  const hasMore = stage.companies.length > 8;
+  const displayCompanies = showAll ? stage.companies : stage.companies.slice(0, 12);
 
-  const targetPos = isMobile ? Position.Top : Position.Left;
-  const sourcePos = isMobile ? Position.Bottom : Position.Right;
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) setVisible(true); },
+      { threshold: 0.15 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  const isLeft = index % 2 === 0;
+  const isCentered = index === 4;
 
   return (
     <div
-      className="stage-node-wrapper"
+      ref={(el) => { (ref as React.MutableRefObject<HTMLDivElement | null>).current = el; cardRef(el); }}
+      className={`stage-card-wrapper ${visible ? "stage-visible" : "stage-hidden"}`}
       style={{
-        animation: `fadeSlideIn 0.5s ease-out ${animIndex * 0.15}s both`,
+        display: "flex",
+        justifyContent: isCentered ? "center" : isLeft ? "flex-start" : "flex-end",
+        animationDelay: `${index * 0.12}s`,
       }}
+      data-testid={`stage-card-wrapper-${stage.id}`}
     >
-      <Handle type="target" position={targetPos} style={{ opacity: 0 }} />
-      <Handle type="source" position={sourcePos} style={{ opacity: 0 }} />
-
       <div
-        className="stage-node-card"
-        style={{
-          width: expanded ? 420 : 260,
-          borderColor: expanded
-            ? `${stage.accentColor}66`
-            : "rgba(255,255,255,0.08)",
-          boxShadow: expanded
-            ? `0 0 30px ${stage.accentColor}20`
-            : "none",
-        }}
+        className="stage-card"
+        style={{ "--stage-color": stage.accentColor } as React.CSSProperties}
         data-testid={`stage-node-${stage.id}`}
       >
-        <div className="flex items-center gap-2 mb-1">
-          <IconComp
-            className="flex-shrink-0"
-            style={{ color: stage.accentColor, width: 18, height: 18 }}
-          />
-          <span className="text-[16px] font-bold text-white leading-tight">
-            {stage.name}
-          </span>
+        <div className="flex items-center justify-between mb-1">
+          <div className="flex items-center gap-3">
+            <IconComp
+              className="flex-shrink-0"
+              style={{ color: stage.accentColor, width: 24, height: 24 }}
+            />
+            <div>
+              <span className="text-[18px] font-bold text-white leading-tight block">
+                {stage.name}
+              </span>
+              <span className="text-[13px]" style={{ color: "#888" }}>
+                {stage.tagline}
+              </span>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span
+              className="text-[12px] font-semibold px-2.5 py-1 rounded-md"
+              style={{
+                color: bottleneckColor,
+                background: `${bottleneckColor}18`,
+                border: `1px solid ${bottleneckColor}30`,
+              }}
+            >
+              {BOTTLENECK_LABELS[stage.bottleneck.status]}
+            </span>
+          </div>
         </div>
-        <p className="text-[12px] mb-3" style={{ color: "#888" }}>
-          {stage.tagline}
-        </p>
 
-        <div className="mb-3">
+        <div className="flex flex-wrap gap-2 mt-4 mb-4">
+          {stage.subCategories.map((sub) => {
+            const SubIcon = SUB_ICONS[sub.icon] || Cog;
+            return (
+              <div
+                key={sub.label}
+                className="sub-category-tile"
+                data-testid={`subcategory-${sub.label.toLowerCase().replace(/\s/g, "-")}`}
+              >
+                <SubIcon style={{ width: 20, height: 20, color: stage.accentColor }} />
+                <span className="text-[10px] mt-1" style={{ color: "#888" }}>{sub.label}</span>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="mb-4">
           <div
             className="w-full rounded-full"
             style={{ height: 6, background: "#2A2A3E" }}
           >
             <div
-              className="rounded-full bottleneck-bar-fill"
+              className="rounded-full"
               style={{
                 height: 6,
-                width: `${stage.bottleneck.barFill * 100}%`,
+                width: visible ? `${stage.bottleneck.barFill * 100}%` : "0%",
                 background: bottleneckColor,
-                animation: `barGrow 0.8s ease-out ${animIndex * 0.15 + 0.3}s both`,
+                transition: "width 0.8s ease-out",
+                transitionDelay: `${index * 0.12 + 0.3}s`,
               }}
             />
           </div>
-          <span
-            className="text-[11px] font-medium mt-1 inline-block"
-            style={{ color: bottleneckColor }}
-          >
-            {BOTTLENECK_LABELS[stage.bottleneck.status]}
-          </span>
         </div>
 
-        <div className="flex items-center justify-between mb-1">
-          <span className="text-[12px]" style={{ color: "#aaa" }}>
-            {companyCount} companies
+        <p
+          className="text-[13px] leading-relaxed mb-5"
+          style={{
+            color: "#bbb",
+            borderLeft: `3px solid ${stage.accentColor}4D`,
+            paddingLeft: 14,
+          }}
+        >
+          {stage.description}
+        </p>
+
+        <div className="flex flex-wrap gap-2 mb-4">
+          {stage.keyMetrics.map((m) => (
+            <div
+              key={m.label}
+              className="flex-1 min-w-[120px] rounded-lg p-3"
+              style={{ background: "#1A1A30", border: "1px solid rgba(255,255,255,0.04)" }}
+            >
+              <div className="text-[18px] font-bold text-white">{m.value}</div>
+              <div className="text-[11px]" style={{ color: "#888" }}>{m.label}</div>
+            </div>
+          ))}
+        </div>
+
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-[13px]" style={{ color: "#aaa" }}>
+            {stage.companies.length} companies tracked
           </span>
           <span
-            className="text-[12px] font-mono flex items-center gap-1"
+            className="text-[13px] font-mono flex items-center gap-1"
             style={{ color: avgChange >= 0 ? "#22C55E" : "#EF4444" }}
           >
             {avgChange >= 0 ? (
-              <TrendingUp style={{ width: 12, height: 12 }} />
+              <TrendingUp style={{ width: 13, height: 13 }} />
             ) : (
-              <TrendingDown style={{ width: 12, height: 12 }} />
+              <TrendingDown style={{ width: 13, height: 13 }} />
             )}
-            {avgChange >= 0 ? "+" : ""}
-            {avgChange.toFixed(2)}% today
+            {avgChange >= 0 ? "+" : ""}{avgChange.toFixed(2)}% today
           </span>
         </div>
 
-        <p className="text-[13px] font-medium" style={{ color: "#F0A500" }}>
-          {stage.keyMetrics[0]?.label}: {stage.keyMetrics[0]?.value}
-        </p>
-
-        {!expanded && (
-          <div className="flex items-center gap-1 mt-3 text-[11px]" style={{ color: "#666" }}>
-            <ChevronDown style={{ width: 12, height: 12 }} />
-            Click to explore
-          </div>
-        )}
-
-        {expanded && (
-          <div
-            className="mt-4 pt-4"
-            style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}
-            data-stop-toggle
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div
-              className="text-[13px] leading-relaxed mb-4"
-              style={{
-                color: "#ccc",
-                borderLeft: `3px solid ${stage.accentColor}4D`,
-                paddingLeft: 12,
-              }}
-            >
-              {stage.description}
-            </div>
-
-            <div className="flex flex-wrap gap-2 mb-4">
-              {stage.keyMetrics.map((m) => (
-                <div
-                  key={m.label}
-                  className="flex-1 min-w-[100px] rounded-lg p-3"
-                  style={{ background: "#222238" }}
-                >
-                  <div className="text-[18px] font-bold text-white">
-                    {m.value}
-                  </div>
-                  <div className="text-[11px]" style={{ color: "#888" }}>
-                    {m.label}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="grid grid-cols-2 gap-1.5 max-h-[280px] overflow-y-auto pr-1 custom-scrollbar">
-              {displayCompanies.map((c) => {
-                const sd = stockMap[c.ticker];
-                const chg = sd?.changePercent ?? 0;
-                return (
-                  <div
-                    key={c.ticker}
-                    className="stock-mini-card"
-                    style={{
-                      ["--accent" as string]: stage.accentColor,
-                    }}
-                    onClick={() => onNavigate(`/stock/${c.ticker}`)}
-                    data-testid={`stock-card-${c.ticker}`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-[13px] font-bold text-white">
-                        {c.ticker}
-                      </span>
-                      <span
-                        className="text-[12px] font-mono"
-                        style={{ color: chg >= 0 ? "#22C55E" : "#EF4444" }}
-                      >
-                        {chg >= 0 ? "+" : ""}
-                        {chg.toFixed(1)}%
-                      </span>
-                    </div>
-                    <div className="text-[11px]" style={{ color: "#888" }}>
-                      {c.name}
-                    </div>
-                    <div className="text-[10px]" style={{ color: "#666" }}>
-                      {c.subcategory}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {hasMore && !showAll && (
-              <button
-                className="text-[11px] mt-2 flex items-center gap-1 hover:text-white transition-colors"
-                style={{ color: "#888" }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowAll(true);
-                }}
-                data-testid={`show-all-${stage.id}`}
-              >
-                <ChevronDown style={{ width: 12, height: 12 }} />
-                Show all {stage.companies.length} companies
-              </button>
-            )}
-
-            <button
-              className="flex items-center gap-1 mt-3 text-[11px] hover:text-white transition-colors"
-              style={{ color: "#666" }}
-              onClick={() => onToggle()}
-              data-testid={`close-${stage.id}`}
-            >
-              <ChevronUp style={{ width: 12, height: 12 }} />
+        <button
+          className="flex items-center gap-2 text-[13px] font-medium transition-colors w-full justify-center py-2.5 rounded-lg"
+          style={{
+            color: expanded ? "#888" : stage.accentColor,
+            background: expanded ? "transparent" : `${stage.accentColor}12`,
+            border: `1px solid ${expanded ? "rgba(255,255,255,0.06)" : `${stage.accentColor}25`}`,
+          }}
+          onClick={() => setExpanded(!expanded)}
+          data-testid={`explore-${stage.id}`}
+        >
+          {expanded ? (
+            <>
+              <ChevronUp style={{ width: 14, height: 14 }} />
               Collapse
-            </button>
+            </>
+          ) : (
+            <>
+              <ChevronDown style={{ width: 14, height: 14 }} />
+              Explore {stage.companies.length} companies
+            </>
+          )}
+        </button>
+
+        <div
+          className="companies-expand"
+          style={{
+            maxHeight: expanded ? "600px" : "0px",
+            opacity: expanded ? 1 : 0,
+            overflow: "hidden",
+            transition: "max-height 0.4s ease-out, opacity 0.3s ease-out",
+          }}
+        >
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 mt-4 max-h-[400px] overflow-y-auto pr-1 custom-scrollbar">
+            {displayCompanies.map((c) => {
+              const sd = stockMap[c.ticker];
+              const chg = sd?.changePercent ?? 0;
+              return (
+                <div
+                  key={c.ticker}
+                  className="stock-mini-card"
+                  style={{ ["--accent" as string]: stage.accentColor }}
+                  onClick={() => onNavigate(`/stock/${c.ticker}`)}
+                  data-testid={`stock-card-${c.ticker}`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[13px] font-bold text-white">{c.ticker}</span>
+                    <span
+                      className="text-[12px] font-mono"
+                      style={{ color: chg >= 0 ? "#22C55E" : "#EF4444" }}
+                    >
+                      {chg >= 0 ? "+" : ""}{chg.toFixed(1)}%
+                    </span>
+                  </div>
+                  <div className="text-[11px]" style={{ color: "#888" }}>{c.name}</div>
+                  <div className="text-[10px]" style={{ color: "#666" }}>{c.subcategory}</div>
+                </div>
+              );
+            })}
           </div>
-        )}
+          {stage.companies.length > 12 && !showAll && (
+            <button
+              className="text-[11px] mt-2 flex items-center gap-1 hover:text-white transition-colors"
+              style={{ color: "#888" }}
+              onClick={() => setShowAll(true)}
+              data-testid={`show-all-${stage.id}`}
+            >
+              <ChevronDown style={{ width: 12, height: 12 }} />
+              Show all {stage.companies.length} companies
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
-});
-
-const nodeTypes = { stageNode: StageNode };
-const edgeTypes = { animated: AnimatedEdge };
-
-function getNodePositions(isMobile: boolean) {
-  if (isMobile) {
-    return supplyChainConfig.stages.map((s, i) => ({
-      id: s.id,
-      position: { x: 50, y: i * 340 },
-    }));
-  }
-  return supplyChainConfig.stages.map((s, i) => ({
-    id: s.id,
-    position: { x: i * 340, y: 200 },
-  }));
 }
 
-function SupplyChainFlow() {
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+export default function SupplyChain() {
   const [, navigate] = useLocation();
-  const { fitView } = useReactFlow();
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-
-  useEffect(() => {
-    const handleResize = () => {
-      const mobile = window.innerWidth < 768;
-      setIsMobile(mobile);
-    };
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
+  const stageRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   const { data: apiResponse } = useQuery<{ stages: StageApiData[] }>({
     queryKey: ["/api/supply-chain"],
@@ -381,59 +421,13 @@ function SupplyChainFlow() {
     return m;
   }, [apiResponse]);
 
-  const handleToggle = useCallback(
-    (stageId: string) => {
-      setExpandedId((prev) => (prev === stageId ? null : stageId));
-      setTimeout(() => fitView({ padding: 0.15, duration: 400 }), 50);
-    },
-    [fitView]
-  );
-
   const handleNavigate = useCallback(
     (path: string) => navigate(path),
     [navigate]
   );
 
-  const positions = getNodePositions(isMobile);
-
-  const nodes: Node[] = supplyChainConfig.stages.map((stage, i) => ({
-    id: stage.id,
-    type: "stageNode",
-    position: positions[i].position,
-    data: {
-      stage,
-      apiData: apiMap[stage.id],
-      expanded: expandedId === stage.id,
-      onToggle: () => handleToggle(stage.id),
-      onNavigate: handleNavigate,
-      animIndex: i,
-      isMobile,
-    },
-    draggable: false,
-  }));
-
-  const edges: Edge[] = [
-    { id: "e1", source: "raw-materials", target: "generation" },
-    { id: "e2", source: "generation", target: "transmission" },
-    { id: "e3", source: "transmission", target: "distribution" },
-    { id: "e4", source: "distribution", target: "end-use" },
-  ].map((e, i) => {
-    const targetStage = supplyChainConfig.stages[i + 1];
-    return {
-      ...e,
-      type: "animated",
-      data: { bottleneckStatus: targetStage.bottleneck.status },
-    };
-  });
-
-  useEffect(() => {
-    const timer = setTimeout(() => fitView({ padding: 0.15, duration: 600 }), 200);
-    return () => clearTimeout(timer);
-  }, [fitView, isMobile]);
-
   const totalCompanies = supplyChainConfig.stages.reduce(
-    (sum, s) => sum + s.companies.length,
-    0
+    (sum, s) => sum + s.companies.length, 0
   );
   const tightest = supplyChainConfig.stages.reduce((worst, s) => {
     const rank = { flowing: 0, tightening: 1, bottlenecked: 2 };
@@ -441,30 +435,18 @@ function SupplyChainFlow() {
   });
 
   return (
-    <div className="h-full flex flex-col" data-testid="supply-chain-page">
+    <div className="h-full overflow-y-auto" data-testid="supply-chain-page">
       <div
-        className="flex items-center gap-2 px-4 flex-shrink-0 flex-wrap"
-        style={{ height: 48, background: "#12121E" }}
+        className="flex items-center gap-2 px-4 md:px-8 flex-wrap sticky top-0 z-10"
+        style={{ height: 48, background: "#12121E", borderBottom: "1px solid rgba(255,255,255,0.06)" }}
         data-testid="supply-chain-summary"
       >
-        <span className="text-[16px] font-bold text-white">
-          Supply Chain Tracker
-        </span>
-        <span className="text-[13px]" style={{ color: "#666" }}>
-          ·
-        </span>
-        <span className="text-[13px]" style={{ color: "#aaa" }}>
-          5 stages
-        </span>
-        <span className="text-[13px]" style={{ color: "#666" }}>
-          ·
-        </span>
-        <span className="text-[13px]" style={{ color: "#aaa" }}>
-          {totalCompanies} companies
-        </span>
-        <span className="text-[13px]" style={{ color: "#666" }}>
-          ·
-        </span>
+        <span className="text-[16px] font-bold text-white">Supply Chain Tracker</span>
+        <span className="text-[13px]" style={{ color: "#666" }}>·</span>
+        <span className="text-[13px]" style={{ color: "#aaa" }}>5 stages</span>
+        <span className="text-[13px]" style={{ color: "#666" }}>·</span>
+        <span className="text-[13px]" style={{ color: "#aaa" }}>{totalCompanies} companies</span>
+        <span className="text-[13px]" style={{ color: "#666" }}>·</span>
         <span className="text-[13px]" style={{ color: "#aaa" }}>
           Tightest bottleneck:{" "}
           <span style={{ color: BOTTLENECK_COLORS[tightest.bottleneck.status] }}>
@@ -473,40 +455,22 @@ function SupplyChainFlow() {
         </span>
       </div>
 
-      <div className="flex-1 min-h-0" style={{ minHeight: 500 }}>
-        <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          nodeTypes={nodeTypes}
-          edgeTypes={edgeTypes}
-          onNodeClick={(_event, node) => {
-            const target = _event.target as HTMLElement;
-            if (target.closest('[data-stop-toggle]')) return;
-            handleToggle(node.id);
-          }}
-          fitView
-          fitViewOptions={{ padding: 0.15 }}
-          panOnDrag
-          zoomOnScroll
-          zoomOnPinch
-          minZoom={0.3}
-          maxZoom={1.5}
-          proOptions={{ hideAttribution: true }}
-          nodesDraggable={false}
-          nodesConnectable={false}
-          elementsSelectable={false}
-        >
-          <Background color="#333" gap={20} size={1} />
-        </ReactFlow>
+      <div className="relative px-4 md:px-8 py-8 md:py-12 max-w-[1100px] mx-auto">
+        <ConnectionLines stageRefs={stageRefs} />
+
+        <div className="relative z-[2] space-y-16 md:space-y-20">
+          {supplyChainConfig.stages.map((stage, i) => (
+            <StageCard
+              key={stage.id}
+              stage={stage}
+              apiData={apiMap[stage.id]}
+              index={i}
+              onNavigate={handleNavigate}
+              cardRef={(el) => { stageRefs.current[i] = el; }}
+            />
+          ))}
+        </div>
       </div>
     </div>
-  );
-}
-
-export default function SupplyChain() {
-  return (
-    <ReactFlowProvider>
-      <SupplyChainFlow />
-    </ReactFlowProvider>
   );
 }

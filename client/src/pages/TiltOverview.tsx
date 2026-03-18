@@ -718,10 +718,48 @@ function XFeedSection() {
   );
 }
 
-function NextCatalystsWidget({ catalysts }: { catalysts: Catalyst[] }) {
-  const upcoming = catalysts
-    .filter((c) => daysUntil(c.date) >= 0)
-    .slice(0, 3);
+interface MergedCatalystItem {
+  id: string;
+  type: "earnings" | "catalyst";
+  date: string;
+  sortDate: string;
+  ticker?: string;
+  company?: string;
+  time?: string;
+  quarter?: string;
+  stage?: string;
+  stageColor?: string;
+  category?: string;
+  title?: string;
+  description?: string;
+  dateLabel?: string;
+  affectedTickers?: string[];
+  affectedSectors?: string[];
+}
+
+interface AllCatalystsResponse {
+  items: MergedCatalystItem[];
+  earningsSource: "finnhub" | "seed";
+}
+
+const MERGED_CATEGORY_COLORS: Record<string, string> = {
+  Earnings:       "#60a5fa",
+  Regulatory:     "#F0A500",
+  Policy:         "#a855f7",
+  Infrastructure: "#22C55E",
+  Market:         "#F07800",
+  Industry:       "#F07800",
+};
+
+function NextCatalystsWidget() {
+  const { data } = useQuery<AllCatalystsResponse>({
+    queryKey: ["/api/catalysts/all"],
+    refetchInterval: 900000,
+  });
+
+  const upcoming = (data?.items || [])
+    .filter((c) => daysUntil(c.sortDate) >= 0)
+    .slice(0, 5);
 
   if (upcoming.length === 0) return null;
 
@@ -731,7 +769,7 @@ function NextCatalystsWidget({ catalysts }: { catalysts: Catalyst[] }) {
         <div className="flex items-center gap-2">
           <Calendar className="h-3.5 w-3.5 text-[#F0A500]" />
           <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-            Next Catalysts
+            Next 5 Catalysts
           </h2>
         </div>
         <Link
@@ -743,18 +781,27 @@ function NextCatalystsWidget({ catalysts }: { catalysts: Catalyst[] }) {
         </Link>
       </div>
       <div className="space-y-3">
-        {upcoming.map((catalyst) => {
-          const days = daysUntil(catalyst.date);
-          const catColor = CATEGORY_COLORS[catalyst.category] ?? "#9ca3af";
+        {upcoming.map((item) => {
+          const days = daysUntil(item.sortDate);
+          const isEarnings = item.type === "earnings";
+          const label = isEarnings ? `${item.ticker} Earnings` : (item.title || "");
+          const catLabel = isEarnings ? item.stage || "Earnings" : item.category || "Event";
+          const catColor = isEarnings
+            ? (item.stageColor || "#60a5fa")
+            : (MERGED_CATEGORY_COLORS[item.category || ""] ?? "#9ca3af");
+
           return (
-            <div key={catalyst.id} className="flex items-start gap-3" data-testid={`catalyst-preview-${catalyst.id}`}>
+            <div key={item.id} className="flex items-start gap-3" data-testid={`catalyst-preview-${item.id}`}>
               <div className="text-center flex-shrink-0 w-12">
                 <p className="text-lg font-bold font-mono text-foreground leading-none">{days === 0 ? "0" : days}</p>
                 <p className="text-[10px] text-muted-foreground">{days === 0 ? "TODAY" : "days"}</p>
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                  <p className="text-xs font-medium text-foreground truncate">{catalyst.title}</p>
+                  <p className="text-xs font-medium text-foreground truncate">{label}</p>
+                  {isEarnings && item.time && (
+                    <span className="text-[10px] text-muted-foreground/50 font-mono">{item.time}</span>
+                  )}
                 </div>
                 <div className="flex items-center gap-2">
                   <span
@@ -765,9 +812,9 @@ function NextCatalystsWidget({ catalysts }: { catalysts: Catalyst[] }) {
                       borderColor: `${catColor}30`,
                     }}
                   >
-                    {catalyst.category}
+                    {catLabel}
                   </span>
-                  <span className="text-[10px] text-muted-foreground/60">{formatDateShort(catalyst.date)}</span>
+                  <span className="text-[10px] text-muted-foreground/60">{formatDateShort(item.sortDate)}</span>
                 </div>
               </div>
             </div>
@@ -1022,6 +1069,7 @@ export default function TiltOverview() {
             ) : (
               <CatalystCalendarSection catalysts={[...(catalysts ?? []), ...(earningsCalendar ?? [])].sort((a, b) => a.date.localeCompare(b.date))} />
             )}
+            <NextCatalystsWidget />
             <XFeedSection />
           </div>
         </div>

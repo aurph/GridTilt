@@ -17,7 +17,7 @@ import {
   Map,
   Link2,
   BarChart3,
-  Calendar,
+  CalendarDays,
   FileText,
 } from "lucide-react";
 import logoPath from "@assets/Untitled_design_(4)_1772554897403.png";
@@ -56,7 +56,7 @@ const navItems = [
   {
     title: "Catalyst Tracker",
     url: "/catalysts",
-    icon: Calendar,
+    icon: CalendarDays,
     description: "Upcoming market events",
   },
   {
