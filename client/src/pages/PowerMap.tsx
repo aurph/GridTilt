@@ -734,7 +734,7 @@ export default function PowerMap() {
           box-shadow: 0 2px 8px rgba(0,0,0,0.5) !important;
         }
         .leaflet-control-zoom a {
-          background: #1A1A2E !important;
+          background: #1A1917 !important;
           color: rgba(255,255,255,0.7) !important;
           border: 1px solid rgba(255,255,255,0.08) !important;
           width: 28px !important;
@@ -763,7 +763,7 @@ export default function PowerMap() {
           ref={mapContainerRef}
         >
           <div className="absolute top-3 left-3 z-[1000] pointer-events-auto" data-testid="stats-overlay">
-            <div className="bg-[#1A1A2E]/90 backdrop-blur-md border border-white/[0.06] rounded-lg px-4 py-3 shadow-xl">
+            <div className="bg-[#1A1917]/90 backdrop-blur-md border border-white/[0.06] rounded-lg px-4 py-3 shadow-xl">
               <div className="flex items-center gap-2 mb-2">
                 <Zap className="h-3.5 w-3.5 text-[#F07800]" />
                 <span className="text-xs font-semibold text-white/90 tracking-tight">Power Map</span>
@@ -786,14 +786,14 @@ export default function PowerMap() {
           <div className="absolute top-3 right-3 z-[1000] flex flex-col gap-2 pointer-events-auto">
             <div className="flex rounded-md overflow-hidden border border-white/[0.08] text-xs font-mono shadow-lg">
               <button
-                className={`px-3 py-1.5 transition-all duration-500 ${viewMode === "dc" ? "bg-[#F07800] text-black font-semibold" : "bg-[#1A1A2E]/90 text-white/60 hover:text-white/90 backdrop-blur-md"}`}
+                className={`px-3 py-1.5 transition-all duration-500 ${viewMode === "dc" ? "bg-[#F07800] text-black font-semibold" : "bg-[#1A1917]/90 text-white/60 hover:text-white/90 backdrop-blur-md"}`}
                 onClick={() => setViewMode("dc")}
                 data-testid="toggle-dc-locations"
               >
                 DC Locations
               </button>
               <button
-                className={`px-3 py-1.5 transition-all duration-500 ${viewMode === "stress" ? "bg-[#F07800] text-black font-semibold" : "bg-[#1A1A2E]/90 text-white/60 hover:text-white/90 backdrop-blur-md"}`}
+                className={`px-3 py-1.5 transition-all duration-500 ${viewMode === "stress" ? "bg-[#F07800] text-black font-semibold" : "bg-[#1A1917]/90 text-white/60 hover:text-white/90 backdrop-blur-md"}`}
                 onClick={() => setViewMode("stress")}
                 data-testid="toggle-grid-stress"
               >
@@ -810,7 +810,7 @@ export default function PowerMap() {
                   setFiltersExpanded(!filtersExpanded);
                 }
               }}
-              className="flex items-center gap-2 bg-[#1A1A2E]/90 backdrop-blur-md border border-white/[0.08] rounded-md px-3 py-1.5 text-xs font-mono text-white/60 hover:text-white/90 transition-colors shadow-lg"
+              className="flex items-center gap-2 bg-[#1A1917]/90 backdrop-blur-md border border-white/[0.08] rounded-md px-3 py-1.5 text-xs font-mono text-white/60 hover:text-white/90 transition-colors shadow-lg"
               data-testid="filter-bar-toggle"
             >
               <SlidersHorizontal className="h-3 w-3" />
@@ -827,7 +827,7 @@ export default function PowerMap() {
 
           {filtersExpanded && (
             <div className="absolute top-[88px] right-3 z-[1000] pointer-events-auto" data-testid="filter-panel">
-              <div className="bg-[#1A1A2E]/95 backdrop-blur-md border border-white/[0.08] rounded-lg p-4 shadow-2xl w-[320px] max-h-[60vh] overflow-y-auto">
+              <div className="bg-[#1A1917]/95 backdrop-blur-md border border-white/[0.08] rounded-lg p-4 shadow-2xl w-[320px] max-h-[60vh] overflow-y-auto">
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-xs font-semibold text-white/80">Filter Facilities</span>
                   {anyFilterActive && (
@@ -945,7 +945,7 @@ export default function PowerMap() {
 
           {viewMode === "stress" && (
             <div className="absolute bottom-10 left-3 z-[1000] pointer-events-none">
-              <div className="bg-[#1A1A2E]/90 backdrop-blur-md border border-white/[0.06] rounded-lg px-3 py-2.5 shadow-lg">
+              <div className="bg-[#1A1917]/90 backdrop-blur-md border border-white/[0.06] rounded-lg px-3 py-2.5 shadow-lg">
                 <p className="text-[9px] font-mono text-white/40 uppercase tracking-wider mb-1.5">Grid Stress</p>
                 <div className="space-y-1 text-[10px] font-mono text-white/60">
                   <div className="flex items-center gap-1.5"><div className="h-2 w-4 rounded-sm bg-red-500/60" /> Critical (&lt;16%)</div>
@@ -959,7 +959,7 @@ export default function PowerMap() {
 
           {viewMode === "dc" && (
             <div className="absolute bottom-3 left-3 z-[1000] pointer-events-none">
-              <div className="bg-[#1A1A2E]/90 backdrop-blur-md border border-white/[0.06] rounded-lg px-3 py-2 shadow-lg">
+              <div className="bg-[#1A1917]/90 backdrop-blur-md border border-white/[0.06] rounded-lg px-3 py-2 shadow-lg">
                 <div className="flex items-center gap-3 text-[10px] font-mono text-white/50">
                   <div className="flex items-center gap-1.5"><div className="h-2 w-2 rounded-full bg-[#F07800]" />Operational</div>
                   <div className="flex items-center gap-1.5"><div className="h-2 w-2 rounded-full bg-[#F0A500]" />Construction</div>
@@ -1019,7 +1019,7 @@ export default function PowerMap() {
               <div
                 className="border rounded-lg shadow-2xl text-xs font-mono min-w-[260px] max-w-[280px] overflow-hidden"
                 style={{
-                  background: "#1A1A2E",
+                  background: "#1A1917",
                   borderColor: "rgba(240, 120, 0, 0.3)",
                   boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
                   backdropFilter: "blur(8px)",
@@ -1180,7 +1180,7 @@ export default function PowerMap() {
       {mobileFiltersOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div className="absolute inset-0 bg-black/60" onClick={() => setMobileFiltersOpen(false)} />
-          <div className="absolute bottom-0 left-0 right-0 bg-[#1A1A2E] border-t border-white/[0.08] rounded-t-xl p-5 max-h-[80vh] overflow-y-auto">
+          <div className="absolute bottom-0 left-0 right-0 bg-[#1A1917] border-t border-white/[0.08] rounded-t-xl p-5 max-h-[80vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <SlidersHorizontal className="h-4 w-4 text-white/60" />

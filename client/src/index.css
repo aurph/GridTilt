@@ -60,7 +60,7 @@
   --ring: 28 95% 53%;
 
   /* Chart palette */
-  --chart-1: 210 100% 56%;
+  --chart-1: 28 95% 53%;
   --chart-2: 36 100% 50%;
   --chart-3: 160 70% 45%;
   --chart-4: 270 65% 65%;
@@ -270,7 +270,7 @@ html {
 
 .stage-card {
   width: min(600px, 90vw);
-  background: linear-gradient(180deg, #141428 0%, #1A1A2E 100%);
+  background: linear-gradient(180deg, #161614 0%, #1A1917 100%);
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 16px;
   padding: 28px 32px;
@@ -316,7 +316,7 @@ html {
   justify-content: center;
   width: 80px;
   height: 70px;
-  background: #1E1E32;
+  background: #1E1D1A;
   border: 1px solid rgba(255, 255, 255, 0.04);
   border-radius: 10px;
   transition: transform 0.15s ease;
@@ -328,7 +328,7 @@ html {
 }
 
 .stock-mini-card {
-  background: #1E1E32;
+  background: #1E1D1A;
   border-radius: 8px;
   padding: 10px;
   cursor: pointer;

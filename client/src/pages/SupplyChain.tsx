@@ -263,7 +263,7 @@ function StageCard({
         <div className="mb-4">
           <div
             className="w-full rounded-full"
-            style={{ height: 6, background: "#2A2A3E" }}
+            style={{ height: 6, background: "#2A2925" }}
           >
             <div
               className="rounded-full"
@@ -294,7 +294,7 @@ function StageCard({
             <div
               key={m.label}
               className="flex-1 min-w-[120px] rounded-lg p-3"
-              style={{ background: "#1A1A30", border: "1px solid rgba(255,255,255,0.04)" }}
+              style={{ background: "#1C1B18", border: "1px solid rgba(255,255,255,0.04)" }}
             >
               <div className="text-[18px] font-bold text-white">{m.value}</div>
               <div className="text-[11px]" style={{ color: "#888" }}>{m.label}</div>
@@ -438,7 +438,7 @@ export default function SupplyChain() {
     <div className="h-full overflow-y-auto" data-testid="supply-chain-page">
       <div
         className="flex items-center gap-2 px-4 md:px-8 flex-wrap sticky top-0 z-10"
-        style={{ height: 48, background: "#12121E", borderBottom: "1px solid rgba(255,255,255,0.06)" }}
+        style={{ height: 48, background: "#151513", borderBottom: "1px solid rgba(255,255,255,0.06)" }}
         data-testid="supply-chain-summary"
       >
         <span className="text-[16px] font-bold text-white">Supply Chain Tracker</span>

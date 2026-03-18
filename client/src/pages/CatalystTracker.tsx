@@ -129,13 +129,13 @@ function CalendarGrid({
 
       <div className="grid grid-cols-7 gap-px" style={{ background: "rgba(255,255,255,0.03)" }}>
         {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
-          <div key={d} className="text-center text-[11px] font-medium py-2" style={{ color: "#666", background: "#12121E" }}>
+          <div key={d} className="text-center text-[11px] font-medium py-2" style={{ color: "#666", background: "#151513" }}>
             {d}
           </div>
         ))}
         {cells.map((day, i) => {
           if (day === null) {
-            return <div key={`empty-${i}`} style={{ background: "#14142A", minHeight: 80 }} />;
+            return <div key={`empty-${i}`} style={{ background: "#161614", minHeight: 80 }} />;
           }
           const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
           const dayItems = itemsByDate[dateStr] || [];
@@ -148,7 +148,7 @@ function CalendarGrid({
               key={dateStr}
               className="cursor-pointer transition-all"
               style={{
-                background: isSelected ? "#1E1E3A" : isToday ? "#1A1A30" : "#14142A",
+                background: isSelected ? "#1E1D1A" : isToday ? "#1C1B18" : "#161614",
                 minHeight: 80,
                 padding: "6px 8px",
                 borderLeft: isToday ? "2px solid #F07800" : isSelected ? "2px solid rgba(255,255,255,0.2)" : "2px solid transparent",
@@ -212,7 +212,7 @@ function DayDetailCard({ item }: { item: MergedItem }) {
     return (
       <div
         className="rounded-lg p-4"
-        style={{ background: "#1A1A2E", border: `1px solid ${e.stageColor}25` }}
+        style={{ background: "#1A1917", border: `1px solid ${e.stageColor}25` }}
         data-testid={`detail-${e.ticker}`}
       >
         <div className="flex items-center justify-between mb-1">
@@ -222,7 +222,7 @@ function DayDetailCard({ item }: { item: MergedItem }) {
           </div>
           <span
             className="text-[11px] font-medium px-2 py-0.5 rounded"
-            style={{ background: "#2A2A3E", color: "#aaa" }}
+            style={{ background: "#2A2925", color: "#aaa" }}
           >
             {e.time}
           </span>
@@ -254,7 +254,7 @@ function DayDetailCard({ item }: { item: MergedItem }) {
   return (
     <div
       className="rounded-lg p-4"
-      style={{ background: "#1A1A2E", borderLeft: `3px solid ${catColor}` }}
+      style={{ background: "#1A1917", borderLeft: `3px solid ${catColor}` }}
       data-testid={`detail-${c.id}`}
     >
       <div className="flex items-center gap-2 mb-1">
@@ -291,7 +291,7 @@ function UpcomingTimeline({ items }: { items: MergedItem[] }) {
       <div className="relative pl-6">
         <div
           className="absolute left-[9px] top-0 bottom-0 w-[2px]"
-          style={{ background: "#2A2A3E" }}
+          style={{ background: "#2A2925" }}
         />
 
         {upcoming.map((item) => {
@@ -309,7 +309,7 @@ function UpcomingTimeline({ items }: { items: MergedItem[] }) {
               <div key={item.id} className="relative flex items-start gap-3 pb-4" data-testid={`timeline-${e.ticker}`}>
                 <div
                   className="absolute left-[-18px] top-[6px] w-[10px] h-[10px] rounded-full border-2"
-                  style={{ background: dotColor, borderColor: "#0A0A1A" }}
+                  style={{ background: dotColor, borderColor: "#0E0E0C" }}
                 />
                 <div className="flex-1 flex items-center gap-3 flex-wrap">
                   <span
@@ -334,7 +334,7 @@ function UpcomingTimeline({ items }: { items: MergedItem[] }) {
                   </span>
                   <span
                     className="text-[10px] px-1.5 py-0.5 rounded"
-                    style={{ background: "#2A2A3E", color: "#aaa" }}
+                    style={{ background: "#2A2925", color: "#aaa" }}
                   >
                     {e.time}
                   </span>
@@ -354,7 +354,7 @@ function UpcomingTimeline({ items }: { items: MergedItem[] }) {
             <div key={item.id} className="relative flex items-start gap-3 pb-4" data-testid={`timeline-${c.id}`}>
               <div
                 className="absolute left-[-18px] top-[6px] w-[10px] h-[10px] rounded-full border-2"
-                style={{ background: catColor, borderColor: "#0A0A1A" }}
+                style={{ background: catColor, borderColor: "#0E0E0C" }}
               />
               <div className="flex-1 flex items-center gap-3 flex-wrap">
                 <span className="text-[11px] font-bold uppercase min-w-[60px]" style={{ color: timeLabelColor }}>
@@ -387,7 +387,7 @@ function UpcomingTimeline({ items }: { items: MergedItem[] }) {
 
       {showPast && past.length > 0 && (
         <div className="relative pl-6 mt-4 opacity-50">
-          <div className="absolute left-[9px] top-0 bottom-0 w-[2px]" style={{ background: "#1E1E2E" }} />
+          <div className="absolute left-[9px] top-0 bottom-0 w-[2px]" style={{ background: "#1E1D1A" }} />
           {past.map((item) => {
             if (item.type !== "earnings") return null;
             const e = item as EarningsItem;
@@ -428,7 +428,7 @@ function ThesisCatalysts({ catalysts }: { catalysts: CatalystItem[] }) {
               key={c.id}
               className="rounded-lg p-5"
               style={{
-                background: "#1A1A2E",
+                background: "#1A1917",
                 borderLeft: `3px solid ${catColor}`,
               }}
               data-testid={`catalyst-${c.id}`}
@@ -496,7 +496,7 @@ export default function CatalystTracker() {
     <div className="h-full overflow-y-auto" data-testid="catalyst-tracker-page">
       <div
         className="flex items-center gap-2 px-4 md:px-8 flex-wrap sticky top-0 z-10"
-        style={{ height: 48, background: "#12121E", borderBottom: "1px solid rgba(255,255,255,0.06)" }}
+        style={{ height: 48, background: "#151513", borderBottom: "1px solid rgba(255,255,255,0.06)" }}
       >
         <CalendarDays style={{ width: 16, height: 16, color: "#F07800" }} />
         <span className="text-[16px] font-bold text-white">Catalyst Tracker</span>
@@ -513,7 +513,7 @@ export default function CatalystTracker() {
       {earningsSource === "seed" && (
         <div
           className="flex items-center gap-2 px-4 md:px-8 py-2 text-[12px]"
-          style={{ background: "#1A1A30", borderBottom: "1px solid rgba(255,255,255,0.04)", color: "#F0A500" }}
+          style={{ background: "#1C1B18", borderBottom: "1px solid rgba(255,255,255,0.04)", color: "#F0A500" }}
           data-testid="seed-data-banner"
         >
           <AlertTriangle style={{ width: 14, height: 14, flexShrink: 0 }} />
@@ -525,7 +525,7 @@ export default function CatalystTracker() {
         {isLoading ? (
           <div className="space-y-4">
             {[...Array(3)].map((_, i) => (
-              <div key={i} className="h-32 rounded-lg animate-pulse" style={{ background: "#1A1A2E" }} />
+              <div key={i} className="h-32 rounded-lg animate-pulse" style={{ background: "#1A1917" }} />
             ))}
           </div>
         ) : (

@@ -5,7 +5,6 @@ import {
   SidebarGroup,
   SidebarGroupContent,
   SidebarMenu,
-  SidebarMenuButton,
   SidebarMenuItem,
   SidebarHeader,
   SidebarFooter,
@@ -90,55 +89,52 @@ export function AppSidebar() {
       <SidebarContent>
         <SidebarGroup className="pt-3 px-2">
           <SidebarGroupContent>
-            <SidebarMenu className="space-y-1">
+            <SidebarMenu className="space-y-0.5">
               {navItems.map((item) => {
                 const isActive = location === item.url || (item.url !== "/" && location.startsWith(item.url));
                 return (
                   <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton
-                      asChild
-                      data-active={isActive}
-                      className="h-auto py-0 px-0 rounded-lg relative"
+                    <Link
+                      href={item.url}
+                      data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, "-")}`}
+                      className="flex items-center gap-3 px-3 py-2.5 no-underline"
+                      style={{
+                        background: isActive ? "rgba(240, 120, 0, 0.08)" : "transparent",
+                        borderLeft: isActive ? "3px solid #F07800" : "3px solid transparent",
+                      }}
                     >
-                      <Link
-                        href={item.url}
-                        data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, "-")}`}
-                        className="flex items-center gap-3 px-3 py-3 rounded-lg transition-colors"
+                      <div
+                        className="flex items-center justify-center flex-shrink-0"
                         style={{
-                          background: isActive ? "rgba(240, 120, 0, 0.08)" : "transparent",
-                          borderLeft: isActive ? "3px solid #F07800" : "3px solid transparent",
+                          width: 34,
+                          height: 34,
+                          borderRadius: 7,
+                          background: isActive ? "rgba(240, 120, 0, 0.12)" : "rgba(255, 255, 255, 0.03)",
                         }}
                       >
-                        <div
-                          className="flex items-center justify-center flex-shrink-0"
+                        <item.icon
                           style={{
-                            width: 36,
-                            height: 36,
-                            borderRadius: 8,
-                            background: isActive ? "rgba(240, 120, 0, 0.12)" : "rgba(255, 255, 255, 0.03)",
+                            width: 20,
+                            height: 20,
+                            color: isActive ? "#F07800" : "#777",
                           }}
+                        />
+                      </div>
+                      <div className="flex flex-col gap-0.5 min-w-0">
+                        <span
+                          className="text-[13px] font-medium leading-tight"
+                          style={{ color: isActive ? "#F07800" : "#d4d4d4" }}
                         >
-                          <item.icon
-                            style={{
-                              width: 22,
-                              height: 22,
-                              color: isActive ? "#F07800" : "#888",
-                            }}
-                          />
-                        </div>
-                        <div className="flex flex-col gap-0.5 min-w-0">
-                          <span
-                            className="text-[13px] font-semibold leading-tight"
-                            style={{ color: isActive ? "#F07800" : "#e0e0e0" }}
-                          >
-                            {item.title}
-                          </span>
-                          <span className="text-[11px] leading-tight text-muted-foreground truncate">
-                            {item.description}
-                          </span>
-                        </div>
-                      </Link>
-                    </SidebarMenuButton>
+                          {item.title}
+                        </span>
+                        <span
+                          className="text-[11px] leading-tight truncate"
+                          style={{ color: "#666" }}
+                        >
+                          {item.description}
+                        </span>
+                      </div>
+                    </Link>
                   </SidebarMenuItem>
                 );
               })}
