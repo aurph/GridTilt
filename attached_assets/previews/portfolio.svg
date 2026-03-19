@@ -1,26 +1,27 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 160" fill="none">
-  <rect width="400" height="160" rx="6" fill="#141210"/>
-  <rect x="20" y="15" width="160" height="130" rx="4" fill="#1a1816"/>
-  <text x="30" y="35" font-size="9" fill="#F07800" font-family="monospace">Exposure Score</text>
-  <text x="75" y="80" font-size="32" fill="#F07800" font-family="monospace" text-anchor="middle" font-weight="bold">78</text>
-  <text x="75" y="95" font-size="8" fill="#888" font-family="monospace" text-anchor="middle">/ 100</text>
-  <circle cx="100" cy="75" r="35" fill="none" stroke="#F07800" stroke-width="3" opacity="0.2"/>
-  <circle cx="100" cy="75" r="35" fill="none" stroke="#F07800" stroke-width="3" stroke-dasharray="176" stroke-dashoffset="39" opacity="0.6" transform="rotate(-90 100 75)"/>
-  <rect x="200" y="15" width="180" height="130" rx="4" fill="#1a1816"/>
-  <text x="210" y="35" font-size="8" fill="#888" font-family="monospace">SECTOR BREAKDOWN</text>
-  <rect x="210" y="45" width="130" height="10" rx="2" fill="#F07800" opacity="0.2"/>
-  <rect x="210" y="45" width="95" height="10" rx="2" fill="#F07800" opacity="0.5"/>
-  <text x="345" y="54" font-size="7" fill="#F07800" font-family="monospace">Compute</text>
-  <rect x="210" y="62" width="130" height="10" rx="2" fill="#F0A500" opacity="0.2"/>
-  <rect x="210" y="62" width="72" height="10" rx="2" fill="#F0A500" opacity="0.5"/>
-  <text x="345" y="71" font-size="7" fill="#F0A500" font-family="monospace">Nuclear</text>
-  <rect x="210" y="79" width="130" height="10" rx="2" fill="#D4A843" opacity="0.2"/>
-  <rect x="210" y="79" width="55" height="10" rx="2" fill="#D4A843" opacity="0.5"/>
-  <text x="345" y="88" font-size="7" fill="#D4A843" font-family="monospace">Grid</text>
-  <rect x="210" y="96" width="130" height="10" rx="2" fill="#C87533" opacity="0.2"/>
-  <rect x="210" y="96" width="40" height="10" rx="2" fill="#C87533" opacity="0.5"/>
-  <text x="345" y="105" font-size="7" fill="#C87533" font-family="monospace">Uranium</text>
-  <rect x="210" y="113" width="130" height="10" rx="2" fill="#B8860B" opacity="0.2"/>
-  <rect x="210" y="113" width="30" height="10" rx="2" fill="#B8860B" opacity="0.5"/>
-  <text x="345" y="122" font-size="7" fill="#B8860B" font-family="monospace">REITs</text>
+  <rect width="400" height="160" rx="6" fill="#0E0E0C"/>
+  <rect x="16" y="10" width="165" height="138" rx="4" fill="#141210"/>
+  <text x="26" y="30" font-size="9" fill="#F07800" font-family="monospace" font-weight="600">EXPOSURE SCORE</text>
+  <text x="80" y="82" font-size="36" fill="#F07800" font-family="monospace" text-anchor="middle" font-weight="bold">78</text>
+  <text x="80" y="98" font-size="9" fill="#666" font-family="monospace" text-anchor="middle">/ 100</text>
+  <circle cx="100" cy="78" r="38" fill="none" stroke="#F07800" stroke-width="3" opacity="0.12"/>
+  <circle cx="100" cy="78" r="38" fill="none" stroke="#F07800" stroke-width="3" stroke-dasharray="190" stroke-dashoffset="42" opacity="0.5" transform="rotate(-90 100 78)"/>
+  <text x="80" y="140" font-size="7" fill="#555" font-family="monospace" text-anchor="middle">HIGH EXPOSURE</text>
+  <rect x="196" y="10" width="188" height="138" rx="4" fill="#141210"/>
+  <text x="206" y="30" font-size="8" fill="#888" font-family="monospace" font-weight="500">SECTOR BREAKDOWN</text>
+  <rect x="206" y="40" width="140" height="10" rx="2" fill="#F07800" opacity="0.12"/>
+  <rect x="206" y="40" width="105" height="10" rx="2" fill="#F07800" opacity="0.4"/>
+  <text x="356" y="49" font-size="7" fill="#F07800" font-family="monospace">Compute</text>
+  <rect x="206" y="58" width="140" height="10" rx="2" fill="#F0A500" opacity="0.12"/>
+  <rect x="206" y="58" width="78" height="10" rx="2" fill="#F0A500" opacity="0.4"/>
+  <text x="356" y="67" font-size="7" fill="#F0A500" font-family="monospace">Nuclear</text>
+  <rect x="206" y="76" width="140" height="10" rx="2" fill="#D4A843" opacity="0.12"/>
+  <rect x="206" y="76" width="58" height="10" rx="2" fill="#D4A843" opacity="0.4"/>
+  <text x="356" y="85" font-size="7" fill="#D4A843" font-family="monospace">Grid</text>
+  <rect x="206" y="94" width="140" height="10" rx="2" fill="#C87533" opacity="0.12"/>
+  <rect x="206" y="94" width="42" height="10" rx="2" fill="#C87533" opacity="0.4"/>
+  <text x="356" y="103" font-size="7" fill="#C87533" font-family="monospace">Uranium</text>
+  <rect x="206" y="112" width="140" height="10" rx="2" fill="#B8860B" opacity="0.12"/>
+  <rect x="206" y="112" width="32" height="10" rx="2" fill="#B8860B" opacity="0.4"/>
+  <text x="356" y="121" font-size="7" fill="#B8860B" font-family="monospace">REITs</text>
 </svg>

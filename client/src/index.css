@@ -288,6 +288,8 @@ html {
   width: 100%;
   min-height: 100vh;
   padding: 16px 20px 48px;
+  overflow-y: auto;
+  height: 100%;
 }
 
 .sc-topbar {
