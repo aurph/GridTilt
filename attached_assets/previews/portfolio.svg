@@ -2,11 +2,11 @@
   <rect width="400" height="160" rx="6" fill="#0E0E0C"/>
   <rect x="16" y="10" width="165" height="138" rx="4" fill="#141210"/>
   <text x="26" y="30" font-size="9" fill="#F07800" font-family="monospace" font-weight="600">EXPOSURE SCORE</text>
-  <text x="80" y="82" font-size="36" fill="#F07800" font-family="monospace" text-anchor="middle" font-weight="bold">78</text>
-  <text x="80" y="98" font-size="9" fill="#666" font-family="monospace" text-anchor="middle">/ 100</text>
-  <circle cx="100" cy="78" r="38" fill="none" stroke="#F07800" stroke-width="3" opacity="0.12"/>
-  <circle cx="100" cy="78" r="38" fill="none" stroke="#F07800" stroke-width="3" stroke-dasharray="190" stroke-dashoffset="42" opacity="0.5" transform="rotate(-90 100 78)"/>
-  <text x="80" y="140" font-size="7" fill="#555" font-family="monospace" text-anchor="middle">HIGH EXPOSURE</text>
+  <text x="99" y="82" font-size="36" fill="#F07800" font-family="monospace" text-anchor="middle" font-weight="bold">78</text>
+  <text x="99" y="98" font-size="9" fill="#666" font-family="monospace" text-anchor="middle">/ 100</text>
+  <circle cx="99" cy="78" r="38" fill="none" stroke="#F07800" stroke-width="3" opacity="0.12"/>
+  <circle cx="99" cy="78" r="38" fill="none" stroke="#F07800" stroke-width="3" stroke-dasharray="190" stroke-dashoffset="42" opacity="0.5" transform="rotate(-90 99 78)"/>
+  <text x="99" y="140" font-size="7" fill="#555" font-family="monospace" text-anchor="middle">HIGH EXPOSURE</text>
   <rect x="196" y="10" width="188" height="138" rx="4" fill="#141210"/>
   <text x="206" y="30" font-size="8" fill="#888" font-family="monospace" font-weight="500">SECTOR BREAKDOWN</text>
   <rect x="206" y="40" width="140" height="10" rx="2" fill="#F07800" opacity="0.12"/>
