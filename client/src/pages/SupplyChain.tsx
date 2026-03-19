@@ -1,32 +1,27 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
+import * as d3 from "d3";
 import {
   Zap, Mountain, Cable, Server, X,
   Atom, Circle, Wrench, Gem, Flame, Radiation, Gauge, Sun, FlaskConical,
   Plug, HardHat, Snowflake, ToggleRight, Building, Battery,
   Cloud, Landmark, Cpu, Pickaxe, GitBranch,
-  TrendingUp, TrendingDown, ChevronRight,
 } from "lucide-react";
-import { STAGE_CONFIGS, subSystems, type SubSystem } from "@/data/supply-chain-config";
+import {
+  supplyNodes,
+  supplyLinks,
+  STAGE_COLORS,
+  STAGE_LABELS,
+  type SupplyNode,
+  type SupplyLink,
+} from "@/data/supply-chain-config";
 
 const ICON_MAP: Record<string, typeof Zap> = {
   Mountain, Zap, Cable, Server, GitBranch,
   Atom, Circle, Wrench, Gem, Flame, Radiation, Gauge, Sun, FlaskConical,
   Plug, HardHat, Snowflake, ToggleRight, Building, Battery,
   Cloud, Landmark, Cpu, Pickaxe,
-};
-
-const BOTTLENECK_COLORS: Record<string, string> = {
-  flowing: "#22C55E",
-  tightening: "#F0A500",
-  bottlenecked: "#EF4444",
-};
-
-const BOTTLENECK_LABELS: Record<string, string> = {
-  flowing: "FLOWING",
-  tightening: "TIGHT",
-  bottlenecked: "CRITICAL",
 };
 
 interface StockData {
@@ -43,114 +38,343 @@ interface StageApiData {
   stocks: StockData[];
 }
 
-function ConnectorLines({
-  rootRef,
-  systemRefs,
-  subsystemRefs,
-  activeStage,
-  activeSubsystem,
+interface SimNode extends d3.SimulationNodeDatum {
+  id: string;
+  name: string;
+  stage: string;
+  stageIndex: number;
+  icon: string;
+  companies: { ticker: string; name: string }[];
+  description: string;
+  keyMetric?: { value: string; label: string };
+}
+
+interface SimLink extends d3.SimulationLinkDatum<SimNode> {
+  label?: string;
+}
+
+const GRAPH_W = 1200;
+const GRAPH_H = 700;
+
+function NetworkGraph({
+  activeNode,
+  onSelectNode,
+  entrancePhase,
 }: {
-  rootRef: React.RefObject<HTMLDivElement | null>;
-  systemRefs: React.RefObject<Record<string, HTMLDivElement | null>>;
-  subsystemRefs: React.RefObject<Record<string, HTMLDivElement | null>>;
-  activeStage: string | null;
-  activeSubsystem: string | null;
+  activeNode: string | null;
+  onSelectNode: (id: string | null) => void;
+  entrancePhase: number;
 }) {
   const svgRef = useRef<SVGSVGElement>(null);
-  const [lines, setLines] = useState<{ x1: number; y1: number; x2: number; y2: number; active: boolean; level: number }[]>([]);
+  const gRef = useRef<SVGGElement>(null);
+  const nodesRef = useRef<SimNode[]>([]);
+  const linksRef = useRef<SimLink[]>([]);
+  const positionsReady = useRef(false);
+  const [, forceRender] = useState(0);
 
-  const recalc = useCallback(() => {
-    const svg = svgRef.current;
-    const root = rootRef.current;
-    if (!svg || !root) return;
-    const containerRect = svg.getBoundingClientRect();
-    const newLines: typeof lines = [];
-
-    const rootRect = root.getBoundingClientRect();
-    const rootCx = rootRect.left + rootRect.width / 2 - containerRect.left;
-    const rootBy = rootRect.bottom - containerRect.top;
-
-    STAGE_CONFIGS.forEach((stage) => {
-      const sysEl = systemRefs.current?.[stage.id];
-      if (!sysEl) return;
-      const sysRect = sysEl.getBoundingClientRect();
-      const sysCx = sysRect.left + sysRect.width / 2 - containerRect.left;
-      const sysTy = sysRect.top - containerRect.top;
-      const sysBx = sysRect.bottom - containerRect.top;
-
-      const isActive = activeStage === stage.id;
-      newLines.push({ x1: rootCx, y1: rootBy, x2: sysCx, y2: sysTy, active: isActive, level: 0 });
-
-      const stageSubs = subSystems.filter(s => s.parentStage === stage.id);
-      stageSubs.forEach((sub) => {
-        const subEl = subsystemRefs.current?.[sub.id];
-        if (!subEl) return;
-        const subRect = subEl.getBoundingClientRect();
-        const subCx = subRect.left + subRect.width / 2 - containerRect.left;
-        const subTy = subRect.top - containerRect.top;
-        const isSubActive = activeSubsystem === sub.id;
-        newLines.push({ x1: sysCx, y1: sysBx, x2: subCx, y2: subTy, active: isSubActive || isActive, level: 1 });
-      });
+  const connectedSet = useMemo(() => {
+    if (!activeNode) return null;
+    const s = new Set<string>();
+    s.add(activeNode);
+    supplyLinks.forEach((l) => {
+      if (l.source === activeNode || l.target === activeNode) {
+        s.add(l.source);
+        s.add(l.target);
+      }
     });
+    return s;
+  }, [activeNode]);
 
-    setLines(newLines);
-  }, [rootRef, systemRefs, subsystemRefs, activeStage, activeSubsystem]);
+  const connectedLinkSet = useMemo(() => {
+    if (!activeNode) return null;
+    const s = new Set<number>();
+    supplyLinks.forEach((l, i) => {
+      if (l.source === activeNode || l.target === activeNode) s.add(i);
+    });
+    return s;
+  }, [activeNode]);
 
   useEffect(() => {
-    recalc();
-    const t1 = setTimeout(recalc, 100);
-    const t2 = setTimeout(recalc, 500);
-    const t3 = setTimeout(recalc, 700);
-    window.addEventListener("resize", recalc);
+    const nodes: SimNode[] = supplyNodes.map((n) => ({
+      ...n,
+      x: undefined as unknown as number,
+      y: undefined as unknown as number,
+    }));
+    const links: SimLink[] = supplyLinks.map((l) => ({
+      source: l.source,
+      target: l.target,
+      label: l.label,
+    }));
 
-    const ro = new ResizeObserver(() => recalc());
-    if (rootRef.current) ro.observe(rootRef.current);
-    Object.values(systemRefs.current || {}).forEach(el => { if (el) ro.observe(el); });
-    Object.values(subsystemRefs.current || {}).forEach(el => { if (el) ro.observe(el); });
+    nodesRef.current = nodes;
+    linksRef.current = links;
 
-    return () => {
-      clearTimeout(t1); clearTimeout(t2); clearTimeout(t3);
-      window.removeEventListener("resize", recalc);
-      ro.disconnect();
-    };
-  }, [recalc]);
+    const stageX = [0.1, 0.3, 0.5, 0.7, 0.9];
+
+    const simulation = d3.forceSimulation<SimNode>(nodes)
+      .force('x', d3.forceX<SimNode>((d) => stageX[d.stageIndex] * GRAPH_W).strength(0.85))
+      .force('y', d3.forceY<SimNode>(GRAPH_H / 2).strength(0.05))
+      .force('collide', d3.forceCollide<SimNode>(55))
+      .force('link', d3.forceLink<SimNode, SimLink>(links).id((d) => d.id).distance(140).strength(0.25))
+      .force('charge', d3.forceManyBody<SimNode>().strength(-180))
+      .stop();
+
+    for (let i = 0; i < 350; i++) simulation.tick();
+
+    positionsReady.current = true;
+    forceRender((v) => v + 1);
+
+    return () => { simulation.stop(); };
+  }, []);
+
+  useEffect(() => {
+    const svg = svgRef.current;
+    if (!svg) return;
+
+    const zoom = d3.zoom<SVGSVGElement, unknown>()
+      .scaleExtent([0.4, 3])
+      .on('zoom', (event) => {
+        if (gRef.current) {
+          gRef.current.setAttribute('transform', event.transform.toString());
+        }
+      });
+
+    d3.select(svg).call(zoom);
+
+    d3.select(svg).on('dblclick.zoom', () => {
+      d3.select(svg).transition().duration(500).call(zoom.transform, d3.zoomIdentity);
+    });
+
+    return () => { d3.select(svg).on('.zoom', null); };
+  }, []);
+
+  if (!positionsReady.current) return null;
+
+  const nodes = nodesRef.current;
+  const links = linksRef.current;
 
   return (
-    <svg ref={svgRef} className="sc-connector-svg" data-testid="sc-connectors">
-      {lines.map((l, i) => (
-        <line
-          key={i}
-          x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2}
-          stroke={l.active ? "rgba(240,120,0,0.45)" : "rgba(255,255,255,0.06)"}
-          strokeWidth={l.active ? 1.5 : 1}
-        />
-      ))}
+    <svg
+      ref={svgRef}
+      className="sc-graph-svg"
+      viewBox={`0 0 ${GRAPH_W} ${GRAPH_H}`}
+      preserveAspectRatio="xMidYMid meet"
+      data-testid="sc-network-graph"
+    >
+      <g ref={gRef}>
+        {STAGE_LABELS.map((s) => {
+          const stageX = [0.1, 0.3, 0.5, 0.7, 0.9];
+          return (
+            <text
+              key={s.id}
+              x={stageX[s.index] * GRAPH_W}
+              y={24}
+              textAnchor="middle"
+              className="sc-stage-label"
+              data-testid={`stage-label-${s.id}`}
+            >
+              {s.name}
+            </text>
+          );
+        })}
+
+        {[0.2, 0.4, 0.6, 0.8].map((frac) => (
+          <line
+            key={frac}
+            x1={frac * GRAPH_W}
+            y1={36}
+            x2={frac * GRAPH_W}
+            y2={GRAPH_H - 10}
+            stroke="rgba(255,255,255,0.03)"
+            strokeWidth={1}
+          />
+        ))}
+
+        {links.map((link, i) => {
+          const src = link.source as SimNode;
+          const tgt = link.target as SimNode;
+          if (!src.x || !tgt.x) return null;
+
+          const isHighlighted = connectedLinkSet?.has(i);
+          const isDimmed = connectedLinkSet && !isHighlighted;
+
+          const midX = (src.x + tgt.x) / 2;
+          const path = `M ${src.x} ${src.y} C ${midX} ${src.y}, ${midX} ${tgt.y}, ${tgt.x} ${tgt.y}`;
+
+          const opacity = isDimmed ? 0.03 : isHighlighted ? 0.5 : 0.1;
+          const width = isHighlighted ? 2.5 : 1.2;
+
+          const delay = entrancePhase >= 2
+            ? Math.min(src.stageIndex, tgt.stageIndex) * 0.08 + 0.3
+            : 99;
+
+          return (
+            <path
+              key={i}
+              d={path}
+              fill="none"
+              stroke={`rgba(240,120,0,${opacity})`}
+              strokeWidth={width}
+              className={entrancePhase >= 2 ? "sc-link-enter" : "sc-link-hidden"}
+              style={{ animationDelay: `${delay}s` }}
+              data-testid={`link-${i}`}
+            />
+          );
+        })}
+
+        {nodes.map((node) => {
+          const color = STAGE_COLORS[node.stage] || '#F07800';
+          const isActive = activeNode === node.id;
+          const isConnected = connectedSet?.has(node.id);
+          const isDimmed = connectedSet && !isConnected;
+
+          const nodeOpacity = isDimmed ? 0.15 : 1;
+          const strokeColor = isActive
+            ? color
+            : isConnected
+              ? color
+              : 'rgba(240,120,0,0.15)';
+          const strokeWidth = isActive ? 3 : isConnected ? 2 : 1.5;
+          const fillColor = isActive
+            ? `rgba(${hexToRgb(color)},0.12)`
+            : '#1C1B18';
+          const filterVal = isActive
+            ? `drop-shadow(0 0 12px ${color})`
+            : isConnected
+              ? `drop-shadow(0 0 6px ${color})`
+              : 'none';
+
+          const enterDelay = entrancePhase >= 1
+            ? node.stageIndex * 0.1
+            : 99;
+
+          const IconComp = ICON_MAP[node.icon] || Zap;
+
+          return (
+            <g
+              key={node.id}
+              transform={`translate(${node.x},${node.y})`}
+              style={{ opacity: nodeOpacity, cursor: 'pointer', transition: 'opacity 0.3s' }}
+              onClick={(e) => { e.stopPropagation(); onSelectNode(isActive ? null : node.id); }}
+              className={entrancePhase >= 1 ? "sc-node-enter" : "sc-node-hidden"}
+              data-testid={`node-${node.id}`}
+            >
+              <circle
+                r={32}
+                fill={fillColor}
+                stroke={strokeColor}
+                strokeWidth={strokeWidth}
+                style={{ filter: filterVal, transition: 'all 0.25s ease', animationDelay: `${enterDelay}s` }}
+              />
+              <foreignObject x={-12} y={-12} width={24} height={24} style={{ overflow: 'visible' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 24, height: 24 }}>
+                  <IconComp
+                    size={20}
+                    strokeWidth={2}
+                    color={isActive || isConnected ? color : '#888'}
+                    style={{ transition: 'color 0.25s' }}
+                  />
+                </div>
+              </foreignObject>
+              <text
+                y={46}
+                textAnchor="middle"
+                className="sc-node-label"
+                fill="white"
+              >
+                {node.name}
+              </text>
+              <text
+                y={58}
+                textAnchor="middle"
+                className="sc-node-sublabel"
+                fill="#666"
+              >
+                {node.companies.length} co.
+              </text>
+            </g>
+          );
+        })}
+
+        {activeNode && links.map((link, i) => {
+          if (!connectedLinkSet?.has(i)) return null;
+          const src = link.source as SimNode;
+          const tgt = link.target as SimNode;
+          if (!src.x || !tgt.x || !link.label) return null;
+
+          const mx = (src.x + tgt.x) / 2;
+          const my = (src.y! + tgt.y!) / 2;
+
+          return (
+            <g key={`label-${i}`} transform={`translate(${mx},${my})`}>
+              <rect
+                x={-link.label.length * 3.2 - 6}
+                y={-8}
+                width={link.label.length * 6.4 + 12}
+                height={16}
+                rx={3}
+                fill="rgba(14,14,12,0.9)"
+                stroke="rgba(240,120,0,0.15)"
+                strokeWidth={0.5}
+              />
+              <text
+                textAnchor="middle"
+                dy={4}
+                className="sc-link-label"
+              >
+                {link.label}
+              </text>
+            </g>
+          );
+        })}
+      </g>
     </svg>
   );
 }
 
+function hexToRgb(hex: string): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `${r},${g},${b}`;
+}
+
 function DetailPanel({
-  sub,
-  parentStage,
+  node,
   stockMap,
   onClose,
   onNavigate,
 }: {
-  sub: SubSystem;
-  parentStage: typeof STAGE_CONFIGS[0];
+  node: SupplyNode;
   stockMap: Record<string, StockData>;
   onClose: () => void;
   onNavigate: (path: string) => void;
 }) {
-  const Icon = ICON_MAP[sub.icon] || Zap;
+  const stageColor = STAGE_COLORS[node.stage] || '#F07800';
+  const Icon = ICON_MAP[node.icon] || Zap;
+
+  const upstreamLinks = supplyLinks.filter((l) => l.target === node.id);
+  const downstreamLinks = supplyLinks.filter((l) => l.source === node.id);
+
+  const upstreamNodes = upstreamLinks.map((l) => {
+    const n = supplyNodes.find((sn) => sn.id === l.source);
+    return { name: n?.name || l.source, label: l.label };
+  });
+  const downstreamNodes = downstreamLinks.map((l) => {
+    const n = supplyNodes.find((sn) => sn.id === l.target);
+    return { name: n?.name || l.target, label: l.label };
+  });
+
   return (
-    <div className="sc-detail-panel" data-testid={`detail-${sub.id}`}>
-      <div className="flex items-start justify-between mb-3">
+    <div className="sc-detail-panel" data-testid={`detail-${node.id}`}>
+      <div className="flex items-start justify-between mb-2">
         <div className="flex items-center gap-3">
-          <Icon style={{ width: 18, height: 18, color: parentStage.accentColor }} />
+          <Icon style={{ width: 18, height: 18, color: stageColor }} />
           <div>
-            <span className="sc-mono text-[15px] font-bold text-white">{sub.name}</span>
-            <span className="text-[11px] ml-2" style={{ color: "#666" }}>{parentStage.name}</span>
+            <span className="sc-mono text-[15px] font-bold text-white">{node.name}</span>
+            <span className="text-[11px] ml-2 uppercase" style={{ color: '#555' }}>
+              {STAGE_LABELS.find((s) => s.id === node.stage)?.name}
+            </span>
           </div>
         </div>
         <button onClick={onClose} className="text-[#555] hover:text-white transition-colors" data-testid="close-detail">
@@ -158,22 +382,44 @@ function DetailPanel({
         </button>
       </div>
 
-      <div className="sc-mono text-[11px] mb-3" style={{ color: parentStage.accentColor }}>{sub.oneLiner}</div>
+      {node.keyMetric && (
+        <div className="sc-mono text-[11px] mb-2" style={{ color: stageColor }}>
+          {node.keyMetric.label}: {node.keyMetric.value}
+        </div>
+      )}
 
       <div className="sc-divider mb-3" />
 
-      <p className="text-[12px] leading-[1.6] mb-4" style={{ color: "#999" }}>{sub.description}</p>
+      <p className="text-[12px] leading-[1.6] mb-4" style={{ color: '#999' }}>{node.description}</p>
 
-      {sub.keyMetrics.length > 0 && (
-        <div className="flex flex-wrap gap-4 mb-4">
-          {sub.keyMetrics.map((m, i) => (
-            <div key={i} data-testid={`metric-${sub.id}-${i}`}>
-              <div className="sc-mono text-[14px] font-bold text-white">{m.value}</div>
-              <div className="text-[10px] uppercase tracking-wider" style={{ color: "#555" }}>{m.label}</div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+        {upstreamNodes.length > 0 && (
+          <div>
+            <div className="sc-section-label" style={{ color: '#22C55E' }}>RECEIVES FROM</div>
+            <div className="flex flex-wrap gap-1">
+              {upstreamNodes.map((u, i) => (
+                <span key={i} className="sc-flow-tag" data-testid={`upstream-${i}`}>
+                  {u.name}
+                  {u.label && <span className="text-[#555]"> ({u.label})</span>}
+                </span>
+              ))}
             </div>
-          ))}
-        </div>
-      )}
+          </div>
+        )}
+        {downstreamNodes.length > 0 && (
+          <div>
+            <div className="sc-section-label" style={{ color: '#F0A500' }}>FEEDS INTO</div>
+            <div className="flex flex-wrap gap-1">
+              {downstreamNodes.map((d, i) => (
+                <span key={i} className="sc-flow-tag" data-testid={`downstream-${i}`}>
+                  {d.name}
+                  {d.label && <span className="text-[#555]"> ({d.label})</span>}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
 
       <div className="sc-section-label">SECURITIES</div>
       <div className="sc-stock-table">
@@ -183,7 +429,7 @@ function DetailPanel({
           <span className="sc-stock-col-price">PRICE</span>
           <span className="sc-stock-col-chg">CHG%</span>
         </div>
-        {sub.companies.map((c) => {
+        {node.companies.map((c) => {
           const stock = stockMap[c.ticker];
           const chg = stock?.changePercent ?? 0;
           const price = stock?.price;
@@ -208,75 +454,10 @@ function DetailPanel({
   );
 }
 
-function SystemSummaryPanel({
-  stage,
-  subs,
-  stockMap,
-  onSelectSub,
-  onClose,
-}: {
-  stage: typeof STAGE_CONFIGS[0];
-  subs: SubSystem[];
-  stockMap: Record<string, StockData>;
-  onSelectSub: (id: string) => void;
-  onClose: () => void;
-}) {
-  const allTickers = subs.flatMap(s => s.companies.map(c => c.ticker));
-  const uniqueTickers = [...new Set(allTickers)];
-  const stocks = uniqueTickers.map(t => stockMap[t]).filter(Boolean);
-  const avgChange = stocks.length > 0 ? stocks.reduce((s, st) => s + st.changePercent, 0) / stocks.length : 0;
-
-  return (
-    <div className="sc-detail-panel" data-testid={`summary-${stage.id}`}>
-      <div className="flex items-start justify-between mb-3">
-        <div>
-          <span className="sc-mono text-[15px] font-bold text-white">{stage.name}</span>
-          <span className="text-[11px] ml-2" style={{ color: "#555" }}>{stage.tagline}</span>
-        </div>
-        <div className="flex items-center gap-3">
-          <span className="sc-mono text-[12px] font-medium" style={{ color: avgChange >= 0 ? "#22C55E" : "#EF4444" }}>
-            {avgChange >= 0 ? "+" : ""}{avgChange.toFixed(2)}%
-          </span>
-          <span className="text-[10px]" style={{ color: "#555" }}>{uniqueTickers.length} securities</span>
-          <button onClick={onClose} className="text-[#555] hover:text-white transition-colors" data-testid="close-summary">
-            <X style={{ width: 16, height: 16 }} />
-          </button>
-        </div>
-      </div>
-      <div className="sc-divider mb-3" />
-      <div className="sc-section-label">SUB-SYSTEMS</div>
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
-        {subs.map((sub) => {
-          const Icon = ICON_MAP[sub.icon] || Zap;
-          return (
-            <div
-              key={sub.id}
-              className="sc-summary-sub"
-              onClick={() => onSelectSub(sub.id)}
-              data-testid={`summary-sub-${sub.id}`}
-            >
-              <div className="flex items-center gap-2 mb-1">
-                <Icon style={{ width: 14, height: 14, color: stage.accentColor }} />
-                <span className="sc-mono text-[12px] font-semibold text-white">{sub.name}</span>
-              </div>
-              <div className="text-[10px]" style={{ color: "#555" }}>{sub.companies.length} co. <ChevronRight style={{ width: 10, height: 10, display: "inline" }} /></div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
 export default function SupplyChain() {
   const [, navigate] = useLocation();
-  const [activeSubsystem, setActiveSubsystem] = useState<string | null>(null);
-  const [activeStageSummary, setActiveStageSummary] = useState<string | null>(null);
-  const [entranceLevel, setEntranceLevel] = useState(0);
-
-  const rootRef = useRef<HTMLDivElement>(null);
-  const systemRefs = useRef<Record<string, HTMLDivElement | null>>({});
-  const subsystemRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const [activeNode, setActiveNode] = useState<string | null>(null);
+  const [entrancePhase, setEntrancePhase] = useState(0);
 
   const { data: apiData } = useQuery<{ stages: StageApiData[] }>({
     queryKey: ["/api/supply-chain"],
@@ -291,56 +472,22 @@ export default function SupplyChain() {
     return m;
   }, [apiData]);
 
-  const stageAvgChanges = useMemo(() => {
-    const m: Record<string, number> = {};
-    apiData?.stages?.forEach((stage) => { m[stage.key] = stage.avgChange; });
-    return m;
-  }, [apiData]);
-
   const totalCompanies = useMemo(() => {
     const all = new Set<string>();
-    subSystems.forEach(s => s.companies.forEach(c => all.add(c.ticker)));
+    supplyNodes.forEach((n) => n.companies.forEach((c) => all.add(c.ticker)));
     return all.size;
   }, []);
 
   useEffect(() => {
-    const t1 = setTimeout(() => setEntranceLevel(1), 50);
-    const t2 = setTimeout(() => setEntranceLevel(2), 250);
-    const t3 = setTimeout(() => setEntranceLevel(3), 450);
-    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
+    const t1 = setTimeout(() => setEntrancePhase(1), 100);
+    const t2 = setTimeout(() => setEntrancePhase(2), 600);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
   }, []);
 
-  const activeStageId = activeSubsystem
-    ? subSystems.find(s => s.id === activeSubsystem)?.parentStage || null
-    : activeStageSummary;
-
-  const handleSubClick = (subId: string) => {
-    if (activeSubsystem === subId) {
-      setActiveSubsystem(null);
-    } else {
-      setActiveSubsystem(subId);
-      setActiveStageSummary(null);
-    }
-  };
-
-  const handleSystemClick = (stageId: string) => {
-    if (activeStageSummary === stageId) {
-      setActiveStageSummary(null);
-    } else {
-      setActiveStageSummary(stageId);
-      setActiveSubsystem(null);
-    }
-  };
-
-  const tightestBottleneck = STAGE_CONFIGS.reduce((a, b) => b.bottleneck.barFill > a.bottleneck.barFill ? b : a);
-
-  const activeSub = activeSubsystem ? subSystems.find(s => s.id === activeSubsystem) : null;
-  const activeParentStage = activeSub ? STAGE_CONFIGS.find(s => s.id === activeSub.parentStage) : null;
-  const summaryStage = activeStageSummary ? STAGE_CONFIGS.find(s => s.id === activeStageSummary) : null;
-  const summarySubs = summaryStage ? subSystems.filter(s => s.parentStage === summaryStage.id) : [];
+  const activeNodeData = activeNode ? supplyNodes.find((n) => n.id === activeNode) : null;
 
   return (
-    <div className="sc-page" data-testid="supply-chain-page">
+    <div className="sc-page" data-testid="supply-chain-page" onClick={() => setActiveNode(null)}>
       <div className="sc-topbar" data-testid="sc-summary-bar">
         <div className="sc-topbar-left">
           <span className="sc-mono text-[13px] font-bold" style={{ color: "#F07800" }}>SUPPLY CHAIN</span>
@@ -348,132 +495,38 @@ export default function SupplyChain() {
           <span className="sc-mono text-[11px] text-white">AI Power Infrastructure</span>
         </div>
         <div className="sc-topbar-right">
-          <span className="sc-mono text-[10px]" style={{ color: "#555" }}>SYSTEMS</span>
-          <span className="sc-mono text-[11px] text-white">5</span>
+          <span className="sc-mono text-[10px]" style={{ color: "#555" }}>NODES</span>
+          <span className="sc-mono text-[11px] text-white">{supplyNodes.length}</span>
+          <span className="sc-topbar-sep">|</span>
+          <span className="sc-mono text-[10px]" style={{ color: "#555" }}>CONNECTIONS</span>
+          <span className="sc-mono text-[11px] text-white">{supplyLinks.length}</span>
           <span className="sc-topbar-sep">|</span>
           <span className="sc-mono text-[10px]" style={{ color: "#555" }}>SECURITIES</span>
           <span className="sc-mono text-[11px] text-white">{totalCompanies}</span>
-          <span className="sc-topbar-sep">|</span>
-          <span className="sc-mono text-[10px]" style={{ color: "#555" }}>BOTTLENECK</span>
-          <span className="sc-mono text-[11px]" style={{ color: "#EF4444" }} data-testid="tightest-bottleneck">{tightestBottleneck.name.toUpperCase()}</span>
         </div>
       </div>
 
-      <div className="sc-tree">
-        <ConnectorLines
-          rootRef={rootRef}
-          systemRefs={systemRefs}
-          subsystemRefs={subsystemRefs}
-          activeStage={activeStageId}
-          activeSubsystem={activeSubsystem}
+      <div className="sc-graph-container" onClick={(e) => e.stopPropagation()}>
+        <NetworkGraph
+          activeNode={activeNode}
+          onSelectNode={setActiveNode}
+          entrancePhase={entrancePhase}
         />
-
-        <div
-          ref={rootRef}
-          className={`sc-root ${entranceLevel >= 1 ? "sc-entered" : "sc-pre-enter"}`}
-          data-testid="sc-root"
-        >
-          <Zap style={{ width: 16, height: 16, color: "#F07800" }} />
-          <span className="sc-mono text-[13px] font-bold text-white">AI POWER SUPPLY CHAIN</span>
-          <span className="sc-mono text-[10px]" style={{ color: "#555" }}>{totalCompanies} securities tracked</span>
+        <div className="sc-graph-hint">
+          <span className="text-[10px]" style={{ color: '#444' }}>Scroll to zoom. Drag to pan. Double-click to reset. Click a node to explore.</span>
         </div>
+      </div>
 
-        <div className={`sc-systems-row ${entranceLevel >= 2 ? "sc-entered" : "sc-pre-enter"}`}>
-          {STAGE_CONFIGS.map((stage, idx) => {
-            const Icon = ICON_MAP[stage.icon] || Zap;
-            const isActive = activeStageId === stage.id;
-            const isDimmed = activeStageId !== null && !isActive;
-            const avgChg = stageAvgChanges[stage.id] ?? 0;
-            const bottleneckColor = BOTTLENECK_COLORS[stage.bottleneck.status];
-            const stageSubs = subSystems.filter(s => s.parentStage === stage.id);
-            const stageCompanyCount = new Set(stageSubs.flatMap(s => s.companies.map(c => c.ticker))).size;
-
-            return (
-              <div
-                key={stage.id}
-                ref={(el) => { systemRefs.current[stage.id] = el; }}
-                className={`sc-system ${isActive ? "sc-system-active" : ""}`}
-                style={{
-                  "--system-color": stage.accentColor,
-                  opacity: isDimmed ? 0.35 : 1,
-                } as React.CSSProperties}
-                onClick={() => handleSystemClick(stage.id)}
-                data-testid={`system-${stage.id}`}
-              >
-                <div className="sc-system-header">
-                  <div className="flex items-center gap-2">
-                    <Icon style={{ width: 16, height: 16, color: stage.accentColor }} />
-                    <span className="sc-mono text-[12px] font-bold text-white">{stage.name}</span>
-                  </div>
-                  <span className="sc-mono text-[9px] font-bold px-1.5 py-0.5" style={{ background: `${bottleneckColor}15`, color: bottleneckColor, borderRadius: 2 }} data-testid={`bottleneck-${stage.id}`}>
-                    {BOTTLENECK_LABELS[stage.bottleneck.status]}
-                  </span>
-                </div>
-                <div className="text-[10px]" style={{ color: "#555" }}>{stage.tagline}</div>
-                <div className="sc-system-bar">
-                  <div className="sc-system-bar-fill" style={{ width: `${stage.bottleneck.barFill * 100}%`, background: bottleneckColor }} />
-                </div>
-                <div className="sc-system-footer">
-                  <span className="sc-mono text-[10px]" style={{ color: "#555" }}>{stageCompanyCount} co.</span>
-                  <span className="sc-mono text-[10px] font-medium" style={{ color: avgChg >= 0 ? "#22C55E" : "#EF4444" }} data-testid={`avg-change-${stage.id}`}>
-                    {avgChg >= 0 ? "+" : ""}{avgChg.toFixed(2)}%
-                  </span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        <div className={`sc-subsystems-row ${entranceLevel >= 3 ? "sc-entered" : "sc-pre-enter"}`}>
-          {STAGE_CONFIGS.map((stage) => {
-            const stageSubs = subSystems.filter(s => s.parentStage === stage.id);
-            const isStageActive = activeStageId === stage.id;
-            const isDimmed = activeStageId !== null && !isStageActive;
-
-            return (
-              <div key={stage.id} className="sc-subsystem-cluster" style={{ opacity: isDimmed ? 0.35 : 1, transition: "opacity 0.3s ease" }}>
-                {stageSubs.map((sub) => {
-                  const Icon = ICON_MAP[sub.icon] || Zap;
-                  const isSubActive = activeSubsystem === sub.id;
-                  return (
-                    <div
-                      key={sub.id}
-                      ref={(el) => { subsystemRefs.current[sub.id] = el; }}
-                      className={`sc-subsystem ${isSubActive ? "sc-subsystem-active" : ""}`}
-                      style={{ "--parent-color": stage.accentColor } as React.CSSProperties}
-                      onClick={(e) => { e.stopPropagation(); handleSubClick(sub.id); }}
-                      data-testid={`subsystem-${sub.id}`}
-                    >
-                      <Icon style={{ width: 20, height: 20, color: isSubActive ? stage.accentColor : "#666", transition: "color 0.2s" }} />
-                      <span className="sc-subsystem-label">{sub.name}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            );
-          })}
-        </div>
-
-        {activeSub && activeParentStage && (
+      {activeNodeData && (
+        <div onClick={(e) => e.stopPropagation()}>
           <DetailPanel
-            sub={activeSub}
-            parentStage={activeParentStage}
+            node={activeNodeData}
             stockMap={stockMap}
-            onClose={() => setActiveSubsystem(null)}
+            onClose={() => setActiveNode(null)}
             onNavigate={navigate}
           />
-        )}
-
-        {summaryStage && !activeSubsystem && (
-          <SystemSummaryPanel
-            stage={summaryStage}
-            subs={summarySubs}
-            stockMap={stockMap}
-            onSelectSub={(id) => { setActiveSubsystem(id); setActiveStageSummary(null); }}
-            onClose={() => setActiveStageSummary(null)}
-          />
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
