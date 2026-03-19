@@ -46,6 +46,7 @@ export const supplyNodes: SupplyNode[] = [
   { id: 'transformers', name: 'Transformers',      stage: 'transmission', stageIndex: 2, icon: 'Plug',          companies: [{ ticker: 'ETN', name: 'Eaton Corporation' },{ ticker: 'ABB', name: 'ABB Ltd' },{ ticker: 'EMR', name: 'Emerson Electric' },{ ticker: 'HUBB', name: 'Hubbell Inc' }], description: 'THE bottleneck. US makes ~60/yr. Need 200-500 for AI. 400,000 lbs each. 18-36 mo lead time.', keyMetric: { value: '18-36 mo', label: 'Lead time' } },
   { id: 'hv-cable',     name: 'HV Cable',          stage: 'transmission', stageIndex: 2, icon: 'Cable',         companies: [{ ticker: 'WIRE', name: 'Encore Wire' },{ ticker: 'NVT', name: 'nVent Electric' }], description: 'High-voltage lines carrying power from plants to demand centers.', keyMetric: { value: 'Growing', label: 'Queue' } },
   { id: 'line-const',   name: 'Line Construction', stage: 'transmission', stageIndex: 2, icon: 'HardHat',       companies: [{ ticker: 'PWR', name: 'Quanta Services' },{ ticker: 'IDA', name: 'IDACORP' },{ ticker: 'AYI', name: 'Acuity Brands' },{ ticker: 'GNRC', name: 'Generac' }], description: 'Physical build of transmission lines + towers. Quanta has the largest private HV workforce in NA. 5-10 yr permitting.', keyMetric: { value: '5-10 yr', label: 'Permitting' } },
+  { id: 'substations',  name: 'Substations',       stage: 'transmission', stageIndex: 2, icon: 'Zap',           companies: [{ ticker: 'ETN', name: 'Eaton Corporation' },{ ticker: 'ABB', name: 'ABB Ltd' },{ ticker: 'HUBB', name: 'Hubbell Inc' },{ ticker: 'DUK', name: 'Duke Energy' },{ ticker: 'AEP', name: 'American Electric Power' }], description: 'Where utility grid meets the customer. Step-down voltage for distribution. New DC substations can require 100-500 MW dedicated capacity.', keyMetric: { value: '100-500 MW', label: 'Per DC site' } },
 
   { id: 'cooling',      name: 'Cooling',           stage: 'distribution', stageIndex: 3, icon: 'Snowflake',     companies: [{ ticker: 'VRT', name: 'Vertiv Holdings' },{ ticker: 'CARR', name: 'Carrier Global' },{ ticker: 'JCI', name: 'Johnson Controls' }], description: 'AI racks pull 40-70kW. Liquid cooling becoming standard. Vertiv and Carrier dominate.', keyMetric: { value: '40-70kW', label: 'Per rack' } },
   { id: 'switchgear',   name: 'Switchgear',        stage: 'distribution', stageIndex: 3, icon: 'ToggleRight',   companies: [{ ticker: 'ETN', name: 'Eaton Corporation' },{ ticker: 'ABB', name: 'ABB Ltd' }], description: 'Routes and protects power inside facilities. 2-3 year backlogs.', keyMetric: { value: '2-3 yr', label: 'Backlog' } },
@@ -91,11 +92,15 @@ export const supplyLinks: SupplyLink[] = [
   // Transmission -> Transmission (internal)
   { source: 'line-const',  target: 'hv-cable',      label: 'infrastructure' },
 
-  // Transmission -> Distribution
-  { source: 'transformers',target: 'switchgear',    label: 'step-down' },
-  { source: 'transformers',target: 'power-mgmt',    label: 'facility feed' },
-  { source: 'hv-cable',    target: 'switchgear',    label: 'delivery' },
-  { source: 'hv-cable',    target: 'dc-build',      label: 'site feed' },
+  // Transmission internal
+  { source: 'transformers',target: 'substations',   label: 'step-down' },
+  { source: 'hv-cable',    target: 'substations',   label: 'delivery' },
+  { source: 'line-const',  target: 'substations',   label: 'site work' },
+
+  // Substations -> Distribution
+  { source: 'substations', target: 'switchgear',    label: 'utility handoff' },
+  { source: 'substations', target: 'power-mgmt',    label: 'facility feed' },
+  { source: 'substations', target: 'dc-build',      label: 'site power' },
 
   // Distribution -> End Use
   { source: 'cooling',     target: 'hyperscalers',  label: 'thermal mgmt' },
