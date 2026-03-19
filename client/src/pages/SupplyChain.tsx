@@ -56,7 +56,7 @@ interface SimLink extends d3.SimulationLinkDatum<SimNode> {
 }
 
 const GRAPH_W = 1200;
-const GRAPH_H = 700;
+const GRAPH_H = 800;
 
 const connectionCounts: Record<string, number> = {};
 supplyLinks.forEach((l) => {
@@ -127,9 +127,9 @@ function NetworkGraph({
     const simulation = d3.forceSimulation<SimNode>(nodes)
       .force('x', d3.forceX<SimNode>((d) => stageX[d.stageIndex] * GRAPH_W).strength(0.85))
       .force('y', d3.forceY<SimNode>(GRAPH_H / 2).strength(0.05))
-      .force('collide', d3.forceCollide<SimNode>((d) => getNodeRadius(d.id) + 20))
+      .force('collide', d3.forceCollide<SimNode>((d) => getNodeRadius(d.id) + 32))
       .force('link', d3.forceLink<SimNode, SimLink>(links).id((d) => d.id).distance(140).strength(0.25))
-      .force('charge', d3.forceManyBody<SimNode>().strength(-180))
+      .force('charge', d3.forceManyBody<SimNode>().strength(-250))
       .stop();
 
     for (let i = 0; i < 350; i++) simulation.tick();
