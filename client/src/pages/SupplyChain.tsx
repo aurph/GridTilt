@@ -1,32 +1,29 @@
-import { useState, useCallback, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import {
-  Mountain, Zap, Cable, Network, Server,
-  ChevronDown, ChevronUp, TrendingUp, TrendingDown,
-  Atom, CircleDot, Wrench, Cog, Radiation, Flame, Sun, FlaskConical,
-  Plug, Construction, Snowflake, Building2,
-  Monitor, BarChart3, Cpu, Pickaxe,
+  Zap, Mountain, Cable, Server, X,
+  Atom, Circle, Wrench, Gem, Flame, Radiation, Gauge, Sun, FlaskConical,
+  Plug, HardHat, Snowflake, ToggleRight, Building, Battery,
+  Cloud, Landmark, Cpu, Pickaxe, GitBranch,
+  TrendingUp, TrendingDown,
 } from "lucide-react";
-import { supplyChainConfig, type StageConfig, type BottleneckStatus } from "@/data/supply-chain-config";
+import { STAGE_CONFIGS, subSystems, type SubSystem } from "@/data/supply-chain-config";
 
-const STAGE_ICONS: Record<string, typeof Mountain> = {
-  Mountain, Zap, Cable, Network, Server,
+const ICON_MAP: Record<string, typeof Zap> = {
+  Mountain, Zap, Cable, Server, GitBranch,
+  Atom, Circle, Wrench, Gem, Flame, Radiation, Gauge, Sun, FlaskConical,
+  Plug, HardHat, Snowflake, ToggleRight, Building, Battery,
+  Cloud, Landmark, Cpu, Pickaxe,
 };
 
-const SUB_ICONS: Record<string, typeof Mountain> = {
-  Atom, CircleDot, Wrench, Cog, Radiation, Flame, Sun, FlaskConical,
-  Zap, Plug, Construction, Snowflake, Building2,
-  Monitor, BarChart3, Cpu, Pickaxe,
-};
-
-const BOTTLENECK_COLORS: Record<BottleneckStatus, string> = {
+const BOTTLENECK_COLORS: Record<string, string> = {
   flowing: "#22C55E",
   tightening: "#F0A500",
   bottlenecked: "#EF4444",
 };
 
-const BOTTLENECK_LABELS: Record<BottleneckStatus, string> = {
+const BOTTLENECK_LABELS: Record<string, string> = {
   flowing: "Flowing",
   tightening: "Tightening",
   bottlenecked: "Bottlenecked",
@@ -46,350 +43,230 @@ interface StageApiData {
   stocks: StockData[];
 }
 
-function ConnectionLines({ stageRefs }: { stageRefs: React.RefObject<(HTMLDivElement | null)[]> }) {
-  const [paths, setPaths] = useState<{ d: string; color: string }[]>([]);
+function ConnectorLines({
+  rootRef,
+  systemRefs,
+  subsystemRefs,
+  activeStage,
+  activeSubsystem,
+}: {
+  rootRef: React.RefObject<HTMLDivElement | null>;
+  systemRefs: React.RefObject<Record<string, HTMLDivElement | null>>;
+  subsystemRefs: React.RefObject<Record<string, HTMLDivElement | null>>;
+  activeStage: string | null;
+  activeSubsystem: string | null;
+}) {
   const svgRef = useRef<SVGSVGElement>(null);
-  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [lines, setLines] = useState<{ x1: number; y1: number; x2: number; y2: number; active: boolean; level: number }[]>([]);
+
+  const recalc = useCallback(() => {
+    const svg = svgRef.current;
+    const root = rootRef.current;
+    if (!svg || !root) return;
+    const containerRect = svg.getBoundingClientRect();
+    const newLines: typeof lines = [];
+
+    const rootRect = root.getBoundingClientRect();
+    const rootCx = rootRect.left + rootRect.width / 2 - containerRect.left;
+    const rootBy = rootRect.bottom - containerRect.top;
+
+    STAGE_CONFIGS.forEach((stage) => {
+      const sysEl = systemRefs.current?.[stage.id];
+      if (!sysEl) return;
+      const sysRect = sysEl.getBoundingClientRect();
+      const sysCx = sysRect.left + sysRect.width / 2 - containerRect.left;
+      const sysTy = sysRect.top - containerRect.top;
+      const sysBx = sysRect.bottom - containerRect.top;
+
+      const isActive = activeStage === stage.id;
+      newLines.push({ x1: rootCx, y1: rootBy, x2: sysCx, y2: sysTy, active: isActive, level: 0 });
+
+      const stageSubs = subSystems.filter(s => s.parentStage === stage.id);
+      stageSubs.forEach((sub) => {
+        const subEl = subsystemRefs.current?.[sub.id];
+        if (!subEl) return;
+        const subRect = subEl.getBoundingClientRect();
+        const subCx = subRect.left + subRect.width / 2 - containerRect.left;
+        const subTy = subRect.top - containerRect.top;
+        const isSubActive = activeSubsystem === sub.id;
+        newLines.push({ x1: sysCx, y1: sysBx, x2: subCx, y2: subTy, active: isSubActive || isActive, level: 1 });
+      });
+    });
+
+    setLines(newLines);
+  }, [rootRef, systemRefs, subsystemRefs, activeStage, activeSubsystem]);
 
   useEffect(() => {
-    const recalc = () => {
-      const refs = stageRefs.current;
-      if (!refs || !containerRef.current) return;
-      const container = containerRef.current.parentElement;
-      if (!container) return;
-      const containerRect = container.getBoundingClientRect();
-
-      const newPaths: { d: string; color: string }[] = [];
-      for (let i = 0; i < refs.length - 1; i++) {
-        const from = refs[i];
-        const to = refs[i + 1];
-        if (!from || !to) continue;
-
-        const fromRect = from.getBoundingClientRect();
-        const toRect = to.getBoundingClientRect();
-
-        const isFromLeft = i % 2 === 0;
-
-        let sx: number, sy: number, ex: number, ey: number;
-
-        if (isFromLeft) {
-          sx = fromRect.right - containerRect.left;
-          sy = fromRect.bottom - containerRect.top - 40;
-          ex = toRect.left - containerRect.left + 40;
-          ey = toRect.top - containerRect.top + 20;
-        } else {
-          sx = fromRect.left - containerRect.left + 40;
-          sy = fromRect.bottom - containerRect.top - 40;
-          ex = toRect.right - containerRect.left;
-          ey = toRect.top - containerRect.top + 20;
-        }
-
-        const midY = (sy + ey) / 2;
-        const d = `M ${sx} ${sy} C ${sx} ${midY}, ${ex} ${midY}, ${ex} ${ey}`;
-
-        const targetStage = supplyChainConfig.stages[i + 1];
-        const color = BOTTLENECK_COLORS[targetStage.bottleneck.status];
-        newPaths.push({ d, color });
-      }
-      setPaths(newPaths);
-    };
-
-    containerRef.current = svgRef.current?.parentElement as HTMLDivElement;
     recalc();
-    const timer = setTimeout(recalc, 600);
+    const t1 = setTimeout(recalc, 100);
+    const t2 = setTimeout(recalc, 500);
+    const t3 = setTimeout(recalc, 700);
     window.addEventListener("resize", recalc);
 
-    const refs = stageRefs.current;
-    let ro: ResizeObserver | null = null;
-    if (refs) {
-      ro = new ResizeObserver(() => recalc());
-      refs.forEach((el) => { if (el) ro!.observe(el); });
-    }
+    const ro = new ResizeObserver(() => recalc());
+    if (rootRef.current) ro.observe(rootRef.current);
+    Object.values(systemRefs.current || {}).forEach(el => { if (el) ro.observe(el); });
+    Object.values(subsystemRefs.current || {}).forEach(el => { if (el) ro.observe(el); });
 
     return () => {
-      clearTimeout(timer);
+      clearTimeout(t1); clearTimeout(t2); clearTimeout(t3);
       window.removeEventListener("resize", recalc);
-      if (ro) ro.disconnect();
+      ro.disconnect();
     };
-  }, [stageRefs]);
+  }, [recalc]);
 
   return (
-    <svg
-      ref={svgRef}
-      className="connection-overlay"
-      style={{
-        position: "absolute",
-        top: 0,
-        left: 0,
-        width: "100%",
-        height: "100%",
-        pointerEvents: "none",
-        zIndex: 1,
-      }}
-    >
-      {paths.map((path, i) => (
-        <g key={i}>
-          <path
-            d={path.d}
-            stroke={path.color}
-            strokeWidth={2.5}
-            fill="none"
-            strokeDasharray="8 4"
-            opacity={0.25}
-          />
-          {[0, 1, 2].map((j) => (
-            <circle key={j} r="4" fill={path.color} opacity={0.6}>
-              <animateMotion
-                dur="3s"
-                repeatCount="indefinite"
-                path={path.d}
-                begin={`${j * 1}s`}
-              />
-            </circle>
-          ))}
-        </g>
+    <svg ref={svgRef} className="sc-connector-svg" data-testid="sc-connectors">
+      {lines.map((l, i) => (
+        <line
+          key={i}
+          x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2}
+          stroke={l.active ? "rgba(240,120,0,0.5)" : "rgba(240,120,0,0.12)"}
+          strokeWidth={l.active ? 2 : 1.5}
+          strokeDasharray={l.level === 1 ? "4 3" : "none"}
+        />
       ))}
     </svg>
   );
 }
 
-function StageCard({
-  stage,
-  apiData,
-  index,
+function DetailPanel({
+  sub,
+  parentStage,
+  stockMap,
+  onClose,
   onNavigate,
-  cardRef,
 }: {
-  stage: StageConfig;
-  apiData: StageApiData | undefined;
-  index: number;
+  sub: SubSystem;
+  parentStage: typeof STAGE_CONFIGS[0];
+  stockMap: Record<string, StockData>;
+  onClose: () => void;
   onNavigate: (path: string) => void;
-  cardRef: (el: HTMLDivElement | null) => void;
 }) {
-  const [expanded, setExpanded] = useState(false);
-  const [showAll, setShowAll] = useState(false);
-  const [visible, setVisible] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  const IconComp = STAGE_ICONS[stage.icon] || Zap;
-  const bottleneckColor = BOTTLENECK_COLORS[stage.bottleneck.status];
-
-  const stocks = apiData?.stocks || [];
-  const avgChange = apiData?.avgChange ?? 0;
-
-  const stockMap = useMemo(() => {
-    const m: Record<string, StockData> = {};
-    stocks.forEach((s) => { m[s.ticker] = s; });
-    return m;
-  }, [stocks]);
-
-  const displayCompanies = showAll ? stage.companies : stage.companies.slice(0, 12);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) setVisible(true); },
-      { threshold: 0.15 }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-
-  const isLeft = index % 2 === 0;
-  const isCentered = index === 4;
-
+  const Icon = ICON_MAP[sub.icon] || Zap;
   return (
-    <div
-      ref={(el) => { (ref as React.MutableRefObject<HTMLDivElement | null>).current = el; cardRef(el); }}
-      className={`stage-card-wrapper ${visible ? "stage-visible" : "stage-hidden"}`}
-      style={{
-        display: "flex",
-        justifyContent: isCentered ? "center" : isLeft ? "flex-start" : "flex-end",
-        animationDelay: `${index * 0.12}s`,
-      }}
-      data-testid={`stage-card-wrapper-${stage.id}`}
-    >
-      <div
-        className="stage-card"
-        style={{ "--stage-color": stage.accentColor } as React.CSSProperties}
-        data-testid={`stage-node-${stage.id}`}
-      >
-        <div className="flex items-center justify-between mb-1">
-          <div className="flex items-center gap-3">
-            <IconComp
-              className="flex-shrink-0"
-              style={{ color: stage.accentColor, width: 24, height: 24 }}
-            />
-            <div>
-              <span className="text-[18px] font-bold text-white leading-tight block">
-                {stage.name}
-              </span>
-              <span className="text-[13px]" style={{ color: "#888" }}>
-                {stage.tagline}
-              </span>
-            </div>
+    <div className="sc-detail-panel" data-testid={`detail-${sub.id}`}>
+      <div className="flex items-start justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center justify-center" style={{ width: 40, height: 40, borderRadius: 10, background: `${parentStage.accentColor}15` }}>
+            <Icon style={{ width: 24, height: 24, color: parentStage.accentColor }} />
           </div>
-          <div className="flex items-center gap-2">
-            <span
-              className="text-[12px] font-semibold px-2.5 py-1 rounded-md"
-              style={{
-                color: bottleneckColor,
-                background: `${bottleneckColor}18`,
-                border: `1px solid ${bottleneckColor}30`,
-              }}
-            >
-              {BOTTLENECK_LABELS[stage.bottleneck.status]}
-            </span>
+          <div>
+            <h3 className="text-[18px] font-bold text-white">{sub.name}</h3>
+            <span className="text-[12px]" style={{ color: "#888" }}>{sub.oneLiner}</span>
           </div>
         </div>
-
-        <div className="flex flex-wrap gap-2 mt-4 mb-4">
-          {stage.subCategories.map((sub) => {
-            const SubIcon = SUB_ICONS[sub.icon] || Cog;
-            return (
-              <div
-                key={sub.label}
-                className="sub-category-tile"
-                data-testid={`subcategory-${sub.label.toLowerCase().replace(/\s/g, "-")}`}
-              >
-                <SubIcon style={{ width: 20, height: 20, color: stage.accentColor }} />
-                <span className="text-[10px] mt-1" style={{ color: "#888" }}>{sub.label}</span>
-              </div>
-            );
-          })}
+        <div className="flex items-center gap-3">
+          <span className="text-[11px] px-2 py-1 rounded" style={{ background: `${parentStage.accentColor}15`, color: parentStage.accentColor }}>
+            {parentStage.name}
+          </span>
+          <button onClick={onClose} className="text-[#666] hover:text-white transition-colors p-1" data-testid="close-detail">
+            <X style={{ width: 18, height: 18 }} />
+          </button>
         </div>
+      </div>
 
-        <div className="mb-4">
-          <div
-            className="w-full rounded-full"
-            style={{ height: 6, background: "#2A2925" }}
-          >
-            <div
-              className="rounded-full"
-              style={{
-                height: 6,
-                width: visible ? `${stage.bottleneck.barFill * 100}%` : "0%",
-                background: bottleneckColor,
-                transition: "width 0.8s ease-out",
-                transitionDelay: `${index * 0.12 + 0.3}s`,
-              }}
-            />
-          </div>
-        </div>
+      <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 16, marginBottom: 16 }}>
+        <p className="text-[13px] leading-relaxed" style={{ color: "#aaa" }}>{sub.description}</p>
+      </div>
 
-        <p
-          className="text-[13px] leading-relaxed mb-5"
-          style={{
-            color: "#bbb",
-            borderLeft: `3px solid ${stage.accentColor}4D`,
-            paddingLeft: 14,
-          }}
-        >
-          {stage.description}
-        </p>
-
-        <div className="flex flex-wrap gap-2 mb-4">
-          {stage.keyMetrics.map((m) => (
-            <div
-              key={m.label}
-              className="flex-1 min-w-[120px] rounded-lg p-3"
-              style={{ background: "#1C1B18", border: "1px solid rgba(255,255,255,0.04)" }}
-            >
-              <div className="text-[18px] font-bold text-white">{m.value}</div>
+      {sub.keyMetrics.length > 0 && (
+        <div className="flex flex-wrap gap-3 mb-5">
+          {sub.keyMetrics.map((m, i) => (
+            <div key={i} className="px-4 py-3 rounded-lg" style={{ background: "#151513", border: "1px solid rgba(255,255,255,0.06)" }}>
+              <div className="text-[16px] font-bold text-white">{m.value}</div>
               <div className="text-[11px]" style={{ color: "#888" }}>{m.label}</div>
             </div>
           ))}
         </div>
+      )}
 
-        <div className="flex items-center justify-between mb-3">
-          <span className="text-[13px]" style={{ color: "#aaa" }}>
-            {stage.companies.length} companies tracked
-          </span>
-          <span
-            className="text-[13px] font-mono flex items-center gap-1"
-            style={{ color: avgChange >= 0 ? "#22C55E" : "#EF4444" }}
-          >
-            {avgChange >= 0 ? (
-              <TrendingUp style={{ width: 13, height: 13 }} />
-            ) : (
-              <TrendingDown style={{ width: 13, height: 13 }} />
-            )}
-            {avgChange >= 0 ? "+" : ""}{avgChange.toFixed(2)}% today
-          </span>
+      <div>
+        <div className="text-[11px] font-semibold uppercase tracking-wider mb-3" style={{ color: "#666" }}>
+          Companies in this sub-system
         </div>
-
-        <button
-          className="flex items-center gap-2 text-[13px] font-medium transition-colors w-full justify-center py-2.5 rounded-lg"
-          style={{
-            color: expanded ? "#888" : stage.accentColor,
-            background: expanded ? "transparent" : `${stage.accentColor}12`,
-            border: `1px solid ${expanded ? "rgba(255,255,255,0.06)" : `${stage.accentColor}25`}`,
-          }}
-          onClick={() => setExpanded(!expanded)}
-          data-testid={`explore-${stage.id}`}
-        >
-          {expanded ? (
-            <>
-              <ChevronUp style={{ width: 14, height: 14 }} />
-              Collapse
-            </>
-          ) : (
-            <>
-              <ChevronDown style={{ width: 14, height: 14 }} />
-              Explore {stage.companies.length} companies
-            </>
-          )}
-        </button>
-
-        <div
-          className="companies-expand"
-          style={{
-            maxHeight: expanded ? "600px" : "0px",
-            opacity: expanded ? 1 : 0,
-            overflow: "hidden",
-            transition: "max-height 0.4s ease-out, opacity 0.3s ease-out",
-          }}
-        >
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 mt-4 max-h-[400px] overflow-y-auto pr-1 custom-scrollbar">
-            {displayCompanies.map((c) => {
-              const sd = stockMap[c.ticker];
-              const chg = sd?.changePercent ?? 0;
-              return (
-                <div
-                  key={c.ticker}
-                  className="stock-mini-card"
-                  style={{ ["--accent" as string]: stage.accentColor }}
-                  onClick={() => onNavigate(`/stock/${c.ticker}`)}
-                  data-testid={`stock-card-${c.ticker}`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-[13px] font-bold text-white">{c.ticker}</span>
-                    <span
-                      className="text-[12px] font-mono"
-                      style={{ color: chg >= 0 ? "#22C55E" : "#EF4444" }}
-                    >
-                      {chg >= 0 ? "+" : ""}{chg.toFixed(1)}%
-                    </span>
-                  </div>
-                  <div className="text-[11px]" style={{ color: "#888" }}>{c.name}</div>
-                  <div className="text-[10px]" style={{ color: "#666" }}>{c.subcategory}</div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+          {sub.companies.map((c) => {
+            const stock = stockMap[c.ticker];
+            const chg = stock?.changePercent ?? 0;
+            return (
+              <div
+                key={c.ticker}
+                className="stock-mini-card"
+                style={{ "--accent": parentStage.accentColor } as React.CSSProperties}
+                onClick={() => onNavigate(`/stock/${c.ticker}`)}
+                data-testid={`company-${c.ticker}`}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[13px] font-bold text-white">{c.ticker}</span>
+                  <span className="text-[11px] font-medium" style={{ color: chg >= 0 ? "#22C55E" : "#EF4444" }}>
+                    {chg >= 0 ? <TrendingUp style={{ width: 12, height: 12, display: "inline" }} /> : <TrendingDown style={{ width: 12, height: 12, display: "inline" }} />}
+                    {" "}{chg >= 0 ? "+" : ""}{chg.toFixed(1)}%
+                  </span>
                 </div>
-              );
-            })}
-          </div>
-          {stage.companies.length > 12 && !showAll && (
-            <button
-              className="text-[11px] mt-2 flex items-center gap-1 hover:text-white transition-colors"
-              style={{ color: "#888" }}
-              onClick={() => setShowAll(true)}
-              data-testid={`show-all-${stage.id}`}
-            >
-              <ChevronDown style={{ width: 12, height: 12 }} />
-              Show all {stage.companies.length} companies
-            </button>
-          )}
+                <div className="text-[10px] truncate" style={{ color: "#888" }}>{c.name}</div>
+                {stock && <div className="text-[11px] mt-1" style={{ color: "#aaa" }}>${stock.price.toFixed(2)}</div>}
+              </div>
+            );
+          })}
         </div>
+      </div>
+    </div>
+  );
+}
+
+function SystemSummaryPanel({
+  stage,
+  subs,
+  stockMap,
+  onSelectSub,
+  onClose,
+}: {
+  stage: typeof STAGE_CONFIGS[0];
+  subs: SubSystem[];
+  stockMap: Record<string, StockData>;
+  onSelectSub: (id: string) => void;
+  onClose: () => void;
+}) {
+  const allTickers = subs.flatMap(s => s.companies.map(c => c.ticker));
+  const uniqueTickers = [...new Set(allTickers)];
+  const stocks = uniqueTickers.map(t => stockMap[t]).filter(Boolean);
+  const avgChange = stocks.length > 0 ? stocks.reduce((s, st) => s + st.changePercent, 0) / stocks.length : 0;
+
+  return (
+    <div className="sc-detail-panel" data-testid={`summary-${stage.id}`}>
+      <div className="flex items-start justify-between mb-4">
+        <div>
+          <h3 className="text-[18px] font-bold text-white">{stage.name}</h3>
+          <span className="text-[12px]" style={{ color: "#888" }}>{stage.tagline} · {uniqueTickers.length} companies</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-[13px] font-medium" style={{ color: avgChange >= 0 ? "#22C55E" : "#EF4444" }}>
+            {avgChange >= 0 ? "+" : ""}{avgChange.toFixed(2)}% avg
+          </span>
+          <button onClick={onClose} className="text-[#666] hover:text-white transition-colors p-1" data-testid="close-summary">
+            <X style={{ width: 18, height: 18 }} />
+          </button>
+        </div>
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+        {subs.map((sub) => {
+          const Icon = ICON_MAP[sub.icon] || Zap;
+          return (
+            <div
+              key={sub.id}
+              className="p-3 rounded-lg cursor-pointer transition-all hover:border-opacity-100"
+              style={{ background: "#151513", border: `1px solid ${stage.accentColor}30` }}
+              onClick={() => onSelectSub(sub.id)}
+              data-testid={`summary-sub-${sub.id}`}
+            >
+              <Icon style={{ width: 24, height: 24, color: stage.accentColor, marginBottom: 6 }} />
+              <div className="text-[13px] font-semibold text-white">{sub.name}</div>
+              <div className="text-[10px]" style={{ color: "#888" }}>{sub.companies.length} companies</div>
+              <div className="text-[10px] mt-1" style={{ color: "#666" }}>{sub.oneLiner}</div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -397,79 +274,205 @@ function StageCard({
 
 export default function SupplyChain() {
   const [, navigate] = useLocation();
-  const stageRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const [activeSubsystem, setActiveSubsystem] = useState<string | null>(null);
+  const [activeStageSummary, setActiveStageSummary] = useState<string | null>(null);
+  const [entranceLevel, setEntranceLevel] = useState(0);
 
-  const { data: apiResponse } = useQuery<{ stages: StageApiData[] }>({
+  const rootRef = useRef<HTMLDivElement>(null);
+  const systemRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const subsystemRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
+  const { data: apiData } = useQuery<{ stages: StageApiData[] }>({
     queryKey: ["/api/supply-chain"],
     refetchInterval: 5 * 60 * 1000,
   });
 
-  const apiMap = useMemo(() => {
-    const m: Record<string, StageApiData> = {};
-    const keyToId: Record<string, string> = {
-      rawMaterials: "raw-materials",
-      generation: "generation",
-      transmission: "transmission",
-      distribution: "distribution",
-      endUse: "end-use",
-    };
-    const stages = apiResponse?.stages || [];
-    stages.forEach((s) => {
-      const id = keyToId[s.key] || s.key;
-      m[id] = s;
+  const stockMap = useMemo(() => {
+    const m: Record<string, StockData> = {};
+    apiData?.stages?.forEach((stage) => {
+      stage.stocks?.forEach((s) => { m[s.ticker] = s; });
     });
     return m;
-  }, [apiResponse]);
+  }, [apiData]);
 
-  const handleNavigate = useCallback(
-    (path: string) => navigate(path),
-    [navigate]
-  );
+  const stageAvgChanges = useMemo(() => {
+    const m: Record<string, number> = {};
+    apiData?.stages?.forEach((stage) => { m[stage.key] = stage.avgChange; });
+    return m;
+  }, [apiData]);
 
-  const totalCompanies = supplyChainConfig.stages.reduce(
-    (sum, s) => sum + s.companies.length, 0
-  );
-  const tightest = supplyChainConfig.stages.reduce((worst, s) => {
-    const rank = { flowing: 0, tightening: 1, bottlenecked: 2 };
-    return rank[s.bottleneck.status] > rank[worst.bottleneck.status] ? s : worst;
-  });
+  const totalCompanies = useMemo(() => {
+    const all = new Set<string>();
+    subSystems.forEach(s => s.companies.forEach(c => all.add(c.ticker)));
+    return all.size;
+  }, []);
+
+  useEffect(() => {
+    const t1 = setTimeout(() => setEntranceLevel(1), 50);
+    const t2 = setTimeout(() => setEntranceLevel(2), 250);
+    const t3 = setTimeout(() => setEntranceLevel(3), 450);
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
+  }, []);
+
+  const activeStageId = activeSubsystem
+    ? subSystems.find(s => s.id === activeSubsystem)?.parentStage || null
+    : activeStageSummary;
+
+  const handleSubClick = (subId: string) => {
+    if (activeSubsystem === subId) {
+      setActiveSubsystem(null);
+    } else {
+      setActiveSubsystem(subId);
+      setActiveStageSummary(null);
+    }
+  };
+
+  const handleSystemClick = (stageId: string) => {
+    if (activeStageSummary === stageId) {
+      setActiveStageSummary(null);
+    } else {
+      setActiveStageSummary(stageId);
+      setActiveSubsystem(null);
+    }
+  };
+
+  const tightestBottleneck = STAGE_CONFIGS.reduce((a, b) => b.bottleneck.barFill > a.bottleneck.barFill ? b : a);
+
+  const activeSub = activeSubsystem ? subSystems.find(s => s.id === activeSubsystem) : null;
+  const activeParentStage = activeSub ? STAGE_CONFIGS.find(s => s.id === activeSub.parentStage) : null;
+  const summaryStage = activeStageSummary ? STAGE_CONFIGS.find(s => s.id === activeStageSummary) : null;
+  const summarySubs = summaryStage ? subSystems.filter(s => s.parentStage === summaryStage.id) : [];
 
   return (
-    <div className="h-full overflow-y-auto" data-testid="supply-chain-page">
+    <div className="sc-page" data-testid="supply-chain-page">
       <div
-        className="flex items-center gap-2 px-4 md:px-8 flex-wrap sticky top-0 z-10"
-        style={{ height: 48, background: "#151513", borderBottom: "1px solid rgba(255,255,255,0.06)" }}
-        data-testid="supply-chain-summary"
+        className="sc-summary-bar"
+        data-testid="sc-summary-bar"
       >
+        <Cable style={{ width: 16, height: 16, color: "#F07800" }} />
         <span className="text-[16px] font-bold text-white">Supply Chain Tracker</span>
-        <span className="text-[13px]" style={{ color: "#666" }}>·</span>
-        <span className="text-[13px]" style={{ color: "#aaa" }}>5 stages</span>
-        <span className="text-[13px]" style={{ color: "#666" }}>·</span>
+        <span style={{ color: "#666" }}>·</span>
+        <span className="text-[13px]" style={{ color: "#aaa" }}>5 systems</span>
+        <span style={{ color: "#666" }}>·</span>
         <span className="text-[13px]" style={{ color: "#aaa" }}>{totalCompanies} companies</span>
-        <span className="text-[13px]" style={{ color: "#666" }}>·</span>
-        <span className="text-[13px]" style={{ color: "#aaa" }}>
-          Tightest bottleneck:{" "}
-          <span style={{ color: BOTTLENECK_COLORS[tightest.bottleneck.status] }}>
-            {tightest.name}
-          </span>
-        </span>
+        <span style={{ color: "#666" }}>·</span>
+        <span className="text-[13px]" style={{ color: "#aaa" }}>Tightest bottleneck: <span style={{ color: "#EF4444" }} data-testid="tightest-bottleneck">{tightestBottleneck.name}</span></span>
       </div>
 
-      <div className="relative px-4 md:px-8 py-8 md:py-12 max-w-[1100px] mx-auto">
-        <ConnectionLines stageRefs={stageRefs} />
+      <div className="sc-tree">
+        <ConnectorLines
+          rootRef={rootRef}
+          systemRefs={systemRefs}
+          subsystemRefs={subsystemRefs}
+          activeStage={activeStageId}
+          activeSubsystem={activeSubsystem}
+        />
 
-        <div className="relative z-[2] space-y-16 md:space-y-20">
-          {supplyChainConfig.stages.map((stage, i) => (
-            <StageCard
-              key={stage.id}
-              stage={stage}
-              apiData={apiMap[stage.id]}
-              index={i}
-              onNavigate={handleNavigate}
-              cardRef={(el) => { stageRefs.current[i] = el; }}
-            />
-          ))}
+        <div
+          ref={rootRef}
+          className={`sc-root ${entranceLevel >= 1 ? "sc-entered" : "sc-pre-enter"}`}
+          data-testid="sc-root"
+        >
+          <Zap style={{ width: 20, height: 20, color: "#F07800" }} />
+          <div>
+            <div className="text-[18px] font-bold text-white">AI Power Supply Chain</div>
+            <div className="text-[12px]" style={{ color: "#888" }}>5 systems · {totalCompanies}+ companies</div>
+          </div>
         </div>
+
+        <div className={`sc-systems-row ${entranceLevel >= 2 ? "sc-entered" : "sc-pre-enter"}`}>
+          {STAGE_CONFIGS.map((stage) => {
+            const Icon = ICON_MAP[stage.icon] || Zap;
+            const isActive = activeStageId === stage.id;
+            const isDimmed = activeStageId !== null && !isActive;
+            const avgChg = stageAvgChanges[stage.id] ?? 0;
+            const bottleneckColor = BOTTLENECK_COLORS[stage.bottleneck.status];
+            const stageSubs = subSystems.filter(s => s.parentStage === stage.id);
+            const stageCompanyCount = new Set(stageSubs.flatMap(s => s.companies.map(c => c.ticker))).size;
+
+            return (
+              <div
+                key={stage.id}
+                ref={(el) => { systemRefs.current[stage.id] = el; }}
+                className={`sc-system ${isActive ? "sc-system-active" : ""}`}
+                style={{
+                  "--system-color": stage.accentColor,
+                  opacity: isDimmed ? 0.4 : 1,
+                } as React.CSSProperties}
+                onClick={() => handleSystemClick(stage.id)}
+                data-testid={`system-${stage.id}`}
+              >
+                <div className="sc-system-status">
+                  <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded" style={{ background: `${bottleneckColor}18`, color: bottleneckColor }} data-testid={`bottleneck-${stage.id}`}>
+                    {BOTTLENECK_LABELS[stage.bottleneck.status]}
+                  </span>
+                </div>
+                <Icon style={{ width: 40, height: 40, color: stage.accentColor }} />
+                <div className="text-[14px] font-bold text-white mt-2">{stage.name}</div>
+                <div className="text-[10px]" style={{ color: "#888" }}>{stage.tagline}</div>
+                <div className="w-full mt-3 rounded-full" style={{ height: 5, background: "#2A2925" }}>
+                  <div className="rounded-full" style={{ height: 5, width: `${stage.bottleneck.barFill * 100}%`, background: bottleneckColor, transition: "width 0.8s ease-out" }} />
+                </div>
+                <div className="flex items-center justify-between w-full mt-2">
+                  <span className="text-[10px]" style={{ color: "#666" }}>{stageCompanyCount} companies</span>
+                  <span className="text-[10px] font-medium" style={{ color: avgChg >= 0 ? "#22C55E" : "#EF4444" }} data-testid={`avg-change-${stage.id}`}>
+                    {avgChg >= 0 ? "+" : ""}{avgChg.toFixed(1)}%
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className={`sc-subsystems-row ${entranceLevel >= 3 ? "sc-entered" : "sc-pre-enter"}`}>
+          {STAGE_CONFIGS.map((stage) => {
+            const stageSubs = subSystems.filter(s => s.parentStage === stage.id);
+            const isStageActive = activeStageId === stage.id;
+            const isDimmed = activeStageId !== null && !isStageActive;
+
+            return (
+              <div key={stage.id} className="sc-subsystem-cluster" style={{ opacity: isDimmed ? 0.4 : 1, transition: "opacity 0.3s ease" }}>
+                {stageSubs.map((sub) => {
+                  const Icon = ICON_MAP[sub.icon] || Zap;
+                  const isSubActive = activeSubsystem === sub.id;
+                  return (
+                    <div
+                      key={sub.id}
+                      ref={(el) => { subsystemRefs.current[sub.id] = el; }}
+                      className={`sc-subsystem ${isSubActive ? "sc-subsystem-active" : ""}`}
+                      style={{ "--parent-color": stage.accentColor } as React.CSSProperties}
+                      onClick={(e) => { e.stopPropagation(); handleSubClick(sub.id); }}
+                      data-testid={`subsystem-${sub.id}`}
+                    >
+                      <Icon className="sc-subsystem-icon" style={{ width: 28, height: 28, color: isSubActive ? stage.accentColor : "#888" }} />
+                      <span className="sc-subsystem-label">{sub.name}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
+
+        {activeSub && activeParentStage && (
+          <DetailPanel
+            sub={activeSub}
+            parentStage={activeParentStage}
+            stockMap={stockMap}
+            onClose={() => setActiveSubsystem(null)}
+            onNavigate={navigate}
+          />
+        )}
+
+        {summaryStage && !activeSubsystem && (
+          <SystemSummaryPanel
+            stage={summaryStage}
+            subs={summarySubs}
+            stockMap={stockMap}
+            onSelectSub={(id) => { setActiveSubsystem(id); setActiveStageSummary(null); }}
+            onClose={() => setActiveStageSummary(null)}
+          />
+        )}
       </div>
     </div>
   );

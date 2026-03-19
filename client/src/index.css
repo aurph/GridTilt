@@ -279,63 +279,189 @@ html {
   }
 }
 
-.stage-card {
-  width: min(600px, 90vw);
-  background: linear-gradient(180deg, #161614 0%, #1A1917 100%);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 16px;
-  padding: 28px 32px;
+.sc-page {
+  width: 100%;
+  min-height: 100vh;
+  padding: 24px 24px 60px;
+}
+
+.sc-summary-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 32px;
+}
+
+.sc-tree {
   position: relative;
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
 }
 
-.stage-card::before {
-  content: '';
+.sc-connector-svg {
   position: absolute;
+  top: 0;
   left: 0;
-  top: 20%;
-  height: 60%;
-  width: 3px;
-  border-radius: 3px;
-  background: var(--stage-color);
-  box-shadow: 0 0 12px var(--stage-color);
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
 }
 
-.stage-card:hover {
-  border-color: rgba(255, 255, 255, 0.12);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
-}
-
-.stage-hidden {
+.sc-pre-enter {
   opacity: 0;
-  transform: translateY(24px);
+  transform: translateY(10px);
 }
 
-.stage-visible {
-  animation: stageEnter 0.5s ease-out forwards;
+.sc-entered {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.4s ease-out, transform 0.4s ease-out;
 }
 
-@keyframes stageEnter {
-  from { opacity: 0; transform: translateY(24px); }
-  to { opacity: 1; transform: translateY(0); }
+.sc-root {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #1C1B18;
+  border: 1px solid rgba(240, 120, 0, 0.2);
+  border-radius: 14px;
+  padding: 14px 24px;
+  margin-bottom: 48px;
+  z-index: 1;
+  position: relative;
 }
 
-.sub-category-tile {
+.sc-systems-row {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: nowrap;
+  width: 100%;
+  margin-bottom: 32px;
+  z-index: 1;
+  position: relative;
+}
+
+.sc-system {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 180px;
+  max-width: 200px;
+  flex: 1;
+  background: #1A1917;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+  padding: 16px 14px 14px;
+  cursor: pointer;
+  transition: opacity 0.3s ease, transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
+  z-index: 1;
+}
+
+.sc-system:hover {
+  transform: translateY(-3px);
+  border-color: var(--system-color, rgba(240, 120, 0, 0.3));
+  box-shadow: 0 0 16px color-mix(in srgb, var(--system-color, #F07800) 15%, transparent);
+}
+
+.sc-system-active {
+  border-color: var(--system-color, rgba(240, 120, 0, 0.4));
+  background: #1E1D1A;
+  box-shadow: 0 0 20px color-mix(in srgb, var(--system-color, #F07800) 12%, transparent);
+}
+
+.sc-system-status {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}
+
+.sc-subsystems-row {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: nowrap;
+  width: 100%;
+  margin-bottom: 12px;
+  z-index: 1;
+  position: relative;
+}
+
+.sc-subsystem-cluster {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+  flex: 1;
+  min-width: 180px;
+  max-width: 200px;
+  transition: opacity 0.3s ease;
+}
+
+.sc-subsystem {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   width: 80px;
-  height: 70px;
+  height: 76px;
   background: #1E1D1A;
   border: 1px solid rgba(255, 255, 255, 0.04);
-  border-radius: 10px;
-  transition: transform 0.15s ease;
-  cursor: default;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.2s ease, background 0.2s ease;
+  z-index: 1;
+  position: relative;
 }
 
-.sub-category-tile:hover {
-  transform: scale(1.05);
+.sc-subsystem:hover {
+  transform: scale(1.08);
+}
+
+.sc-subsystem-active {
+  border-color: var(--parent-color, rgba(240, 120, 0, 0.4));
+  background: color-mix(in srgb, var(--parent-color, #F07800) 8%, #1E1D1A);
+}
+
+.sc-subsystem-icon {
+  transition: color 0.2s ease;
+}
+
+.sc-subsystem-label {
+  font-size: 10px;
+  color: #888;
+  margin-top: 4px;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.sc-detail-panel {
+  width: 100%;
+  max-width: 900px;
+  margin: 24px auto 0;
+  background: #1C1B18;
+  border: 1px solid rgba(240, 120, 0, 0.15);
+  border-radius: 16px;
+  padding: 32px;
+  animation: scSlideDown 0.35s ease-out;
+  z-index: 1;
+  position: relative;
+}
+
+@keyframes scSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .stock-mini-card {
@@ -357,16 +483,89 @@ html {
 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
 .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
 
-@media (max-width: 767px) {
-  .stage-card-wrapper {
-    justify-content: center !important;
+@media (max-width: 1279px) {
+  .sc-system {
+    min-width: 160px;
   }
-  .stage-card {
-    width: 100%;
-    padding: 20px;
+  .sc-subsystem-cluster {
+    min-width: 160px;
+    max-width: 180px;
   }
-  .sub-category-tile {
+  .sc-subsystem {
     width: 70px;
-    height: 62px;
+    height: 66px;
+  }
+}
+
+@media (max-width: 1023px) {
+  .sc-systems-row {
+    flex-wrap: wrap;
+    gap: 12px;
+    max-width: 600px;
+  }
+  .sc-subsystems-row {
+    flex-wrap: wrap;
+    gap: 12px;
+    max-width: 600px;
+  }
+  .sc-system {
+    min-width: 160px;
+    max-width: 180px;
+  }
+  .sc-subsystem-cluster {
+    min-width: 160px;
+    max-width: 180px;
+  }
+  .sc-connector-svg {
+    display: none;
+  }
+  .sc-detail-panel {
+    padding: 24px;
+  }
+}
+
+@media (max-width: 767px) {
+  .sc-page {
+    padding: 16px 12px 40px;
+  }
+  .sc-summary-bar {
+    margin-bottom: 20px;
+  }
+  .sc-systems-row {
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    max-width: 100%;
+  }
+  .sc-subsystems-row {
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    max-width: 100%;
+  }
+  .sc-system {
+    min-width: auto;
+    max-width: 100%;
+    width: 100%;
+  }
+  .sc-subsystem-cluster {
+    min-width: auto;
+    max-width: 100%;
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(3, 70px);
+    justify-content: center;
+    gap: 8px;
+  }
+  .sc-subsystem {
+    width: 70px;
+    height: 66px;
+  }
+  .sc-detail-panel {
+    padding: 20px 16px;
+    border-radius: 12px;
+  }
+  .sc-connector-svg {
+    display: none;
   }
 }
