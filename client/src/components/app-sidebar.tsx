@@ -75,7 +75,7 @@ export function AppSidebar() {
           <img
             src={logoPath}
             alt="GridTilt logo"
-            className="h-11 w-11 rounded-md object-cover logo-entrance"
+            className="h-16 w-16 rounded-md object-contain logo-entrance"
           />
           <div>
             <div className="font-bold text-base tracking-tight text-foreground" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
