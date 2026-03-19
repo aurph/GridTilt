@@ -1866,8 +1866,8 @@ Preferred-Languages: en
       background_color: "#121110",
       theme_color: "#F07800",
       icons: [
-        { src: "/favicon.png", sizes: "192x192", type: "image/png" },
-        { src: "/favicon.png", sizes: "512x512", type: "image/png" },
+        { src: "/favicon-logo.png", sizes: "192x192", type: "image/png" },
+        { src: "/favicon-logo.png", sizes: "512x512", type: "image/png" },
       ],
     });
   });

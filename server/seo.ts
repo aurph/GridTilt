@@ -104,7 +104,7 @@ function organizationJsonLd(): object {
     "@type": "Organization",
     "name": "GridTilt",
     "url": BASE_URL,
-    "logo": `${BASE_URL}/favicon.png`,
+    "logo": `${BASE_URL}/favicon-logo.png`,
     "sameAs": ["https://x.com/gridtilt"],
     "founder": {
       "@type": "Person",
