@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 160" fill="none">
+  <rect width="400" height="160" rx="6" fill="#141210"/>
+  <circle cx="60" cy="60" r="18" fill="#C87533" opacity="0.2" stroke="#C87533" stroke-width="1.5"/>
+  <text x="60" y="64" font-size="7" fill="#C87533" font-family="monospace" text-anchor="middle">URA</text>
+  <circle cx="160" cy="45" r="22" fill="#F07800" opacity="0.2" stroke="#F07800" stroke-width="1.5"/>
+  <text x="160" y="49" font-size="7" fill="#F07800" font-family="monospace" text-anchor="middle">NUC</text>
+  <circle cx="160" cy="110" r="16" fill="#F07800" opacity="0.15" stroke="#F07800" stroke-width="1"/>
+  <text x="160" y="114" font-size="7" fill="#F07800" font-family="monospace" text-anchor="middle">GAS</text>
+  <circle cx="260" cy="55" r="20" fill="#D4A843" opacity="0.2" stroke="#D4A843" stroke-width="1.5"/>
+  <text x="260" y="59" font-size="7" fill="#D4A843" font-family="monospace" text-anchor="middle">GRID</text>
+  <circle cx="260" cy="115" r="14" fill="#D4A843" opacity="0.15" stroke="#D4A843" stroke-width="1"/>
+  <text x="260" y="119" font-size="7" fill="#D4A843" font-family="monospace" text-anchor="middle">T&D</text>
+  <circle cx="350" cy="70" r="24" fill="#F0A500" opacity="0.2" stroke="#F0A500" stroke-width="1.5"/>
+  <text x="350" y="74" font-size="7" fill="#F0A500" font-family="monospace" text-anchor="middle">DC</text>
+  <line x1="78" y1="58" x2="138" y2="48" stroke="#F07800" stroke-width="1" opacity="0.4"/>
+  <line x1="78" y1="64" x2="144" y2="105" stroke="#F07800" stroke-width="1" opacity="0.3"/>
+  <line x1="182" y1="45" x2="240" y2="52" stroke="#D4A843" stroke-width="1" opacity="0.4"/>
+  <line x1="176" y1="108" x2="246" y2="112" stroke="#D4A843" stroke-width="1" opacity="0.3"/>
+  <line x1="280" y1="58" x2="326" y2="66" stroke="#F0A500" stroke-width="1" opacity="0.4"/>
+  <line x1="274" y1="112" x2="330" y2="80" stroke="#F0A500" stroke-width="1" opacity="0.3"/>
+  <path d="M78 56 Q110 30 138 44" stroke="#C87533" stroke-width="1" opacity="0.3" fill="none"/>
+</svg>

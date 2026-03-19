@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 160" fill="none">
+  <rect width="400" height="160" rx="6" fill="#141210"/>
+  <text x="20" y="25" font-size="8" fill="#888" font-family="monospace">SCENARIO INPUTS</text>
+  <rect x="20" y="35" width="160" height="16" rx="3" fill="#1a1816"/>
+  <text x="28" y="47" font-size="7" fill="#D4A843" font-family="monospace">DC Growth Rate</text>
+  <rect x="130" y="38" width="40" height="10" rx="5" fill="#F07800" opacity="0.3"/>
+  <circle cx="155" cy="43" r="4" fill="#F07800"/>
+  <rect x="20" y="57" width="160" height="16" rx="3" fill="#1a1816"/>
+  <text x="28" y="69" font-size="7" fill="#D4A843" font-family="monospace">Nuclear Capacity</text>
+  <rect x="130" y="60" width="40" height="10" rx="5" fill="#F0A500" opacity="0.3"/>
+  <circle cx="148" cy="65" r="4" fill="#F0A500"/>
+  <rect x="20" y="79" width="160" height="16" rx="3" fill="#1a1816"/>
+  <text x="28" y="91" font-size="7" fill="#D4A843" font-family="monospace">Grid Stress</text>
+  <rect x="130" y="82" width="40" height="10" rx="5" fill="#C87533" opacity="0.3"/>
+  <circle cx="142" cy="87" r="4" fill="#C87533"/>
+  <rect x="200" y="15" width="180" height="130" rx="4" fill="#1a1816"/>
+  <text x="210" y="35" font-size="8" fill="#F07800" font-family="monospace">PROJECTED OUTCOME</text>
+  <polyline points="220,120 240,115 260,105 280,95 300,80 320,65 340,55 360,50" stroke="#F07800" stroke-width="2" fill="none" opacity="0.7"/>
+  <polyline points="220,120 240,118 260,112 280,108 300,100 320,95 340,92 360,90" stroke="#F0A500" stroke-width="1.5" fill="none" opacity="0.5" stroke-dasharray="4 2"/>
+  <line x1="220" y1="120" x2="360" y2="120" stroke="#2a2520" stroke-width="0.5"/>
+  <line x1="220" y1="45" x2="220" y2="120" stroke="#2a2520" stroke-width="0.5"/>
+  <text x="210" y="135" font-size="6" fill="#555" font-family="monospace">2025</text>
+  <text x="350" y="135" font-size="6" fill="#555" font-family="monospace">2035</text>
+</svg>

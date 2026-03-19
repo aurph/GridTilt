@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 160" fill="none">
+  <rect width="400" height="160" rx="6" fill="#141210"/>
+  <path d="M50 60 L80 40 L120 50 L150 35 L180 55 L210 30 L250 45 L280 38 L310 55 L340 42 L360 50" stroke="#2a2520" stroke-width="1" fill="none"/>
+  <path d="M50 90 L80 100 L120 85 L150 105 L180 80 L210 95 L250 110 L280 90 L310 100 L340 95 L360 105" stroke="#2a2520" stroke-width="1" fill="none"/>
+  <circle cx="120" cy="65" r="6" fill="#F07800" opacity="0.6"/>
+  <circle cx="120" cy="65" r="10" fill="none" stroke="#F07800" opacity="0.2" stroke-width="1"/>
+  <circle cx="210" cy="50" r="8" fill="#F07800" opacity="0.7"/>
+  <circle cx="210" cy="50" r="14" fill="none" stroke="#F07800" opacity="0.2" stroke-width="1"/>
+  <circle cx="280" cy="60" r="5" fill="#F0A500" opacity="0.5"/>
+  <circle cx="280" cy="60" r="9" fill="none" stroke="#F0A500" opacity="0.2" stroke-width="1"/>
+  <circle cx="340" cy="70" r="7" fill="#F0A500" opacity="0.6"/>
+  <circle cx="340" cy="70" r="12" fill="none" stroke="#F0A500" opacity="0.2" stroke-width="1"/>
+  <circle cx="80" cy="95" r="4" fill="#D4A843" opacity="0.5"/>
+  <circle cx="180" cy="90" r="6" fill="#C87533" opacity="0.5"/>
+  <rect x="20" y="125" width="50" height="20" rx="3" fill="#1a1816"/>
+  <text x="28" y="138" font-size="7" fill="#F07800" font-family="monospace">PJM</text>
+  <rect x="80" y="125" width="50" height="20" rx="3" fill="#1a1816"/>
+  <text x="88" y="138" font-size="7" fill="#F0A500" font-family="monospace">MISO</text>
+  <rect x="140" y="125" width="60" height="20" rx="3" fill="#1a1816"/>
+  <text x="148" y="138" font-size="7" fill="#D4A843" font-family="monospace">ERCOT</text>
+</svg>

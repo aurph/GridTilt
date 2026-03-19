@@ -24,6 +24,13 @@ import {
 import { Zap, TrendingUp, Activity, AlertTriangle, Info, ArrowUp, ArrowDown, Calendar, ChevronRight, ChevronLeft, ExternalLink, ChevronDown, ChevronUp, Cpu, Plug, BarChart3, Calculator, Layers, Map, Link2, CalendarDays } from "lucide-react";
 import { EmailCapture, ScrollTriggeredBanner } from "@/components/EmailCapture";
 
+import stackPreview from "@assets/previews/stack.svg";
+import supplyChainPreview from "@assets/previews/supply-chain.svg";
+import powerMapPreview from "@assets/previews/power-map.svg";
+import catalystPreview from "@assets/previews/catalyst.svg";
+import portfolioPreview from "@assets/previews/portfolio.svg";
+import calculatorPreview from "@assets/previews/calculator.svg";
+
 const electricityData = [
   { year: "2010", demand: 3879, dcDemand: 140, projected: null, dcProjected: null },
   { year: "2011", demand: 3883, dcDemand: 150, projected: null, dcProjected: null },
@@ -923,6 +930,7 @@ const FEATURE_SLIDES = [
     description: "60+ equities across 8 supply chain layers. Compute, nuclear, uranium, power hardware, utilities, construction, and more.",
     href: "/stack",
     accent: "#F07800",
+    preview: stackPreview,
   },
   {
     icon: Link2,
@@ -930,6 +938,7 @@ const FEATURE_SLIDES = [
     description: "Interactive D3 force network mapping 20 nodes and 42 real supply relationships from raw materials to end-use compute.",
     href: "/supply-chain",
     accent: "#F0A500",
+    preview: supplyChainPreview,
   },
   {
     icon: Map,
@@ -937,6 +946,7 @@ const FEATURE_SLIDES = [
     description: "US data center locations, power capacity, and utility interconnection points. See where the load is landing.",
     href: "/power-map",
     accent: "#C87533",
+    preview: powerMapPreview,
   },
   {
     icon: CalendarDays,
@@ -944,6 +954,7 @@ const FEATURE_SLIDES = [
     description: "Live earnings calendar with 80+ tickers from Yahoo Finance, plus thesis catalysts. Never miss a market-moving event.",
     href: "/catalysts",
     accent: "#D4A843",
+    preview: catalystPreview,
   },
   {
     icon: BarChart3,
@@ -951,6 +962,7 @@ const FEATURE_SLIDES = [
     description: "Score any portfolio for AI power exposure. See how your holdings map to the infrastructure buildout.",
     href: "/portfolio",
     accent: "#F07800",
+    preview: portfolioPreview,
   },
   {
     icon: Calculator,
@@ -958,6 +970,7 @@ const FEATURE_SLIDES = [
     description: "Model scenarios and test conviction across demand growth, nuclear capacity, and grid stress variables.",
     href: "/trade",
     accent: "#F0A500",
+    preview: calculatorPreview,
   },
 ];
 
@@ -1016,15 +1029,20 @@ function FeatureCarousel() {
           </button>
         </div>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {slides.map((slide) => {
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4" key={current}>
+        {slides.map((slide, idx) => {
           const Icon = slide.icon;
           return (
             <Link key={slide.href} href={slide.href}>
-              <Card className="p-5 border-card-border hover:border-[#F07800]/30 transition-all cursor-pointer group h-full" data-testid={`feature-card-${slide.title.toLowerCase().replace(/\s+/g, "-")}`}>
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="h-9 w-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${slide.accent}15` }}>
-                    <Icon className="h-4.5 w-4.5" style={{ color: slide.accent, width: 18, height: 18 }} />
+              <Card
+                className="p-5 border-card-border hover:border-[#F07800]/30 transition-all cursor-pointer group h-full carousel-card-enter overflow-hidden"
+                style={{ animationDelay: `${idx * 80}ms` }}
+                data-testid={`feature-card-${slide.title.toLowerCase().replace(/\s+/g, "-")}`}
+              >
+                <img src={slide.preview} alt={`${slide.title} preview`} className="feature-preview-img" />
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${slide.accent}15` }}>
+                    <Icon style={{ color: slide.accent, width: 16, height: 16 }} />
                   </div>
                   <h3 className="text-sm font-semibold text-foreground group-hover:text-[#F07800] transition-colors">{slide.title}</h3>
                 </div>

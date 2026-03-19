@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 160" fill="none">
+  <rect width="400" height="160" rx="6" fill="#141210"/>
+  <rect x="20" y="20" width="360" height="24" rx="3" fill="#1a1816"/>
+  <rect x="24" y="24" width="60" height="16" rx="2" fill="#F07800" opacity="0.3"/>
+  <text x="36" y="35" font-size="8" fill="#F07800" font-family="monospace">TICKER</text>
+  <rect x="90" y="24" width="50" height="16" rx="2" fill="#1f1d1a"/>
+  <text x="96" y="35" font-size="8" fill="#888" font-family="monospace">PRICE</text>
+  <rect x="146" y="24" width="40" height="16" rx="2" fill="#1f1d1a"/>
+  <text x="152" y="35" font-size="8" fill="#888" font-family="monospace">CHG</text>
+  <g opacity="0.7">
+    <rect x="20" y="50" width="360" height="18" rx="2" fill="#1a1816"/>
+    <text x="28" y="63" font-size="9" fill="#F0A500" font-family="monospace">NVDA</text>
+    <text x="96" y="63" font-size="9" fill="#ccc" font-family="monospace">$148.20</text>
+    <text x="152" y="63" font-size="9" fill="#F07800" font-family="monospace">+2.4%</text>
+    <rect x="200" y="54" width="80" height="8" rx="1" fill="#F07800" opacity="0.2"/>
+    <rect x="200" y="54" width="62" height="8" rx="1" fill="#F07800" opacity="0.5"/>
+  </g>
+  <g opacity="0.6">
+    <rect x="20" y="72" width="360" height="18" rx="2" fill="#141210"/>
+    <text x="28" y="85" font-size="9" fill="#F0A500" font-family="monospace">CEG</text>
+    <text x="96" y="85" font-size="9" fill="#ccc" font-family="monospace">$289.50</text>
+    <text x="152" y="85" font-size="9" fill="#F07800" font-family="monospace">+1.8%</text>
+    <rect x="200" y="76" width="80" height="8" rx="1" fill="#F07800" opacity="0.2"/>
+    <rect x="200" y="76" width="55" height="8" rx="1" fill="#F07800" opacity="0.5"/>
+  </g>
+  <g opacity="0.5">
+    <rect x="20" y="94" width="360" height="18" rx="2" fill="#1a1816"/>
+    <text x="28" y="107" font-size="9" fill="#F0A500" font-family="monospace">VST</text>
+    <text x="96" y="107" font-size="9" fill="#ccc" font-family="monospace">$176.80</text>
+    <text x="152" y="107" font-size="9" fill="#D4A843" font-family="monospace">+0.9%</text>
+    <rect x="200" y="98" width="80" height="8" rx="1" fill="#D4A843" opacity="0.2"/>
+    <rect x="200" y="98" width="40" height="8" rx="1" fill="#D4A843" opacity="0.5"/>
+  </g>
+  <g opacity="0.3">
+    <rect x="20" y="116" width="360" height="18" rx="2" fill="#141210"/>
+    <rect x="20" y="138" width="360" height="18" rx="2" fill="#1a1816"/>
+  </g>
+</svg>

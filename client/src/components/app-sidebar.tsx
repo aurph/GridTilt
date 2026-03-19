@@ -75,14 +75,14 @@ export function AppSidebar() {
           <img
             src={logoPath}
             alt="GridTilt logo"
-            className="h-9 w-9 rounded-md object-cover"
+            className="h-11 w-11 rounded-md object-cover logo-entrance"
             style={{ filter: "saturate(1.4) brightness(0.85)" }}
           />
           <div>
-            <div className="font-bold text-base tracking-tight text-foreground">
+            <div className="font-bold text-base tracking-tight text-foreground" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
               Grid<span className="text-[#F07800]">Tilt</span>
             </div>
-            <div className="text-xs text-muted-foreground tracking-wide">AI Power Economy</div>
+            <div className="text-[10px] text-muted-foreground tracking-wide font-mono">AI Power Economy</div>
           </div>
         </div>
       </SidebarHeader>
