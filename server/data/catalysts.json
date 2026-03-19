@@ -1,21 +1,5 @@
 [
   {
-    "id": 1,
-    "date": "2026-03-25",
-    "title": "Micron Technology Q2 FY2026 Earnings",
-    "category": "Earnings",
-    "thesisImpact": "Micron reports memory chip revenue and demand trends relevant to datacenter and AI server buildouts. HBM (high-bandwidth memory) shipment volumes indicate GPU production pace.",
-    "tickers": ["MU", "NVDA", "TSM"]
-  },
-  {
-    "id": 2,
-    "date": "2026-04-10",
-    "title": "Constellation Energy Q1 2026 Earnings",
-    "category": "Earnings",
-    "thesisImpact": "Constellation operates the largest US nuclear fleet. Earnings include updates on the Three Mile Island Unit 1 restart process and any new datacenter power purchase agreements.",
-    "tickers": ["CEG", "VST"]
-  },
-  {
     "id": 3,
     "date": "2026-04-15",
     "title": "NRC Palisades Nuclear Restart Review",
@@ -24,52 +8,12 @@
     "tickers": ["CEG", "VST", "TLN"]
   },
   {
-    "id": 4,
-    "date": "2026-04-16",
-    "title": "Eaton Corporation Q1 2026 Earnings",
-    "category": "Earnings",
-    "thesisImpact": "Eaton's electrical segment reports order intake for switchgear, power distribution units, and transformer systems used in datacenter construction. Backlog levels reflect infrastructure demand.",
-    "tickers": ["ETN", "GEV", "HUBB", "VRT"]
-  },
-  {
-    "id": 5,
-    "date": "2026-04-22",
-    "title": "GE Vernova Q1 2026 Earnings",
-    "category": "Earnings",
-    "thesisImpact": "GE Vernova reports on gas turbine orders, grid equipment backlog, and transformer lead times. Order book data reflects utility-scale power infrastructure spending levels.",
-    "tickers": ["GEV", "ETN", "NEE", "VST"]
-  },
-  {
-    "id": 6,
-    "date": "2026-04-29",
-    "title": "Meta and Microsoft Q1 2026 Earnings",
-    "category": "Earnings",
-    "thesisImpact": "Meta and Microsoft report quarterly capital expenditure figures for AI infrastructure and datacenter expansion. Capex guidance updates indicate downstream demand for power and cooling equipment.",
-    "tickers": ["META", "MSFT", "AMZN", "GOOGL"]
-  },
-  {
     "id": 7,
     "date": "2026-05-01",
     "title": "PJM Capacity Auction Results",
     "category": "Market",
     "thesisImpact": "PJM Interconnection holds annual capacity auctions for its 13-state service territory. Clearing prices determine forward revenue for generators and reflect supply-demand balance on the largest US grid.",
     "tickers": ["VST", "CEG", "NRG", "TLN"]
-  },
-  {
-    "id": 8,
-    "date": "2026-05-06",
-    "title": "Vertiv Holdings Q1 2026 Earnings",
-    "category": "Earnings",
-    "thesisImpact": "Vertiv supplies thermal management and power infrastructure for datacenters. Order growth and backlog figures reflect datacenter construction activity and cooling demand for high-density AI racks.",
-    "tickers": ["VRT", "CARR", "ETN"]
-  },
-  {
-    "id": 9,
-    "date": "2026-05-28",
-    "title": "NVIDIA Q1 FY2027 Earnings",
-    "category": "Earnings",
-    "thesisImpact": "NVIDIA reports datacenter GPU revenue and forward guidance. Shipment volumes and next-generation product ramp timelines affect downstream power and cooling infrastructure procurement.",
-    "tickers": ["NVDA", "TSM", "EQIX", "VRT"]
   },
   {
     "id": 10,

@@ -1428,16 +1428,24 @@ Sent to ${subscriberCount} subscribers. You're receiving this because you subscr
   // Catalysts: manual thesis catalysts from config.
   // sortDate is used only for display ordering; dateLabel shows the actual expected timeframe.
   // All events listed are real, verifiable regulatory/market proceedings.
-  const MANUAL_CATALYSTS = [
-    { id: 'palisades-restart', category: 'Regulatory', title: 'NRC Review: Palisades Nuclear Restart', description: "NRC is reviewing Holtec's application to restart Michigan's 800 MW Palisades plant, which shut down in 2022. A decision would be the first US nuclear plant restart from decommissioned status.", dateLabel: 'Apr 2026', sortDate: '2026-04-15', affectedTickers: ['CEG', 'VST', 'TLN'], affectedSectors: ['Nuclear'] },
-    { id: 'pjm-auction', category: 'Market', title: 'PJM Capacity Auction Results', description: 'PJM Interconnection, which operates the grid for 13 states and D.C., holds annual capacity auctions to procure generation commitments. Results set clearing prices that affect merchant generator revenue.', dateLabel: 'Q2 2026', sortDate: '2026-05-01', affectedTickers: ['VST', 'CEG', 'NRG'], affectedSectors: ['Generation'] },
-    { id: 'ferc-order-1920', category: 'Infrastructure', title: 'FERC Transmission Planning Rule (Order 1920)', description: 'FERC Order 1920, issued May 2024, requires regional transmission planning on a 20-year forward-looking basis. Implementation timelines and compliance filings are ongoing through 2026.', dateLabel: '2026', sortDate: '2026-06-01', affectedTickers: ['PWR', 'ETN', 'EMR'], affectedSectors: ['Transmission'] },
-    { id: 'doe-loan-programs', category: 'Regulatory', title: 'DOE Loan Programs for Nuclear/Grid', description: "The DOE Loan Programs Office has authority to issue loans and loan guarantees for energy infrastructure projects, including nuclear and grid modernization. Disbursement decisions are ongoing.", dateLabel: '2026-2027', sortDate: '2026-06-15', affectedTickers: ['SMR', 'OKLO', 'BWXT', 'GEV'], affectedSectors: ['Nuclear', 'Grid'] },
-    { id: 'hyperscaler-capex', category: 'Industry', title: 'Hyperscaler Capex Guidance Updates', description: 'META, MSFT, AMZN, and GOOGL report quarterly earnings with updated capital expenditure guidance for AI infrastructure and datacenter buildouts.', dateLabel: 'Ongoing (quarterly)', sortDate: '2026-04-29', affectedTickers: ['META', 'MSFT', 'AMZN', 'GOOGL'], affectedSectors: ['End Use', 'Distribution'] },
-    { id: 'lpt-tariffs', category: 'Market', title: 'Large Power Transformer Import Tariff Decisions', description: 'US trade policy decisions on large power transformer imports affect domestic supply timelines. The US imports a significant share of LPTs, and tariff changes impact procurement lead times.', dateLabel: 'Mid-2026', sortDate: '2026-07-01', affectedTickers: ['ETN', 'ABB', 'PWR'], affectedSectors: ['Transmission'] },
-    { id: 'tmi-restart', category: 'Infrastructure', title: 'Three Mile Island Unit 1 Restart', description: "Constellation Energy has announced plans to restart Three Mile Island Unit 1 (837 MW) under a power purchase agreement with Microsoft. NRC regulatory review is required before restart can proceed.", dateLabel: '2026-2028', sortDate: '2026-08-01', affectedTickers: ['CEG', 'MSFT'], affectedSectors: ['Nuclear'] },
-    { id: 'epa-emissions', category: 'Regulatory', title: 'EPA Power Plant Emissions Rules', description: 'EPA has proposed updated emissions standards for new and existing gas-fired power plants. Final rules will affect permitting timelines and operating costs for gas generation.', dateLabel: '2026', sortDate: '2026-09-01', affectedTickers: ['GEV', 'BKR', 'NRG', 'VST'], affectedSectors: ['Generation'] },
-  ];
+  function loadManualCatalysts(): any[] {
+    try {
+      const filePath = join(process.cwd(), "server", "data", "catalysts.json");
+      const raw = readFileSync(filePath, "utf-8");
+      return JSON.parse(raw).map((c: any) => ({
+        id: c.id?.toString() ?? c.title,
+        category: c.category,
+        title: c.title,
+        description: c.thesisImpact || '',
+        dateLabel: new Date(c.date + "T12:00:00").toLocaleDateString("en-US", { month: "short", year: "numeric" }),
+        sortDate: c.date,
+        affectedTickers: c.tickers || [],
+        affectedSectors: [],
+      }));
+    } catch {
+      return [];
+    }
+  }
 
   // Earnings dates based on each company's historical reporting week.
   // Fiscal quarter designations are verified from each company's fiscal year calendar.
@@ -1535,7 +1543,7 @@ Sent to ${subscriberCount} subscribers. You're receiving this because you subscr
   });
 
   app.get("/api/catalysts/manual", (_req, res) => {
-    res.json(MANUAL_CATALYSTS);
+    res.json(loadManualCatalysts());
   });
 
   app.get("/api/catalysts/all", async (_req, res) => {
@@ -1554,7 +1562,8 @@ Sent to ${subscriberCount} subscribers. You're receiving this because you subscr
       stageColor: e.stageColor,
     }));
 
-    const manualFormatted = MANUAL_CATALYSTS.map(c => ({
+    const manualCatalysts = loadManualCatalysts();
+    const manualFormatted = manualCatalysts.map(c => ({
       id: c.id,
       type: 'catalyst' as const,
       date: c.sortDate,

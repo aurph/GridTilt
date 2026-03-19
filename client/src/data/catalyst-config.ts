@@ -2,8 +2,8 @@ export type CatalystCategory = 'Regulatory' | 'Policy' | 'Infrastructure' | 'Mar
 
 export const catalystCategoryColors: Record<CatalystCategory, string> = {
   Regulatory:     '#F0A500',
-  Policy:         '#A855F7',
-  Infrastructure: '#22C55E',
+  Policy:         '#D4A843',
+  Infrastructure: '#C87533',
   Market:         '#F07800',
   Industry:       '#F07800',
 };
@@ -117,7 +117,7 @@ export const earningsSeed: EarningsSeed[] = [
   { ticker: 'TSM',   company: 'Taiwan Semiconductor',    date: '2026-04-17', time: 'BMO', quarter: 'Q1 2026' },
   { ticker: 'GOOGL', company: 'Alphabet',                date: '2026-04-29', time: 'AMC', quarter: 'Q1 2026' },
   { ticker: 'META',  company: 'Meta Platforms',           date: '2026-04-29', time: 'AMC', quarter: 'Q1 2026' },
-  { ticker: 'MSFT',  company: 'Microsoft',               date: '2026-04-29', time: 'AMC', quarter: 'Q1 2026' },
+  { ticker: 'MSFT',  company: 'Microsoft',               date: '2026-04-29', time: 'AMC', quarter: 'Q3 FY2026' },
   { ticker: 'AAPL',  company: 'Apple',                   date: '2026-04-30', time: 'AMC', quarter: 'Q2 FY2026' },
   { ticker: 'AMZN',  company: 'Amazon',                  date: '2026-04-30', time: 'AMC', quarter: 'Q1 2026' },
   { ticker: 'AMD',   company: 'Advanced Micro Devices',  date: '2026-05-05', time: 'AMC', quarter: 'Q1 2026' },
@@ -151,7 +151,7 @@ export const SUPPLY_CHAIN_STAGE_MAP: Record<string, string> = {
 export const STAGE_COLORS: Record<string, string> = {
   'Raw Materials': '#C87533',
   'Generation': '#F07800',
-  'Transmission': '#F0A500',
-  'Distribution': '#22C55E',
-  'End Use': '#A855F7',
+  'Transmission': '#D4A843',
+  'Distribution': '#B8860B',
+  'End Use': '#F0A500',
 };

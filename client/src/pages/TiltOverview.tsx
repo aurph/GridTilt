@@ -71,14 +71,6 @@ interface KpiData {
   };
 }
 
-interface Catalyst {
-  id: number;
-  date: string;
-  title: string;
-  category: string;
-  tickers: string[];
-}
-
 interface TopMover {
   ticker: string;
   name: string;
@@ -96,10 +88,12 @@ interface SectorPulseItem {
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
-  Earnings:   "#F0A500",
-  Regulatory: "#F0A500",
-  Policy:     "#a855f7",
-  Market:     "#F07800",
+  Earnings:       "#F0A500",
+  Regulatory:     "#F0A500",
+  Policy:         "#D4A843",
+  Market:         "#F07800",
+  Infrastructure: "#C87533",
+  Industry:       "#F07800",
 };
 
 function daysUntil(dateStr: string): number {
@@ -490,29 +484,51 @@ function SectorPulseSection({ pulse, isLoading, isError }: { pulse: SectorPulseI
   );
 }
 
-function CatalystCalendarSection({ catalysts }: { catalysts: Catalyst[] }) {
+function CatalystCalendarSection() {
   const today = new Date();
   const [viewMonth, setViewMonth] = useState(today.getMonth());
   const [viewYear, setViewYear] = useState(today.getFullYear());
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
 
+  const { data } = useQuery<AllCatalystsResponse>({
+    queryKey: ["/api/catalysts/all"],
+    refetchInterval: 900000,
+  });
+
+  const items = data?.items || [];
+
   const firstDay = new Date(viewYear, viewMonth, 1).getDay();
   const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
   const monthLabel = new Date(viewYear, viewMonth, 1).toLocaleDateString("en-US", { month: "long", year: "numeric" });
 
-  const catalystByDate: Record<string, Catalyst[]> = {};
-  catalysts.forEach((c) => {
-    const d = c.date.slice(0, 10);
-    if (!catalystByDate[d]) catalystByDate[d] = [];
-    catalystByDate[d].push(c);
+  const itemsByDate: Record<string, MergedCatalystItem[]> = {};
+  items.forEach((item) => {
+    const d = (item.date || item.sortDate).slice(0, 10);
+    if (!itemsByDate[d]) itemsByDate[d] = [];
+    itemsByDate[d].push(item);
   });
 
   const selectedDateKey = selectedDay;
-  const selectedCatalysts = selectedDateKey ? (catalystByDate[selectedDateKey] ?? []) : [];
+  const selectedItems = selectedDateKey ? (itemsByDate[selectedDateKey] ?? []) : [];
 
-  const upcoming = catalysts
-    .filter((c) => daysUntil(c.date) >= 0)
+  const upcoming = items
+    .filter((c) => daysUntil(c.sortDate) >= 0)
     .slice(0, 5);
+
+  function getItemColor(item: MergedCatalystItem): string {
+    if (item.type === 'earnings') return item.stageColor || "#F0A500";
+    return CATEGORY_COLORS[item.category || ''] ?? "#6b7280";
+  }
+
+  function getItemLabel(item: MergedCatalystItem): string {
+    if (item.type === 'earnings') return `${item.ticker}: ${item.company} Earnings`;
+    return item.title || '';
+  }
+
+  function getItemCategory(item: MergedCatalystItem): string {
+    if (item.type === 'earnings') return item.stage || 'Earnings';
+    return item.category || 'Event';
+  }
 
   return (
     <Card className="p-5 border-card-border" data-testid="catalyst-calendar">
@@ -565,10 +581,10 @@ function CatalystCalendarSection({ catalysts }: { catalysts: Catalyst[] }) {
         {Array.from({ length: daysInMonth }, (_, i) => {
           const day = i + 1;
           const dateKey = `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-          const dayCatalysts = catalystByDate[dateKey] ?? [];
+          const dayItems = itemsByDate[dateKey] ?? [];
           const isToday = viewYear === today.getFullYear() && viewMonth === today.getMonth() && day === today.getDate();
           const isSelected = selectedDay === dateKey;
-          const hasCatalysts = dayCatalysts.length > 0;
+          const hasItems = dayItems.length > 0;
 
           return (
             <button
@@ -582,13 +598,13 @@ function CatalystCalendarSection({ catalysts }: { catalysts: Catalyst[] }) {
               data-testid={`calendar-day-${day}`}
             >
               <span>{day}</span>
-              {hasCatalysts && (
+              {hasItems && (
                 <div className="flex gap-0.5 mt-0.5">
-                  {dayCatalysts.slice(0, 3).map((cat, ci) => (
+                  {dayItems.slice(0, 3).map((item, ci) => (
                     <div
                       key={ci}
                       className="h-1 w-1 rounded-full"
-                      style={{ backgroundColor: CATEGORY_COLORS[cat.category] ?? "#6b7280" }}
+                      style={{ backgroundColor: getItemColor(item) }}
                     />
                   ))}
                 </div>
@@ -598,16 +614,16 @@ function CatalystCalendarSection({ catalysts }: { catalysts: Catalyst[] }) {
         })}
       </div>
 
-      {selectedCatalysts.length > 0 && (
+      {selectedItems.length > 0 && (
         <div className="mt-3 pt-3 border-t border-border space-y-2">
-          {selectedCatalysts.map((cat) => {
-            const cc = CATEGORY_COLORS[cat.category] ?? "#6b7280";
+          {selectedItems.map((item) => {
+            const cc = getItemColor(item);
             return (
-              <div key={cat.id} className="flex items-start gap-2">
+              <div key={item.id} className="flex items-start gap-2">
                 <div className="h-1.5 w-1.5 rounded-full mt-1.5 flex-shrink-0" style={{ backgroundColor: cc }} />
                 <div className="min-w-0">
-                  <p className="text-xs font-medium text-foreground leading-tight">{cat.title}</p>
-                  <span className="text-[10px]" style={{ color: cc }}>{cat.category}</span>
+                  <p className="text-xs font-medium text-foreground leading-tight">{getItemLabel(item)}</p>
+                  <span className="text-[10px]" style={{ color: cc }}>{getItemCategory(item)}</span>
                 </div>
               </div>
             );
@@ -618,16 +634,16 @@ function CatalystCalendarSection({ catalysts }: { catalysts: Catalyst[] }) {
       <div className="mt-4 pt-3 border-t border-border">
         <p className="text-[10px] uppercase tracking-wider text-muted-foreground/60 mb-2">Next 5 Upcoming</p>
         <div className="space-y-2">
-          {upcoming.map((catalyst) => {
-            const days = daysUntil(catalyst.date);
-            const cc = CATEGORY_COLORS[catalyst.category] ?? "#6b7280";
+          {upcoming.map((item) => {
+            const days = daysUntil(item.sortDate);
+            const cc = getItemColor(item);
             return (
-              <div key={catalyst.id} className="flex items-center gap-2" data-testid={`upcoming-catalyst-${catalyst.id}`}>
+              <div key={item.id} className="flex items-center gap-2" data-testid={`upcoming-catalyst-${item.id}`}>
                 <span className="text-[10px] font-mono text-muted-foreground w-8 flex-shrink-0">
                   {days === 0 ? "TODAY" : `${days}d`}
                 </span>
                 <div className="h-1 w-1 rounded-full flex-shrink-0" style={{ backgroundColor: cc }} />
-                <span className="text-xs text-foreground truncate flex-1 min-w-0">{catalyst.title}</span>
+                <span className="text-xs text-foreground truncate flex-1 min-w-0">{getItemLabel(item)}</span>
               </div>
             );
           })}
@@ -744,8 +760,8 @@ interface AllCatalystsResponse {
 const MERGED_CATEGORY_COLORS: Record<string, string> = {
   Earnings:       "#F0A500",
   Regulatory:     "#F0A500",
-  Policy:         "#a855f7",
-  Infrastructure: "#22C55E",
+  Policy:         "#D4A843",
+  Infrastructure: "#C87533",
   Market:         "#F07800",
   Industry:       "#F07800",
 };
@@ -906,15 +922,6 @@ export default function TiltOverview() {
     refetchInterval: 900000,
   });
 
-  const { data: catalysts, isError: catalystsError } = useQuery<Catalyst[]>({
-    queryKey: ["/api/catalysts"],
-    refetchInterval: 900000,
-  });
-
-  const { data: earningsCalendar, isError: earningsError } = useQuery<Catalyst[]>({
-    queryKey: ["/api/earnings-calendar"],
-    refetchInterval: 900000,
-  });
 
   const { data: topMovers, isLoading: topMoversLoading, isError: topMoversError } = useQuery<TopMover[]>({
     queryKey: ["/api/top-movers"],
@@ -1060,14 +1067,7 @@ export default function TiltOverview() {
             <SectorPulseSection pulse={sectorPulse ?? []} isLoading={sectorPulseLoading} isError={sectorPulseError} />
           </div>
           <div className="lg:col-span-2 space-y-4">
-            {(catalystsError && earningsError) ? (
-              <Card className="p-5 border-card-border flex items-center gap-2 text-sm text-muted-foreground">
-                <AlertTriangle className="h-4 w-4 text-red-400 flex-shrink-0" />
-                <span>Unable to load catalyst calendar.</span>
-              </Card>
-            ) : (
-              <CatalystCalendarSection catalysts={[...(catalysts ?? []), ...(earningsCalendar ?? [])].sort((a, b) => a.date.localeCompare(b.date))} />
-            )}
+            <CatalystCalendarSection />
             <NextCatalystsWidget />
             <XFeedSection />
           </div>
