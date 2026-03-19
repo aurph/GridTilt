@@ -56,6 +56,17 @@ interface SimLink extends d3.SimulationLinkDatum<SimNode> {
 const GRAPH_W = 1200;
 const GRAPH_H = 700;
 
+const connectionCounts: Record<string, number> = {};
+supplyLinks.forEach((l) => {
+  connectionCounts[l.source] = (connectionCounts[l.source] || 0) + 1;
+  connectionCounts[l.target] = (connectionCounts[l.target] || 0) + 1;
+});
+
+function getNodeRadius(nodeId: string): number {
+  const count = connectionCounts[nodeId] || 2;
+  return Math.min(42, Math.max(28, 24 + count * 1.5));
+}
+
 function NetworkGraph({
   activeNode,
   onSelectNode,
@@ -114,7 +125,7 @@ function NetworkGraph({
     const simulation = d3.forceSimulation<SimNode>(nodes)
       .force('x', d3.forceX<SimNode>((d) => stageX[d.stageIndex] * GRAPH_W).strength(0.85))
       .force('y', d3.forceY<SimNode>(GRAPH_H / 2).strength(0.05))
-      .force('collide', d3.forceCollide<SimNode>(55))
+      .force('collide', d3.forceCollide<SimNode>((d) => getNodeRadius(d.id) + 20))
       .force('link', d3.forceLink<SimNode, SimLink>(links).id((d) => d.id).distance(140).strength(0.25))
       .force('charge', d3.forceManyBody<SimNode>().strength(-180))
       .stop();
@@ -201,8 +212,9 @@ function NetworkGraph({
           const midX = (src.x + tgt.x) / 2;
           const path = `M ${src.x} ${src.y} C ${midX} ${src.y}, ${midX} ${tgt.y}, ${tgt.x} ${tgt.y}`;
 
+          const isGSU = link.label === 'GSU';
           const opacity = isDimmed ? 0.03 : isHighlighted ? 0.5 : 0.1;
-          const width = isHighlighted ? 2.5 : 1.2;
+          const width = isHighlighted ? 2.5 : isGSU ? 2 : 1.2;
 
           const delay = entrancePhase >= 2
             ? Math.min(src.stageIndex, tgt.stageIndex) * 0.08 + 0.3
@@ -249,6 +261,8 @@ function NetworkGraph({
             : 99;
 
           const IconComp = ICON_MAP[node.icon] || Zap;
+          const r = getNodeRadius(node.id);
+          const iconSize = Math.round(r * 0.5);
 
           return (
             <g
@@ -260,16 +274,16 @@ function NetworkGraph({
               data-testid={`node-${node.id}`}
             >
               <circle
-                r={32}
+                r={r}
                 fill={fillColor}
                 stroke={strokeColor}
                 strokeWidth={strokeWidth}
                 style={{ filter: filterVal, transition: 'all 0.25s ease', animationDelay: `${enterDelay}s` }}
               />
-              <foreignObject x={-12} y={-12} width={24} height={24} style={{ overflow: 'visible' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 24, height: 24 }}>
+              <foreignObject x={-iconSize / 2} y={-iconSize / 2} width={iconSize} height={iconSize} style={{ overflow: 'visible' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: iconSize, height: iconSize }}>
                   <IconComp
-                    size={20}
+                    size={iconSize}
                     strokeWidth={2}
                     color={isActive || isConnected ? color : '#888'}
                     style={{ transition: 'color 0.25s' }}
@@ -277,7 +291,7 @@ function NetworkGraph({
                 </div>
               </foreignObject>
               <text
-                y={46}
+                y={r + 14}
                 textAnchor="middle"
                 className="sc-node-label"
                 fill="white"
@@ -285,7 +299,7 @@ function NetworkGraph({
                 {node.name}
               </text>
               <text
-                y={58}
+                y={r + 26}
                 textAnchor="middle"
                 className="sc-node-sublabel"
                 fill="#666"
@@ -344,11 +358,13 @@ function DetailPanel({
   stockMap,
   onClose,
   onNavigate,
+  onSelectNode,
 }: {
   node: SupplyNode;
   stockMap: Record<string, StockData>;
   onClose: () => void;
   onNavigate: (path: string) => void;
+  onSelectNode: (id: string) => void;
 }) {
   const stageColor = STAGE_COLORS[node.stage] || '#F07800';
   const Icon = ICON_MAP[node.icon] || Zap;
@@ -358,11 +374,11 @@ function DetailPanel({
 
   const upstreamNodes = upstreamLinks.map((l) => {
     const n = supplyNodes.find((sn) => sn.id === l.source);
-    return { name: n?.name || l.source, label: l.label };
+    return { id: l.source, name: n?.name || l.source, label: l.label };
   });
   const downstreamNodes = downstreamLinks.map((l) => {
     const n = supplyNodes.find((sn) => sn.id === l.target);
-    return { name: n?.name || l.target, label: l.label };
+    return { id: l.target, name: n?.name || l.target, label: l.label };
   });
 
   return (
@@ -395,10 +411,15 @@ function DetailPanel({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
         {upstreamNodes.length > 0 && (
           <div>
-            <div className="sc-section-label" style={{ color: '#22C55E' }}>RECEIVES FROM</div>
+            <div className="sc-section-label" style={{ color: '#D4A843' }}>RECEIVES FROM</div>
             <div className="flex flex-wrap gap-1">
               {upstreamNodes.map((u, i) => (
-                <span key={i} className="sc-flow-tag" data-testid={`upstream-${i}`}>
+                <span
+                  key={i}
+                  className="sc-flow-tag sc-flow-tag-clickable"
+                  onClick={() => onSelectNode(u.id)}
+                  data-testid={`upstream-${i}`}
+                >
                   {u.name}
                   {u.label && <span className="text-[#555]"> ({u.label})</span>}
                 </span>
@@ -411,7 +432,12 @@ function DetailPanel({
             <div className="sc-section-label" style={{ color: '#F0A500' }}>FEEDS INTO</div>
             <div className="flex flex-wrap gap-1">
               {downstreamNodes.map((d, i) => (
-                <span key={i} className="sc-flow-tag" data-testid={`downstream-${i}`}>
+                <span
+                  key={i}
+                  className="sc-flow-tag sc-flow-tag-clickable"
+                  onClick={() => onSelectNode(d.id)}
+                  data-testid={`downstream-${i}`}
+                >
                   {d.name}
                   {d.label && <span className="text-[#555]"> ({d.label})</span>}
                 </span>
@@ -524,6 +550,7 @@ export default function SupplyChain() {
             stockMap={stockMap}
             onClose={() => setActiveNode(null)}
             onNavigate={navigate}
+            onSelectNode={setActiveNode}
           />
         </div>
       )}

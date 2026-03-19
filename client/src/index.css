@@ -437,6 +437,14 @@ html {
   border-radius: 3px;
   padding: 3px 8px;
 }
+.sc-flow-tag-clickable {
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+}
+.sc-flow-tag-clickable:hover {
+  border-color: rgba(240, 120, 0, 0.4);
+  color: #F07800;
+}
 
 .sc-stock-table {
   border: 1px solid rgba(255, 255, 255, 0.06);
