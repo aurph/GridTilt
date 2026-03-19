@@ -21,7 +21,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Zap, TrendingUp, Activity, AlertTriangle, Info, ArrowUp, ArrowDown, Calendar, ChevronRight, ExternalLink, ChevronDown, ChevronUp, Cpu, Plug, BarChart3, Calculator } from "lucide-react";
+import { Zap, TrendingUp, Activity, AlertTriangle, Info, ArrowUp, ArrowDown, Calendar, ChevronRight, ChevronLeft, ExternalLink, ChevronDown, ChevronUp, Cpu, Plug, BarChart3, Calculator, Layers, Map, Link2, CalendarDays } from "lucide-react";
 import { EmailCapture, ScrollTriggeredBanner } from "@/components/EmailCapture";
 
 const electricityData = [
@@ -916,6 +916,131 @@ function WhatAmILookingAt() {
   );
 }
 
+const FEATURE_SLIDES = [
+  {
+    icon: Layers,
+    title: "The Stack",
+    description: "60+ equities across 8 supply chain layers. Compute, nuclear, uranium, power hardware, utilities, construction, and more.",
+    href: "/stack",
+    accent: "#F07800",
+  },
+  {
+    icon: Link2,
+    title: "Supply Chain Tracker",
+    description: "Interactive D3 force network mapping 20 nodes and 42 real supply relationships from raw materials to end-use compute.",
+    href: "/supply-chain",
+    accent: "#F0A500",
+  },
+  {
+    icon: Map,
+    title: "Power Map",
+    description: "US data center locations, power capacity, and utility interconnection points. See where the load is landing.",
+    href: "/power-map",
+    accent: "#C87533",
+  },
+  {
+    icon: CalendarDays,
+    title: "Catalyst Tracker",
+    description: "Live earnings calendar with 80+ tickers from Yahoo Finance, plus thesis catalysts. Never miss a market-moving event.",
+    href: "/catalysts",
+    accent: "#D4A843",
+  },
+  {
+    icon: BarChart3,
+    title: "Portfolio Overlay",
+    description: "Score any portfolio for AI power exposure. See how your holdings map to the infrastructure buildout.",
+    href: "/portfolio",
+    accent: "#F07800",
+  },
+  {
+    icon: Calculator,
+    title: "Thesis Calculator",
+    description: "Model scenarios and test conviction across demand growth, nuclear capacity, and grid stress variables.",
+    href: "/trade",
+    accent: "#F0A500",
+  },
+];
+
+function FeatureCarousel() {
+  const [current, setCurrent] = useState(0);
+  const [autoplay, setAutoplay] = useState(true);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    if (!autoplay) return;
+    intervalRef.current = setInterval(() => {
+      setCurrent((prev) => (prev + 1) % FEATURE_SLIDES.length);
+    }, 4000);
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+  }, [autoplay]);
+
+  const go = (dir: number) => {
+    setAutoplay(false);
+    setCurrent((prev) => (prev + dir + FEATURE_SLIDES.length) % FEATURE_SLIDES.length);
+  };
+
+  const visibleCount = 3;
+  const slides = [];
+  for (let i = 0; i < visibleCount; i++) {
+    slides.push(FEATURE_SLIDES[(current + i) % FEATURE_SLIDES.length]);
+  }
+
+  return (
+    <div data-testid="feature-carousel">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Explore Features</h2>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => go(-1)}
+            className="p-1.5 rounded hover:bg-muted/30 transition-colors text-muted-foreground hover:text-foreground"
+            data-testid="carousel-prev"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          <div className="flex items-center gap-1 mx-2">
+            {FEATURE_SLIDES.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => { setAutoplay(false); setCurrent(i); }}
+                className={`h-1.5 rounded-full transition-all ${i === current ? "w-4 bg-[#F07800]" : "w-1.5 bg-muted-foreground/30 hover:bg-muted-foreground/50"}`}
+                data-testid={`carousel-dot-${i}`}
+              />
+            ))}
+          </div>
+          <button
+            onClick={() => go(1)}
+            className="p-1.5 rounded hover:bg-muted/30 transition-colors text-muted-foreground hover:text-foreground"
+            data-testid="carousel-next"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {slides.map((slide) => {
+          const Icon = slide.icon;
+          return (
+            <Link key={slide.href} href={slide.href}>
+              <Card className="p-5 border-card-border hover:border-[#F07800]/30 transition-all cursor-pointer group h-full" data-testid={`feature-card-${slide.title.toLowerCase().replace(/\s+/g, "-")}`}>
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="h-9 w-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${slide.accent}15` }}>
+                    <Icon className="h-4.5 w-4.5" style={{ color: slide.accent, width: 18, height: 18 }} />
+                  </div>
+                  <h3 className="text-sm font-semibold text-foreground group-hover:text-[#F07800] transition-colors">{slide.title}</h3>
+                </div>
+                <p className="text-xs text-muted-foreground leading-relaxed mb-3">{slide.description}</p>
+                <div className="flex items-center gap-1 text-xs font-medium" style={{ color: slide.accent }}>
+                  Explore <ChevronRight className="h-3 w-3 group-hover:translate-x-0.5 transition-transform" />
+                </div>
+              </Card>
+            </Link>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function TiltOverview() {
   const { data: kpiData, isLoading, isError: kpiError } = useQuery<KpiData>({
     queryKey: ["/api/kpis"],
@@ -937,117 +1062,36 @@ export default function TiltOverview() {
 
   return (
     <div className="flex flex-col h-full overflow-y-auto">
-      <div className="grid-bg border-b border-border px-4 sm:px-6 py-4 sm:py-5">
+      <div className="grid-bg border-b border-border px-4 sm:px-6 py-6 sm:py-8">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div>
-              <div className="flex items-center gap-2 mb-0.5">
-                <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">
-                  The Grid is <span className="text-[#F07800]">Tilting</span>
-                </h1>
-                <Badge className="bg-[#F0A500]/15 text-[#F0A500] border-[#F0A500]/30 text-[10px] font-mono tracking-wider py-0">
-                  LIVE
-                </Badge>
-              </div>
+              <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight mb-1">
+                Grid information, <span className="italic text-[#F07800]">tilted</span> in your favor
+              </h1>
               <p className="text-muted-foreground text-xs sm:text-sm max-w-lg">
-                US datacenter load hit ~6.4% of grid capacity in 2025. Live equities, infrastructure, and power data across 60+ tickers.
+                Live equities, infrastructure, and power data across 60+ tickers tracking the AI power economy.
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <div className="relative flex h-2 w-2">
-              <div className="h-2 w-2 rounded-full bg-green-500" />
-              <div className="animate-ping absolute h-2 w-2 rounded-full bg-green-500 opacity-75" />
+          <div className="flex items-center gap-3">
+            <Badge className="bg-[#F0A500]/15 text-[#F0A500] border-[#F0A500]/30 text-[10px] font-mono tracking-wider py-0">
+              LIVE
+            </Badge>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <div className="relative flex h-2 w-2">
+                <div className="h-2 w-2 rounded-full bg-[#F0A500]" />
+                <div className="animate-ping absolute h-2 w-2 rounded-full bg-[#F0A500] opacity-75" />
+              </div>
+              <span className="font-mono text-[11px]">15-min refresh</span>
             </div>
-            <span className="font-mono text-[11px]">15-min refresh</span>
           </div>
         </div>
       </div>
 
       <div className="flex-1 p-4 sm:p-6 space-y-4 sm:space-y-5">
 
-        {/* KPI Cards */}
-        <div>
-          <div className="flex items-center gap-2 mb-4">
-            <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Composite Indicators</h2>
-            {kpiError && (
-              <span className="flex items-center gap-1 text-xs text-red-400">
-                <AlertTriangle className="h-3 w-3" /> Data unavailable
-              </span>
-            )}
-            <UITooltip>
-              <TooltipTrigger>
-                <Info className="h-3.5 w-3.5 text-muted-foreground" />
-              </TooltipTrigger>
-              <TooltipContent>
-                <p className="text-xs">Each index uses live intraday price signals anchored to an EIA/utility industry baseline.</p>
-              </TooltipContent>
-            </UITooltip>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <KpiCard
-              icon={Activity}
-              title="AI Power Demand Index"
-              value={kpiData?.aiPowerIndex ?? null}
-              unit="/ 100"
-              subtitle="Baseline 72 from EIA data. Tap info for methodology."
-              color="neutral"
-              methodology="Baseline 72/100. Three inputs: DC electricity ~6.4% (EIA 2025), AI CAGR ~33%/yr, $328B Big 4 capex. 100 = full-grid saturation. Intraday: NVDA 40%, TSM 25%, EQIX 20%, MU 15%, scaled 1.2x."
-              constituents={c && (
-                <>
-                  <p className="text-xs text-muted-foreground mb-1.5 font-medium">Today's momentum signals</p>
-                  <ConstituentRow label="NVDA (40%)" value={c.nvdaChange} />
-                  <ConstituentRow label="TSM (25%)" value={c.tsmChange} />
-                  <ConstituentRow label="EQIX (20%)" value={c.eqixChange} />
-                  <ConstituentRow label="MU (15%)" value={c.muChange} />
-                </>
-              )}
-              isLoading={isLoading}
-            />
-            <KpiCard
-              icon={Zap}
-              title="Nuclear Renaissance Index"
-              value={kpiData?.nriValue ?? null}
-              unit=""
-              subtitle={`Anchored basket index. Base: ${kpiData?.nriBaseDate ?? "Jan 1, 2024"} = 100`}
-              color="amber"
-              methodology={`Basket index, base = 100 on Jan 1 2024. Weights: CEG 25%, VST 20%, CCJ 15%, NLR 20%, uranium 10%, policy 10%. Policy multiplier 0.9-1.1, current ${kpiData?.smrPolicyScore ?? 7.8}/10. Since Jan 2024: CEG +98%, VST +521%, CCJ flat, uranium +1%.`}
-              constituents={c && (
-                <>
-                  <p className="text-xs text-muted-foreground mb-1.5 font-medium">Performance vs Jan 1, 2024</p>
-                  <PerfRow label="CEG (25%)" perf={c.cegPerf} base="base $146" />
-                  <PerfRow label="VST (20%)" perf={c.vstPerf} base="base $28.50" />
-                  <PerfRow label="CCJ (15%)" perf={c.ccjPerf} base="base $47.50" />
-                  <PerfRow label="NLR ETF (20%)" perf={c.nlrPerf} base="base $68" />
-                  <PerfRow label="Uranium spot (10%)" perf={c.uPerf} base="base $91/lb" />
-                  <div className="flex items-center justify-between text-xs py-0.5 mt-1 pt-1.5 border-t border-border/50">
-                    <span className="text-muted-foreground">Policy multiplier</span>
-                    <span className="font-mono font-semibold text-[#F0A500]">{c.nriPolicyMultiplier?.toFixed(3)}x</span>
-                  </div>
-                </>
-              )}
-              isLoading={isLoading}
-            />
-            <KpiCard
-              icon={AlertTriangle}
-              title="Grid Stress Score"
-              value={kpiData?.gridStress ?? null}
-              unit="/ 100"
-              subtitle="PJM/MISO/ERCOT reserve margin signal. Tap info for methodology."
-              color="red"
-              methodology="Baseline 68/100. Pressures: MISO 13.4%, PJM 17.5%, ERCOT 15.8% (NERC 2026 est.). 100 = grid emergency. Intraday: VST 40%, CEG 35%, EQIX 25%. Above 75 = elevated risk."
-              constituents={c && (
-                <>
-                  <p className="text-xs text-muted-foreground mb-1.5 font-medium">Today's momentum signals</p>
-                  <ConstituentRow label="VST (40%) merchant power" value={c.vstChange} />
-                  <ConstituentRow label="CEG (35%) nuclear utility" value={c.cegChange} />
-                  <ConstituentRow label="EQIX (25%) DC load proxy" value={c.eqixChange} />
-                </>
-              )}
-              isLoading={isLoading}
-            />
-          </div>
-        </div>
+        <FeatureCarousel />
 
         <WhatAmILookingAt />
 

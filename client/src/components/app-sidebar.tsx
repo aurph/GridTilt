@@ -18,7 +18,7 @@ import {
   CalendarDays,
   FileText,
 } from "lucide-react";
-import logoPath from "@assets/Untitled_design_(4)_1772554897403.png";
+import logoPath from "@assets/Property_1=Default_1773886261299.png";
 
 const navItems = [
   {
