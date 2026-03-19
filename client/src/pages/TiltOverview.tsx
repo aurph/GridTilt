@@ -519,7 +519,7 @@ function CatalystCalendarSection({ catalysts }: { catalysts: Catalyst[] }) {
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Calendar className="h-3.5 w-3.5 text-[#F0A500]" />
-          <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Catalyst Calendar</h2>
+          <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Catalyst Tracker</h2>
         </div>
         <Link
           href="/catalysts"

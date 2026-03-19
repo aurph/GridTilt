@@ -1446,7 +1446,7 @@ Sent to ${subscriberCount} subscribers. You're receiving this because you subscr
     { ticker: 'TSM', company: 'Taiwan Semiconductor', date: '2026-04-17', time: 'BMO', quarter: 'Q1 2026' },
     { ticker: 'GOOGL', company: 'Alphabet', date: '2026-04-29', time: 'AMC', quarter: 'Q1 2026' },
     { ticker: 'META', company: 'Meta Platforms', date: '2026-04-29', time: 'AMC', quarter: 'Q1 2026' },
-    { ticker: 'MSFT', company: 'Microsoft', date: '2026-04-29', time: 'AMC', quarter: 'Q1 2026' },
+    { ticker: 'MSFT', company: 'Microsoft', date: '2026-04-29', time: 'AMC', quarter: 'Q3 FY2026' },
     { ticker: 'AAPL', company: 'Apple', date: '2026-04-30', time: 'AMC', quarter: 'Q2 FY2026' },
     { ticker: 'AMZN', company: 'Amazon', date: '2026-04-30', time: 'AMC', quarter: 'Q1 2026' },
     { ticker: 'AMD', company: 'Advanced Micro Devices', date: '2026-05-05', time: 'AMC', quarter: 'Q1 2026' },
@@ -1477,8 +1477,8 @@ Sent to ${subscriberCount} subscribers. You're receiving this because you subscr
   };
 
   const STAGE_COLORS_MAP: Record<string, string> = {
-    'Raw Materials': '#C87533', 'Generation': '#F07800', 'Transmission': '#F0A500',
-    'Distribution': '#22C55E', 'End Use': '#A855F7',
+    'Raw Materials': '#C87533', 'Generation': '#F07800', 'Transmission': '#D4A843',
+    'Distribution': '#B8860B', 'End Use': '#F0A500',
   };
 
   function getEarningsData() {
@@ -1492,15 +1492,35 @@ Sent to ${subscriberCount} subscribers. You're receiving this because you subscr
       }
     }
 
-    const seedTickers = EARNINGS_SEED.map(e => e.ticker);
-    const entries = seedTickers.map(ticker => {
-      const seed = EARNINGS_SEED.find(e => e.ticker === ticker)!;
-      const liveDate = yahooDateMap[ticker];
-      const date = (liveDate && liveDate >= todayStr) ? liveDate : seed.date;
-      return { ...seed, date };
-    });
+    const seen = new Set<string>();
+    const allEntries: Array<{ ticker: string; company: string; date: string; time: string; quarter: string }> = [];
 
-    const filtered = entries.filter(e => e.date >= todayStr);
+    for (const seed of EARNINGS_SEED) {
+      const liveDate = yahooDateMap[seed.ticker];
+      const date = (liveDate && liveDate >= todayStr) ? liveDate : seed.date;
+      allEntries.push({ ...seed, date });
+      seen.add(seed.ticker);
+    }
+
+    if (earningsCache?.items) {
+      for (const item of earningsCache.items) {
+        const ticker = item.tickers?.[0];
+        if (!ticker || seen.has(ticker)) continue;
+        if (item.date < todayStr) continue;
+        const staticData = STATIC_MARKET_DATA[ticker];
+        const name = staticData?.name ?? ticker;
+        allEntries.push({
+          ticker,
+          company: name,
+          date: item.date,
+          time: '',
+          quarter: '',
+        });
+        seen.add(ticker);
+      }
+    }
+
+    const filtered = allEntries.filter(e => e.date >= todayStr);
     return filtered.map(e => ({
       ...e,
       stage: STAGE_MAP[e.ticker] || 'End Use',
