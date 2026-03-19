@@ -76,6 +76,7 @@ export function AppSidebar() {
             src={logoPath}
             alt="GridTilt logo"
             className="h-9 w-9 rounded-md object-cover"
+            style={{ filter: "saturate(1.4) brightness(0.85)" }}
           />
           <div>
             <div className="font-bold text-base tracking-tight text-foreground">
