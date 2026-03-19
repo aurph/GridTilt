@@ -18,7 +18,7 @@ import {
   CalendarDays,
   FileText,
 } from "lucide-react";
-import logoPath from "@assets/GridTilt_(1)_1773888852417.png";
+import logoPath from "@assets/Image_[Vectorized]_(2)_1773890483514.png";
 
 const navItems = [
   {
@@ -76,7 +76,6 @@ export function AppSidebar() {
             src={logoPath}
             alt="GridTilt logo"
             className="h-11 w-11 rounded-md object-cover logo-entrance"
-            style={{ filter: "saturate(1.4) brightness(0.85)" }}
           />
           <div>
             <div className="font-bold text-base tracking-tight text-foreground" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
