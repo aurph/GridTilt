@@ -9,7 +9,7 @@
   <circle cx="260" cy="55" r="20" fill="#D4A843" opacity="0.2" stroke="#D4A843" stroke-width="1.5"/>
   <text x="260" y="59" font-size="7" fill="#D4A843" font-family="monospace" text-anchor="middle">GRID</text>
   <circle cx="260" cy="115" r="14" fill="#D4A843" opacity="0.15" stroke="#D4A843" stroke-width="1"/>
-  <text x="260" y="119" font-size="7" fill="#D4A843" font-family="monospace" text-anchor="middle">T&D</text>
+  <text x="260" y="119" font-size="7" fill="#D4A843" font-family="monospace" text-anchor="middle">T&amp;D</text>
   <circle cx="350" cy="70" r="24" fill="#F0A500" opacity="0.2" stroke="#F0A500" stroke-width="1.5"/>
   <text x="350" y="74" font-size="7" fill="#F0A500" font-family="monospace" text-anchor="middle">DC</text>
   <line x1="78" y1="58" x2="138" y2="48" stroke="#F07800" stroke-width="1" opacity="0.4"/>
