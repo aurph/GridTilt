@@ -119,7 +119,7 @@ function CalendarGrid({
         <button onClick={prevMonth} className="p-2 hover:text-white text-[#888] transition-colors" data-testid="calendar-prev">
           <ChevronLeft style={{ width: 18, height: 18 }} />
         </button>
-        <span className="text-[18px] font-bold text-white">{monthName}</span>
+        <span className="text-[15px] font-bold text-white">{monthName}</span>
         <button onClick={nextMonth} className="p-2 hover:text-white text-[#888] transition-colors" data-testid="calendar-next">
           <ChevronRight style={{ width: 18, height: 18 }} />
         </button>
@@ -133,7 +133,7 @@ function CalendarGrid({
         ))}
         {cells.map((day, i) => {
           if (day === null) {
-            return <div key={`empty-${i}`} style={{ background: "#161614", minHeight: 80 }} />;
+            return <div key={`empty-${i}`} style={{ background: "#161614", minHeight: 56 }} />;
           }
           const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
           const dayItems = itemsByDate[dateStr] || [];
@@ -147,8 +147,8 @@ function CalendarGrid({
               className="cursor-pointer transition-all"
               style={{
                 background: isSelected ? "#1E1D1A" : isToday ? "#1C1B18" : "#161614",
-                minHeight: 80,
-                padding: "6px 8px",
+                minHeight: 56,
+                padding: "4px 6px",
                 borderLeft: isToday ? "2px solid #F07800" : isSelected ? "2px solid rgba(255,255,255,0.2)" : "2px solid transparent",
                 opacity: isWeekend && dayItems.length === 0 ? 0.6 : 1,
               }}
@@ -501,7 +501,7 @@ export default function CatalystTracker() {
         </span>
       </div>
 
-      <div className="px-4 md:px-8 py-6 max-w-[1100px] mx-auto space-y-10">
+      <div className="px-4 md:px-8 py-6 max-w-[1200px] mx-auto space-y-10">
         {isLoading ? (
           <div className="space-y-4">
             {[...Array(3)].map((_, i) => (
@@ -510,16 +510,19 @@ export default function CatalystTracker() {
           </div>
         ) : (
           <>
-            <CalendarGrid
-              items={items}
-              currentMonth={currentMonth}
-              onMonthChange={setCurrentMonth}
-              selectedDate={selectedDate}
-              onDateSelect={setSelectedDate}
-            />
-
-            <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 32 }}>
-              <UpcomingTimeline items={items} />
+            <div className="flex flex-col lg:flex-row gap-6" style={{ alignItems: "flex-start" }}>
+              <div className="w-full lg:w-auto" style={{ flex: "0 0 auto", maxWidth: 420 }}>
+                <CalendarGrid
+                  items={items}
+                  currentMonth={currentMonth}
+                  onMonthChange={setCurrentMonth}
+                  selectedDate={selectedDate}
+                  onDateSelect={setSelectedDate}
+                />
+              </div>
+              <div className="flex-1 min-w-0 border-t lg:border-t-0 lg:border-l pt-6 lg:pt-0 lg:pl-6" style={{ borderColor: "rgba(255,255,255,0.06)" }}>
+                <UpcomingTimeline items={items} />
+              </div>
             </div>
 
             <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 32 }}>
