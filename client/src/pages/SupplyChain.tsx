@@ -8,6 +8,7 @@ import {
   Plug, HardHat, Snowflake, ToggleRight, Building, Battery,
   Cloud, Landmark, Cpu, Pickaxe, GitBranch,
 } from "lucide-react";
+import { SiBitcoin } from "react-icons/si";
 import {
   supplyNodes,
   supplyLinks,
@@ -17,11 +18,12 @@ import {
   type SupplyLink,
 } from "@/data/supply-chain-config";
 
-const ICON_MAP: Record<string, typeof Zap> = {
+const ICON_MAP: Record<string, any> = {
   Mountain, Zap, Cable, Server, GitBranch,
   Atom, Circle, Wrench, Gem, Flame, Radiation, Gauge, Sun, FlaskConical,
   Plug, HardHat, Snowflake, ToggleRight, Building, Battery,
   Cloud, Landmark, Cpu, Pickaxe,
+  Bitcoin: SiBitcoin,
 };
 
 interface StockData {
