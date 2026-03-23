@@ -446,14 +446,17 @@ const NEWS_CACHE_TTL = 60 * 60 * 1000; // 1 hour - safe for RSS and NewsData.io
 // RSS feeds: AI infrastructure, power grid, nuclear, datacenters
 const RSS_FEEDS: Array<{ url: string; sourceName: string }> = [
   { url: "https://www.utilitydive.com/feeds/news/", sourceName: "Utility Dive" },
-  { url: "https://www.datacenterdynamics.com/en/rss/", sourceName: "Data Center Dynamics" },
+  { url: "https://www.datacenterdynamics.com/en/rss/", sourceName: "DCD" },
   { url: "https://www.world-nuclear-news.org/rss", sourceName: "World Nuclear News" },
   { url: "https://www.power-eng.com/feed/", sourceName: "Power Engineering" },
-  { url: "https://nuclearenergynow.org/feed/", sourceName: "Nuclear Energy Now" },
+  { url: "https://www.powermag.com/feed/", sourceName: "Power Magazine" },
+  { url: "https://www.latitudemedia.com/feed", sourceName: "Latitude Media" },
+  { url: "https://www.energy.gov/rss.xml", sourceName: "DOE" },
+  { url: "https://www.eia.gov/rss/todayinenergy.xml", sourceName: "EIA" },
 ];
 
 async function fetchRSSNews(): Promise<NewsItem[]> {
-  const parser = new RSSParser({ timeout: 8000 });
+  const parser = new RSSParser({ timeout: 5000 });
   const allItems: NewsItem[] = [];
 
   await Promise.allSettled(
@@ -461,12 +464,14 @@ async function fetchRSSNews(): Promise<NewsItem[]> {
       try {
         const feed = await parser.parseURL(url);
         for (const item of feed.items ?? []) {
-          const title = item.title ?? "";
+          const title = (item.title ?? "").trim();
           const desc = item.contentSnippet ?? item.content ?? "";
           if (!title || !isNewsRelevant(title + " " + desc)) continue;
+          if (/^sponsored:/i.test(title)) continue;
+          const rawSource = feed.title ? feed.title.replace(/\s*\|.*$/, "").replace(/\s*-\s.*$/, "").trim() : sourceName;
           allItems.push({
             headline: title,
-            source: feed.title ? feed.title.replace(/\s*\|.*$/, "").trim() : sourceName,
+            source: rawSource || sourceName,
             url: item.link ?? item.guid ?? "#",
             publishedAt: item.isoDate ?? item.pubDate ?? new Date().toISOString(),
           });
@@ -477,10 +482,13 @@ async function fetchRSSNews(): Promise<NewsItem[]> {
     })
   );
 
-  // Sort newest first, deduplicate by headline prefix
+  // Sort newest first, filter to last 7 days, deduplicate by headline prefix
+  const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
   allItems.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
   const seen = new Set<string>();
   return allItems.filter((item) => {
+    const pubTime = new Date(item.publishedAt).getTime();
+    if (Number.isNaN(pubTime) || pubTime < sevenDaysAgo) return false;
     const key = item.headline.slice(0, 60).toLowerCase();
     if (seen.has(key)) return false;
     seen.add(key);
@@ -498,6 +506,13 @@ const NEWS_KEYWORDS = [
   "baseload power", "capacity auction", "power purchase agreement", "nuclear plant",
   "uranium mining", "Cameco", "Vistra", "NextEra", "Dominion Energy", "Duke Energy",
   "data centre", "AI power", "clean energy", "renewable energy",
+  "substation", "transmission line", "power plant", "natural gas generation",
+  "grid infrastructure", "electric utility", "grid reliability", "load growth",
+  "generation capacity", "power sector", "energy storage", "battery storage",
+  "solar farm", "wind farm", "offshore wind", "onshore wind", "FERC",
+  "grid expansion", "energy infrastructure", "power supply", "electric grid",
+  "gas turbine", "combined cycle", "peaker plant", "dispatchable",
+  "hollow core fiber", "fiber optic", "low latency",
 ];
 
 function isNewsRelevant(headline: string): boolean {
