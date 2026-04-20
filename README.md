@@ -1,73 +1,97 @@
-# GridTilt — AI Infrastructure & Power Economy Dashboard
+# GridTilt
 
-GridTilt visualizes the economic relationship between AI compute demand, data center expansion, power consumption, and the financial markets positioned around it. AI data centers now consume 2–3% of global electricity and that number is accelerating.
+> Equities, infrastructure, and power data for the AI power economy.
 
-## Pages
+GridTilt is a research dashboard for tracking the financial and physical buildout of AI infrastructure — compute, data centers, generation, transmission, and the public companies positioned around them. It pulls live equity data, EIA power data, and grid-relevant news so you can see where capital and electrons are actually flowing.
 
-### 1. Tilt Overview (Home)
-- Three live KPI cards: AI Power Demand Index, Nuclear Renaissance Index, Grid Stress Score
-- Full-width US electricity demand area chart (2019 → 2030 projection) with key event annotations (ChatGPT launch, AI boom, nuclear renaissance)
+Live: **[gridtilt.com](https://gridtilt.com)**
 
-### 2. The Stack
-Three supply-chain layers with live market data:
-- **Compute Layer** — NVDA, AMD, MU, INTC (P/E, revenue growth YoY, 30-day sparklines)
-- **Infrastructure Layer** — IREN, EQIX, DLR, AMT (power per facility, performance vs S&P 500)
-- **Power Layer** — CEG, NEE, URA, CCJ + uranium vs CEG scatter plot with Pearson correlation coefficient
+---
 
-### 3. Power Map
-SVG US map with 25 announced/operating data centers from Microsoft, Google, Amazon, Meta, Apple, xAI, OpenAI, and Oracle. Dots are:
-- Green = <100 MW
-- Yellow = 100–500 MW
-- Red = >500 MW
+## What it does
 
-Click a dot → slide-in panel with company, location, planned capacity, estimated annual power consumption, and nearest grid operator.
+| Module | What's inside |
+|---|---|
+| **Tilt Overview** | Top movers, sector pulse, catalyst calendar, US electricity demand chart (2010 → 2030 projection), thesis-health KPIs. |
+| **The Stack** | 60+ tickers across 8 supply-chain layers (compute, nuclear, uranium, power hardware, utilities, construction, hyperscalers, REITs). |
+| **Power Map** | US data center locations with power capacity and the utility / RTO they sit on. |
+| **Supply Chain** | D3 force graph of 21 nodes and 44 real supply relationships from raw materials to end-use compute. |
+| **Catalyst Tracker** | Earnings + thesis catalyst calendar across 80+ tickers. |
+| **Portfolio Overlay** | Score any portfolio 0–100 on AI-power exposure across 5 dimensions. |
+| **Thesis Calculator** | Sliders for demand growth, nuclear capacity, and grid stress to model scenarios. |
+| **News Ticker** | 7-day rolling feed from 8 industry RSS sources (Utility Dive, DCD, World Nuclear News, POWER Magazine, Power Engineering, Latitude Media, DOE, EIA). |
 
-### 4. The Trade
-Financial thesis builder with sliders for:
-- AI workload growth per year
-- Average data center PUE
-- % shift to nuclear power
+---
 
-Right panel shows projected US power demand chart and the 5 most financially leveraged public companies to the scenario.
-
-### 5. Portfolio Overlay
-Paste comma-separated tickers. App scores each holding 0–100 on "AI Power Exposure" across 5 dimensions: Compute / Infrastructure / Power / Cooling / Grid. Visualized as a radar chart.
-
-## Data Sources
+## Data sources
 
 | Data | Source |
-|------|--------|
-| Stock prices, P/E ratios | [Yahoo Finance](https://finance.yahoo.com) via `yahoo-finance2` npm package (unofficial API) |
-| US electricity demand history | [EIA Electric Power Monthly](https://www.eia.gov/electricity/monthly/) — US Energy Information Administration |
-| Nuclear stock correlation | Calculated internally from Yahoo Finance quotes |
-| Data center locations | Public announcements from Microsoft, Google, Amazon, Meta, Apple, xAI, OpenAI, Oracle |
-| AI Power Demand Index | Composite: hyperscaler capex + data center capacity announcements |
-| Grid Stress Score | Derived from EIA demand trends vs. historical capacity baselines |
+|---|---|
+| Equity quotes, P/E, fundamentals | Yahoo Finance via `yahoo-finance2` |
+| US electricity demand history | [EIA Electric Power Monthly](https://www.eia.gov/electricity/monthly/) |
+| Data center locations | Public announcements (Microsoft, Google, Amazon, Meta, Apple, xAI, OpenAI, Oracle) |
+| Industry news | Live RSS from 8 publications, refreshed hourly |
+| Grid stress, AI demand, NRI | Composite indices derived from EIA + capacity announcements |
 
-## EIA API
+No proprietary data feeds and no scraped paywalled sources. All projections are clearly labeled as such.
 
-The EIA provides a free, open API. No key is required for public data endpoints. For production use with higher rate limits, register at [eia.gov/opendata](https://www.eia.gov/opendata/).
+---
 
-## Running Locally
+## Stack
+
+- **Frontend** — React 18, TypeScript, Vite, Tailwind, shadcn/ui, Recharts, D3, React Leaflet
+- **Backend** — Node 20, Express 5, Drizzle ORM, optional Postgres (in-memory fallback)
+- **Data** — `yahoo-finance2`, `rss-parser`, EIA public endpoints
+- **Hosting** — Replit Deployments (autoscale)
+
+---
+
+## Run locally
 
 ```bash
+npm install
+cp .env.example .env   # set SESSION_SECRET; everything else is optional
 npm run dev
 ```
 
-Server runs on port 5000. Both the Express backend and Vite frontend are served from the same port.
+Both the Express API and the Vite dev server bind to **port 5000**.
 
-## Tech Stack
+```bash
+npm run build    # production bundle
+npm start        # serve the built bundle
+npm run check    # typecheck
+```
 
-- **Frontend**: React + TypeScript, Vite, TailwindCSS, shadcn/ui
-- **Backend**: Node.js + Express
-- **Charts**: Recharts, React Simple Maps
-- **Market Data**: yahoo-finance2 (unofficial Yahoo Finance API)
-- **State**: TanStack Query v5
+---
 
-## Design
+## Configuration
 
-Dark mode only. Color palette:
-- Background: deep navy `#0D1B2A`
-- Primary / Electric blue: `#1E90FF`  
-- Highlights / Amber: `#F0A500`
-- Font: Inter (sans-serif), JetBrains Mono (data)
+| Var | Required | Notes |
+|---|---|---|
+| `SESSION_SECRET` | yes | Any long random string. |
+| `NEWSDATA_API_KEY` | no | Optional [newsdata.io](https://newsdata.io) key. The 8 RSS feeds work without it. |
+| `DATABASE_URL` | no | Postgres connection string. Without it, the app uses in-memory storage. |
+
+---
+
+## Project layout
+
+```
+client/         React + Vite frontend
+  src/
+    pages/      Route-level components (TiltOverview, Stack, PowerMap, ...)
+    components/ Shared UI and shadcn primitives
+    data/       Static config (supply chain graph, ticker metadata)
+server/         Express API
+  routes.ts     All HTTP endpoints + RSS / Yahoo fetchers
+  storage.ts    IStorage interface (in-memory + Postgres impls)
+shared/         Types and Drizzle schemas shared between client and server
+```
+
+---
+
+## License
+
+MIT — see [LICENSE](./LICENSE).
+
+Built by [Jack Schwartz](https://github.com/aurph).
