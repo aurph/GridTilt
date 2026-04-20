@@ -974,82 +974,27 @@ const FEATURE_SLIDES = [
   },
 ];
 
-function FeatureCarousel() {
-  const [current, setCurrent] = useState(0);
-  const [autoplay, setAutoplay] = useState(true);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  useEffect(() => {
-    if (!autoplay) return;
-    intervalRef.current = setInterval(() => {
-      setCurrent((prev) => (prev + 1) % FEATURE_SLIDES.length);
-    }, 4000);
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  }, [autoplay]);
-
-  const go = (dir: number) => {
-    setAutoplay(false);
-    setCurrent((prev) => (prev + dir + FEATURE_SLIDES.length) % FEATURE_SLIDES.length);
-  };
-
-  const visibleCount = 3;
-  const slides = [];
-  for (let i = 0; i < visibleCount; i++) {
-    slides.push(FEATURE_SLIDES[(current + i) % FEATURE_SLIDES.length]);
-  }
-
+function ModuleGrid() {
   return (
-    <div data-testid="feature-carousel">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Explore Features</h2>
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => go(-1)}
-            className="p-1.5 rounded hover:bg-muted/30 transition-colors text-muted-foreground hover:text-foreground"
-            data-testid="carousel-prev"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </button>
-          <div className="flex items-center gap-1 mx-2">
-            {FEATURE_SLIDES.map((_, i) => (
-              <button
-                key={i}
-                onClick={() => { setAutoplay(false); setCurrent(i); }}
-                className={`h-1.5 rounded-full transition-all ${i === current ? "w-4 bg-[#F07800]" : "w-1.5 bg-muted-foreground/30 hover:bg-muted-foreground/50"}`}
-                data-testid={`carousel-dot-${i}`}
-              />
-            ))}
-          </div>
-          <button
-            onClick={() => go(1)}
-            className="p-1.5 rounded hover:bg-muted/30 transition-colors text-muted-foreground hover:text-foreground"
-            data-testid="carousel-next"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </button>
-        </div>
+    <div data-testid="module-grid">
+      <div className="flex items-baseline justify-between mb-3">
+        <h2 className="text-sm font-semibold text-foreground">Modules</h2>
+        <span className="text-[11px] text-muted-foreground/70">{FEATURE_SLIDES.length} tools</span>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4" key={current}>
-        {slides.map((slide, idx) => {
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        {FEATURE_SLIDES.map((slide) => {
           const Icon = slide.icon;
           return (
             <Link key={slide.href} href={slide.href}>
               <Card
-                className="p-5 border-card-border hover:border-[#F07800]/30 transition-all cursor-pointer group h-full carousel-card-enter overflow-hidden"
-                style={{ animationDelay: `${idx * 80}ms` }}
-                data-testid={`feature-card-${slide.title.toLowerCase().replace(/\s+/g, "-")}`}
+                className="p-4 border-card-border hover:border-border transition-colors cursor-pointer h-full"
+                data-testid={`module-card-${slide.title.toLowerCase().replace(/\s+/g, "-")}`}
               >
-                <img src={slide.preview} alt={`${slide.title} preview`} className="feature-preview-img" />
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${slide.accent}15` }}>
-                    <Icon style={{ color: slide.accent, width: 16, height: 16 }} />
-                  </div>
-                  <h3 className="text-sm font-semibold text-foreground group-hover:text-[#F07800] transition-colors">{slide.title}</h3>
+                <div className="flex items-center gap-2.5 mb-1.5">
+                  <Icon className="h-4 w-4 text-muted-foreground" />
+                  <h3 className="text-sm font-medium text-foreground">{slide.title}</h3>
                 </div>
-                <p className="text-xs text-muted-foreground leading-relaxed mb-3">{slide.description}</p>
-                <div className="flex items-center gap-1 text-xs font-medium" style={{ color: slide.accent }}>
-                  Explore <ChevronRight className="h-3 w-3 group-hover:translate-x-0.5 transition-transform" />
-                </div>
+                <p className="text-xs text-muted-foreground leading-relaxed">{slide.description}</p>
               </Card>
             </Link>
           );
@@ -1084,32 +1029,24 @@ export default function TiltOverview() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div>
-              <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight mb-1">
-                Grid information, <span className="italic text-[#F07800]">tilted</span> in your favor
+              <h1 className="text-xl sm:text-2xl font-semibold text-foreground tracking-tight mb-1">
+                Tilt Overview
               </h1>
-              <p className="text-muted-foreground text-xs sm:text-sm max-w-lg">
-                Live equities, infrastructure, and power data across 60+ tickers tracking the AI power economy.
+              <p className="text-muted-foreground text-xs sm:text-sm max-w-xl">
+                Equities, infrastructure, and power data across 60+ tickers tracking the AI power economy.
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <Badge className="bg-[#F0A500]/15 text-[#F0A500] border-[#F0A500]/30 text-[10px] font-mono tracking-wider py-0">
-              LIVE
-            </Badge>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <div className="relative flex h-2 w-2">
-                <div className="h-2 w-2 rounded-full bg-[#F0A500]" />
-                <div className="animate-ping absolute h-2 w-2 rounded-full bg-[#F0A500] opacity-75" />
-              </div>
-              <span className="font-mono text-[11px]">15-min refresh</span>
-            </div>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <div className="h-1.5 w-1.5 rounded-full bg-[#F0A500]" />
+            <span className="font-mono text-[11px] tracking-wide">15-min refresh</span>
           </div>
         </div>
       </div>
 
       <div className="flex-1 p-4 sm:p-6 space-y-4 sm:space-y-5">
 
-        <FeatureCarousel />
+        <ModuleGrid />
 
         <WhatAmILookingAt />
 
