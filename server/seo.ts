@@ -389,6 +389,9 @@ export function injectMetaTags(html: string, meta: PageMeta): string {
 
   html = html.replace(/<title>[^<]*<\/title>/, "");
   html = html.replace(/<meta name="description"[^>]*\/?>/, "");
+  html = html.replace(/<meta name="robots"[^>]*\/?>/g, "");
+  html = html.replace(/<meta name="googlebot"[^>]*\/?>/g, "");
+  html = html.replace(/<link rel="canonical"[^>]*\/?>/g, "");
   html = html.replace(/<meta property="og:[^>]*\/?>/g, "");
   html = html.replace(/<meta name="twitter:[^>]*\/?>/g, "");
 

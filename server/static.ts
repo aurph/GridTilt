@@ -12,6 +12,7 @@ export function serveStatic(app: Express) {
   }
 
   app.use(express.static(distPath, {
+    index: false,
     maxAge: "1y",
     immutable: true,
     setHeaders: (res, filePath) => {
@@ -26,6 +27,9 @@ export function serveStatic(app: Express) {
     let html = fs.readFileSync(indexPath, "utf-8");
     const meta = getPageMeta(req.path);
     html = injectMetaTags(html, meta);
-    res.set("Content-Type", "text/html").send(html);
+    res
+      .set("Content-Type", "text/html")
+      .set("X-Robots-Tag", "index, follow")
+      .send(html);
   });
 }
