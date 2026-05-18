@@ -385,9 +385,7 @@ export function injectMetaTags(html: string, meta: PageMeta): string {
     <meta name="twitter:title" content="${escapeHtml(meta.title)}" />
     <meta name="twitter:description" content="${escapeHtml(meta.description)}" />
     <meta name="twitter:image" content="${meta.ogImage}" />
-    <!-- REPLACE WITH YOUR GOOGLE SEARCH CONSOLE VERIFICATION CODE -->
-    <meta name="google-site-verification" content="VERIFICATION_CODE_HERE" />
-    ${meta.jsonLd.map((ld) => `<script type="application/ld+json">${JSON.stringify(ld)}</script>`).join("\n    ")}`;
+    ${meta.jsonLd.map((ld) => `<script type="application/ld+json">${JSON.stringify(ld).replace(/</g, "\\u003c").replace(/>/g, "\\u003e").replace(/&/g, "\\u0026").replace(/\u2028/g, "\\u2028").replace(/\u2029/g, "\\u2029")}</script>`).join("\n    ")}`;
 
   html = html.replace(/<title>[^<]*<\/title>/, "");
   html = html.replace(/<meta name="description"[^>]*\/?>/, "");
