@@ -17,6 +17,7 @@ import {
   BarChart3,
   CalendarDays,
   FileText,
+  Calculator,
 } from "lucide-react";
 import logoPath from "@assets/Image_[Vectorized]_(2)_1773890483514.png";
 
@@ -50,6 +51,12 @@ const navItems = [
     url: "/portfolio",
     icon: BarChart3,
     description: "AI Power Exposure score",
+  },
+  {
+    title: "Thesis Calculator",
+    url: "/trade",
+    icon: Calculator,
+    description: "Scenario modeling",
   },
   {
     title: "Catalyst Tracker",

@@ -43,7 +43,9 @@ const SHORTCUTS = [
   { keys: ["G", "3"], description: "Go to Power Map", path: "/power-map" },
   { keys: ["G", "4"], description: "Go to Supply Chain", path: "/supply-chain" },
   { keys: ["G", "5"], description: "Go to Portfolio Overlay", path: "/portfolio" },
-  { keys: ["G", "6"], description: "Go to Catalyst Tracker", path: "/catalysts" },
+  { keys: ["G", "6"], description: "Go to Thesis Calculator", path: "/trade" },
+  { keys: ["G", "7"], description: "Go to Catalyst Tracker", path: "/catalysts" },
+  { keys: ["G", "8"], description: "Go to Analysis", path: "/blog" },
   { keys: ["?"], description: "Show this keyboard shortcuts panel", path: null },
 ];
 
@@ -172,7 +174,8 @@ function App() {
       if (gPressed) {
         const routes: Record<string, string> = {
           "1": "/", "2": "/stack", "3": "/power-map",
-          "4": "/supply-chain", "5": "/portfolio", "6": "/catalysts",
+          "4": "/supply-chain", "5": "/portfolio", "6": "/trade",
+          "7": "/catalysts", "8": "/blog",
         };
         if (routes[e.key]) {
           navigate(routes[e.key]);
