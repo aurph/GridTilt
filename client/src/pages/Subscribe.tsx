@@ -52,7 +52,7 @@ export default function Subscribe() {
 
         <div className="grid grid-cols-3 gap-3">
           {[
-            { icon: TrendingUp, label: "Tilt Status", desc: "AI Power Index, NRI, Grid Stress updates" },
+            { icon: TrendingUp, label: "Tilt Status", desc: "AI Power Demand, NPI, Grid Stress updates" },
             { icon: BarChart3, label: "Top Movers", desc: "Best and worst performers by sector" },
             { icon: Map, label: "Power Map", desc: "New facilities and capacity updates" },
           ].map(({ icon: Icon, label, desc }) => (
