@@ -99,3 +99,64 @@ sh(`git push ${remote} main > /tmp/p.log 2>&1`);
 - `curl -s http://localhost:5000/api/export/daily | jq 'keys'` — should be `[date, thesis_status, indices, top_movers]`
 - Screenshot `/power-map` and confirm: orange "≥ 400 MW ONLY" banner visible, facility count matches the filtered dataset
 - Use `runTest()` from the testing skill for end-to-end checks after UI changes
+
+---
+
+## Addendum: Daily X auto-post pipeline (added 2026-05-19)
+
+### What it does
+At a scheduled time on weekdays, an external cron service hits a Replit-hosted endpoint, which composes a tweet from live market data and posts it as @gridtilt via the X API. Failures are logged to a JSON file for audit.
+
+### Endpoints (all on gridtilt.com, all admin-gated by `x-admin-key: $ADMIN_API_KEY`)
+- `POST /api/admin/post-now` — body `{ text: string }`. Posts arbitrary text. Used for diagnostics.
+- `POST /api/admin/cron/daily-tweet` — no body. Picks a weekday template (mon/tue/wed/thu/fri), builds the text from live data, posts it, writes a row to the social log. Weekends return `{ skipped: true }` early.
+- `GET /api/admin/social-log?limit=N` — returns last N entries from `server/data/social-log.json`.
+- `POST /api/social/generate` — public, returns generated text only, does not post. Used by the UI preview.
+
+Code lives in `server/routes.ts` (search `post-now`, `daily-tweet`, `social-log`). The X client is OAuth 1.0a, hand-rolled with `crypto` + a thin signer (no SDK).
+
+### X auth setup
+Six secrets configured in Replit Secrets:
+- `X_API_KEY`, `X_API_SECRET` — OAuth 1.0a consumer (app-level)
+- `X_ACCESS_TOKEN`, `X_ACCESS_TOKEN_SECRET` — OAuth 1.0a user tokens for @gridtilt
+- `X_CLIENT_ID`, `X_CLIENT_SECRET` — OAuth 2.0 credentials. Stored for future migration but NOT used by current code.
+
+The app permission on developer.x.com is **Read and write**. After flipping that switch you MUST regenerate the OAuth 1.0a Access Token + Secret (a separate button on Keys and tokens) — the old ones stay scoped to whatever they were issued under.
+
+### Cron trigger (external)
+We use **cron-job.org** (free) instead of a Replit Scheduled Deployment because Replit's per-repl Publishing pane only manages one deployment slot and the account-wide Deployments dashboard was inaccessible.
+
+Cron config:
+- URL: `https://gridtilt.com/api/admin/cron/daily-tweet`
+- Method: POST
+- Header: `x-admin-key: <ADMIN_API_KEY value>`
+- Schedule: every weekday 8:30 AM America/New_York (DST-aware)
+
+### Common failure: 401 from X after credential changes
+The deployed snapshot at gridtilt.com caches env vars at deploy time. If you regenerate X tokens (or any secret), the dev workspace picks up the new value on next workflow restart, but production keeps the old value until you click **Republish** in the Publishing pane. Symptom: `/api/admin/post-now` returns `ok:true` locally but `401 Unauthorized` on prod. Fix: republish.
+
+### Verification commands
+```bash
+# Local (dev workspace, port 5000)
+curl -s -X POST http://localhost:5000/api/admin/post-now \
+  -H "x-admin-key: $ADMIN_API_KEY" -H "Content-Type: application/json" \
+  -d '{"text":"local diag"}' | jq
+
+# Production
+curl -s -X POST https://gridtilt.com/api/admin/post-now \
+  -H "x-admin-key: $ADMIN_API_KEY" -H "Content-Type: application/json" \
+  -d '{"text":"prod diag"}' | jq
+
+# Inspect recent log entries
+curl -s "https://gridtilt.com/api/admin/social-log?limit=5" \
+  -H "x-admin-key: $ADMIN_API_KEY" | jq
+
+# Force a cron run without waiting for the schedule
+curl -s -X POST https://gridtilt.com/api/admin/cron/daily-tweet \
+  -H "x-admin-key: $ADMIN_API_KEY" | jq
+```
+
+### Open follow-ups (not done)
+- Delete diagnostic tweets from @gridtilt (one was id `2056832457022882259`).
+- Confirm first real weekday cron fire posts cleanly (the prod redeploy unblocks this).
+- Optional: build a `/admin/social` UI for previewing and manually triggering tweets without curl.
