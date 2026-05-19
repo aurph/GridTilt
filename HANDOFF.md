@@ -1,4 +1,4 @@
-# GridTilt — Handoff for Claude / Replit / future-you
+ # GridTilt — Handoff for Claude / Replit / future-you
 
 Last updated: 2026-05-19
 Repo: `aurph/GridTilt` (main)
