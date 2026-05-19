@@ -1,0 +1,21 @@
+[
+  {
+    "id": 59,
+    "name": "Amazon Unknown (Amazon turns to geothermal solar and st)",
+    "company": "Amazon",
+    "city": "Unknown",
+    "state": "NV",
+    "lat": 38.313,
+    "lng": -117.055,
+    "powerMW": 700,
+    "status": "announced",
+    "annualMWh": 5212200,
+    "gridOperator": "Unknown",
+    "openDate": "TBD",
+    "sourceUrl": "https://www.power-eng.com/renewables/geothermal/amazon-turns-to-geothermal-solar-and-storage-to-power-nevada-data-center-growth/",
+    "sourceTitle": "Amazon turns to geothermal, solar and storage to power Nevada data center growth",
+    "sourceName": "Power Engineering",
+    "discoveredAt": "2026-05-19T19:41:23.132Z",
+    "approxCoords": true
+  }
+]

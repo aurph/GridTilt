@@ -5,6 +5,13 @@ import { join } from "path";
 import { createHmac, randomBytes, timingSafeEqual } from "crypto";
 import RSSParser from "rss-parser";
 import {
+  runDatacenterIngestion,
+  startDatacenterIngesterSchedule,
+  loadPending as loadPendingDatacenters,
+  approvePending as approvePendingDatacenter,
+  rejectPending as rejectPendingDatacenter,
+} from "./datacenter-ingester";
+import {
   BASE_URL,
   SITEMAP_STATIC_PAGES,
   SITEMAP_SECTOR_SLUGS,
@@ -1737,6 +1744,42 @@ Sent to ${subscriberCount} subscribers. You're receiving this because you subscr
     saveDatacenters(next);
     res.json({ removed: id });
   });
+
+  // ─── Datacenter ingester (auto-discovery from public RSS) ───────────────
+  app.get("/api/admin/datacenters/pending", (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    res.json(loadPendingDatacenters());
+  });
+
+  app.post("/api/admin/datacenters/ingest", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    try {
+      const result = await runDatacenterIngestion();
+      res.json(result);
+    } catch (err: any) {
+      res.status(500).json({ error: "Ingest failed", detail: String(err?.message ?? err) });
+    }
+  });
+
+  app.post("/api/admin/datacenters/pending/:id/approve", (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    const id = parseInt(req.params.id, 10);
+    if (!Number.isFinite(id)) return res.status(400).json({ error: "Invalid id" });
+    const result = approvePendingDatacenter(id);
+    if (!result.ok) return res.status(400).json({ error: result.error });
+    res.status(201).json(result.approved);
+  });
+
+  app.delete("/api/admin/datacenters/pending/:id", (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    const id = parseInt(req.params.id, 10);
+    if (!Number.isFinite(id)) return res.status(400).json({ error: "Invalid id" });
+    const removed = rejectPendingDatacenter(id);
+    if (!removed) return res.status(404).json({ error: "Not found" });
+    res.json({ removed: id });
+  });
+
+  startDatacenterIngesterSchedule();
 
   app.get("/api/catalysts", (_req, res) => {
     try {
