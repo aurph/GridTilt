@@ -828,8 +828,13 @@ export async function registerRoutes(
         const stocks = stage.tickers
           .map((t) => stockData[t])
           .filter(Boolean);
-        const avgChange = stocks.length > 0
-          ? parseFloat((stocks.reduce((s, st) => s + (st.changePercent ?? 0), 0) / stocks.length).toFixed(2))
+        // Exclude stale/null changePercent values so a Yahoo throttle on a few
+        // tickers doesn't pull the stage average toward zero.
+        const liveChanges = stocks
+          .map((st) => st.changePercent)
+          .filter((c): c is number => typeof c === "number" && Number.isFinite(c));
+        const avgChange = liveChanges.length > 0
+          ? parseFloat((liveChanges.reduce((s, v) => s + v, 0) / liveChanges.length).toFixed(2))
           : 0;
         return {
           key,
@@ -1753,8 +1758,6 @@ Preferred-Languages: en
           grid_stress: { value: 70, trend: "up" },
         },
         top_movers: topMoversData,
-        facility_count: 48,
-        total_capacity_gw: 20.7,
       });
     } catch (error) {
       console.error("Daily export error:", error);

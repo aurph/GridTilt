@@ -24,7 +24,9 @@ interface DataCenter {
   openDate: string;
 }
 
-const DATA_CENTERS: DataCenter[] = [
+const MIN_TRACKED_MW = 400;
+
+const DATA_CENTERS_RAW: DataCenter[] = [
   { id: 1,  name: "Azure Phoenix Mega Campus",      company: "Microsoft", city: "Phoenix",        state: "AZ", lat: 33.4484, lng: -112.074,  powerMW: 600,  status: "construction", annualMWh: 5256000,  gridOperator: "APS/WECC",              openDate: "2026 Q1" },
   { id: 2,  name: "Google Midlothian DC",            company: "Google",    city: "Midlothian",     state: "TX", lat: 32.4827, lng: -96.9939,  powerMW: 480,  status: "construction", annualMWh: 4204800,  gridOperator: "ERCOT",                 openDate: "2025 Q4" },
   { id: 3,  name: "AWS US-East-2 Expansion",         company: "Amazon",    city: "Columbus",       state: "OH", lat: 39.9612, lng: -82.9988,  powerMW: 750,  status: "operational",  annualMWh: 6570000,  gridOperator: "PJM",                   openDate: "2023" },
@@ -87,6 +89,13 @@ const DATA_CENTERS: DataCenter[] = [
   { id: 57, name: "Meta Beaver Dam WI Campus",       company: "Meta",      city: "Beaver Dam",     state: "WI", lat: 43.4578, lng: -88.8373,  powerMW: 715,  status: "construction", annualMWh: 6263400,  gridOperator: "MISO",                  openDate: "2027 Q2" },
   { id: 58, name: "Crusoe Abilene Phase 2",          company: "Crusoe",    city: "Abilene",        state: "TX", lat: 32.4400, lng: -99.7400,  powerMW: 1200, status: "construction", annualMWh: 10512000, gridOperator: "ERCOT",                 openDate: "2026 Q4" },
 ];
+
+// Honor the threshold advertised in the banner: only track hyperscale-class
+// sites. Smaller historical facilities stay in the source array (for easy
+// adjustment of the threshold later) but are filtered out everywhere.
+const DATA_CENTERS: DataCenter[] = DATA_CENTERS_RAW.filter(
+  (d) => d.powerMW >= MIN_TRACKED_MW,
+);
 
 interface RTOConfig {
   label: string;
