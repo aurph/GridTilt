@@ -12,6 +12,19 @@ import {
   SITEMAP_OPERATOR_SLUGS,
 } from "./seo";
 
+interface SupplyChainStage {
+  name: string;
+  tagline: string;
+  color: string;
+  bottleneckStatus: "Tightening" | "Bottlenecked" | "Flowing";
+  bottleneckDetail: string;
+  keyMetric: string;
+  tickers: string[];
+}
+const SUPPLY_CHAIN_STAGES: Record<string, SupplyChainStage> = JSON.parse(
+  readFileSync(join(process.cwd(), "server", "data", "supply-chain-stages.json"), "utf-8"),
+);
+
 // Known company data for portfolio scoring
 const COMPANY_DATABASE: Record<string, {
   name: string;
@@ -796,126 +809,14 @@ export async function registerRoutes(
     }
   });
 
-  const SUPPLY_CHAIN_STAGES = {
-    rawMaterials: {
-      name: "Raw Materials",
-      tagline: "Where it comes from",
-      color: "#CD7F32",
-      bottleneckStatus: "Tightening" as const,
-      bottleneckDetail: "Copper prices above $10,000/ton. Uranium spot at $80+/lb. Electrical steel lead times at 8-12 months. Demand from AI data centers could require 475,000 additional tons of copper annually by 2028.",
-      keyMetric: "Copper: $10,200/ton",
-      tickers: ["CCJ", "UEC", "NXE", "DNN", "UUUU", "LEU", "FCX", "SCCO", "TECK", "HBM", "NUE", "STLD", "CLF", "X", "MP", "USAR", "BHP", "RIO", "VALE", "AR", "EQT", "RRC", "SWN", "LNG", "COPX"],
-    },
-    generation: {
-      name: "Generation",
-      tagline: "How it's made",
-      color: "#F07800",
-      bottleneckStatus: "Tightening" as const,
-      bottleneckDetail: "GE Vernova gas turbine backlog exceeds 3 years. Nuclear fleet operating near capacity limits. Constellation, Vistra, and Talen are signing long-term PPAs with hyperscalers at premium rates. SMR deployment timeline remains 2028-2030 at earliest.",
-      keyMetric: "GEV backlog: $100B+",
-      tickers: ["CEG", "VST", "TLN", "NRG", "GEV", "SIEGY", "BKR", "SMR", "OKLO", "BWXT", "NEE", "AES", "FSLR", "ENPH", "SEDG", "SO", "DUK", "AEP"],
-    },
-    transmission: {
-      name: "Transmission",
-      tagline: "How it moves",
-      color: "#F0A500",
-      bottleneckStatus: "Bottlenecked" as const,
-      bottleneckDetail: "Large power transformer lead times at 18-36 months. US domestic production approximately 60 units/year against estimated demand of 200-500 over 5 years. This is the tightest bottleneck in the chain. PJM interconnection queue exceeds 250 GW of pending projects with 4+ year wait times.",
-      keyMetric: "LPT lead time: 18-36 months",
-      tickers: ["ETN", "ABB", "PWR", "EMR", "HUBB", "AYI", "WIRE", "AOS", "GNRC", "IDA", "NVT"],
-    },
-    distribution: {
-      name: "Distribution",
-      tagline: "How it connects",
-      color: "#B8860B",
-      bottleneckStatus: "Tightening" as const,
-      bottleneckDetail: "Data center switchgear and UPS systems face 12-18 month lead times. Liquid cooling demand growing 40%+ annually as GPU power density increases. Eaton and Vertiv order backlogs at record levels. Site development constrained by permitting delays in key markets.",
-      keyMetric: "Eaton backlog: 2-3 years",
-      tickers: ["VRT", "CARR", "JCI", "ETN", "ABB", "EME", "MTZ", "STRL", "FLR", "J", "ACM", "PRIM"],
-    },
-    endUse: {
-      name: "End Use",
-      tagline: "Where it goes",
-      color: "#F0A500",
-      bottleneckStatus: "Flowing" as const,
-      bottleneckDetail: "48 tracked facilities. 28 operational, 15 under construction, 5 announced. Total tracked capacity: 20.7 GW. Hyperscaler capex commitments exceed $200B over the next 3 years. GPU compute demand continues to outpace supply.",
-      keyMetric: "48 facilities / 20.7 GW",
-      tickers: ["EQIX", "DLR", "AMT", "NVDA", "AMD", "AVGO", "TSM", "MU", "INTC", "SMCI", "META", "AMZN", "MSFT", "GOOGL", "AAPL", "IREN", "CLSK", "MARA", "DELL", "ANET", "MRVL"],
-    },
-  };
-
   app.get("/api/supply-chain", async (_req, res) => {
     try {
-      const cacheKey = "supply-chain";
-      const now = Date.now();
-      const cached = stackCache[cacheKey];
-      if (cached && now - cached.timestamp < 5 * 60 * 1000) {
-        const stockData = cached.data;
-        const stages = Object.entries(SUPPLY_CHAIN_STAGES).map(([key, stage]) => {
-          const stocks = stage.tickers
-            .map((t) => stockData[t])
-            .filter(Boolean);
-          const avgChange = stocks.length > 0
-            ? parseFloat((stocks.reduce((s, st) => s + (st.changePercent ?? 0), 0) / stocks.length).toFixed(2))
-            : 0;
-          return {
-            key,
-            name: stage.name,
-            tagline: stage.tagline,
-            color: stage.color,
-            companyCount: stocks.length,
-            avgChange,
-            bottleneckStatus: stage.bottleneckStatus,
-            bottleneckDetail: stage.bottleneckDetail,
-            keyMetric: stage.keyMetric,
-            stocks: stocks.map((s) => ({
-              ticker: s.ticker,
-              name: s.name,
-              price: s.price,
-              change: s.change,
-              changePercent: s.changePercent,
-              marketCapDisplay: s.marketCapDisplay,
-            })),
-          };
-        });
-        return res.json({ stages, tightestBottleneck: "Transmission" });
-      }
-
-      const stockData: Record<string, any> = {};
-      const allTickers = [...new Set(Object.values(SUPPLY_CHAIN_STAGES).flatMap((s) => s.tickers))];
-      try {
-        const results = await Promise.all(
-          allTickers.map((t) => yahooFinance.quote(t).catch(() => null))
-        );
-        results.forEach((r, i) => {
-          if (r?.regularMarketPrice) {
-            const ticker = allTickers[i];
-            const staticData = STATIC_MARKET_DATA[ticker];
-            stockData[ticker] = {
-              ticker,
-              name: r.shortName || r.longName || staticData?.name || ticker,
-              price: r.regularMarketPrice,
-              change: r.regularMarketChange ?? 0,
-              changePercent: r.regularMarketChangePercent ?? 0,
-              marketCapDisplay: staticData?.marketCapDisplay || "",
-            };
-          }
-        });
-      } catch {
-        // fall through to static
-      }
-
-      allTickers.forEach((ticker) => {
-        if (!stockData[ticker]) {
-          const s = STATIC_MARKET_DATA[ticker];
-          if (s) stockData[ticker] = { ticker, name: s.name, price: s.price, change: s.change, changePercent: s.changePercent, marketCapDisplay: s.marketCapDisplay };
-        }
-      });
-
-      stackCache[cacheKey] = { data: stockData, timestamp: now };
+      const stockData = await getCachedStockData("1D");
 
       const stages = Object.entries(SUPPLY_CHAIN_STAGES).map(([key, stage]) => {
-        const stocks = stage.tickers.map((t) => stockData[t]).filter(Boolean);
+        const stocks = stage.tickers
+          .map((t) => stockData[t])
+          .filter(Boolean);
         const avgChange = stocks.length > 0
           ? parseFloat((stocks.reduce((s, st) => s + (st.changePercent ?? 0), 0) / stocks.length).toFixed(2))
           : 0;
@@ -940,7 +841,8 @@ export async function registerRoutes(
         };
       });
 
-      res.json({ stages, tightestBottleneck: "Transmission" });
+      const tightest = stages.find((s) => s.bottleneckStatus === "Bottlenecked");
+      res.json({ stages, tightestBottleneck: tightest?.name ?? "Transmission" });
     } catch (error) {
       console.error("Supply chain error:", error);
       res.status(500).json({ error: "Failed to fetch supply chain data" });

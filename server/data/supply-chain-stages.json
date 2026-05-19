@@ -1,0 +1,47 @@
+{
+  "rawMaterials": {
+    "name": "Raw Materials",
+    "tagline": "Where it comes from",
+    "color": "#CD7F32",
+    "bottleneckStatus": "Tightening",
+    "bottleneckDetail": "Copper prices above $10,000/ton. Uranium spot at $80+/lb. Electrical steel lead times at 8-12 months. Demand from AI data centers could require 475,000 additional tons of copper annually by 2028.",
+    "keyMetric": "Copper: $10,200/ton",
+    "tickers": ["CCJ", "UEC", "NXE", "DNN", "UUUU", "LEU", "FCX", "SCCO", "TECK", "HBM", "NUE", "STLD", "CLF", "X", "MP", "USAR", "BHP", "RIO", "VALE", "AR", "EQT", "RRC", "SWN", "LNG", "COPX"]
+  },
+  "generation": {
+    "name": "Generation",
+    "tagline": "How it's made",
+    "color": "#F07800",
+    "bottleneckStatus": "Tightening",
+    "bottleneckDetail": "GE Vernova gas turbine backlog exceeds 3 years. Nuclear fleet operating near capacity limits. Constellation, Vistra, and Talen are signing long-term PPAs with hyperscalers at premium rates. SMR deployment timeline remains 2028-2030 at earliest.",
+    "keyMetric": "GEV backlog: $100B+",
+    "tickers": ["CEG", "VST", "TLN", "NRG", "GEV", "SIEGY", "BKR", "SMR", "OKLO", "BWXT", "NEE", "AES", "FSLR", "ENPH", "SEDG", "SO", "DUK", "AEP"]
+  },
+  "transmission": {
+    "name": "Transmission",
+    "tagline": "How it moves",
+    "color": "#F0A500",
+    "bottleneckStatus": "Bottlenecked",
+    "bottleneckDetail": "Large power transformer lead times at 18-36 months. US domestic production approximately 60 units/year against estimated demand of 200-500 over 5 years. This is the tightest bottleneck in the chain. PJM interconnection queue exceeds 250 GW of pending projects with 4+ year wait times.",
+    "keyMetric": "LPT lead time: 18-36 months",
+    "tickers": ["ETN", "ABB", "PWR", "EMR", "HUBB", "AYI", "WIRE", "AOS", "GNRC", "IDA", "NVT"]
+  },
+  "distribution": {
+    "name": "Distribution",
+    "tagline": "How it connects",
+    "color": "#B8860B",
+    "bottleneckStatus": "Tightening",
+    "bottleneckDetail": "Data center switchgear and UPS systems face 12-18 month lead times. Liquid cooling demand growing 40%+ annually as GPU power density increases. Eaton and Vertiv order backlogs at record levels. Site development constrained by permitting delays in key markets.",
+    "keyMetric": "Eaton backlog: 2-3 years",
+    "tickers": ["VRT", "CARR", "JCI", "ETN", "ABB", "EME", "MTZ", "STRL", "FLR", "J", "ACM", "PRIM"]
+  },
+  "endUse": {
+    "name": "End Use",
+    "tagline": "Where it goes",
+    "color": "#F0A500",
+    "bottleneckStatus": "Flowing",
+    "bottleneckDetail": "48 tracked facilities. 28 operational, 15 under construction, 5 announced. Total tracked capacity: 20.7 GW. Hyperscaler capex commitments exceed $200B over the next 3 years. GPU compute demand continues to outpace supply.",
+    "keyMetric": "48 facilities / 20.7 GW",
+    "tickers": ["EQIX", "DLR", "AMT", "NVDA", "AMD", "AVGO", "TSM", "MU", "INTC", "SMCI", "META", "AMZN", "MSFT", "GOOGL", "AAPL", "IREN", "CLSK", "MARA", "DELL", "ANET", "MRVL"]
+  }
+}

@@ -4,11 +4,10 @@ import { useLocation } from "wouter";
 import * as d3 from "d3";
 import {
   Zap, Mountain, Cable, Server, X,
-  Atom, Circle, Wrench, Gem, Flame, Radiation, Gauge, Sun, FlaskConical,
+  Atom, Wrench, Hammer, Gem, Flame, Radiation, Gauge, Sun, FlaskConical,
   Plug, HardHat, Snowflake, ToggleRight, Building, Battery,
-  Cloud, Landmark, Cpu, Pickaxe, GitBranch,
+  Cloud, Warehouse, Cpu, Pickaxe, Workflow, GitBranch,
 } from "lucide-react";
-import { SiBitcoin } from "react-icons/si";
 import {
   supplyNodes,
   supplyLinks,
@@ -20,10 +19,9 @@ import {
 
 const ICON_MAP: Record<string, any> = {
   Mountain, Zap, Cable, Server, GitBranch,
-  Atom, Circle, Wrench, Gem, Flame, Radiation, Gauge, Sun, FlaskConical,
+  Atom, Wrench, Hammer, Gem, Flame, Radiation, Gauge, Sun, FlaskConical,
   Plug, HardHat, Snowflake, ToggleRight, Building, Battery,
-  Cloud, Landmark, Cpu, Pickaxe,
-  Bitcoin: SiBitcoin,
+  Cloud, Warehouse, Cpu, Pickaxe, Workflow,
 };
 
 interface StockData {
