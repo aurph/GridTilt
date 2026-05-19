@@ -14,5 +14,13 @@
     "ok": true,
     "id": "2056832457022882259",
     "trigger": "manual"
+  },
+  {
+    "timestamp": "2026-05-19T20:39:01.430Z",
+    "platform": "twitter",
+    "text": "local re-verify after prod republish",
+    "ok": true,
+    "id": "2056837049072669038",
+    "trigger": "manual"
   }
 ]
