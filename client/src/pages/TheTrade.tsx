@@ -231,7 +231,7 @@ export default function TheTrade() {
       <div className="grid-bg border-b border-border px-6 py-5">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
-            <h1 className="text-2xl font-bold text-foreground tracking-tight">Thesis Calculator</h1>
+            <h1 className="text-2xl font-bold text-foreground tracking-tight">Scenario Calculator</h1>
             <p className="text-muted-foreground text-sm mt-1 max-w-xl">
               50 GW of new AI datacenter capacity is projected by 2030. Model capex, grid interconnect timelines, and power supply mix under different assumptions.
             </p>

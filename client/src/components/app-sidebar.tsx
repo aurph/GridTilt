@@ -53,7 +53,7 @@ const navItems = [
     description: "AI Power Exposure score",
   },
   {
-    title: "Thesis Calculator",
+    title: "Scenario Calculator",
     url: "/trade",
     icon: Calculator,
     description: "Scenario modeling",

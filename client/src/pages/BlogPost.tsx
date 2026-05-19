@@ -224,7 +224,7 @@ export default function BlogPost() {
             <Link href="/" className="text-[#F07800] hover:text-[#F0A500]">Dashboard</Link>
             <Link href="/stack" className="text-[#F07800] hover:text-[#F0A500]">The Stack</Link>
             <Link href="/power-map" className="text-[#F07800] hover:text-[#F0A500]">Power Map</Link>
-            <Link href="/trade" className="text-[#F07800] hover:text-[#F0A500]">Thesis Calculator</Link>
+            <Link href="/trade" className="text-[#F07800] hover:text-[#F0A500]">Scenario Calculator</Link>
           </div>
         </Card>
 

@@ -2,7 +2,7 @@ import type { Express, Request, Response } from "express";
 import { type Server } from "http";
 import { readFileSync, writeFileSync, existsSync } from "fs";
 import { join } from "path";
-import { createHmac, timingSafeEqual } from "crypto";
+import { createHmac, randomBytes, timingSafeEqual } from "crypto";
 import RSSParser from "rss-parser";
 import {
   BASE_URL,
@@ -578,153 +578,359 @@ function isNewsRelevant(headline: string): boolean {
   return NEWS_KEYWORDS.some((kw) => lower.includes(kw.toLowerCase()));
 }
 
+// ─── X (Twitter) OAuth 1.0a posting client ──────────────────────────────────
+// Hand-rolled signer. No third-party SDK. Uses Node crypto + fetch.
+
+function pctEncode(s: string): string {
+  return encodeURIComponent(s)
+    .replace(/!/g, "%21")
+    .replace(/\*/g, "%2A")
+    .replace(/'/g, "%27")
+    .replace(/\(/g, "%28")
+    .replace(/\)/g, "%29");
+}
+
+function buildOAuth1Header(
+  method: string,
+  url: string,
+  consumerKey: string,
+  consumerSecret: string,
+  accessToken: string,
+  accessTokenSecret: string,
+): string {
+  const oauthParams: Record<string, string> = {
+    oauth_consumer_key: consumerKey,
+    oauth_nonce: randomBytes(16).toString("hex"),
+    oauth_signature_method: "HMAC-SHA1",
+    oauth_timestamp: Math.floor(Date.now() / 1000).toString(),
+    oauth_token: accessToken,
+    oauth_version: "1.0",
+  };
+
+  // X /2/tweets uses a JSON body, which is NOT included in the signature.
+  // Only the OAuth params are signed for this endpoint.
+  const sortedKeys = Object.keys(oauthParams).sort();
+  const paramString = sortedKeys
+    .map((k) => `${pctEncode(k)}=${pctEncode(oauthParams[k])}`)
+    .join("&");
+
+  const baseString = [
+    method.toUpperCase(),
+    pctEncode(url),
+    pctEncode(paramString),
+  ].join("&");
+
+  const signingKey = `${pctEncode(consumerSecret)}&${pctEncode(accessTokenSecret)}`;
+  const signature = createHmac("sha1", signingKey).update(baseString).digest("base64");
+
+  const headerParams = { ...oauthParams, oauth_signature: signature };
+  return (
+    "OAuth " +
+    Object.keys(headerParams)
+      .sort()
+      .map((k) => `${pctEncode(k)}="${pctEncode(headerParams[k])}"`)
+      .join(", ")
+  );
+}
+
+interface XPostResult {
+  ok: boolean;
+  id?: string;
+  text?: string;
+  error?: string;
+  dryRun?: boolean;
+}
+
+async function xPostTweet(text: string): Promise<XPostResult> {
+  const consumerKey = process.env.X_API_KEY;
+  const consumerSecret = process.env.X_API_SECRET;
+  const accessToken = process.env.X_ACCESS_TOKEN;
+  const accessTokenSecret = process.env.X_ACCESS_TOKEN_SECRET;
+
+  if (!consumerKey || !consumerSecret || !accessToken || !accessTokenSecret) {
+    return { ok: true, text, dryRun: true };
+  }
+
+  const url = "https://api.x.com/2/tweets";
+  const authHeader = buildOAuth1Header(
+    "POST",
+    url,
+    consumerKey,
+    consumerSecret,
+    accessToken,
+    accessTokenSecret,
+  );
+
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        Authorization: authHeader,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ text }),
+    });
+    if (!res.ok) {
+      const errText = await res.text().catch(() => "");
+      return { ok: false, text, error: `X API ${res.status}: ${errText.slice(0, 300)}` };
+    }
+    const data = (await res.json()) as any;
+    return { ok: true, id: data?.data?.id, text };
+  } catch (e: any) {
+    return { ok: false, text, error: e?.message ?? "unknown" };
+  }
+}
+
+const SOCIAL_LOG_FILE = join(process.cwd(), "server", "data", "social-log.json");
+
+interface SocialLogEntry {
+  timestamp: string;
+  platform: "twitter";
+  text: string;
+  ok: boolean;
+  id?: string;
+  error?: string;
+  dryRun?: boolean;
+  template?: string;
+  trigger?: "cron" | "manual";
+}
+
+function appendSocialLog(entry: SocialLogEntry): void {
+  let log: SocialLogEntry[] = [];
+  try {
+    if (existsSync(SOCIAL_LOG_FILE)) {
+      log = JSON.parse(readFileSync(SOCIAL_LOG_FILE, "utf-8"));
+    }
+  } catch {
+    log = [];
+  }
+  log.push(entry);
+  // Keep the last 500 entries to bound file size
+  if (log.length > 500) log = log.slice(-500);
+  writeFileSync(SOCIAL_LOG_FILE, JSON.stringify(log, null, 2));
+}
+
+// ─── KPI computation (shared by /api/kpis and the cron composer) ────────────
+
+interface KpiResult {
+  aiPowerIndex: number;
+  nriValue: number;
+  gridStress: number;
+  smrPolicyScore: number;
+  nriBaseDate: string;
+  constituents: {
+    nvdaChange: number; tsmChange: number; eqixChange: number; muChange: number;
+    cegPerf: number; vstPerf: number; ccjPerf: number; nlrPerf: number;
+    uPerf: number; policyPerf: number; nriPolicyMultiplier: number; nriMomentum: number;
+    vstChange: number; cegChange: number;
+  };
+}
+
+async function computeKpis(): Promise<KpiResult> {
+  let nvdaChange = 2.86, tsmChange = 1.62, muChange = 2.03, eqixChange = 1.40;
+  let cegChange = 3.18, vstChange = 2.44, ccjChange = 3.10, neeChange = -0.39;
+  let cegPrice = STATIC_MARKET_DATA.CEG.price;
+  let vstPrice = STATIC_MARKET_DATA.VST.price;
+  let ccjPrice = STATIC_MARKET_DATA.CCJ.price;
+  let nlrPrice = STATIC_MARKET_DATA.NLR.price;
+
+  try {
+    const YahooFinanceClass = (await import("yahoo-finance2")).default;
+    const yahooFinance = new YahooFinanceClass({ suppressNotices: ["yahooSurvey"] });
+    const quotes = await Promise.all([
+      yahooFinance.quote("NVDA").catch(() => null),
+      yahooFinance.quote("TSM").catch(() => null),
+      yahooFinance.quote("MU").catch(() => null),
+      yahooFinance.quote("EQIX").catch(() => null),
+      yahooFinance.quote("CEG").catch(() => null),
+      yahooFinance.quote("VST").catch(() => null),
+      yahooFinance.quote("CCJ").catch(() => null),
+      yahooFinance.quote("NLR").catch(() => null),
+      yahooFinance.quote("NEE").catch(() => null),
+    ]);
+    if (quotes[0]?.regularMarketChangePercent != null) nvdaChange = quotes[0].regularMarketChangePercent;
+    if (quotes[1]?.regularMarketChangePercent != null) tsmChange = quotes[1].regularMarketChangePercent;
+    if (quotes[2]?.regularMarketChangePercent != null) muChange = quotes[2].regularMarketChangePercent;
+    if (quotes[3]?.regularMarketChangePercent != null) eqixChange = quotes[3].regularMarketChangePercent;
+    if (quotes[4]?.regularMarketChangePercent != null) cegChange = quotes[4].regularMarketChangePercent;
+    if (quotes[5]?.regularMarketChangePercent != null) vstChange = quotes[5].regularMarketChangePercent;
+    if (quotes[6]?.regularMarketChangePercent != null) ccjChange = quotes[6].regularMarketChangePercent;
+    if (quotes[8]?.regularMarketChangePercent != null) neeChange = quotes[8].regularMarketChangePercent;
+    if (quotes[4]?.regularMarketPrice != null) cegPrice = quotes[4].regularMarketPrice;
+    if (quotes[5]?.regularMarketPrice != null) vstPrice = quotes[5].regularMarketPrice;
+    if (quotes[6]?.regularMarketPrice != null) ccjPrice = quotes[6].regularMarketPrice;
+    if (quotes[7]?.regularMarketPrice != null) nlrPrice = quotes[7].regularMarketPrice;
+  } catch {
+    // fall through to static defaults
+  }
+
+  const cegPerf = cegPrice / NRI_BASE.CEG;
+  const vstPerf = vstPrice / NRI_BASE.VST;
+  const ccjPerf = ccjPrice / NRI_BASE.CCJ;
+  const nlrPerf = nlrPrice / NRI_BASE.NLR;
+  const uPerf = URANIUM_SPOT_CURRENT / NRI_BASE.URANIUM_SPOT;
+  const policyPerf = 0.5 + SMR_POLICY_SCORE / 10;
+
+  const nriWeightedPerf =
+    0.25 * cegPerf + 0.20 * vstPerf + 0.15 * ccjPerf +
+    0.20 * nlrPerf + 0.10 * uPerf   + 0.10 * policyPerf;
+
+  const nriPolicyMultiplier = 0.9 + (SMR_POLICY_SCORE / 10) * 0.2;
+  const nriValue = parseFloat((100 * nriWeightedPerf * nriPolicyMultiplier).toFixed(1));
+  const nriMomentum = cegChange * 0.35 + vstChange * 0.30 + ccjChange * 0.20 + neeChange * 0.15;
+
+  const aiMomentum = (nvdaChange * 0.40 + tsmChange * 0.25 + eqixChange * 0.20 + muChange * 0.15) * 1.2;
+  const aiPowerIndex = Math.max(52, Math.min(94, 72 + aiMomentum));
+
+  const stressMomentum = (vstChange * 0.40 + cegChange * 0.35 + eqixChange * 0.25) * 1.0;
+  const gridStress = Math.max(52, Math.min(92, 68 + stressMomentum));
+
+  return {
+    aiPowerIndex: parseFloat(aiPowerIndex.toFixed(1)),
+    nriValue,
+    gridStress: parseFloat(gridStress.toFixed(1)),
+    smrPolicyScore: SMR_POLICY_SCORE,
+    nriBaseDate: "Jan 1, 2024",
+    constituents: {
+      nvdaChange: parseFloat(nvdaChange.toFixed(2)),
+      tsmChange: parseFloat(tsmChange.toFixed(2)),
+      eqixChange: parseFloat(eqixChange.toFixed(2)),
+      muChange: parseFloat(muChange.toFixed(2)),
+      cegPerf: parseFloat(cegPerf.toFixed(3)),
+      vstPerf: parseFloat(vstPerf.toFixed(3)),
+      ccjPerf: parseFloat(ccjPerf.toFixed(3)),
+      nlrPerf: parseFloat(nlrPerf.toFixed(3)),
+      uPerf: parseFloat(uPerf.toFixed(3)),
+      policyPerf: parseFloat(policyPerf.toFixed(3)),
+      nriPolicyMultiplier: parseFloat(nriPolicyMultiplier.toFixed(3)),
+      nriMomentum: parseFloat(nriMomentum.toFixed(2)),
+      vstChange: parseFloat(vstChange.toFixed(2)),
+      cegChange: parseFloat(cegChange.toFixed(2)),
+    },
+  };
+}
+
+function deriveTiltStatus(k: KpiResult): "ACCELERATING" | "EXPANDING" | "COOLING" {
+  if (k.aiPowerIndex > 78 && k.gridStress > 70 && k.nriValue > 130) return "ACCELERATING";
+  if (k.aiPowerIndex < 68 && k.gridStress < 55) return "COOLING";
+  return "EXPANDING";
+}
+
+// ─── Tweet composers (one per rotating template) ────────────────────────────
+
+function fmtPct(n: number): string {
+  const v = n.toFixed(2);
+  return n >= 0 ? `+${v}%` : `${v}%`;
+}
+
+async function composeTiltStatusTweet(): Promise<string> {
+  const k = await computeKpis();
+  const status = deriveTiltStatus(k);
+  return [
+    `tilt status: ${status.toLowerCase()}`,
+    "",
+    `ai demand    ${k.aiPowerIndex.toFixed(0)}`,
+    `nuclear      ${k.nriValue.toFixed(0)}`,
+    `grid stress  ${k.gridStress.toFixed(0)}`,
+    "",
+    "gridtilt.com",
+  ].join("\n");
+}
+
+async function composeTopMoversTweet(): Promise<string> {
+  const stockData = await getCachedStockData("1D");
+  const movers = Object.values(stockData)
+    .filter((s: any) => s && typeof s.changePercent === "number")
+    .sort((a: any, b: any) => Math.abs(b.changePercent) - Math.abs(a.changePercent))
+    .slice(0, 4);
+  const lines = movers.map((s: any) => `$${s.ticker} ${fmtPct(s.changePercent)}`);
+  return ["AI infra movers today", "", ...lines, "", "gridtilt.com/stack"].join("\n");
+}
+
+async function composeNriUpdateTweet(): Promise<string> {
+  const k = await computeKpis();
+  const c = k.constituents;
+  const pp = (perf: number) => `${perf >= 1 ? "+" : ""}${((perf - 1) * 100).toFixed(0)}%`;
+  return [
+    `nuclear renaissance index  ${k.nriValue.toFixed(0)}`,
+    "",
+    `CEG  ${pp(c.cegPerf)}  vs Jan '24`,
+    `VST  ${pp(c.vstPerf)}  vs Jan '24`,
+    `CCJ  ${pp(c.ccjPerf)}  vs Jan '24`,
+    `U3O8 ${pp(c.uPerf)}  vs Jan '24`,
+    "",
+    "gridtilt.com",
+  ].join("\n");
+}
+
+async function composeCatalystPreviewTweet(): Promise<string> {
+  let upcoming: any[] = [];
+  try {
+    const filePath = join(process.cwd(), "server", "data", "catalysts.json");
+    const raw = readFileSync(filePath, "utf-8");
+    const catalysts = JSON.parse(raw) as any[];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const sevenDaysOut = new Date(today.getTime() + 7 * 86400000);
+    upcoming = catalysts
+      .filter((c) => {
+        const d = new Date(c.date);
+        return d >= today && d <= sevenDaysOut;
+      })
+      .slice(0, 4);
+  } catch {
+    upcoming = [];
+  }
+
+  if (upcoming.length === 0) {
+    return [
+      "next week in AI infra",
+      "",
+      "no major scheduled catalysts.",
+      "watch earnings + regulatory dockets.",
+      "",
+      "gridtilt.com/catalysts",
+    ].join("\n");
+  }
+
+  const lines = upcoming.map((c) => {
+    const d = new Date(c.date).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+    return `${d}: ${c.title}`;
+  });
+  return ["next week's catalysts", "", ...lines, "", "gridtilt.com/catalysts"].join("\n");
+}
+
+const ROTATING_TEMPLATES: Record<number, { name: string; compose: () => Promise<string> }> = {
+  1: { name: "tilt_status",       compose: composeTiltStatusTweet },     // Mon
+  2: { name: "top_movers",        compose: composeTopMoversTweet },      // Tue
+  3: { name: "nri_update",        compose: composeNriUpdateTweet },      // Wed
+  4: { name: "top_movers",        compose: composeTopMoversTweet },      // Thu
+  5: { name: "catalyst_preview",  compose: composeCatalystPreviewTweet },// Fri
+};
+
+function ensureTweetLength(text: string): string {
+  if (text.length <= 280) return text;
+  // Trim trailing lines until it fits. Always keep first line.
+  const lines = text.split("\n");
+  while (lines.length > 1 && lines.join("\n").length > 280) {
+    lines.splice(lines.length - 2, 1);
+  }
+  let out = lines.join("\n");
+  if (out.length > 280) out = out.slice(0, 277) + "…";
+  return out;
+}
+
 export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
   // KPI endpoint - three composite indicators
-  app.get("/api/kpis", async (req, res) => {
-    // Static defaults for intraday % changes
-    let nvdaChange = 2.86, tsmChange = 1.62, muChange = 2.03, eqixChange = 1.40;
-    let cegChange = 3.18,  vstChange = 2.44,  ccjChange = 3.10, neeChange = -0.39, etrChange = 0.82;
-    // Static defaults for NRI price levels (used for since-base performance)
-    let cegPrice  = STATIC_MARKET_DATA.CEG.price;   // ~$315 (Mar 2026 fallback)
-    let vstPrice  = STATIC_MARKET_DATA.VST.price;   // ~$154 (Mar 2026 fallback)
-    let ccjPrice  = STATIC_MARKET_DATA.CCJ.price;   // ~$113 (Mar 2026 fallback)
-    let nlrPrice  = STATIC_MARKET_DATA.NLR.price;   // ~$68 (Mar 2026 fallback)
-
-    try {
-      const YahooFinanceClass = (await import("yahoo-finance2")).default;
-      const yahooFinance = new YahooFinanceClass({ suppressNotices: ["yahooSurvey"] });
-      const quotes = await Promise.all([
-        yahooFinance.quote("NVDA").catch(() => null),
-        yahooFinance.quote("TSM").catch(() => null),
-        yahooFinance.quote("MU").catch(() => null),
-        yahooFinance.quote("EQIX").catch(() => null),
-        yahooFinance.quote("CEG").catch(() => null),
-        yahooFinance.quote("VST").catch(() => null),
-        yahooFinance.quote("CCJ").catch(() => null),
-        yahooFinance.quote("NLR").catch(() => null),
-        yahooFinance.quote("NEE").catch(() => null),
-        yahooFinance.quote("ETR").catch(() => null),
-      ]);
-      if (quotes[0]?.regularMarketChangePercent != null) nvdaChange  = quotes[0].regularMarketChangePercent;
-      if (quotes[1]?.regularMarketChangePercent != null) tsmChange   = quotes[1].regularMarketChangePercent;
-      if (quotes[2]?.regularMarketChangePercent != null) muChange    = quotes[2].regularMarketChangePercent;
-      if (quotes[3]?.regularMarketChangePercent != null) eqixChange  = quotes[3].regularMarketChangePercent;
-      if (quotes[4]?.regularMarketChangePercent != null) cegChange   = quotes[4].regularMarketChangePercent;
-      if (quotes[5]?.regularMarketChangePercent != null) vstChange   = quotes[5].regularMarketChangePercent;
-      if (quotes[6]?.regularMarketChangePercent != null) ccjChange   = quotes[6].regularMarketChangePercent;
-      if (quotes[8]?.regularMarketChangePercent != null) neeChange   = quotes[8].regularMarketChangePercent;
-      if (quotes[9]?.regularMarketChangePercent != null) etrChange   = quotes[9].regularMarketChangePercent;
-      // Live prices for NRI basket performance calculation
-      if (quotes[4]?.regularMarketPrice != null) cegPrice = quotes[4].regularMarketPrice;
-      if (quotes[5]?.regularMarketPrice != null) vstPrice = quotes[5].regularMarketPrice;
-      if (quotes[6]?.regularMarketPrice != null) ccjPrice = quotes[6].regularMarketPrice;
-      if (quotes[7]?.regularMarketPrice != null) nlrPrice = quotes[7].regularMarketPrice;
-    } catch (_e) {
-      // Fall through to static defaults
-    }
-
-    // ─────────────────────────────────────────────────────────
-    // 1. NUCLEAR RENAISSANCE INDEX (NRI)
-    // Anchored basket index - base = 100 on January 1, 2024.
-    // Six components across utilities, miners, ETF, policy, and raw commodity.
-    // Policy multiplier (0.9-1.1) captures regulatory/legislative regime separately
-    // from the 10% direct policy component.
-    // ─────────────────────────────────────────────────────────
-    const cegPerf  = cegPrice  / NRI_BASE.CEG;           // stock performance vs base date
-    const vstPerf  = vstPrice  / NRI_BASE.VST;
-    const ccjPerf  = ccjPrice  / NRI_BASE.CCJ;
-    const nlrPerf  = nlrPrice  / NRI_BASE.NLR;
-    const uPerf    = URANIUM_SPOT_CURRENT / NRI_BASE.URANIUM_SPOT;  // uranium spot performance
-    // SMR policy component: 0 + (score/10) normalized so 5/10=1.0 baseline, 10/10=1.5
-    // Using: perf = 0.5 + (score / 10), giving 0.5 at score=0 and 1.5 at score=10
-    const policyPerf = 0.5 + (SMR_POLICY_SCORE / 10);
-
-    const nriWeightedPerf =
-      0.25 * cegPerf +
-      0.20 * vstPerf +
-      0.15 * ccjPerf +
-      0.20 * nlrPerf +
-      0.10 * uPerf   +
-      0.10 * policyPerf;
-
-    // Policy multiplier: separate regulatory regime factor (0.9 to 1.1)
-    // At score 7.8: 0.9 + (7.8/10 × 0.2) = 1.056
-    const nriPolicyMultiplier = 0.9 + (SMR_POLICY_SCORE / 10) * 0.2;
-    const nriValue = parseFloat((100 * nriWeightedPerf * nriPolicyMultiplier).toFixed(1));
-
-    // Intraday momentum signal for display (not used in index calculation)
-    const nriMomentum = cegChange * 0.35 + vstChange * 0.30 + ccjChange * 0.20 + neeChange * 0.15;
-
-    // ─────────────────────────────────────────────────────────
-    // 2. AI POWER DEMAND INDEX (0-100)
-    // Measures the pace at which AI compute infrastructure is driving
-    // power demand pressure on the US grid.
-    //
-    // Structural baseline = 72/100, derived from:
-    //   - US data center electricity share ~5-6% of national grid (DOE 2024 actual: 4.4% / 183 TWh)
-    //   - AI-driven demand CAGR: ~35%/yr (2022-2025 actuals, EIA + utility regulatory filings)
-    //   - Hyperscaler 2026 AI capex guidance: ~$660B Big 4 (AMZN $200B, GOOGL $180B, MSFT $120B, META $125B)
-    // NOTE: Structural baseline is a static hardcoded constant. Uranium spot price ($92/lb, Mar 2026),
-    // SMR policy score (7.8/10), and electricity demand data are also static estimates.
-    // Only stock prices and intraday % changes are live (Yahoo Finance).
-    //   - GPU/HBM demand backlog: NVDA revenue +122% YoY (FY2025), TSM CoWoS capacity constrained
-    //   - 100 would represent grid fully saturated by AI demand (theoretical maximum)
-    //
-    // Momentum layer: intraday signals from key infrastructure names (±8 pt range)
-    //   NVDA (40%) + TSM (25%) + EQIX (20%) + MU (15%)
-    //   Rationale: GPU demand (NVDA/TSM) drives primary load signal;
-    //   EQIX reflects live data center capacity absorption; MU tracks HBM memory demand.
-    // ─────────────────────────────────────────────────────────
-    const aiMomentum = (nvdaChange * 0.40 + tsmChange * 0.25 + eqixChange * 0.20 + muChange * 0.15) * 1.2;
-    const aiPowerIndex = Math.max(52, Math.min(94, 72 + aiMomentum));
-
-    // ─────────────────────────────────────────────────────────
-    // 3. GRID STRESS SCORE (0-100)
-    // Measures supply/demand gap pressure on the US transmission grid.
-    //
-    // Structural baseline = 68/100, derived from:
-    //   - PJM reserve margin: declined from 27% (2020) to 20% (2024); projected <15% by 2028
-    //   - MISO issued formal capacity shortfall warnings for 2027-2028
-    //   - ERCOT: 900+ hours of high-price scarcity events in 2023
-    //   - EIA long-term: 30GW+ of announced DC load vs <15GW new dispatchable capacity planned
-    //   - 100 would represent a declared grid emergency / rolling blackout conditions
-    //
-    // Momentum layer: power price signals from merchant generators (±8 pt range)
-    //   VST (40%) + CEG (35%): rising merchant power stocks = power prices tightening
-    //   EQIX (25%): rising DC REIT = forward load commitment accelerating
-    // ─────────────────────────────────────────────────────────
-    const stressMomentum = (vstChange * 0.40 + cegChange * 0.35 + eqixChange * 0.25) * 1.0;
-    const gridStress = Math.max(52, Math.min(92, 68 + stressMomentum));
-
-    res.json({
-      aiPowerIndex:  parseFloat(aiPowerIndex.toFixed(1)),
-      nriValue:      nriValue,
-      gridStress:    parseFloat(gridStress.toFixed(1)),
-      smrPolicyScore: SMR_POLICY_SCORE,
-      nriBaseDate:   "Jan 1, 2024",
-      constituents: {
-        // AI Power Index signals
-        nvdaChange:  parseFloat(nvdaChange.toFixed(2)),
-        tsmChange:   parseFloat(tsmChange.toFixed(2)),
-        eqixChange:  parseFloat(eqixChange.toFixed(2)),
-        muChange:    parseFloat(muChange.toFixed(2)),
-        // NRI price performance since Jan 1, 2024
-        cegPerf:     parseFloat(cegPerf.toFixed(3)),
-        vstPerf:     parseFloat(vstPerf.toFixed(3)),
-        ccjPerf:     parseFloat(ccjPerf.toFixed(3)),
-        nlrPerf:     parseFloat(nlrPerf.toFixed(3)),
-        uPerf:       parseFloat(uPerf.toFixed(3)),
-        policyPerf:  parseFloat(policyPerf.toFixed(3)),
-        nriPolicyMultiplier: parseFloat(nriPolicyMultiplier.toFixed(3)),
-        nriMomentum: parseFloat(nriMomentum.toFixed(2)),
-        // Grid Stress signals
-        vstChange:   parseFloat(vstChange.toFixed(2)),
-        cegChange:   parseFloat(cegChange.toFixed(2)),
-      },
-    });
+  // Methodology lives in `computeKpis()` above. Both this route and the daily
+  // tweet cron call the same function so the public dashboard and the social
+  // post can never drift on what "today's numbers" are.
+  app.get("/api/kpis", async (_req, res) => {
+    const kpis = await computeKpis();
+    res.json(kpis);
   });
 
   // Stack endpoint - 8 layers, 10-min cache
@@ -1829,37 +2035,32 @@ Preferred-Languages: en
   app.get("/portfolio-overlay", (_req, res) => res.redirect(301, "/portfolio"));
 
   // ─── Content Export APIs ────────────────────────────────────────────────
-  app.get("/api/export/daily", async (_req, res) => {
+  // Admin-gated so scheduled cron is the only caller. The shape is stable so
+  // we can wire other automations against it later (LinkedIn, Bluesky, etc).
+  app.get("/api/export/daily", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
     try {
-      const cached = stackCache["1D"];
-      const topMoversData: any[] = [];
-      if (cached?.data) {
-        // stackCache stores a flat dict { TICKER: stockObject }, not sectored arrays.
-        const allStocks: any[] = Object.values(cached.data).filter(
-          (s: any) => s && typeof s.changePercent === "number",
-        );
-        allStocks
-          .sort((a: any, b: any) => Math.abs(b.changePercent) - Math.abs(a.changePercent))
-          .slice(0, 5)
-          .forEach((s: any) => {
-            topMoversData.push({
-              ticker: s.ticker,
-              name: s.name,
-              change_pct: parseFloat(s.changePercent.toFixed(2)),
-              sector: s.sector || "Unknown",
-            });
-          });
-      }
+      const kpis = await computeKpis();
+      const stockData = await getCachedStockData("1D");
+      const topMovers = (Object.values(stockData) as any[])
+        .filter((s) => s && typeof s.changePercent === "number")
+        .sort((a, b) => Math.abs(b.changePercent) - Math.abs(a.changePercent))
+        .slice(0, 5)
+        .map((s) => ({
+          ticker: s.ticker,
+          name: s.name,
+          change_pct: parseFloat(s.changePercent.toFixed(2)),
+        }));
 
       res.json({
         date: new Date().toISOString().split("T")[0],
-        thesis_status: "Expanding",
+        tilt_status: deriveTiltStatus(kpis).toLowerCase(),
         indices: {
-          ai_demand: { value: 74, trend: "up" },
-          nuclear_renaissance: { value: 279, trend: "stable" },
-          grid_stress: { value: 70, trend: "up" },
+          ai_demand: kpis.aiPowerIndex,
+          nuclear_renaissance: kpis.nriValue,
+          grid_stress: kpis.gridStress,
         },
-        top_movers: topMoversData,
+        top_movers: topMovers,
       });
     } catch (error) {
       console.error("Daily export error:", error);
@@ -1867,22 +2068,103 @@ Preferred-Languages: en
     }
   });
 
-  app.post("/api/social/generate", (req, res) => {
-    const { platform, type } = req.body || {};
-    const templates: Record<string, string> = {
-      thesis_status: "gridtilt thesis status\n\nai demand: 74\nnuclear renaissance: 279\ngrid stress: 70\n\nstatus: expanding\n\ngridtilt.com",
-      daily_movers: "top movers on gridtilt today\n\ncheck the live dashboard for today's AI power infrastructure movers\n\ngridtilt.com/stack",
-      sector_pulse: "sector pulse\n\nconstruction and data centers leading today\nnuclear and uranium tracking\n\ngridtilt.com",
-      catalyst_preview: "upcoming catalysts\n\ncheck gridtilt.com/catalysts for the full calendar\n\nearnings, regulatory decisions, and policy events",
-    };
+  // Compose a tweet from a named template without posting. Use this to preview
+  // copy before scheduling. Returns the text + the template that was picked.
+  app.post("/api/social/generate", async (req, res) => {
+    const { template } = req.body || {};
+    const dayIdx = new Date().getDay();
+    const picked = template
+      ? Object.values(ROTATING_TEMPLATES).find((t) => t.name === template)
+      : ROTATING_TEMPLATES[dayIdx];
+    if (!picked) {
+      return res.status(400).json({
+        error: "Unknown template",
+        available: Array.from(new Set(Object.values(ROTATING_TEMPLATES).map((t) => t.name))),
+      });
+    }
+    try {
+      const text = ensureTweetLength(await picked.compose());
+      res.json({ template: picked.name, text, length: text.length });
+    } catch (error: any) {
+      console.error("Social generate error:", error);
+      res.status(500).json({ error: error?.message ?? "compose failed" });
+    }
+  });
 
-    const text = templates[type || "thesis_status"] || templates.thesis_status;
-    res.json({
-      text,
-      platform: platform || "twitter",
-      has_image: true,
-      image_url: `/api/og?page=${type || "home"}`,
+  // Cron-triggered daily tweet. Picks template by day of week, composes from
+  // live data, posts to X. Logs every attempt (success or dry-run) to
+  // server/data/social-log.json so we can audit what shipped.
+  app.post("/api/admin/cron/daily-tweet", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    const dayIdx = new Date().getDay();
+    const picked = ROTATING_TEMPLATES[dayIdx];
+    if (!picked) {
+      return res.json({ skipped: true, reason: "no template for weekend", dayIdx });
+    }
+    try {
+      const text = ensureTweetLength(await picked.compose());
+      const result = await xPostTweet(text);
+      appendSocialLog({
+        timestamp: new Date().toISOString(),
+        platform: "twitter",
+        text,
+        ok: result.ok,
+        id: result.id,
+        error: result.error,
+        dryRun: result.dryRun,
+        template: picked.name,
+        trigger: "cron",
+      });
+      res.json({ template: picked.name, ...result });
+    } catch (error: any) {
+      console.error("Daily tweet cron error:", error);
+      appendSocialLog({
+        timestamp: new Date().toISOString(),
+        platform: "twitter",
+        text: "(compose failed)",
+        ok: false,
+        error: error?.message ?? "unknown",
+        template: picked.name,
+        trigger: "cron",
+      });
+      res.status(500).json({ error: error?.message ?? "cron failed" });
+    }
+  });
+
+  // Manual post. Use this for feature launches, breaking news, etc.
+  // POST with body: { text: "..." } and the x-admin-key header.
+  app.post("/api/admin/post-now", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    const { text } = req.body || {};
+    if (!text || typeof text !== "string" || text.trim().length === 0) {
+      return res.status(400).json({ error: "text body field is required" });
+    }
+    const trimmed = ensureTweetLength(text.trim());
+    const result = await xPostTweet(trimmed);
+    appendSocialLog({
+      timestamp: new Date().toISOString(),
+      platform: "twitter",
+      text: trimmed,
+      ok: result.ok,
+      id: result.id,
+      error: result.error,
+      dryRun: result.dryRun,
+      trigger: "manual",
     });
+    res.json(result);
+  });
+
+  // Read-only view of the last N posts (for sanity checking from a browser).
+  app.get("/api/admin/social-log", (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    try {
+      const limit = Math.min(parseInt((req.query.limit as string) || "50", 10), 500);
+      const raw = existsSync(SOCIAL_LOG_FILE) ? readFileSync(SOCIAL_LOG_FILE, "utf-8") : "[]";
+      const log = JSON.parse(raw) as SocialLogEntry[];
+      res.json(log.slice(-limit).reverse());
+    } catch {
+      res.json([]);
+    }
   });
 
   // ─── RSS Feeds ──────────────────────────────────────────────────────────

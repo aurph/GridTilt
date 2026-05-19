@@ -259,7 +259,7 @@ function KpiCard({
   );
 }
 
-function ThesisHealthBar({ aiPower, gridStress, nri }: { aiPower: number | null; gridStress: number | null; nri: number | null }) {
+function TiltStatusBar({ aiPower, gridStress, nri }: { aiPower: number | null; gridStress: number | null; nri: number | null }) {
   if (aiPower === null || gridStress === null || nri === null) return null;
 
   const isAccelerating = aiPower > 78 && gridStress > 70 && nri > 130;
@@ -280,12 +280,12 @@ function ThesisHealthBar({ aiPower, gridStress, nri }: { aiPower: number | null;
   ] as const;
 
   return (
-    <Card className={`p-4 border ${statusBg}`} data-testid="thesis-health-bar">
+    <Card className={`p-4 border ${statusBg}`} data-testid="tilt-status-bar">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-4">
         {/* Status + numbers row on mobile, status only on desktop */}
         <div className="flex items-start justify-between sm:block flex-shrink-0">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Thesis Health</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Tilt Status</p>
             <div className="flex items-center gap-2">
               <div className="h-2 w-2 rounded-full animate-pulse flex-shrink-0" style={{ backgroundColor: statusColor }} />
               <span className="text-sm font-bold font-mono tracking-wide" style={{ color: statusColor }}>{status}</span>
@@ -865,8 +865,8 @@ const FEATURE_SLIDES = [
   },
   {
     icon: Calculator,
-    title: "Thesis Calculator",
-    description: "Model scenarios and test conviction across demand growth, nuclear capacity, and grid stress variables.",
+    title: "Scenario Calculator",
+    description: "Model scenarios across demand growth, nuclear capacity, and grid stress variables.",
     href: "/trade",
     accent: "#F0A500",
     preview: calculatorPreview,
@@ -1000,9 +1000,9 @@ export default function TiltOverview() {
           />
         </div>
 
-        {/* 2. Thesis Health summary */}
+        {/* 2. Tilt Status summary */}
         {!isLoading && kpiData && (
-          <ThesisHealthBar
+          <TiltStatusBar
             aiPower={kpiData.aiPowerIndex}
             gridStress={kpiData.gridStress}
             nri={kpiData.nriValue}

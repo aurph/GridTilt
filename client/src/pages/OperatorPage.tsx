@@ -120,7 +120,7 @@ export default function OperatorPage() {
         <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">Related Tools</h2>
         <div className="space-y-2 text-sm">
           <Link href="/power-map" className="block text-[#F07800] hover:text-[#F0A500]">Power Map</Link>
-          <Link href="/trade" className="block text-[#F07800] hover:text-[#F0A500]">Thesis Calculator</Link>
+          <Link href="/trade" className="block text-[#F07800] hover:text-[#F0A500]">Scenario Calculator</Link>
           <Link href="/catalysts" className="block text-[#F07800] hover:text-[#F0A500]">Catalyst Tracker</Link>
         </div>
       </Card>

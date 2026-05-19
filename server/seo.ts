@@ -159,7 +159,7 @@ const TRADE_FAQS = [
   { question: "How much electricity do AI data centers use?", answer: "AI data centers currently consume approximately 6.4% of US electricity, or about 288 TWh annually. Under base case projections, new AI capacity could reach 50 GW by 2030." },
   { question: "What is the AI power demand thesis?", answer: "The thesis holds that companies building power infrastructure for AI data centers will benefit from multi-year demand driven by physical construction bottlenecks, grid interconnection queues, and transformer shortages." },
   { question: "How many AI data centers are being built?", answer: "GridTilt tracks 48 AI data center facilities across the US, including operational, under construction, and announced projects totaling over 20 GW of capacity." },
-  { question: "What does the GridTilt Thesis Calculator model?", answer: "The calculator models total capex, large power transformer demand, nuclear build requirements, and grid interconnect timelines under conservative (35 GW), base (50 GW), and aggressive (75 GW) scenarios." },
+  { question: "What does the GridTilt Scenario Calculator model?", answer: "The calculator models total capex, large power transformer demand, nuclear build requirements, and grid interconnect timelines under conservative (35 GW), base (50 GW), and aggressive (75 GW) scenarios." },
   { question: "What is a large power transformer (LPT) shortage?", answer: "The US produces approximately 60 large power transformers per year domestically. Under base case AI demand scenarios, annual LPT requirements could exceed domestic capacity, creating a multi-year supply bottleneck." },
 ];
 
@@ -186,7 +186,7 @@ export function getPageMeta(pathname: string): PageMeta {
     } else if (pathname === "/trade") {
       jsonLd.push(faqJsonLd(TRADE_FAQS), breadcrumbJsonLd([
         { name: "GridTilt", url: BASE_URL },
-        { name: "Thesis Calculator", url: `${BASE_URL}/trade` },
+        { name: "Scenario Calculator", url: `${BASE_URL}/trade` },
       ]));
     } else if (pathname === "/stack") {
       jsonLd.push(breadcrumbJsonLd([
