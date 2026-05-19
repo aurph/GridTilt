@@ -168,11 +168,78 @@ function NetworkGraph({
 
     for (let i = 0; i < 350; i++) simulation.tick();
 
+    // After convergence, push apart labels that overlap. Label box ≈ width
+    // proportional to character count, height ~24px (name + sublabel).
+    // We only nudge along y to preserve stage-column structure.
+    const CHAR_PX = 5.5;
+    const LABEL_H = 26;
+    const labelBox = (n: SimNode) => {
+      const r = getNodeRadius(n.id);
+      const w = Math.max(60, n.name.length * CHAR_PX);
+      return {
+        left:  (n.x ?? 0) - w / 2,
+        right: (n.x ?? 0) + w / 2,
+        top:    (n.y ?? 0) + r + 4,
+        bottom: (n.y ?? 0) + r + 4 + LABEL_H,
+      };
+    };
+    for (let pass = 0; pass < 4; pass++) {
+      for (let i = 0; i < nodes.length; i++) {
+        for (let j = i + 1; j < nodes.length; j++) {
+          const a = labelBox(nodes[i]);
+          const b = labelBox(nodes[j]);
+          const hOverlap = a.left < b.right && a.right > b.left;
+          const vOverlap = a.top < b.bottom && a.bottom > b.top;
+          if (hOverlap && vOverlap) {
+            const dy = (a.top + a.bottom) / 2 < (b.top + b.bottom) / 2 ? -6 : 6;
+            nodes[i].y = (nodes[i].y ?? 0) + dy;
+            nodes[j].y = (nodes[j].y ?? 0) - dy;
+          }
+        }
+      }
+    }
+
     positionsReady.current = true;
     forceRender((v) => v + 1);
 
     return () => { simulation.stop(); };
   }, []);
+
+  // Drag handlers attached to each node group via React refs. Mutates the
+  // node position directly and re-renders. Works with both mouse and touch
+  // because pointer events normalize both.
+  const dragState = useRef<{ id: string | null; dx: number; dy: number }>({ id: null, dx: 0, dy: 0 });
+
+  const onNodePointerDown = (id: string, e: React.PointerEvent<SVGGElement>) => {
+    e.stopPropagation();
+    const node = nodesRef.current.find((n) => n.id === id);
+    if (!node) return;
+    const ctm = (e.currentTarget.ownerSVGElement)?.getScreenCTM()?.inverse();
+    if (!ctm) return;
+    const pt = new DOMPoint(e.clientX, e.clientY).matrixTransform(ctm);
+    dragState.current = { id, dx: pt.x - (node.x ?? 0), dy: pt.y - (node.y ?? 0) };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+
+  const onNodePointerMove = (e: React.PointerEvent<SVGGElement>) => {
+    const { id, dx, dy } = dragState.current;
+    if (!id) return;
+    const ctm = (e.currentTarget.ownerSVGElement)?.getScreenCTM()?.inverse();
+    if (!ctm) return;
+    const pt = new DOMPoint(e.clientX, e.clientY).matrixTransform(ctm);
+    const node = nodesRef.current.find((n) => n.id === id);
+    if (!node) return;
+    node.x = pt.x - dx;
+    node.y = pt.y - dy;
+    forceRender((v) => v + 1);
+  };
+
+  const onNodePointerUp = (e: React.PointerEvent<SVGGElement>) => {
+    if (dragState.current.id) {
+      dragState.current = { id: null, dx: 0, dy: 0 };
+      e.currentTarget.releasePointerCapture?.(e.pointerId);
+    }
+  };
 
   useEffect(() => {
     const svg = svgRef.current;
@@ -334,8 +401,12 @@ function NetworkGraph({
             <g
               key={node.id}
               transform={`translate(${node.x},${node.y})`}
-              style={{ opacity: nodeOpacity, cursor: 'pointer', transition: 'opacity 0.3s' }}
-              onClick={(e) => { e.stopPropagation(); onSelectNode(isActive ? null : node.id); }}
+              style={{ opacity: nodeOpacity, cursor: dragState.current.id === node.id ? 'grabbing' : 'grab', transition: 'opacity 0.3s', touchAction: 'none' }}
+              onClick={(e) => { e.stopPropagation(); if (!dragState.current.id) onSelectNode(isActive ? null : node.id); }}
+              onPointerDown={(e) => onNodePointerDown(node.id, e)}
+              onPointerMove={onNodePointerMove}
+              onPointerUp={onNodePointerUp}
+              onPointerCancel={onNodePointerUp}
               className={entrancePhase >= 1 ? "sc-node-enter" : "sc-node-hidden"}
               data-testid={`node-${node.id}`}
             >
@@ -417,6 +488,159 @@ function hexToRgb(hex: string): string {
   const g = parseInt(hex.slice(3, 5), 16);
   const b = parseInt(hex.slice(5, 7), 16);
   return `${r},${g},${b}`;
+}
+
+// ─── Flow view — alternate Sankey-style layered diagram ─────────────────────
+// Columns per stage, nodes stacked vertically with height proportional to
+// connection count, bezier bands connecting source nodes to target nodes.
+// Click a node to focus its connections.
+
+function FlowView({
+  activeNode,
+  onSelectNode,
+}: {
+  activeNode: string | null;
+  onSelectNode: (id: string | null) => void;
+}) {
+  const W = 1200;
+  const H = 700;
+  const COL_PAD = 60;
+  const NODE_W = 14;
+  const NODE_GAP = 6;
+
+  const layout = useMemo(() => {
+    // Bucket nodes by stage
+    const byStage: Record<number, SupplyNode[]> = {};
+    supplyNodes.forEach((n) => {
+      (byStage[n.stageIndex] = byStage[n.stageIndex] || []).push(n);
+    });
+
+    // Sort within each stage by connection count (heavier nodes toward middle
+    // to reduce visual crossing of bands).
+    Object.values(byStage).forEach((arr) => {
+      arr.sort((a, b) => (connectionCounts[b.id] ?? 0) - (connectionCounts[a.id] ?? 0));
+    });
+
+    // Compute y-position for each node within its stage column.
+    const positions: Record<string, { x: number; y: number; h: number }> = {};
+    const stageX = [0.08, 0.28, 0.5, 0.72, 0.92];
+    const totalUsableH = H - 100;
+
+    for (let s = 0; s <= 4; s++) {
+      const stageNodes = byStage[s] || [];
+      const totalConn = stageNodes.reduce((sum, n) => sum + (connectionCounts[n.id] ?? 1), 0);
+      const gapsTotal = (stageNodes.length - 1) * NODE_GAP;
+      const heightForNodes = totalUsableH - gapsTotal;
+      let cursor = 60;
+      stageNodes.forEach((n) => {
+        const share = (connectionCounts[n.id] ?? 1) / Math.max(totalConn, 1);
+        const h = Math.max(18, share * heightForNodes);
+        positions[n.id] = { x: stageX[s] * W - NODE_W / 2, y: cursor, h };
+        cursor += h + NODE_GAP;
+      });
+    }
+
+    return { positions, byStage };
+  }, []);
+
+  const connectedSet = useMemo(() => {
+    if (!activeNode) return null;
+    const s = new Set<string>();
+    s.add(activeNode);
+    supplyLinks.forEach((l) => {
+      if (l.source === activeNode || l.target === activeNode) {
+        s.add(l.source); s.add(l.target);
+      }
+    });
+    return s;
+  }, [activeNode]);
+
+  return (
+    <svg
+      className="sc-graph-svg"
+      viewBox={`0 0 ${W} ${H}`}
+      preserveAspectRatio="xMidYMid meet"
+      data-testid="sc-flow-view"
+    >
+      {/* Stage labels */}
+      {STAGE_LABELS.map((s) => {
+        const stageX = [0.08, 0.28, 0.5, 0.72, 0.92];
+        const x = stageX[s.index] * W;
+        return (
+          <text key={s.id} x={x} y={28} textAnchor="middle" className="sc-stage-label">
+            {s.name}
+          </text>
+        );
+      })}
+
+      {/* Bands */}
+      {supplyLinks.map((link, i) => {
+        const src = layout.positions[link.source];
+        const tgt = layout.positions[link.target];
+        if (!src || !tgt) return null;
+        const x1 = src.x + NODE_W;
+        const x2 = tgt.x;
+        const y1 = src.y + src.h / 2;
+        const y2 = tgt.y + tgt.h / 2;
+        const midX = (x1 + x2) / 2;
+        const path = `M ${x1} ${y1} C ${midX} ${y1}, ${midX} ${y2}, ${x2} ${y2}`;
+        const isHighlighted = connectedSet?.has(link.source) && connectedSet?.has(link.target);
+        const isDimmed = connectedSet && !isHighlighted;
+        const opacity = isDimmed ? 0.04 : isHighlighted ? 0.45 : 0.15;
+        return (
+          <path
+            key={i}
+            d={path}
+            fill="none"
+            stroke="#F07800"
+            strokeWidth={3}
+            strokeOpacity={opacity}
+            data-testid={`flow-link-${i}`}
+          />
+        );
+      })}
+
+      {/* Node rectangles */}
+      {supplyNodes.map((node) => {
+        const pos = layout.positions[node.id];
+        if (!pos) return null;
+        const color = STAGE_COLORS[node.stage] || '#F07800';
+        const isActive = activeNode === node.id;
+        const isConnected = connectedSet?.has(node.id);
+        const isDimmed = connectedSet && !isConnected;
+        const opacity = isDimmed ? 0.3 : 1;
+        return (
+          <g
+            key={node.id}
+            opacity={opacity}
+            style={{ cursor: 'pointer', transition: 'opacity 0.25s' }}
+            onClick={(e) => { e.stopPropagation(); onSelectNode(isActive ? null : node.id); }}
+            data-testid={`flow-node-${node.id}`}
+          >
+            <rect
+              x={pos.x}
+              y={pos.y}
+              width={NODE_W}
+              height={pos.h}
+              fill={color}
+              stroke={isActive ? '#fff' : color}
+              strokeWidth={isActive ? 2 : 0}
+              rx={2}
+            />
+            <text
+              x={pos.x + NODE_W + 6}
+              y={pos.y + pos.h / 2 + 3}
+              className="sc-node-label"
+              fill={isActive || isConnected ? '#fff' : '#aaa'}
+              style={{ pointerEvents: 'none' }}
+            >
+              {node.name}
+            </text>
+          </g>
+        );
+      })}
+    </svg>
+  );
 }
 
 function DetailPanel({
@@ -571,6 +795,16 @@ function DetailPanel({
 export default function SupplyChain() {
   const [, navigate] = useLocation();
   const [activeNode, setActiveNode] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<"network" | "flow">(() => {
+    try {
+      const v = localStorage.getItem("gridtilt_sc_view");
+      return v === "flow" ? "flow" : "network";
+    } catch { return "network"; }
+  });
+  const setView = (m: "network" | "flow") => {
+    setViewMode(m);
+    try { localStorage.setItem("gridtilt_sc_view", m); } catch {}
+  };
   const [entrancePhase, setEntrancePhase] = useState(0);
 
   const { data: apiData } = useQuery<{ stages: StageApiData[] }>({
@@ -632,16 +866,36 @@ export default function SupplyChain() {
           <span className="sc-topbar-sep">|</span>
           <span className="sc-mono text-[10px]" style={{ color: "#555" }}>SECURITIES</span>
           <span className="sc-mono text-[11px] text-white">{totalCompanies}</span>
+          <span className="sc-topbar-sep">|</span>
+          <div className="sc-view-toggle" data-testid="sc-view-toggle" onClick={(e) => e.stopPropagation()}>
+            <button
+              className={`sc-view-btn ${viewMode === "network" ? "sc-view-btn-active" : ""}`}
+              onClick={() => setView("network")}
+              data-testid="view-network"
+            >network</button>
+            <button
+              className={`sc-view-btn ${viewMode === "flow" ? "sc-view-btn-active" : ""}`}
+              onClick={() => setView("flow")}
+              data-testid="view-flow"
+            >flow</button>
+          </div>
         </div>
       </div>
 
       <div className="sc-graph-container" onClick={(e) => e.stopPropagation()}>
-        <NetworkGraph
-          activeNode={activeNode}
-          onSelectNode={setActiveNode}
-          entrancePhase={entrancePhase}
-          stageMeta={stageMeta}
-        />
+        {viewMode === "network" ? (
+          <NetworkGraph
+            activeNode={activeNode}
+            onSelectNode={setActiveNode}
+            entrancePhase={entrancePhase}
+            stageMeta={stageMeta}
+          />
+        ) : (
+          <FlowView
+            activeNode={activeNode}
+            onSelectNode={setActiveNode}
+          />
+        )}
       </div>
 
       <div className="sc-legend" data-testid="sc-legend" onClick={(e) => e.stopPropagation()}>

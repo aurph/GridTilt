@@ -1,0 +1,87 @@
+{
+  "source": "Lawrence Berkeley National Lab — Queued Up dataset (sample)",
+  "sourceUrl": "https://emp.lbl.gov/queues",
+  "lastUpdated": "2026-05-19",
+  "schema": {
+    "id": "string",
+    "projectName": "string",
+    "sponsor": "string",
+    "capacityMW": "number",
+    "type": "solar|gas|nuclear|wind|storage|hybrid|other",
+    "iso": "PJM|MISO|ERCOT|CAISO|SPP|NYISO|ISONE|WECC|SERC|FRCC",
+    "state": "two-letter postal code",
+    "status": "active|withdrawn|operational",
+    "queueDate": "YYYY-MM-DD",
+    "expectedOnline": "YYYY|null",
+    "dcRelevant": "boolean — flagged if ≥100 MW AND in a hyperscaler region",
+    "notes": "string|null"
+  },
+  "projects": [
+    { "id": "PJM-2401", "projectName": "Stargate Loudoun Solar+Storage", "sponsor": "Brookfield Renewable", "capacityMW": 850, "type": "hybrid", "iso": "PJM", "state": "VA", "status": "active", "queueDate": "2024-03-12", "expectedOnline": "2028", "dcRelevant": true, "notes": "Adjacent to Equinix DC10 campus, hyperscaler offtake reported" },
+    { "id": "PJM-2412", "projectName": "Ashburn Gas Peaker", "sponsor": "Vistra Corp", "capacityMW": 1100, "type": "gas", "iso": "PJM", "state": "VA", "status": "active", "queueDate": "2024-06-04", "expectedOnline": "2027", "dcRelevant": true, "notes": "Behind-the-meter contract talks with two hyperscalers" },
+    { "id": "PJM-2305", "projectName": "Three Mile Island Unit 1 Restart", "sponsor": "Constellation Energy", "capacityMW": 837, "type": "nuclear", "iso": "PJM", "state": "PA", "status": "active", "queueDate": "2024-09-20", "expectedOnline": "2028", "dcRelevant": true, "notes": "20-year PPA with Microsoft for AI workloads" },
+    { "id": "PJM-2502", "projectName": "Northern VA Battery Storage", "sponsor": "Form Energy", "capacityMW": 400, "type": "storage", "iso": "PJM", "state": "VA", "status": "active", "queueDate": "2025-01-08", "expectedOnline": "2027", "dcRelevant": true, "notes": "Multi-day duration; firming for DC load" },
+    { "id": "PJM-2208", "projectName": "Susquehanna Solar Phase II", "sponsor": "EDF Renewables", "capacityMW": 320, "type": "solar", "iso": "PJM", "state": "PA", "status": "withdrawn", "queueDate": "2022-04-15", "expectedOnline": null, "dcRelevant": false, "notes": "Withdrew 2025-Q3 citing transmission upgrade costs" },
+    { "id": "PJM-2510", "projectName": "Talen Susquehanna BTM Extension", "sponsor": "Talen Energy", "capacityMW": 480, "type": "nuclear", "iso": "PJM", "state": "PA", "status": "active", "queueDate": "2025-03-22", "expectedOnline": "2027", "dcRelevant": true, "notes": "Extension of Amazon co-location agreement" },
+    { "id": "PJM-2415", "projectName": "Loudoun Substation Storage", "sponsor": "Engie", "capacityMW": 250, "type": "storage", "iso": "PJM", "state": "VA", "status": "active", "queueDate": "2024-08-30", "expectedOnline": "2027", "dcRelevant": true },
+    { "id": "PJM-2308", "projectName": "WV Gas Combined Cycle", "sponsor": "NextEra Energy", "capacityMW": 1300, "type": "gas", "iso": "PJM", "state": "WV", "status": "active", "queueDate": "2023-11-04", "expectedOnline": "2028", "dcRelevant": true },
+    { "id": "PJM-2509", "projectName": "Maryland Offshore Wind", "sponsor": "Ørsted", "capacityMW": 968, "type": "wind", "iso": "PJM", "state": "MD", "status": "active", "queueDate": "2025-02-14", "expectedOnline": "2030", "dcRelevant": false },
+    { "id": "PJM-2404", "projectName": "Ohio Mega Solar", "sponsor": "Invenergy", "capacityMW": 620, "type": "solar", "iso": "PJM", "state": "OH", "status": "active", "queueDate": "2024-05-19", "expectedOnline": "2028", "dcRelevant": false },
+
+    { "id": "ERCOT-2403", "projectName": "Abilene Solar Megaproject", "sponsor": "Recurrent Energy", "capacityMW": 1200, "type": "solar", "iso": "ERCOT", "state": "TX", "status": "active", "queueDate": "2024-02-08", "expectedOnline": "2027", "dcRelevant": true, "notes": "Targeting datacenter PPA contracts" },
+    { "id": "ERCOT-2411", "projectName": "Permian Basin Gas Plant", "sponsor": "Crusoe Energy", "capacityMW": 500, "type": "gas", "iso": "ERCOT", "state": "TX", "status": "active", "queueDate": "2024-09-12", "expectedOnline": "2027", "dcRelevant": true, "notes": "Co-located with AI hosting facility" },
+    { "id": "ERCOT-2505", "projectName": "Houston DC Storage Complex", "sponsor": "Plus Power", "capacityMW": 600, "type": "storage", "iso": "ERCOT", "state": "TX", "status": "active", "queueDate": "2025-01-20", "expectedOnline": "2027", "dcRelevant": true },
+    { "id": "ERCOT-2407", "projectName": "Comanche Peak Unit 3", "sponsor": "Vistra Corp", "capacityMW": 1200, "type": "nuclear", "iso": "ERCOT", "state": "TX", "status": "active", "queueDate": "2024-07-30", "expectedOnline": "2032", "dcRelevant": true, "notes": "AP1000 reactor; NRC review in progress" },
+    { "id": "ERCOT-2310", "projectName": "South Texas Wind Phase III", "sponsor": "Pattern Energy", "capacityMW": 450, "type": "wind", "iso": "ERCOT", "state": "TX", "status": "withdrawn", "queueDate": "2023-10-15", "expectedOnline": null, "dcRelevant": false, "notes": "Interconnection cost reassessment forced withdrawal" },
+    { "id": "ERCOT-2419", "projectName": "Dallas Solar+Storage Hybrid", "sponsor": "AES Corporation", "capacityMW": 750, "type": "hybrid", "iso": "ERCOT", "state": "TX", "status": "active", "queueDate": "2024-11-02", "expectedOnline": "2027", "dcRelevant": true },
+    { "id": "ERCOT-2511", "projectName": "Austin Hyperscale Solar", "sponsor": "Lightsource bp", "capacityMW": 900, "type": "solar", "iso": "ERCOT", "state": "TX", "status": "active", "queueDate": "2025-03-08", "expectedOnline": "2028", "dcRelevant": true },
+    { "id": "ERCOT-2402", "projectName": "Gulf Coast Gas Peaker", "sponsor": "NRG Energy", "capacityMW": 1800, "type": "gas", "iso": "ERCOT", "state": "TX", "status": "active", "queueDate": "2024-01-25", "expectedOnline": "2026", "dcRelevant": true },
+    { "id": "ERCOT-2207", "projectName": "West Texas Battery", "sponsor": "Engie", "capacityMW": 200, "type": "storage", "iso": "ERCOT", "state": "TX", "status": "operational", "queueDate": "2022-05-12", "expectedOnline": "2025", "dcRelevant": false, "notes": "Operational since Q2 2025" },
+    { "id": "ERCOT-2422", "projectName": "Houston Microgrid", "sponsor": "Bloom Energy", "capacityMW": 150, "type": "gas", "iso": "ERCOT", "state": "TX", "status": "active", "queueDate": "2024-12-04", "expectedOnline": "2026", "dcRelevant": true },
+
+    { "id": "MISO-2401", "projectName": "Iowa Wind Farm Expansion", "sponsor": "MidAmerican Energy", "capacityMW": 850, "type": "wind", "iso": "MISO", "state": "IA", "status": "active", "queueDate": "2024-03-04", "expectedOnline": "2027", "dcRelevant": false },
+    { "id": "MISO-2406", "projectName": "Michigan Solar Park", "sponsor": "DTE Energy", "capacityMW": 480, "type": "solar", "iso": "MISO", "state": "MI", "status": "active", "queueDate": "2024-06-18", "expectedOnline": "2027", "dcRelevant": false },
+    { "id": "MISO-2410", "projectName": "Wisconsin Gas Peaker", "sponsor": "WEC Energy Group", "capacityMW": 720, "type": "gas", "iso": "MISO", "state": "WI", "status": "active", "queueDate": "2024-08-22", "expectedOnline": "2027", "dcRelevant": true, "notes": "Microsoft Wisconsin campus area" },
+    { "id": "MISO-2503", "projectName": "Minnesota Storage Hub", "sponsor": "Xcel Energy", "capacityMW": 350, "type": "storage", "iso": "MISO", "state": "MN", "status": "active", "queueDate": "2025-01-30", "expectedOnline": "2027", "dcRelevant": false },
+    { "id": "MISO-2309", "projectName": "Illinois Nuclear Uprate", "sponsor": "Constellation Energy", "capacityMW": 175, "type": "nuclear", "iso": "MISO", "state": "IL", "status": "active", "queueDate": "2023-12-10", "expectedOnline": "2027", "dcRelevant": true, "notes": "Power uprate at Byron station" },
+    { "id": "MISO-2415", "projectName": "Indiana Solar Cluster", "sponsor": "Duke Energy", "capacityMW": 600, "type": "solar", "iso": "MISO", "state": "IN", "status": "active", "queueDate": "2024-10-08", "expectedOnline": "2027", "dcRelevant": false },
+    { "id": "MISO-2206", "projectName": "Northern Michigan Wind", "sponsor": "Consumers Energy", "capacityMW": 300, "type": "wind", "iso": "MISO", "state": "MI", "status": "withdrawn", "queueDate": "2022-03-25", "expectedOnline": null, "dcRelevant": false },
+    { "id": "MISO-2421", "projectName": "Louisiana Industrial Solar", "sponsor": "Entergy", "capacityMW": 1000, "type": "solar", "iso": "MISO", "state": "LA", "status": "active", "queueDate": "2024-11-15", "expectedOnline": "2027", "dcRelevant": false },
+
+    { "id": "CAISO-2403", "projectName": "Mojave Hybrid Solar+Storage", "sponsor": "8minute Solar", "capacityMW": 1500, "type": "hybrid", "iso": "CAISO", "state": "CA", "status": "active", "queueDate": "2024-02-22", "expectedOnline": "2027", "dcRelevant": true, "notes": "PG&E DC corridor offtake" },
+    { "id": "CAISO-2409", "projectName": "Diablo Canyon License Renewal", "sponsor": "PG&E", "capacityMW": 2200, "type": "nuclear", "iso": "CAISO", "state": "CA", "status": "active", "queueDate": "2024-08-04", "expectedOnline": "2030", "dcRelevant": true, "notes": "Extension to 2045, hyperscaler interest" },
+    { "id": "CAISO-2502", "projectName": "Silicon Valley Battery Storage", "sponsor": "Tesla Energy", "capacityMW": 500, "type": "storage", "iso": "CAISO", "state": "CA", "status": "active", "queueDate": "2025-01-12", "expectedOnline": "2026", "dcRelevant": true },
+    { "id": "CAISO-2308", "projectName": "Imperial Valley Geothermal", "sponsor": "Ormat Technologies", "capacityMW": 180, "type": "other", "iso": "CAISO", "state": "CA", "status": "active", "queueDate": "2023-09-18", "expectedOnline": "2026", "dcRelevant": false },
+    { "id": "CAISO-2414", "projectName": "Sacramento Solar Expansion", "sponsor": "SMUD", "capacityMW": 380, "type": "solar", "iso": "CAISO", "state": "CA", "status": "active", "queueDate": "2024-09-30", "expectedOnline": "2027", "dcRelevant": false },
+
+    { "id": "SPP-2404", "projectName": "Kansas Wind Megaplant", "sponsor": "Evergy", "capacityMW": 950, "type": "wind", "iso": "SPP", "state": "KS", "status": "active", "queueDate": "2024-05-08", "expectedOnline": "2027", "dcRelevant": false },
+    { "id": "SPP-2412", "projectName": "Oklahoma DC Gas Plant", "sponsor": "OGE Energy", "capacityMW": 800, "type": "gas", "iso": "SPP", "state": "OK", "status": "active", "queueDate": "2024-10-14", "expectedOnline": "2027", "dcRelevant": true, "notes": "Hyperscaler offtake reported" },
+    { "id": "SPP-2503", "projectName": "Texas Panhandle Storage", "sponsor": "Pinegate Renewables", "capacityMW": 300, "type": "storage", "iso": "SPP", "state": "TX", "status": "active", "queueDate": "2025-02-04", "expectedOnline": "2027", "dcRelevant": false },
+    { "id": "SPP-2207", "projectName": "Nebraska Solar Pilot", "sponsor": "Nebraska Public Power", "capacityMW": 120, "type": "solar", "iso": "SPP", "state": "NE", "status": "withdrawn", "queueDate": "2022-06-08", "expectedOnline": null, "dcRelevant": false },
+
+    { "id": "NYISO-2402", "projectName": "Indian Point Re-Site Storage", "sponsor": "LS Power", "capacityMW": 400, "type": "storage", "iso": "NYISO", "state": "NY", "status": "active", "queueDate": "2024-04-12", "expectedOnline": "2026", "dcRelevant": false, "notes": "Reusing decommissioned nuclear site interconnection" },
+    { "id": "NYISO-2411", "projectName": "Long Island Solar", "sponsor": "Brookfield", "capacityMW": 280, "type": "solar", "iso": "NYISO", "state": "NY", "status": "active", "queueDate": "2024-09-22", "expectedOnline": "2027", "dcRelevant": false },
+    { "id": "NYISO-2504", "projectName": "Upstate NY Gas Peaker", "sponsor": "NRG Energy", "capacityMW": 550, "type": "gas", "iso": "NYISO", "state": "NY", "status": "active", "queueDate": "2025-02-08", "expectedOnline": "2027", "dcRelevant": true },
+
+    { "id": "ISONE-2405", "projectName": "Massachusetts Offshore Wind", "sponsor": "Avangrid", "capacityMW": 1200, "type": "wind", "iso": "ISONE", "state": "MA", "status": "active", "queueDate": "2024-06-30", "expectedOnline": "2030", "dcRelevant": false },
+    { "id": "ISONE-2410", "projectName": "Maine Hydro Expansion", "sponsor": "Brookfield Renewable", "capacityMW": 220, "type": "other", "iso": "ISONE", "state": "ME", "status": "active", "queueDate": "2024-08-12", "expectedOnline": "2027", "dcRelevant": false },
+    { "id": "ISONE-2502", "projectName": "Connecticut Storage", "sponsor": "Eversource", "capacityMW": 150, "type": "storage", "iso": "ISONE", "state": "CT", "status": "active", "queueDate": "2025-01-15", "expectedOnline": "2026", "dcRelevant": false },
+
+    { "id": "SERC-2403", "projectName": "Georgia Vogtle 5", "sponsor": "Southern Company", "capacityMW": 1100, "type": "nuclear", "iso": "SERC", "state": "GA", "status": "active", "queueDate": "2024-03-20", "expectedOnline": "2034", "dcRelevant": true, "notes": "AP1000 reactor; AI datacenter interest in service area" },
+    { "id": "SERC-2410", "projectName": "Atlanta Solar Cluster", "sponsor": "Georgia Power", "capacityMW": 600, "type": "solar", "iso": "SERC", "state": "GA", "status": "active", "queueDate": "2024-09-08", "expectedOnline": "2027", "dcRelevant": true },
+    { "id": "SERC-2418", "projectName": "Tennessee Gas Combined Cycle", "sponsor": "Tennessee Valley Authority", "capacityMW": 1450, "type": "gas", "iso": "SERC", "state": "TN", "status": "active", "queueDate": "2024-10-30", "expectedOnline": "2028", "dcRelevant": true, "notes": "Oak Ridge / Nashville DC growth" },
+    { "id": "SERC-2509", "projectName": "Carolina SMR Site", "sponsor": "Duke Energy", "capacityMW": 300, "type": "nuclear", "iso": "SERC", "state": "NC", "status": "active", "queueDate": "2025-03-04", "expectedOnline": "2032", "dcRelevant": true, "notes": "NuScale VOYGR-6 candidate site" },
+    { "id": "SERC-2306", "projectName": "Alabama Wind Project", "sponsor": "RWE Renewables", "capacityMW": 180, "type": "wind", "iso": "SERC", "state": "AL", "status": "withdrawn", "queueDate": "2023-07-18", "expectedOnline": null, "dcRelevant": false },
+
+    { "id": "WECC-2404", "projectName": "Arizona Solar Mega Project", "sponsor": "EDF Renewables", "capacityMW": 1800, "type": "solar", "iso": "WECC", "state": "AZ", "status": "active", "queueDate": "2024-04-25", "expectedOnline": "2027", "dcRelevant": true, "notes": "Phoenix DC market growth" },
+    { "id": "WECC-2411", "projectName": "Nevada Geothermal", "sponsor": "Ormat Technologies", "capacityMW": 240, "type": "other", "iso": "WECC", "state": "NV", "status": "active", "queueDate": "2024-08-20", "expectedOnline": "2027", "dcRelevant": true },
+    { "id": "WECC-2503", "projectName": "Utah Storage Hub", "sponsor": "Tesla Energy", "capacityMW": 450, "type": "storage", "iso": "WECC", "state": "UT", "status": "active", "queueDate": "2025-02-12", "expectedOnline": "2027", "dcRelevant": true, "notes": "Salt Lake DC corridor" },
+    { "id": "WECC-2408", "projectName": "Idaho Hybrid Solar+Wind", "sponsor": "Idaho Power", "capacityMW": 380, "type": "hybrid", "iso": "WECC", "state": "ID", "status": "active", "queueDate": "2024-07-18", "expectedOnline": "2027", "dcRelevant": true, "notes": "Meta Idaho Falls campus area" },
+    { "id": "WECC-2306", "projectName": "Wyoming Coal Conversion", "sponsor": "Berkshire Hathaway Energy", "capacityMW": 500, "type": "gas", "iso": "WECC", "state": "WY", "status": "active", "queueDate": "2023-08-04", "expectedOnline": "2027", "dcRelevant": false },
+
+    { "id": "PJM-2408", "projectName": "New Jersey Storage Facility", "sponsor": "Convergent Energy", "capacityMW": 200, "type": "storage", "iso": "PJM", "state": "NJ", "status": "active", "queueDate": "2024-07-22", "expectedOnline": "2027", "dcRelevant": false },
+    { "id": "PJM-2417", "projectName": "Northern Virginia Gas Backup", "sponsor": "Dominion Energy", "capacityMW": 950, "type": "gas", "iso": "PJM", "state": "VA", "status": "active", "queueDate": "2024-11-08", "expectedOnline": "2027", "dcRelevant": true, "notes": "Direct hyperscaler procurement" },
+    { "id": "PJM-2506", "projectName": "Maryland Datacenter Solar", "sponsor": "ENGIE North America", "capacityMW": 450, "type": "solar", "iso": "PJM", "state": "MD", "status": "active", "queueDate": "2025-02-22", "expectedOnline": "2027", "dcRelevant": true },
+    { "id": "PJM-2218", "projectName": "Delaware Wind Farm", "sponsor": "Ørsted", "capacityMW": 320, "type": "wind", "iso": "PJM", "state": "DE", "status": "withdrawn", "queueDate": "2022-12-10", "expectedOnline": null, "dcRelevant": false }
+  ]
+}

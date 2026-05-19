@@ -1026,6 +1026,52 @@ async function composeNpiUpdateTweet(): Promise<string> {
   ].join("\n");
 }
 
+async function composeQueueUpdateTweet(): Promise<string> {
+  try {
+    const filePath = join(process.cwd(), "server", "data", "interconnection-queue.json");
+    const raw = readFileSync(filePath, "utf-8");
+    const data = JSON.parse(raw) as { projects: Array<{ capacityMW: number; iso: string; status: string; dcRelevant: boolean; type: string }> };
+    const active = data.projects.filter((p) => p.status === "active");
+    const totalGW = active.reduce((s, p) => s + p.capacityMW, 0) / 1000;
+    const dcProjects = active.filter((p) => p.dcRelevant);
+    const dcGW = dcProjects.reduce((s, p) => s + p.capacityMW, 0) / 1000;
+    const withdrawn = data.projects.filter((p) => p.status === "withdrawn").length;
+    const withdrawalRate = data.projects.length > 0
+      ? Math.round((withdrawn / data.projects.length) * 100)
+      : 0;
+
+    // Find leading ISO by pending GW.
+    const byIso: Record<string, number> = {};
+    for (const p of active) {
+      byIso[p.iso] = (byIso[p.iso] ?? 0) + p.capacityMW;
+    }
+    const leadIso = Object.entries(byIso).sort((a, b) => b[1] - a[1])[0];
+    const observation = leadIso
+      ? `${leadIso[0]} leads with ${(leadIso[1] / 1000).toFixed(1)} GW pending.`
+      : "queue spread evenly across isos.";
+
+    return [
+      "us interconnection queue · snapshot",
+      "",
+      `${totalGW.toFixed(1)} GW pending across active requests`,
+      `${dcProjects.length} projects flagged datacenter-relevant`,
+      `${withdrawalRate}% historical withdrawal rate`,
+      "",
+      observation,
+      "",
+      `${TWEET_FOOTER_MARK} gridtilt.com/queue`,
+    ].join("\n");
+  } catch {
+    return [
+      "us interconnection queue",
+      "",
+      "the grid bottleneck nobody else dashboards.",
+      "",
+      `${TWEET_FOOTER_MARK} gridtilt.com/queue`,
+    ].join("\n");
+  }
+}
+
 const TIER1_EARNINGS = new Set(["NVDA", "MSFT", "GOOGL", "META", "AMZN", "TSM", "AMD", "AAPL"]);
 
 async function composeCatalystPreviewTweet(): Promise<string> {
@@ -1086,7 +1132,7 @@ const ROTATING_TEMPLATES: Record<number, { name: string; compose: () => Promise<
   1: { name: "tilt_status",       compose: composeTiltStatusTweet },      // Mon
   2: { name: "top_movers",        compose: composeTopMoversTweet },       // Tue
   3: { name: "npi_update",        compose: composeNpiUpdateTweet },       // Wed
-  4: { name: "top_movers",        compose: composeTopMoversTweet },       // Thu
+  4: { name: "queue_update",      compose: composeQueueUpdateTweet },     // Thu
   5: { name: "catalyst_preview",  compose: composeCatalystPreviewTweet }, // Fri
 };
 
@@ -1251,6 +1297,89 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Supply chain error:", error);
       res.status(500).json({ error: "Failed to fetch supply chain data" });
+    }
+  });
+
+  // ─── Interconnection Queue (LBNL-sourced) ──────────────────────────────────
+  // Public, no auth. Returns the full project list plus aggregate summary
+  // stats. Data is a sample of the Lawrence Berkeley National Lab "Queued Up"
+  // dataset, hand-curated to AI-power-relevant projects. Annual refresh from
+  // emp.lbl.gov/queues. Schema documented in the JSON file's top-level keys.
+  app.get("/api/queue", (_req, res) => {
+    try {
+      const filePath = join(process.cwd(), "server", "data", "interconnection-queue.json");
+      const raw = readFileSync(filePath, "utf-8");
+      const data = JSON.parse(raw) as {
+        source: string;
+        sourceUrl: string;
+        lastUpdated: string;
+        projects: Array<{
+          id: string;
+          projectName: string;
+          sponsor: string;
+          capacityMW: number;
+          type: string;
+          iso: string;
+          state: string;
+          status: "active" | "withdrawn" | "operational";
+          queueDate: string;
+          expectedOnline: string | null;
+          dcRelevant: boolean;
+          notes?: string;
+        }>;
+      };
+
+      // Summary aggregates: total pending GW by ISO, by type, withdrawal rate,
+      // count of datacenter-relevant projects.
+      const active = data.projects.filter((p) => p.status === "active");
+      const withdrawn = data.projects.filter((p) => p.status === "withdrawn");
+      const operational = data.projects.filter((p) => p.status === "operational");
+      const dcRelevant = active.filter((p) => p.dcRelevant);
+
+      const sumMW = (arr: typeof data.projects) => arr.reduce((s, p) => s + p.capacityMW, 0);
+
+      const byIso: Record<string, { count: number; mw: number }> = {};
+      const byType: Record<string, { count: number; mw: number }> = {};
+      const byState: Record<string, { count: number; mw: number }> = {};
+      for (const p of active) {
+        byIso[p.iso] = byIso[p.iso] || { count: 0, mw: 0 };
+        byIso[p.iso].count += 1;
+        byIso[p.iso].mw += p.capacityMW;
+        byType[p.type] = byType[p.type] || { count: 0, mw: 0 };
+        byType[p.type].count += 1;
+        byType[p.type].mw += p.capacityMW;
+        byState[p.state] = byState[p.state] || { count: 0, mw: 0 };
+        byState[p.state].count += 1;
+        byState[p.state].mw += p.capacityMW;
+      }
+
+      const totalProjects = data.projects.length;
+      const withdrawalRate = totalProjects > 0
+        ? parseFloat((withdrawn.length / totalProjects * 100).toFixed(1))
+        : 0;
+
+      res.json({
+        source: data.source,
+        sourceUrl: data.sourceUrl,
+        lastUpdated: data.lastUpdated,
+        summary: {
+          totalProjects,
+          activeProjects: active.length,
+          withdrawnProjects: withdrawn.length,
+          operationalProjects: operational.length,
+          activePendingGW: parseFloat((sumMW(active) / 1000).toFixed(1)),
+          dcRelevantProjects: dcRelevant.length,
+          dcRelevantPendingGW: parseFloat((sumMW(dcRelevant) / 1000).toFixed(1)),
+          withdrawalRatePct: withdrawalRate,
+          byIso,
+          byType,
+          byState,
+        },
+        projects: data.projects,
+      });
+    } catch (error) {
+      console.error("Queue endpoint error:", error);
+      res.status(500).json({ error: "Failed to load interconnection queue" });
     }
   });
 

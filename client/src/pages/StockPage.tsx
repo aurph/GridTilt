@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, ExternalLink, TrendingUp, TrendingDown, AlertTriangle, Share2 } from "lucide-react";
+import { ArrowLeft, ExternalLink, TrendingUp, TrendingDown, AlertTriangle, Share2, Clock } from "lucide-react";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip as RTooltip } from "recharts";
 import { useToast } from "@/hooks/use-toast";
 
@@ -17,12 +17,13 @@ interface StockInfo {
   layerKey: string;
   stockData: {
     price: number;
-    change: number;
-    changePercent: number;
+    change: number | null;
+    changePercent: number | null;
     pe: number | null;
     revenueGrowth: number | null;
     marketCapDisplay: string;
     sparkline: number[];
+    stale?: boolean;
   } | null;
   relatedTickers: string[];
   relatedCatalysts: Array<{ id: number; date: string; title: string; category: string; thesisImpact: string }>;
@@ -82,7 +83,9 @@ export default function StockPage() {
     );
   }
 
-  const isUp = (data.stockData?.changePercent ?? 0) >= 0;
+  const hasLiveChg = typeof data.stockData?.changePercent === "number" && Number.isFinite(data.stockData.changePercent);
+  const isUp = hasLiveChg && (data.stockData!.changePercent as number) >= 0;
+  const isStale = !!data.stockData?.stale;
   const chartData = data.stockData?.sparkline?.map((v, i) => ({ i, price: v })) || [];
   const sectorSlug = SECTOR_SLUG_MAP[data.layerKey] || data.layerKey;
 
@@ -117,10 +120,17 @@ export default function StockPage() {
             {data.stockData && (
               <>
                 <span className="text-xl font-bold font-mono" data-testid="stock-price">${data.stockData.price.toFixed(2)}</span>
-                <Badge className={`font-mono ${isUp ? "bg-green-500/15 text-green-400" : "bg-red-500/15 text-red-400"}`} data-testid="stock-change">
-                  {isUp ? <TrendingUp className="h-3 w-3 mr-1" /> : <TrendingDown className="h-3 w-3 mr-1" />}
-                  {isUp ? "+" : ""}{data.stockData.changePercent.toFixed(2)}%
-                </Badge>
+                {hasLiveChg ? (
+                  <Badge className={`font-mono ${isUp ? "bg-green-500/15 text-green-400" : "bg-red-500/15 text-red-400"}`} data-testid="stock-change">
+                    {isUp ? <TrendingUp className="h-3 w-3 mr-1" /> : <TrendingDown className="h-3 w-3 mr-1" />}
+                    {isUp ? "+" : ""}{(data.stockData.changePercent as number).toFixed(2)}%
+                  </Badge>
+                ) : (
+                  <Badge className="font-mono bg-[#F0A500]/15 text-[#F0A500] border-[#F0A500]/30 inline-flex items-center gap-1" data-testid="stock-stale">
+                    <Clock className="h-3 w-3" />
+                    {isStale ? "delayed" : "—"}
+                  </Badge>
+                )}
               </>
             )}
           </div>
