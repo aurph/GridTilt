@@ -103,10 +103,9 @@ const CATEGORY_COLORS: Record<string, string> = {
 };
 
 function daysUntil(dateStr: string): number {
-  const target = new Date(dateStr);
+  const target = new Date(dateStr + "T12:00:00");
   const now = new Date();
-  now.setHours(0, 0, 0, 0);
-  target.setHours(0, 0, 0, 0);
+  now.setHours(12, 0, 0, 0);
   return Math.round((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 }
 
@@ -930,12 +929,10 @@ export default function TiltOverview() {
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="max-w-2xl">
             <h1 className="text-2xl sm:text-3xl font-semibold text-foreground tracking-tight mb-1.5">
-              AI power infrastructure, in public.
+              Grid information, tilted.
             </h1>
             <p className="text-muted-foreground text-xs sm:text-sm leading-relaxed">
-              The grid is tilting. I track it here.
-              <span className="text-muted-foreground/60"> — Jack Schwartz · </span>
-              <Link href="/blog" className="text-[#F07800] hover:text-[#F0A500] transition-colors">latest analysis →</Link>
+              Live equities, infrastructure, and power data across 60+ tickers.
             </p>
           </div>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
