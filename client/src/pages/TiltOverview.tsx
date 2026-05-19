@@ -62,16 +62,16 @@ const annotations = [
 
 interface KpiData {
   aiPowerIndex: number;
-  nriValue: number;
+  npiValue: number;
   gridStress: number;
   smrPolicyScore: number;
-  nriBaseDate: string;
+  npiBaseDate: string;
   constituents: {
     // AI Power Index constituents (intraday % change signals)
     nvdaChange: number; tsmChange: number; eqixChange: number; muChange: number;
-    // NRI constituents (price performance since Jan 1, 2024 base)
+    // NPI constituents (price performance since Jan 1, 2024 base)
     cegPerf: number; vstPerf: number; ccjPerf: number; nlrPerf: number;
-    uPerf: number; policyPerf: number; nriPolicyMultiplier: number; nriMomentum: number;
+    uPerf: number; policyPerf: number; npiPolicyMultiplier: number; npiMomentum: number;
     // Grid Stress signals
     vstChange: number; cegChange: number;
   };
@@ -259,23 +259,23 @@ function KpiCard({
   );
 }
 
-function TiltStatusBar({ aiPower, gridStress, nri }: { aiPower: number | null; gridStress: number | null; nri: number | null }) {
-  if (aiPower === null || gridStress === null || nri === null) return null;
+function TiltStatusBar({ aiPower, gridStress, npi }: { aiPower: number | null; gridStress: number | null; npi: number | null }) {
+  if (aiPower === null || gridStress === null || npi === null) return null;
 
-  const isAccelerating = aiPower > 78 && gridStress > 70 && nri > 130;
-  const isCooling = aiPower < 68 && gridStress < 55;
-  const status = isAccelerating ? "ACCELERATING" : isCooling ? "COOLING" : "EXPANDING";
-  const statusColor = isAccelerating ? "#F07800" : isCooling ? "#6b7280" : "#F0A500";
-  const statusBg = isAccelerating ? "bg-[#F07800]/10 border-[#F07800]/25" : isCooling ? "bg-muted/20 border-card-border" : "bg-[#F0A500]/10 border-[#F0A500]/20";
-  const description = isAccelerating
+  const isElevated = aiPower > 78 && gridStress > 70 && npi > 130;
+  const isEasing = aiPower < 68 && gridStress < 55;
+  const status = isElevated ? "elevated" : isEasing ? "easing" : "tracking baseline";
+  const statusColor = isElevated ? "#F07800" : isEasing ? "#6b7280" : "#F0A500";
+  const statusBg = isElevated ? "bg-[#F07800]/10 border-[#F07800]/25" : isEasing ? "bg-muted/20 border-card-border" : "bg-[#F0A500]/10 border-[#F0A500]/20";
+  const description = isElevated
     ? `All three indices elevated. AI power demand is outpacing grid additions. Grid stress at ${gridStress.toFixed(0)}/100 signals regional capacity constraints.`
-    : isCooling
+    : isEasing
     ? `Indices have pulled back from peaks. Could be sector rotation or reduced procurement activity. Watch hyperscaler capex guidance.`
-    : `Tracking the baseline scenario. Demand index above structural baseline (72/100). NRI at ${nri.toFixed(0)} reflects continued momentum from 2024 PPA signings.`;
+    : `Tracking the structural baseline. Demand index sits above 72/100. NPI at ${npi.toFixed(0)} reflects continued momentum from 2024 PPA signings.`;
 
   const numbers = [
     { label: "AI Demand", val: aiPower },
-    { label: "NRI", val: nri },
+    { label: "NPI", val: npi },
     { label: "Grid Stress", val: gridStress },
   ] as const;
 
@@ -965,8 +965,8 @@ export default function TiltOverview() {
           />
           <KpiCard
             icon={Zap}
-            title="Nuclear Renaissance"
-            value={kpiData?.nriValue ?? null}
+            title="Nuclear Power Index"
+            value={kpiData?.npiValue ?? null}
             unit=""
             subtitle="Basket index, Jan 1, 2024 = 100"
             color="amber"
@@ -1005,7 +1005,7 @@ export default function TiltOverview() {
           <TiltStatusBar
             aiPower={kpiData.aiPowerIndex}
             gridStress={kpiData.gridStress}
-            nri={kpiData.nriValue}
+            npi={kpiData.npiValue}
           />
         )}
 

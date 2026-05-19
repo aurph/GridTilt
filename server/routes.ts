@@ -318,10 +318,11 @@ const STATIC_MARKET_DATA: Record<string, {
   MRVL: { name: "Marvell Technology Inc", price: 88.00, change: 0.00, changePercent: 0.00, pe: 48.2, revenueGrowth: 18.4, marketCapDisplay: "$76B" },
 };
 
-// Nuclear Renaissance Index (NRI) - Jan 1, 2024 base prices
-// Jan 1, 2024 is the anchor date: narrative around AI baseload demand started accelerating.
-// All prices are closing prices circa Jan 2, 2024 (first trading day 2024).
-const NRI_BASE = {
+// Nuclear Power Index (NPI) - Jan 1, 2024 base prices
+// Jan 1, 2024 is the anchor date: AI baseload demand started pulling
+// hyperscaler attention to nuclear that quarter. All prices are closing
+// prices circa Jan 2, 2024 (first trading day 2024).
+const NPI_BASE = {
   CEG: 146.00,       // CEG ~$143-148 range, pre-AI PPA narrative acceleration
   VST: 28.50,        // VST ~$25-32 range, pre-AI merchant power premium
   CCJ: 47.50,        // CCJ ~$46-49, pre-2024 uranium spot spike to $107
@@ -714,14 +715,14 @@ function appendSocialLog(entry: SocialLogEntry): void {
 
 interface KpiResult {
   aiPowerIndex: number;
-  nriValue: number;
+  npiValue: number;
   gridStress: number;
   smrPolicyScore: number;
-  nriBaseDate: string;
+  npiBaseDate: string;
   constituents: {
     nvdaChange: number; tsmChange: number; eqixChange: number; muChange: number;
     cegPerf: number; vstPerf: number; ccjPerf: number; nlrPerf: number;
-    uPerf: number; policyPerf: number; nriPolicyMultiplier: number; nriMomentum: number;
+    uPerf: number; policyPerf: number; npiPolicyMultiplier: number; npiMomentum: number;
     vstChange: number; cegChange: number;
   };
 }
@@ -764,20 +765,20 @@ async function computeKpis(): Promise<KpiResult> {
     // fall through to static defaults
   }
 
-  const cegPerf = cegPrice / NRI_BASE.CEG;
-  const vstPerf = vstPrice / NRI_BASE.VST;
-  const ccjPerf = ccjPrice / NRI_BASE.CCJ;
-  const nlrPerf = nlrPrice / NRI_BASE.NLR;
-  const uPerf = URANIUM_SPOT_CURRENT / NRI_BASE.URANIUM_SPOT;
+  const cegPerf = cegPrice / NPI_BASE.CEG;
+  const vstPerf = vstPrice / NPI_BASE.VST;
+  const ccjPerf = ccjPrice / NPI_BASE.CCJ;
+  const nlrPerf = nlrPrice / NPI_BASE.NLR;
+  const uPerf = URANIUM_SPOT_CURRENT / NPI_BASE.URANIUM_SPOT;
   const policyPerf = 0.5 + SMR_POLICY_SCORE / 10;
 
-  const nriWeightedPerf =
+  const npiWeightedPerf =
     0.25 * cegPerf + 0.20 * vstPerf + 0.15 * ccjPerf +
     0.20 * nlrPerf + 0.10 * uPerf   + 0.10 * policyPerf;
 
-  const nriPolicyMultiplier = 0.9 + (SMR_POLICY_SCORE / 10) * 0.2;
-  const nriValue = parseFloat((100 * nriWeightedPerf * nriPolicyMultiplier).toFixed(1));
-  const nriMomentum = cegChange * 0.35 + vstChange * 0.30 + ccjChange * 0.20 + neeChange * 0.15;
+  const npiPolicyMultiplier = 0.9 + (SMR_POLICY_SCORE / 10) * 0.2;
+  const npiValue = parseFloat((100 * npiWeightedPerf * npiPolicyMultiplier).toFixed(1));
+  const npiMomentum = cegChange * 0.35 + vstChange * 0.30 + ccjChange * 0.20 + neeChange * 0.15;
 
   const aiMomentum = (nvdaChange * 0.40 + tsmChange * 0.25 + eqixChange * 0.20 + muChange * 0.15) * 1.2;
   const aiPowerIndex = Math.max(52, Math.min(94, 72 + aiMomentum));
@@ -787,10 +788,10 @@ async function computeKpis(): Promise<KpiResult> {
 
   return {
     aiPowerIndex: parseFloat(aiPowerIndex.toFixed(1)),
-    nriValue,
+    npiValue,
     gridStress: parseFloat(gridStress.toFixed(1)),
     smrPolicyScore: SMR_POLICY_SCORE,
-    nriBaseDate: "Jan 1, 2024",
+    npiBaseDate: "Jan 1, 2024",
     constituents: {
       nvdaChange: parseFloat(nvdaChange.toFixed(2)),
       tsmChange: parseFloat(tsmChange.toFixed(2)),
@@ -802,66 +803,179 @@ async function computeKpis(): Promise<KpiResult> {
       nlrPerf: parseFloat(nlrPerf.toFixed(3)),
       uPerf: parseFloat(uPerf.toFixed(3)),
       policyPerf: parseFloat(policyPerf.toFixed(3)),
-      nriPolicyMultiplier: parseFloat(nriPolicyMultiplier.toFixed(3)),
-      nriMomentum: parseFloat(nriMomentum.toFixed(2)),
+      npiPolicyMultiplier: parseFloat(npiPolicyMultiplier.toFixed(3)),
+      npiMomentum: parseFloat(npiMomentum.toFixed(2)),
       vstChange: parseFloat(vstChange.toFixed(2)),
       cegChange: parseFloat(cegChange.toFixed(2)),
     },
   };
 }
 
-function deriveTiltStatus(k: KpiResult): "ACCELERATING" | "EXPANDING" | "COOLING" {
-  if (k.aiPowerIndex > 78 && k.gridStress > 70 && k.nriValue > 130) return "ACCELERATING";
-  if (k.aiPowerIndex < 68 && k.gridStress < 55) return "COOLING";
-  return "EXPANDING";
+type TiltStatus = "elevated" | "tracking baseline" | "easing";
+
+function deriveTiltStatus(k: KpiResult): TiltStatus {
+  if (k.aiPowerIndex > 78 && k.gridStress > 70 && k.npiValue > 130) return "elevated";
+  if (k.aiPowerIndex < 68 && k.gridStress < 55) return "easing";
+  return "tracking baseline";
 }
 
 // ─── Tweet composers (one per rotating template) ────────────────────────────
+// Each template renders ~6-10 lines: a header, a data block, and a one-line
+// observation tied to real signal. Lowercase voice. Light branding via the
+// ⚡ mark before the URL line.
+
+const TWEET_FOOTER_MARK = "⚡";
 
 function fmtPct(n: number): string {
   const v = n.toFixed(2);
   return n >= 0 ? `+${v}%` : `${v}%`;
 }
 
+function fmtPerf(perf: number): string {
+  const pct = ((perf - 1) * 100).toFixed(0);
+  return perf >= 1 ? `+${pct}%` : `${pct}%`;
+}
+
+// Reads sector pulse from the cached stack data and returns the layer with
+// the largest absolute average change. Used to point at "what dominated."
+async function dominantSector(): Promise<{ key: string; label: string; avgChange: number } | null> {
+  const stockData = await getCachedStockData("1D");
+  const LABELS: Record<string, string> = {
+    compute: "compute",
+    nuclear: "nuclear generators",
+    uranium: "uranium miners",
+    powerHardware: "power hardware",
+    utilities: "utilities",
+    dataCenters: "datacenter reits",
+    construction: "construction",
+    rawMaterialsMining: "miners",
+    rawMaterialsNatGas: "natural gas",
+    renewableGeneration: "renewables",
+    transmissionGrid: "grid hardware",
+    cryptoAIDC: "ai hosting",
+    etfsBenchmarks: "etfs",
+  };
+  let best: { key: string; label: string; avgChange: number } | null = null;
+  for (const [key, tickers] of Object.entries(STACK_TICKERS)) {
+    if (key === "etfsBenchmarks") continue; // ETFs water down the signal
+    const changes = tickers
+      .map((t) => stockData[t]?.changePercent)
+      .filter((c: any) => typeof c === "number");
+    if (changes.length === 0) continue;
+    const avg = changes.reduce((s: number, v: number) => s + v, 0) / changes.length;
+    if (!best || Math.abs(avg) > Math.abs(best.avgChange)) {
+      best = { key, label: LABELS[key] ?? key, avgChange: avg };
+    }
+  }
+  return best;
+}
+
 async function composeTiltStatusTweet(): Promise<string> {
   const k = await computeKpis();
   const status = deriveTiltStatus(k);
+
+  // Identify the most stretched dimension vs baseline.
+  const aiHeat = k.aiPowerIndex - 72;
+  const stressHeat = k.gridStress - 68;
+  const npiVsBase = k.npiValue - 100;
+
+  let observation: string;
+  if (k.gridStress > 75 && stressHeat > aiHeat) {
+    observation = "grid is the tightest of the three. reserve margins remain a constraint.";
+  } else if (k.aiPowerIndex > 78) {
+    observation = "ai power demand running hot. compute and dc reits leading the bid.";
+  } else if (npiVsBase > 40) {
+    observation = `npi sits +${npiVsBase.toFixed(0)}% since jan '24. nuclear basket has carried the trade.`;
+  } else if (k.aiPowerIndex < 68 && k.gridStress < 60) {
+    observation = "indices have pulled back from peaks. watch hyperscaler capex tone.";
+  } else {
+    observation = "all three indices near structural baseline. no dimension running away.";
+  }
+
   return [
-    `tilt status: ${status.toLowerCase()}`,
+    `tilt: ${status}`,
     "",
-    `ai demand    ${k.aiPowerIndex.toFixed(0)}`,
-    `nuclear      ${k.nriValue.toFixed(0)}`,
-    `grid stress  ${k.gridStress.toFixed(0)}`,
+    `ai power demand  ${k.aiPowerIndex.toFixed(0)}`,
+    `nuclear (npi)    ${k.npiValue.toFixed(0)}`,
+    `grid stress      ${k.gridStress.toFixed(0)}`,
     "",
-    "gridtilt.com",
+    observation,
+    "",
+    `${TWEET_FOOTER_MARK} gridtilt.com`,
   ].join("\n");
 }
 
 async function composeTopMoversTweet(): Promise<string> {
   const stockData = await getCachedStockData("1D");
-  const movers = Object.values(stockData)
-    .filter((s: any) => s && typeof s.changePercent === "number")
-    .sort((a: any, b: any) => Math.abs(b.changePercent) - Math.abs(a.changePercent))
+  const movers = (Object.values(stockData) as any[])
+    .filter((s) => s && typeof s.changePercent === "number")
+    .sort((a, b) => Math.abs(b.changePercent) - Math.abs(a.changePercent))
     .slice(0, 4);
-  const lines = movers.map((s: any) => `$${s.ticker} ${fmtPct(s.changePercent)}`);
-  return ["AI infra movers today", "", ...lines, "", "gridtilt.com/stack"].join("\n");
-}
 
-async function composeNriUpdateTweet(): Promise<string> {
-  const k = await computeKpis();
-  const c = k.constituents;
-  const pp = (perf: number) => `${perf >= 1 ? "+" : ""}${((perf - 1) * 100).toFixed(0)}%`;
+  const lines = movers.map((s) => `$${s.ticker} ${fmtPct(s.changePercent)}`);
+
+  // Build the narrative from sector dominance + direction mix.
+  const dom = await dominantSector();
+  const upCount = movers.filter((s) => s.changePercent > 0).length;
+  const downCount = movers.length - upCount;
+
+  let observation: string;
+  if (dom && Math.abs(dom.avgChange) > 1.5) {
+    const verb = dom.avgChange > 0 ? "leading the tape" : "got sold today";
+    observation = `${dom.label} ${verb}. avg ${fmtPct(dom.avgChange)} across the basket.`;
+  } else if (downCount === movers.length) {
+    observation = "broad pullback. nothing green in the top movers.";
+  } else if (upCount === movers.length) {
+    observation = "ai infra bid across the board today.";
+  } else if (downCount > upCount) {
+    observation = "sellers in control. defensive day for the sector.";
+  } else {
+    observation = "mixed tape. compute and generators trading separately.";
+  }
+
   return [
-    `nuclear renaissance index  ${k.nriValue.toFixed(0)}`,
+    "top movers · ai infra",
     "",
-    `CEG  ${pp(c.cegPerf)}  vs Jan '24`,
-    `VST  ${pp(c.vstPerf)}  vs Jan '24`,
-    `CCJ  ${pp(c.ccjPerf)}  vs Jan '24`,
-    `U3O8 ${pp(c.uPerf)}  vs Jan '24`,
+    ...lines,
     "",
-    "gridtilt.com",
+    observation,
+    "",
+    `${TWEET_FOOTER_MARK} gridtilt.com/stack`,
   ].join("\n");
 }
+
+async function composeNpiUpdateTweet(): Promise<string> {
+  const k = await computeKpis();
+  const c = k.constituents;
+
+  const perfs: Array<{ label: string; sym: string; perf: number }> = [
+    { label: "constellation", sym: "CEG",  perf: c.cegPerf },
+    { label: "vistra",        sym: "VST",  perf: c.vstPerf },
+    { label: "cameco",        sym: "CCJ",  perf: c.ccjPerf },
+    { label: "uranium spot",  sym: "U₃O₈", perf: c.uPerf  },
+  ];
+
+  // Largest absolute move drives the narrative line.
+  const leader = perfs.reduce((a, b) => Math.abs(b.perf - 1) > Math.abs(a.perf - 1) ? b : a);
+  const observation = leader.perf >= 1
+    ? `${leader.label} carrying the basket: ${fmtPerf(leader.perf)} since jan '24.`
+    : `${leader.label} dragging the basket: ${fmtPerf(leader.perf)} since jan '24.`;
+
+  return [
+    `nuclear power index (npi)  ${k.npiValue.toFixed(0)}`,
+    "",
+    `CEG   ${fmtPerf(c.cegPerf)}`,
+    `VST   ${fmtPerf(c.vstPerf)}`,
+    `CCJ   ${fmtPerf(c.ccjPerf)}`,
+    `U₃O₈  ${fmtPerf(c.uPerf)}`,
+    "",
+    observation,
+    "",
+    `${TWEET_FOOTER_MARK} gridtilt.com`,
+  ].join("\n");
+}
+
+const TIER1_EARNINGS = new Set(["NVDA", "MSFT", "GOOGL", "META", "AMZN", "TSM", "AMD", "AAPL"]);
 
 async function composeCatalystPreviewTweet(): Promise<string> {
   let upcoming: any[] = [];
@@ -884,12 +998,12 @@ async function composeCatalystPreviewTweet(): Promise<string> {
 
   if (upcoming.length === 0) {
     return [
-      "next week in AI infra",
+      "next week · ai infra",
       "",
-      "no major scheduled catalysts.",
-      "watch earnings + regulatory dockets.",
+      "no scheduled catalysts on the docket.",
+      "watch earnings tape and regulatory filings.",
       "",
-      "gridtilt.com/catalysts",
+      `${TWEET_FOOTER_MARK} gridtilt.com/catalysts`,
     ].join("\n");
   }
 
@@ -897,15 +1011,32 @@ async function composeCatalystPreviewTweet(): Promise<string> {
     const d = new Date(c.date).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
     return `${d}: ${c.title}`;
   });
-  return ["next week's catalysts", "", ...lines, "", "gridtilt.com/catalysts"].join("\n");
+
+  // Surface the most market-moving item if it's a tier-1 ticker earnings.
+  const headline = upcoming.find((c: any) =>
+    Array.isArray(c.tickers) && c.tickers.some((t: string) => TIER1_EARNINGS.has(t))
+  );
+  const observation = headline
+    ? `headline of the week: ${headline.title.toLowerCase()}.`
+    : "sector-specific catalysts only this week. no tier-1 earnings.";
+
+  return [
+    "next week · ai infra",
+    "",
+    ...lines,
+    "",
+    observation,
+    "",
+    `${TWEET_FOOTER_MARK} gridtilt.com/catalysts`,
+  ].join("\n");
 }
 
 const ROTATING_TEMPLATES: Record<number, { name: string; compose: () => Promise<string> }> = {
-  1: { name: "tilt_status",       compose: composeTiltStatusTweet },     // Mon
-  2: { name: "top_movers",        compose: composeTopMoversTweet },      // Tue
-  3: { name: "nri_update",        compose: composeNriUpdateTweet },      // Wed
-  4: { name: "top_movers",        compose: composeTopMoversTweet },      // Thu
-  5: { name: "catalyst_preview",  compose: composeCatalystPreviewTweet },// Fri
+  1: { name: "tilt_status",       compose: composeTiltStatusTweet },      // Mon
+  2: { name: "top_movers",        compose: composeTopMoversTweet },       // Tue
+  3: { name: "npi_update",        compose: composeNpiUpdateTweet },       // Wed
+  4: { name: "top_movers",        compose: composeTopMoversTweet },       // Thu
+  5: { name: "catalyst_preview",  compose: composeCatalystPreviewTweet }, // Fri
 };
 
 function ensureTweetLength(text: string): string {
@@ -2057,7 +2188,7 @@ Preferred-Languages: en
         tilt_status: deriveTiltStatus(kpis).toLowerCase(),
         indices: {
           ai_demand: kpis.aiPowerIndex,
-          nuclear_renaissance: kpis.nriValue,
+          nuclear_power: kpis.npiValue,
           grid_stress: kpis.gridStress,
         },
         top_movers: topMovers,

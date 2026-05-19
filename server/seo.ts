@@ -166,7 +166,7 @@ const TRADE_FAQS = [
 const HOME_FAQS = [
   { question: "What is GridTilt?", answer: "GridTilt is a financial dashboard tracking the AI power infrastructure buildout. It provides live market data for 60+ equities across compute, nuclear, uranium, power hardware, utilities, data centers, construction, and ETF sectors." },
   { question: "What is the AI Power Demand Index?", answer: "The AI Power Demand Index is a composite indicator tracking semiconductor demand signals, datacenter REIT performance, and power hardware order trends to gauge the pace of AI infrastructure buildout." },
-  { question: "What is the Nuclear Renaissance Index?", answer: "The Nuclear Renaissance Index (NRI) tracks the performance of nuclear power generators, uranium miners, and nuclear policy developments relative to a January 2024 baseline. Values above 100 indicate sector appreciation." },
+  { question: "What is the Nuclear Power Index?", answer: "The Nuclear Power Index (NPI) tracks the performance of nuclear power generators, uranium miners, and nuclear policy developments relative to a January 2024 baseline. Values above 100 indicate sector appreciation." },
   { question: "What is the Grid Stress Score?", answer: "The Grid Stress Score combines RTO reserve margin data, interconnection queue lengths, and transformer lead times to indicate how strained the US electrical grid is from AI datacenter demand." },
   { question: "How often is GridTilt data updated?", answer: "Market data refreshes every 15 minutes during trading hours. Catalyst events and news feeds update hourly. The Power Map facility data is updated as new projects are announced." },
 ];
