@@ -688,6 +688,50 @@ async function xPostTweet(text: string): Promise<XPostResult> {
   }
 }
 
+interface XDeleteResult {
+  ok: boolean;
+  id: string;
+  deleted?: boolean;
+  error?: string;
+  dryRun?: boolean;
+}
+
+async function xDeleteTweet(id: string): Promise<XDeleteResult> {
+  const consumerKey = process.env.X_API_KEY;
+  const consumerSecret = process.env.X_API_SECRET;
+  const accessToken = process.env.X_ACCESS_TOKEN;
+  const accessTokenSecret = process.env.X_ACCESS_TOKEN_SECRET;
+
+  if (!consumerKey || !consumerSecret || !accessToken || !accessTokenSecret) {
+    return { ok: true, id, dryRun: true };
+  }
+
+  const url = `https://api.x.com/2/tweets/${encodeURIComponent(id)}`;
+  const authHeader = buildOAuth1Header(
+    "DELETE",
+    url,
+    consumerKey,
+    consumerSecret,
+    accessToken,
+    accessTokenSecret,
+  );
+
+  try {
+    const res = await fetch(url, {
+      method: "DELETE",
+      headers: { Authorization: authHeader },
+    });
+    if (!res.ok) {
+      const errText = await res.text().catch(() => "");
+      return { ok: false, id, error: `X API ${res.status}: ${errText.slice(0, 300)}` };
+    }
+    const data = (await res.json()) as any;
+    return { ok: true, id, deleted: !!data?.data?.deleted };
+  } catch (e: any) {
+    return { ok: false, id, error: e?.message ?? "unknown" };
+  }
+}
+
 const SOCIAL_LOG_FILE = join(process.cwd(), "server", "data", "social-log.json");
 
 interface SocialLogEntry {
@@ -2188,6 +2232,28 @@ Preferred-Languages: en
       timestamp: new Date().toISOString(),
       platform: "twitter",
       text: trimmed,
+      ok: result.ok,
+      id: result.id,
+      error: result.error,
+      dryRun: result.dryRun,
+      trigger: "manual",
+    });
+    res.json(result);
+  });
+
+  // Delete a tweet by id. Use for removing diagnostics or mistakes.
+  // DELETE /api/admin/tweet/:id with x-admin-key header.
+  app.delete("/api/admin/tweet/:id", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    const { id } = req.params;
+    if (!id || !/^\d+$/.test(id)) {
+      return res.status(400).json({ error: "valid numeric tweet id required" });
+    }
+    const result = await xDeleteTweet(id);
+    appendSocialLog({
+      timestamp: new Date().toISOString(),
+      platform: "twitter",
+      text: `(delete tweet ${id})`,
       ok: result.ok,
       id: result.id,
       error: result.error,

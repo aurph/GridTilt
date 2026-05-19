@@ -21,6 +21,7 @@ import BlogPost from "@/pages/BlogPost";
 import SupplyChain from "@/pages/SupplyChain";
 import Subscribe from "@/pages/Subscribe";
 import AdminDatacenters from "@/pages/AdminDatacenters";
+import AdminSocial from "@/pages/AdminSocial";
 import { NewsTicker } from "@/components/NewsTicker";
 import { useLocation } from "wouter";
 import { useState, useEffect } from "react";
@@ -143,6 +144,7 @@ function Router() {
       <Route path="/blog/:slug" component={BlogPost} />
       <Route path="/subscribe" component={Subscribe} />
       <Route path="/admin/datacenters" component={AdminDatacenters} />
+      <Route path="/admin/social" component={AdminSocial} />
       <Route component={NotFound} />
     </Switch>
   );

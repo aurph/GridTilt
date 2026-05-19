@@ -156,7 +156,16 @@ curl -s -X POST https://gridtilt.com/api/admin/cron/daily-tweet \
   -H "x-admin-key: $ADMIN_API_KEY" | jq
 ```
 
+### Admin UI
+- `/admin/social` — browser console for the pipeline. Same admin-key pattern as `/admin/datacenters` (key stored in localStorage under `gridtilt_admin_key`).
+  - Load a template, edit, post to @gridtilt
+  - Delete tweets by id
+  - Auto-refreshing log of the last 50 entries with open / stage-delete buttons per row
+- `DELETE /api/admin/tweet/:id` — backing endpoint. Validates numeric id, calls X `DELETE /2/tweets/:id` with OAuth 1.0a, logs the attempt.
+
 ### Open follow-ups (not done)
-- Delete diagnostic tweets from @gridtilt (one was id `2056832457022882259`).
 - Confirm first real weekday cron fire posts cleanly (the prod redeploy unblocks this).
-- Optional: build a `/admin/social` UI for previewing and manually triggering tweets without curl.
+
+### Completed 2026-05-19
+- Three diagnostic tweets deleted (ids `2056832457022882259`, `2056837049072669038`, `2056839400344936574`).
+- `/admin/social` console shipped.
