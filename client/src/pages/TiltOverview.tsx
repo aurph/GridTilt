@@ -4,7 +4,6 @@ import {
   ComposedChart,
   Area,
   Line,
-  LineChart,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -21,7 +20,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Zap, TrendingUp, Activity, AlertTriangle, Info, ArrowUp, ArrowDown, Calendar, ChevronRight, ChevronLeft, ExternalLink, ChevronDown, ChevronUp, Cpu, Plug, BarChart3, Calculator, Layers, Map, Link2, CalendarDays } from "lucide-react";
+import { Zap, TrendingUp, Activity, AlertTriangle, Info, ArrowUp, ArrowDown, Calendar, ChevronRight, ExternalLink, Cpu, BarChart3, Calculator, Layers, Map, Link2, CalendarDays } from "lucide-react";
 import { EmailCapture, ScrollTriggeredBanner } from "@/components/EmailCapture";
 
 import stackPreview from "@assets/previews/stack.svg";
@@ -118,19 +117,6 @@ function formatDateShort(dateStr: string): string {
   });
 }
 
-function generateIndexSparkline(baseValue: number, length = 14): { i: number; v: number }[] {
-  const data = [];
-  let v = baseValue * 0.92;
-  const seed = Math.floor(baseValue * 100);
-  for (let i = 0; i < length; i++) {
-    const pseudoRandom = Math.sin(seed * 9301 + i * 49297) * 0.5 + 0.5;
-    v = v + (baseValue - v) * 0.12 + (pseudoRandom - 0.45) * 1.2;
-    v = Math.max(0, Math.min(100, v));
-    data.push({ i, v: parseFloat(v.toFixed(2)) });
-  }
-  return data;
-}
-
 const SECTOR_DEMAND = [
   { sector: "Residential", twh: 1658, yoy: 2.1, color: "#6b7280" },
   { sector: "Commercial", twh: 1569, yoy: 2.4, color: "#8b5cf6" },
@@ -213,25 +199,21 @@ function KpiCard({
       bg: "bg-muted/25",
       border: "border-card-border",
       value: "text-foreground",
-      sparkColor: "#94a3b8",
     },
     amber: {
       icon: "text-[#F0A500]",
       bg: "bg-[#F0A500]/10",
       border: "border-[#F0A500]/25",
       value: "text-[#F0A500]",
-      sparkColor: "#F0A500",
     },
     red: {
       icon: "text-orange-400",
       bg: "bg-orange-500/10",
       border: "border-orange-500/25",
       value: "text-orange-400",
-      sparkColor: "#F07800",
     },
   };
   const c = colorMap[color];
-  const sparkData = value !== null ? generateIndexSparkline(value) : [];
 
   return (
     <Card className={`p-5 border ${c.border} relative`}>
@@ -268,22 +250,6 @@ function KpiCard({
               </span>
               <span className="text-sm text-muted-foreground mb-1.5">{unit}</span>
             </div>
-            {value !== null && sparkData.length > 0 && (
-              <div className="h-8 -mx-1">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={sparkData}>
-                    <Line
-                      type="monotone"
-                      dataKey="v"
-                      stroke={c.sparkColor}
-                      strokeWidth={1.5}
-                      dot={false}
-                      strokeOpacity={0.6}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            )}
             <p className="text-xs text-muted-foreground leading-snug">
               {subtitle ?? "Live market signals. Tap info for methodology."}
             </p>
@@ -847,80 +813,14 @@ function NextCatalystsWidget() {
   );
 }
 
-function WhatAmILookingAt() {
-  const [open, setOpen] = useState(() => {
-    try { return localStorage.getItem("gridtilt_wtail_open") === "1"; } catch { return false; }
-  });
-
-  const toggle = () => {
-    const next = !open;
-    setOpen(next);
-    try { localStorage.setItem("gridtilt_wtail_open", next ? "1" : "0"); } catch { /* ignore */ }
-  };
-
-  const tiles = [
-    {
-      icon: Cpu,
-      title: "The Thesis",
-      body: "AI datacenter load reached ~288 TWh in 2025, about 6.4% of the US grid. Big Tech committed $328B+ in 2025 capex and signed 12+ GW of nuclear PPAs. The physical infrastructure to deliver that power is the investable layer.",
-    },
-    {
-      icon: Plug,
-      title: "The 3 Indices",
-      body: "AI Power Demand Index: composite score from EIA datacenter load data (baseline 72/100). Nuclear Renaissance Index: weighted basket of CEG, VST, CCJ, NLR, uranium spot, rebased to Jan 2024 = 100. Grid Stress Score: reserve margin signal from PJM, MISO, ERCOT (baseline 68/100).",
-    },
-    {
-      icon: BarChart3,
-      title: "The Stack",
-      body: "60+ public equities in 8 supply chain layers. Includes compute, nuclear, uranium, power hardware, utilities, data centers, construction, and ETF benchmarks.",
-    },
-  ];
-
-  return (
-    <div className="border border-border/60 rounded-[0.35rem] overflow-hidden" data-testid="what-am-i-looking-at">
-      <button
-        onClick={toggle}
-        className="w-full flex items-center justify-between px-4 py-2.5 bg-muted/15 hover:bg-muted/25 transition-colors text-left"
-        data-testid="wtail-toggle"
-      >
-        <div className="flex items-center gap-2 min-w-0">
-          <Info className="h-3.5 w-3.5 text-[#F07800] flex-shrink-0" />
-          <span className="text-xs text-muted-foreground">New here? <span className="text-[#F07800] font-medium">What am I looking at?</span></span>
-        </div>
-        {open
-          ? <ChevronUp className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-          : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-        }
-      </button>
-
-      {open && (
-        <div className="px-5 pb-5 pt-4 bg-muted/5">
-          <p className="text-sm text-muted-foreground leading-relaxed mb-4 max-w-3xl">
-            GridTilt tracks the <span className="text-foreground font-medium">AI Infrastructure & Power Economy</span>: the public equities, grid operators, and supply chain segments exposed to accelerating datacenter power demand.
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {tiles.map((tile) => {
-              const Icon = tile.icon;
-              return (
-                <div key={tile.title} className="p-4 rounded-[0.35rem] border border-border/50 bg-card">
-                  <div className="flex items-center gap-2 mb-2.5">
-                    <div className="h-6 w-6 rounded flex items-center justify-center bg-[#F07800]/10 flex-shrink-0">
-                      <Icon className="h-3.5 w-3.5 text-[#F07800]" />
-                    </div>
-                    <h3 className="text-xs font-semibold text-foreground uppercase tracking-wider">{tile.title}</h3>
-                  </div>
-                  <p className="text-xs text-muted-foreground leading-relaxed">{tile.body}</p>
-                </div>
-              );
-            })}
-          </div>
-          <p className="text-[11px] text-muted-foreground/50 mt-4">
-            Collapse this panel anytime. Your preference is saved.
-          </p>
-        </div>
-      )}
-    </div>
-  );
+function relativeTime(updatedAt: number | undefined): string {
+  if (!updatedAt) return "loading";
+  const seconds = Math.floor((Date.now() - updatedAt) / 1000);
+  if (seconds < 60) return "just now";
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  return `${hours}h ago`;
 }
 
 const FEATURE_SLIDES = [
@@ -1021,42 +921,104 @@ export default function TiltOverview() {
     refetchInterval: 900000,
   });
 
+  const { dataUpdatedAt: kpiUpdatedAt } = useQuery<KpiData>({ queryKey: ["/api/kpis"] });
   const c = kpiData?.constituents;
 
   return (
     <div className="flex flex-col h-full overflow-y-auto">
       <div className="grid-bg border-b border-border px-4 sm:px-6 py-6 sm:py-8">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div>
-              <h1 className="text-xl sm:text-2xl font-semibold text-foreground tracking-tight mb-1">
-                Tilt Overview
-              </h1>
-              <p className="text-muted-foreground text-xs sm:text-sm max-w-xl">
-                Equities, infrastructure, and power data across 60+ tickers tracking the AI power economy.
-              </p>
-            </div>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="max-w-2xl">
+            <h1 className="text-2xl sm:text-3xl font-semibold text-foreground tracking-tight mb-1.5">
+              AI power infrastructure, in public.
+            </h1>
+            <p className="text-muted-foreground text-xs sm:text-sm leading-relaxed">
+              The grid is tilting. I track it here.
+              <span className="text-muted-foreground/60"> — Jack Schwartz · </span>
+              <Link href="/blog" className="text-[#F07800] hover:text-[#F0A500] transition-colors">latest analysis →</Link>
+            </p>
           </div>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <div className="h-1.5 w-1.5 rounded-full bg-[#F0A500]" />
-            <span className="font-mono text-[11px] tracking-wide">15-min refresh</span>
+            <span className="font-mono text-[11px] tracking-wide" data-testid="last-updated">Updated {relativeTime(kpiUpdatedAt)}</span>
           </div>
         </div>
       </div>
 
       <div className="flex-1 p-4 sm:p-6 space-y-4 sm:space-y-5">
 
-        <ModuleGrid />
+        {/* 1. The three indices — what only we make */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3" data-testid="kpi-triad">
+          <KpiCard
+            icon={Cpu}
+            title="AI Power Demand"
+            value={kpiData?.aiPowerIndex ?? null}
+            unit="/100"
+            color="amber"
+            methodology="Composite score (0–100). Baseline 72 derived from data center share of US grid (~6%), AI capex run-rate, GPU/HBM backlog. Intraday momentum layer weighted to NVDA, TSM, EQIX, MU."
+            constituents={c ? (
+              <>
+                <ConstituentRow label="NVDA" value={c.nvdaChange} />
+                <ConstituentRow label="TSM" value={c.tsmChange} />
+                <ConstituentRow label="EQIX" value={c.eqixChange} />
+                <ConstituentRow label="MU" value={c.muChange} />
+              </>
+            ) : undefined}
+            isLoading={isLoading}
+          />
+          <KpiCard
+            icon={Zap}
+            title="Nuclear Renaissance"
+            value={kpiData?.nriValue ?? null}
+            unit=""
+            subtitle="Basket index, Jan 1, 2024 = 100"
+            color="amber"
+            methodology="Weighted basket of CEG (25%), VST (20%), CCJ (15%), NLR ETF (20%), uranium spot (10%), and SMR policy score (10%). Rebased to 100 on Jan 1, 2024."
+            constituents={c ? (
+              <>
+                <PerfRow label="CEG" perf={c.cegPerf} />
+                <PerfRow label="VST" perf={c.vstPerf} />
+                <PerfRow label="CCJ" perf={c.ccjPerf} />
+                <PerfRow label="NLR" perf={c.nlrPerf} />
+                <PerfRow label="U₃O₈" perf={c.uPerf} />
+              </>
+            ) : undefined}
+            isLoading={isLoading}
+          />
+          <KpiCard
+            icon={AlertTriangle}
+            title="Grid Stress"
+            value={kpiData?.gridStress ?? null}
+            unit="/100"
+            color="red"
+            methodology="Composite score (0–100). Baseline 68 derived from PJM/MISO/ERCOT reserve margin trajectories and DC interconnection queue backlog vs new capacity additions. Intraday momentum from merchant generators (VST, CEG) and DC REIT (EQIX)."
+            constituents={c ? (
+              <>
+                <ConstituentRow label="VST" value={c.vstChange} />
+                <ConstituentRow label="CEG" value={c.cegChange} />
+                <ConstituentRow label="EQIX" value={c.eqixChange} />
+              </>
+            ) : undefined}
+            isLoading={isLoading}
+          />
+        </div>
 
-        <WhatAmILookingAt />
-
-        {/* Thesis Health */}
+        {/* 2. Thesis Health summary */}
         {!isLoading && kpiData && (
           <ThesisHealthBar
             aiPower={kpiData.aiPowerIndex}
             gridStress={kpiData.gridStress}
             nri={kpiData.nriValue}
           />
+        )}
+
+        {kpiError && (
+          <Card className="p-4 border-red-500/20 bg-red-500/5">
+            <div className="flex items-center gap-2 text-xs text-red-400">
+              <AlertTriangle className="h-3.5 w-3.5" />
+              <span>Live index data unavailable. Showing last known values.</span>
+            </div>
+          </Card>
         )}
 
         {/* Dashboard density - 2-col */}
@@ -1068,7 +1030,9 @@ export default function TiltOverview() {
           <div className="lg:col-span-2 space-y-4">
             <CatalystCalendarSection />
             <NextCatalystsWidget />
-            <XFeedSection />
+            <div className="hidden md:block">
+              <XFeedSection />
+            </div>
           </div>
         </div>
 
@@ -1293,22 +1257,20 @@ export default function TiltOverview() {
           </p>
         </Card>
 
-        <Link href="/trade">
-          <Card className="p-4 border-card-border hover:border-[#F07800]/30 transition-colors cursor-pointer group" data-testid="link-thesis-calculator">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Calculator className="h-4 w-4 text-[#F0A500]" />
-                <div>
-                  <span className="text-sm font-medium text-foreground group-hover:text-[#F07800] transition-colors">Thesis Calculator</span>
-                  <p className="text-xs text-muted-foreground">Model scenarios and test your conviction</p>
-                </div>
-              </div>
-              <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-[#F07800] transition-colors" />
-            </div>
-          </Card>
-        </Link>
+        {/* Explore modules — discovery, moved to the bottom of the dashboard */}
+        <ModuleGrid />
 
         <EmailCapture variant="inline" />
+
+        <footer className="pt-4 border-t border-border/40 text-[11px] text-muted-foreground/60 leading-relaxed space-y-1">
+          <p>
+            Data: Yahoo Finance · EIA · DOE · NERC · LBNL · public RSS sources. Composite indices computed in-house; methodology in each card's info tooltip.
+          </p>
+          <p>
+            Research and commentary, not investment advice. Past performance does not predict future returns.
+            Built by Jack Schwartz · <a href="https://x.com/gridtilt" target="_blank" rel="noopener noreferrer" className="hover:text-foreground/80 transition-colors">@gridtilt</a>
+          </p>
+        </footer>
 
       </div>
       <ScrollTriggeredBanner />

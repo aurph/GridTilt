@@ -1,8 +1,8 @@
-import type { Express, Request } from "express";
+import type { Express, Request, Response } from "express";
 import { type Server } from "http";
 import { readFileSync, writeFileSync, existsSync } from "fs";
 import { join } from "path";
-import { createHash, createHmac } from "crypto";
+import { createHmac, timingSafeEqual } from "crypto";
 import RSSParser from "rss-parser";
 import {
   BASE_URL,
@@ -164,20 +164,21 @@ function scorePortfolioTicker(ticker: string) {
   };
 }
 
-// Generate realistic sparkline data
-function generateSparkline(basePrice: number, volatility: number = 0.02, points: number = 30): number[] {
-  const data: number[] = [basePrice];
-  for (let i = 1; i < points; i++) {
-    const change = data[i - 1] * (1 + (Math.random() - 0.5) * volatility * 2);
-    data.push(parseFloat(change.toFixed(2)));
+// Yahoo chart() options keyed to the requested timeframe.
+// Returns intraday for 1D, hourly for 5D, daily for 1M.
+function chartOptsForTimeframe(tf: string) {
+  const period2 = new Date();
+  if (tf === "1M") {
+    const period1 = new Date(period2.getTime() - 35 * 24 * 60 * 60 * 1000);
+    return { period1, period2, interval: "1d" as const };
   }
-  return data;
-}
-
-function sparklineParamsForTimeframe(tf: string): { points: number; volatility: number } {
-  if (tf === "5D") return { points: 30, volatility: 0.025 };
-  if (tf === "1M") return { points: 60, volatility: 0.035 };
-  return { points: 20, volatility: 0.015 }; // 1D default
+  if (tf === "5D") {
+    const period1 = new Date(period2.getTime() - 7 * 24 * 60 * 60 * 1000);
+    return { period1, period2, interval: "1h" as const };
+  }
+  // 1D default — last two days of 5m bars (covers the most recent session)
+  const period1 = new Date(period2.getTime() - 2 * 24 * 60 * 60 * 1000);
+  return { period1, period2, interval: "5m" as const };
 }
 
 // Static market data (fallback when Yahoo Finance is unavailable)
@@ -325,32 +326,6 @@ const SMR_POLICY_SCORE = 7.8;
 // This is now ABOVE the Jan 2024 base of $91/lb, reversing the prior drawdown.
 const URANIUM_SPOT_CURRENT = 92.0;
 
-function getStockData(tickers: string[]) {
-  return tickers.map((ticker) => {
-    const data = STATIC_MARKET_DATA[ticker] ?? {
-      name: `${ticker}`,
-      price: 50 + Math.random() * 200,
-      change: (Math.random() - 0.4) * 5,
-      changePercent: (Math.random() - 0.4) * 4,
-      pe: null,
-      revenueGrowth: null,
-    };
-    return {
-      ticker,
-      name: data.name,
-      price: data.price,
-      change: data.change,
-      changePercent: data.changePercent,
-      pe: data.pe,
-      revenueGrowth: data.revenueGrowth,
-      sparkline: generateSparkline(data.price),
-      powerMW: (data as any).powerMW,
-      vs_sp500: (data as any).vs_sp500,
-      marketCapDisplay: (data as any).marketCapDisplay,
-    };
-  });
-}
-
 // Generate scatter data with a target Pearson r using the standard linear noise model:
 //   y = r * x_std + sqrt(1 - r^2) * noise_std  (both in z-score space, then rescale)
 function gaussianRandom(): number {
@@ -435,6 +410,65 @@ const STACK_TICKERS = {
   etfsBenchmarks:     ["URA", "URNM", "NLR", "DTCR", "GRID", "XLU", "PAVE", "QQQ", "XLK", "SPY", "TSLA"],
 };
 const ALL_STACK_TICKERS = Object.values(STACK_TICKERS).flat();
+
+// Fetch live quote + real historical sparkline for every tracked ticker.
+// Falls through to STATIC_MARKET_DATA on per-ticker Yahoo failure, with
+// sparkline left empty (UI shows nothing rather than fabricated data).
+async function getCachedStockData(timeframe: string): Promise<Record<string, any>> {
+  const cacheKey = timeframe;
+  const now = Date.now();
+  const cached = stackCache[cacheKey];
+  if (cached && now - cached.timestamp < STACK_CACHE_TTL) {
+    return cached.data;
+  }
+
+  const stockData: Record<string, any> = {};
+  try {
+    const YahooFinanceClass = (await import("yahoo-finance2")).default;
+    const yahooFinance = new YahooFinanceClass({ suppressNotices: ["yahooSurvey"] });
+    const chartOpts = chartOptsForTimeframe(timeframe);
+
+    const [quotes, charts] = await Promise.all([
+      Promise.all(ALL_STACK_TICKERS.map((t) => yahooFinance.quote(t).catch(() => null))),
+      Promise.all(ALL_STACK_TICKERS.map((t) => yahooFinance.chart(t, chartOpts).catch(() => null))),
+    ]);
+
+    quotes.forEach((r, i) => {
+      if (r?.regularMarketPrice) {
+        const ticker = ALL_STACK_TICKERS[i];
+        const staticData = STATIC_MARKET_DATA[ticker];
+        const closes = (charts[i]?.quotes ?? [])
+          .map((q: any) => q.close)
+          .filter((c: any): c is number => typeof c === "number");
+        stockData[ticker] = {
+          ticker,
+          name: r.longName || r.shortName || staticData?.name || ticker,
+          price: r.regularMarketPrice,
+          change: r.regularMarketChange ?? 0,
+          changePercent: r.regularMarketChangePercent ?? 0,
+          pe: r.trailingPE ?? staticData?.pe ?? null,
+          revenueGrowth: staticData?.revenueGrowth ?? null,
+          sparkline: closes,
+          powerMW: staticData?.powerMW,
+          vs_sp500: staticData?.vs_sp500,
+          marketCapDisplay: staticData?.marketCapDisplay,
+        };
+      }
+    });
+  } catch {
+    // fall through to static-only
+  }
+
+  for (const ticker of ALL_STACK_TICKERS) {
+    if (!stockData[ticker]) {
+      const s = STATIC_MARKET_DATA[ticker];
+      if (s) stockData[ticker] = { ticker, ...s, sparkline: [] };
+    }
+  }
+
+  stackCache[cacheKey] = { data: stockData, timestamp: now };
+  return stockData;
+}
 
 // ─── News cache (1-hour TTL) ────────────────────────────────────────────────
 interface NewsItem { headline: string; source: string; url: string; publishedAt: string; }
@@ -621,7 +655,7 @@ export async function registerRoutes(
     //   EQIX reflects live data center capacity absorption; MU tracks HBM memory demand.
     // ─────────────────────────────────────────────────────────
     const aiMomentum = (nvdaChange * 0.40 + tsmChange * 0.25 + eqixChange * 0.20 + muChange * 0.15) * 1.2;
-    const aiPowerIndex = Math.max(52, Math.min(94, 72 + aiMomentum + (Math.random() - 0.5) * 0.3));
+    const aiPowerIndex = Math.max(52, Math.min(94, 72 + aiMomentum));
 
     // ─────────────────────────────────────────────────────────
     // 3. GRID STRESS SCORE (0-100)
@@ -639,7 +673,7 @@ export async function registerRoutes(
     //   EQIX (25%): rising DC REIT = forward load commitment accelerating
     // ─────────────────────────────────────────────────────────
     const stressMomentum = (vstChange * 0.40 + cegChange * 0.35 + eqixChange * 0.25) * 1.0;
-    const gridStress = Math.max(52, Math.min(92, 68 + stressMomentum + (Math.random() - 0.5) * 0.4));
+    const gridStress = Math.max(52, Math.min(92, 68 + stressMomentum));
 
     res.json({
       aiPowerIndex:  parseFloat(aiPowerIndex.toFixed(1)),
@@ -673,60 +707,7 @@ export async function registerRoutes(
   app.get("/api/stack", async (req, res) => {
     try {
       const timeframe = (req.query.timeframe as string) || "1D";
-      const spParams = sparklineParamsForTimeframe(timeframe);
-      const cacheKey = timeframe;
-      const now = Date.now();
-
-      // Serve from cache if fresh
-      let stockData: Record<string, any> = {};
-      if (stackCache[cacheKey] && (now - stackCache[cacheKey].timestamp) < STACK_CACHE_TTL) {
-        stockData = stackCache[cacheKey].data;
-      } else {
-        try {
-          const YahooFinanceClass = (await import("yahoo-finance2")).default;
-          const yahooFinance = new YahooFinanceClass({ suppressNotices: ["yahooSurvey"] });
-          const results = await Promise.all(
-            ALL_STACK_TICKERS.map((t) => yahooFinance.quote(t).catch(() => null))
-          );
-          results.forEach((r, i) => {
-            if (r?.regularMarketPrice) {
-              const ticker = ALL_STACK_TICKERS[i];
-              const staticData = STATIC_MARKET_DATA[ticker];
-              stockData[ticker] = {
-                ticker,
-                name: r.longName || r.shortName || staticData?.name || ticker,
-                price: r.regularMarketPrice,
-                change: r.regularMarketChange ?? 0,
-                changePercent: r.regularMarketChangePercent ?? 0,
-                pe: r.trailingPE ?? staticData?.pe ?? null,
-                revenueGrowth: staticData?.revenueGrowth ?? null,
-                sparkline: generateSparkline(r.regularMarketPrice, spParams.volatility, spParams.points),
-                powerMW: staticData?.powerMW,
-                vs_sp500: staticData?.vs_sp500,
-                marketCapDisplay: staticData?.marketCapDisplay,
-              };
-            }
-          });
-        } catch (e) {
-          // Fall through to static data
-        }
-
-        // Fill in missing tickers with static fallback
-        ALL_STACK_TICKERS.forEach((ticker) => {
-          if (!stockData[ticker]) {
-            const s = STATIC_MARKET_DATA[ticker];
-            if (s) {
-              stockData[ticker] = {
-                ticker,
-                ...s,
-                sparkline: generateSparkline(s.price, spParams.volatility, spParams.points),
-              };
-            }
-          }
-        });
-
-        stackCache[cacheKey] = { data: stockData, timestamp: now };
-      }
+      const stockData = await getCachedStockData(timeframe);
 
       const ccjCorrelationData = generateCCJCorrelationData();
       const cegCorrelationData = generateCEGCorrelationData();
@@ -766,48 +747,7 @@ export async function registerRoutes(
   // Top Movers endpoint - top 5 by absolute % change across all stack tickers
   app.get("/api/top-movers", async (_req, res) => {
     try {
-      const cacheKey = "1D";
-      const now = Date.now();
-      let stockData: Record<string, any> = {};
-
-      if (stackCache[cacheKey] && (now - stackCache[cacheKey].timestamp) < STACK_CACHE_TTL) {
-        stockData = stackCache[cacheKey].data;
-      } else {
-        const spParams = sparklineParamsForTimeframe("1D");
-        try {
-          const YahooFinanceClass = (await import("yahoo-finance2")).default;
-          const yahooFinance = new YahooFinanceClass({ suppressNotices: ["yahooSurvey"] });
-          const results = await Promise.all(
-            ALL_STACK_TICKERS.map((t) => yahooFinance.quote(t).catch(() => null))
-          );
-          results.forEach((r, i) => {
-            if (r?.regularMarketPrice) {
-              const ticker = ALL_STACK_TICKERS[i];
-              const staticData = STATIC_MARKET_DATA[ticker];
-              stockData[ticker] = {
-                ticker,
-                name: r.longName || r.shortName || staticData?.name || ticker,
-                price: r.regularMarketPrice,
-                change: r.regularMarketChange ?? 0,
-                changePercent: r.regularMarketChangePercent ?? 0,
-                pe: r.trailingPE ?? staticData?.pe ?? null,
-                revenueGrowth: staticData?.revenueGrowth ?? null,
-                sparkline: generateSparkline(r.regularMarketPrice, spParams.volatility, spParams.points),
-                powerMW: staticData?.powerMW,
-                vs_sp500: staticData?.vs_sp500,
-                marketCapDisplay: staticData?.marketCapDisplay,
-              };
-            }
-          });
-        } catch (_e) {}
-        ALL_STACK_TICKERS.forEach((ticker) => {
-          if (!stockData[ticker]) {
-            const s = STATIC_MARKET_DATA[ticker];
-            if (s) stockData[ticker] = { ticker, ...s, sparkline: generateSparkline(s.price, spParams.volatility, spParams.points) };
-          }
-        });
-        stackCache[cacheKey] = { data: stockData, timestamp: now };
-      }
+      const stockData = await getCachedStockData("1D");
 
       // Determine sector for each ticker
       const sectorMap: Record<string, string> = {};
@@ -832,48 +772,7 @@ export async function registerRoutes(
   // Sector Pulse endpoint - avg % change per layer
   app.get("/api/sector-pulse", async (_req, res) => {
     try {
-      const cacheKey = "1D";
-      const now = Date.now();
-      let stockData: Record<string, any> = {};
-
-      if (stackCache[cacheKey] && (now - stackCache[cacheKey].timestamp) < STACK_CACHE_TTL) {
-        stockData = stackCache[cacheKey].data;
-      } else {
-        const spParams = sparklineParamsForTimeframe("1D");
-        try {
-          const YahooFinanceClass = (await import("yahoo-finance2")).default;
-          const yahooFinance = new YahooFinanceClass({ suppressNotices: ["yahooSurvey"] });
-          const results = await Promise.all(
-            ALL_STACK_TICKERS.map((t) => yahooFinance.quote(t).catch(() => null))
-          );
-          results.forEach((r, i) => {
-            if (r?.regularMarketPrice) {
-              const ticker = ALL_STACK_TICKERS[i];
-              const staticData = STATIC_MARKET_DATA[ticker];
-              stockData[ticker] = {
-                ticker,
-                name: r.longName || r.shortName || staticData?.name || ticker,
-                price: r.regularMarketPrice,
-                change: r.regularMarketChange ?? 0,
-                changePercent: r.regularMarketChangePercent ?? 0,
-                pe: r.trailingPE ?? staticData?.pe ?? null,
-                revenueGrowth: staticData?.revenueGrowth ?? null,
-                sparkline: generateSparkline(r.regularMarketPrice, spParams.volatility, spParams.points),
-                powerMW: staticData?.powerMW,
-                vs_sp500: staticData?.vs_sp500,
-                marketCapDisplay: staticData?.marketCapDisplay,
-              };
-            }
-          });
-        } catch (_e) {}
-        ALL_STACK_TICKERS.forEach((ticker) => {
-          if (!stockData[ticker]) {
-            const s = STATIC_MARKET_DATA[ticker];
-            if (s) stockData[ticker] = { ticker, ...s, sparkline: generateSparkline(s.price, spParams.volatility, spParams.points) };
-          }
-        });
-        stackCache[cacheKey] = { data: stockData, timestamp: now };
-      }
+      const stockData = await getCachedStockData("1D");
 
       const SECTOR_LABELS: Record<string, string> = {
         compute: "Compute", nuclear: "Nuclear", uranium: "Uranium",
@@ -1064,9 +963,33 @@ export async function registerRoutes(
     writeFileSync(SUBSCRIBERS_FILE, JSON.stringify(subs, null, 2));
   }
 
-  const UNSUB_SECRET = process.env.SESSION_SECRET || "gridtilt-unsub-fallback";
+  const UNSUB_TOKEN_SECRET = process.env.UNSUB_TOKEN_SECRET;
+  if (!UNSUB_TOKEN_SECRET) {
+    throw new Error(
+      "UNSUB_TOKEN_SECRET env var is required. Generate one with: openssl rand -hex 32",
+    );
+  }
   function makeUnsubToken(email: string): string {
-    return createHmac("sha256", UNSUB_SECRET).update(email).digest("hex");
+    return createHmac("sha256", UNSUB_TOKEN_SECRET).update(email).digest("hex");
+  }
+  function safeEqualStr(a: string, b: string): boolean {
+    const aBuf = Buffer.from(a);
+    const bBuf = Buffer.from(b);
+    if (aBuf.length !== bBuf.length) return false;
+    return timingSafeEqual(aBuf, bBuf);
+  }
+  function requireAdmin(req: Request, res: Response): boolean {
+    const expected = process.env.ADMIN_API_KEY;
+    if (!expected) {
+      res.status(503).json({ error: "Admin API not configured" });
+      return false;
+    }
+    const provided = req.headers["x-admin-key"];
+    if (typeof provided !== "string" || !safeEqualStr(provided, expected)) {
+      res.status(401).json({ error: "Unauthorized" });
+      return false;
+    }
+    return true;
   }
 
   const subscribeRateLimit = new Map<string, { count: number; resetAt: number }>();
@@ -1142,9 +1065,7 @@ export async function registerRoutes(
     }
 
     const subscribers = loadSubscribers();
-    const remaining = subscribers.filter((s) => {
-      return makeUnsubToken(s.email) !== token;
-    });
+    const remaining = subscribers.filter((s) => !safeEqualStr(makeUnsubToken(s.email), token));
 
     if (remaining.length < subscribers.length) {
       saveSubscribers(remaining);
@@ -1222,10 +1143,7 @@ Sent to ${subscriberCount} subscribers. You're receiving this because you subscr
   });
 
   app.post("/api/newsletter/send", async (req, res) => {
-    const authKey = req.headers["x-admin-key"];
-    if (authKey !== process.env.SESSION_SECRET) {
-      return res.status(401).json({ error: "Unauthorized" });
-    }
+    if (!requireAdmin(req, res)) return;
 
     if (!process.env.RESEND_API_KEY) {
       return res.status(400).json({ error: "RESEND_API_KEY not configured" });
@@ -1282,19 +1200,13 @@ Sent to ${subscriberCount} subscribers. You're receiving this because you subscr
   });
 
   app.get("/api/admin/subscribers", (req, res) => {
-    const authKey = req.headers["x-admin-key"];
-    if (authKey !== process.env.SESSION_SECRET) {
-      return res.status(401).json({ error: "Unauthorized" });
-    }
+    if (!requireAdmin(req, res)) return;
     const subscribers = loadSubscribers();
     res.json({ count: subscribers.length, subscribers });
   });
 
   app.delete("/api/admin/subscribers/:email", (req, res) => {
-    const authKey = req.headers["x-admin-key"];
-    if (authKey !== process.env.SESSION_SECRET) {
-      return res.status(401).json({ error: "Unauthorized" });
-    }
+    if (!requireAdmin(req, res)) return;
     const emailToRemove = decodeURIComponent(req.params.email).toLowerCase();
     const subscribers = loadSubscribers();
     const remaining = subscribers.filter((s) => s.email !== emailToRemove);

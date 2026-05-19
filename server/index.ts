@@ -6,6 +6,10 @@ import { createServer } from "http";
 const app = express();
 const httpServer = createServer(app);
 
+// Replit terminates TLS at a single reverse proxy in front of our process.
+// Trust one hop so req.ip reflects the real client IP for rate limiting.
+app.set("trust proxy", 1);
+
 declare module "http" {
   interface IncomingMessage {
     rawBody: unknown;
