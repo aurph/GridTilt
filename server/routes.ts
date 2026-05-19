@@ -1431,6 +1431,107 @@ Sent to ${subscriberCount} subscribers. You're receiving this because you subscr
     res.json({ items: merged });
   });
 
+  // ─── Datacenters: JSON-backed registry of hyperscale sites ──────────────
+  const datacentersPath = join(process.cwd(), "server", "data", "datacenters.json");
+
+  type Datacenter = {
+    id: number;
+    name: string;
+    company: string;
+    city: string;
+    state: string;
+    lat: number;
+    lng: number;
+    powerMW: number;
+    status: "operational" | "construction" | "announced";
+    annualMWh: number;
+    gridOperator: string;
+    openDate: string;
+  };
+
+  function loadDatacenters(): Datacenter[] {
+    try {
+      if (!existsSync(datacentersPath)) return [];
+      return JSON.parse(readFileSync(datacentersPath, "utf-8")) as Datacenter[];
+    } catch (err) {
+      console.error("Datacenters read error:", err);
+      return [];
+    }
+  }
+
+  function saveDatacenters(list: Datacenter[]): void {
+    writeFileSync(datacentersPath, JSON.stringify(list, null, 2) + "\n", "utf-8");
+  }
+
+  function validateDatacenter(body: any): { ok: true; value: Omit<Datacenter, "id"> } | { ok: false; error: string } {
+    const required = ["name", "company", "city", "state", "lat", "lng", "powerMW", "status", "annualMWh", "gridOperator", "openDate"];
+    for (const k of required) {
+      if (body[k] === undefined || body[k] === null) return { ok: false, error: `Missing field: ${k}` };
+    }
+    const validStatus = ["operational", "construction", "announced"];
+    if (!validStatus.includes(body.status)) return { ok: false, error: "Invalid status" };
+    const num = (n: any) => typeof n === "number" && Number.isFinite(n);
+    if (!num(body.lat) || !num(body.lng) || !num(body.powerMW) || !num(body.annualMWh)) {
+      return { ok: false, error: "lat, lng, powerMW, annualMWh must be numbers" };
+    }
+    if (body.powerMW < 400) {
+      return { ok: false, error: "powerMW must be >= 400 (hyperscale threshold)" };
+    }
+    return {
+      ok: true,
+      value: {
+        name: String(body.name),
+        company: String(body.company),
+        city: String(body.city),
+        state: String(body.state),
+        lat: body.lat,
+        lng: body.lng,
+        powerMW: body.powerMW,
+        status: body.status,
+        annualMWh: body.annualMWh,
+        gridOperator: String(body.gridOperator),
+        openDate: String(body.openDate),
+      },
+    };
+  }
+
+  app.get("/api/datacenters", (_req, res) => {
+    res.json(loadDatacenters());
+  });
+
+  app.post("/api/admin/datacenters", (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    const parsed = validateDatacenter(req.body);
+    if (!parsed.ok) return res.status(400).json({ error: parsed.error });
+    const list = loadDatacenters();
+
+    const dup = list.find(
+      (d) =>
+        d.name.toLowerCase() === parsed.value.name.toLowerCase() ||
+        (Math.abs(d.lat - parsed.value.lat) < 0.01 &&
+          Math.abs(d.lng - parsed.value.lng) < 0.01 &&
+          d.company.toLowerCase() === parsed.value.company.toLowerCase()),
+    );
+    if (dup) return res.status(409).json({ error: "Datacenter already exists", id: dup.id });
+
+    const nextId = list.reduce((m, d) => Math.max(m, d.id), 0) + 1;
+    const created: Datacenter = { id: nextId, ...parsed.value };
+    list.push(created);
+    saveDatacenters(list);
+    res.status(201).json(created);
+  });
+
+  app.delete("/api/admin/datacenters/:id", (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    const id = parseInt(req.params.id, 10);
+    if (!Number.isFinite(id)) return res.status(400).json({ error: "Invalid id" });
+    const list = loadDatacenters();
+    const next = list.filter((d) => d.id !== id);
+    if (next.length === list.length) return res.status(404).json({ error: "Not found" });
+    saveDatacenters(next);
+    res.json({ removed: id });
+  });
+
   app.get("/api/catalysts", (_req, res) => {
     try {
       const filePath = join(process.cwd(), "server", "data", "catalysts.json");
