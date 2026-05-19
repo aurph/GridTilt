@@ -20,6 +20,7 @@ import BlogIndex from "@/pages/BlogIndex";
 import BlogPost from "@/pages/BlogPost";
 import SupplyChain from "@/pages/SupplyChain";
 import Subscribe from "@/pages/Subscribe";
+import Queue from "@/pages/Queue";
 import AdminDatacenters from "@/pages/AdminDatacenters";
 import AdminSocial from "@/pages/AdminSocial";
 import { NewsTicker } from "@/components/NewsTicker";
@@ -35,6 +36,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/trade": "Scenario Calculator",
   "/portfolio": "Portfolio Overlay",
   "/catalysts": "Catalyst Tracker",
+  "/queue": "Interconnection Queue",
   "/blog": "Analysis",
   "/subscribe": "Subscribe",
 };
@@ -48,6 +50,7 @@ const SHORTCUTS = [
   { keys: ["G", "6"], description: "Go to Scenario Calculator", path: "/trade" },
   { keys: ["G", "7"], description: "Go to Catalyst Tracker", path: "/catalysts" },
   { keys: ["G", "8"], description: "Go to Analysis", path: "/blog" },
+  { keys: ["G", "9"], description: "Go to Interconnection Queue", path: "/queue" },
   { keys: ["?"], description: "Show this keyboard shortcuts panel", path: null },
 ];
 
@@ -136,6 +139,7 @@ function Router() {
       <Route path="/trade" component={TheTrade} />
       <Route path="/portfolio" component={PortfolioOverlay} />
       <Route path="/catalysts" component={CatalystTracker} />
+      <Route path="/queue" component={Queue} />
       <Route path="/stock/:ticker" component={StockPage} />
       <Route path="/sector/:slug" component={SectorPage} />
       <Route path="/region/:slug" component={RegionPage} />
@@ -179,7 +183,7 @@ function App() {
         const routes: Record<string, string> = {
           "1": "/", "2": "/stack", "3": "/power-map",
           "4": "/supply-chain", "5": "/portfolio", "6": "/trade",
-          "7": "/catalysts", "8": "/blog",
+          "7": "/catalysts", "8": "/blog", "9": "/queue",
         };
         if (routes[e.key]) {
           navigate(routes[e.key]);

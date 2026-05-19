@@ -400,6 +400,31 @@ html {
   letter-spacing: 0.5px;
 }
 
+.sc-view-toggle {
+  display: inline-flex;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.sc-view-btn {
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 10px;
+  letter-spacing: 1px;
+  padding: 3px 10px;
+  background: transparent;
+  color: #777;
+  border: none;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+.sc-view-btn:hover {
+  color: #fff;
+}
+.sc-view-btn-active {
+  background: rgba(240, 120, 0, 0.15);
+  color: #F07800;
+}
+
 .sc-node-hidden {
   opacity: 0;
 }

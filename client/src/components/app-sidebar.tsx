@@ -18,6 +18,7 @@ import {
   CalendarDays,
   FileText,
   Calculator,
+  Cable,
 } from "lucide-react";
 import logoPath from "@assets/Image_[Vectorized]_(2)_1773890483514.png";
 
@@ -63,6 +64,12 @@ const navItems = [
     url: "/catalysts",
     icon: CalendarDays,
     description: "Upcoming market events",
+  },
+  {
+    title: "Queue",
+    url: "/queue",
+    icon: Cable,
+    description: "Interconnection backlog",
   },
   {
     title: "Analysis",
