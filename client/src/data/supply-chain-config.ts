@@ -57,6 +57,10 @@ export const supplyNodes: SupplyNode[] = [
   { id: 'dc-reits',     name: 'Datacenter REITs',  stage: 'end-use', stageIndex: 4, icon: 'Warehouse',     companies: [{ ticker: 'EQIX', name: 'Equinix' },{ ticker: 'DLR', name: 'Digital Realty' },{ ticker: 'AMT', name: 'American Tower' }], description: 'Data center landlords. Equinix: 273 DCs worldwide. Digital Realty: largest portfolio.', keyMetric: { value: '273', label: 'EQIX DCs' } },
   { id: 'compute',      name: 'Compute',           stage: 'end-use', stageIndex: 4, icon: 'Cpu',           companies: [{ ticker: 'NVDA', name: 'NVIDIA' },{ ticker: 'AMD', name: 'AMD' },{ ticker: 'AVGO', name: 'Broadcom' },{ ticker: 'TSM', name: 'TSMC' },{ ticker: 'MU', name: 'Micron' },{ ticker: 'INTC', name: 'Intel' },{ ticker: 'SMCI', name: 'Super Micro' }], description: 'The chips consuming the power. NVDA owns 80%+ of AI training. TSMC fabs it all.', keyMetric: { value: '80%+', label: 'NVDA share' } },
   { id: 'miners',       name: 'AI Hosting',        stage: 'end-use', stageIndex: 4, icon: 'Server',        companies: [{ ticker: 'IREN', name: 'IREN Limited' },{ ticker: 'CLSK', name: 'CleanSpark' },{ ticker: 'MARA', name: 'Marathon Digital' }], description: 'Former crypto miners pivoting to AI/HPC hosting. Already have power contracts, cooling, and cheap land.' },
+
+  { id: 'hbm-memory',   name: 'HBM Memory',        stage: 'end-use', stageIndex: 4, icon: 'MemoryStick',   companies: [{ ticker: 'MU', name: 'Micron Technology' }], description: 'High-bandwidth memory sits on every AI accelerator. SK Hynix, Samsung, and Micron split supply. HBM3E capacity caps GPU shipments more than wafer supply does.', keyMetric: { value: 'Sold out', label: 'HBM3E 2026' } },
+  { id: 'optics',       name: 'Optics & Networking', stage: 'end-use', stageIndex: 4, icon: 'Network',       companies: [{ ticker: 'ANET', name: 'Arista Networks' },{ ticker: 'MRVL', name: 'Marvell Technology' },{ ticker: 'AVGO', name: 'Broadcom' }], description: 'Transceivers, switches, and DSPs wiring GPUs into clusters. The next gigawatt-scale bottleneck behind power and HBM.', keyMetric: { value: '800G+', label: 'Next-gen optics' } },
+  { id: 'workforce',    name: 'Workforce',         stage: 'transmission', stageIndex: 2, icon: 'Users',         companies: [], description: 'Electricians, line workers, and skilled trades. LBNL flags labor as the quiet constraint on transmission buildout. No public ticker maps cleanly to the labor pool.', keyMetric: { value: '5+ yr', label: 'Lead time to upskill' } },
 ];
 
 export const supplyLinks: SupplyLink[] = [
@@ -121,4 +125,16 @@ export const supplyLinks: SupplyLink[] = [
   // Within End Use
   { source: 'dc-reits',    target: 'compute',       label: 'colocation' },
   { source: 'hyperscalers',target: 'compute',       label: 'procurement' },
+
+  // HBM + Optics (subsystems of Compute reaching Hyperscalers)
+  { source: 'compute',     target: 'hbm-memory',    label: 'on-package' },
+  { source: 'hbm-memory',  target: 'hyperscalers',  label: 'integrated' },
+  { source: 'compute',     target: 'optics',        label: 'interconnect' },
+  { source: 'optics',      target: 'hyperscalers',  label: 'cluster fabric' },
+  { source: 'optics',      target: 'dc-reits',      label: 'cross-connect' },
+
+  // Workforce feeds physical build stages
+  { source: 'workforce',   target: 'line-const',    label: 'labor' },
+  { source: 'workforce',   target: 'dc-build',      label: 'labor' },
+  { source: 'workforce',   target: 'substations',   label: 'labor' },
 ];

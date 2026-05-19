@@ -7,6 +7,7 @@ import {
   Atom, Wrench, Hammer, Gem, Flame, Radiation, Gauge, Sun, FlaskConical,
   Plug, HardHat, Snowflake, ToggleRight, Building, Battery,
   Cloud, Warehouse, Cpu, Pickaxe, Workflow, GitBranch, Clock,
+  MemoryStick, Network, Users,
 } from "lucide-react";
 import {
   Tooltip as UITooltip,
@@ -27,6 +28,7 @@ const ICON_MAP: Record<string, any> = {
   Atom, Wrench, Hammer, Gem, Flame, Radiation, Gauge, Sun, FlaskConical,
   Plug, HardHat, Snowflake, ToggleRight, Building, Battery,
   Cloud, Warehouse, Cpu, Pickaxe, Workflow,
+  MemoryStick, Network, Users,
 };
 
 interface StockData {
@@ -38,11 +40,37 @@ interface StockData {
   stale?: boolean;
 }
 
+type BottleneckStatus = 'Flowing' | 'Tightening' | 'Bottlenecked';
+
 interface StageApiData {
   key: string;
   avgChange: number;
   stocks: StockData[];
+  bottleneckStatus?: BottleneckStatus;
+  bottleneckDetail?: string;
+  keyMetric?: string;
 }
+
+interface StageMeta {
+  status: BottleneckStatus;
+  detail: string;
+  keyMetric: string;
+}
+
+// Map server stage key (camelCase) to client stage id (kebab-case)
+const STAGE_KEY_MAP: Record<string, string> = {
+  rawMaterials: 'raw-materials',
+  generation: 'generation',
+  transmission: 'transmission',
+  distribution: 'distribution',
+  endUse: 'end-use',
+};
+
+const STATUS_COLOR: Record<BottleneckStatus, string> = {
+  Flowing: '#22C55E',
+  Tightening: '#F0A500',
+  Bottlenecked: '#EF4444',
+};
 
 interface SimNode extends d3.SimulationNodeDatum {
   id: string;
@@ -77,10 +105,12 @@ function NetworkGraph({
   activeNode,
   onSelectNode,
   entrancePhase,
+  stageMeta,
 }: {
   activeNode: string | null;
   onSelectNode: (id: string | null) => void;
   entrancePhase: number;
+  stageMeta: Record<string, StageMeta>;
 }) {
   const svgRef = useRef<SVGSVGElement>(null);
   const gRef = useRef<SVGGElement>(null);
@@ -181,17 +211,47 @@ function NetworkGraph({
       <g ref={gRef}>
         {STAGE_LABELS.map((s) => {
           const stageX = [0.1, 0.3, 0.5, 0.7, 0.9];
+          const x = stageX[s.index] * GRAPH_W;
+          const meta = stageMeta[s.id];
+          const pillColor = meta ? STATUS_COLOR[meta.status] : null;
+          const tip = meta
+            ? `${meta.status.toUpperCase()}: ${meta.detail}${meta.keyMetric ? ` (${meta.keyMetric})` : ''}`
+            : undefined;
           return (
-            <text
-              key={s.id}
-              x={stageX[s.index] * GRAPH_W}
-              y={24}
-              textAnchor="middle"
-              className="sc-stage-label"
-              data-testid={`stage-label-${s.id}`}
-            >
-              {s.name}
-            </text>
+            <g key={s.id} data-testid={`stage-label-${s.id}`}>
+              <text
+                x={x}
+                y={24}
+                textAnchor="middle"
+                className="sc-stage-label"
+              >
+                {s.name}
+              </text>
+              {meta && (
+                <g transform={`translate(${x}, 40)`}>
+                  {tip && <title>{tip}</title>}
+                  <rect
+                    x={-46}
+                    y={-9}
+                    width={92}
+                    height={18}
+                    rx={9}
+                    fill={`${pillColor}1A`}
+                    stroke={`${pillColor}66`}
+                    strokeWidth={1}
+                  />
+                  <circle cx={-32} cy={0} r={3.5} fill={pillColor!} />
+                  <text
+                    x={-22}
+                    y={4}
+                    className="sc-stage-pill-text"
+                    fill={pillColor!}
+                  >
+                    {meta.status}
+                  </text>
+                </g>
+              )}
+            </g>
           );
         })}
 
@@ -526,6 +586,21 @@ export default function SupplyChain() {
     return m;
   }, [apiData]);
 
+  const stageMeta = useMemo(() => {
+    const m: Record<string, StageMeta> = {};
+    apiData?.stages?.forEach((stage) => {
+      const clientId = STAGE_KEY_MAP[stage.key];
+      if (clientId && stage.bottleneckStatus) {
+        m[clientId] = {
+          status: stage.bottleneckStatus,
+          detail: stage.bottleneckDetail ?? '',
+          keyMetric: stage.keyMetric ?? '',
+        };
+      }
+    });
+    return m;
+  }, [apiData]);
+
   const totalCompanies = useMemo(() => {
     const all = new Set<string>();
     supplyNodes.forEach((n) => n.companies.forEach((c) => all.add(c.ticker)));
@@ -565,10 +640,18 @@ export default function SupplyChain() {
           activeNode={activeNode}
           onSelectNode={setActiveNode}
           entrancePhase={entrancePhase}
+          stageMeta={stageMeta}
         />
-        <div className="sc-graph-hint">
-          <span className="text-[10px]" style={{ color: '#444' }}>Scroll to zoom. Drag to pan. Double-click to reset. Click a node to explore.</span>
-        </div>
+      </div>
+
+      <div className="sc-legend" data-testid="sc-legend" onClick={(e) => e.stopPropagation()}>
+        {STAGE_LABELS.map((s) => (
+          <span key={s.id}>
+            <span className="sc-legend-swatch" style={{ background: STAGE_COLORS[s.id] }} />
+            {s.name}
+          </span>
+        ))}
+        <span className="sc-legend-hint">click a node to explore. scroll to zoom. double-click to reset.</span>
       </div>
 
       {activeNodeData && (

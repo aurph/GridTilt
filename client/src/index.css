@@ -365,6 +365,41 @@ html {
   fill: #888;
 }
 
+.sc-stage-pill-text {
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+
+.sc-legend {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding: 8px 12px;
+  margin-top: 12px;
+  background: #0E0E0C;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 10px;
+  color: #777;
+}
+.sc-legend-swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  margin-right: 6px;
+  vertical-align: -1px;
+}
+.sc-legend-hint {
+  margin-left: auto;
+  color: #555;
+  letter-spacing: 0.5px;
+}
+
 .sc-node-hidden {
   opacity: 0;
 }
