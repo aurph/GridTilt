@@ -929,10 +929,10 @@ export default function TiltOverview() {
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="max-w-2xl">
             <h1 className="text-2xl sm:text-3xl font-semibold text-foreground tracking-tight mb-1.5">
-              Grid information, tilted.
+              Grid information, <span className="italic text-[#F07800]">tilted</span> in your favor
             </h1>
             <p className="text-muted-foreground text-xs sm:text-sm leading-relaxed">
-              Live equities, infrastructure, and power data across 60+ tickers.
+              Live equities, infrastructure, and power data across 60+ tickers tracking the AI power economy.
             </p>
           </div>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
