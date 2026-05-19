@@ -6,8 +6,13 @@ import {
   Zap, Mountain, Cable, Server, X,
   Atom, Wrench, Hammer, Gem, Flame, Radiation, Gauge, Sun, FlaskConical,
   Plug, HardHat, Snowflake, ToggleRight, Building, Battery,
-  Cloud, Warehouse, Cpu, Pickaxe, Workflow, GitBranch,
+  Cloud, Warehouse, Cpu, Pickaxe, Workflow, GitBranch, Clock,
 } from "lucide-react";
+import {
+  Tooltip as UITooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   supplyNodes,
   supplyLinks,
@@ -30,6 +35,7 @@ interface StockData {
   price: number;
   change: number;
   changePercent: number;
+  stale?: boolean;
 }
 
 interface StageApiData {
@@ -475,8 +481,24 @@ function DetailPanel({
               <span className="sc-stock-col-ticker sc-mono font-bold text-white">{c.ticker}</span>
               <span className="sc-stock-col-name text-[#777] truncate">{c.name}</span>
               <span className="sc-stock-col-price sc-mono text-[#aaa]">{price ? `$${price.toFixed(2)}` : "--"}</span>
-              <span className={`sc-stock-col-chg sc-mono font-medium ${chgColor}`}>
+              <span className={`sc-stock-col-chg sc-mono font-medium ${chgColor} inline-flex items-center justify-end gap-1`}>
                 {hasLiveChg ? `${chg! >= 0 ? "+" : ""}${chg!.toFixed(2)}%` : "--"}
+                {stock?.stale && (
+                  <UITooltip>
+                    <TooltipTrigger asChild>
+                      <span
+                        className="inline-flex items-center"
+                        onClick={(e) => e.stopPropagation()}
+                        data-testid={`stale-indicator-${c.ticker}`}
+                      >
+                        <Clock className="h-3 w-3 text-[#F0A500]/70" />
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent side="left" className="text-xs max-w-[220px]">
+                      Live quote temporarily unavailable, retrying
+                    </TooltipContent>
+                  </UITooltip>
+                )}
               </span>
             </div>
           );

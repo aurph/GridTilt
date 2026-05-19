@@ -20,7 +20,7 @@ import {
   Tooltip,
   Legend,
 } from "recharts";
-import { Cpu, Server, Zap, TrendingUp, TrendingDown, Info } from "lucide-react";
+import { Cpu, Server, Zap, TrendingUp, TrendingDown, Info, Clock } from "lucide-react";
 
 interface StockData {
   ticker: string;
@@ -34,6 +34,7 @@ interface StockData {
   marketCapDisplay?: string;
   powerMW?: number;
   vs_sp500?: number;
+  stale?: boolean;
 }
 
 interface CorrelationPoint {
@@ -72,10 +73,30 @@ function Sparkline({ data, color }: { data: number[] | undefined; color: string 
   );
 }
 
+function StaleBadge({ ticker }: { ticker: string }) {
+  return (
+    <UITooltip>
+      <TooltipTrigger asChild>
+        <span
+          className="inline-flex items-center gap-1 rounded-sm border border-[#F0A500]/30 bg-[#F0A500]/10 px-1.5 py-0 text-[10px] font-mono text-[#F0A500]/90 leading-4"
+          data-testid={`stale-indicator-${ticker}`}
+        >
+          <Clock className="h-2.5 w-2.5" />
+          delayed
+        </span>
+      </TooltipTrigger>
+      <TooltipContent side="top" className="text-xs max-w-[220px]">
+        Live quote temporarily unavailable, retrying
+      </TooltipContent>
+    </UITooltip>
+  );
+}
+
 function StockCard({ stock, showPower, showVsSP500 }: { stock: StockData; showPower?: boolean; showVsSP500?: boolean }) {
-  if (!stock || stock.price == null || stock.changePercent == null) return null;
-  const isUp = stock.changePercent >= 0;
-  const isDown = stock.changePercent < -2;
+  if (!stock || stock.price == null) return null;
+  const isStale = stock.stale || stock.changePercent == null;
+  const isUp = !isStale && stock.changePercent >= 0;
+  const isDown = !isStale && stock.changePercent < -2;
   return (
     <Card
       className={`p-4 border-card-border transition-all duration-200 cursor-pointer hover:-translate-y-0.5 hover:shadow-lg ${isDown ? "border-red-500/20 bg-red-950/5" : ""}`}
@@ -86,9 +107,13 @@ function StockCard({ stock, showPower, showVsSP500 }: { stock: StockData; showPo
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-bold text-sm text-foreground font-mono">{stock.ticker}</span>
-            <Badge className={`text-xs px-1.5 py-0 font-mono ${isUp ? "bg-green-500/15 text-green-400" : "bg-red-500/15 text-red-400"}`}>
-              {isUp ? "+" : ""}{stock.changePercent.toFixed(2)}%
-            </Badge>
+            {isStale ? (
+              <StaleBadge ticker={stock.ticker} />
+            ) : (
+              <Badge className={`text-xs px-1.5 py-0 font-mono ${isUp ? "bg-green-500/15 text-green-400" : "bg-red-500/15 text-red-400"}`}>
+                {isUp ? "+" : ""}{stock.changePercent.toFixed(2)}%
+              </Badge>
+            )}
           </div>
           <p className="text-xs text-muted-foreground mt-0.5 truncate max-w-[150px]">{stock.name}</p>
           {stock.marketCapDisplay && (
@@ -97,8 +122,8 @@ function StockCard({ stock, showPower, showVsSP500 }: { stock: StockData; showPo
         </div>
         <div className="text-right flex-shrink-0">
           <p className="font-semibold text-sm text-foreground font-mono">${stock.price.toFixed(2)}</p>
-          <p className={`text-xs font-mono ${isUp ? "text-green-400" : "text-red-400"}`}>
-            {isUp ? "+" : ""}{stock.change.toFixed(2)}
+          <p className={`text-xs font-mono ${isStale ? "text-muted-foreground" : isUp ? "text-green-400" : "text-red-400"}`}>
+            {isStale ? "--" : `${isUp ? "+" : ""}${stock.change.toFixed(2)}`}
           </p>
         </div>
       </div>
@@ -205,7 +230,11 @@ type SortBy = "change" | "marketcap" | "alpha";
 function sortStocks(stocks: StockData[], sortBy: SortBy): StockData[] {
   if (!stocks) return [];
   const arr = [...stocks];
-  if (sortBy === "change") return arr.sort((a, b) => b.changePercent - a.changePercent);
+  if (sortBy === "change") return arr.sort((a, b) => {
+    const av = typeof a.changePercent === "number" ? a.changePercent : -Infinity;
+    const bv = typeof b.changePercent === "number" ? b.changePercent : -Infinity;
+    return bv - av;
+  });
   if (sortBy === "alpha") return arr.sort((a, b) => a.ticker.localeCompare(b.ticker));
   if (sortBy === "marketcap") return arr.sort((a, b) => {
     const parseM = (s?: string) => {

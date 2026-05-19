@@ -853,6 +853,7 @@ export async function registerRoutes(
             change: s.change,
             changePercent: s.changePercent,
             marketCapDisplay: s.marketCapDisplay,
+            stale: s.stale ?? false,
           })),
         };
       });
