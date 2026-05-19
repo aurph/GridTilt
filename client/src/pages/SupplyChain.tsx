@@ -457,8 +457,14 @@ function DetailPanel({
         </div>
         {node.companies.map((c) => {
           const stock = stockMap[c.ticker];
-          const chg = stock?.changePercent ?? 0;
+          const chg = stock?.changePercent;
           const price = stock?.price;
+          const hasLiveChg = typeof chg === "number" && Number.isFinite(chg);
+          const chgColor = !hasLiveChg
+            ? "text-[#555]"
+            : chg! >= 0
+              ? "text-[#22C55E]"
+              : "text-[#EF4444]";
           return (
             <div
               key={c.ticker}
@@ -469,8 +475,8 @@ function DetailPanel({
               <span className="sc-stock-col-ticker sc-mono font-bold text-white">{c.ticker}</span>
               <span className="sc-stock-col-name text-[#777] truncate">{c.name}</span>
               <span className="sc-stock-col-price sc-mono text-[#aaa]">{price ? `$${price.toFixed(2)}` : "--"}</span>
-              <span className={`sc-stock-col-chg sc-mono font-medium ${chg >= 0 ? "text-[#22C55E]" : "text-[#EF4444]"}`}>
-                {chg >= 0 ? "+" : ""}{chg.toFixed(2)}%
+              <span className={`sc-stock-col-chg sc-mono font-medium ${chgColor}`}>
+                {hasLiveChg ? `${chg! >= 0 ? "+" : ""}${chg!.toFixed(2)}%` : "--"}
               </span>
             </div>
           );

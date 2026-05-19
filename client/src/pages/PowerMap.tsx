@@ -73,6 +73,19 @@ const DATA_CENTERS: DataCenter[] = [
   { id: 46, name: "CoreWeave Ellendale ND",          company: "CoreWeave", city: "Ellendale",      state: "ND", lat: 46.0026, lng: -98.5274,  powerMW: 400,  status: "construction", annualMWh: 3504000,  gridOperator: "MISO",                  openDate: "2026 Q2" },
   { id: 47, name: "Stargate Santa Teresa NM",        company: "OpenAI",    city: "Santa Teresa",   state: "NM", lat: 31.9176, lng: -106.7118, powerMW: 500,  status: "construction", annualMWh: 4380000,  gridOperator: "El Paso Electric/WECC", openDate: "2027 Q1" },
   { id: 48, name: "AWS Susquehanna PA",              company: "Amazon",    city: "Salem Township", state: "PA", lat: 41.0570, lng: -76.3488,  powerMW: 800,  status: "construction", annualMWh: 7008000,  gridOperator: "PPL/PJM",               openDate: "2026 Q3" },
+
+  // 2025-2026 announcements (all >= 400 MW). Capacities are publicly reported
+  // build-out targets; some are phase 1 figures with multi-GW scalability.
+  { id: 49, name: "Stargate Lordstown OH",           company: "OpenAI",    city: "Lordstown",      state: "OH", lat: 41.1542, lng: -80.7882,  powerMW: 1500, status: "construction", annualMWh: 13140000, gridOperator: "FirstEnergy/PJM",       openDate: "2026 Q4" },
+  { id: 50, name: "Stargate Milam County TX",        company: "OpenAI",    city: "Milam County",   state: "TX", lat: 30.7869, lng: -96.9786,  powerMW: 1500, status: "construction", annualMWh: 13140000, gridOperator: "ERCOT",                 openDate: "2027 Q1" },
+  { id: 51, name: "AWS Madison County MS Hub",       company: "Amazon",    city: "Canton",         state: "MS", lat: 32.6126, lng: -90.0356,  powerMW: 1000, status: "construction", annualMWh: 8760000,  gridOperator: "Entergy/MISO",          openDate: "2027 Q2" },
+  { id: 52, name: "Meta Hyperion Phase 2",           company: "Meta",      city: "Richland Parish",state: "LA", lat: 32.4720, lng: -91.6050,  powerMW: 1000, status: "announced",    annualMWh: 8760000,  gridOperator: "Entergy/SERC",          openDate: "2029" },
+  { id: 53, name: "xAI Memphis Whitehaven",          company: "xAI",       city: "Memphis",        state: "TN", lat: 35.0631, lng: -90.0273,  powerMW: 1000, status: "announced",    annualMWh: 8760000,  gridOperator: "TVA/SERC",              openDate: "2027 Q2" },
+  { id: 54, name: "Google Dorchester County SC",     company: "Google",    city: "Dorchester",     state: "SC", lat: 33.0681, lng: -80.4030,  powerMW: 600,  status: "construction", annualMWh: 5256000,  gridOperator: "Santee Cooper/SERC",    openDate: "2027 Q1" },
+  { id: 55, name: "Google Skagit County WA",         company: "Google",    city: "Mount Vernon",   state: "WA", lat: 48.4201, lng: -122.3344, powerMW: 500,  status: "announced",    annualMWh: 4380000,  gridOperator: "PSE/BPA/WECC",          openDate: "2027 Q3" },
+  { id: 56, name: "Microsoft Caledonia WI",          company: "Microsoft", city: "Caledonia",      state: "WI", lat: 42.8061, lng: -87.8784,  powerMW: 450,  status: "announced",    annualMWh: 3942000,  gridOperator: "MISO",                  openDate: "2028 Q1" },
+  { id: 57, name: "Meta Beaver Dam WI Campus",       company: "Meta",      city: "Beaver Dam",     state: "WI", lat: 43.4578, lng: -88.8373,  powerMW: 715,  status: "construction", annualMWh: 6263400,  gridOperator: "MISO",                  openDate: "2027 Q2" },
+  { id: 58, name: "Crusoe Abilene Phase 2",          company: "Crusoe",    city: "Abilene",        state: "TX", lat: 32.4400, lng: -99.7400,  powerMW: 1200, status: "construction", annualMWh: 10512000, gridOperator: "ERCOT",                 openDate: "2026 Q4" },
 ];
 
 interface RTOConfig {
@@ -740,6 +753,30 @@ export default function PowerMap() {
           style={{ minHeight: 520 }}
           ref={mapContainerRef}
         >
+          <div
+            className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] pointer-events-auto max-w-[min(640px,calc(100%-280px))] hidden md:block"
+            data-testid="threshold-banner"
+          >
+            <div className="bg-[#1A1917]/95 backdrop-blur-md border border-[#F07800]/40 rounded-lg px-4 py-2.5 shadow-xl shadow-black/40">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <Zap className="h-4 w-4 text-[#F07800]" />
+                  <span className="text-[11px] font-mono font-bold tracking-widest text-[#F07800] uppercase">≥ 400 MW only</span>
+                </div>
+                <span className="h-4 w-px bg-white/15" />
+                <p className="text-[11px] leading-tight text-white/70">
+                  We track hyperscale AI campuses. Smaller sites exist by the thousands. Sources like <span className="text-white/90 font-medium">DC Map</span> and <span className="text-white/90 font-medium">Data Center Knowledge</span> cover them better.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="absolute top-16 left-1/2 -translate-x-1/2 z-[1000] pointer-events-auto md:hidden" data-testid="threshold-banner-mobile">
+            <div className="bg-[#1A1917]/95 backdrop-blur-md border border-[#F07800]/40 rounded-md px-3 py-1.5 shadow-xl">
+              <span className="text-[10px] font-mono font-bold tracking-wider text-[#F07800] uppercase">≥ 400 MW only</span>
+            </div>
+          </div>
+
           <div className="absolute top-3 left-3 z-[1000] pointer-events-auto" data-testid="stats-overlay">
             <div className="bg-[#1A1917]/90 backdrop-blur-md border border-white/[0.06] rounded-lg px-4 py-3 shadow-xl">
               <div className="flex items-center gap-2 mb-2">

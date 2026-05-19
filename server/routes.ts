@@ -475,7 +475,18 @@ async function getCachedStockData(timeframe: string): Promise<Record<string, any
   for (const ticker of ALL_STACK_TICKERS) {
     if (!stockData[ticker]) {
       const s = STATIC_MARKET_DATA[ticker];
-      if (s) stockData[ticker] = { ticker, ...s, sparkline: [] };
+      if (s) {
+        // Yahoo failed for this ticker. Emit null for change/changePercent so
+        // the UI can render "--" instead of a fake "+0.00%" that looks live.
+        stockData[ticker] = {
+          ticker,
+          ...s,
+          change: null,
+          changePercent: null,
+          stale: true,
+          sparkline: [],
+        };
+      }
     }
   }
 
@@ -992,13 +1003,12 @@ export async function registerRoutes(
 
       let stockData: Record<string, any> = {};
       try {
-        const cacheKey = "supply-chain";
-        const cached = stackCache[cacheKey];
+        const cached = stackCache["1D"];
         if (cached) stockData = cached.data;
       } catch {}
 
       const topMovers = Object.values(stockData)
-        .filter((s: any) => s?.changePercent)
+        .filter((s: any) => typeof s?.changePercent === "number" && s.changePercent !== 0)
         .sort((a: any, b: any) => Math.abs(b.changePercent) - Math.abs(a.changePercent))
         .slice(0, 5);
 
@@ -1717,12 +1727,11 @@ Preferred-Languages: en
       const cached = stackCache["1D"];
       const topMoversData: any[] = [];
       if (cached?.data) {
-        const allStocks: any[] = [];
-        for (const layer of Object.values(cached.data)) {
-          if (Array.isArray(layer)) allStocks.push(...layer);
-        }
+        // stackCache stores a flat dict { TICKER: stockObject }, not sectored arrays.
+        const allStocks: any[] = Object.values(cached.data).filter(
+          (s: any) => s && typeof s.changePercent === "number",
+        );
         allStocks
-          .filter((s: any) => s?.changePercent != null)
           .sort((a: any, b: any) => Math.abs(b.changePercent) - Math.abs(a.changePercent))
           .slice(0, 5)
           .forEach((s: any) => {
@@ -1882,13 +1891,8 @@ ${rssItems}
     }
 
     const cached = stackCache["1D"];
-    let stockData: any = null;
-    if (cached?.data && layerKey) {
-      const layerData = (cached.data as any)[layerKey];
-      if (Array.isArray(layerData)) {
-        stockData = layerData.find((s: any) => s.ticker === ticker);
-      }
-    }
+    // stackCache stores a flat { TICKER: stockObject } dict.
+    const stockData: any = cached?.data?.[ticker] ?? null;
 
     const sectorStocks = layerKey ? STACK_TICKERS[layerKey as keyof typeof STACK_TICKERS] : [];
     const relatedTickers = sectorStocks.filter((t) => t !== ticker).slice(0, 6);
