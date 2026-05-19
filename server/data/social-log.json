@@ -6,5 +6,13 @@
     "ok": false,
     "error": "X API 403: {\"title\":\"Forbidden\",\"status\":403,\"detail\":\"Your client app is not configured with the appropriate oauth1 app permissions for this endpoint.\",\"type\":\"https://api.twitter.com/2/problems/oauth1-permissions\"}",
     "trigger": "manual"
+  },
+  {
+    "timestamp": "2026-05-19T20:20:46.601Z",
+    "platform": "twitter",
+    "text": "gridtilt local diagnostic, deleting shortly",
+    "ok": true,
+    "id": "2056832457022882259",
+    "trigger": "manual"
   }
 ]
