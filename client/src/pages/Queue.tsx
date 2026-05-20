@@ -157,7 +157,7 @@ export default function Queue() {
           </div>
           {data && (
             <div className="text-[11px] text-muted-foreground/70 font-mono tracking-wide text-right space-y-0.5" data-testid="backlog-sources">
-              <div>last refreshed {data.lastRefreshed}</div>
+              <FreshnessChip lastRefreshed={data.lastRefreshed} />
               <div className="text-muted-foreground/50">queue totals · {h?.queueOverallAsOf}</div>
               <div className="text-muted-foreground/50">PJM cycle · {h?.pjmReopenedAsOf}</div>
               <div className="text-muted-foreground/50">ERCOT load · {h?.ercotLargeLoadAsOf}</div>
@@ -299,6 +299,21 @@ export default function Queue() {
         </p>
       </div>
     </div>
+  );
+}
+
+function FreshnessChip({ lastRefreshed }: { lastRefreshed: string }) {
+  const refreshDate = new Date(lastRefreshed + "T12:00:00");
+  const days = Math.max(0, Math.floor((Date.now() - refreshDate.getTime()) / 86400000));
+  const label = days === 0 ? "refreshed today" : days === 1 ? "refreshed yesterday" : `refreshed ${days} days ago`;
+  const color =
+    days <= 14 ? "text-green-400/80 border-green-400/30" :
+    days <= 60 ? "text-[#F0A500] border-[#F0A500]/30" :
+    "text-red-400 border-red-400/30";
+  return (
+    <span className={`inline-block px-1.5 py-0.5 rounded border ${color}`} data-testid="freshness-chip">
+      {label}
+    </span>
   );
 }
 

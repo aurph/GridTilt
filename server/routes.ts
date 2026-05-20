@@ -2648,6 +2648,169 @@ Preferred-Languages: en
     }
   });
 
+  // ─── Backlog admin (project add + headline patch) ───────────────────────
+  // These let you keep the interconnection-backlog dataset fresh from anywhere
+  // without a redeploy. Both routes write to server/data/interconnection-queue.json
+  // atomically (read, mutate, write) and bump lastRefreshed.
+
+  const BACKLOG_FILE = join(process.cwd(), "server", "data", "interconnection-queue.json");
+
+  function loadBacklog(): BacklogDataset {
+    const raw = readFileSync(BACKLOG_FILE, "utf-8");
+    return JSON.parse(raw) as BacklogDataset;
+  }
+  function saveBacklog(data: BacklogDataset): void {
+    data.lastRefreshed = new Date().toISOString().slice(0, 10);
+    writeFileSync(BACKLOG_FILE, JSON.stringify(data, null, 2) + "\n");
+  }
+  function slugify(s: string): string {
+    return s.toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "")
+      .slice(0, 60);
+  }
+
+  // POST /api/admin/add-backlog-project
+  // Body: { projectName, sponsor, capacityMW, type, iso, state, category,
+  //         expectedOnline?, offtaker?, dcRelevant?, status?, sources?, notes? }
+  // Behavior: appends a new project, or updates an existing one if `id` is
+  // supplied and matches. Returns the saved project + new project count.
+  app.post("/api/admin/add-backlog-project", (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    const b = req.body || {};
+    const required = ["projectName", "sponsor", "capacityMW", "type", "iso", "state", "category"];
+    for (const k of required) {
+      if (b[k] === undefined || b[k] === null || b[k] === "") {
+        return res.status(400).json({ error: `missing required field: ${k}` });
+      }
+    }
+    if (typeof b.capacityMW !== "number") {
+      return res.status(400).json({ error: "capacityMW must be a number" });
+    }
+    const validTypes = ["nuclear", "gas", "solar", "wind", "storage", "hybrid", "load", "other"];
+    if (!validTypes.includes(b.type)) {
+      return res.status(400).json({ error: `type must be one of: ${validTypes.join(", ")}` });
+    }
+    const validCategories = ["generation", "load", "ppa", "aggregate", "regulatory"];
+    if (!validCategories.includes(b.category)) {
+      return res.status(400).json({ error: `category must be one of: ${validCategories.join(", ")}` });
+    }
+    const validStatuses = ["active", "withdrawn", "operational"];
+    const status = b.status ?? "active";
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ error: `status must be one of: ${validStatuses.join(", ")}` });
+    }
+
+    try {
+      const data = loadBacklog();
+      const id = (b.id && typeof b.id === "string") ? b.id : slugify(b.projectName);
+      const project: BacklogProject = {
+        id,
+        projectName: b.projectName,
+        sponsor: b.sponsor,
+        capacityMW: b.capacityMW,
+        type: b.type,
+        iso: b.iso,
+        state: b.state,
+        status,
+        category: b.category,
+        expectedOnline: b.expectedOnline ?? null,
+        offtaker: b.offtaker ?? null,
+        dcRelevant: b.dcRelevant === true,
+        sources: Array.isArray(b.sources) ? b.sources : undefined,
+        notes: typeof b.notes === "string" ? b.notes : undefined,
+      };
+
+      const idx = data.projects.findIndex((p) => p.id === id);
+      const action = idx >= 0 ? "updated" : "added";
+      if (idx >= 0) data.projects[idx] = project;
+      else data.projects.push(project);
+
+      // Refresh tracked headline counts off the projects array.
+      const nonAggregate = data.projects.filter((p) => p.category !== "aggregate");
+      data.headline.trackedProjects = nonAggregate.length;
+      data.headline.trackedCapacityGW = parseFloat(
+        (nonAggregate.reduce((s, p) => s + (p.capacityMW || 0), 0) / 1000).toFixed(1)
+      );
+
+      saveBacklog(data);
+      res.json({
+        action,
+        project,
+        trackedProjects: data.headline.trackedProjects,
+        trackedCapacityGW: data.headline.trackedCapacityGW,
+      });
+    } catch (e: any) {
+      console.error("add-backlog-project error:", e);
+      res.status(500).json({ error: e?.message ?? "save failed" });
+    }
+  });
+
+  // DELETE /api/admin/backlog-project/:id
+  app.delete("/api/admin/backlog-project/:id", (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    try {
+      const data = loadBacklog();
+      const before = data.projects.length;
+      data.projects = data.projects.filter((p) => p.id !== req.params.id);
+      if (data.projects.length === before) {
+        return res.status(404).json({ error: "no project with that id" });
+      }
+      const nonAggregate = data.projects.filter((p) => p.category !== "aggregate");
+      data.headline.trackedProjects = nonAggregate.length;
+      data.headline.trackedCapacityGW = parseFloat(
+        (nonAggregate.reduce((s, p) => s + (p.capacityMW || 0), 0) / 1000).toFixed(1)
+      );
+      saveBacklog(data);
+      res.json({ removed: req.params.id, trackedProjects: data.headline.trackedProjects });
+    } catch (e: any) {
+      console.error("delete-backlog-project error:", e);
+      res.status(500).json({ error: e?.message ?? "delete failed" });
+    }
+  });
+
+  // POST /api/admin/update-backlog-headlines
+  // Body is a partial object of headline fields you want to overwrite,
+  // plus optional `asOfFields` to update the matching asOf-style fields.
+  // Example:
+  //   { "pjmReopenedGW": 271, "pjmReopenedProjects": 845,
+  //     "pjmReopenedAsOf": "PJM Cycle 1 update, June 2026" }
+  app.post("/api/admin/update-backlog-headlines", (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    const patch = req.body || {};
+    if (typeof patch !== "object" || Array.isArray(patch)) {
+      return res.status(400).json({ error: "body must be an object of headline keys" });
+    }
+    try {
+      const data = loadBacklog();
+      const allowed = new Set<keyof BacklogDataset["headline"]>([
+        "trackedProjects", "trackedCapacityGW",
+        "queueOverallGW", "queueOverallProjects",
+        "medianWaitMonths", "historicalWithdrawalPct",
+        "queueOverallAsOf", "queueOverallSourceUrl",
+        "ercotLargeLoadGW", "ercotLargeLoadDataCenterPct", "ercotLargeLoadAsOf",
+        "pjmReopenedGW", "pjmReopenedProjects", "pjmReopenedAsOf",
+        "dominionContractedGW", "dominionAsOf",
+        "duke5yrGenAddGW", "metaHyperionGW", "stargateAbileneGW",
+      ]);
+      const applied: Record<string, any> = {};
+      for (const [k, v] of Object.entries(patch)) {
+        if (allowed.has(k as any)) {
+          (data.headline as any)[k] = v;
+          applied[k] = v;
+        }
+      }
+      if (Object.keys(applied).length === 0) {
+        return res.status(400).json({ error: "no allowed headline fields in body", allowed: Array.from(allowed) });
+      }
+      saveBacklog(data);
+      res.json({ applied, lastRefreshed: data.lastRefreshed });
+    } catch (e: any) {
+      console.error("update-backlog-headlines error:", e);
+      res.status(500).json({ error: e?.message ?? "save failed" });
+    }
+  });
+
   // ─── RSS Feeds ──────────────────────────────────────────────────────────
   app.get("/feed.xml", async (_req, res) => {
     try {
