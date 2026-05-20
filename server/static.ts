@@ -25,7 +25,8 @@ export function serveStatic(app: Express) {
   app.use("/{*path}", (req, res) => {
     const indexPath = path.resolve(distPath, "index.html");
     let html = fs.readFileSync(indexPath, "utf-8");
-    const meta = getPageMeta(req.path);
+    const pathname = req.originalUrl.split("?")[0] || "/";
+    const meta = getPageMeta(pathname);
     html = injectMetaTags(html, meta);
     res
       .set("Content-Type", "text/html")

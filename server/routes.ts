@@ -2219,8 +2219,37 @@ Preferred-Languages: en
         title = "60+ AI Power Stocks";
         subtitle = "Live Data Across 8 Sectors";
       } else if (page === "power-map") {
-        title = "48 AI Data Centers Mapped";
-        subtitle = "Locations by Grid Region and Operator";
+        title = "US AI Data Center Map";
+        subtitle = "Filter by operator, region, and capacity (\u2265 400 MW)";
+      } else if (page === "supply-chain") {
+        title = "AI Power Supply Chain";
+        subtitle = "5 systems, 20 sub-systems, silicon to substation";
+      } else if (page === "queue") {
+        title = "The Interconnection Queue";
+        subtitle = "~2,700 GW pending across 7 US ISOs";
+        stats = [
+          { label: "Requests", value: "~12k" },
+          { label: "GW Pending", value: "~2,700" },
+          { label: "Withdraw Rate", value: "~80%" },
+        ];
+      } else if (page === "trade") {
+        title = "AI Power Scenario Calculator";
+        subtitle = "Model demand, capex, and LPT requirements through 2030";
+      } else if (page === "portfolio") {
+        title = "AI Power Thesis Score";
+        subtitle = "Rate any portfolio against the AI power buildout";
+      } else if (page === "catalysts") {
+        title = "Catalyst Calendar";
+        subtitle = "Earnings, policy, and regulatory events for AI power";
+      } else if (page === "blog" && name) {
+        title = name;
+        subtitle = "GridTilt Analysis";
+      } else if (page === "blog") {
+        title = "GridTilt Analysis";
+        subtitle = "Research on the AI power infrastructure thesis";
+      } else if (page === "subscribe") {
+        title = "Get the Tilt";
+        subtitle = "Weekly AI power market intel, in your inbox";
       } else if (page === "sector" && name) {
         title = `${name} Sector`;
         subtitle = "AI Power Infrastructure Stocks";

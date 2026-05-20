@@ -49,7 +49,8 @@ export async function setupVite(server: Server, app: Express) {
         `src="/src/main.tsx"`,
         `src="/src/main.tsx?v=${nanoid()}"`,
       );
-      const meta = getPageMeta(req.path);
+      const pathname = req.originalUrl.split("?")[0] || "/";
+      const meta = getPageMeta(pathname);
       template = injectMetaTags(template, meta);
       const page = await vite.transformIndexHtml(url, template);
       res.status(200).set({ "Content-Type": "text/html" }).end(page);

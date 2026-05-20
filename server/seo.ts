@@ -49,6 +49,21 @@ const STATIC_PAGES: Record<string, { title: string; description: string; slug: s
     description: "Research and analysis on the AI power infrastructure thesis. Data center power demand, nuclear energy, grid constraints, and investment implications.",
     slug: "blog",
   },
+  "/queue": {
+    title: "Interconnection Queue \u2014 Every Power Project Waiting on the US Grid \u2014 GridTilt",
+    description: "Live tracker of US interconnection queue applications across all 7 ISOs. ~12k requests, ~2,700 GW pending, historically about 80% withdraw before commercial operation.",
+    slug: "queue",
+  },
+  "/supply-chain": {
+    title: "AI Power Supply Chain \u2014 Bottlenecks from Silicon to Substation \u2014 GridTilt",
+    description: "Five-system breakdown of the AI power supply chain. 20 sub-systems mapped from chips through compute, cooling, transmission, and generation. Live equity exposure per node.",
+    slug: "supply-chain",
+  },
+  "/subscribe": {
+    title: "Get the Tilt \u2014 Weekly AI Power Market Intel \u2014 GridTilt",
+    description: "Weekly digest of AI power market moves, catalysts, and thesis updates. Built for investors tracking the buildout.",
+    slug: "subscribe",
+  },
 };
 
 const SECTOR_SLUGS: Record<string, { name: string; description: string }> = {
