@@ -586,6 +586,48 @@ function isNewsRelevant(headline: string): boolean {
   return NEWS_KEYWORDS.some((kw) => lower.includes(kw.toLowerCase()));
 }
 
+// ─── Interconnection queue dataset shape (LBNL Queued Up + curated) ────────
+
+interface QueueAggregateRow { type?: string; iso?: string; gw: number | null; yoyPct?: number | null; asOfNote?: string }
+interface QueueNotableProject {
+  id: string;
+  projectName: string;
+  sponsor: string;
+  capacityMW: number;
+  type: string;
+  iso: string;
+  state: string;
+  status: "active" | "withdrawn" | "operational";
+  expectedOnline: string | null;
+  dcRelevant: boolean;
+  offtaker?: string | null;
+  sources?: string[];
+  notes?: string;
+}
+interface QueueDataset {
+  source: {
+    title: string;
+    publisher: string;
+    publishedDate: string;
+    asOf: string;
+    sourceUrl: string;
+    reportUrl?: string;
+    notes?: string;
+  };
+  aggregates: {
+    totalActiveGW: number;
+    totalActiveProjects: number;
+    medianQueueMonths: number;
+    historicalWithdrawalPct: number;
+    historicalCompletionPct: number;
+    byType: QueueAggregateRow[];
+    byIso: QueueAggregateRow[];
+    pjmDetail?: any;
+    ercotDetail?: any;
+  };
+  notableProjects: QueueNotableProject[];
+}
+
 // ─── OG image renderer (shared by /api/og and the X media upload path) ─────
 
 interface OgStat { label: string; value: string }
@@ -646,19 +688,15 @@ async function ogCardForTemplate(template: string): Promise<OgCard> {
     try {
       const filePath = join(process.cwd(), "server", "data", "interconnection-queue.json");
       const raw = readFileSync(filePath, "utf-8");
-      const data = JSON.parse(raw) as { projects: Array<{ capacityMW: number; status: string; dcRelevant: boolean }> };
-      const active = data.projects.filter((p) => p.status === "active");
-      const totalGW = active.reduce((s, p) => s + p.capacityMW, 0) / 1000;
-      const dcGW = active.filter((p) => p.dcRelevant).reduce((s, p) => s + p.capacityMW, 0) / 1000;
-      const withdrawn = data.projects.filter((p) => p.status === "withdrawn").length;
-      const rate = data.projects.length > 0 ? Math.round((withdrawn / data.projects.length) * 100) : 0;
+      const data = JSON.parse(raw) as QueueDataset;
+      const a = data.aggregates;
       return {
         title: "us interconnection queue",
-        subtitle: "every power project waiting on the grid",
+        subtitle: `${a.totalActiveProjects.toLocaleString()} projects · ${data.source.asOf}`,
         stats: [
-          { label: "Active GW", value: totalGW.toFixed(1) },
-          { label: "DC-relevant", value: `${dcGW.toFixed(1)} GW` },
-          { label: "Withdrawal", value: `${rate}%` },
+          { label: "Active GW", value: a.totalActiveGW.toLocaleString() },
+          { label: "Median wait", value: `${a.medianQueueMonths} mo` },
+          { label: "Withdrawal", value: `${a.historicalWithdrawalPct}%` },
         ],
       };
     } catch {
@@ -1256,32 +1294,22 @@ async function composeQueueUpdateTweet(): Promise<string> {
   try {
     const filePath = join(process.cwd(), "server", "data", "interconnection-queue.json");
     const raw = readFileSync(filePath, "utf-8");
-    const data = JSON.parse(raw) as { projects: Array<{ capacityMW: number; iso: string; status: string; dcRelevant: boolean; type: string }> };
-    const active = data.projects.filter((p) => p.status === "active");
-    const totalGW = active.reduce((s, p) => s + p.capacityMW, 0) / 1000;
-    const dcProjects = active.filter((p) => p.dcRelevant);
-    const dcGW = dcProjects.reduce((s, p) => s + p.capacityMW, 0) / 1000;
-    const withdrawn = data.projects.filter((p) => p.status === "withdrawn").length;
-    const withdrawalRate = data.projects.length > 0
-      ? Math.round((withdrawn / data.projects.length) * 100)
-      : 0;
+    const data = JSON.parse(raw) as QueueDataset;
+    const a = data.aggregates;
 
-    const byIso: Record<string, number> = {};
-    for (const p of active) {
-      byIso[p.iso] = (byIso[p.iso] ?? 0) + p.capacityMW;
-    }
-    const isoSorted = Object.entries(byIso).sort((a, b) => b[1] - a[1]);
-    const top3 = isoSorted.slice(0, 3);
+    const isoTop = [...a.byIso]
+      .filter((r) => typeof r.gw === "number")
+      .sort((x, y) => (y.gw ?? 0) - (x.gw ?? 0))
+      .slice(0, 3);
 
     return [
-      "us interconnection queue today:",
+      `us interconnection queue · ${data.source.asOf}`,
       "",
-      `${totalGW.toFixed(1)} GW pending across active requests`,
-      `${dcProjects.length} projects flagged datacenter-relevant (${dcGW.toFixed(1)} GW)`,
-      `${withdrawalRate}% historical withdrawal rate`,
+      `${a.totalActiveGW.toLocaleString()} GW active across ${a.totalActiveProjects.toLocaleString()} projects`,
+      `median wait: ${a.medianQueueMonths} months. ~${a.historicalWithdrawalPct}% historical withdrawal.`,
       "",
-      "by iso:",
-      ...top3.map(([iso, mw]) => `${iso.padEnd(5)} ${(mw / 1000).toFixed(1)} GW`),
+      "biggest by region:",
+      ...isoTop.map((r) => `${(r.iso ?? "").padEnd(14)} ${r.gw} GW`),
       "",
       "https://gridtilt.com/queue",
     ].join("\n");
@@ -1531,73 +1559,11 @@ export async function registerRoutes(
     try {
       const filePath = join(process.cwd(), "server", "data", "interconnection-queue.json");
       const raw = readFileSync(filePath, "utf-8");
-      const data = JSON.parse(raw) as {
-        source: string;
-        sourceUrl: string;
-        lastUpdated: string;
-        projects: Array<{
-          id: string;
-          projectName: string;
-          sponsor: string;
-          capacityMW: number;
-          type: string;
-          iso: string;
-          state: string;
-          status: "active" | "withdrawn" | "operational";
-          queueDate: string;
-          expectedOnline: string | null;
-          dcRelevant: boolean;
-          notes?: string;
-        }>;
-      };
-
-      // Summary aggregates: total pending GW by ISO, by type, withdrawal rate,
-      // count of datacenter-relevant projects.
-      const active = data.projects.filter((p) => p.status === "active");
-      const withdrawn = data.projects.filter((p) => p.status === "withdrawn");
-      const operational = data.projects.filter((p) => p.status === "operational");
-      const dcRelevant = active.filter((p) => p.dcRelevant);
-
-      const sumMW = (arr: typeof data.projects) => arr.reduce((s, p) => s + p.capacityMW, 0);
-
-      const byIso: Record<string, { count: number; mw: number }> = {};
-      const byType: Record<string, { count: number; mw: number }> = {};
-      const byState: Record<string, { count: number; mw: number }> = {};
-      for (const p of active) {
-        byIso[p.iso] = byIso[p.iso] || { count: 0, mw: 0 };
-        byIso[p.iso].count += 1;
-        byIso[p.iso].mw += p.capacityMW;
-        byType[p.type] = byType[p.type] || { count: 0, mw: 0 };
-        byType[p.type].count += 1;
-        byType[p.type].mw += p.capacityMW;
-        byState[p.state] = byState[p.state] || { count: 0, mw: 0 };
-        byState[p.state].count += 1;
-        byState[p.state].mw += p.capacityMW;
-      }
-
-      const totalProjects = data.projects.length;
-      const withdrawalRate = totalProjects > 0
-        ? parseFloat((withdrawn.length / totalProjects * 100).toFixed(1))
-        : 0;
-
+      const data = JSON.parse(raw) as QueueDataset;
       res.json({
         source: data.source,
-        sourceUrl: data.sourceUrl,
-        lastUpdated: data.lastUpdated,
-        summary: {
-          totalProjects,
-          activeProjects: active.length,
-          withdrawnProjects: withdrawn.length,
-          operationalProjects: operational.length,
-          activePendingGW: parseFloat((sumMW(active) / 1000).toFixed(1)),
-          dcRelevantProjects: dcRelevant.length,
-          dcRelevantPendingGW: parseFloat((sumMW(dcRelevant) / 1000).toFixed(1)),
-          withdrawalRatePct: withdrawalRate,
-          byIso,
-          byType,
-          byState,
-        },
-        projects: data.projects,
+        aggregates: data.aggregates,
+        notableProjects: data.notableProjects,
       });
     } catch (error) {
       console.error("Queue endpoint error:", error);

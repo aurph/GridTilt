@@ -9,10 +9,18 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
-  Zap, Cable, Filter, ArrowUpDown, Info, ExternalLink, Sun, Wind, Atom, Flame, Battery,
+  Zap, Filter, ArrowUpDown, Info, ExternalLink, Sun, Wind, Atom, Flame, Battery, Cable,
 } from "lucide-react";
 
-interface QueueProject {
+interface AggregateRow {
+  type?: string;
+  iso?: string;
+  gw: number | null;
+  yoyPct?: number | null;
+  asOfNote?: string;
+}
+
+interface NotableProject {
   id: string;
   projectName: string;
   sponsor: string;
@@ -21,32 +29,35 @@ interface QueueProject {
   iso: string;
   state: string;
   status: "active" | "withdrawn" | "operational";
-  queueDate: string;
   expectedOnline: string | null;
   dcRelevant: boolean;
+  offtaker?: string | null;
+  sources?: string[];
   notes?: string;
 }
 
-interface QueueSummary {
-  totalProjects: number;
-  activeProjects: number;
-  withdrawnProjects: number;
-  operationalProjects: number;
-  activePendingGW: number;
-  dcRelevantProjects: number;
-  dcRelevantPendingGW: number;
-  withdrawalRatePct: number;
-  byIso: Record<string, { count: number; mw: number }>;
-  byType: Record<string, { count: number; mw: number }>;
-  byState: Record<string, { count: number; mw: number }>;
-}
-
 interface QueueResponse {
-  source: string;
-  sourceUrl: string;
-  lastUpdated: string;
-  summary: QueueSummary;
-  projects: QueueProject[];
+  source: {
+    title: string;
+    publisher: string;
+    publishedDate: string;
+    asOf: string;
+    sourceUrl: string;
+    reportUrl?: string;
+    notes?: string;
+  };
+  aggregates: {
+    totalActiveGW: number;
+    totalActiveProjects: number;
+    medianQueueMonths: number;
+    historicalWithdrawalPct: number;
+    historicalCompletionPct: number;
+    byType: AggregateRow[];
+    byIso: AggregateRow[];
+    pjmDetail?: { totalGW: number; totalProjects: number; byTypeGW: Record<string, number>; asOf: string };
+    ercotDetail?: { generationGW: number; generationProjects: number; byTypeGW: Record<string, number>; largeLoadQueueGW: number; largeLoadDataCenterPct: number; largeLoadCryptoPct: number; asOf: string };
+  };
+  notableProjects: NotableProject[];
 }
 
 const TYPE_COLORS: Record<string, string> = {
@@ -69,7 +80,7 @@ const TYPE_ICONS: Record<string, any> = {
   other: Zap,
 };
 
-type SortKey = "capacityMW" | "queueDate" | "projectName" | "iso";
+type SortKey = "capacityMW" | "projectName" | "iso" | "type";
 type SortDir = "asc" | "desc";
 
 export default function Queue() {
@@ -80,63 +91,55 @@ export default function Queue() {
 
   const [isoFilter, setIsoFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
-  const [statusFilter, setStatusFilter] = useState<string>("active");
   const [dcOnly, setDcOnly] = useState(false);
-  const [minMW, setMinMW] = useState(0);
   const [sortKey, setSortKey] = useState<SortKey>("capacityMW");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
 
   const filtered = useMemo(() => {
-    if (!data?.projects) return [];
-    let rows = data.projects.filter((p) => {
+    if (!data?.notableProjects) return [];
+    let rows = data.notableProjects.filter((p) => {
       if (isoFilter !== "all" && p.iso !== isoFilter) return false;
       if (typeFilter !== "all" && p.type !== typeFilter) return false;
-      if (statusFilter !== "all" && p.status !== statusFilter) return false;
       if (dcOnly && !p.dcRelevant) return false;
-      if (p.capacityMW < minMW) return false;
       return true;
     });
     rows = rows.sort((a, b) => {
       let cmp = 0;
       if (sortKey === "capacityMW") cmp = a.capacityMW - b.capacityMW;
-      else if (sortKey === "queueDate") cmp = a.queueDate.localeCompare(b.queueDate);
       else if (sortKey === "projectName") cmp = a.projectName.localeCompare(b.projectName);
       else if (sortKey === "iso") cmp = a.iso.localeCompare(b.iso);
+      else if (sortKey === "type") cmp = a.type.localeCompare(b.type);
       return sortDir === "asc" ? cmp : -cmp;
     });
     return rows;
-  }, [data, isoFilter, typeFilter, statusFilter, dcOnly, minMW, sortKey, sortDir]);
+  }, [data, isoFilter, typeFilter, dcOnly, sortKey, sortDir]);
 
   const toggleSort = (key: SortKey) => {
-    if (sortKey === key) {
-      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
-    } else {
-      setSortKey(key);
-      setSortDir("desc");
-    }
+    if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else { setSortKey(key); setSortDir("desc"); }
   };
 
-  const isos = data?.summary?.byIso ? Object.keys(data.summary.byIso).sort() : [];
-  const types = data?.summary?.byType ? Object.keys(data.summary.byType) : [];
+  const isos = data?.notableProjects ? Array.from(new Set(data.notableProjects.map((p) => p.iso))).sort() : [];
+  const types = data?.notableProjects ? Array.from(new Set(data.notableProjects.map((p) => p.type))) : [];
 
-  const maxIsoMw = data ? Math.max(...Object.values(data.summary.byIso).map((v) => v.mw), 1) : 1;
-  const maxTypeMw = data ? Math.max(...Object.values(data.summary.byType).map((v) => v.mw), 1) : 1;
+  const a = data?.aggregates;
+  const maxTypeGw = a ? Math.max(...a.byType.map((r) => r.gw ?? 0), 1) : 1;
+  const maxIsoGw = a ? Math.max(...a.byIso.map((r) => r.gw ?? 0), 1) : 1;
 
   return (
     <div className="flex flex-col h-full overflow-y-auto">
       {/* Hero */}
       <div className="grid-bg border-b border-border px-4 sm:px-6 py-6 sm:py-8" data-testid="queue-hero">
         <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="max-w-2xl">
+          <div className="max-w-3xl">
             <h1 className="text-2xl sm:text-3xl font-semibold text-foreground tracking-tight mb-1.5">
               Interconnection Queue
             </h1>
             <p className="text-muted-foreground text-xs sm:text-sm leading-relaxed">
-              Every power project waiting to plug into the US grid.
-              The binding constraint on AI datacenter buildout.
-              <span className="text-muted-foreground/60"> Sourced from </span>
+              Every active US interconnection request. ~10,300 projects, ~2,290 GW pending.
+              Headline numbers from{" "}
               <a
-                href={data?.sourceUrl ?? "https://emp.lbl.gov/queues"}
+                href={data?.source?.sourceUrl ?? "https://emp.lbl.gov/queues"}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-[#F07800] hover:text-[#F0A500] inline-flex items-center gap-0.5"
@@ -144,20 +147,20 @@ export default function Queue() {
               >
                 LBNL Queued Up <ExternalLink className="h-3 w-3" />
               </a>
-              <span className="text-muted-foreground/60">.</span>
+              ; notable projects curated from SEC filings, utility press, and FERC dockets.
             </p>
           </div>
           {data && (
-            <div className="text-xs text-muted-foreground font-mono tracking-wide" data-testid="queue-last-updated">
-              dataset: {data.lastUpdated}
+            <div className="text-xs text-muted-foreground font-mono tracking-wide text-right" data-testid="queue-asof">
+              <div>dataset: {data.source.asOf}</div>
+              <div className="text-muted-foreground/50">published {data.source.publishedDate}</div>
             </div>
           )}
         </div>
       </div>
 
       <div className="flex-1 p-4 sm:p-6 space-y-4 sm:space-y-5">
-
-        {/* Headline stats */}
+        {/* Headline stats — all from LBNL aggregates */}
         {isLoading ? (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-24" />)}
@@ -166,113 +169,146 @@ export default function Queue() {
           <Card className="p-4 border-red-500/20 bg-red-500/5">
             <p className="text-xs text-red-400">Queue dataset unavailable.</p>
           </Card>
-        ) : (
+        ) : a && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3" data-testid="queue-stats">
-            <StatTile label="Active pending" value={`${data.summary.activePendingGW} GW`} sub={`${data.summary.activeProjects} projects`} color="#F07800" />
-            <StatTile label="DC-relevant" value={`${data.summary.dcRelevantPendingGW} GW`} sub={`${data.summary.dcRelevantProjects} projects flagged`} color="#F0A500" />
-            <StatTile label="Withdrawal rate" value={`${data.summary.withdrawalRatePct}%`} sub={`${data.summary.withdrawnProjects} of ${data.summary.totalProjects}`} color="#94a3b8" />
-            <StatTile label="ISOs covered" value={`${Object.keys(data.summary.byIso).length}`} sub="balancing areas" color="#94a3b8" />
+            <StatTile label="Active capacity" value={`${a.totalActiveGW.toLocaleString()} GW`} sub={`${a.totalActiveProjects.toLocaleString()} projects`} color="#F07800" />
+            <StatTile label="Median queue wait" value={`${a.medianQueueMonths} mo`} sub="2024 cohort. was 22 mo in 2008." color="#F0A500" />
+            <StatTile label="Historical withdrawal" value={`${a.historicalWithdrawalPct}%`} sub={`only ${a.historicalCompletionPct}% reached COD`} color="#ef4444" />
+            <StatTile label="Gas YoY" value="+72%" sub="gas the only category growing in 2024" color="#94a3b8" />
           </div>
         )}
 
-        {/* By ISO + By Type bar charts */}
-        {data && (
+        {/* By Type + By ISO */}
+        {a && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <Card className="p-5 border-card-border" data-testid="chart-by-iso">
+            <Card className="p-5 border-card-border" data-testid="chart-by-type">
               <div className="flex items-center gap-2 mb-4">
-                <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Pending GW by ISO</h2>
+                <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Capacity by type (GW)</h2>
                 <UITooltip>
                   <TooltipTrigger><Info className="h-3.5 w-3.5 text-muted-foreground" /></TooltipTrigger>
-                  <TooltipContent><p className="text-xs">Sum of nameplate capacity for active queue requests in each balancing area.</p></TooltipContent>
+                  <TooltipContent><p className="text-xs">LBNL Queued Up 2025, end of 2024. YoY change shown to the right.</p></TooltipContent>
                 </UITooltip>
               </div>
               <div className="space-y-2">
-                {Object.entries(data.summary.byIso).sort((a, b) => b[1].mw - a[1].mw).map(([iso, v]) => (
-                  <div key={iso} className="flex items-center gap-3" data-testid={`iso-bar-${iso}`}>
-                    <span className="font-mono text-xs text-foreground w-16 flex-shrink-0">{iso}</span>
-                    <div className="flex-1 h-1.5 bg-muted/30 rounded-full overflow-hidden">
-                      <div className="h-full rounded-full" style={{ width: `${(v.mw / maxIsoMw) * 100}%`, backgroundColor: "#F0A500" }} />
-                    </div>
-                    <span className="font-mono text-xs text-foreground w-20 text-right">{(v.mw / 1000).toFixed(1)} GW</span>
-                    <span className="font-mono text-[10px] text-muted-foreground w-10 text-right">{v.count}</span>
-                  </div>
-                ))}
-              </div>
-            </Card>
-
-            <Card className="p-5 border-card-border" data-testid="chart-by-type">
-              <div className="flex items-center gap-2 mb-4">
-                <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Pending GW by Type</h2>
-              </div>
-              <div className="space-y-2">
-                {Object.entries(data.summary.byType).sort((a, b) => b[1].mw - a[1].mw).map(([type, v]) => {
-                  const Icon = TYPE_ICONS[type] ?? Zap;
+                {a.byType.map((r) => {
+                  const Icon = TYPE_ICONS[r.type ?? "other"] ?? Zap;
+                  const gw = r.gw ?? 0;
                   return (
-                    <div key={type} className="flex items-center gap-3" data-testid={`type-bar-${type}`}>
-                      <Icon className="h-3.5 w-3.5 flex-shrink-0" style={{ color: TYPE_COLORS[type] ?? "#94a3b8" }} />
-                      <span className="font-mono text-xs text-foreground w-16 flex-shrink-0">{type}</span>
+                    <div key={r.type} className="flex items-center gap-3" data-testid={`type-bar-${r.type}`}>
+                      <Icon className="h-3.5 w-3.5 flex-shrink-0" style={{ color: TYPE_COLORS[r.type ?? "other"] ?? "#94a3b8" }} />
+                      <span className="font-mono text-xs text-foreground w-16 flex-shrink-0 capitalize">{r.type}</span>
                       <div className="flex-1 h-1.5 bg-muted/30 rounded-full overflow-hidden">
-                        <div className="h-full rounded-full" style={{ width: `${(v.mw / maxTypeMw) * 100}%`, backgroundColor: TYPE_COLORS[type] ?? "#94a3b8" }} />
+                        <div className="h-full rounded-full" style={{ width: `${(gw / maxTypeGw) * 100}%`, backgroundColor: TYPE_COLORS[r.type ?? "other"] ?? "#94a3b8" }} />
                       </div>
-                      <span className="font-mono text-xs text-foreground w-20 text-right">{(v.mw / 1000).toFixed(1)} GW</span>
-                      <span className="font-mono text-[10px] text-muted-foreground w-10 text-right">{v.count}</span>
+                      <span className="font-mono text-xs text-foreground w-16 text-right">{r.gw == null ? "—" : `${r.gw} GW`}</span>
+                      <span className={`font-mono text-[10px] w-12 text-right ${r.yoyPct == null ? "text-muted-foreground/40" : r.yoyPct >= 0 ? "text-green-400" : "text-red-400"}`}>
+                        {r.yoyPct == null ? "" : `${r.yoyPct >= 0 ? "+" : ""}${r.yoyPct}%`}
+                      </span>
                     </div>
                   );
                 })}
               </div>
             </Card>
+
+            <Card className="p-5 border-card-border" data-testid="chart-by-iso">
+              <div className="flex items-center gap-2 mb-4">
+                <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Capacity by region (GW)</h2>
+                <UITooltip>
+                  <TooltipTrigger><Info className="h-3.5 w-3.5 text-muted-foreground" /></TooltipTrigger>
+                  <TooltipContent><p className="text-xs max-w-xs">Pulled from LBNL where available; major-ISO figures updated with each operator's most recent monthly report.</p></TooltipContent>
+                </UITooltip>
+              </div>
+              <div className="space-y-2">
+                {a.byIso.filter((r) => r.gw != null).sort((x, y) => (y.gw ?? 0) - (x.gw ?? 0)).map((r) => (
+                  <div key={r.iso} className="flex items-center gap-3" data-testid={`iso-bar-${r.iso}`}>
+                    <span className="font-mono text-xs text-foreground w-28 flex-shrink-0 truncate">{r.iso}</span>
+                    <div className="flex-1 h-1.5 bg-muted/30 rounded-full overflow-hidden">
+                      <div className="h-full rounded-full" style={{ width: `${((r.gw ?? 0) / maxIsoGw) * 100}%`, backgroundColor: "#F0A500" }} />
+                    </div>
+                    <span className="font-mono text-xs text-foreground w-16 text-right">{r.gw} GW</span>
+                  </div>
+                ))}
+              </div>
+              <p className="text-[10px] text-muted-foreground/60 mt-3">Some regional totals not separately published in LBNL summary; aggregates may include hybrids.</p>
+            </Card>
           </div>
         )}
 
-        {/* Filters */}
+        {/* ERCOT detail callout — the large-load story is the headline */}
+        {a?.ercotDetail && (
+          <Card className="p-5 border-[#F07800]/20 bg-[#F07800]/5" data-testid="ercot-callout">
+            <div className="flex items-start justify-between flex-wrap gap-3">
+              <div>
+                <h2 className="text-xs font-semibold uppercase tracking-widest text-[#F07800] mb-1">ERCOT large-load queue</h2>
+                <p className="text-xs text-muted-foreground max-w-2xl leading-relaxed">
+                  Texas's large-load (datacenter + crypto + industrial) interconnection requests stand at{" "}
+                  <span className="text-foreground font-mono">{a.ercotDetail.largeLoadQueueGW} GW</span>,
+                  up ~4x in the past year. Datacenters are{" "}
+                  <span className="text-foreground font-mono">{a.ercotDetail.largeLoadDataCenterPct}%</span> of that load.
+                  Generation queue separately at <span className="text-foreground font-mono">{a.ercotDetail.generationGW} GW</span> across{" "}
+                  {a.ercotDetail.generationProjects.toLocaleString()} active requests.
+                </p>
+              </div>
+              <span className="font-mono text-[10px] text-muted-foreground/60">{a.ercotDetail.asOf}</span>
+            </div>
+          </Card>
+        )}
+
+        {/* PJM detail callout — the gas pivot is the second headline */}
+        {a?.pjmDetail && (
+          <Card className="p-5 border-card-border" data-testid="pjm-callout">
+            <div className="flex items-start justify-between flex-wrap gap-3 mb-3">
+              <div>
+                <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">PJM reopened queue</h2>
+                <p className="text-xs text-muted-foreground mt-1">
+                  After PJM's first-ready-first-served reform: {a.pjmDetail.totalProjects.toLocaleString()} projects, {a.pjmDetail.totalGW} GW. Gas leads.
+                </p>
+              </div>
+              <span className="font-mono text-[10px] text-muted-foreground/60">{a.pjmDetail.asOf}</span>
+            </div>
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 mt-3">
+              {Object.entries(a.pjmDetail.byTypeGW).map(([type, gw]) => (
+                <div key={type} className="text-center" data-testid={`pjm-type-${type}`}>
+                  <div className="text-[10px] text-muted-foreground uppercase tracking-wider">{type.replace(/_/g, " ")}</div>
+                  <div className="text-lg font-bold font-mono text-foreground">{gw} GW</div>
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
+
+        {/* Notable projects header + filters */}
         <Card className="p-4 border-card-border" data-testid="queue-filters">
-          <div className="flex items-center gap-2 mb-3">
-            <Filter className="h-3.5 w-3.5 text-[#F0A500]" />
-            <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Filters</h2>
+          <div className="flex items-center justify-between flex-wrap gap-3 mb-3">
+            <div className="flex items-center gap-2">
+              <Filter className="h-3.5 w-3.5 text-[#F0A500]" />
+              <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Notable named projects</h2>
+              <UITooltip>
+                <TooltipTrigger><Info className="h-3.5 w-3.5 text-muted-foreground" /></TooltipTrigger>
+                <TooltipContent><p className="text-xs max-w-xs">Curated set of publicly disclosed projects (SEC filings, utility press, FERC dockets). Not the full {data?.aggregates?.totalActiveProjects?.toLocaleString() ?? "10,300"}-project queue.</p></TooltipContent>
+              </UITooltip>
+            </div>
+            <span className="text-muted-foreground/60 font-mono text-[11px]">{filtered.length} / {data?.notableProjects?.length ?? 0}</span>
           </div>
           <div className="flex flex-wrap items-center gap-3 text-xs">
             <SelectControl label="ISO" value={isoFilter} onChange={setIsoFilter} options={[{ value: "all", label: "All ISOs" }, ...isos.map((i) => ({ value: i, label: i }))]} />
             <SelectControl label="Type" value={typeFilter} onChange={setTypeFilter} options={[{ value: "all", label: "All types" }, ...types.map((t) => ({ value: t, label: t }))]} />
-            <SelectControl label="Status" value={statusFilter} onChange={setStatusFilter} options={[
-              { value: "all", label: "All statuses" },
-              { value: "active", label: "Active" },
-              { value: "withdrawn", label: "Withdrawn" },
-              { value: "operational", label: "Operational" },
-            ]} />
             <label className="flex items-center gap-1.5 text-muted-foreground cursor-pointer" data-testid="filter-dc-only">
-              <input
-                type="checkbox"
-                checked={dcOnly}
-                onChange={(e) => setDcOnly(e.target.checked)}
-                className="accent-[#F07800]"
-              />
+              <input type="checkbox" checked={dcOnly} onChange={(e) => setDcOnly(e.target.checked)} className="accent-[#F07800]" />
               DC-relevant only
             </label>
-            <label className="flex items-center gap-1.5 text-muted-foreground">
-              Min MW
-              <input
-                type="number"
-                value={minMW}
-                onChange={(e) => setMinMW(Math.max(0, parseInt(e.target.value) || 0))}
-                className="w-20 bg-[#0E0E0C] border border-white/[0.08] rounded px-2 py-1 text-foreground font-mono"
-                data-testid="filter-min-mw"
-                min={0}
-                step={50}
-              />
-            </label>
-            <span className="text-muted-foreground/60 ml-auto font-mono">{filtered.length} / {data?.projects?.length ?? 0}</span>
           </div>
         </Card>
 
-        {/* Projects table */}
+        {/* Notable projects table */}
         <Card className="border-card-border overflow-hidden" data-testid="queue-table">
           <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-[#0E0E0C] border-b border-border text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
             <SortHeader label="Project" sortKey="projectName" current={sortKey} dir={sortDir} onClick={toggleSort} className="col-span-4" />
             <SortHeader label="ISO" sortKey="iso" current={sortKey} dir={sortDir} onClick={toggleSort} className="col-span-1" />
             <span className="col-span-1">State</span>
-            <span className="col-span-1">Type</span>
+            <SortHeader label="Type" sortKey="type" current={sortKey} dir={sortDir} onClick={toggleSort} className="col-span-1" />
             <SortHeader label="MW" sortKey="capacityMW" current={sortKey} dir={sortDir} onClick={toggleSort} className="col-span-1 text-right" />
-            <SortHeader label="Queued" sortKey="queueDate" current={sortKey} dir={sortDir} onClick={toggleSort} className="col-span-2" />
+            <span className="col-span-2">Online</span>
             <span className="col-span-1 text-center">Status</span>
             <span className="col-span-1 text-center">DC</span>
           </div>
@@ -281,9 +317,7 @@ export default function Queue() {
               {Array(8).fill(null).map((_, i) => <Skeleton key={i} className="h-6" />)}
             </div>
           ) : filtered.length === 0 ? (
-            <div className="p-6 text-center text-xs text-muted-foreground" data-testid="queue-empty">
-              No projects match the current filters.
-            </div>
+            <div className="p-6 text-center text-xs text-muted-foreground" data-testid="queue-empty">No projects match the current filters.</div>
           ) : (
             filtered.map((p) => {
               const Icon = TYPE_ICONS[p.type] ?? Zap;
@@ -291,13 +325,10 @@ export default function Queue() {
               return (
                 <UITooltip key={p.id}>
                   <TooltipTrigger asChild>
-                    <div
-                      className="grid grid-cols-12 gap-2 px-4 py-2 border-b border-border/30 last:border-0 text-xs hover:bg-[#F07800]/5 cursor-help"
-                      data-testid={`queue-row-${p.id}`}
-                    >
+                    <div className="grid grid-cols-12 gap-2 px-4 py-2 border-b border-border/30 last:border-0 text-xs hover:bg-[#F07800]/5 cursor-help" data-testid={`queue-row-${p.id}`}>
                       <div className="col-span-4 min-w-0">
                         <div className="font-medium text-foreground truncate">{p.projectName}</div>
-                        <div className="text-[10px] text-muted-foreground truncate">{p.sponsor}</div>
+                        <div className="text-[10px] text-muted-foreground truncate">{p.sponsor}{p.offtaker ? ` → ${p.offtaker}` : ""}</div>
                       </div>
                       <span className="col-span-1 font-mono text-foreground">{p.iso}</span>
                       <span className="col-span-1 font-mono text-foreground">{p.state}</span>
@@ -306,7 +337,7 @@ export default function Queue() {
                         {p.type}
                       </span>
                       <span className="col-span-1 font-mono text-foreground text-right tabular-nums">{p.capacityMW.toLocaleString()}</span>
-                      <span className="col-span-2 font-mono text-muted-foreground">{p.queueDate}</span>
+                      <span className="col-span-2 font-mono text-muted-foreground text-[10px] truncate">{p.expectedOnline ?? "—"}</span>
                       <span className="col-span-1 text-center">
                         <Badge variant="outline" className="text-[9px] font-mono px-1.5 py-0" style={{ color: statusColor, borderColor: `${statusColor}40` }}>
                           {p.status}
@@ -317,12 +348,14 @@ export default function Queue() {
                       </span>
                     </div>
                   </TooltipTrigger>
-                  {(p.notes || p.expectedOnline) && (
+                  {(p.notes || p.sources) && (
                     <TooltipContent side="top" className="max-w-md p-3">
-                      {p.expectedOnline && (
-                        <p className="text-[10px] text-muted-foreground mb-1">Expected online: <span className="text-foreground font-mono">{p.expectedOnline}</span></p>
-                      )}
                       {p.notes && <p className="text-xs leading-relaxed">{p.notes}</p>}
+                      {p.sources && p.sources.length > 0 && (
+                        <p className="text-[10px] text-muted-foreground mt-1.5">
+                          sources: {p.sources.join(", ")}
+                        </p>
+                      )}
                     </TooltipContent>
                   )}
                 </UITooltip>
@@ -331,11 +364,11 @@ export default function Queue() {
           )}
         </Card>
 
-        <p className="text-[11px] text-muted-foreground/50 leading-relaxed">
-          Queue data is a curated sample of the LBNL Queued Up dataset focused on AI-power-relevant projects.
-          For the full ~12,000-request dataset across all balancing areas, see <a href="https://emp.lbl.gov/queues" target="_blank" rel="noopener noreferrer" className="text-[#F07800] hover:text-[#F0A500]">emp.lbl.gov/queues</a>.
-          The withdrawal rate historically runs around 70-80% across all ISOs.
-        </p>
+        {data?.source?.notes && (
+          <p className="text-[11px] text-muted-foreground/60 leading-relaxed">
+            {data.source.notes}
+          </p>
+        )}
       </div>
     </div>
   );
