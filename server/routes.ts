@@ -586,6 +586,172 @@ function isNewsRelevant(headline: string): boolean {
   return NEWS_KEYWORDS.some((kw) => lower.includes(kw.toLowerCase()));
 }
 
+// ─── OG image renderer (shared by /api/og and the X media upload path) ─────
+
+interface OgStat { label: string; value: string }
+interface OgCard {
+  title: string;
+  subtitle: string;
+  stats: OgStat[];
+}
+
+async function liveIndicesStats(): Promise<OgStat[]> {
+  try {
+    const k = await computeKpis();
+    return [
+      { label: "AI Demand", value: k.aiPowerIndex.toFixed(0) },
+      { label: "Nuclear (NPI)", value: k.npiValue.toFixed(0) },
+      { label: "Grid Stress", value: k.gridStress.toFixed(0) },
+    ];
+  } catch {
+    return [
+      { label: "AI Demand", value: "—" },
+      { label: "Nuclear (NPI)", value: "—" },
+      { label: "Grid Stress", value: "—" },
+    ];
+  }
+}
+
+// Per-template OG card content. Pulled from the same data sources the tweet
+// composers use, so the card and the tweet text stay in sync.
+async function ogCardForTemplate(template: string): Promise<OgCard> {
+  if (template === "tilt_status") {
+    return { title: "today's indices", subtitle: "ai power demand · nuclear · grid stress", stats: await liveIndicesStats() };
+  }
+  if (template === "top_movers") {
+    const sd = await getCachedStockData("1D");
+    const movers = (Object.values(sd) as any[])
+      .filter((s) => s && typeof s.changePercent === "number")
+      .sort((a, b) => Math.abs(b.changePercent) - Math.abs(a.changePercent))
+      .slice(0, 3);
+    return {
+      title: "today's biggest moves",
+      subtitle: "ai infrastructure equities",
+      stats: movers.map((s) => ({ label: `$${s.ticker}`, value: `${s.changePercent >= 0 ? "+" : ""}${s.changePercent.toFixed(2)}%` })),
+    };
+  }
+  if (template === "npi_update") {
+    const k = await computeKpis();
+    return {
+      title: "nuclear power index",
+      subtitle: `${k.npiValue.toFixed(0)} (baseline 100, jan 2024)`,
+      stats: [
+        { label: "VST", value: `${k.constituents.vstPerf >= 1 ? "+" : ""}${((k.constituents.vstPerf - 1) * 100).toFixed(0)}%` },
+        { label: "CEG", value: `${k.constituents.cegPerf >= 1 ? "+" : ""}${((k.constituents.cegPerf - 1) * 100).toFixed(0)}%` },
+        { label: "CCJ", value: `${k.constituents.ccjPerf >= 1 ? "+" : ""}${((k.constituents.ccjPerf - 1) * 100).toFixed(0)}%` },
+      ],
+    };
+  }
+  if (template === "queue_update") {
+    try {
+      const filePath = join(process.cwd(), "server", "data", "interconnection-queue.json");
+      const raw = readFileSync(filePath, "utf-8");
+      const data = JSON.parse(raw) as { projects: Array<{ capacityMW: number; status: string; dcRelevant: boolean }> };
+      const active = data.projects.filter((p) => p.status === "active");
+      const totalGW = active.reduce((s, p) => s + p.capacityMW, 0) / 1000;
+      const dcGW = active.filter((p) => p.dcRelevant).reduce((s, p) => s + p.capacityMW, 0) / 1000;
+      const withdrawn = data.projects.filter((p) => p.status === "withdrawn").length;
+      const rate = data.projects.length > 0 ? Math.round((withdrawn / data.projects.length) * 100) : 0;
+      return {
+        title: "us interconnection queue",
+        subtitle: "every power project waiting on the grid",
+        stats: [
+          { label: "Active GW", value: totalGW.toFixed(1) },
+          { label: "DC-relevant", value: `${dcGW.toFixed(1)} GW` },
+          { label: "Withdrawal", value: `${rate}%` },
+        ],
+      };
+    } catch {
+      return { title: "us interconnection queue", subtitle: "every power project waiting on the grid", stats: [] };
+    }
+  }
+  if (template === "catalyst_preview") {
+    return { title: "this week's catalysts", subtitle: "earnings · regulatory · policy", stats: await liveIndicesStats() };
+  }
+  // Fallback
+  return { title: "gridtilt", subtitle: "ai power infrastructure", stats: await liveIndicesStats() };
+}
+
+async function renderOgPng(card: OgCard): Promise<Buffer> {
+  const satori = (await import("satori")).default;
+  const { Resvg } = await import("@resvg/resvg-js");
+  const fontData = readFileSync(join(process.cwd(), "server", "fonts", "Inter-Regular.ttf"));
+
+  const svg = await satori(
+    {
+      type: "div",
+      props: {
+        style: {
+          width: "1200px",
+          height: "630px",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+          padding: "60px",
+          background: "linear-gradient(135deg, #121110 0%, #1a1917 50%, #121110 100%)",
+          fontFamily: "Inter, sans-serif",
+          color: "#ffffff",
+        },
+        children: [
+          {
+            type: "div",
+            props: {
+              style: { display: "flex", flexDirection: "column", gap: "16px" },
+              children: [
+                {
+                  type: "div",
+                  props: {
+                    style: { display: "flex", alignItems: "center", gap: "12px" },
+                    children: [
+                      { type: "div", props: { style: { width: "8px", height: "32px", backgroundColor: "#F07800", borderRadius: "4px" } } },
+                      { type: "div", props: { style: { fontSize: "28px", fontWeight: "700", color: "#F07800", letterSpacing: "2px" }, children: "GRIDTILT" } },
+                    ],
+                  },
+                },
+                { type: "div", props: { style: { fontSize: "52px", fontWeight: "800", lineHeight: "1.1", maxWidth: "900px" }, children: card.title } },
+                { type: "div", props: { style: { fontSize: "24px", color: "#9ca3af", maxWidth: "900px" }, children: card.subtitle } },
+              ],
+            },
+          },
+          {
+            type: "div",
+            props: {
+              style: { display: "flex", justifyContent: "space-between", alignItems: "flex-end" },
+              children: [
+                {
+                  type: "div",
+                  props: {
+                    style: { display: "flex", gap: "40px" },
+                    children: card.stats.map((s) => ({
+                      type: "div",
+                      props: {
+                        style: { display: "flex", flexDirection: "column", gap: "4px" },
+                        children: [
+                          { type: "div", props: { style: { fontSize: "14px", color: "#6b7280", textTransform: "uppercase", letterSpacing: "2px" }, children: s.label } },
+                          { type: "div", props: { style: { fontSize: "40px", fontWeight: "700", color: "#F0A500", fontFamily: "monospace" }, children: s.value } },
+                        ],
+                      },
+                    })),
+                  },
+                },
+                { type: "div", props: { style: { fontSize: "18px", color: "#6b7280" }, children: "gridtilt.com" } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+    {
+      width: 1200,
+      height: 630,
+      fonts: [{ name: "Inter", data: fontData, weight: 400, style: "normal" as const }],
+    },
+  );
+
+  const resvg = new Resvg(svg, { fitTo: { mode: "width", value: 1200 } });
+  return Buffer.from(resvg.render().asPng());
+}
+
 // ─── X (Twitter) OAuth 1.0a posting client ──────────────────────────────────
 // Hand-rolled signer. No third-party SDK. Uses Node crypto + fetch.
 
@@ -649,7 +815,51 @@ interface XPostResult {
   dryRun?: boolean;
 }
 
-async function xPostTweet(text: string): Promise<XPostResult> {
+// Upload a PNG to X via the v1.1 media endpoint. Returns the media_id_string
+// that /2/tweets accepts. OAuth 1.0a, but the multipart body is NOT part of
+// the signature base string (oauth params + URL + method only).
+async function xUploadMedia(pngBuf: Buffer): Promise<string | null> {
+  const consumerKey = process.env.X_API_KEY;
+  const consumerSecret = process.env.X_API_SECRET;
+  const accessToken = process.env.X_ACCESS_TOKEN;
+  const accessTokenSecret = process.env.X_ACCESS_TOKEN_SECRET;
+  if (!consumerKey || !consumerSecret || !accessToken || !accessTokenSecret) {
+    return null;
+  }
+
+  const url = "https://upload.twitter.com/1.1/media/upload.json";
+  const authHeader = buildOAuth1Header(
+    "POST",
+    url,
+    consumerKey,
+    consumerSecret,
+    accessToken,
+    accessTokenSecret,
+  );
+
+  try {
+    const form = new FormData();
+    // Use Blob; X expects raw bytes in the `media` field for simple upload
+    form.append("media", new Blob([pngBuf], { type: "image/png" }), "card.png");
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { Authorization: authHeader },
+      body: form as any,
+    });
+    if (!res.ok) {
+      const errText = await res.text().catch(() => "");
+      console.error("X media upload failed:", res.status, errText.slice(0, 300));
+      return null;
+    }
+    const data = (await res.json()) as any;
+    return data?.media_id_string ?? null;
+  } catch (e: any) {
+    console.error("X media upload error:", e?.message);
+    return null;
+  }
+}
+
+async function xPostTweet(text: string, mediaIds?: string[]): Promise<XPostResult> {
   const consumerKey = process.env.X_API_KEY;
   const consumerSecret = process.env.X_API_SECRET;
   const accessToken = process.env.X_ACCESS_TOKEN;
@@ -669,6 +879,11 @@ async function xPostTweet(text: string): Promise<XPostResult> {
     accessTokenSecret,
   );
 
+  const body: any = { text };
+  if (mediaIds && mediaIds.length > 0) {
+    body.media = { media_ids: mediaIds };
+  }
+
   try {
     const res = await fetch(url, {
       method: "POST",
@@ -676,7 +891,7 @@ async function xPostTweet(text: string): Promise<XPostResult> {
         Authorization: authHeader,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ text }),
+      body: JSON.stringify(body),
     });
     if (!res.ok) {
       const errText = await res.text().catch(() => "");
@@ -862,20 +1077,22 @@ async function computeKpis(): Promise<KpiResult> {
   };
 }
 
-type TiltStatus = "elevated" | "tracking baseline" | "easing";
-
-function deriveTiltStatus(k: KpiResult): TiltStatus {
+// Simple status label used by /api/export/daily. Most surfaces don't show
+// this word any more (the tilt-status tweet drops it). Kept narrow so the
+// export endpoint has a stable shape.
+function deriveTiltStatus(k: KpiResult): "elevated" | "tracking baseline" | "easing" {
   if (k.aiPowerIndex > 78 && k.gridStress > 70 && k.npiValue > 130) return "elevated";
   if (k.aiPowerIndex < 68 && k.gridStress < 55) return "easing";
   return "tracking baseline";
 }
 
-// ─── Tweet composers (one per rotating template) ────────────────────────────
-// Each template renders ~6-10 lines: a header, a data block, and a one-line
-// observation tied to real signal. Lowercase voice. Light branding via the
-// ⚡ mark before the URL line.
-
-const TWEET_FOOTER_MARK = "⚡";
+// ─── Tweet composers ───────────────────────────────────────────────────────
+// Voice rules:
+//   - lowercase, short sentences
+//   - describe what's in the data; don't editorialize
+//   - no "running hot", "carrying the basket", "the bottleneck nobody
+//     dashboards", "the whole trade", etc. those are takes, not observations
+//   - full https:// urls so X cards the link properly
 
 function fmtPct(n: number): string {
   const v = n.toFixed(2);
@@ -887,72 +1104,67 @@ function fmtPerf(perf: number): string {
   return perf >= 1 ? `+${pct}%` : `${pct}%`;
 }
 
-// Reads sector pulse from the cached stack data and returns the layer with
-// the largest absolute average change. Used to point at "what dominated."
-async function dominantSector(): Promise<{ key: string; label: string; avgChange: number } | null> {
-  const stockData = await getCachedStockData("1D");
-  const LABELS: Record<string, string> = {
+// Map every tracked ticker back to a short sector label for inline tagging.
+const SECTOR_TAG: Record<string, string> = (() => {
+  const m: Record<string, string> = {};
+  const labels: Record<string, string> = {
     compute: "compute",
-    nuclear: "nuclear generators",
-    uranium: "uranium miners",
+    nuclear: "nuclear",
+    uranium: "uranium",
     powerHardware: "power hardware",
-    utilities: "utilities",
-    dataCenters: "datacenter reits",
+    utilities: "utility",
+    dataCenters: "dc reit",
     construction: "construction",
-    rawMaterialsMining: "miners",
-    rawMaterialsNatGas: "natural gas",
-    renewableGeneration: "renewables",
+    rawMaterialsMining: "mining",
+    rawMaterialsNatGas: "nat gas",
+    renewableGeneration: "solar/renewables",
     transmissionGrid: "grid hardware",
     cryptoAIDC: "ai hosting",
-    etfsBenchmarks: "etfs",
+    etfsBenchmarks: "etf",
   };
-  let best: { key: string; label: string; avgChange: number } | null = null;
   for (const [key, tickers] of Object.entries(STACK_TICKERS)) {
-    if (key === "etfsBenchmarks") continue; // ETFs water down the signal
-    const changes = tickers
-      .map((t) => stockData[t]?.changePercent)
-      .filter((c: any) => typeof c === "number");
-    if (changes.length === 0) continue;
-    const avg = changes.reduce((s: number, v: number) => s + v, 0) / changes.length;
-    if (!best || Math.abs(avg) > Math.abs(best.avgChange)) {
-      best = { key, label: LABELS[key] ?? key, avgChange: avg };
-    }
+    for (const t of tickers) m[t] = labels[key] ?? key;
   }
-  return best;
-}
+  return m;
+})();
 
 async function composeTiltStatusTweet(): Promise<string> {
   const k = await computeKpis();
-  const status = deriveTiltStatus(k);
 
-  // Identify the most stretched dimension vs baseline.
-  const aiHeat = k.aiPowerIndex - 72;
-  const stressHeat = k.gridStress - 68;
-  const npiVsBase = k.npiValue - 100;
+  // Find which index is furthest from its own baseline (each scaled).
+  // ai_demand baseline 72, grid baseline 68, npi baseline 100.
+  const aiOff = k.aiPowerIndex - 72;
+  const stressOff = k.gridStress - 68;
+  const npiOff = k.npiValue - 100;
+  const npiPctOff = npiOff;  // expressed as points vs 100 -> ~ percent
 
-  let observation: string;
-  if (k.gridStress > 75 && stressHeat > aiHeat) {
-    observation = "grid is the tightest of the three. reserve margins remain a constraint.";
-  } else if (k.aiPowerIndex > 78) {
-    observation = "ai power demand running hot. compute and dc reits leading the bid.";
-  } else if (npiVsBase > 40) {
-    observation = `npi sits +${npiVsBase.toFixed(0)}% since jan '24. nuclear basket has carried the trade.`;
-  } else if (k.aiPowerIndex < 68 && k.gridStress < 60) {
-    observation = "indices have pulled back from peaks. watch hyperscaler capex tone.";
+  let line: string;
+  if (Math.abs(npiPctOff) > 30 && Math.abs(npiPctOff) > Math.abs(aiOff) && Math.abs(npiPctOff) > Math.abs(stressOff)) {
+    line = npiPctOff > 0
+      ? `npi is the outlier. ${npiPctOff.toFixed(0)} points above its jan 2024 baseline of 100. the other two sit near where they started.`
+      : `npi is the outlier on the downside. ${Math.abs(npiPctOff).toFixed(0)} points below its baseline.`;
+  } else if (Math.abs(stressOff) > 6 && Math.abs(stressOff) >= Math.abs(aiOff)) {
+    line = stressOff > 0
+      ? "grid stress is the one moving. reserve margins keep tightening."
+      : "grid stress has eased back toward baseline.";
+  } else if (Math.abs(aiOff) > 6) {
+    line = aiOff > 0
+      ? "ai power demand sits above baseline. compute and dc reits doing the work."
+      : "ai power demand has cooled. watch hyperscaler capex tone.";
   } else {
-    observation = "all three indices near structural baseline. no dimension running away.";
+    line = "all three indices sit near their baselines today.";
   }
 
   return [
-    `tilt: ${status}`,
+    "gridtilt · today's indices",
     "",
     `ai power demand  ${k.aiPowerIndex.toFixed(0)}`,
     `nuclear (npi)    ${k.npiValue.toFixed(0)}`,
     `grid stress      ${k.gridStress.toFixed(0)}`,
     "",
-    observation,
+    line,
     "",
-    `${TWEET_FOOTER_MARK} gridtilt.com`,
+    "https://gridtilt.com",
   ].join("\n");
 }
 
@@ -963,35 +1175,47 @@ async function composeTopMoversTweet(): Promise<string> {
     .sort((a, b) => Math.abs(b.changePercent) - Math.abs(a.changePercent))
     .slice(0, 4);
 
-  const lines = movers.map((s) => `$${s.ticker} ${fmtPct(s.changePercent)}`);
+  // Show ticker + sector tag inline.
+  const lines = movers.map((s) => {
+    const tag = SECTOR_TAG[s.ticker];
+    return `$${s.ticker} ${fmtPct(s.changePercent)}${tag ? ` (${tag})` : ""}`;
+  });
 
-  // Build the narrative from sector dominance + direction mix.
-  const dom = await dominantSector();
+  // Honest direction count + dominant sector among the shown movers.
   const upCount = movers.filter((s) => s.changePercent > 0).length;
   const downCount = movers.length - upCount;
 
-  let observation: string;
-  if (dom && Math.abs(dom.avgChange) > 1.5) {
-    const verb = dom.avgChange > 0 ? "leading the tape" : "got sold today";
-    observation = `${dom.label} ${verb}. avg ${fmtPct(dom.avgChange)} across the basket.`;
+  // Among the displayed tickers, which sector shows up the most?
+  const tagCounts: Record<string, number> = {};
+  for (const s of movers) {
+    const tag = SECTOR_TAG[s.ticker];
+    if (tag) tagCounts[tag] = (tagCounts[tag] ?? 0) + 1;
+  }
+  const repeated = Object.entries(tagCounts).find(([, n]) => n >= 2);
+
+  let line: string;
+  if (repeated) {
+    const tag = repeated[0];
+    const repTickers = movers.filter((s) => SECTOR_TAG[s.ticker] === tag);
+    const repUp = repTickers.filter((s) => s.changePercent > 0).length;
+    const direction = repUp === repTickers.length ? "up" : repUp === 0 ? "down" : "mixed";
+    line = `${tag} shows up ${repeated[1]} times, ${direction}.`;
   } else if (downCount === movers.length) {
-    observation = "broad pullback. nothing green in the top movers.";
+    line = "all four down today.";
   } else if (upCount === movers.length) {
-    observation = "ai infra bid across the board today.";
-  } else if (downCount > upCount) {
-    observation = "sellers in control. defensive day for the sector.";
+    line = "all four up today.";
   } else {
-    observation = "mixed tape. compute and generators trading separately.";
+    line = `${upCount} up, ${downCount} down. mixed across sectors.`;
   }
 
   return [
-    "top movers · ai infra",
+    "today's biggest moves in ai infra:",
     "",
     ...lines,
     "",
-    observation,
+    line,
     "",
-    `${TWEET_FOOTER_MARK} gridtilt.com/stack`,
+    "https://gridtilt.com/stack",
   ].join("\n");
 }
 
@@ -999,30 +1223,32 @@ async function composeNpiUpdateTweet(): Promise<string> {
   const k = await computeKpis();
   const c = k.constituents;
 
-  const perfs: Array<{ label: string; sym: string; perf: number }> = [
-    { label: "constellation", sym: "CEG",  perf: c.cegPerf },
-    { label: "vistra",        sym: "VST",  perf: c.vstPerf },
-    { label: "cameco",        sym: "CCJ",  perf: c.ccjPerf },
-    { label: "uranium spot",  sym: "U₃O₈", perf: c.uPerf  },
+  const perfs = [
+    { sym: "CEG",  perf: c.cegPerf },
+    { sym: "VST",  perf: c.vstPerf },
+    { sym: "CCJ",  perf: c.ccjPerf },
+    { sym: "NLR",  perf: c.nlrPerf },
+    { sym: "U₃O₈", perf: c.uPerf  },
   ];
 
-  // Largest absolute move drives the narrative line.
-  const leader = perfs.reduce((a, b) => Math.abs(b.perf - 1) > Math.abs(a.perf - 1) ? b : a);
-  const observation = leader.perf >= 1
-    ? `${leader.label} carrying the basket: ${fmtPerf(leader.perf)} since jan '24.`
-    : `${leader.label} dragging the basket: ${fmtPerf(leader.perf)} since jan '24.`;
+  // Sort components by magnitude of move for the data block.
+  const sorted = [...perfs].sort((a, b) => Math.abs(b.perf - 1) - Math.abs(a.perf - 1));
+  const top = sorted[0];
+
+  // Find the biggest divergence in the basket.
+  const max = sorted[0].perf;
+  const min = sorted[sorted.length - 1].perf;
+  const spread = ((max - min) * 100).toFixed(0);
 
   return [
-    `nuclear power index (npi)  ${k.npiValue.toFixed(0)}`,
+    `nuclear power index today: ${k.npiValue.toFixed(0)}`,
+    "(baseline 100, jan 2024)",
     "",
-    `CEG   ${fmtPerf(c.cegPerf)}`,
-    `VST   ${fmtPerf(c.vstPerf)}`,
-    `CCJ   ${fmtPerf(c.ccjPerf)}`,
-    `U₃O₈  ${fmtPerf(c.uPerf)}`,
+    ...sorted.map((p) => `${p.sym.padEnd(5)} ${fmtPerf(p.perf)}`),
     "",
-    observation,
+    `spread between ${top.sym} and the laggard: ${spread} points.`,
     "",
-    `${TWEET_FOOTER_MARK} gridtilt.com`,
+    "https://gridtilt.com",
   ].join("\n");
 }
 
@@ -1040,34 +1266,32 @@ async function composeQueueUpdateTweet(): Promise<string> {
       ? Math.round((withdrawn / data.projects.length) * 100)
       : 0;
 
-    // Find leading ISO by pending GW.
     const byIso: Record<string, number> = {};
     for (const p of active) {
       byIso[p.iso] = (byIso[p.iso] ?? 0) + p.capacityMW;
     }
-    const leadIso = Object.entries(byIso).sort((a, b) => b[1] - a[1])[0];
-    const observation = leadIso
-      ? `${leadIso[0]} leads with ${(leadIso[1] / 1000).toFixed(1)} GW pending.`
-      : "queue spread evenly across isos.";
+    const isoSorted = Object.entries(byIso).sort((a, b) => b[1] - a[1]);
+    const top3 = isoSorted.slice(0, 3);
 
     return [
-      "us interconnection queue · snapshot",
+      "us interconnection queue today:",
       "",
       `${totalGW.toFixed(1)} GW pending across active requests`,
-      `${dcProjects.length} projects flagged datacenter-relevant`,
+      `${dcProjects.length} projects flagged datacenter-relevant (${dcGW.toFixed(1)} GW)`,
       `${withdrawalRate}% historical withdrawal rate`,
       "",
-      observation,
+      "by iso:",
+      ...top3.map(([iso, mw]) => `${iso.padEnd(5)} ${(mw / 1000).toFixed(1)} GW`),
       "",
-      `${TWEET_FOOTER_MARK} gridtilt.com/queue`,
+      "https://gridtilt.com/queue",
     ].join("\n");
   } catch {
     return [
       "us interconnection queue",
       "",
-      "the grid bottleneck nobody else dashboards.",
+      "data unavailable today. checking the dataset.",
       "",
-      `${TWEET_FOOTER_MARK} gridtilt.com/queue`,
+      "https://gridtilt.com/queue",
     ].join("\n");
   }
 }
@@ -1095,36 +1319,34 @@ async function composeCatalystPreviewTweet(): Promise<string> {
 
   if (upcoming.length === 0) {
     return [
-      "next week · ai infra",
+      "this week on the ai infra calendar:",
       "",
-      "no scheduled catalysts on the docket.",
-      "watch earnings tape and regulatory filings.",
+      "nothing scheduled. quiet docket.",
       "",
-      `${TWEET_FOOTER_MARK} gridtilt.com/catalysts`,
+      "https://gridtilt.com/catalysts",
     ].join("\n");
   }
 
   const lines = upcoming.map((c) => {
     const d = new Date(c.date).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
-    return `${d}: ${c.title}`;
+    return `${d}: ${c.title.toLowerCase()}`;
   });
 
-  // Surface the most market-moving item if it's a tier-1 ticker earnings.
-  const headline = upcoming.find((c: any) =>
+  const tier1 = upcoming.find((c: any) =>
     Array.isArray(c.tickers) && c.tickers.some((t: string) => TIER1_EARNINGS.has(t))
   );
-  const observation = headline
-    ? `headline of the week: ${headline.title.toLowerCase()}.`
-    : "sector-specific catalysts only this week. no tier-1 earnings.";
+  const tailLine = tier1
+    ? `the one to watch is ${tier1.title.toLowerCase()}.`
+    : "no tier-1 earnings on the docket this week.";
 
   return [
-    "next week · ai infra",
+    "this week on the ai infra calendar:",
     "",
     ...lines,
     "",
-    observation,
+    tailLine,
     "",
-    `${TWEET_FOOTER_MARK} gridtilt.com/catalysts`,
+    "https://gridtilt.com/catalysts",
   ].join("\n");
 }
 
@@ -2198,185 +2420,57 @@ Preferred-Languages: en
   // ─── SEO: Dynamic OG Image Generation ──────────────────────────────────
   app.get("/api/og", async (req, res) => {
     try {
-      const satori = (await import("satori")).default;
-      const { Resvg } = await import("@resvg/resvg-js");
-      const fontData = readFileSync(join(process.cwd(), "server", "fonts", "Inter-Regular.ttf"));
-
       const page = (req.query.page as string) || "home";
       const ticker = req.query.ticker as string | undefined;
       const name = req.query.name as string | undefined;
+      const template = req.query.template as string | undefined;
 
-      let title = "The Grid is Tilting";
-      let subtitle = "AI Power Infrastructure Dashboard";
-      let stats: Array<{ label: string; value: string }> = [];
-
-      if (ticker) {
+      let card: OgCard;
+      if (template) {
+        card = await ogCardForTemplate(template);
+      } else if (ticker) {
         const companyInfo = COMPANY_DATABASE[ticker.toUpperCase()];
-        title = companyInfo ? `${companyInfo.name} ($${ticker.toUpperCase()})` : `$${ticker.toUpperCase()}`;
-        subtitle = companyInfo ? `${companyInfo.primarySegment} Sector` : "AI Power Thesis Analysis";
-        stats = [{ label: "Sector", value: companyInfo?.primarySegment || "Unknown" }];
+        card = {
+          title: companyInfo ? `${companyInfo.name} ($${ticker.toUpperCase()})` : `$${ticker.toUpperCase()}`,
+          subtitle: companyInfo ? `${companyInfo.primarySegment} Sector` : "AI Power Thesis Analysis",
+          stats: [{ label: "Sector", value: companyInfo?.primarySegment || "Unknown" }],
+        };
       } else if (page === "stack") {
-        title = "60+ AI Power Stocks";
-        subtitle = "Live Data Across 8 Sectors";
+        card = { title: "60+ AI Power Stocks", subtitle: "Live Data Across 8 Sectors", stats: await liveIndicesStats() };
       } else if (page === "power-map") {
-        title = "US AI Data Center Map";
-        subtitle = "Filter by operator, region, and capacity (\u2265 400 MW)";
+        card = { title: "US AI Data Center Map", subtitle: "Filter by operator, region, and capacity (\u2265 400 MW)", stats: await liveIndicesStats() };
       } else if (page === "supply-chain") {
-        title = "AI Power Supply Chain";
-        subtitle = "5 systems, 20 sub-systems, silicon to substation";
+        card = { title: "AI Power Supply Chain", subtitle: "5 systems, 20 sub-systems, silicon to substation", stats: await liveIndicesStats() };
       } else if (page === "queue") {
-        title = "The Interconnection Queue";
-        subtitle = "~2,700 GW pending across 7 US ISOs";
-        stats = [
-          { label: "Requests", value: "~12k" },
-          { label: "GW Pending", value: "~2,700" },
-          { label: "Withdraw Rate", value: "~80%" },
-        ];
+        card = await ogCardForTemplate("queue_update");
       } else if (page === "trade") {
-        title = "AI Power Scenario Calculator";
-        subtitle = "Model demand, capex, and LPT requirements through 2030";
+        card = { title: "AI Power Scenario Calculator", subtitle: "Model demand, capex, and LPT requirements through 2030", stats: await liveIndicesStats() };
       } else if (page === "portfolio") {
-        title = "AI Power Thesis Score";
-        subtitle = "Rate any portfolio against the AI power buildout";
+        card = { title: "AI Power Thesis Score", subtitle: "Rate any portfolio against the AI power buildout", stats: await liveIndicesStats() };
       } else if (page === "catalysts") {
-        title = "Catalyst Calendar";
-        subtitle = "Earnings, policy, and regulatory events for AI power";
+        card = { title: "Catalyst Calendar", subtitle: "Earnings, policy, and regulatory events for AI power", stats: await liveIndicesStats() };
       } else if (page === "blog" && name) {
-        title = name;
-        subtitle = "GridTilt Analysis";
+        card = { title: name, subtitle: "GridTilt Analysis", stats: await liveIndicesStats() };
       } else if (page === "blog") {
-        title = "GridTilt Analysis";
-        subtitle = "Research on the AI power infrastructure thesis";
+        card = { title: "GridTilt Analysis", subtitle: "Research on the AI power infrastructure thesis", stats: await liveIndicesStats() };
       } else if (page === "subscribe") {
-        title = "Get the Tilt";
-        subtitle = "Weekly AI power market intel, in your inbox";
+        card = { title: "Get the Tilt", subtitle: "Weekly AI power market intel, in your inbox", stats: await liveIndicesStats() };
       } else if (page === "sector" && name) {
-        title = `${name} Sector`;
-        subtitle = "AI Power Infrastructure Stocks";
+        card = { title: `${name} Sector`, subtitle: "AI Power Infrastructure Stocks", stats: await liveIndicesStats() };
       } else if (page === "region" && name) {
-        title = `${name} Grid Region`;
-        subtitle = "AI Data Center Locations";
+        card = { title: `${name} Grid Region`, subtitle: "AI Data Center Locations", stats: await liveIndicesStats() };
       } else if (page === "operator" && name) {
-        title = `${name} AI Data Centers`;
-        subtitle = "Locations and Capacity";
+        card = { title: `${name} AI Data Centers`, subtitle: "Locations and Capacity", stats: await liveIndicesStats() };
+      } else {
+        // home (default)
+        card = { title: "The grid is tilting.", subtitle: "AI power infrastructure dashboard", stats: await liveIndicesStats() };
       }
 
-      const svg = await satori(
-        {
-          type: "div",
-          props: {
-            style: {
-              width: "1200px",
-              height: "630px",
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "space-between",
-              padding: "60px",
-              background: "linear-gradient(135deg, #121110 0%, #1a1917 50%, #121110 100%)",
-              fontFamily: "Inter, sans-serif",
-              color: "#ffffff",
-            },
-            children: [
-              {
-                type: "div",
-                props: {
-                  style: { display: "flex", flexDirection: "column", gap: "16px" },
-                  children: [
-                    {
-                      type: "div",
-                      props: {
-                        style: { display: "flex", alignItems: "center", gap: "12px" },
-                        children: [
-                          {
-                            type: "div",
-                            props: {
-                              style: {
-                                width: "8px",
-                                height: "32px",
-                                backgroundColor: "#F07800",
-                                borderRadius: "4px",
-                              },
-                            },
-                          },
-                          {
-                            type: "div",
-                            props: {
-                              style: { fontSize: "28px", fontWeight: "700", color: "#F07800", letterSpacing: "2px" },
-                              children: "GRIDTILT",
-                            },
-                          },
-                        ],
-                      },
-                    },
-                    {
-                      type: "div",
-                      props: {
-                        style: { fontSize: "52px", fontWeight: "800", lineHeight: "1.1", maxWidth: "900px" },
-                        children: title,
-                      },
-                    },
-                    {
-                      type: "div",
-                      props: {
-                        style: { fontSize: "24px", color: "#9ca3af", maxWidth: "800px" },
-                        children: subtitle,
-                      },
-                    },
-                  ],
-                },
-              },
-              {
-                type: "div",
-                props: {
-                  style: { display: "flex", justifyContent: "space-between", alignItems: "flex-end" },
-                  children: [
-                    {
-                      type: "div",
-                      props: {
-                        style: { display: "flex", gap: "40px" },
-                        children: (stats.length > 0 ? stats : [
-                          { label: "AI Demand", value: "74" },
-                          { label: "Nuclear", value: "279" },
-                          { label: "Grid Stress", value: "70" },
-                        ]).map((s) => ({
-                          type: "div",
-                          props: {
-                            style: { display: "flex", flexDirection: "column", gap: "4px" },
-                            children: [
-                              { type: "div", props: { style: { fontSize: "14px", color: "#6b7280", textTransform: "uppercase", letterSpacing: "2px" }, children: s.label } },
-                              { type: "div", props: { style: { fontSize: "40px", fontWeight: "700", color: "#F0A500", fontFamily: "monospace" }, children: s.value } },
-                            ],
-                          },
-                        })),
-                      },
-                    },
-                    {
-                      type: "div",
-                      props: {
-                        style: { fontSize: "18px", color: "#6b7280" },
-                        children: "gridtilt.com",
-                      },
-                    },
-                  ],
-                },
-              },
-            ],
-          },
-        },
-        {
-          width: 1200,
-          height: 630,
-          fonts: [{ name: "Inter", data: fontData, weight: 400, style: "normal" as const }],
-        },
-      );
-
-      const resvg = new Resvg(svg, { fitTo: { mode: "width", value: 1200 } });
-      const png = resvg.render().asPng();
-
+      const png = await renderOgPng(card);
       res.set({
         "Content-Type": "image/png",
-        "Cache-Control": "public, max-age=3600, s-maxage=86400",
-      }).send(Buffer.from(png));
+        "Cache-Control": "public, max-age=600, s-maxage=600",  // 10 min so live stats stay fresh
+      }).send(png);
     } catch (error) {
       console.error("OG image generation error:", error);
       res.status(500).json({ error: "Failed to generate OG image" });
@@ -2479,7 +2573,21 @@ Preferred-Languages: en
     }
     try {
       const text = ensureTweetLength(await picked.compose());
-      const result = await xPostTweet(text);
+
+      // Render the template's matching OG image and attach it. If the upload
+      // fails (X throttling, OAuth issue), still post the text — the link card
+      // will fall back to the page's og:image meta.
+      let mediaIds: string[] | undefined;
+      try {
+        const card = await ogCardForTemplate(picked.name);
+        const png = await renderOgPng(card);
+        const mediaId = await xUploadMedia(png);
+        if (mediaId) mediaIds = [mediaId];
+      } catch (mediaErr: any) {
+        console.error("OG media upload skipped:", mediaErr?.message);
+      }
+
+      const result = await xPostTweet(text, mediaIds);
       appendSocialLog({
         timestamp: new Date().toISOString(),
         platform: "twitter",
@@ -2491,7 +2599,7 @@ Preferred-Languages: en
         template: picked.name,
         trigger: "cron",
       });
-      res.json({ template: picked.name, ...result });
+      res.json({ template: picked.name, mediaAttached: !!mediaIds, ...result });
     } catch (error: any) {
       console.error("Daily tweet cron error:", error);
       appendSocialLog({
@@ -2507,16 +2615,29 @@ Preferred-Languages: en
     }
   });
 
-  // Manual post. Use this for feature launches, breaking news, etc.
-  // POST with body: { text: "..." } and the x-admin-key header.
+  // Manual post. Body: { text, template? }. When template is provided, the
+  // matching OG image is generated and attached. Without it, text-only post.
   app.post("/api/admin/post-now", async (req, res) => {
     if (!requireAdmin(req, res)) return;
-    const { text } = req.body || {};
+    const { text, template } = req.body || {};
     if (!text || typeof text !== "string" || text.trim().length === 0) {
       return res.status(400).json({ error: "text body field is required" });
     }
     const trimmed = ensureTweetLength(text.trim());
-    const result = await xPostTweet(trimmed);
+
+    let mediaIds: string[] | undefined;
+    if (template && typeof template === "string") {
+      try {
+        const card = await ogCardForTemplate(template);
+        const png = await renderOgPng(card);
+        const mediaId = await xUploadMedia(png);
+        if (mediaId) mediaIds = [mediaId];
+      } catch (mediaErr: any) {
+        console.error("OG media upload skipped:", mediaErr?.message);
+      }
+    }
+
+    const result = await xPostTweet(trimmed, mediaIds);
     appendSocialLog({
       timestamp: new Date().toISOString(),
       platform: "twitter",
@@ -2525,9 +2646,10 @@ Preferred-Languages: en
       id: result.id,
       error: result.error,
       dryRun: result.dryRun,
+      template,
       trigger: "manual",
     });
-    res.json(result);
+    res.json({ ...result, mediaAttached: !!mediaIds });
   });
 
   // Delete a tweet by id. Use for removing diagnostics or mistakes.
