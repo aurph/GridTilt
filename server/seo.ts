@@ -50,8 +50,8 @@ const STATIC_PAGES: Record<string, { title: string; description: string; slug: s
     slug: "blog",
   },
   "/queue": {
-    title: "Interconnection Queue \u2014 Every Power Project Waiting on the US Grid \u2014 GridTilt",
-    description: "Live tracker of US interconnection queue applications across all 7 ISOs. ~12k requests, ~2,700 GW pending, historically about 80% withdraw before commercial operation.",
+    title: "Interconnection Backlog \u00b7 Named US Power Projects Waiting on the Grid \u00b7 GridTilt",
+    description: "Every named US power project we can verify, plus the ISO queue totals that contain them. ~2,290 GW pending across ~10,300 projects (LBNL). 55-month median wait. ERCOT's large-load queue alone is 230 GW.",
     slug: "queue",
   },
   "/supply-chain": {

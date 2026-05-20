@@ -36,7 +36,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/trade": "Scenario Calculator",
   "/portfolio": "Portfolio Overlay",
   "/catalysts": "Catalyst Tracker",
-  "/queue": "Interconnection Queue",
+  "/queue": "Interconnection Backlog",
   "/blog": "Analysis",
   "/subscribe": "Subscribe",
 };
@@ -50,7 +50,7 @@ const SHORTCUTS = [
   { keys: ["G", "6"], description: "Go to Scenario Calculator", path: "/trade" },
   { keys: ["G", "7"], description: "Go to Catalyst Tracker", path: "/catalysts" },
   { keys: ["G", "8"], description: "Go to Analysis", path: "/blog" },
-  { keys: ["G", "9"], description: "Go to Interconnection Queue", path: "/queue" },
+  { keys: ["G", "9"], description: "Go to Interconnection Backlog", path: "/queue" },
   { keys: ["?"], description: "Show this keyboard shortcuts panel", path: null },
 ];
 

@@ -66,10 +66,10 @@ const navItems = [
     description: "Upcoming market events",
   },
   {
-    title: "Queue",
+    title: "Backlog",
     url: "/queue",
     icon: Cable,
-    description: "Interconnection backlog",
+    description: "Interconnection projects in flight",
   },
   {
     title: "Analysis",

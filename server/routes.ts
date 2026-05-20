@@ -588,45 +588,49 @@ function isNewsRelevant(headline: string): boolean {
 
 // ─── Interconnection queue dataset shape (LBNL Queued Up + curated) ────────
 
-interface QueueAggregateRow { type?: string; iso?: string; gw: number | null; yoyPct?: number | null; asOfNote?: string }
-interface QueueNotableProject {
+interface BacklogProject {
   id: string;
   projectName: string;
   sponsor: string;
   capacityMW: number;
-  type: string;
+  type: "nuclear" | "gas" | "solar" | "wind" | "storage" | "hybrid" | "load" | "other";
   iso: string;
   state: string;
   status: "active" | "withdrawn" | "operational";
+  category: "generation" | "load" | "ppa" | "aggregate" | "regulatory";
   expectedOnline: string | null;
-  dcRelevant: boolean;
   offtaker?: string | null;
+  dcRelevant: boolean;
   sources?: string[];
   notes?: string;
 }
-interface QueueDataset {
-  source: {
-    title: string;
-    publisher: string;
-    publishedDate: string;
-    asOf: string;
-    sourceUrl: string;
-    reportUrl?: string;
-    notes?: string;
-  };
-  aggregates: {
-    totalActiveGW: number;
-    totalActiveProjects: number;
-    medianQueueMonths: number;
+interface BacklogDataset {
+  lastRefreshed: string;
+  headline: {
+    trackedProjects: number;
+    trackedCapacityGW: number;
+    queueOverallGW: number;
+    queueOverallProjects: number;
+    medianWaitMonths: number;
     historicalWithdrawalPct: number;
-    historicalCompletionPct: number;
-    byType: QueueAggregateRow[];
-    byIso: QueueAggregateRow[];
-    pjmDetail?: any;
-    ercotDetail?: any;
+    queueOverallAsOf: string;
+    queueOverallSourceUrl: string;
+    ercotLargeLoadGW: number;
+    ercotLargeLoadDataCenterPct: number;
+    ercotLargeLoadAsOf: string;
+    pjmReopenedGW: number;
+    pjmReopenedProjects: number;
+    pjmReopenedAsOf: string;
+    dominionContractedGW: number;
+    dominionAsOf: string;
+    duke5yrGenAddGW: number;
+    metaHyperionGW: number;
+    stargateAbileneGW: number;
   };
-  notableProjects: QueueNotableProject[];
+  projects: BacklogProject[];
 }
+// Old name kept as alias so any existing imports still work
+type QueueDataset = BacklogDataset;
 
 // ─── OG image renderer (shared by /api/og and the X media upload path) ─────
 
@@ -688,19 +692,19 @@ async function ogCardForTemplate(template: string): Promise<OgCard> {
     try {
       const filePath = join(process.cwd(), "server", "data", "interconnection-queue.json");
       const raw = readFileSync(filePath, "utf-8");
-      const data = JSON.parse(raw) as QueueDataset;
-      const a = data.aggregates;
+      const data = JSON.parse(raw) as BacklogDataset;
+      const h = data.headline;
       return {
-        title: "us interconnection queue",
-        subtitle: `${a.totalActiveProjects.toLocaleString()} projects · ${data.source.asOf}`,
+        title: "us interconnection backlog",
+        subtitle: `tracking ${h.trackedProjects} named projects · ${h.trackedCapacityGW} GW`,
         stats: [
-          { label: "Active GW", value: a.totalActiveGW.toLocaleString() },
-          { label: "Median wait", value: `${a.medianQueueMonths} mo` },
-          { label: "Withdrawal", value: `${a.historicalWithdrawalPct}%` },
+          { label: "Total queue (GW)", value: h.queueOverallGW.toLocaleString() },
+          { label: "Median wait", value: `${h.medianWaitMonths} mo` },
+          { label: "Withdrawal", value: `${h.historicalWithdrawalPct}%` },
         ],
       };
     } catch {
-      return { title: "us interconnection queue", subtitle: "every power project waiting on the grid", stats: [] };
+      return { title: "us interconnection backlog", subtitle: "every named power project we can verify", stats: [] };
     }
   }
   if (template === "catalyst_preview") {
@@ -1294,30 +1298,25 @@ async function composeQueueUpdateTweet(): Promise<string> {
   try {
     const filePath = join(process.cwd(), "server", "data", "interconnection-queue.json");
     const raw = readFileSync(filePath, "utf-8");
-    const data = JSON.parse(raw) as QueueDataset;
-    const a = data.aggregates;
-
-    const isoTop = [...a.byIso]
-      .filter((r) => typeof r.gw === "number")
-      .sort((x, y) => (y.gw ?? 0) - (x.gw ?? 0))
-      .slice(0, 3);
+    const data = JSON.parse(raw) as BacklogDataset;
+    const h = data.headline;
 
     return [
-      `us interconnection queue · ${data.source.asOf}`,
+      "us interconnection backlog",
       "",
-      `${a.totalActiveGW.toLocaleString()} GW active across ${a.totalActiveProjects.toLocaleString()} projects`,
-      `median wait: ${a.medianQueueMonths} months. ~${a.historicalWithdrawalPct}% historical withdrawal.`,
+      `~${h.queueOverallGW.toLocaleString()} GW in the overall queue.`,
+      `median wait: ${h.medianWaitMonths} months.`,
+      `ERCOT large-load alone: ${h.ercotLargeLoadGW} GW (${h.ercotLargeLoadDataCenterPct}% datacenters).`,
       "",
-      "biggest by region:",
-      ...isoTop.map((r) => `${(r.iso ?? "").padEnd(14)} ${r.gw} GW`),
+      `gridtilt tracks ${h.trackedProjects} named projects, ${h.trackedCapacityGW} GW.`,
       "",
       "https://gridtilt.com/queue",
     ].join("\n");
   } catch {
     return [
-      "us interconnection queue",
+      "us interconnection backlog",
       "",
-      "data unavailable today. checking the dataset.",
+      "dataset refreshing.",
       "",
       "https://gridtilt.com/queue",
     ].join("\n");
@@ -1550,7 +1549,7 @@ export async function registerRoutes(
     }
   });
 
-  // ─── Interconnection Queue (LBNL-sourced) ──────────────────────────────────
+  // ─── Interconnection Backlog (LBNL aggregates + verified named projects) ──
   // Public, no auth. Returns the full project list plus aggregate summary
   // stats. Data is a sample of the Lawrence Berkeley National Lab "Queued Up"
   // dataset, hand-curated to AI-power-relevant projects. Annual refresh from
@@ -1559,15 +1558,11 @@ export async function registerRoutes(
     try {
       const filePath = join(process.cwd(), "server", "data", "interconnection-queue.json");
       const raw = readFileSync(filePath, "utf-8");
-      const data = JSON.parse(raw) as QueueDataset;
-      res.json({
-        source: data.source,
-        aggregates: data.aggregates,
-        notableProjects: data.notableProjects,
-      });
+      const data = JSON.parse(raw) as BacklogDataset;
+      res.json(data);
     } catch (error) {
-      console.error("Queue endpoint error:", error);
-      res.status(500).json({ error: "Failed to load interconnection queue" });
+      console.error("Backlog endpoint error:", error);
+      res.status(500).json({ error: "Failed to load interconnection backlog" });
     }
   });
 
