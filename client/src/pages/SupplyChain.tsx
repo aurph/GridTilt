@@ -9,6 +9,7 @@ import {
   Cloud, Warehouse, Cpu, Pickaxe, Workflow, GitBranch, Clock,
   MemoryStick, Network, Users,
 } from "lucide-react";
+import { SiBitcoin } from "react-icons/si";
 import {
   Tooltip as UITooltip,
   TooltipContent,
@@ -29,6 +30,7 @@ const ICON_MAP: Record<string, any> = {
   Plug, HardHat, Snowflake, ToggleRight, Building, Battery,
   Cloud, Warehouse, Cpu, Pickaxe, Workflow,
   MemoryStick, Network, Users,
+  Bitcoin: SiBitcoin,
 };
 
 interface StockData {
