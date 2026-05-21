@@ -1,21 +1,5 @@
 [
   {
-    "id": 3,
-    "date": "2026-04-15",
-    "title": "NRC Palisades Nuclear Restart Review",
-    "category": "Regulatory",
-    "thesisImpact": "NRC review of Holtec's application to restart the 800 MW Palisades plant in Michigan. If approved, it would be the first US nuclear plant restarted from decommissioned status.",
-    "tickers": ["CEG", "VST", "TLN"]
-  },
-  {
-    "id": 7,
-    "date": "2026-05-01",
-    "title": "PJM Capacity Auction Results",
-    "category": "Market",
-    "thesisImpact": "PJM Interconnection holds annual capacity auctions for its 13-state service territory. Clearing prices determine forward revenue for generators and reflect supply-demand balance on the largest US grid.",
-    "tickers": ["VST", "CEG", "NRG", "TLN"]
-  },
-  {
     "id": 10,
     "date": "2026-06-01",
     "title": "FERC Order 1920 Implementation",
@@ -32,6 +16,22 @@
     "tickers": ["OKLO", "BWXT", "CEG", "CCJ"]
   },
   {
+    "id": 14,
+    "date": "2026-06-30",
+    "title": "FERC large-load interconnection ANOPR decision",
+    "category": "Regulatory",
+    "thesisImpact": "FERC must act by end of June 2026 on the DOE-initiated Advance Notice of Proposed Rulemaking for large-load interconnection. Outcome shapes how datacenter loads connect to the grid and how cost is allocated.",
+    "tickers": ["VST", "CEG", "GEV", "ETN"]
+  },
+  {
+    "id": 15,
+    "date": "2026-07-31",
+    "title": "PJM Expedited Interconnection Track (EIT) effective",
+    "category": "Regulatory",
+    "thesisImpact": "PJM's Expedited Interconnection Track targets July 31, 2026 effective date. Up to 10 fast-track approvals per year for large new or uprated capacity resources.",
+    "tickers": ["GEV", "CEG", "VST", "TLN"]
+  },
+  {
     "id": 12,
     "date": "2026-07-01",
     "title": "Large Power Transformer Trade Policy Review",
@@ -44,7 +44,31 @@
     "date": "2026-08-01",
     "title": "Three Mile Island Unit 1 Restart Progress",
     "category": "Infrastructure",
-    "thesisImpact": "Constellation Energy is pursuing restart of TMI Unit 1 (837 MW) under a power purchase agreement with Microsoft. NRC review and regulatory approvals are required before restart operations can begin.",
+    "thesisImpact": "Constellation Energy is pursuing restart of TMI Unit 1 (837 MW) under a power purchase agreement with Microsoft. NRC review and regulatory approvals continue toward a 2027-2028 target restart.",
     "tickers": ["CEG", "MSFT"]
+  },
+  {
+    "id": 16,
+    "date": "2026-08-27",
+    "title": "NVIDIA Q2 FY2027 earnings (typical reporting week)",
+    "category": "Earnings",
+    "thesisImpact": "NVIDIA's quarterly print is the dominant signal for AI-infra demand. Guidance on Blackwell ramps, datacenter mix, and capex absorption sets the tone for the entire stack.",
+    "tickers": ["NVDA", "TSM", "AVGO", "MU"]
+  },
+  {
+    "id": 17,
+    "date": "2026-09-15",
+    "title": "Texas SB6 large-load interconnection rules effective",
+    "category": "Regulatory",
+    "thesisImpact": "PUCT-issued rules under SB6 set interconnection standards for ERCOT loads of 75 MW or more. Study fees of $100k-$300k. Slows speculative interconnection requests; shifts cost discovery up-front.",
+    "tickers": ["VST", "NRG", "CEG"]
+  },
+  {
+    "id": 18,
+    "date": "2026-12-15",
+    "title": "LBNL Queued Up 2026 Edition expected",
+    "category": "Industry",
+    "thesisImpact": "Lawrence Berkeley National Lab publishes the annual interconnection queue report mid-December. The 2026 edition will show end-of-2025 totals across all ISOs and balancing areas.",
+    "tickers": ["GEV", "PWR", "ETN"]
   }
 ]

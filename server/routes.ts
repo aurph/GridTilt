@@ -562,6 +562,286 @@ async function fetchRSSNews(): Promise<NewsItem[]> {
   }).slice(0, 30);
 }
 
+// ─── Backlog news-driven auto-refresh ──────────────────────────────────────
+// Patterns to detect when an article reports an updated headline figure for
+// PJM, ERCOT, MISO, or the overall US queue. Each pattern captures a GW or
+// project-count number. Matches are sanity-checked against the current value
+// before being applied. Less-confident matches go to a review queue.
+
+interface BacklogUpdatePattern {
+  field: keyof BacklogDataset["headline"];
+  asOfField?: keyof BacklogDataset["headline"];
+  unit: "GW" | "projects" | "percent";
+  // Regex must capture the number in group 1
+  regex: RegExp;
+  // Sanity: new value must be within ±this fraction of current. 1.0 = ±100%
+  sanityRange: number;
+  // Optional minimum match score (e.g. require certain words present)
+  contextHints?: string[];
+  label: string;
+}
+
+const BACKLOG_PATTERNS: BacklogUpdatePattern[] = [
+  {
+    field: "pjmReopenedGW",
+    asOfField: "pjmReopenedAsOf",
+    unit: "GW",
+    regex: /\bPJM(?:'s|s)?\s+(?:reopened\s+|new\s+|transition\s+|cycle\s+\d+\s+)?(?:queue|interconnection\s+queue)\b[^\.]{0,80}?(\d{2,4}(?:\.\d+)?)\s*GW\b/i,
+    sanityRange: 0.6,
+    contextHints: ["queue", "interconnection"],
+    label: "PJM reopened queue total GW",
+  },
+  {
+    field: "pjmReopenedProjects",
+    asOfField: "pjmReopenedAsOf",
+    unit: "projects",
+    regex: /\bPJM\b[^\.]{0,80}?(\d{2,5})\s+(?:active\s+)?(?:projects|requests)\b/i,
+    sanityRange: 0.8,
+    contextHints: ["queue"],
+    label: "PJM project count",
+  },
+  {
+    field: "ercotLargeLoadGW",
+    asOfField: "ercotLargeLoadAsOf",
+    unit: "GW",
+    regex: /\bERCOT(?:'s)?\s+(?:large[- ]load|datacenter|data[- ]center)[^\.]{0,80}?(\d{2,4}(?:\.\d+)?)\s*GW\b/i,
+    sanityRange: 1.5,
+    contextHints: ["ERCOT", "large"],
+    label: "ERCOT large-load queue GW",
+  },
+  {
+    field: "queueOverallGW",
+    asOfField: "queueOverallAsOf",
+    unit: "GW",
+    regex: /(?:U\.?S\.?|nationwide|national|active)\s+(?:interconnection\s+)?queue[^\.]{0,80}?([\d,]{3,5})\s*GW\b/i,
+    sanityRange: 0.6,
+    contextHints: ["queue"],
+    label: "US overall queue GW",
+  },
+  {
+    field: "queueOverallProjects",
+    asOfField: "queueOverallAsOf",
+    unit: "projects",
+    regex: /([\d,]{3,6})\s+(?:active\s+)?(?:projects|requests)\s+(?:actively\s+)?(?:seeking|in\s+the\s+queue|in\s+US\s+interconnection)/i,
+    sanityRange: 0.6,
+    contextHints: ["queue", "interconnection"],
+    label: "US overall queue projects",
+  },
+  {
+    field: "dominionContractedGW",
+    asOfField: "dominionAsOf",
+    unit: "GW",
+    regex: /\bDominion(?:'s|\s+Energy)?\s+[^\.]{0,80}?(\d{2,3}(?:\.\d+)?)\s*GW\s+(?:contracted|in\s+contracts|under\s+contract|of\s+data\s+center)/i,
+    sanityRange: 0.5,
+    contextHints: ["data center", "contract"],
+    label: "Dominion contracted DC GW",
+  },
+  {
+    field: "stargateAbileneGW",
+    unit: "GW",
+    regex: /\bStargate\b[^\.]{0,40}?Abilene[^\.]{0,80}?(\d{1,2}(?:\.\d+)?)\s*GW\b/i,
+    sanityRange: 1.0,
+    contextHints: ["Stargate"],
+    label: "Stargate Abilene capacity GW",
+  },
+];
+
+const AUTO_UPDATE_LOG = join(process.cwd(), "server", "data", "backlog-auto-updates.json");
+
+interface BacklogAutoUpdateEntry {
+  timestamp: string;
+  field: string;
+  oldValue: number | string | null;
+  newValue: number | string;
+  source: string;
+  sourceUrl: string;
+  articleHeadline: string;
+  articleDate: string;
+  pattern: string;
+  status: "applied" | "pending-review" | "rejected-sanity" | "rejected-stale";
+  reason?: string;
+}
+
+function loadAutoUpdateLog(): BacklogAutoUpdateEntry[] {
+  try {
+    if (existsSync(AUTO_UPDATE_LOG)) {
+      return JSON.parse(readFileSync(AUTO_UPDATE_LOG, "utf-8"));
+    }
+  } catch { /* ignore */ }
+  return [];
+}
+
+function appendAutoUpdateLog(entry: BacklogAutoUpdateEntry): void {
+  const log = loadAutoUpdateLog();
+  log.push(entry);
+  // Bounded to last 500 entries
+  const trimmed = log.length > 500 ? log.slice(-500) : log;
+  writeFileSync(AUTO_UPDATE_LOG, JSON.stringify(trimmed, null, 2) + "\n");
+}
+
+// Returns a count of applied + flagged updates after one pass.
+async function scanNewsForBacklogUpdates(news: NewsItem[]): Promise<{ applied: number; flagged: number; checked: number }> {
+  const filePath = join(process.cwd(), "server", "data", "interconnection-queue.json");
+  let data: BacklogDataset;
+  try {
+    data = JSON.parse(readFileSync(filePath, "utf-8")) as BacklogDataset;
+  } catch (e) {
+    console.error("Backlog scanner: could not load dataset:", e);
+    return { applied: 0, flagged: 0, checked: 0 };
+  }
+
+  let applied = 0;
+  let flagged = 0;
+  let checked = 0;
+  const now = Date.now();
+  const NINETY_DAYS_MS = 90 * 86400000;
+
+  for (const pattern of BACKLOG_PATTERNS) {
+    // Best candidate = most recent article whose headline matches and passes hints
+    let best: { article: NewsItem; capture: string } | null = null;
+    let bestTs = 0;
+    for (const article of news) {
+      const ts = new Date(article.publishedAt).getTime();
+      if (!Number.isFinite(ts) || now - ts > NINETY_DAYS_MS) continue;
+      const m = article.headline.match(pattern.regex);
+      if (!m) continue;
+      // Context hint check: at least one hint must appear in the headline
+      if (pattern.contextHints && pattern.contextHints.length > 0) {
+        const lower = article.headline.toLowerCase();
+        const hit = pattern.contextHints.some((h) => lower.includes(h.toLowerCase()));
+        if (!hit) continue;
+      }
+      if (ts > bestTs) {
+        bestTs = ts;
+        best = { article, capture: m[1] };
+      }
+    }
+    if (!best) continue;
+    checked += 1;
+
+    const newValueNum = parseFloat(best.capture.replace(/,/g, ""));
+    if (!Number.isFinite(newValueNum)) continue;
+    const currentValue = (data.headline as any)[pattern.field];
+    const currentNum = typeof currentValue === "number" ? currentValue : null;
+
+    // Sanity range: only auto-apply if within configured range of current.
+    let withinRange = true;
+    if (currentNum != null && currentNum > 0) {
+      const lower = currentNum * (1 - pattern.sanityRange);
+      const upper = currentNum * (1 + pattern.sanityRange);
+      withinRange = newValueNum >= lower && newValueNum <= upper;
+    }
+
+    // If the article's timestamp is older than what we likely have, skip.
+    // (We don't have machine-parsable asOf dates; this is a coarse check.)
+    const articleDate = new Date(best.article.publishedAt).toISOString().slice(0, 10);
+
+    if (currentNum != null && newValueNum === currentNum) {
+      // No-op — number matches what we have. Skip silently.
+      continue;
+    }
+
+    if (withinRange) {
+      // Auto-apply.
+      (data.headline as any)[pattern.field] = newValueNum;
+      if (pattern.asOfField) {
+        const sourceLabel = best.article.source ? ` (${best.article.source} ${articleDate})` : ` (${articleDate})`;
+        (data.headline as any)[pattern.asOfField] = `Auto-updated from news${sourceLabel}`;
+      }
+      appendAutoUpdateLog({
+        timestamp: new Date().toISOString(),
+        field: String(pattern.field),
+        oldValue: currentNum,
+        newValue: newValueNum,
+        source: best.article.source,
+        sourceUrl: best.article.url,
+        articleHeadline: best.article.headline,
+        articleDate,
+        pattern: pattern.label,
+        status: "applied",
+      });
+      applied += 1;
+    } else {
+      // Out of sanity range — flag for review.
+      appendAutoUpdateLog({
+        timestamp: new Date().toISOString(),
+        field: String(pattern.field),
+        oldValue: currentNum,
+        newValue: newValueNum,
+        source: best.article.source,
+        sourceUrl: best.article.url,
+        articleHeadline: best.article.headline,
+        articleDate,
+        pattern: pattern.label,
+        status: "pending-review",
+        reason: `outside ±${(pattern.sanityRange * 100).toFixed(0)}% sanity range of ${currentNum}`,
+      });
+      flagged += 1;
+    }
+  }
+
+  if (applied > 0) {
+    data.lastRefreshed = new Date().toISOString().slice(0, 10);
+    writeFileSync(filePath, JSON.stringify(data, null, 2) + "\n");
+  }
+
+  return { applied, flagged, checked };
+}
+
+// Rate-limit LBNL check to once per 24 hours regardless of news refresh cadence.
+let lastLbnlCheckTs = 0;
+function maybeCheckLbnlEdition(): void {
+  const now = Date.now();
+  if (now - lastLbnlCheckTs < 24 * 60 * 60 * 1000) return;
+  lastLbnlCheckTs = now;
+  checkLbnlEdition().catch((e) => console.error("LBNL check error:", e));
+}
+
+// LBNL annual edition detector. Fetches their landing page, looks for the
+// "YYYY Edition" string. If newer than what we have on file, logs a flag.
+async function checkLbnlEdition(): Promise<{ currentEdition: string | null; latestEdition: string | null; newer: boolean }> {
+  try {
+    const res = await fetch("https://emp.lbl.gov/queues", {
+      headers: { "User-Agent": "GridTilt-Bot/1.0 (gridtilt.com)" },
+    });
+    if (!res.ok) return { currentEdition: null, latestEdition: null, newer: false };
+    const html = await res.text();
+    const m = html.match(/Queued Up:?\s*(\d{4})\s+Edition/i);
+    if (!m) return { currentEdition: null, latestEdition: null, newer: false };
+    const latestYear = parseInt(m[1], 10);
+
+    const dataPath = join(process.cwd(), "server", "data", "interconnection-queue.json");
+    const data = JSON.parse(readFileSync(dataPath, "utf-8")) as BacklogDataset;
+    const currentMatch = data.headline.queueOverallAsOf.match(/(\d{4})/);
+    const currentYear = currentMatch ? parseInt(currentMatch[1], 10) : 0;
+
+    const newer = latestYear > currentYear;
+    if (newer) {
+      appendAutoUpdateLog({
+        timestamp: new Date().toISOString(),
+        field: "queueOverallAsOf",
+        oldValue: data.headline.queueOverallAsOf,
+        newValue: `Queued Up ${latestYear} Edition (manual ingest required)`,
+        source: "LBNL",
+        sourceUrl: "https://emp.lbl.gov/queues",
+        articleHeadline: m[0],
+        articleDate: new Date().toISOString().slice(0, 10),
+        pattern: "LBNL annual edition detection",
+        status: "pending-review",
+        reason: "LBNL XLSX ingest is not automated; run a manual refresh against the new edition",
+      });
+    }
+    return {
+      currentEdition: currentMatch ? currentMatch[1] : null,
+      latestEdition: m[1],
+      newer,
+    };
+  } catch (e: any) {
+    console.error("LBNL check error:", e?.message);
+    return { currentEdition: null, latestEdition: null, newer: false };
+  }
+}
+
 const NEWS_KEYWORDS = [
   "data center", "datacenter", "hyperscaler", "AI infrastructure", "power grid",
   "nuclear energy", "nuclear restart", "uranium", "grid stress", "interconnection",
@@ -1947,6 +2227,9 @@ Sent to ${subscriberCount} subscribers. You're receiving this because you subscr
               }));
             if (items.length > 0) {
               newsCache = { items, timestamp: now };
+              // Auto-scan for backlog headline updates whenever news refreshes
+              scanNewsForBacklogUpdates(items).catch((e) => console.error("backlog scan error:", e));
+              maybeCheckLbnlEdition();
               return res.json(items);
             }
           }
@@ -1960,6 +2243,8 @@ Sent to ${subscriberCount} subscribers. You're receiving this because you subscr
         const rssItems = await fetchRSSNews();
         if (rssItems.length >= 3) {
           newsCache = { items: rssItems, timestamp: now };
+          scanNewsForBacklogUpdates(rssItems).catch((e) => console.error("backlog scan error:", e));
+          maybeCheckLbnlEdition();
           return res.json(rssItems);
         }
       } catch (_e) {
@@ -1976,20 +2261,25 @@ Sent to ${subscriberCount} subscribers. You're receiving this because you subscr
   // Catalysts: manual thesis catalysts from config.
   // sortDate is used only for display ordering; dateLabel shows the actual expected timeframe.
   // All events listed are real, verifiable regulatory/market proceedings.
+  // Past-dated entries are filtered out server-side so a forgotten catalyst
+  // never lingers on the calendar (same contract as the earnings path).
   function loadManualCatalysts(): any[] {
     try {
       const filePath = join(process.cwd(), "server", "data", "catalysts.json");
       const raw = readFileSync(filePath, "utf-8");
-      return JSON.parse(raw).map((c: any) => ({
-        id: c.id?.toString() ?? c.title,
-        category: c.category,
-        title: c.title,
-        description: c.thesisImpact || '',
-        dateLabel: new Date(c.date + "T12:00:00").toLocaleDateString("en-US", { month: "short", year: "numeric" }),
-        sortDate: c.date,
-        affectedTickers: c.tickers || [],
-        affectedSectors: [],
-      }));
+      const todayStr = new Date().toISOString().split('T')[0];
+      return JSON.parse(raw)
+        .filter((c: any) => typeof c.date === "string" && c.date >= todayStr)
+        .map((c: any) => ({
+          id: c.id?.toString() ?? c.title,
+          category: c.category,
+          title: c.title,
+          description: c.thesisImpact || '',
+          dateLabel: new Date(c.date + "T12:00:00").toLocaleDateString("en-US", { month: "short", year: "numeric" }),
+          sortDate: c.date,
+          affectedTickers: c.tickers || [],
+          affectedSectors: [],
+        }));
     } catch {
       return [];
     }
@@ -1998,16 +2288,22 @@ Sent to ${subscriberCount} subscribers. You're receiving this because you subscr
   // Earnings dates based on each company's historical reporting week.
   // Fiscal quarter designations are verified from each company's fiscal year calendar.
   // Exact day may shift by ±1 week; dates represent the typical reporting week.
-  const EARNINGS_SEED = [
-    { ticker: 'TSM', company: 'Taiwan Semiconductor', date: '2026-04-17', time: 'BMO', quarter: 'Q1 2026' },
-    { ticker: 'GOOGL', company: 'Alphabet', date: '2026-04-29', time: 'AMC', quarter: 'Q1 2026' },
-    { ticker: 'META', company: 'Meta Platforms', date: '2026-04-29', time: 'AMC', quarter: 'Q1 2026' },
-    { ticker: 'MSFT', company: 'Microsoft', date: '2026-04-29', time: 'AMC', quarter: 'Q3 FY2026' },
-    { ticker: 'AAPL', company: 'Apple', date: '2026-04-30', time: 'AMC', quarter: 'Q2 FY2026' },
-    { ticker: 'AMZN', company: 'Amazon', date: '2026-04-30', time: 'AMC', quarter: 'Q1 2026' },
-    { ticker: 'AMD', company: 'Advanced Micro Devices', date: '2026-05-05', time: 'AMC', quarter: 'Q1 2026' },
-    { ticker: 'NVDA', company: 'NVIDIA', date: '2026-05-28', time: 'AMC', quarter: 'Q1 FY2027' },
-  ];
+  // Companies we display on the marquee even when their earnings date is
+  // not yet confirmed by Yahoo. This is METADATA ONLY (company name + BMO/AMC
+  // hint). Dates come exclusively from live Yahoo calendarEvents. If Yahoo
+  // doesn't have a future date for a ticker, we don't put it on the calendar.
+  // No fake fallback dates. Ever. (Past bug: hardcoded next-earnings dates
+  // went stale and showed NVDA at +8 days when it had reported earlier today.)
+  const EARNINGS_TICKER_META: Record<string, { company: string; timeHint: string }> = {
+    TSM:   { company: 'Taiwan Semiconductor',     timeHint: 'BMO' },
+    GOOGL: { company: 'Alphabet',                  timeHint: 'AMC' },
+    META:  { company: 'Meta Platforms',            timeHint: 'AMC' },
+    MSFT:  { company: 'Microsoft',                 timeHint: 'AMC' },
+    AAPL:  { company: 'Apple',                     timeHint: 'AMC' },
+    AMZN:  { company: 'Amazon',                    timeHint: 'AMC' },
+    AMD:   { company: 'Advanced Micro Devices',    timeHint: 'AMC' },
+    NVDA:  { company: 'NVIDIA',                    timeHint: 'AMC' },
+  };
 
   const STAGE_MAP: Record<string, string> = {
     CCJ: 'Raw Materials', UEC: 'Raw Materials', NXE: 'Raw Materials', DNN: 'Raw Materials',
@@ -2040,40 +2336,26 @@ Sent to ${subscriberCount} subscribers. You're receiving this because you subscr
   function getEarningsData() {
     const todayStr = new Date().toISOString().split('T')[0];
 
-    const yahooDateMap: Record<string, string> = {};
-    if (earningsCache?.items) {
-      for (const item of earningsCache.items) {
-        const ticker = item.tickers?.[0];
-        if (ticker) yahooDateMap[ticker] = item.date;
-      }
-    }
+    // Single source of truth: Yahoo Finance calendarEvents. No date seeds.
+    if (!earningsCache?.items) return [];
 
     const seen = new Set<string>();
     const allEntries: Array<{ ticker: string; company: string; date: string; time: string; quarter: string }> = [];
 
-    for (const seed of EARNINGS_SEED) {
-      const liveDate = yahooDateMap[seed.ticker];
-      const date = (liveDate && liveDate >= todayStr) ? liveDate : seed.date;
-      allEntries.push({ ...seed, date });
-      seen.add(seed.ticker);
-    }
-
-    if (earningsCache?.items) {
-      for (const item of earningsCache.items) {
-        const ticker = item.tickers?.[0];
-        if (!ticker || seen.has(ticker)) continue;
-        if (item.date < todayStr) continue;
-        const staticData = STATIC_MARKET_DATA[ticker];
-        const name = staticData?.name ?? ticker;
-        allEntries.push({
-          ticker,
-          company: name,
-          date: item.date,
-          time: '',
-          quarter: '',
-        });
-        seen.add(ticker);
-      }
+    for (const item of earningsCache.items) {
+      const ticker = item.tickers?.[0];
+      if (!ticker || seen.has(ticker)) continue;
+      if (!item.date || item.date < todayStr) continue;  // strict: must be today or future
+      const meta = EARNINGS_TICKER_META[ticker];
+      const staticData = STATIC_MARKET_DATA[ticker];
+      allEntries.push({
+        ticker,
+        company: meta?.company ?? staticData?.name ?? ticker,
+        date: item.date,
+        time: meta?.timeHint ?? '',
+        quarter: '',  // intentionally blank; we don't want to claim a quarter we can't verify
+      });
+      seen.add(ticker);
     }
 
     const filtered = allEntries.filter(e => e.date >= todayStr);
@@ -2766,6 +3048,38 @@ Preferred-Languages: en
     } catch (e: any) {
       console.error("delete-backlog-project error:", e);
       res.status(500).json({ error: e?.message ?? "delete failed" });
+    }
+  });
+
+  // GET /api/admin/backlog-auto-updates[?limit=N&status=applied|pending-review|all]
+  app.get("/api/admin/backlog-auto-updates", (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    try {
+      const limit = Math.min(parseInt((req.query.limit as string) || "100", 10), 500);
+      const status = (req.query.status as string) || "all";
+      const log = loadAutoUpdateLog();
+      const filtered = status === "all" ? log : log.filter((e) => e.status === status);
+      res.json(filtered.slice(-limit).reverse());
+    } catch {
+      res.json([]);
+    }
+  });
+
+  // POST /api/admin/scan-news-now — manually trigger a backlog news scan.
+  // Useful for testing or after manually refreshing the news cache.
+  app.post("/api/admin/scan-news-now", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    try {
+      const items = newsCache?.items ?? [];
+      if (items.length === 0) {
+        return res.json({ ran: false, reason: "news cache empty; refresh /api/news first" });
+      }
+      const result = await scanNewsForBacklogUpdates(items);
+      const lbnl = await checkLbnlEdition();
+      lastLbnlCheckTs = Date.now();
+      res.json({ ran: true, ...result, lbnl });
+    } catch (e: any) {
+      res.status(500).json({ error: e?.message ?? "scan failed" });
     }
   });
 
