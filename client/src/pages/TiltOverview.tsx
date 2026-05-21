@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Zap, TrendingUp, Activity, AlertTriangle, Info, ArrowUp, ArrowDown, Calendar, ChevronRight, ExternalLink, Cpu, BarChart3, Calculator, Layers, Map, Link2, CalendarDays } from "lucide-react";
 import { EmailCapture, ScrollTriggeredBanner } from "@/components/EmailCapture";
+import WhatsHappening from "@/components/WhatsHappening";
 
 import stackPreview from "@assets/previews/stack.svg";
 import supplyChainPreview from "@assets/previews/supply-chain.svg";
@@ -944,79 +945,8 @@ export default function TiltOverview() {
 
       <div className="flex-1 p-4 sm:p-6 space-y-4 sm:space-y-5">
 
-        {/* 1. The three indices — what only we make */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3" data-testid="kpi-triad">
-          <KpiCard
-            icon={Cpu}
-            title="AI Power Demand"
-            value={kpiData?.aiPowerIndex ?? null}
-            unit="/100"
-            color="amber"
-            methodology="Composite score (0–100). Baseline 72 derived from data center share of US grid (~6%), AI capex run-rate, GPU/HBM backlog. Intraday momentum layer weighted to NVDA, TSM, EQIX, MU."
-            constituents={c ? (
-              <>
-                <ConstituentRow label="NVDA" value={c.nvdaChange} />
-                <ConstituentRow label="TSM" value={c.tsmChange} />
-                <ConstituentRow label="EQIX" value={c.eqixChange} />
-                <ConstituentRow label="MU" value={c.muChange} />
-              </>
-            ) : undefined}
-            isLoading={isLoading}
-          />
-          <KpiCard
-            icon={Zap}
-            title="Nuclear Power Index"
-            value={kpiData?.npiValue ?? null}
-            unit=""
-            subtitle="Basket index, Jan 1, 2024 = 100"
-            color="amber"
-            methodology="Weighted basket of CEG (25%), VST (20%), CCJ (15%), NLR ETF (20%), uranium spot (10%), and SMR policy score (10%). Rebased to 100 on Jan 1, 2024."
-            constituents={c ? (
-              <>
-                <PerfRow label="CEG" perf={c.cegPerf} />
-                <PerfRow label="VST" perf={c.vstPerf} />
-                <PerfRow label="CCJ" perf={c.ccjPerf} />
-                <PerfRow label="NLR" perf={c.nlrPerf} />
-                <PerfRow label="U₃O₈" perf={c.uPerf} />
-              </>
-            ) : undefined}
-            isLoading={isLoading}
-          />
-          <KpiCard
-            icon={AlertTriangle}
-            title="Grid Stress"
-            value={kpiData?.gridStress ?? null}
-            unit="/100"
-            color="red"
-            methodology="Composite score (0–100). Baseline 68 derived from PJM/MISO/ERCOT reserve margin trajectories and DC interconnection queue backlog vs new capacity additions. Intraday momentum from merchant generators (VST, CEG) and DC REIT (EQIX)."
-            constituents={c ? (
-              <>
-                <ConstituentRow label="VST" value={c.vstChange} />
-                <ConstituentRow label="CEG" value={c.cegChange} />
-                <ConstituentRow label="EQIX" value={c.eqixChange} />
-              </>
-            ) : undefined}
-            isLoading={isLoading}
-          />
-        </div>
-
-        {/* 2. Tilt Status summary */}
-        {!isLoading && kpiData && (
-          <TiltStatusBar
-            aiPower={kpiData.aiPowerIndex}
-            gridStress={kpiData.gridStress}
-            npi={kpiData.npiValue}
-          />
-        )}
-
-        {kpiError && (
-          <Card className="p-4 border-red-500/20 bg-red-500/5">
-            <div className="flex items-center gap-2 text-xs text-red-400">
-              <AlertTriangle className="h-3.5 w-3.5" />
-              <span>Live index data unavailable. Showing last known values.</span>
-            </div>
-          </Card>
-        )}
+        {/* Editorial hero — replaces the prior KPI-cards-as-headline layout */}
+        <WhatsHappening />
 
         {/* Dashboard density - 2-col */}
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
@@ -1033,8 +963,8 @@ export default function TiltOverview() {
           </div>
         </div>
 
-        {/* Main demand chart */}
-        <Card className="p-6 border-card-border">
+        {/* Main demand chart — the evidentiary visual the WhatsHappening lede sets up */}
+        <Card id="demand-chart" className="p-6 border-card-border scroll-mt-20">
           <div className="flex flex-wrap items-start justify-between gap-4 mb-5">
             <div>
               <div className="flex items-center gap-2 mb-1">
@@ -1195,6 +1125,86 @@ export default function TiltOverview() {
             <span className="text-red-400/70">--- Grid capacity ceiling</span>
           </div>
         </Card>
+
+        {/* Composite indices — research depth, intentionally demoted from headline */}
+        <div className="pt-2">
+          <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/70 mb-3">
+            composite indices · methodology in each card
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3" data-testid="kpi-triad">
+            <KpiCard
+              icon={Cpu}
+              title="AI Power Demand"
+              value={kpiData?.aiPowerIndex ?? null}
+              unit="/100"
+              color="amber"
+              methodology="Composite score (0-100). Baseline 72 derived from data center share of US grid (~6%), AI capex run-rate, GPU/HBM backlog. Intraday momentum layer weighted to NVDA, TSM, EQIX, MU."
+              constituents={c ? (
+                <>
+                  <ConstituentRow label="NVDA" value={c.nvdaChange} />
+                  <ConstituentRow label="TSM" value={c.tsmChange} />
+                  <ConstituentRow label="EQIX" value={c.eqixChange} />
+                  <ConstituentRow label="MU" value={c.muChange} />
+                </>
+              ) : undefined}
+              isLoading={isLoading}
+            />
+            <KpiCard
+              icon={Zap}
+              title="Nuclear Power Index"
+              value={kpiData?.npiValue ?? null}
+              unit=""
+              subtitle="Basket index, Jan 1, 2024 = 100"
+              color="amber"
+              methodology="Weighted basket of CEG (25%), VST (20%), CCJ (15%), NLR ETF (20%), uranium spot (10%), and SMR policy score (10%). Rebased to 100 on Jan 1, 2024."
+              constituents={c ? (
+                <>
+                  <PerfRow label="CEG" perf={c.cegPerf} />
+                  <PerfRow label="VST" perf={c.vstPerf} />
+                  <PerfRow label="CCJ" perf={c.ccjPerf} />
+                  <PerfRow label="NLR" perf={c.nlrPerf} />
+                  <PerfRow label="U₃O₈" perf={c.uPerf} />
+                </>
+              ) : undefined}
+              isLoading={isLoading}
+            />
+            <KpiCard
+              icon={AlertTriangle}
+              title="Grid Stress"
+              value={kpiData?.gridStress ?? null}
+              unit="/100"
+              color="red"
+              methodology="Composite score (0-100). Baseline 68 derived from PJM/MISO/ERCOT reserve margin trajectories and DC interconnection queue backlog vs new capacity additions. Intraday momentum from merchant generators (VST, CEG) and DC REIT (EQIX)."
+              constituents={c ? (
+                <>
+                  <ConstituentRow label="VST" value={c.vstChange} />
+                  <ConstituentRow label="CEG" value={c.cegChange} />
+                  <ConstituentRow label="EQIX" value={c.eqixChange} />
+                </>
+              ) : undefined}
+              isLoading={isLoading}
+            />
+          </div>
+
+          {!isLoading && kpiData && (
+            <div className="mt-3">
+              <TiltStatusBar
+                aiPower={kpiData.aiPowerIndex}
+                gridStress={kpiData.gridStress}
+                npi={kpiData.npiValue}
+              />
+            </div>
+          )}
+
+          {kpiError && (
+            <Card className="mt-3 p-4 border-red-500/20 bg-red-500/5">
+              <div className="flex items-center gap-2 text-xs text-red-400">
+                <AlertTriangle className="h-3.5 w-3.5" />
+                <span>Live index data unavailable. Showing last known values.</span>
+              </div>
+            </Card>
+          )}
+        </div>
 
         {/* 4-column stat strip */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">

@@ -1983,6 +1983,18 @@ export async function registerRoutes(
     }
   });
 
+  // Hyperscaler capex aggregate for the homepage explainer. Public.
+  app.get("/api/hyperscaler-capex", (_req, res) => {
+    try {
+      const filePath = join(process.cwd(), "server", "data", "hyperscaler-capex.json");
+      const raw = readFileSync(filePath, "utf-8");
+      res.json(JSON.parse(raw));
+    } catch (error) {
+      console.error("Hyperscaler capex endpoint error:", error);
+      res.status(500).json({ error: "Failed to load hyperscaler capex" });
+    }
+  });
+
   const SUBSCRIBERS_FILE = join(process.cwd(), "server", "data", "subscribers.json");
   interface Subscriber { email: string; subscribedAt: string; }
 

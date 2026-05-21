@@ -68,7 +68,7 @@
 
   /* Typography */
   --font-sans: Inter, sans-serif;
-  --font-serif: Georgia, serif;
+  --font-serif: "Source Serif 4", Georgia, serif;
   --font-mono: "JetBrains Mono", monospace;
 
   /* Slightly sharper corners - more terminal, less consumer app */

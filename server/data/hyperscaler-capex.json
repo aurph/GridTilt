@@ -1,0 +1,14 @@
+{
+  "fy2025": {
+    "totalUsdBillions": 340,
+    "components": [
+      { "ticker": "MSFT",  "company": "Microsoft", "usdBillions": 80,  "sourceUrl": "https://www.microsoft.com/en-us/Investor/earnings/", "sourceLabel": "Microsoft FY2025 capex guide" },
+      { "ticker": "GOOGL", "company": "Alphabet",  "usdBillions": 90,  "sourceUrl": "https://abc.xyz/investor/",                            "sourceLabel": "Alphabet FY2025 capex update" },
+      { "ticker": "META",  "company": "Meta",       "usdBillions": 70,  "sourceUrl": "https://investor.fb.com/",                            "sourceLabel": "Meta FY2025 capex guidance" },
+      { "ticker": "AMZN",  "company": "Amazon",     "usdBillions": 100, "sourceUrl": "https://www.aboutamazon.com/news/company-news",        "sourceLabel": "AWS infrastructure capex disclosure" }
+    ],
+    "asOf": "Q1 2026 earnings cycle",
+    "notes": "Total is the sum of disclosed FY2025 capex guides from the four largest US hyperscalers. Most of this spend lands in datacenters, GPUs, networking, and the power infrastructure to run it. Values are rounded; per-ticker breakdowns reflect publicly stated capex guides as of the most recent earnings cycle and are intended for explainer context, not precise accounting."
+  },
+  "lastRefreshed": "2026-05-20"
+}
