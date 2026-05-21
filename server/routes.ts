@@ -337,15 +337,63 @@ const NPI_BASE = {
   URANIUM_SPOT: 91.00,  // U3O8 spot ~$90-95/lb in Jan 2024 (pre-Feb 2024 spike to $107)
 };
 
-// SMR & PPA policy score (1-10 qualitative, updated periodically)
-// Current: 7.8 - NRC Kairos/Oklo approvals, Microsoft TMI restart PPA, Amazon/Talen Virginia nuclear PPA,
-// Google advanced nuclear PPAs, several state-level nuclear support legislation packages.
-const SMR_POLICY_SCORE = 7.8;
+// ─── Auto-derived market constants ─────────────────────────────────────────
+// URANIUM_SPOT and SMR_POLICY_SCORE were hardcoded values that drifted out of
+// date. They are now derived at request time:
+//   - Uranium spot: loaded from server/data/market-constants.json, which the
+//     news scanner auto-updates when it detects $XX/lb in headlines from
+//     Cameco PR, World Nuclear News, etc. Admin override available.
+//   - SMR policy score: counted from active nuclear-PPA projects in the
+//     backlog. Score rises automatically as new PPAs land in the dataset.
+const MARKET_CONSTANTS_FILE = join(process.cwd(), "server", "data", "market-constants.json");
 
-// Current U3O8 uranium spot price $/lb (updated March 2026)
-// Spot rallied back to ~$101.50/lb in Jan/Feb 2026 before pulling back; currently ~$92/lb as of early Mar 2026.
-// This is now ABOVE the Jan 2024 base of $91/lb, reversing the prior drawdown.
-const URANIUM_SPOT_CURRENT = 92.0;
+interface MarketConstants {
+  uraniumSpotUsdPerLb: number;
+  uraniumSpotAsOf: string;
+  uraniumSpotSource: string;
+  lastUpdated: string;
+}
+
+function loadMarketConstants(): MarketConstants {
+  try {
+    return JSON.parse(readFileSync(MARKET_CONSTANTS_FILE, "utf-8"));
+  } catch {
+    // Last-resort defaults if file is missing/corrupt
+    return {
+      uraniumSpotUsdPerLb: 92.0,
+      uraniumSpotAsOf: "fallback baseline",
+      uraniumSpotSource: "in-code default",
+      lastUpdated: "1970-01-01",
+    };
+  }
+}
+
+function saveMarketConstants(m: MarketConstants): void {
+  m.lastUpdated = new Date().toISOString().slice(0, 10);
+  writeFileSync(MARKET_CONSTANTS_FILE, JSON.stringify(m, null, 2) + "\n");
+}
+
+// Derive SMR policy score from the backlog. Score scales with the count of
+// active hyperscaler-grade nuclear PPAs we're tracking. Anchored so the
+// score moves slowly and stays in the 6.5-9.5 range under normal conditions.
+function deriveSmrPolicyScore(): number {
+  try {
+    const dataPath = join(process.cwd(), "server", "data", "interconnection-queue.json");
+    const data = JSON.parse(readFileSync(dataPath, "utf-8")) as BacklogDataset;
+    const nuclearActive = data.projects.filter((p) =>
+      p.type === "nuclear" &&
+      p.status === "active" &&
+      (p.category === "ppa" || p.category === "generation") &&
+      p.dcRelevant
+    );
+    // 5.0 baseline + 0.3 per active nuclear-PPA, capped at 9.5.
+    // Tuned so current dataset (~9 nuclear PPAs) yields ~7.7, close to the
+    // historical 7.8 anchor — preserves NPI continuity.
+    return Math.min(9.5, 5.0 + 0.3 * nuclearActive.length);
+  } catch {
+    return 7.0;  // conservative fallback
+  }
+}
 
 // Generate scatter data with a target Pearson r using the standard linear noise model:
 //   y = r * x_std + sqrt(1 - r^2) * noise_std  (both in z-score space, then rescale)
@@ -458,6 +506,14 @@ async function getCachedStockData(timeframe: string): Promise<Record<string, any
       if (r?.regularMarketPrice) {
         const ticker = ALL_STACK_TICKERS[i];
         const staticData = STATIC_MARKET_DATA[ticker];
+        // Write-through fallback cache: keep STATIC_MARKET_DATA current so
+        // a future Yahoo throttle returns prices < 10 min stale instead of
+        // months stale. Only price/change/changePercent are written.
+        if (staticData) {
+          staticData.price = r.regularMarketPrice;
+          if (r.regularMarketChange != null) staticData.change = r.regularMarketChange;
+          if (r.regularMarketChangePercent != null) staticData.changePercent = r.regularMarketChangePercent;
+        }
         const closes = (charts[i]?.quotes ?? [])
           .map((q: any) => q.close)
           .filter((c: any): c is number => typeof c === "number");
@@ -786,6 +842,82 @@ async function scanNewsForBacklogUpdates(news: NewsItem[]): Promise<{ applied: n
   }
 
   return { applied, flagged, checked };
+}
+
+// Scan news for uranium U3O8 spot price mentions. Patterns match articles
+// where a fresh spot price is quoted, e.g., Cameco PR, World Nuclear News,
+// trade press. Updates server/data/market-constants.json on confident match.
+const URANIUM_PATTERNS: RegExp[] = [
+  /U(?:3O8|₃O₈)\s+spot[^.]{0,30}?\$(\d{2,3}(?:\.\d{1,2})?)\s*\/?\s*lb/i,
+  /uranium\s+spot[^.]{0,30}?\$(\d{2,3}(?:\.\d{1,2})?)\s*\/?\s*lb/i,
+  /\$(\d{2,3}(?:\.\d{1,2})?)\s*\/?\s*lb[^.]{0,30}?(?:uranium|U3O8|U₃O₈)/i,
+];
+
+async function scanNewsForMarketConstants(news: NewsItem[]): Promise<{ uraniumApplied: boolean; latestQuote: number | null }> {
+  const mc = loadMarketConstants();
+  const now = Date.now();
+  const NINETY_DAYS_MS = 90 * 86400000;
+  let bestPrice: number | null = null;
+  let bestArticle: NewsItem | null = null;
+  let bestTs = 0;
+  for (const article of news) {
+    const ts = new Date(article.publishedAt).getTime();
+    if (!Number.isFinite(ts) || now - ts > NINETY_DAYS_MS) continue;
+    for (const re of URANIUM_PATTERNS) {
+      const m = article.headline.match(re);
+      if (!m) continue;
+      const v = parseFloat(m[1]);
+      if (!Number.isFinite(v) || v < 30 || v > 250) continue;  // sanity: U3O8 has ranged ~$30-$110 in recent history; widened band
+      if (ts > bestTs) {
+        bestTs = ts;
+        bestPrice = v;
+        bestArticle = article;
+        break;
+      }
+    }
+  }
+  if (bestPrice == null || bestArticle == null) return { uraniumApplied: false, latestQuote: null };
+
+  // Sanity: only apply if within ±40% of current (uranium can swing fast but
+  // multi-times moves are usually quote misreads).
+  const current = mc.uraniumSpotUsdPerLb;
+  const withinRange = bestPrice >= current * 0.6 && bestPrice <= current * 1.6;
+  if (bestPrice === current) return { uraniumApplied: false, latestQuote: bestPrice };
+
+  const articleDate = new Date(bestArticle.publishedAt).toISOString().slice(0, 10);
+  if (withinRange) {
+    appendAutoUpdateLog({
+      timestamp: new Date().toISOString(),
+      field: "uraniumSpotUsdPerLb",
+      oldValue: current,
+      newValue: bestPrice,
+      source: bestArticle.source,
+      sourceUrl: bestArticle.url,
+      articleHeadline: bestArticle.headline,
+      articleDate,
+      pattern: "uranium spot price",
+      status: "applied",
+    });
+    mc.uraniumSpotUsdPerLb = bestPrice;
+    mc.uraniumSpotAsOf = `Auto-updated from ${bestArticle.source} ${articleDate}`;
+    saveMarketConstants(mc);
+    return { uraniumApplied: true, latestQuote: bestPrice };
+  } else {
+    appendAutoUpdateLog({
+      timestamp: new Date().toISOString(),
+      field: "uraniumSpotUsdPerLb",
+      oldValue: current,
+      newValue: bestPrice,
+      source: bestArticle.source,
+      sourceUrl: bestArticle.url,
+      articleHeadline: bestArticle.headline,
+      articleDate,
+      pattern: "uranium spot price",
+      status: "pending-review",
+      reason: `outside ±40% sanity range of ${current}`,
+    });
+    return { uraniumApplied: false, latestQuote: bestPrice };
+  }
 }
 
 // Rate-limit LBNL check to once per 24 hours regardless of news refresh cadence.
@@ -1353,18 +1485,23 @@ async function computeKpis(): Promise<KpiResult> {
     // fall through to static defaults
   }
 
+  // Auto-derived market constants
+  const mc = loadMarketConstants();
+  const uraniumSpot = mc.uraniumSpotUsdPerLb;
+  const smrPolicyScore = deriveSmrPolicyScore();
+
   const cegPerf = cegPrice / NPI_BASE.CEG;
   const vstPerf = vstPrice / NPI_BASE.VST;
   const ccjPerf = ccjPrice / NPI_BASE.CCJ;
   const nlrPerf = nlrPrice / NPI_BASE.NLR;
-  const uPerf = URANIUM_SPOT_CURRENT / NPI_BASE.URANIUM_SPOT;
-  const policyPerf = 0.5 + SMR_POLICY_SCORE / 10;
+  const uPerf = uraniumSpot / NPI_BASE.URANIUM_SPOT;
+  const policyPerf = 0.5 + smrPolicyScore / 10;
 
   const npiWeightedPerf =
     0.25 * cegPerf + 0.20 * vstPerf + 0.15 * ccjPerf +
     0.20 * nlrPerf + 0.10 * uPerf   + 0.10 * policyPerf;
 
-  const npiPolicyMultiplier = 0.9 + (SMR_POLICY_SCORE / 10) * 0.2;
+  const npiPolicyMultiplier = 0.9 + (smrPolicyScore / 10) * 0.2;
   const npiValue = parseFloat((100 * npiWeightedPerf * npiPolicyMultiplier).toFixed(1));
   const npiMomentum = cegChange * 0.35 + vstChange * 0.30 + ccjChange * 0.20 + neeChange * 0.15;
 
@@ -1378,7 +1515,7 @@ async function computeKpis(): Promise<KpiResult> {
     aiPowerIndex: parseFloat(aiPowerIndex.toFixed(1)),
     npiValue,
     gridStress: parseFloat(gridStress.toFixed(1)),
-    smrPolicyScore: SMR_POLICY_SCORE,
+    smrPolicyScore: parseFloat(smrPolicyScore.toFixed(2)),
     npiBaseDate: "Jan 1, 2024",
     constituents: {
       nvdaChange: parseFloat(nvdaChange.toFixed(2)),
@@ -2227,8 +2364,9 @@ Sent to ${subscriberCount} subscribers. You're receiving this because you subscr
               }));
             if (items.length > 0) {
               newsCache = { items, timestamp: now };
-              // Auto-scan for backlog headline updates whenever news refreshes
+              // Auto-scan for backlog headline updates + market constants
               scanNewsForBacklogUpdates(items).catch((e) => console.error("backlog scan error:", e));
+              scanNewsForMarketConstants(items).catch((e) => console.error("market constants scan error:", e));
               maybeCheckLbnlEdition();
               return res.json(items);
             }
@@ -2244,6 +2382,7 @@ Sent to ${subscriberCount} subscribers. You're receiving this because you subscr
         if (rssItems.length >= 3) {
           newsCache = { items: rssItems, timestamp: now };
           scanNewsForBacklogUpdates(rssItems).catch((e) => console.error("backlog scan error:", e));
+          scanNewsForMarketConstants(rssItems).catch((e) => console.error("market constants scan error:", e));
           maybeCheckLbnlEdition();
           return res.json(rssItems);
         }
@@ -3075,9 +3214,10 @@ Preferred-Languages: en
         return res.json({ ran: false, reason: "news cache empty; refresh /api/news first" });
       }
       const result = await scanNewsForBacklogUpdates(items);
+      const uranium = await scanNewsForMarketConstants(items);
       const lbnl = await checkLbnlEdition();
       lastLbnlCheckTs = Date.now();
-      res.json({ ran: true, ...result, lbnl });
+      res.json({ ran: true, ...result, uranium, lbnl });
     } catch (e: any) {
       res.status(500).json({ error: e?.message ?? "scan failed" });
     }
