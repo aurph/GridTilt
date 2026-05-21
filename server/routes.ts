@@ -2312,26 +2312,26 @@ Sent to ${subscriberCount} subscribers. You're receiving this because you subscr
           return isNaN(t) ? 0 : t;
         };
 
-        // Last earnings already reported (post-earnings-aware). If a candidate
-        // date is on or before this, it's a stale "next earnings" entry.
-        const lastReportedMs = toMs(quote?.earningsTimestamp);
-
-        // Build candidate "next earnings" timestamps from every source Yahoo gives
-        // us, then pick the soonest one that's both in the future AND strictly
-        // after lastReported.
+        // Gather every "next earnings" hint Yahoo gives us across both endpoints
+        // and pick the soonest one that's today or later. Yahoo is inconsistent:
+        // for some tickers `earningsTimestamp` is the LAST report, for others
+        // it's the NEXT one, so we just treat any positive timestamp as a
+        // candidate and let the "today or later" filter do the work. Better to
+        // show a date that's a few days stale post-earnings than to drop the
+        // ticker entirely.
         const candidates: number[] = [];
         const earningsDateArr = summary?.calendarEvents?.earnings?.earningsDate ?? [];
         for (const d of earningsDateArr) {
           const t = toMs(d);
           if (t > 0) candidates.push(t);
         }
-        const startMs = toMs(quote?.earningsTimestampStart);
-        if (startMs > 0) candidates.push(startMs);
-        const endMs = toMs(quote?.earningsTimestampEnd);
-        if (endMs > 0) candidates.push(endMs);
+        for (const k of ["earningsTimestampStart", "earningsTimestampEnd", "earningsTimestamp"] as const) {
+          const t = toMs(quote?.[k]);
+          if (t > 0) candidates.push(t);
+        }
 
-        const valid = candidates.filter((t) => t >= todayMs && t > lastReportedMs);
-        if (valid.length === 0) return; // skip — no credible upcoming date
+        const valid = candidates.filter((t) => t >= todayMs);
+        if (valid.length === 0) return; // no future date — skip
         const nextMs = Math.min(...valid);
 
         const d = new Date(nextMs);
