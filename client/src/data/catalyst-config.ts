@@ -102,28 +102,6 @@ export const manualCatalysts: ManualCatalyst[] = [
   },
 ];
 
-export interface EarningsSeed {
-  ticker: string;
-  company: string;
-  date: string;
-  time: 'BMO' | 'AMC' | 'TBD';
-  quarter: string;
-}
-
-// Earnings dates based on each company's historical reporting week.
-// Fiscal quarter designations are verified from each company's fiscal year calendar.
-// Exact day may shift by ±1 week; dates represent the typical reporting week.
-export const earningsSeed: EarningsSeed[] = [
-  { ticker: 'TSM',   company: 'Taiwan Semiconductor',    date: '2026-04-17', time: 'BMO', quarter: 'Q1 2026' },
-  { ticker: 'GOOGL', company: 'Alphabet',                date: '2026-04-29', time: 'AMC', quarter: 'Q1 2026' },
-  { ticker: 'META',  company: 'Meta Platforms',           date: '2026-04-29', time: 'AMC', quarter: 'Q1 2026' },
-  { ticker: 'MSFT',  company: 'Microsoft',               date: '2026-04-29', time: 'AMC', quarter: 'Q3 FY2026' },
-  { ticker: 'AAPL',  company: 'Apple',                   date: '2026-04-30', time: 'AMC', quarter: 'Q2 FY2026' },
-  { ticker: 'AMZN',  company: 'Amazon',                  date: '2026-04-30', time: 'AMC', quarter: 'Q1 2026' },
-  { ticker: 'AMD',   company: 'Advanced Micro Devices',  date: '2026-05-05', time: 'AMC', quarter: 'Q1 2026' },
-  { ticker: 'NVDA',  company: 'NVIDIA',                  date: '2026-05-28', time: 'AMC', quarter: 'Q1 FY2027' },
-];
-
 export const SUPPLY_CHAIN_STAGE_MAP: Record<string, string> = {
   CCJ: 'Raw Materials', UEC: 'Raw Materials', NXE: 'Raw Materials', DNN: 'Raw Materials',
   UUUU: 'Raw Materials', LEU: 'Raw Materials', FCX: 'Raw Materials', SCCO: 'Raw Materials',
