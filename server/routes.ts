@@ -2274,29 +2274,78 @@ Sent to ${subscriberCount} subscribers. You're receiving this because you subscr
       const YahooFinanceClass = (await import("yahoo-finance2")).default;
       const yahooFinance = new YahooFinanceClass({ suppressNotices: ["yahooSurvey"] });
 
-      const summaries = await Promise.all(
-        ALL_STACK_TICKERS.map((ticker) =>
-          yahooFinance.quoteSummary(ticker, { modules: ["calendarEvents"] }).catch(() => null)
-        )
-      );
+      // Pull both calendarEvents (for date arrays) and quote (for post-earnings-aware
+      // earningsTimestampStart/End + last-reported earningsTimestamp). Yahoo's
+      // calendarEvents.earningsDate[0] lags after a company reports — it can still
+      // show the just-passed date for ~a week. quote().earningsTimestamp tells us
+      // the LAST earnings, so we can detect and discard stale calendarEvents dates.
+      const [summaries, quotes] = await Promise.all([
+        Promise.all(
+          ALL_STACK_TICKERS.map((ticker) =>
+            yahooFinance.quoteSummary(ticker, { modules: ["calendarEvents"] }).catch(() => null)
+          )
+        ),
+        Promise.all(
+          ALL_STACK_TICKERS.map((ticker) =>
+            yahooFinance.quote(ticker).catch(() => null)
+          )
+        ),
+      ]);
+
+      // Cutoff: only count dates from today onward. (Anything strictly earlier
+      // than today has already happened — we never want to show it as upcoming.)
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todayMs = today.getTime();
 
       summaries.forEach((summary, i) => {
         const ticker = ALL_STACK_TICKERS[i];
-        const earningsDate = summary?.calendarEvents?.earnings?.earningsDate?.[0];
-        if (earningsDate) {
-          const d = new Date(earningsDate);
-          const dateStr = d.toISOString().slice(0, 10);
-          const staticData = STATIC_MARKET_DATA[ticker];
-          const name = staticData?.name ?? ticker;
-          results.push({
-            id: idCounter++,
-            date: dateStr,
-            title: `${ticker}: ${name} Earnings`,
-            category: "Earnings",
-            thesisImpact: `Watch for AI/datacenter demand commentary, power consumption guidance, and forward revenue outlook from ${name}.`,
-            tickers: [ticker],
-          });
+        const quote: any = quotes[i];
+
+        // yahoo-finance2 may return these as Date objects, numbers (sec or ms),
+        // or strings — normalize to ms-since-epoch, returning 0 if unparseable.
+        const toMs = (v: any): number => {
+          if (v == null) return 0;
+          if (v instanceof Date) return v.getTime();
+          if (typeof v === "number") return v < 1e12 ? v * 1000 : v; // seconds → ms
+          const t = new Date(v).getTime();
+          return isNaN(t) ? 0 : t;
+        };
+
+        // Last earnings already reported (post-earnings-aware). If a candidate
+        // date is on or before this, it's a stale "next earnings" entry.
+        const lastReportedMs = toMs(quote?.earningsTimestamp);
+
+        // Build candidate "next earnings" timestamps from every source Yahoo gives
+        // us, then pick the soonest one that's both in the future AND strictly
+        // after lastReported.
+        const candidates: number[] = [];
+        const earningsDateArr = summary?.calendarEvents?.earnings?.earningsDate ?? [];
+        for (const d of earningsDateArr) {
+          const t = toMs(d);
+          if (t > 0) candidates.push(t);
         }
+        const startMs = toMs(quote?.earningsTimestampStart);
+        if (startMs > 0) candidates.push(startMs);
+        const endMs = toMs(quote?.earningsTimestampEnd);
+        if (endMs > 0) candidates.push(endMs);
+
+        const valid = candidates.filter((t) => t >= todayMs && t > lastReportedMs);
+        if (valid.length === 0) return; // skip — no credible upcoming date
+        const nextMs = Math.min(...valid);
+
+        const d = new Date(nextMs);
+        const dateStr = d.toISOString().slice(0, 10);
+        const staticData = STATIC_MARKET_DATA[ticker];
+        const name = staticData?.name ?? ticker;
+        results.push({
+          id: idCounter++,
+          date: dateStr,
+          title: `${ticker}: ${name} Earnings`,
+          category: "Earnings",
+          thesisImpact: `Watch for AI/datacenter demand commentary, power consumption guidance, and forward revenue outlook from ${name}.`,
+          tickers: [ticker],
+        });
       });
     } catch (_e) {
       // Yahoo Finance failed

@@ -22,7 +22,6 @@ import {
 } from "@/components/ui/tooltip";
 import { Zap, TrendingUp, Activity, AlertTriangle, Info, ArrowUp, ArrowDown, Calendar, ChevronRight, ExternalLink, Cpu, BarChart3, Calculator, Layers, Map, Link2, CalendarDays } from "lucide-react";
 import { EmailCapture, ScrollTriggeredBanner } from "@/components/EmailCapture";
-import WhatsHappening from "@/components/WhatsHappening";
 
 import stackPreview from "@assets/previews/stack.svg";
 import supplyChainPreview from "@assets/previews/supply-chain.svg";
@@ -945,9 +944,6 @@ export default function TiltOverview() {
 
       <div className="flex-1 p-4 sm:p-6 space-y-4 sm:space-y-5">
 
-        {/* Editorial hero — replaces the prior KPI-cards-as-headline layout */}
-        <WhatsHappening />
-
         {/* Dashboard density - 2-col */}
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
           <div className="lg:col-span-3 space-y-4">
@@ -963,7 +959,7 @@ export default function TiltOverview() {
           </div>
         </div>
 
-        {/* Main demand chart — the evidentiary visual the WhatsHappening lede sets up */}
+        {/* Main demand chart */}
         <Card id="demand-chart" className="p-6 border-card-border scroll-mt-20">
           <div className="flex flex-wrap items-start justify-between gap-4 mb-5">
             <div>

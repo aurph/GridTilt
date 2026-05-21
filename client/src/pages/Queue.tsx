@@ -88,11 +88,71 @@ const CATEGORY_LABELS: Record<string, string> = {
 type SortKey = "capacityMW" | "projectName" | "iso" | "type" | "expectedOnline";
 type SortDir = "asc" | "desc";
 
+// Normalize the API response so the page renders whether the deployed server
+// is on the OLD (aggregates/notableProjects) or NEW (headline/projects) shape.
+// This protects against deploy lag where the server and client are out of sync.
+function normalizeBacklog(raw: any): BacklogResponse | undefined {
+  if (!raw) return undefined;
+  if (raw.headline && Array.isArray(raw.projects)) {
+    return raw as BacklogResponse;
+  }
+  if (raw.aggregates && Array.isArray(raw.notableProjects)) {
+    const a = raw.aggregates;
+    const isoTotal = Array.isArray(a.byIso)
+      ? a.byIso.find((r: any) => r.iso === "PJM")?.gw ?? 258
+      : 258;
+    const projects = (raw.notableProjects as any[]).map((p) => ({
+      id: p.id,
+      projectName: p.projectName,
+      sponsor: p.sponsor,
+      capacityMW: p.capacityMW,
+      type: p.type,
+      iso: p.iso,
+      state: p.state,
+      status: p.status,
+      category: p.capacityMW > 50000 ? "aggregate" : (p.type === "load" ? "load" : "generation"),
+      expectedOnline: p.expectedOnline ?? null,
+      offtaker: p.offtaker ?? null,
+      dcRelevant: !!p.dcRelevant,
+      sources: p.sources,
+      notes: p.notes,
+    }));
+    const nonAgg = projects.filter((p) => p.category !== "aggregate");
+    return {
+      lastRefreshed: raw.source?.asOf ?? "unknown",
+      headline: {
+        trackedProjects: nonAgg.length,
+        trackedCapacityGW: parseFloat((nonAgg.reduce((s, p) => s + p.capacityMW, 0) / 1000).toFixed(1)),
+        queueOverallGW: a.totalActiveGW ?? 2290,
+        queueOverallProjects: a.totalActiveProjects ?? 10300,
+        medianWaitMonths: a.medianQueueMonths ?? 55,
+        historicalWithdrawalPct: a.historicalWithdrawalPct ?? 77,
+        queueOverallAsOf: raw.source?.asOf ?? "LBNL Queued Up 2025",
+        queueOverallSourceUrl: raw.source?.sourceUrl ?? "https://emp.lbl.gov/queues",
+        ercotLargeLoadGW: a.ercotDetail?.largeLoadQueueGW ?? 230,
+        ercotLargeLoadDataCenterPct: a.ercotDetail?.largeLoadDataCenterPct ?? 72.9,
+        ercotLargeLoadAsOf: a.ercotDetail?.asOf ?? "ERCOT late 2025",
+        pjmReopenedGW: a.pjmDetail?.totalGW ?? isoTotal,
+        pjmReopenedProjects: a.pjmDetail?.totalProjects ?? 811,
+        pjmReopenedAsOf: a.pjmDetail?.asOf ?? "PJM Cycle 1, Apr 2026",
+        dominionContractedGW: 47.1,
+        dominionAsOf: "Q1 2026",
+        duke5yrGenAddGW: 13,
+        metaHyperionGW: 5,
+        stargateAbileneGW: 1.2,
+      },
+      projects: projects as any,
+    };
+  }
+  return undefined;
+}
+
 export default function Queue() {
-  const { data, isLoading, isError } = useQuery<BacklogResponse>({
+  const { data: rawData, isLoading, isError } = useQuery<any>({
     queryKey: ["/api/queue"],
     refetchInterval: 24 * 60 * 60 * 1000,
   });
+  const data = normalizeBacklog(rawData);
 
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [isoFilter, setIsoFilter] = useState<string>("all");
