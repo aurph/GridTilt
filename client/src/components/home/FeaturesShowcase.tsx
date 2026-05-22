@@ -21,8 +21,7 @@ const MODULES: Module[] = [
   {
     number: "01",
     name: "The Stack",
-    caption:
-      "Sixty-plus equities across nine layers of the AI power stack, priced live.",
+    caption: "Sixty-plus public companies behind the AI buildout, priced live.",
     cta: "Open the stack",
     preview: stackSvg,
     route: "/stack",
@@ -30,8 +29,7 @@ const MODULES: Module[] = [
   {
     number: "02",
     name: "Power Map",
-    caption:
-      "Forty-eight AI data centers plotted by operator, grid region, and announced capacity.",
+    caption: "Forty-eight AI data centers, plotted by operator and grid region.",
     cta: "Open the map",
     preview: powerMapSvg,
     route: "/power-map",
@@ -39,8 +37,7 @@ const MODULES: Module[] = [
   {
     number: "03",
     name: "Supply Chain",
-    caption:
-      "Twenty bottlenecks from silicon to substation, each tied to the equities exposed.",
+    caption: "Twenty places the buildout can get stuck, mapped to the companies exposed.",
     cta: "Trace the chain",
     preview: supplyChainSvg,
     route: "/supply-chain",
@@ -48,8 +45,7 @@ const MODULES: Module[] = [
   {
     number: "04",
     name: "Catalyst Tracker",
-    caption:
-      "Earnings dates, regulatory rulings, and policy votes that move these names — on one calendar.",
+    caption: "Earnings dates, rule changes, and policy votes. One calendar.",
     cta: "See what's next",
     preview: catalystSvg,
     route: "/catalysts",
@@ -57,8 +53,7 @@ const MODULES: Module[] = [
   {
     number: "05",
     name: "Portfolio Overlay",
-    caption:
-      "Score any ticker against the AI power thesis: nuclear, grid stress, and demand pressure.",
+    caption: "Type a ticker. See how exposed it is to the AI power story.",
     cta: "Score a ticker",
     preview: portfolioSvg,
     route: "/portfolio",
@@ -66,8 +61,7 @@ const MODULES: Module[] = [
   {
     number: "06",
     name: "Scenario Calculator",
-    caption:
-      "Model US AI electricity demand to 2030 with three presets and assumptions you can edit.",
+    caption: "Pick how fast AI grows. See what it does to the grid by 2030.",
     cta: "Run a scenario",
     preview: calculatorSvg,
     route: "/trade",
@@ -77,17 +71,15 @@ const MODULES: Module[] = [
 export function FeaturesShowcase() {
   return (
     <section
+      id="stack"
       style={{
         position: "relative",
-        paddingTop: "clamp(80px, 12vh, 160px)",
-        paddingBottom: "clamp(80px, 12vh, 160px)",
+        paddingTop: "clamp(96px, 14vh, 160px)",
+        paddingBottom: "clamp(96px, 14vh, 160px)",
       }}
       data-testid="home-features"
     >
-      <div
-        className="gt-rule-top"
-        style={{ position: "absolute", top: 0, left: 0, right: 0 }}
-      />
+      <div className="gt-rule-top" style={{ position: "absolute", top: 0, left: 0, right: 0 }} />
       <div
         style={{
           maxWidth: 1280,
@@ -96,21 +88,12 @@ export function FeaturesShowcase() {
           paddingRight: HORIZ_PAD,
         }}
       >
-        <div style={{ marginBottom: "clamp(56px, 8vh, 96px)" }}>
-          <div className="gt-eyebrow" style={{ marginBottom: 28 }}>
-            What we track
-          </div>
-          <h2
-            className="gt-section-heading"
-            style={{ marginBottom: 28, maxWidth: 920 }}
-          >
-            Six instruments.
-            <br />
-            <span style={{ color: "var(--mkt-ink-muted)" }}>One thesis.</span>
+        <div style={{ marginBottom: "clamp(56px, 9vh, 88px)", maxWidth: 900 }}>
+          <h2 className="gt-section-heading" style={{ marginBottom: 24 }}>
+            Six places to start.
           </h2>
           <p className="gt-section-dek">
-            Each module isolates one piece of the AI power buildout. Open the
-            one closest to what you already follow.
+            Each shows a different slice of the buildout. Pick the one closest to what you already follow.
           </p>
         </div>
 
@@ -123,9 +106,7 @@ export function FeaturesShowcase() {
               key={m.number}
               href={m.route}
               className="gt-feature-card"
-              data-testid={`feature-card-${m.name
-                .toLowerCase()
-                .replace(/\s+/g, "-")}`}
+              data-testid={`feature-card-${m.name.toLowerCase().replace(/\s+/g, "-")}`}
             >
               <div className="gt-feature-card__num">
                 <span>{m.number}</span>

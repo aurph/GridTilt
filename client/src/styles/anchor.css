@@ -1,53 +1,41 @@
-/*  GridTilt Home — Marketing surface.
+/*  GridTilt Home — marketing surface.
  *  Scoped via .gt-marketing on the Home root.
  *
- *  Anchor: Industrial extended. Dark warm-charcoal surface, JetBrains Mono
- *  for branding type, single #F07800 accent, hairline wireframe grid.
- *  Signature move: GRIDTILT wordmark types in terminal-style and the TILT
- *  half rotates ~8° to orange when the typing finishes.
+ *  Anchor: dark warm-charcoal industrial extended for marketing. JetBrains
+ *  Mono is the brand voice (logo, wordmark, eyebrows, tabular figures).
+ *  Inter handles prose only. Single accent #F07800.
  *
- *  Differentiator-internal rules:
- *    - The accent (#F07800) appears on:
- *        the TILT half of the wordmark after tilt,
- *        primary CTA underline/glow,
- *        feature card hover state,
- *        signal-pulse markers,
- *        the rare "live now" data point.
- *      Nowhere else.
- *    - Mono restricted to: wordmark, section numbers, feature card titles,
- *      tabular figures. Body prose stays in Inter.
- *    - Hairline grid is decorative; never carry information.
+ *  Signature move: GridTilt wordmark types out terminal-style. When the
+ *  full word lands, the "tilt" half transitions from upright to italic
+ *  and shifts to #F07800. No rotation, no caps.
+ *
+ *  Forbidden:
+ *    - mono-caps subtitle "eyebrows" with no information ("ON THE BENCH")
+ *    - themed UI copy ("TRACKING LIVE", "SCROLL THE STACK BELOW")
+ *    - filler status pills + pulsing dots
+ *    - em dashes (use periods/commas/rephrase)
+ *    - "BUILT SOLO" footer signatures
  */
 
 .gt-marketing {
-  /* Surfaces — warm charcoal, slightly varied for layering */
   --mkt-bg:          #0B0B0A;
   --mkt-bg-elev:     #131211;
-  --mkt-bg-card:     #17161410;
   --mkt-bg-deeper:   #060605;
 
-  /* Hairlines + wireframe */
   --mkt-line:        rgba(255, 255, 255, 0.06);
   --mkt-line-bright: rgba(255, 255, 255, 0.14);
-  --mkt-line-accent: rgba(240, 120, 0, 0.28);
-  --mkt-grid-line:   rgba(255, 255, 255, 0.028);
+  --mkt-grid-line:   rgba(255, 255, 255, 0.024);
 
-  /* Ink */
   --mkt-ink:         #F2F1ED;
   --mkt-ink-muted:   #9C9A93;
   --mkt-ink-quiet:   #5A5854;
 
-  /* Accent — ONE */
   --mkt-accent:      #F07800;
   --mkt-accent-soft: rgba(240, 120, 0, 0.10);
   --mkt-accent-glow: rgba(240, 120, 0, 0.30);
 
-  /* Type */
   --mkt-display:     'JetBrains Mono', 'SF Mono', 'Menlo', monospace;
   --mkt-body:        'Inter', 'Helvetica Neue', sans-serif;
-
-  /* Shape */
-  --mkt-radius:      4px;
 
   background: var(--mkt-bg);
   color: var(--mkt-ink);
@@ -76,71 +64,59 @@
     linear-gradient(90deg, var(--mkt-grid-line) 1px, transparent 1px);
   background-size: 56px 56px;
   background-position: -1px -1px;
-  mask-image: radial-gradient(ellipse 80% 80% at center, rgba(0,0,0,1) 0%, rgba(0,0,0,0.5) 50%, transparent 90%);
-  -webkit-mask-image: radial-gradient(ellipse 80% 80% at center, rgba(0,0,0,1) 0%, rgba(0,0,0,0.5) 50%, transparent 90%);
+  mask-image: radial-gradient(ellipse 80% 80% at center, rgba(0,0,0,1) 0%, rgba(0,0,0,0.5) 50%, transparent 95%);
+  -webkit-mask-image: radial-gradient(ellipse 80% 80% at center, rgba(0,0,0,1) 0%, rgba(0,0,0,0.5) 50%, transparent 95%);
   pointer-events: none;
   z-index: 0;
 }
-.gt-marketing-grid > * {
-  position: relative;
-  z-index: 1;
-}
+.gt-marketing-grid > * { position: relative; z-index: 1; }
 
 /* ─── Animated wordmark ────────────────────────────────────────────────── */
 
 .gt-wordmark {
   font-family: var(--mkt-display);
   font-weight: 700;
-  font-size: clamp(64px, 13vw, 200px);
-  letter-spacing: -0.06em;
-  line-height: 0.9;
+  font-size: clamp(54px, 11vw, 168px);
+  letter-spacing: -0.045em;
+  line-height: 1;
   color: var(--mkt-ink);
   user-select: none;
   display: inline-flex;
   align-items: baseline;
   white-space: nowrap;
+  margin: 0;
 }
 .gt-wordmark__half {
   display: inline-block;
+  font-style: normal;
   transition:
-    transform 600ms cubic-bezier(0.34, 1.45, 0.64, 1),
-    color 350ms ease-out,
-    text-shadow 600ms ease-out;
-  transform-origin: 0% 100%;
+    font-style 380ms cubic-bezier(0.34, 1.2, 0.64, 1),
+    color 380ms ease-out,
+    transform 380ms cubic-bezier(0.34, 1.2, 0.64, 1);
 }
 .gt-wordmark__half--tilt.is-tilted {
   color: var(--mkt-accent);
-  transform: rotate(-8deg);
-  text-shadow: 0 0 22px var(--mkt-accent-glow);
+  font-style: italic;
+  transform: translateX(0.02em);
 }
 .gt-wordmark__caret {
   display: inline-block;
-  width: 0.55ch;
+  width: 0.5ch;
   color: var(--mkt-accent);
-  margin-left: 0.06em;
+  margin-left: 0.04em;
   animation: gt-caret 700ms steps(2, end) infinite;
 }
-.gt-wordmark__caret.is-fading {
-  animation: gt-caret-fade 400ms ease-out forwards;
-}
-@keyframes gt-caret {
-  to { opacity: 0; }
-}
-@keyframes gt-caret-fade {
-  to { opacity: 0; }
-}
+.gt-wordmark__caret.is-fading { animation: gt-caret-fade 400ms ease-out forwards; }
+@keyframes gt-caret      { to { opacity: 0; } }
+@keyframes gt-caret-fade { to { opacity: 0; } }
 
-/* ─── Reveal-on-mount staggered fades ──────────────────────────────────── */
+/* ─── Staggered reveal animations ──────────────────────────────────────── */
 
 @keyframes gt-rise {
-  from { opacity: 0; transform: translateY(14px); }
+  from { opacity: 0; transform: translateY(12px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-
-.gt-rise {
-  opacity: 0;
-  animation: gt-rise 700ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
-}
+.gt-rise { opacity: 0; animation: gt-rise 700ms cubic-bezier(0.22, 1, 0.36, 1) forwards; }
 .gt-rise-1 { animation-delay: 1300ms; }
 .gt-rise-2 { animation-delay: 1500ms; }
 .gt-rise-3 { animation-delay: 1700ms; }
@@ -155,7 +131,6 @@
   padding: 32px 28px 28px;
   border: 1px solid var(--mkt-line);
   background: var(--mkt-bg-elev);
-  border-radius: var(--mkt-radius);
   text-decoration: none;
   color: inherit;
   overflow: hidden;
@@ -166,7 +141,6 @@
   position: absolute;
   inset: 0;
   border: 1px solid transparent;
-  border-radius: var(--mkt-radius);
   pointer-events: none;
   transition: border-color 220ms ease-out, box-shadow 220ms ease-out;
 }
@@ -175,18 +149,18 @@
   transform: translateY(-2px);
 }
 .gt-feature-card:hover::after {
-  border-color: var(--mkt-line-accent);
+  border-color: var(--mkt-accent);
   box-shadow:
-    inset 0 0 0 1px var(--mkt-line-accent),
-    0 0 24px -8px var(--mkt-accent-glow);
+    inset 0 0 0 1px var(--mkt-accent),
+    0 0 28px -10px var(--mkt-accent-glow);
 }
 .gt-feature-card__num {
   font-family: var(--mkt-display);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 500;
   letter-spacing: 0.16em;
   color: var(--mkt-ink-quiet);
-  margin-bottom: 22px;
+  margin-bottom: 18px;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -206,16 +180,14 @@
   margin-bottom: 10px;
   transition: color 180ms ease-out;
 }
-.gt-feature-card:hover .gt-feature-card__title {
-  color: var(--mkt-accent);
-}
+.gt-feature-card:hover .gt-feature-card__title { color: var(--mkt-accent); }
 .gt-feature-card__caption {
   font-family: var(--mkt-body);
   font-size: 14px;
   line-height: 1.6;
   color: var(--mkt-ink-muted);
-  margin-bottom: 24px;
-  min-height: 67px;
+  margin-bottom: 22px;
+  min-height: 58px;
 }
 .gt-feature-card__preview {
   border: 1px solid var(--mkt-line);
@@ -225,8 +197,6 @@
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  border-radius: 2px;
-  filter: hue-rotate(0deg) brightness(0.96);
 }
 .gt-feature-card__preview img {
   max-width: 100%;
@@ -235,7 +205,7 @@
   opacity: 0.92;
 }
 .gt-feature-card__cta {
-  margin-top: 22px;
+  margin-top: 20px;
   font-family: var(--mkt-display);
   font-size: 12px;
   font-weight: 500;
@@ -251,100 +221,90 @@
   gap: 14px;
 }
 
-/* ─── Primary CTA button ───────────────────────────────────────────────── */
+/* ─── Wireframe CTA (fills on hover) ───────────────────────────────────── */
 
-.gt-cta {
+.gt-cta-wireframe {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  padding: 14px 24px;
-  font-family: var(--mkt-display);
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--mkt-bg);
-  background: var(--mkt-accent);
+  gap: 14px;
+  padding: 16px 28px;
+  font-family: var(--mkt-body);
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--mkt-accent);
+  background: transparent;
   border: 1px solid var(--mkt-accent);
-  border-radius: var(--mkt-radius);
   text-decoration: none;
   cursor: pointer;
-  transition: transform 180ms ease-out, box-shadow 220ms ease-out;
-  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  transition: color 220ms ease-out 60ms, letter-spacing 220ms ease-out;
+  letter-spacing: 0.005em;
 }
-.gt-cta:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 0 32px -6px var(--mkt-accent-glow);
-}
-.gt-cta__arrow {
-  display: inline-block;
-  transition: transform 220ms ease-out;
-}
-.gt-cta:hover .gt-cta__arrow {
-  transform: translateX(4px);
-}
-
-.gt-cta--ghost {
-  background: transparent;
-  color: var(--mkt-ink);
-  border-color: var(--mkt-line-bright);
-}
-.gt-cta--ghost:hover {
-  border-color: var(--mkt-accent);
-  color: var(--mkt-accent);
-  box-shadow: 0 0 24px -8px var(--mkt-accent-glow);
-}
-
-/* ─── Eyebrow + section number ─────────────────────────────────────────── */
-
-.gt-eyebrow {
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
-  font-family: var(--mkt-display);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: var(--mkt-ink-muted);
-}
-.gt-eyebrow::before {
+.gt-cta-wireframe::before {
   content: '';
-  width: 24px;
-  height: 1px;
+  position: absolute;
+  inset: 0;
   background: var(--mkt-accent);
+  transform: translateX(-101%);
+  transition: transform 260ms cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: -1;
+}
+.gt-cta-wireframe:hover { color: var(--mkt-bg); }
+.gt-cta-wireframe:hover::before { transform: translateX(0); }
+.gt-cta-wireframe__arrow {
+  display: inline-block;
+  transition: transform 240ms ease-out;
+}
+.gt-cta-wireframe:hover .gt-cta-wireframe__arrow {
+  transform: translateX(6px);
 }
 
-.gt-section-num {
-  font-family: var(--mkt-display);
-  font-size: 12px;
-  font-weight: 500;
-  letter-spacing: 0.16em;
-  color: var(--mkt-ink-quiet);
+/* ─── Three-chevron scroll cue ─────────────────────────────────────────── */
+
+.gt-chevrons {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.gt-chevrons svg {
+  width: 22px;
+  height: 22px;
+  color: var(--mkt-accent);
+  opacity: 0.3;
+  animation: gt-chev 1700ms ease-in-out infinite;
+}
+.gt-chevrons svg:nth-child(1) { animation-delay: 0ms;   }
+.gt-chevrons svg:nth-child(2) { animation-delay: 180ms; }
+.gt-chevrons svg:nth-child(3) { animation-delay: 360ms; }
+@keyframes gt-chev {
+  0%, 100% { opacity: 0.18; transform: translateY(0); }
+  50%      { opacity: 1;    transform: translateY(3px); }
 }
 
-/* ─── Section heading ──────────────────────────────────────────────────── */
+/* ─── Section heading + dek (no eyebrows, no orange line decoration) ───── */
 
 .gt-section-heading {
   font-family: var(--mkt-display);
   font-weight: 700;
-  font-size: clamp(34px, 5.5vw, 64px);
+  font-size: clamp(34px, 5.2vw, 60px);
   line-height: 1.04;
   letter-spacing: -0.035em;
   color: var(--mkt-ink);
-}
-.gt-section-heading--accent {
-  color: var(--mkt-accent);
+  margin: 0;
 }
 .gt-section-dek {
   font-family: var(--mkt-body);
-  font-size: clamp(16px, 1.6vw, 19px);
+  font-size: clamp(16px, 1.55vw, 19px);
   line-height: 1.55;
   color: var(--mkt-ink-muted);
   max-width: 56ch;
+  margin: 0;
 }
 
-/* ─── Mono numeric helper ──────────────────────────────────────────────── */
+/* ─── Mono helper ──────────────────────────────────────────────────────── */
 
 .gt-mono { font-family: var(--mkt-display); font-variant-numeric: tabular-nums; }
 
@@ -353,12 +313,12 @@
 .gt-rule-top    { border-top:    1px solid var(--mkt-line); }
 .gt-rule-bottom { border-bottom: 1px solid var(--mkt-line); }
 
-/* ─── Footer link ──────────────────────────────────────────────────────── */
+/* ─── Footer ───────────────────────────────────────────────────────────── */
 
 .gt-footer-link {
   color: var(--mkt-ink);
   text-decoration: none;
-  border-bottom: 1px solid var(--mkt-line);
+  border-bottom: 1px solid var(--mkt-line-bright);
   transition: border-color 180ms ease-out, color 180ms ease-out;
 }
 .gt-footer-link:hover {
@@ -366,24 +326,27 @@
   border-bottom-color: var(--mkt-accent);
 }
 
-/* ─── Live pulse dot ───────────────────────────────────────────────────── */
-
-.gt-pulse {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--mkt-accent);
-  box-shadow: 0 0 0 0 var(--mkt-accent-glow);
-  animation: gt-pulse 1800ms ease-out infinite;
+.gt-social {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--mkt-line);
+  color: var(--mkt-ink-muted);
+  transition: color 180ms ease-out, border-color 180ms ease-out;
 }
-@keyframes gt-pulse {
-  0%   { box-shadow: 0 0 0 0 var(--mkt-accent-glow); }
-  70%  { box-shadow: 0 0 0 10px rgba(240,120,0,0); }
-  100% { box-shadow: 0 0 0 0 rgba(240,120,0,0); }
+.gt-social:hover {
+  color: var(--mkt-accent);
+  border-color: var(--mkt-accent);
+}
+.gt-social svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
 }
 
-/* ─── Reduced motion ────────────────────────────────────────────────────── */
+/* ─── Reduced motion ───────────────────────────────────────────────────── */
 
 @media (prefers-reduced-motion: reduce) {
   .gt-marketing *,
@@ -394,7 +357,7 @@
     transition-duration: 0.001ms !important;
   }
   .gt-wordmark__half--tilt.is-tilted {
-    transform: rotate(-8deg);
+    font-style: italic;
     color: var(--mkt-accent);
   }
 }

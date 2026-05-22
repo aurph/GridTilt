@@ -1,24 +1,20 @@
 import { useEffect, useState } from "react";
 
-const TEXT = "GRIDTILT";
-const SPLIT = 4; // "GRID" then "TILT"
+const TEXT = "GridTilt";
+const SPLIT = 4; // "Grid" then "tilt"
 const STEP_MS = 95;
 const FIRST_DELAY_MS = 220;
-const TILT_DELAY_MS = 260;
-const CARET_FADE_MS = 280;
+const TILT_DELAY_MS = 240;
+const CARET_FADE_DELAY_MS = 520;
 
 interface WordmarkProps {
-  // Override the leadInMs to delay the start of typing (use when the wordmark
-  // appears as part of a larger orchestrated entrance).
   leadInMs?: number;
 }
 
 /**
- * GRIDTILT wordmark. Types out terminal-style on mount, then the "TILT" half
- * rotates ~8° and turns #F07800 as the signature move.
- *
- * Respects prefers-reduced-motion (in CSS) — the final state still renders
- * tilted and orange but without the typing/rotation animation.
+ * GridTilt wordmark. Types out character-by-character on mount. When the
+ * full word is on screen, the "tilt" half transitions from upright to
+ * italic and shifts to #F07800. No rotation, no scale.
  */
 export function Wordmark({ leadInMs = 0 }: WordmarkProps) {
   const [count, setCount] = useState(0);
@@ -50,7 +46,7 @@ export function Wordmark({ leadInMs = 0 }: WordmarkProps) {
           }, TILT_DELAY_MS);
           setTimeout(() => {
             if (!cancelled) setCaretFading(true);
-          }, TILT_DELAY_MS + 240);
+          }, TILT_DELAY_MS + CARET_FADE_DELAY_MS);
         }
       }
       tick(1);
@@ -66,11 +62,7 @@ export function Wordmark({ leadInMs = 0 }: WordmarkProps) {
   const visibleTilt = TEXT.slice(SPLIT, count);
 
   return (
-    <h1
-      className="gt-wordmark"
-      aria-label="GridTilt"
-      data-testid="home-wordmark"
-    >
+    <h1 className="gt-wordmark" aria-label="GridTilt" data-testid="home-wordmark">
       <span className="gt-wordmark__half">{visibleGrid}</span>
       <span
         className={`gt-wordmark__half gt-wordmark__half--tilt${tilted ? " is-tilted" : ""}`}
