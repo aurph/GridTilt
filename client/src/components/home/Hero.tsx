@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Wordmark } from "./Wordmark";
 import type { KpiData } from "@/lib/types";
 import logoPath from "@assets/Image_[Vectorized]_(2)_1773890483514.png";
+import powerMapSvg from "@assets/previews/power-map.svg";
 
 const HORIZ_PAD = "clamp(24px, 5vw, 96px)";
 
@@ -36,14 +37,26 @@ export function Hero() {
         width: "100%",
         display: "flex",
         flexDirection: "column",
-        paddingTop: 32,
-        paddingBottom: 56,
+        paddingTop: 36,
+        paddingBottom: 80,
         overflow: "hidden",
       }}
       data-testid="home-hero"
     >
+      {/* Faded power map decoration. Sits behind the content on the right. */}
+      <img
+        src={powerMapSvg}
+        alt=""
+        aria-hidden
+        className="gt-hero-map"
+        data-testid="hero-map-backdrop"
+      />
+
+      {/* Top bar: logo + last refresh */}
       <div
         style={{
+          position: "relative",
+          zIndex: 2,
           width: "100%",
           maxWidth: 1280,
           margin: "0 auto",
@@ -55,15 +68,15 @@ export function Hero() {
           gap: 24,
         }}
       >
-        <Link href="/" aria-label="GridTilt" style={{ display: "inline-flex" }}>
+        <Link href="/" aria-label="GridTilt home" style={{ display: "inline-flex" }}>
           <img
             src={logoPath}
             alt="GridTilt logo"
             style={{
-              height: 44,
-              width: 44,
+              height: 88,
+              width: 88,
               display: "block",
-              borderRadius: 6,
+              borderRadius: 12,
             }}
             data-testid="home-logo-mark"
           />
@@ -77,7 +90,7 @@ export function Hero() {
               letterSpacing: "0.04em",
               textAlign: "right",
               lineHeight: 1.4,
-              paddingTop: 10,
+              paddingTop: 14,
             }}
             data-testid="hero-refresh"
           >
@@ -86,8 +99,11 @@ export function Hero() {
         )}
       </div>
 
+      {/* Main content area. Left-aligned. */}
       <div
         style={{
+          position: "relative",
+          zIndex: 2,
           flex: 1,
           width: "100%",
           maxWidth: 1280,
@@ -97,88 +113,41 @@ export function Hero() {
           display: "flex",
           flexDirection: "column",
           justifyContent: "center",
-          paddingTop: "clamp(48px, 10vh, 120px)",
+          paddingTop: "clamp(40px, 8vh, 96px)",
         }}
       >
         <Wordmark />
 
-        <p
-          className="gt-rise gt-rise-2"
-          style={{
-            fontFamily: "Inter, sans-serif",
-            fontSize: "clamp(22px, 2.5vw, 32px)",
-            fontWeight: 400,
-            lineHeight: 1.35,
-            color: "var(--mkt-ink)",
-            maxWidth: 760,
-            marginTop: 44,
-            marginBottom: 12,
-            letterSpacing: "-0.01em",
-          }}
-        >
-          Watch the AI power grid get built.
-        </p>
-        <p
-          className="gt-rise gt-rise-2"
-          style={{
-            fontFamily: "Inter, sans-serif",
-            fontSize: "clamp(22px, 2.5vw, 32px)",
-            fontWeight: 400,
-            lineHeight: 1.35,
-            color: "var(--mkt-ink-muted)",
-            maxWidth: 760,
-            marginBottom: 48,
-            letterSpacing: "-0.01em",
-          }}
-        >
-          Live, in plain sight.
-        </p>
+        <div className="gt-rise gt-rise-2" style={{ marginTop: 44 }}>
+          <p className="gt-tagline-primary">Energy infrastructure,</p>
+          <p className="gt-tagline-emphasis">in plain sight.</p>
+        </div>
 
         <div
           className="gt-rise gt-rise-3"
-          style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 28,
+            flexWrap: "wrap",
+            marginTop: 48,
+          }}
         >
-          <Link href="/overview" className="gt-cta-wireframe" data-testid="hero-cta-dashboard">
+          <Link href="/overview" className="gt-cta-primary" data-testid="hero-cta-dashboard">
             <span>Open the dashboard</span>
-            <span className="gt-cta-wireframe__arrow" aria-hidden>
+            <span className="gt-cta-primary__arrow" aria-hidden>
               →
             </span>
           </Link>
+          <a
+            href="#stack"
+            className="gt-cta-secondary"
+            data-testid="hero-cta-browse"
+          >
+            or browse the tools
+          </a>
         </div>
       </div>
-
-      <div
-        className="gt-rise gt-rise-5"
-        style={{
-          width: "100%",
-          maxWidth: 1280,
-          margin: "0 auto",
-          paddingLeft: HORIZ_PAD,
-          paddingRight: HORIZ_PAD,
-          display: "flex",
-          justifyContent: "center",
-          paddingBottom: "clamp(24px, 4vh, 48px)",
-        }}
-      >
-        <a
-          href="#stack"
-          className="gt-chevrons"
-          aria-label="Scroll down"
-          data-testid="scroll-cue"
-        >
-          <Chevron />
-          <Chevron />
-          <Chevron />
-        </a>
-      </div>
     </section>
-  );
-}
-
-function Chevron() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square">
-      <path d="M6 9l6 6 6-6" />
-    </svg>
   );
 }

@@ -1,19 +1,17 @@
 /*  GridTilt Home — marketing surface.
  *  Scoped via .gt-marketing on the Home root.
  *
- *  Anchor: dark warm-charcoal industrial extended for marketing. JetBrains
- *  Mono is the brand voice (logo, wordmark, eyebrows, tabular figures).
- *  Inter handles prose only. Single accent #F07800.
- *
- *  Signature move: GridTilt wordmark types out terminal-style. When the
- *  full word lands, the "tilt" half transitions from upright to italic
- *  and shifts to #F07800. No rotation, no caps.
+ *  Voice:
+ *    Display + brand   = JetBrains Mono
+ *    Body              = Inter
+ *    Editorial accent  = Source Serif 4 italic (the "yearning" font;
+ *                        used sparingly on tagline emphasis + secondary CTAs)
  *
  *  Forbidden:
- *    - mono-caps subtitle "eyebrows" with no information ("ON THE BENCH")
+ *    - mono-caps subtitle eyebrows with no information
  *    - themed UI copy ("TRACKING LIVE", "SCROLL THE STACK BELOW")
- *    - filler status pills + pulsing dots
- *    - em dashes (use periods/commas/rephrase)
+ *    - filler status pills / pulsing dots
+ *    - em dashes
  *    - "BUILT SOLO" footer signatures
  */
 
@@ -24,7 +22,8 @@
 
   --mkt-line:        rgba(255, 255, 255, 0.06);
   --mkt-line-bright: rgba(255, 255, 255, 0.14);
-  --mkt-grid-line:   rgba(255, 255, 255, 0.024);
+  --mkt-grid-line:   rgba(255, 255, 255, 0.022);
+  --mkt-accent-veil: rgba(240, 120, 0, 0.035);
 
   --mkt-ink:         #F2F1ED;
   --mkt-ink-muted:   #9C9A93;
@@ -36,6 +35,7 @@
 
   --mkt-display:     'JetBrains Mono', 'SF Mono', 'Menlo', monospace;
   --mkt-body:        'Inter', 'Helvetica Neue', sans-serif;
+  --mkt-serif:       'Source Serif 4', 'Iowan Old Style', 'Georgia', serif;
 
   background: var(--mkt-bg);
   color: var(--mkt-ink);
@@ -50,7 +50,7 @@
   color: var(--mkt-bg);
 }
 
-/* ─── Wireframe grid backdrop ─────────────────────────────────────────── */
+/* ─── Wireframe grid backdrop with slow drift + accent sweep ───────────── */
 
 .gt-marketing-grid {
   position: relative;
@@ -63,20 +63,64 @@
     linear-gradient(var(--mkt-grid-line) 1px, transparent 1px),
     linear-gradient(90deg, var(--mkt-grid-line) 1px, transparent 1px);
   background-size: 56px 56px;
-  background-position: -1px -1px;
-  mask-image: radial-gradient(ellipse 80% 80% at center, rgba(0,0,0,1) 0%, rgba(0,0,0,0.5) 50%, transparent 95%);
-  -webkit-mask-image: radial-gradient(ellipse 80% 80% at center, rgba(0,0,0,1) 0%, rgba(0,0,0,0.5) 50%, transparent 95%);
+  background-position: 0 0;
+  mask-image: radial-gradient(ellipse 90% 80% at 70% 50%, rgba(0,0,0,1) 0%, rgba(0,0,0,0.6) 55%, transparent 100%);
+  -webkit-mask-image: radial-gradient(ellipse 90% 80% at 70% 50%, rgba(0,0,0,1) 0%, rgba(0,0,0,0.6) 55%, transparent 100%);
   pointer-events: none;
   z-index: 0;
+  animation: gt-grid-drift 90s linear infinite;
+}
+.gt-marketing-grid::after {
+  /* Slow accent veil that traces top-to-bottom; almost imperceptible */
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, transparent 0%, var(--mkt-accent-veil) 50%, transparent 100%);
+  background-size: 100% 60%;
+  background-position: 0 -60%;
+  background-repeat: no-repeat;
+  z-index: 0;
+  animation: gt-grid-sweep 14s ease-in-out infinite;
 }
 .gt-marketing-grid > * { position: relative; z-index: 1; }
+
+@keyframes gt-grid-drift {
+  from { background-position: 0 0, 0 0; }
+  to   { background-position: 56px 56px, 56px 56px; }
+}
+@keyframes gt-grid-sweep {
+  0%   { background-position: 0 -60%; }
+  100% { background-position: 0 160%; }
+}
+
+/* ─── Hero faded power map decoration ──────────────────────────────────── */
+
+.gt-hero-map {
+  position: absolute;
+  right: -8%;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 62vw;
+  max-width: 720px;
+  height: auto;
+  opacity: 0.085;
+  pointer-events: none;
+  z-index: 0;
+  filter: saturate(0.7) contrast(1.1);
+  animation: gt-hero-map-breathe 18s ease-in-out infinite;
+}
+@keyframes gt-hero-map-breathe {
+  0%, 100% { opacity: 0.06; transform: translateY(-50%) scale(1); }
+  50%      { opacity: 0.11; transform: translateY(-50%) scale(1.015); }
+}
 
 /* ─── Animated wordmark ────────────────────────────────────────────────── */
 
 .gt-wordmark {
   font-family: var(--mkt-display);
   font-weight: 700;
-  font-size: clamp(54px, 11vw, 168px);
+  font-size: clamp(56px, 11vw, 168px);
   letter-spacing: -0.045em;
   line-height: 1;
   color: var(--mkt-ink);
@@ -109,6 +153,28 @@
 .gt-wordmark__caret.is-fading { animation: gt-caret-fade 400ms ease-out forwards; }
 @keyframes gt-caret      { to { opacity: 0; } }
 @keyframes gt-caret-fade { to { opacity: 0; } }
+
+/* ─── Tagline ──────────────────────────────────────────────────────────── */
+
+.gt-tagline-primary {
+  font-family: var(--mkt-display);
+  font-size: clamp(24px, 2.7vw, 36px);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  color: var(--mkt-ink);
+  margin: 0 0 4px 0;
+}
+.gt-tagline-emphasis {
+  font-family: var(--mkt-serif);
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(28px, 3.2vw, 44px);
+  line-height: 1.15;
+  color: var(--mkt-accent);
+  margin: 0;
+  letter-spacing: -0.01em;
+}
 
 /* ─── Staggered reveal animations ──────────────────────────────────────── */
 
@@ -221,70 +287,111 @@
   gap: 14px;
 }
 
-/* ─── Wireframe CTA (fills on hover) ───────────────────────────────────── */
+/* ─── Primary CTA (offset double-border + fill on hover) ───────────────── */
 
-.gt-cta-wireframe {
+.gt-cta-primary {
   position: relative;
   display: inline-flex;
   align-items: center;
   gap: 14px;
-  padding: 16px 28px;
-  font-family: var(--mkt-body);
-  font-size: 15px;
-  font-weight: 500;
+  padding: 18px 30px;
+  font-family: var(--mkt-display);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   color: var(--mkt-accent);
   background: transparent;
   border: 1px solid var(--mkt-accent);
   text-decoration: none;
   cursor: pointer;
-  overflow: hidden;
-  isolation: isolate;
-  transition: color 220ms ease-out 60ms, letter-spacing 220ms ease-out;
-  letter-spacing: 0.005em;
+  transition: color 220ms ease-out, background 220ms ease-out;
 }
-.gt-cta-wireframe::before {
+.gt-cta-primary::before {
+  /* Outer offset duplicate border that reveals on hover */
   content: '';
   position: absolute;
   inset: 0;
-  background: var(--mkt-accent);
-  transform: translateX(-101%);
-  transition: transform 260ms cubic-bezier(0.4, 0, 0.2, 1);
-  z-index: -1;
+  border: 1px solid var(--mkt-accent);
+  opacity: 0;
+  transform: translate(0, 0);
+  transition: opacity 240ms ease-out, transform 280ms cubic-bezier(0.34, 1.5, 0.64, 1);
+  pointer-events: none;
 }
-.gt-cta-wireframe:hover { color: var(--mkt-bg); }
-.gt-cta-wireframe:hover::before { transform: translateX(0); }
-.gt-cta-wireframe__arrow {
+.gt-cta-primary:hover {
+  background: var(--mkt-accent);
+  color: var(--mkt-bg);
+}
+.gt-cta-primary:hover::before {
+  opacity: 0.55;
+  transform: translate(6px, -6px);
+}
+.gt-cta-primary__arrow {
   display: inline-block;
   transition: transform 240ms ease-out;
 }
-.gt-cta-wireframe:hover .gt-cta-wireframe__arrow {
-  transform: translateX(6px);
+.gt-cta-primary:hover .gt-cta-primary__arrow {
+  transform: translateX(5px);
 }
 
-/* ─── Three-chevron scroll cue ─────────────────────────────────────────── */
+/* ─── Secondary CTA (serif italic, underline) ──────────────────────────── */
 
-.gt-chevrons {
+.gt-cta-secondary {
+  font-family: var(--mkt-serif);
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(17px, 1.4vw, 20px);
+  color: var(--mkt-ink-muted);
+  text-decoration: none;
+  border-bottom: 1px solid var(--mkt-line-bright);
+  padding-bottom: 3px;
+  transition: color 200ms ease-out, border-color 200ms ease-out, letter-spacing 200ms ease-out;
+  letter-spacing: 0;
+}
+.gt-cta-secondary:hover {
+  color: var(--mkt-accent);
+  border-bottom-color: var(--mkt-accent);
+  letter-spacing: 0.005em;
+}
+
+/* ─── Floating chevron scroll cue (sticky bottom-right) ────────────────── */
+
+.gt-chevrons-floating {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  z-index: 40;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
+  gap: 0;
+  padding: 10px 12px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  border-radius: 0;
+  transition: opacity 240ms ease-out;
 }
-.gt-chevrons svg {
+.gt-chevrons-floating svg {
   width: 22px;
   height: 22px;
   color: var(--mkt-accent);
-  opacity: 0.3;
+  opacity: 0.32;
   animation: gt-chev 1700ms ease-in-out infinite;
+  margin-top: -6px;
 }
-.gt-chevrons svg:nth-child(1) { animation-delay: 0ms;   }
-.gt-chevrons svg:nth-child(2) { animation-delay: 180ms; }
-.gt-chevrons svg:nth-child(3) { animation-delay: 360ms; }
+.gt-chevrons-floating svg:first-child { margin-top: 0; }
+.gt-chevrons-floating svg:nth-child(1) { animation-delay: 0ms;   }
+.gt-chevrons-floating svg:nth-child(2) { animation-delay: 200ms; }
+.gt-chevrons-floating svg:nth-child(3) { animation-delay: 400ms; }
+.gt-chevrons-floating:hover svg { opacity: 1; }
+.gt-chevrons-floating.is-near-bottom { opacity: 0; pointer-events: none; }
 @keyframes gt-chev {
   0%, 100% { opacity: 0.18; transform: translateY(0); }
-  50%      { opacity: 1;    transform: translateY(3px); }
+  50%      { opacity: 1;    transform: translateY(4px); }
 }
 
-/* ─── Section heading + dek (no eyebrows, no orange line decoration) ───── */
+/* ─── Section heading + dek ────────────────────────────────────────────── */
 
 .gt-section-heading {
   font-family: var(--mkt-display);
@@ -304,9 +411,8 @@
   margin: 0;
 }
 
-/* ─── Mono helper ──────────────────────────────────────────────────────── */
-
-.gt-mono { font-family: var(--mkt-display); font-variant-numeric: tabular-nums; }
+.gt-mono   { font-family: var(--mkt-display); font-variant-numeric: tabular-nums; }
+.gt-serif  { font-family: var(--mkt-serif); font-style: italic; }
 
 /* ─── Hairline rules ───────────────────────────────────────────────────── */
 
@@ -340,11 +446,7 @@
   color: var(--mkt-accent);
   border-color: var(--mkt-accent);
 }
-.gt-social svg {
-  width: 16px;
-  height: 16px;
-  fill: currentColor;
-}
+.gt-social svg { width: 16px; height: 16px; fill: currentColor; }
 
 /* ─── Reduced motion ───────────────────────────────────────────────────── */
 

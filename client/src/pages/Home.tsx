@@ -3,6 +3,7 @@ import { FeaturesShowcase } from "@/components/home/FeaturesShowcase";
 import { DemandChart } from "@/components/home/DemandChart";
 import { BuildYourOwnTeaser } from "@/components/home/BuildYourOwnTeaser";
 import { HomeFooter } from "@/components/home/HomeFooter";
+import { FloatingScrollCue } from "@/components/home/FloatingScrollCue";
 
 export default function Home() {
   return (
@@ -12,6 +13,7 @@ export default function Home() {
       <DemandChart />
       <BuildYourOwnTeaser />
       <HomeFooter />
+      <FloatingScrollCue />
     </div>
   );
 }

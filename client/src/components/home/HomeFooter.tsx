@@ -97,11 +97,11 @@ export function HomeFooter() {
             Center Dynamics, World Nuclear News, Power Engineering.
           </p>
           <a
-            href="mailto:jacksch45@gmail.com"
+            href="mailto:gridtilt1@gmail.com"
             className="gt-footer-link"
             style={{ fontFamily: "Inter, sans-serif", fontSize: 13 }}
           >
-            jacksch45@gmail.com
+            gridtilt1@gmail.com
           </a>
         </div>
 
