@@ -165,6 +165,30 @@ function Router() {
   );
 }
 
+// Minimal Suspense fallback while the lazy Home chunk loads on cold visits.
+// Holds the wordmark in the masthead position so the first paint of / is the
+// brand mark on the Swiss surface, not a blank white screen.
+function HomeLoadingShell() {
+  return (
+    <div
+      className="anchor-swiss min-h-screen w-full"
+      style={{ padding: "clamp(20px, 4vw, 64px)" }}
+    >
+      <span
+        style={{
+          fontFamily: "Inter, sans-serif",
+          fontSize: 12,
+          fontWeight: 700,
+          letterSpacing: "0.18em",
+          color: "#111111",
+        }}
+      >
+        GRIDTILT
+      </span>
+    </div>
+  );
+}
+
 function App() {
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [location, navigate] = useLocation();
@@ -224,7 +248,7 @@ function App() {
     return (
       <QueryClientProvider client={queryClient}>
         <TooltipProvider delayDuration={300}>
-          <Suspense fallback={null}>
+          <Suspense fallback={<HomeLoadingShell />}>
             <Router />
           </Suspense>
           {showShortcuts && (

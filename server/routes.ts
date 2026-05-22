@@ -1476,8 +1476,13 @@ async function computeKpis(): Promise<KpiResult> {
       yahooFinance.quote("NLR").catch(() => null),
       yahooFinance.quote("NEE").catch(() => null),
     ]);
+    // Heartbeat: count only quotes that returned a fresh change percentage.
+    // Yahoo often returns a stale-cached regularMarketPrice while
+    // regularMarketChangePercent is null on a throttle, which would otherwise
+    // let us label "live" while the index momentum values fell back to
+    // STATIC_MARKET_DATA. Tighten the heartbeat to changePercent specifically.
     quotes.forEach((q) => {
-      if (q?.regularMarketChangePercent != null || q?.regularMarketPrice != null) liveQuoteCount++;
+      if (q?.regularMarketChangePercent != null) liveQuoteCount++;
     });
     if (quotes[0]?.regularMarketChangePercent != null) nvdaChange = quotes[0].regularMarketChangePercent;
     if (quotes[1]?.regularMarketChangePercent != null) tsmChange = quotes[1].regularMarketChangePercent;
@@ -2087,8 +2092,28 @@ export async function registerRoutes(
 
       const subscribers = loadSubscribers();
       const normalizedEmail = email.toLowerCase().trim();
+      const trimmedIntent =
+        typeof intent === "string" && intent.trim() ? intent.trim().slice(0, 500) : null;
+      const trimmedContext =
+        typeof context === "string" && context.trim() ? context.trim().slice(0, 64) : null;
 
-      if (subscribers.some((s) => s.email === normalizedEmail)) {
+      const existing = subscribers.find((s) => s.email === normalizedEmail);
+      if (existing) {
+        // Merge new segmentation fields onto the existing record so we don't
+        // silently drop a returning subscriber's answer (e.g., they were on the
+        // dashboard waitlist last month, today they filled the BuildYourOwn
+        // textarea on /). Preserve a prior intent rather than overwrite it;
+        // always refresh context (most-recent surface is the most useful tag).
+        let mutated = false;
+        if (trimmedIntent && !existing.intent) {
+          existing.intent = trimmedIntent;
+          mutated = true;
+        }
+        if (trimmedContext && existing.context !== trimmedContext) {
+          existing.context = trimmedContext;
+          mutated = true;
+        }
+        if (mutated) saveSubscribers(subscribers);
         return res.json({ message: "You're already on the list", status: "exists" });
       }
 
@@ -2096,12 +2121,8 @@ export async function registerRoutes(
         email: normalizedEmail,
         subscribedAt: new Date().toISOString(),
       };
-      if (typeof intent === "string" && intent.trim()) {
-        record.intent = intent.trim().slice(0, 500);
-      }
-      if (typeof context === "string" && context.trim()) {
-        record.context = context.trim().slice(0, 64);
-      }
+      if (trimmedIntent) record.intent = trimmedIntent;
+      if (trimmedContext) record.context = trimmedContext;
       subscribers.push(record);
       saveSubscribers(subscribers);
 
@@ -2200,7 +2221,7 @@ ${topMovers.map((s: any) => `
 </td></tr>
 <tr><td style="padding:32px;background:#0d0d14;border-top:1px solid rgba(255,255,255,0.04);">
 <div style="text-align:center;">
-<a href="${BASE_URL}" style="display:inline-block;padding:12px 32px;background:#F07800;color:#000;text-decoration:none;font-weight:700;font-size:13px;border-radius:6px;">Explore the Dashboard</a>
+<a href="${BASE_URL}/overview" style="display:inline-block;padding:12px 32px;background:#F07800;color:#000;text-decoration:none;font-weight:700;font-size:13px;border-radius:6px;">Explore the Dashboard</a>
 </div>
 <div style="text-align:center;margin-top:20px;font-size:11px;color:rgba(255,255,255,0.3);">
 Sent to ${subscriberCount} subscribers. You're receiving this because you subscribed at gridtilt.com.<br>
@@ -2955,7 +2976,7 @@ Preferred-Languages: en
       name: "GridTilt \u2014 AI Power Infrastructure Dashboard",
       short_name: "GridTilt",
       description: "Track the AI power buildout",
-      start_url: "/",
+      start_url: "/overview",
       display: "standalone",
       background_color: "#121110",
       theme_color: "#F07800",

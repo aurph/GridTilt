@@ -4,7 +4,11 @@ import { Button } from "@/components/ui/button";
 import { apiRequest } from "@/lib/queryClient";
 
 interface ExtraField {
-  name: string;
+  // Constrained to body keys /api/subscribe knows how to persist. Adding a
+  // new option here requires a parallel change in server/routes.ts (the
+  // handler destructures only `email`, `intent`, `context`); otherwise the
+  // user's answer is silently dropped on the server.
+  name: "intent";
   label: string;
   placeholder: string;
   optional?: boolean;

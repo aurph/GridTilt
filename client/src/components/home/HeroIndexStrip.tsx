@@ -18,7 +18,16 @@ export function HeroIndexStrip() {
     setDateline(formatTodayLong());
   }, []);
 
-  const hasData = !!data && !isError;
+  // Defensive: require all three index values to be finite numbers before
+  // rendering the strip. Per HOMEPAGE_HANDOFF.md §4 ("never fabricate, never
+  // show '—' dressed up as data"), a partial server response from deploy drift
+  // or a schema change must collapse the index strip, not render NaN at 140px.
+  const aiPower    = Number.isFinite(data?.aiPowerIndex) ? data!.aiPowerIndex : null;
+  const npiValue   = Number.isFinite(data?.npiValue)     ? data!.npiValue     : null;
+  const gridStress = Number.isFinite(data?.gridStress)   ? data!.gridStress   : null;
+  const hasData =
+    !isError && aiPower !== null && npiValue !== null && gridStress !== null;
+  const knownSource = data?.source === "live" || data?.source === "static";
   const isStatic = data?.source === "static";
 
   return (
@@ -71,31 +80,39 @@ export function HeroIndexStrip() {
             >
               <IndexCell
                 label="AI POWER"
-                value={Math.round(data!.aiPowerIndex).toString()}
+                value={Math.round(aiPower!).toString()}
                 denom="/100"
               />
               <IndexCell
                 label="NUCLEAR POLICY"
-                value={Math.round(data!.npiValue).toString()}
+                value={Math.round(npiValue!).toString()}
                 denom="base 100"
               />
               <IndexCell
                 label="GRID STRESS"
-                value={Math.round(data!.gridStress).toString()}
+                value={Math.round(gridStress!).toString()}
                 denom="/100"
               />
             </div>
 
-            {/* Freshness marker */}
-            <div
-              className="anchor-mono"
-              style={{ fontSize: 11, color: "#9A9A9A", paddingBottom: 16, letterSpacing: 0.4 }}
-              data-testid="hero-freshness"
-            >
-              {isStatic
-                ? "Static fallback — live data unavailable"
-                : `Live · ${formatIsoAsDateline(data!.asOf)}`}
-            </div>
+            {/* Freshness marker — only renders when the server actually
+                returned a known source field. If the frontend ships before
+                the backend redeploy (Replit manual deploys can lag),
+                old-shape responses omit source/asOf and we suppress the
+                marker entirely rather than print a half-baked "Live · ". */}
+            {knownSource && (
+              <div
+                className="anchor-mono"
+                style={{ fontSize: 11, color: "#9A9A9A", paddingBottom: 16, letterSpacing: 0.4 }}
+                data-testid="hero-freshness"
+              >
+                {isStatic
+                  ? "Static fallback — live data unavailable"
+                  : data!.asOf
+                    ? `Live · ${formatIsoAsDateline(data!.asOf)}`
+                    : "Live"}
+              </div>
+            )}
 
             <div className="anchor-rule-top" />
           </>

@@ -1,3 +1,5 @@
+import { Link } from "wouter";
+
 const HORIZ_PAD = "clamp(20px, 4vw, 64px)";
 
 export function HomeFooter() {
@@ -25,13 +27,13 @@ export function HomeFooter() {
           </div>
           <div>
             <h3 className="anchor-eyebrow" style={{ marginBottom: 16 }}>METHODOLOGY</h3>
-            <a
+            <Link
               href="/overview"
               className="footer-link"
               style={{ fontFamily: "Inter, sans-serif", fontSize: 13 }}
             >
               Read how we compute the indices →
-            </a>
+            </Link>
           </div>
           <div>
             <h3 className="anchor-eyebrow" style={{ marginBottom: 16 }}>PROJECT</h3>

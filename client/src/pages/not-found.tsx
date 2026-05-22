@@ -19,7 +19,7 @@ export default function NotFound() {
           The grid coordinates you requested are offline. The AI power economy continues without this route.
         </p>
         <Link
-          href="/"
+          href="/overview"
           className="px-5 py-2.5 bg-[#F07800]/15 hover:bg-[#F07800]/25 border border-[#F07800]/30 rounded-md text-sm font-medium text-[#F07800] transition-colors"
           data-testid="link-home"
         >
