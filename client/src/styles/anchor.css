@@ -1,0 +1,153 @@
+/*  GridTilt Home — Swiss anchor.
+ *  Scoped via .anchor-swiss on the Home root.
+ *
+ *  FORBIDDEN under .anchor-swiss (any of these = anchor cracked):
+ *    box-shadow != none           — no drop shadows, glows, soft elevation
+ *    border-radius > 4px          — no pill buttons, no rounded cards
+ *    linear-/radial-/conic-gradient
+ *    dark surfaces from index.css — --background, --card must not leak in
+ *    warm-paper surfaces          — #F0-F8 cream, oat, sand = Organic/Lo-Fi
+ *    serif display                — Source Serif 4 stays in dashboard contexts
+ *    .grid-bg                     — the orange-tinted pattern (index.css)
+ *    second accent color          — accent is one. No teal, no green, no second blue.
+ *    text-shadow glow, animated pulses, scroll-linked parallax
+ *    mono fonts in body copy      — mono restricted to three uses (below)
+ *    unicode-glyph icons (▣ ◊ ▶)  — Lucide or nothing
+ *
+ *  If any of these appear under .anchor-swiss in code review, fix the violation —
+ *  do not normalize the anchor downward.
+ *
+ *  Mono usage restricted to three places only:
+ *    1. Hero numeral denominators (/100, base 100)
+ *    2. Chart axis tick labels
+ *    3. Tabular figure columns in live signals
+ *  Nowhere else.
+ */
+
+.anchor-swiss {
+  /* Surface */
+  --anchor-surface:             #F7F7F8;
+  --anchor-surface-elev:        #FFFFFF;
+  --anchor-surface-rule:        #E5E5E5;
+  --anchor-surface-rule-strong: #C7C7C7;
+
+  /* Ink */
+  --anchor-ink:        #111111;
+  --anchor-ink-muted:  #5A5A5A;
+  --anchor-ink-quiet:  #9A9A9A;
+
+  /* Accent — ONE, used deliberately */
+  --anchor-accent:     #F07800;
+
+  /* Data series — ONE primary, ONE muted secondary */
+  --anchor-data:       #1F2937;
+  --anchor-data-muted: #9CA3AF;
+
+  /* Shape */
+  --anchor-radius:        4px;
+  --anchor-rule-weight:   1px;
+
+  /* Type families */
+  --anchor-display: "Inter", "Helvetica Neue", "Arial", sans-serif;
+  --anchor-body:    "Inter", "Helvetica Neue", "Arial", sans-serif;
+  --anchor-mono:    "JetBrains Mono", "SF Mono", "Menlo", monospace;
+
+  background-color: var(--anchor-surface);
+  color: var(--anchor-ink);
+  color-scheme: light;
+  font-family: var(--anchor-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.anchor-swiss ::selection {
+  background-color: var(--anchor-ink);
+  color: var(--anchor-surface);
+}
+
+/* Hairline rule helpers */
+.anchor-swiss .anchor-rule-top    { border-top: 1px solid var(--anchor-surface-rule); }
+.anchor-swiss .anchor-rule-bottom { border-bottom: 1px solid var(--anchor-surface-rule); }
+
+/* Accent underline — the single allowed accent move on the page */
+.anchor-swiss .anchor-accent-underline {
+  text-decoration: underline;
+  text-decoration-color: var(--anchor-accent);
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 6px;
+}
+
+/* Mono numeric column helper — used by hero denominators, chart axes, signal tables */
+.anchor-swiss .anchor-mono {
+  font-family: var(--anchor-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Hero numeral treatment */
+.anchor-swiss .anchor-numeral {
+  font-family: var(--anchor-display);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  color: var(--anchor-ink);
+}
+
+/* Eyebrow/section number labels */
+.anchor-swiss .anchor-eyebrow {
+  font-family: var(--anchor-body);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--anchor-ink-muted);
+}
+
+/* Section number kicker (e.g. "03") */
+.anchor-swiss .anchor-section-num {
+  font-family: var(--anchor-body);
+  font-size: 16px;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  color: var(--anchor-ink);
+}
+
+/* Module card hover — accent underline on title and CTA, no scale, no shadow */
+.anchor-swiss .module-card {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+.anchor-swiss .module-card .module-card-title {
+  text-decoration: none;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 4px;
+  transition: text-decoration-color 0.12s ease-out;
+}
+.anchor-swiss .module-card:hover .module-card-title {
+  text-decoration: underline;
+  text-decoration-color: var(--anchor-accent);
+}
+.anchor-swiss .module-card .module-card-cta {
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 4px;
+  transition: text-decoration-color 0.12s ease-out;
+}
+.anchor-swiss .module-card:hover .module-card-cta {
+  text-decoration-color: var(--anchor-accent);
+}
+
+/* Footer link underline — muted by default, accent on hover */
+.anchor-swiss .footer-link {
+  color: var(--anchor-ink);
+  text-decoration: underline;
+  text-decoration-color: var(--anchor-ink-muted);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  transition: text-decoration-color 0.12s ease-out;
+}
+.anchor-swiss .footer-link:hover {
+  text-decoration-color: var(--anchor-accent);
+}

@@ -1439,6 +1439,8 @@ interface KpiResult {
   gridStress: number;
   smrPolicyScore: number;
   npiBaseDate: string;
+  source: "live" | "static";
+  asOf: string;
   constituents: {
     nvdaChange: number; tsmChange: number; eqixChange: number; muChange: number;
     cegPerf: number; vstPerf: number; ccjPerf: number; nlrPerf: number;
@@ -1455,6 +1457,11 @@ async function computeKpis(): Promise<KpiResult> {
   let ccjPrice = STATIC_MARKET_DATA.CCJ.price;
   let nlrPrice = STATIC_MARKET_DATA.NLR.price;
 
+  // Track how many quotes returned live data so the response can honestly
+  // label itself as live vs static fallback (Yahoo throttles intermittently).
+  let liveQuoteCount = 0;
+  let yahooBlockThrew = false;
+
   try {
     const YahooFinanceClass = (await import("yahoo-finance2")).default;
     const yahooFinance = new YahooFinanceClass({ suppressNotices: ["yahooSurvey"] });
@@ -1469,6 +1476,9 @@ async function computeKpis(): Promise<KpiResult> {
       yahooFinance.quote("NLR").catch(() => null),
       yahooFinance.quote("NEE").catch(() => null),
     ]);
+    quotes.forEach((q) => {
+      if (q?.regularMarketChangePercent != null || q?.regularMarketPrice != null) liveQuoteCount++;
+    });
     if (quotes[0]?.regularMarketChangePercent != null) nvdaChange = quotes[0].regularMarketChangePercent;
     if (quotes[1]?.regularMarketChangePercent != null) tsmChange = quotes[1].regularMarketChangePercent;
     if (quotes[2]?.regularMarketChangePercent != null) muChange = quotes[2].regularMarketChangePercent;
@@ -1482,8 +1492,10 @@ async function computeKpis(): Promise<KpiResult> {
     if (quotes[6]?.regularMarketPrice != null) ccjPrice = quotes[6].regularMarketPrice;
     if (quotes[7]?.regularMarketPrice != null) nlrPrice = quotes[7].regularMarketPrice;
   } catch {
-    // fall through to static defaults
+    yahooBlockThrew = true;
   }
+
+  const source: "live" | "static" = yahooBlockThrew || liveQuoteCount < 5 ? "static" : "live";
 
   // Auto-derived market constants
   const mc = loadMarketConstants();
@@ -1517,6 +1529,8 @@ async function computeKpis(): Promise<KpiResult> {
     gridStress: parseFloat(gridStress.toFixed(1)),
     smrPolicyScore: parseFloat(smrPolicyScore.toFixed(2)),
     npiBaseDate: "Jan 1, 2024",
+    source,
+    asOf: new Date().toISOString(),
     constituents: {
       nvdaChange: parseFloat(nvdaChange.toFixed(2)),
       tsmChange: parseFloat(tsmChange.toFixed(2)),
@@ -1996,7 +2010,12 @@ export async function registerRoutes(
   });
 
   const SUBSCRIBERS_FILE = join(process.cwd(), "server", "data", "subscribers.json");
-  interface Subscriber { email: string; subscribedAt: string; }
+  interface Subscriber {
+    email: string;
+    subscribedAt: string;
+    intent?: string;
+    context?: string;
+  }
 
   function loadSubscribers(): Subscriber[] {
     try {
@@ -2044,7 +2063,7 @@ export async function registerRoutes(
 
   app.post("/api/subscribe", async (req: Request, res) => {
     try {
-      const { email } = req.body;
+      const { email, intent, context } = req.body;
       if (!email || typeof email !== "string") {
         return res.status(400).json({ error: "Email is required" });
       }
@@ -2073,7 +2092,17 @@ export async function registerRoutes(
         return res.json({ message: "You're already on the list", status: "exists" });
       }
 
-      subscribers.push({ email: normalizedEmail, subscribedAt: new Date().toISOString() });
+      const record: Subscriber = {
+        email: normalizedEmail,
+        subscribedAt: new Date().toISOString(),
+      };
+      if (typeof intent === "string" && intent.trim()) {
+        record.intent = intent.trim().slice(0, 500);
+      }
+      if (typeof context === "string" && context.trim()) {
+        record.context = context.trim().slice(0, 64);
+      }
+      subscribers.push(record);
       saveSubscribers(subscribers);
 
       if (process.env.RESEND_API_KEY) {

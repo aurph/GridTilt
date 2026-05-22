@@ -6,7 +6,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import NotFound from "@/pages/not-found";
-import TiltOverview from "@/pages/TiltOverview";
 import TheStack from "@/pages/TheStack";
 import PowerMap from "@/pages/PowerMap";
 import TheTrade from "@/pages/TheTrade";
@@ -25,11 +24,22 @@ import AdminDatacenters from "@/pages/AdminDatacenters";
 import AdminSocial from "@/pages/AdminSocial";
 import { NewsTicker } from "@/components/NewsTicker";
 import { useLocation } from "wouter";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useLayoutEffect, lazy, Suspense } from "react";
 import { X, Keyboard } from "lucide-react";
 
+// Lazy-load the marketing landing and the dashboard root so each visitor only
+// pays for the chunks they actually need. Other dashboard pages stay eager —
+// they're only reached after the user has already loaded the dashboard shell.
+const Home = lazy(() => import("@/pages/Home"));
+const TiltOverview = lazy(() => import("@/pages/TiltOverview"));
+
+// Routes that render WITHOUT the dashboard chrome (no sidebar, no header,
+// no news ticker). Currently just the marketing landing at /.
+const MARKETING_ROUTES = ["/"];
+
 const PAGE_TITLES: Record<string, string> = {
-  "/": "Tilt Overview",
+  "/": "GridTilt",
+  "/overview": "Tilt Overview",
   "/stack": "The Stack",
   "/power-map": "Power Map",
   "/supply-chain": "Supply Chain",
@@ -42,7 +52,7 @@ const PAGE_TITLES: Record<string, string> = {
 };
 
 const SHORTCUTS = [
-  { keys: ["G", "1"], description: "Go to Tilt Overview", path: "/" },
+  { keys: ["G", "1"], description: "Go to Tilt Overview", path: "/overview" },
   { keys: ["G", "2"], description: "Go to The Stack", path: "/stack" },
   { keys: ["G", "3"], description: "Go to Power Map", path: "/power-map" },
   { keys: ["G", "4"], description: "Go to Supply Chain", path: "/supply-chain" },
@@ -132,7 +142,8 @@ function Header() {
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={TiltOverview} />
+      <Route path="/" component={Home} />
+      <Route path="/overview" component={TiltOverview} />
       <Route path="/stack" component={TheStack} />
       <Route path="/power-map" component={PowerMap} />
       <Route path="/supply-chain" component={SupplyChain} />
@@ -156,8 +167,20 @@ function Router() {
 
 function App() {
   const [showShortcuts, setShowShortcuts] = useState(false);
-  const [, navigate] = useLocation();
+  const [location, navigate] = useLocation();
   const [gPressed, setGPressed] = useState(false);
+
+  const isMarketing = MARKETING_ROUTES.includes(location);
+
+  // Strip the dashboard's forced `.dark` class on marketing routes so Tailwind
+  // dark-mode variants don't bleed into the Swiss surface. Restore on dashboard.
+  useLayoutEffect(() => {
+    if (isMarketing) {
+      document.documentElement.classList.remove("dark");
+    } else {
+      document.documentElement.classList.add("dark");
+    }
+  }, [isMarketing]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -181,7 +204,7 @@ function App() {
       }
       if (gPressed) {
         const routes: Record<string, string> = {
-          "1": "/", "2": "/stack", "3": "/power-map",
+          "1": "/overview", "2": "/stack", "3": "/power-map",
           "4": "/supply-chain", "5": "/portfolio", "6": "/trade",
           "7": "/catalysts", "8": "/blog", "9": "/queue",
         };
@@ -195,6 +218,25 @@ function App() {
     return () => window.removeEventListener("keydown", handler);
   }, [gPressed, navigate]);
 
+  // Marketing layout — bare. No SidebarProvider, no AppSidebar, no Header, no
+  // NewsTicker. The Home component owns its own Swiss surface via .anchor-swiss.
+  if (isMarketing) {
+    return (
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider delayDuration={300}>
+          <Suspense fallback={null}>
+            <Router />
+          </Suspense>
+          {showShortcuts && (
+            <KeyboardShortcutsModal onClose={() => setShowShortcuts(false)} />
+          )}
+          <Toaster />
+        </TooltipProvider>
+      </QueryClientProvider>
+    );
+  }
+
+  // Dashboard layout — sidebar, header, news ticker shell.
   const style = {
     "--sidebar-width": "17rem",
     "--sidebar-width-icon": "3.5rem",
@@ -210,7 +252,9 @@ function App() {
               <Header />
               <NewsTicker />
               <main className="flex-1 overflow-auto">
-                <Router />
+                <Suspense fallback={null}>
+                  <Router />
+                </Suspense>
               </main>
             </div>
           </div>

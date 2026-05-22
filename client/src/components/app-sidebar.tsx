@@ -25,7 +25,7 @@ import logoPath from "@assets/Image_[Vectorized]_(2)_1773890483514.png";
 const navItems = [
   {
     title: "Tilt Overview",
-    url: "/",
+    url: "/overview",
     icon: LayoutDashboard,
     description: "Live KPIs and demand chart",
   },

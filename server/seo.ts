@@ -15,9 +15,14 @@ const BASE_URL = "https://gridtilt.com";
 
 const STATIC_PAGES: Record<string, { title: string; description: string; slug: string }> = {
   "/": {
-    title: "GridTilt \u2014 AI Power Infrastructure Dashboard",
-    description: "Track the AI power buildout. Live stock data, data center mapping, and thesis modeling for 60+ companies across 9 sectors.",
+    title: "GridTilt \u2014 The AI Power Buildout, Tracked Honestly",
+    description: "A research dashboard for the AI infrastructure buildout \u2014 data centers, power, compute, and the public equities behind them. Three live indices. Six modules. No Bloomberg required.",
     slug: "",
+  },
+  "/overview": {
+    title: "Tilt Overview \u2014 Live Dashboard \u2014 GridTilt",
+    description: "Live composite indices, top movers, sector pulse, and catalyst calendar across the AI power thesis. Updated every 15 minutes.",
+    slug: "overview",
   },
   "/stack": {
     title: "AI Power Stocks by Sector \u2014 GridTilt",

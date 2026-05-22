@@ -3,12 +3,36 @@ import { Mail, CheckCircle2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { apiRequest } from "@/lib/queryClient";
 
-interface EmailCaptureProps {
-  variant?: "inline" | "banner";
+interface ExtraField {
+  name: string;
+  label: string;
+  placeholder: string;
+  optional?: boolean;
 }
 
-export function EmailCapture({ variant = "inline" }: EmailCaptureProps) {
+interface EmailCaptureProps {
+  variant?: "inline" | "banner";
+  theme?: "default" | "swiss";
+  extraField?: ExtraField;
+  context?: string;
+  successMessage?: string;
+  submitLabel?: string;
+  heading?: string;
+  subheading?: string;
+}
+
+export function EmailCapture({
+  variant = "inline",
+  theme = "default",
+  extraField,
+  context,
+  successMessage,
+  submitLabel,
+  heading,
+  subheading,
+}: EmailCaptureProps) {
   const [email, setEmail] = useState("");
+  const [extraValue, setExtraValue] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "exists" | "error">("idle");
   const [dismissed, setDismissed] = useState(false);
 
@@ -18,10 +42,16 @@ export function EmailCapture({ variant = "inline" }: EmailCaptureProps) {
 
     setStatus("loading");
     try {
-      const res = await apiRequest("POST", "/api/subscribe", { email: email.trim() });
+      const body: Record<string, string> = { email: email.trim() };
+      if (extraField && extraValue.trim()) body[extraField.name] = extraValue.trim();
+      if (context) body.context = context;
+      const res = await apiRequest("POST", "/api/subscribe", body);
       const data = await res.json();
       setStatus(data.status === "exists" ? "exists" : "success");
-      if (data.status !== "exists") setEmail("");
+      if (data.status !== "exists") {
+        setEmail("");
+        setExtraValue("");
+      }
     } catch {
       setStatus("error");
     }
@@ -29,6 +59,124 @@ export function EmailCapture({ variant = "inline" }: EmailCaptureProps) {
 
   if (dismissed) return null;
 
+  // ── Swiss inline variant (Home / and Home thesis section) ──────────────────
+  if (theme === "swiss") {
+    if (status === "success") {
+      return (
+        <div
+          className="border bg-transparent p-5"
+          style={{ borderColor: "#111111", borderRadius: 4 }}
+          data-testid="email-capture-success-swiss"
+        >
+          <p className="text-sm" style={{ color: "#111111" }}>
+            {successMessage ?? "You're on the list. We'll only email about this one feature."}
+          </p>
+        </div>
+      );
+    }
+
+    return (
+      <div
+        className="border bg-transparent p-5"
+        style={{ borderColor: "#E5E5E5", borderRadius: 4 }}
+        data-testid="email-capture-inline-swiss"
+      >
+        {heading && (
+          <h3 className="text-base font-medium mb-1" style={{ color: "#111111" }}>
+            {heading}
+          </h3>
+        )}
+        {subheading && (
+          <p className="text-sm mb-4" style={{ color: "#5A5A5A" }}>
+            {subheading}
+          </p>
+        )}
+        <form onSubmit={handleSubmit} className="space-y-3">
+          {extraField && (
+            <div>
+              <label
+                className="block text-xs mb-1.5"
+                style={{ color: "#5A5A5A" }}
+                htmlFor="email-capture-extra"
+              >
+                {extraField.label}
+                {extraField.optional ? " (optional)" : ""}
+              </label>
+              <textarea
+                id="email-capture-extra"
+                value={extraValue}
+                onChange={(e) => {
+                  setExtraValue(e.target.value);
+                  setStatus("idle");
+                }}
+                placeholder={extraField.placeholder}
+                rows={3}
+                maxLength={500}
+                className="w-full px-3 py-2 text-sm resize-none focus:outline-none"
+                style={{
+                  background: "#FFFFFF",
+                  border: "1px solid #E5E5E5",
+                  borderRadius: 4,
+                  color: "#111111",
+                  fontFamily: "Inter, sans-serif",
+                }}
+                onFocus={(e) => (e.currentTarget.style.borderColor = "#111111")}
+                onBlur={(e) => (e.currentTarget.style.borderColor = "#E5E5E5")}
+                data-testid="input-extra-field"
+              />
+            </div>
+          )}
+          <div className="flex gap-2">
+            <input
+              type="email"
+              required
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setStatus("idle");
+              }}
+              placeholder="you@example.com"
+              className="flex-1 px-3 py-2 text-sm focus:outline-none"
+              style={{
+                background: "#FFFFFF",
+                border: "1px solid #E5E5E5",
+                borderRadius: 4,
+                color: "#111111",
+              }}
+              onFocus={(e) => (e.currentTarget.style.borderColor = "#111111")}
+              onBlur={(e) => (e.currentTarget.style.borderColor = "#E5E5E5")}
+              data-testid="input-email-swiss"
+            />
+            <button
+              type="submit"
+              disabled={status === "loading"}
+              className="text-sm font-medium px-4 py-2 disabled:opacity-50"
+              style={{
+                background: "#111111",
+                color: "#FFFFFF",
+                borderRadius: 4,
+              }}
+              data-testid="button-subscribe-swiss"
+            >
+              {status === "loading" ? "…" : submitLabel ?? "Join the waitlist"}
+            </button>
+          </div>
+        </form>
+        {status === "error" && (
+          <p className="text-xs mt-2" style={{ color: "#111111" }}>
+            <span className="anchor-accent-underline">Something went wrong.</span> Try again.
+          </p>
+        )}
+        {status === "exists" && (
+          <p className="text-xs mt-2" style={{ color: "#5A5A5A" }}>
+            You're already on the list.
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  // ── Default (dashboard) variants — unchanged ───────────────────────────────
   if (status === "success") {
     return (
       <div className={`${variant === "banner" ? "fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-lg" : ""}`}>

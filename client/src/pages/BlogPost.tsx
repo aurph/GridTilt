@@ -221,7 +221,7 @@ export default function BlogPost() {
         <Card className="p-5 border-card-border" data-testid="article-cta">
           <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">Track this on GridTilt</h2>
           <div className="flex flex-wrap gap-3 text-sm">
-            <Link href="/" className="text-[#F07800] hover:text-[#F0A500]">Dashboard</Link>
+            <Link href="/overview" className="text-[#F07800] hover:text-[#F0A500]">Dashboard</Link>
             <Link href="/stack" className="text-[#F07800] hover:text-[#F0A500]">The Stack</Link>
             <Link href="/power-map" className="text-[#F07800] hover:text-[#F0A500]">Power Map</Link>
             <Link href="/trade" className="text-[#F07800] hover:text-[#F0A500]">Scenario Calculator</Link>
