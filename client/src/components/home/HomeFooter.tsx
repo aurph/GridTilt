@@ -1,76 +1,131 @@
 import { Link } from "wouter";
 
-const HORIZ_PAD = "clamp(20px, 4vw, 64px)";
+const HORIZ_PAD = "clamp(24px, 5vw, 96px)";
 
 export function HomeFooter() {
   return (
-    <footer className="w-full" style={{ paddingTop: 64, paddingBottom: 48 }}>
+    <footer
+      style={{
+        position: "relative",
+        paddingTop: 80,
+        paddingBottom: 64,
+        background: "var(--mkt-bg-deeper)",
+      }}
+      data-testid="home-footer"
+    >
       <div
-        className="mx-auto"
+        className="gt-rule-top"
+        style={{ position: "absolute", top: 0, left: 0, right: 0 }}
+      />
+      <div
         style={{
           maxWidth: 1280,
+          margin: "0 auto",
           paddingLeft: HORIZ_PAD,
           paddingRight: HORIZ_PAD,
         }}
       >
-        <div className="anchor-rule-top" style={{ marginBottom: 48 }} />
-
         <div
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4"
-          style={{ rowGap: 32, columnGap: 32, marginBottom: 48 }}
+          style={{ rowGap: 40, columnGap: 32, marginBottom: 64 }}
         >
           <div>
-            <h3 className="anchor-eyebrow" style={{ marginBottom: 16 }}>SOURCES</h3>
-            <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: "#111111", lineHeight: 1.6 }}>
-              Yahoo Finance · EIA · DOE · NERC · LBNL · Public RSS feeds (Utility Dive, Data Center Dynamics, World Nuclear News, Power Engineering)
+            <h3 className="gt-eyebrow" style={{ marginBottom: 22 }}>
+              Sources
+            </h3>
+            <p
+              style={{
+                fontFamily: "Inter, sans-serif",
+                fontSize: 13,
+                color: "var(--mkt-ink-muted)",
+                lineHeight: 1.7,
+              }}
+            >
+              Yahoo Finance · EIA · DOE · NERC · LBNL.
+              <br />
+              RSS feeds: Utility Dive, Data Center Dynamics, World Nuclear
+              News, Power Engineering.
             </p>
           </div>
           <div>
-            <h3 className="anchor-eyebrow" style={{ marginBottom: 16 }}>METHODOLOGY</h3>
-            <Link
-              href="/overview"
-              className="footer-link"
-              style={{ fontFamily: "Inter, sans-serif", fontSize: 13 }}
+            <h3 className="gt-eyebrow" style={{ marginBottom: 22 }}>
+              Explore
+            </h3>
+            <p
+              style={{
+                fontFamily: "Inter, sans-serif",
+                fontSize: 13,
+                lineHeight: 1.9,
+              }}
             >
-              Read how we compute the indices →
-            </Link>
+              <Link href="/overview" className="gt-footer-link">
+                Open the dashboard →
+              </Link>
+            </p>
           </div>
           <div>
-            <h3 className="anchor-eyebrow" style={{ marginBottom: 16 }}>PROJECT</h3>
-            <a
-              href="https://github.com/aurph/GridTilt"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="footer-link"
-              style={{ fontFamily: "Inter, sans-serif", fontSize: 13 }}
+            <h3 className="gt-eyebrow" style={{ marginBottom: 22 }}>
+              Built by
+            </h3>
+            <p
+              style={{
+                fontFamily: "Inter, sans-serif",
+                fontSize: 13,
+                color: "var(--mkt-ink-muted)",
+                lineHeight: 1.7,
+              }}
             >
-              github.com/aurph/GridTilt →
-            </a>
+              Jack Schwartz
+              <br />
+              <a
+                href="https://github.com/aurph/GridTilt"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="gt-footer-link"
+              >
+                github.com/aurph/GridTilt →
+              </a>
+            </p>
           </div>
           <div>
-            <h3 className="anchor-eyebrow" style={{ marginBottom: 16 }}>CONTACT</h3>
-            <a
-              href="mailto:jacksch45@gmail.com"
-              className="footer-link"
-              style={{ fontFamily: "Inter, sans-serif", fontSize: 13 }}
+            <h3 className="gt-eyebrow" style={{ marginBottom: 22 }}>
+              Contact
+            </h3>
+            <p
+              style={{
+                fontFamily: "Inter, sans-serif",
+                fontSize: 13,
+                lineHeight: 1.7,
+              }}
             >
-              jacksch45@gmail.com
-            </a>
+              <a
+                href="mailto:jacksch45@gmail.com"
+                className="gt-footer-link"
+              >
+                jacksch45@gmail.com
+              </a>
+            </p>
           </div>
         </div>
 
         <div
-          className="anchor-rule-top flex flex-wrap items-baseline justify-between"
+          className="gt-rule-top"
           style={{
-            paddingTop: 24,
-            fontFamily: "Inter, sans-serif",
-            fontSize: 12,
-            color: "#5A5A5A",
+            paddingTop: 32,
+            display: "flex",
+            flexWrap: "wrap",
+            justifyContent: "space-between",
+            alignItems: "baseline",
             gap: 16,
+            fontFamily: "JetBrains Mono, monospace",
+            fontSize: 11,
+            color: "var(--mkt-ink-quiet)",
+            letterSpacing: "0.14em",
+            textTransform: "uppercase",
           }}
         >
-          <span>© 2026 GridTilt. Built by Jack Schwartz.</span>
-          <span style={{ color: "#9A9A9A" }}>gridtilt.com</span>
+          <span>© 2026 · GridTilt</span>
+          <span>Built solo · aurph</span>
         </div>
       </div>
     </footer>

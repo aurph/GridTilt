@@ -16,7 +16,9 @@ interface ExtraField {
 
 interface EmailCaptureProps {
   variant?: "inline" | "banner";
-  theme?: "default" | "swiss";
+  // "default" = the existing dashboard dark-on-charcoal card.
+  // "marketing" = the home-page surface (warm dark + JetBrains Mono + orange accent).
+  theme?: "default" | "marketing";
   extraField?: ExtraField;
   context?: string;
   successMessage?: string;
@@ -63,16 +65,27 @@ export function EmailCapture({
 
   if (dismissed) return null;
 
-  // ── Swiss inline variant (Home / and Home thesis section) ──────────────────
-  if (theme === "swiss") {
+  // ── Marketing variant (Home / and Home thesis section) ─────────────────────
+  if (theme === "marketing") {
     if (status === "success") {
       return (
         <div
-          className="border bg-transparent p-5"
-          style={{ borderColor: "#111111", borderRadius: 4 }}
-          data-testid="email-capture-success-swiss"
+          style={{
+            border: "1px solid #F07800",
+            background: "rgba(240,120,0,0.06)",
+            padding: 22,
+            borderRadius: 4,
+          }}
+          data-testid="email-capture-success-marketing"
         >
-          <p className="text-sm" style={{ color: "#111111" }}>
+          <p
+            style={{
+              fontFamily: "Inter, sans-serif",
+              fontSize: 14,
+              color: "#F2F1ED",
+              lineHeight: 1.55,
+            }}
+          >
             {successMessage ?? "You're on the list. We'll only email about this one feature."}
           </p>
         </div>
@@ -81,30 +94,61 @@ export function EmailCapture({
 
     return (
       <div
-        className="border bg-transparent p-5"
-        style={{ borderColor: "#E5E5E5", borderRadius: 4 }}
-        data-testid="email-capture-inline-swiss"
+        style={{
+          border: "1px solid rgba(255,255,255,0.06)",
+          background: "#131211",
+          padding: 24,
+          borderRadius: 4,
+        }}
+        data-testid="email-capture-marketing"
       >
         {heading && (
-          <h3 className="text-base font-medium mb-1" style={{ color: "#111111" }}>
+          <h3
+            style={{
+              fontFamily: "JetBrains Mono, monospace",
+              fontSize: 15,
+              fontWeight: 700,
+              color: "#F2F1ED",
+              marginBottom: 8,
+              letterSpacing: "-0.005em",
+            }}
+          >
             {heading}
           </h3>
         )}
         {subheading && (
-          <p className="text-sm mb-4" style={{ color: "#5A5A5A" }}>
+          <p
+            style={{
+              fontFamily: "Inter, sans-serif",
+              fontSize: 13,
+              color: "#9C9A93",
+              marginBottom: 22,
+              lineHeight: 1.55,
+            }}
+          >
             {subheading}
           </p>
         )}
-        <form onSubmit={handleSubmit} className="space-y-3">
+        <form
+          onSubmit={handleSubmit}
+          style={{ display: "flex", flexDirection: "column", gap: 14 }}
+        >
           {extraField && (
             <div>
               <label
-                className="block text-xs mb-1.5"
-                style={{ color: "#5A5A5A" }}
                 htmlFor="email-capture-extra"
+                style={{
+                  display: "block",
+                  fontFamily: "JetBrains Mono, monospace",
+                  fontSize: 10,
+                  color: "#9C9A93",
+                  letterSpacing: "0.16em",
+                  textTransform: "uppercase",
+                  marginBottom: 10,
+                }}
               >
                 {extraField.label}
-                {extraField.optional ? " (optional)" : ""}
+                {extraField.optional ? " · optional" : ""}
               </label>
               <textarea
                 id="email-capture-extra"
@@ -116,21 +160,29 @@ export function EmailCapture({
                 placeholder={extraField.placeholder}
                 rows={3}
                 maxLength={500}
-                className="w-full px-3 py-2 text-sm resize-none focus:outline-none"
                 style={{
-                  background: "#FFFFFF",
-                  border: "1px solid #E5E5E5",
+                  width: "100%",
+                  padding: "11px 13px",
+                  background: "#0B0B0A",
+                  border: "1px solid rgba(255,255,255,0.06)",
                   borderRadius: 4,
-                  color: "#111111",
+                  color: "#F2F1ED",
                   fontFamily: "Inter, sans-serif",
+                  fontSize: 13,
+                  lineHeight: 1.5,
+                  resize: "none",
+                  outline: "none",
+                  transition: "border-color 180ms ease-out",
                 }}
-                onFocus={(e) => (e.currentTarget.style.borderColor = "#111111")}
-                onBlur={(e) => (e.currentTarget.style.borderColor = "#E5E5E5")}
+                onFocus={(e) => (e.currentTarget.style.borderColor = "#F07800")}
+                onBlur={(e) =>
+                  (e.currentTarget.style.borderColor = "rgba(255,255,255,0.06)")
+                }
                 data-testid="input-extra-field"
               />
             </div>
           )}
-          <div className="flex gap-2">
+          <div style={{ display: "flex", gap: 10 }}>
             <input
               type="email"
               required
@@ -140,39 +192,77 @@ export function EmailCapture({
                 setStatus("idle");
               }}
               placeholder="you@example.com"
-              className="flex-1 px-3 py-2 text-sm focus:outline-none"
               style={{
-                background: "#FFFFFF",
-                border: "1px solid #E5E5E5",
+                flex: 1,
+                padding: "11px 13px",
+                background: "#0B0B0A",
+                border: "1px solid rgba(255,255,255,0.06)",
                 borderRadius: 4,
-                color: "#111111",
+                color: "#F2F1ED",
+                fontFamily: "Inter, sans-serif",
+                fontSize: 13,
+                outline: "none",
+                transition: "border-color 180ms ease-out",
               }}
-              onFocus={(e) => (e.currentTarget.style.borderColor = "#111111")}
-              onBlur={(e) => (e.currentTarget.style.borderColor = "#E5E5E5")}
-              data-testid="input-email-swiss"
+              onFocus={(e) => (e.currentTarget.style.borderColor = "#F07800")}
+              onBlur={(e) =>
+                (e.currentTarget.style.borderColor = "rgba(255,255,255,0.06)")
+              }
+              data-testid="input-email-marketing"
             />
             <button
               type="submit"
               disabled={status === "loading"}
-              className="text-sm font-medium px-4 py-2 disabled:opacity-50"
               style={{
-                background: "#111111",
-                color: "#FFFFFF",
+                padding: "11px 18px",
+                background: "#F07800",
+                color: "#0B0B0A",
+                border: "1px solid #F07800",
                 borderRadius: 4,
+                fontFamily: "JetBrains Mono, monospace",
+                fontSize: 11,
+                fontWeight: 600,
+                letterSpacing: "0.14em",
+                textTransform: "uppercase",
+                cursor: "pointer",
+                transition: "transform 180ms ease-out, box-shadow 220ms ease-out",
+                whiteSpace: "nowrap",
               }}
-              data-testid="button-subscribe-swiss"
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-1px)";
+                e.currentTarget.style.boxShadow = "0 0 24px -6px rgba(240,120,0,0.4)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "";
+                e.currentTarget.style.boxShadow = "";
+              }}
+              data-testid="button-subscribe-marketing"
             >
-              {status === "loading" ? "…" : submitLabel ?? "Join the waitlist"}
+              {status === "loading" ? "..." : submitLabel ?? "Subscribe"}
             </button>
           </div>
         </form>
         {status === "error" && (
-          <p className="text-xs mt-2" style={{ color: "#111111" }}>
-            <span className="anchor-accent-underline">Something went wrong.</span> Try again.
+          <p
+            style={{
+              fontFamily: "Inter, sans-serif",
+              fontSize: 12,
+              color: "#F07800",
+              marginTop: 12,
+            }}
+          >
+            Something went wrong. Try again.
           </p>
         )}
         {status === "exists" && (
-          <p className="text-xs mt-2" style={{ color: "#5A5A5A" }}>
+          <p
+            style={{
+              fontFamily: "Inter, sans-serif",
+              fontSize: 12,
+              color: "#9C9A93",
+              marginTop: 12,
+            }}
+          >
             You're already on the list.
           </p>
         )}

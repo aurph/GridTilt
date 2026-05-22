@@ -1,81 +1,129 @@
 import { EmailCapture } from "@/components/EmailCapture";
 
-const HORIZ_PAD = "clamp(20px, 4vw, 64px)";
+const HORIZ_PAD = "clamp(24px, 5vw, 96px)";
 
 export function ThesisSection() {
   return (
-    <section id="thesis" className="w-full" style={{ paddingTop: 96, paddingBottom: 96 }}>
+    <section
+      id="manifesto"
+      style={{
+        position: "relative",
+        paddingTop: "clamp(96px, 14vh, 180px)",
+        paddingBottom: "clamp(96px, 14vh, 180px)",
+      }}
+      data-testid="home-thesis"
+    >
       <div
-        className="mx-auto"
+        className="gt-rule-top"
+        style={{ position: "absolute", top: 0, left: 0, right: 0 }}
+      />
+      <div
         style={{
           maxWidth: 1280,
+          margin: "0 auto",
           paddingLeft: HORIZ_PAD,
           paddingRight: HORIZ_PAD,
         }}
       >
-        <div className="anchor-rule-top" style={{ marginBottom: 64 }} />
-
-        <div style={{ maxWidth: 680 }}>
-          <div className="anchor-section-num" style={{ marginBottom: 8 }}>06</div>
-          <div className="anchor-eyebrow" style={{ marginBottom: 24 }}>THESIS</div>
+        <div style={{ maxWidth: 720 }}>
+          <div className="gt-eyebrow" style={{ marginBottom: 28 }}>
+            The thesis
+          </div>
           <h2
-            style={{
-              fontFamily: "Inter, sans-serif",
-              fontSize: "clamp(28px, 3vw, 40px)",
-              fontWeight: 600,
-              lineHeight: 1.2,
-              color: "#111111",
-              marginBottom: 40,
-            }}
+            className="gt-section-heading"
+            style={{ marginBottom: 56, maxWidth: 680 }}
           >
-            Why GridTilt exists
+            Why{" "}
+            <span style={{ color: "var(--mkt-accent)" }}>GridTilt</span>{" "}
+            exists.
           </h2>
 
           <div
             style={{
               fontFamily: "Inter, sans-serif",
               fontSize: "clamp(17px, 1.4vw, 19px)",
-              lineHeight: 1.65,
-              color: "#111111",
+              lineHeight: 1.7,
+              color: "var(--mkt-ink-muted)",
             }}
           >
             <p style={{ marginBottom: 24 }}>
-              A few people on Wall Street get to see the AI infrastructure buildout up close. They have Bloomberg terminals, sell-side analysts on speed dial, and earnings call transcripts before retail does. They watch the same numbers I watch, and they trade on them.
+              A handful of investors get to see the AI infrastructure buildout
+              up close — terminals, analyst calls, transcripts before retail.
+              Everyone else hears about it on a podcast, reads a paywalled
+              headline, or notices their utility bill creeping up and wonders
+              if the two are connected.
+            </p>
+            <p
+              style={{
+                marginBottom: 24,
+                color: "var(--mkt-ink)",
+                fontWeight: 500,
+              }}
+            >
+              They are.
             </p>
             <p style={{ marginBottom: 24 }}>
-              Everyone else hears about it on a podcast, or reads a paywalled article, or notices their utility bill creeping up and wonders if the two are connected. They are.
+              US electricity demand was flat for ten years. Then hyperscalers
+              signed power purchase agreements with nuclear plants that were
+              going to be decommissioned. Texas added more data center load in
+              two years than New York City uses in a winter. None of this is
+              hidden — it's just scattered across EIA filings, ISO queue
+              reports, and earnings calls nobody summarizes for normal people.
             </p>
             <p style={{ marginBottom: 24 }}>
-              US electricity demand was flat for ten years. It isn't anymore. Hyperscalers are signing power purchase agreements with nuclear plants that were going to be decommissioned. Texas added more data center load in two years than New York City uses in a winter. None of this is hidden — it's just scattered across EIA filings, ISO queue reports, and earnings calls nobody summarizes for normal people.
+              GridTilt pulls the numbers into one place and shows them
+              honestly. If an index moves, you can see what moved it. If a
+              data center gets announced, you can see the operator, the grid
+              region, and the equities exposed. No paywall. No upsell. No
+              "ask AI." Sources cited.
             </p>
-            <p style={{ marginBottom: 24 }}>
-              GridTilt pulls the numbers into one place and shows them honestly. If an index moves, you can see what moved it. If a data center gets announced, you can see the operator, the grid region, and the equities exposed. No paywall. No upsell. No "ask AI." Sources cited at the bottom.
-            </p>
-            <p style={{ marginBottom: 32 }}>
+            <p
+              style={{
+                marginBottom: 40,
+                color: "var(--mkt-ink)",
+                fontWeight: 500,
+              }}
+            >
               That's it. That's the whole thing.
             </p>
           </div>
 
-          <div style={{ width: 80, height: 1, background: "#E5E5E5", marginBottom: 16 }} />
-          <p style={{ fontFamily: "Inter, sans-serif", fontSize: 16, fontWeight: 500, color: "#111111" }}>
-            — Jack Schwartz, founder
+          <div
+            style={{
+              width: 96,
+              height: 1,
+              background: "var(--mkt-accent)",
+              marginBottom: 18,
+            }}
+          />
+          <p
+            style={{
+              fontFamily: "JetBrains Mono, monospace",
+              fontSize: 13,
+              fontWeight: 500,
+              color: "var(--mkt-ink)",
+              letterSpacing: "0.06em",
+            }}
+          >
+            Jack Schwartz · Founder
           </p>
           <p
             style={{
-              fontFamily: "Inter, sans-serif",
-              fontSize: 11,
-              color: "#9A9A9A",
-              marginTop: 8,
-              fontStyle: "italic",
+              fontFamily: "JetBrains Mono, monospace",
+              fontSize: 10,
+              color: "var(--mkt-ink-quiet)",
+              marginTop: 6,
+              letterSpacing: "0.16em",
+              textTransform: "uppercase",
             }}
             data-testid="thesis-draft-marker"
           >
-            [DRAFT — owner to revise]
+            Draft · owner to revise
           </p>
 
-          <div style={{ marginTop: 56, maxWidth: 480 }}>
+          <div style={{ marginTop: 64, maxWidth: 480 }}>
             <EmailCapture
-              theme="swiss"
+              theme="marketing"
               context="home-thesis"
               heading="Get the GridTilt brief."
               subheading="Monthly. Thesis check, top movers, new facilities. No spam."

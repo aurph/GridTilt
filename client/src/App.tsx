@@ -24,7 +24,7 @@ import AdminDatacenters from "@/pages/AdminDatacenters";
 import AdminSocial from "@/pages/AdminSocial";
 import { NewsTicker } from "@/components/NewsTicker";
 import { useLocation } from "wouter";
-import { useState, useEffect, useLayoutEffect, lazy, Suspense } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { X, Keyboard } from "lucide-react";
 
 // Lazy-load the marketing landing and the dashboard root so each visitor only
@@ -166,25 +166,29 @@ function Router() {
 }
 
 // Minimal Suspense fallback while the lazy Home chunk loads on cold visits.
-// Holds the wordmark in the masthead position so the first paint of / is the
-// brand mark on the Swiss surface, not a blank white screen.
+// Holds the wordmark + a pulse dot in the masthead position so the first paint
+// of / is the brand on the dark surface, not a blank black screen.
 function HomeLoadingShell() {
   return (
     <div
-      className="anchor-swiss min-h-screen w-full"
-      style={{ padding: "clamp(20px, 4vw, 64px)" }}
+      className="gt-marketing min-h-screen w-full"
+      style={{ padding: "clamp(24px, 5vw, 96px)" }}
     >
-      <span
+      <div
         style={{
-          fontFamily: "Inter, sans-serif",
-          fontSize: 12,
-          fontWeight: 700,
-          letterSpacing: "0.18em",
-          color: "#111111",
+          display: "flex",
+          alignItems: "center",
+          gap: 14,
+          fontFamily: "JetBrains Mono, monospace",
+          fontSize: 11,
+          letterSpacing: "0.2em",
+          color: "rgba(255,255,255,0.4)",
+          textTransform: "uppercase",
         }}
       >
-        GRIDTILT
-      </span>
+        <span className="gt-pulse" />
+        <span>Loading · GridTilt</span>
+      </div>
     </div>
   );
 }
@@ -195,16 +199,6 @@ function App() {
   const [gPressed, setGPressed] = useState(false);
 
   const isMarketing = MARKETING_ROUTES.includes(location);
-
-  // Strip the dashboard's forced `.dark` class on marketing routes so Tailwind
-  // dark-mode variants don't bleed into the Swiss surface. Restore on dashboard.
-  useLayoutEffect(() => {
-    if (isMarketing) {
-      document.documentElement.classList.remove("dark");
-    } else {
-      document.documentElement.classList.add("dark");
-    }
-  }, [isMarketing]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {

@@ -1,153 +1,400 @@
-/*  GridTilt Home — Swiss anchor.
- *  Scoped via .anchor-swiss on the Home root.
+/*  GridTilt Home — Marketing surface.
+ *  Scoped via .gt-marketing on the Home root.
  *
- *  FORBIDDEN under .anchor-swiss (any of these = anchor cracked):
- *    box-shadow != none           — no drop shadows, glows, soft elevation
- *    border-radius > 4px          — no pill buttons, no rounded cards
- *    linear-/radial-/conic-gradient
- *    dark surfaces from index.css — --background, --card must not leak in
- *    warm-paper surfaces          — #F0-F8 cream, oat, sand = Organic/Lo-Fi
- *    serif display                — Source Serif 4 stays in dashboard contexts
- *    .grid-bg                     — the orange-tinted pattern (index.css)
- *    second accent color          — accent is one. No teal, no green, no second blue.
- *    text-shadow glow, animated pulses, scroll-linked parallax
- *    mono fonts in body copy      — mono restricted to three uses (below)
- *    unicode-glyph icons (▣ ◊ ▶)  — Lucide or nothing
+ *  Anchor: Industrial extended. Dark warm-charcoal surface, JetBrains Mono
+ *  for branding type, single #F07800 accent, hairline wireframe grid.
+ *  Signature move: GRIDTILT wordmark types in terminal-style and the TILT
+ *  half rotates ~8° to orange when the typing finishes.
  *
- *  If any of these appear under .anchor-swiss in code review, fix the violation —
- *  do not normalize the anchor downward.
- *
- *  Mono usage restricted to three places only:
- *    1. Hero numeral denominators (/100, base 100)
- *    2. Chart axis tick labels
- *    3. Tabular figure columns in live signals
- *  Nowhere else.
+ *  Differentiator-internal rules:
+ *    - The accent (#F07800) appears on:
+ *        the TILT half of the wordmark after tilt,
+ *        primary CTA underline/glow,
+ *        feature card hover state,
+ *        signal-pulse markers,
+ *        the rare "live now" data point.
+ *      Nowhere else.
+ *    - Mono restricted to: wordmark, section numbers, feature card titles,
+ *      tabular figures. Body prose stays in Inter.
+ *    - Hairline grid is decorative; never carry information.
  */
 
-.anchor-swiss {
-  /* Surface */
-  --anchor-surface:             #F7F7F8;
-  --anchor-surface-elev:        #FFFFFF;
-  --anchor-surface-rule:        #E5E5E5;
-  --anchor-surface-rule-strong: #C7C7C7;
+.gt-marketing {
+  /* Surfaces — warm charcoal, slightly varied for layering */
+  --mkt-bg:          #0B0B0A;
+  --mkt-bg-elev:     #131211;
+  --mkt-bg-card:     #17161410;
+  --mkt-bg-deeper:   #060605;
+
+  /* Hairlines + wireframe */
+  --mkt-line:        rgba(255, 255, 255, 0.06);
+  --mkt-line-bright: rgba(255, 255, 255, 0.14);
+  --mkt-line-accent: rgba(240, 120, 0, 0.28);
+  --mkt-grid-line:   rgba(255, 255, 255, 0.028);
 
   /* Ink */
-  --anchor-ink:        #111111;
-  --anchor-ink-muted:  #5A5A5A;
-  --anchor-ink-quiet:  #9A9A9A;
+  --mkt-ink:         #F2F1ED;
+  --mkt-ink-muted:   #9C9A93;
+  --mkt-ink-quiet:   #5A5854;
 
-  /* Accent — ONE, used deliberately */
-  --anchor-accent:     #F07800;
+  /* Accent — ONE */
+  --mkt-accent:      #F07800;
+  --mkt-accent-soft: rgba(240, 120, 0, 0.10);
+  --mkt-accent-glow: rgba(240, 120, 0, 0.30);
 
-  /* Data series — ONE primary, ONE muted secondary */
-  --anchor-data:       #1F2937;
-  --anchor-data-muted: #9CA3AF;
+  /* Type */
+  --mkt-display:     'JetBrains Mono', 'SF Mono', 'Menlo', monospace;
+  --mkt-body:        'Inter', 'Helvetica Neue', sans-serif;
 
   /* Shape */
-  --anchor-radius:        4px;
-  --anchor-rule-weight:   1px;
+  --mkt-radius:      4px;
 
-  /* Type families */
-  --anchor-display: "Inter", "Helvetica Neue", "Arial", sans-serif;
-  --anchor-body:    "Inter", "Helvetica Neue", "Arial", sans-serif;
-  --anchor-mono:    "JetBrains Mono", "SF Mono", "Menlo", monospace;
-
-  background-color: var(--anchor-surface);
-  color: var(--anchor-ink);
-  color-scheme: light;
-  font-family: var(--anchor-body);
+  background: var(--mkt-bg);
+  color: var(--mkt-ink);
+  color-scheme: dark;
+  font-family: var(--mkt-body);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-.anchor-swiss ::selection {
-  background-color: var(--anchor-ink);
-  color: var(--anchor-surface);
+.gt-marketing ::selection {
+  background-color: var(--mkt-accent);
+  color: var(--mkt-bg);
 }
 
-/* Hairline rule helpers */
-.anchor-swiss .anchor-rule-top    { border-top: 1px solid var(--anchor-surface-rule); }
-.anchor-swiss .anchor-rule-bottom { border-bottom: 1px solid var(--anchor-surface-rule); }
+/* ─── Wireframe grid backdrop ─────────────────────────────────────────── */
 
-/* Accent underline — the single allowed accent move on the page */
-.anchor-swiss .anchor-accent-underline {
-  text-decoration: underline;
-  text-decoration-color: var(--anchor-accent);
-  text-decoration-thickness: 1.5px;
-  text-underline-offset: 6px;
+.gt-marketing-grid {
+  position: relative;
+}
+.gt-marketing-grid::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(var(--mkt-grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--mkt-grid-line) 1px, transparent 1px);
+  background-size: 56px 56px;
+  background-position: -1px -1px;
+  mask-image: radial-gradient(ellipse 80% 80% at center, rgba(0,0,0,1) 0%, rgba(0,0,0,0.5) 50%, transparent 90%);
+  -webkit-mask-image: radial-gradient(ellipse 80% 80% at center, rgba(0,0,0,1) 0%, rgba(0,0,0,0.5) 50%, transparent 90%);
+  pointer-events: none;
+  z-index: 0;
+}
+.gt-marketing-grid > * {
+  position: relative;
+  z-index: 1;
 }
 
-/* Mono numeric column helper — used by hero denominators, chart axes, signal tables */
-.anchor-swiss .anchor-mono {
-  font-family: var(--anchor-mono);
-  font-variant-numeric: tabular-nums;
+/* ─── Animated wordmark ────────────────────────────────────────────────── */
+
+.gt-wordmark {
+  font-family: var(--mkt-display);
+  font-weight: 700;
+  font-size: clamp(64px, 13vw, 200px);
+  letter-spacing: -0.06em;
+  line-height: 0.9;
+  color: var(--mkt-ink);
+  user-select: none;
+  display: inline-flex;
+  align-items: baseline;
+  white-space: nowrap;
+}
+.gt-wordmark__half {
+  display: inline-block;
+  transition:
+    transform 600ms cubic-bezier(0.34, 1.45, 0.64, 1),
+    color 350ms ease-out,
+    text-shadow 600ms ease-out;
+  transform-origin: 0% 100%;
+}
+.gt-wordmark__half--tilt.is-tilted {
+  color: var(--mkt-accent);
+  transform: rotate(-8deg);
+  text-shadow: 0 0 22px var(--mkt-accent-glow);
+}
+.gt-wordmark__caret {
+  display: inline-block;
+  width: 0.55ch;
+  color: var(--mkt-accent);
+  margin-left: 0.06em;
+  animation: gt-caret 700ms steps(2, end) infinite;
+}
+.gt-wordmark__caret.is-fading {
+  animation: gt-caret-fade 400ms ease-out forwards;
+}
+@keyframes gt-caret {
+  to { opacity: 0; }
+}
+@keyframes gt-caret-fade {
+  to { opacity: 0; }
 }
 
-/* Hero numeral treatment */
-.anchor-swiss .anchor-numeral {
-  font-family: var(--anchor-display);
-  font-weight: 800;
-  letter-spacing: -0.04em;
-  font-variant-numeric: tabular-nums;
-  line-height: 1;
-  color: var(--anchor-ink);
+/* ─── Reveal-on-mount staggered fades ──────────────────────────────────── */
+
+@keyframes gt-rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
-/* Eyebrow/section number labels */
-.anchor-swiss .anchor-eyebrow {
-  font-family: var(--anchor-body);
-  font-size: 11px;
+.gt-rise {
+  opacity: 0;
+  animation: gt-rise 700ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+.gt-rise-1 { animation-delay: 1300ms; }
+.gt-rise-2 { animation-delay: 1500ms; }
+.gt-rise-3 { animation-delay: 1700ms; }
+.gt-rise-4 { animation-delay: 1900ms; }
+.gt-rise-5 { animation-delay: 2100ms; }
+
+/* ─── Feature card ─────────────────────────────────────────────────────── */
+
+.gt-feature-card {
+  position: relative;
+  display: block;
+  padding: 32px 28px 28px;
+  border: 1px solid var(--mkt-line);
+  background: var(--mkt-bg-elev);
+  border-radius: var(--mkt-radius);
+  text-decoration: none;
+  color: inherit;
+  overflow: hidden;
+  transition: border-color 220ms ease-out, transform 220ms ease-out;
+}
+.gt-feature-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 1px solid transparent;
+  border-radius: var(--mkt-radius);
+  pointer-events: none;
+  transition: border-color 220ms ease-out, box-shadow 220ms ease-out;
+}
+.gt-feature-card:hover {
+  border-color: var(--mkt-line-bright);
+  transform: translateY(-2px);
+}
+.gt-feature-card:hover::after {
+  border-color: var(--mkt-line-accent);
+  box-shadow:
+    inset 0 0 0 1px var(--mkt-line-accent),
+    0 0 24px -8px var(--mkt-accent-glow);
+}
+.gt-feature-card__num {
+  font-family: var(--mkt-display);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  color: var(--mkt-ink-quiet);
+  margin-bottom: 22px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.gt-feature-card__num::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--mkt-line);
+}
+.gt-feature-card__title {
+  font-family: var(--mkt-display);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--mkt-ink);
+  margin-bottom: 10px;
+  transition: color 180ms ease-out;
+}
+.gt-feature-card:hover .gt-feature-card__title {
+  color: var(--mkt-accent);
+}
+.gt-feature-card__caption {
+  font-family: var(--mkt-body);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--mkt-ink-muted);
+  margin-bottom: 24px;
+  min-height: 67px;
+}
+.gt-feature-card__preview {
+  border: 1px solid var(--mkt-line);
+  background: var(--mkt-bg-deeper);
+  aspect-ratio: 16 / 9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 2px;
+  filter: hue-rotate(0deg) brightness(0.96);
+}
+.gt-feature-card__preview img {
+  max-width: 100%;
+  max-height: 100%;
+  display: block;
+  opacity: 0.92;
+}
+.gt-feature-card__cta {
+  margin-top: 22px;
+  font-family: var(--mkt-display);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  color: var(--mkt-ink-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: color 180ms ease-out, gap 220ms ease-out;
+}
+.gt-feature-card:hover .gt-feature-card__cta {
+  color: var(--mkt-accent);
+  gap: 14px;
+}
+
+/* ─── Primary CTA button ───────────────────────────────────────────────── */
+
+.gt-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 24px;
+  font-family: var(--mkt-display);
+  font-size: 13px;
   font-weight: 600;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--anchor-ink-muted);
-}
-
-/* Section number kicker (e.g. "03") */
-.anchor-swiss .anchor-section-num {
-  font-family: var(--anchor-body);
-  font-size: 16px;
-  font-weight: 400;
-  font-variant-numeric: tabular-nums;
-  color: var(--anchor-ink);
-}
-
-/* Module card hover — accent underline on title and CTA, no scale, no shadow */
-.anchor-swiss .module-card {
+  color: var(--mkt-bg);
+  background: var(--mkt-accent);
+  border: 1px solid var(--mkt-accent);
+  border-radius: var(--mkt-radius);
   text-decoration: none;
-  color: inherit;
-  display: block;
+  cursor: pointer;
+  transition: transform 180ms ease-out, box-shadow 220ms ease-out;
+  position: relative;
 }
-.anchor-swiss .module-card .module-card-title {
-  text-decoration: none;
-  text-decoration-thickness: 1.5px;
-  text-underline-offset: 4px;
-  transition: text-decoration-color 0.12s ease-out;
+.gt-cta:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0 32px -6px var(--mkt-accent-glow);
 }
-.anchor-swiss .module-card:hover .module-card-title {
-  text-decoration: underline;
-  text-decoration-color: var(--anchor-accent);
+.gt-cta__arrow {
+  display: inline-block;
+  transition: transform 220ms ease-out;
 }
-.anchor-swiss .module-card .module-card-cta {
-  text-decoration: underline;
-  text-decoration-color: transparent;
-  text-decoration-thickness: 1.5px;
-  text-underline-offset: 4px;
-  transition: text-decoration-color 0.12s ease-out;
-}
-.anchor-swiss .module-card:hover .module-card-cta {
-  text-decoration-color: var(--anchor-accent);
+.gt-cta:hover .gt-cta__arrow {
+  transform: translateX(4px);
 }
 
-/* Footer link underline — muted by default, accent on hover */
-.anchor-swiss .footer-link {
-  color: var(--anchor-ink);
-  text-decoration: underline;
-  text-decoration-color: var(--anchor-ink-muted);
-  text-decoration-thickness: 1px;
-  text-underline-offset: 3px;
-  transition: text-decoration-color 0.12s ease-out;
+.gt-cta--ghost {
+  background: transparent;
+  color: var(--mkt-ink);
+  border-color: var(--mkt-line-bright);
 }
-.anchor-swiss .footer-link:hover {
-  text-decoration-color: var(--anchor-accent);
+.gt-cta--ghost:hover {
+  border-color: var(--mkt-accent);
+  color: var(--mkt-accent);
+  box-shadow: 0 0 24px -8px var(--mkt-accent-glow);
+}
+
+/* ─── Eyebrow + section number ─────────────────────────────────────────── */
+
+.gt-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--mkt-display);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--mkt-ink-muted);
+}
+.gt-eyebrow::before {
+  content: '';
+  width: 24px;
+  height: 1px;
+  background: var(--mkt-accent);
+}
+
+.gt-section-num {
+  font-family: var(--mkt-display);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  color: var(--mkt-ink-quiet);
+}
+
+/* ─── Section heading ──────────────────────────────────────────────────── */
+
+.gt-section-heading {
+  font-family: var(--mkt-display);
+  font-weight: 700;
+  font-size: clamp(34px, 5.5vw, 64px);
+  line-height: 1.04;
+  letter-spacing: -0.035em;
+  color: var(--mkt-ink);
+}
+.gt-section-heading--accent {
+  color: var(--mkt-accent);
+}
+.gt-section-dek {
+  font-family: var(--mkt-body);
+  font-size: clamp(16px, 1.6vw, 19px);
+  line-height: 1.55;
+  color: var(--mkt-ink-muted);
+  max-width: 56ch;
+}
+
+/* ─── Mono numeric helper ──────────────────────────────────────────────── */
+
+.gt-mono { font-family: var(--mkt-display); font-variant-numeric: tabular-nums; }
+
+/* ─── Hairline rules ───────────────────────────────────────────────────── */
+
+.gt-rule-top    { border-top:    1px solid var(--mkt-line); }
+.gt-rule-bottom { border-bottom: 1px solid var(--mkt-line); }
+
+/* ─── Footer link ──────────────────────────────────────────────────────── */
+
+.gt-footer-link {
+  color: var(--mkt-ink);
+  text-decoration: none;
+  border-bottom: 1px solid var(--mkt-line);
+  transition: border-color 180ms ease-out, color 180ms ease-out;
+}
+.gt-footer-link:hover {
+  color: var(--mkt-accent);
+  border-bottom-color: var(--mkt-accent);
+}
+
+/* ─── Live pulse dot ───────────────────────────────────────────────────── */
+
+.gt-pulse {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--mkt-accent);
+  box-shadow: 0 0 0 0 var(--mkt-accent-glow);
+  animation: gt-pulse 1800ms ease-out infinite;
+}
+@keyframes gt-pulse {
+  0%   { box-shadow: 0 0 0 0 var(--mkt-accent-glow); }
+  70%  { box-shadow: 0 0 0 10px rgba(240,120,0,0); }
+  100% { box-shadow: 0 0 0 0 rgba(240,120,0,0); }
+}
+
+/* ─── Reduced motion ────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .gt-marketing *,
+  .gt-marketing *::before,
+  .gt-marketing *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+  .gt-wordmark__half--tilt.is-tilted {
+    transform: rotate(-8deg);
+    color: var(--mkt-accent);
+  }
 }
