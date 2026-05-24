@@ -1,4 +1,6 @@
 import express, { type Request, Response, NextFunction } from "express";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
@@ -6,9 +8,14 @@ import { createServer } from "http";
 const app = express();
 const httpServer = createServer(app);
 
+const isProduction = process.env.NODE_ENV === "production";
+
 // Replit terminates TLS at a single reverse proxy in front of our process.
 // Trust one hop so req.ip reflects the real client IP for rate limiting.
 app.set("trust proxy", 1);
+
+// Strip the Express advertisement banner so probes can't fingerprint the stack.
+app.disable("x-powered-by");
 
 declare module "http" {
   interface IncomingMessage {
@@ -16,14 +23,85 @@ declare module "http" {
   }
 }
 
-app.use((_req, res, next) => {
-  res.setHeader("X-Content-Type-Options", "nosniff");
-  res.setHeader("X-Frame-Options", "SAMEORIGIN");
-  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
-  res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
-  res.setHeader("X-XSS-Protection", "0");
-  next();
+// ─── Security headers via helmet ─────────────────────────────────────────
+//
+// CSP rationale:
+//   script-src       'self' + platform.twitter.com    (the Twitter widget
+//                                                      is the only external
+//                                                      script today). Dev
+//                                                      mode adds 'unsafe-eval'
+//                                                      + 'unsafe-inline' for
+//                                                      Vite HMR; production
+//                                                      stays tight.
+//   style-src        'self' + 'unsafe-inline'         (React inline-style
+//                                                      props render as
+//                                                      style="..." attrs)
+//                                  + fonts.googleapis.com
+//   font-src         'self' + fonts.gstatic.com + data:
+//   img-src          'self' + data: + https:          (allow third-party
+//                                                      images we cite)
+//   connect-src      'self' (+ ws/wss in dev for HMR)
+//   frame-src        'self' + platform.twitter.com    (embedded tweets)
+//   frame-ancestors  'none'                           (GridTilt is never
+//                                                      embedded; prevents
+//                                                      clickjacking)
+//   object-src       'none'                           (no plugins ever)
+//   base-uri         'self'                           (lock <base> to us)
+//
+// HSTS: enabled in production only, 1-year max-age, includeSubDomains,
+// preload-eligible. Dev mode disables HSTS so a localhost dev server
+// can't accidentally cache HSTS for the dev hostname.
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      useDefaults: true,
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: isProduction
+          ? ["'self'", "https://platform.twitter.com"]
+          : [
+              "'self'",
+              "'unsafe-inline'",
+              "'unsafe-eval'",
+              "https://platform.twitter.com",
+            ],
+        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+        fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
+        imgSrc: ["'self'", "data:", "https:"],
+        connectSrc: isProduction
+          ? ["'self'"]
+          : ["'self'", "ws:", "wss:"],
+        frameSrc: ["'self'", "https://platform.twitter.com"],
+        frameAncestors: ["'none'"],
+        objectSrc: ["'none'"],
+        baseUri: ["'self'"],
+      },
+    },
+    // Don't apply COEP — would break loading external images and the
+    // Twitter widget without per-resource Cross-Origin-Resource-Policy
+    // headers from those origins, which we don't control.
+    crossOriginEmbedderPolicy: false,
+    hsts: isProduction
+      ? { maxAge: 31536000, includeSubDomains: true, preload: true }
+      : false,
+    xFrameOptions: { action: "sameorigin" },
+    referrerPolicy: { policy: "strict-origin-when-cross-origin" },
+  }),
+);
+
+// ─── Global API rate limit ───────────────────────────────────────────────
+// 120 req/min/IP across all /api/* endpoints. A logged-in dashboard user
+// loading the overview pulls ~5 endpoints once + auto-refetches every
+// 5-15 min, so the headroom is generous. Mass scrapers / probe storms
+// will hit the limit fast.
+const globalApiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 120,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  message: { error: "Too many requests. Try again in a minute." },
 });
+app.use("/api/", globalApiLimiter);
 
 app.use(
   express.json({

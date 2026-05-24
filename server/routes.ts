@@ -3,6 +3,7 @@ import { type Server } from "http";
 import { readFileSync, writeFileSync, existsSync } from "fs";
 import { join } from "path";
 import { createHmac, randomBytes, timingSafeEqual } from "crypto";
+import rateLimit from "express-rate-limit";
 import RSSParser from "rss-parser";
 import {
   runDatacenterIngestion,
@@ -1837,6 +1838,47 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+  // ─── Per-route rate limiters ──────────────────────────────────────────
+  // The global 120 req/min/IP cap on /api/* is set in server/index.ts.
+  // These are tighter, per-surface limits layered on top.
+
+  // 5 successful subscribe attempts per IP per hour. Email signups are the
+  // most spam-prone surface; tighten aggressively.
+  const subscribeLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000,
+    max: 5,
+    standardHeaders: "draft-7",
+    legacyHeaders: false,
+    message: { error: "Too many subscribe attempts. Try again later." },
+  });
+
+  // 10 unsubscribe requests per IP per minute. The token is HMAC-SHA256 so
+  // brute force is infeasible on its own; this is defense in depth against
+  // someone spamming the endpoint to slow the server down.
+  const unsubscribeLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 10,
+    standardHeaders: "draft-7",
+    legacyHeaders: false,
+    message: { error: "Too many unsubscribe requests. Try again later." },
+  });
+
+  // 5 FAILED admin auth attempts per IP per minute (skipSuccessfulRequests).
+  // Legit admins who already have the key are unaffected; brute force
+  // attackers without it get throttled fast.
+  const adminAuthFailureLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 5,
+    skipSuccessfulRequests: true,
+    standardHeaders: "draft-7",
+    legacyHeaders: false,
+    message: { error: "Too many failed authentication attempts. Try again later." },
+  });
+  // Apply to every admin-only path prefix. Newsletter routes are admin-gated
+  // too even though they don't live under /api/admin/.
+  app.use("/api/admin/", adminAuthFailureLimiter);
+  app.use("/api/newsletter/", adminAuthFailureLimiter);
+
   // KPI endpoint - three composite indicators
   // Methodology lives in `computeKpis()` above. Both this route and the daily
   // tweet cron call the same function so the public dashboard and the social
@@ -2064,9 +2106,7 @@ export async function registerRoutes(
     return true;
   }
 
-  const subscribeRateLimit = new Map<string, { count: number; resetAt: number }>();
-
-  app.post("/api/subscribe", async (req: Request, res) => {
+  app.post("/api/subscribe", subscribeLimiter, async (req: Request, res) => {
     try {
       const { email, intent, context } = req.body;
       if (!email || typeof email !== "string") {
@@ -2076,18 +2116,6 @@ export async function registerRoutes(
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email)) {
         return res.status(400).json({ error: "That doesn't look like an email" });
-      }
-
-      const ip = req.ip || "unknown";
-      const now = Date.now();
-      const limit = subscribeRateLimit.get(ip);
-      if (limit && now < limit.resetAt && limit.count >= 5) {
-        return res.status(429).json({ error: "Too many attempts. Try again later." });
-      }
-      if (!limit || now >= (limit?.resetAt ?? 0)) {
-        subscribeRateLimit.set(ip, { count: 1, resetAt: now + 3600000 });
-      } else {
-        limit.count++;
       }
 
       const subscribers = loadSubscribers();
@@ -2156,7 +2184,7 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/unsubscribe", (req, res) => {
+  app.get("/api/unsubscribe", unsubscribeLimiter, (req, res) => {
     const { token } = req.query;
     if (!token || typeof token !== "string") {
       return res.status(400).send("Invalid unsubscribe link");
