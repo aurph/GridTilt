@@ -203,7 +203,7 @@ Output of Phase C is the **contract** the implementation honors. If Phase D want
 ### Phase E — Verification (use the `verify` and `code-review` skills)
 
 1. **Use the `verify` skill:** start `npm run dev` (binds to port 5000), open `http://localhost:5000/`, screenshot the hero on desktop (1440×900) and mobile (390×844). Open `http://localhost:5000/overview` and confirm the dashboard still renders identically to before.
-2. Capture a before/after pair: rename the existing `home_after_return.png` in the repo root, save the new screenshot beside it as `home_after_return_NEW.png` for the owner to compare. **Do not** delete the original.
+2. Capture a before/after pair: rename the existing `docs/screenshots/home_after_return.png`, save the new screenshot beside it as `home_after_return_NEW.png` for the owner to compare. **Do not** delete the original.
 3. **Use the `code-review` skill** on the diff. Specifically check for:
    - **Token drift.** No rounded cards >4px on `/`. No `box-shadow` other than `none` on `/`. No gradient backgrounds on `/`. No mono fonts in body text on `/`. No second accent color on `/`.
    - **Content discipline.** No fabricated tickers, no fake percentages, no themed UI copy, no Unicode-glyph icons, no `//` kicker comments. Every string on screen names real information or is authored copy that knows what it is.
