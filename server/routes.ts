@@ -1195,7 +1195,7 @@ async function renderOgPng(card: OgCard): Promise<Buffer> {
           },
         ],
       },
-    },
+    } as unknown as Parameters<typeof satori>[0],
     {
       width: 1200,
       height: 630,
@@ -1252,7 +1252,7 @@ function buildOAuth1Header(
   const signingKey = `${pctEncode(consumerSecret)}&${pctEncode(accessTokenSecret)}`;
   const signature = createHmac("sha1", signingKey).update(baseString).digest("base64");
 
-  const headerParams = { ...oauthParams, oauth_signature: signature };
+  const headerParams: Record<string, string> = { ...oauthParams, oauth_signature: signature };
   return (
     "OAuth " +
     Object.keys(headerParams)
@@ -2077,12 +2077,13 @@ export async function registerRoutes(
     writeFileSync(SUBSCRIBERS_FILE, JSON.stringify(subs, null, 2));
   }
 
-  const UNSUB_TOKEN_SECRET = process.env.UNSUB_TOKEN_SECRET;
-  if (!UNSUB_TOKEN_SECRET) {
-    throw new Error(
-      "UNSUB_TOKEN_SECRET env var is required. Generate one with: openssl rand -hex 32",
-    );
-  }
+  const UNSUB_TOKEN_SECRET: string =
+    process.env.UNSUB_TOKEN_SECRET ??
+    (() => {
+      throw new Error(
+        "UNSUB_TOKEN_SECRET env var is required. Generate one with: openssl rand -hex 32",
+      );
+    })();
   function makeUnsubToken(email: string): string {
     return createHmac("sha256", UNSUB_TOKEN_SECRET).update(email).digest("hex");
   }

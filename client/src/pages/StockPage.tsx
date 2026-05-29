@@ -234,7 +234,7 @@ export default function StockPage() {
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Daily Change</span>
                   <span className={`font-mono font-semibold ${isUp ? "text-green-400" : "text-red-400"}`}>
-                    {isUp ? "+" : ""}${data.stockData.change.toFixed(2)}
+                    {data.stockData.change != null ? `${isUp ? "+" : ""}$${data.stockData.change.toFixed(2)}` : "--"}
                   </span>
                 </div>
               </div>
