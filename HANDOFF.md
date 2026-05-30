@@ -1,8 +1,63 @@
  # GridTilt — Handoff for Claude / Replit / future-you
 
-Last updated: 2026-05-19
+Last updated: 2026-05-21
 Repo: `aurph/GridTilt` (main)
 Owner: Jack Schwartz / aurph
+
+---
+
+## ACTIVE BLOCKER — read this first (2026-05-21)
+
+Three commits are sitting in `origin/main` that production has **not** picked up. The work is correct in git; Replit is just not deploying.
+
+```
+b5acf4f  Earnings calendar: stop dropping tickers via overzealous lastReported gate
+c1aabbe  Remove dead earningsSeed (client/src/data/catalyst-config.ts)
+7dcb5aa  Fix the three glaring issues: editorial, backlog, NVDA earnings
+```
+
+**Action:** Open Replit → Deployments tab → Redeploy. Until that happens, the site still shows:
+- Editorial block (`WhatsHappening`) on the homepage — already deleted from source
+- Backlog page empty ("0 of 0") — `Queue.tsx` adapter is in source but not deployed
+- Wrong NVDA earnings (stale May 28 + ghost `"quarter": "Q1 FY2027"` string) — the old `EARNINGS_SEED` is gone from source
+
+### Verify after redeploy
+
+```bash
+# 1. Bundle hash should change away from BJ-AlAq9
+curl -s https://gridtilt.com/ | grep -oE 'src="/assets/[^"]*\.js"'
+
+# 2. The ghost "Q1 FY2027" should no longer appear (string isn't in current source)
+curl -s https://gridtilt.com/api/catalysts/all | grep -o "Q1 FY2027"
+# expected: no output
+
+# 3. Earnings calendar populated
+curl -s https://gridtilt.com/api/earnings-calendar | python3 -c "import json,sys; d=json.load(sys.stdin); print('count:', len(d))"
+
+# 4. Backlog endpoint can return either shape — Queue.tsx normalizes both
+curl -s https://gridtilt.com/api/queue | python3 -c "import json,sys; d=json.load(sys.stdin); print('keys:', list(d.keys()))"
+```
+
+### What was actually fixed in source (awaiting deploy)
+
+1. **Editorial removed.** `client/src/components/WhatsHappening.tsx` deleted. Import + mount removed from `client/src/pages/TiltOverview.tsx`. User feedback: leading with opinion is "asking too much of the user."
+
+2. **Backlog defensive adapter.** `client/src/pages/Queue.tsx` now has `normalizeBacklog(raw)` at the top. Accepts both the new shape `{headline, projects, lastRefreshed}` (60 verified projects, local data file) AND the old shape `{source, aggregates, notableProjects}` (15 projects, what production currently serves). This was the actual "ENTIRELY BROKEN" — the page expected new shape, server returned old shape, deploys were out of sync. Adapter lets the page render with either.
+
+3. **Earnings — final approach (b5acf4f).** `server/routes.ts::refreshEarningsCache()`:
+   - Pulls both `quoteSummary(ticker, { modules: ["calendarEvents"] })` and `quote(ticker)` per ticker
+   - Collects candidate timestamps from `calendarEvents.earnings.earningsDate[]`, `earningsTimestampStart`, `earningsTimestampEnd`, AND `earningsTimestamp`
+   - Picks the soonest candidate that is today-or-later
+   - No "must be after lastReported" gate — that filter dropped tickers when Yahoo's `earningsTimestamp` was the next upcoming earnings rather than the last reported (Yahoo is inconsistent ticker-by-ticker)
+   - Trade-off: for 1–2 days post-report, Yahoo's `calendarEvents` may still hold the just-passed date. Calendar will show that briefly. Better than empty.
+
+### What this session taught
+**Replit autoscale/reserved-VM deployments do NOT auto-pull from GitHub on push.** Manual redeploy is required. Don't say "shipped" after a push — say "pushed to main; redeploy on Replit to ship." Several user complaints this session ("isnt fixed at all", "ENTIRELY BROKEN") were because production was a build or more behind main, not because the code was wrong.
+
+### Untracked files
+- `CLAUDE.md` at repo root (untracked). Decide whether to commit or `.gitignore`.
+
+---
 
 ## What GridTilt is
 Dark-mode dashboard tracking the AI infrastructure and power buildout. Covers ~60+ public equities across compute, nuclear, uranium, power hardware, utilities, datacenters, construction, and ETF benchmarks. The thesis the site quietly expresses: AI compute demand is the load story driving an under-built grid. The site visualizes that story without grandstanding about it.
