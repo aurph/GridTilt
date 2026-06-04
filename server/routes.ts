@@ -19,6 +19,12 @@ import {
   SITEMAP_REGION_SLUGS,
   SITEMAP_OPERATOR_SLUGS,
 } from "./seo";
+import {
+  computeAiPowerIndex,
+  computeGridStress,
+  computeNpi,
+  computeNpiMomentum,
+} from "./indices";
 
 interface SupplyChainStage {
   name: string;
@@ -326,17 +332,8 @@ const STATIC_MARKET_DATA: Record<string, {
   MRVL: { name: "Marvell Technology Inc", price: 88.00, change: 0.00, changePercent: 0.00, pe: 48.2, revenueGrowth: 18.4, marketCapDisplay: "$76B" },
 };
 
-// Nuclear Power Index (NPI) - Jan 1, 2024 base prices
-// Jan 1, 2024 is the anchor date: AI baseload demand started pulling
-// hyperscaler attention to nuclear that quarter. All prices are closing
-// prices circa Jan 2, 2024 (first trading day 2024).
-const NPI_BASE = {
-  CEG: 146.00,       // CEG ~$143-148 range, pre-AI PPA narrative acceleration
-  VST: 28.50,        // VST ~$25-32 range, pre-AI merchant power premium
-  CCJ: 47.50,        // CCJ ~$46-49, pre-2024 uranium spot spike to $107
-  NLR: 68.00,        // VanEck Uranium+Nuclear ETF, early-Jan 2024 baseline
-  URANIUM_SPOT: 91.00,  // U3O8 spot ~$90-95/lb in Jan 2024 (pre-Feb 2024 spike to $107)
-};
+// Nuclear Power Index (NPI) base prices and all index formulas live in
+// server/indices.ts (pure, unit-tested, shared with the backtest script).
 
 // ─── Auto-derived market constants ─────────────────────────────────────────
 // URANIUM_SPOT and SMR_POLICY_SCORE were hardcoded values that drifted out of
@@ -1508,26 +1505,14 @@ async function computeKpis(): Promise<KpiResult> {
   const uraniumSpot = mc.uraniumSpotUsdPerLb;
   const smrPolicyScore = deriveSmrPolicyScore();
 
-  const cegPerf = cegPrice / NPI_BASE.CEG;
-  const vstPerf = vstPrice / NPI_BASE.VST;
-  const ccjPerf = ccjPrice / NPI_BASE.CCJ;
-  const nlrPerf = nlrPrice / NPI_BASE.NLR;
-  const uPerf = uraniumSpot / NPI_BASE.URANIUM_SPOT;
-  const policyPerf = 0.5 + smrPolicyScore / 10;
+  // All formulas live in server/indices.ts (pure + unit-tested; the
+  // historical backtest reconstructs series with these same functions).
+  const npi = computeNpi({ cegPrice, vstPrice, ccjPrice, nlrPrice, uraniumSpot, smrPolicyScore });
+  const { npiValue, cegPerf, vstPerf, ccjPerf, nlrPerf, uPerf, policyPerf, npiPolicyMultiplier } = npi;
+  const npiMomentum = computeNpiMomentum({ cegChange, vstChange, ccjChange, neeChange });
 
-  const npiWeightedPerf =
-    0.25 * cegPerf + 0.20 * vstPerf + 0.15 * ccjPerf +
-    0.20 * nlrPerf + 0.10 * uPerf   + 0.10 * policyPerf;
-
-  const npiPolicyMultiplier = 0.9 + (smrPolicyScore / 10) * 0.2;
-  const npiValue = parseFloat((100 * npiWeightedPerf * npiPolicyMultiplier).toFixed(1));
-  const npiMomentum = cegChange * 0.35 + vstChange * 0.30 + ccjChange * 0.20 + neeChange * 0.15;
-
-  const aiMomentum = (nvdaChange * 0.40 + tsmChange * 0.25 + eqixChange * 0.20 + muChange * 0.15) * 1.2;
-  const aiPowerIndex = Math.max(52, Math.min(94, 72 + aiMomentum));
-
-  const stressMomentum = (vstChange * 0.40 + cegChange * 0.35 + eqixChange * 0.25) * 1.0;
-  const gridStress = Math.max(52, Math.min(92, 68 + stressMomentum));
+  const aiPowerIndex = computeAiPowerIndex({ nvdaChange, tsmChange, eqixChange, muChange });
+  const gridStress = computeGridStress({ vstChange, cegChange, eqixChange });
 
   return {
     aiPowerIndex: parseFloat(aiPowerIndex.toFixed(1)),
