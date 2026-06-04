@@ -25,6 +25,7 @@ import {
   computeNpi,
   computeNpiMomentum,
 } from "./indices";
+import { recordDailyIndexValues, readIndexHistory } from "./index-history";
 
 interface SupplyChainStage {
   name: string;
@@ -1866,12 +1867,20 @@ export async function registerRoutes(
   app.use("/api/newsletter/", adminAuthFailureLimiter);
 
   // KPI endpoint - three composite indicators
-  // Methodology lives in `computeKpis()` above. Both this route and the daily
+  // Methodology lives in server/indices.ts. Both this route and the daily
   // tweet cron call the same function so the public dashboard and the social
   // post can never drift on what "today's numbers" are.
   app.get("/api/kpis", async (_req, res) => {
     const kpis = await computeKpis();
+    recordDailyIndexValues(kpis);
     res.json(kpis);
+  });
+
+  // Public daily gauge history: the committed seed is reconstructed from
+  // public prices (npm run backtest:indices); live values append in place.
+  // Powers transparency and saves anyone re-deriving the series.
+  app.get("/api/index-history", (_req, res) => {
+    res.json(readIndexHistory());
   });
 
   // Stack endpoint - 8 layers, 10-min cache
