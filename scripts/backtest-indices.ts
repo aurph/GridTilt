@@ -29,6 +29,7 @@ import {
   AI_INDEX,
   GRID_STRESS,
   NPI_BASE,
+  NPI_WEIGHTS,
   computeAiPowerIndex,
   computeGridStress,
   computeNpi,
@@ -263,6 +264,100 @@ async function main() {
     );
   }
 
+  // ── NPI redundancy check ──
+  // The skeptical question: NLR (an existing ETF) is already 20% of NPI.
+  // If NPI's equity legs mostly track NLR rebased, the custom basket is an
+  // ETF with extra steps and its distinctiveness rests entirely on the two
+  // judgment legs (uranium spot + policy, 20% of weight).
+  const rebase = (closes: Map<string, number>, base: number) => {
+    const out = new Map<string, number>();
+    for (const d of [...closes.keys()].sort()) {
+      if (d < "2024-01-01") continue;
+      out.set(d, (100 * closes.get(d)!) / base);
+    }
+    return out;
+  };
+  const seriesReturns = (m: Map<string, number>) => {
+    const keys = [...m.keys()].sort();
+    const out = new Map<string, number>();
+    for (let i = 1; i < keys.length; i++) {
+      const prev = m.get(keys[i - 1])!;
+      if (prev > 0) out.set(keys[i], ((m.get(keys[i])! - prev) / prev) * 100);
+    }
+    return out;
+  };
+  const corrOnCommonDates = (a: Map<string, number>, b: Map<string, number>) => {
+    const dates = [...a.keys()].filter((d) => b.has(d)).sort();
+    return {
+      r: pearson(dates.map((d) => a.get(d)!), dates.map((d) => b.get(d)!)),
+      n: dates.length,
+    };
+  };
+
+  const npiRet = seriesReturns(npiDaily);
+  const nlrLevel = rebase(nlrC, NPI_BASE.NLR);
+  const benches: Array<{ name: string; level: Map<string, number> }> = [
+    { name: "NLR", level: nlrLevel },
+    { name: "CEG", level: rebase(cegC, NPI_BASE.CEG) },
+    { name: "VST", level: rebase(vstC, NPI_BASE.VST) },
+    { name: "CCJ", level: rebase(ccjC, NPI_BASE.CCJ) },
+  ];
+  const redundancy = benches.map((b) => {
+    const { r, n } = corrOnCommonDates(npiRet, seriesReturns(b.level));
+    return { name: b.name, r, n };
+  });
+
+  // Level tracking vs NLR: where do the two base-100 lines sit today, and
+  // how far apart have they drifted?
+  const commonLevelDates = [...npiDaily.keys()].filter((d) => nlrLevel.has(d)).sort();
+  const levelDiffs = commonLevelDates.map((d) => npiDaily.get(d)! - nlrLevel.get(d)!);
+  const lastDate = commonLevelDates.at(-1)!;
+  const levelStats = {
+    lastDate,
+    npiLast: npiDaily.get(lastDate)!,
+    nlrLast: nlrLevel.get(lastDate)!,
+    meanAbsDiff: levelDiffs.reduce((a, b) => a + Math.abs(b), 0) / levelDiffs.length,
+    maxAbsDiff: Math.max(...levelDiffs.map(Math.abs)),
+  };
+
+  // Intra-product overlap: CEG+VST are 45% of NPI and 75% of Grid Stress.
+  // If the two headline numbers co-move tightly, the dashboard is showing
+  // one signal twice under two names.
+  const gsDailySignal = new Map(
+    [...gsDaily].map(([d, v]) => [d, v - GRID_STRESS.BASELINE] as [string, number]),
+  );
+  const npiVsGs = corrOnCommonDates(npiRet, gsDailySignal);
+
+  // Current EFFECTIVE weights. The basket is never rebalanced, so a
+  // constituent's share of the level (and of daily variance) is its stated
+  // weight times its price relative, renormalized. Strong performers
+  // swallow the basket over time; this quantifies how far that has gone.
+  const relAt = (closes: Map<string, number>, base: number) =>
+    (closes.get(lastDate) ?? NaN) / base;
+  const effTerms = {
+    CEG: NPI_WEIGHTS.ceg * relAt(cegC, NPI_BASE.CEG),
+    VST: NPI_WEIGHTS.vst * relAt(vstC, NPI_BASE.VST),
+    CCJ: NPI_WEIGHTS.ccj * relAt(ccjC, NPI_BASE.CCJ),
+    NLR: NPI_WEIGHTS.nlr * relAt(nlrC, NPI_BASE.NLR),
+    uranium: NPI_WEIGHTS.uranium * 1, // held at par (no daily series)
+    policy: NPI_WEIGHTS.policy * 1, // held at par
+  };
+  const effDenom = Object.values(effTerms).reduce((a, b) => a + b, 0);
+  const effWeights = Object.fromEntries(
+    Object.entries(effTerms).map(([k, v]) => [k, v / effDenom]),
+  ) as Record<keyof typeof effTerms, number>;
+
+  const nlrR = redundancy.find((x) => x.name === "NLR")!.r;
+  const dominant = redundancy.reduce((a, b) => (b.r > a.r ? b : a));
+  const redundancyVerdict =
+    dominant.r >= 0.95
+      ? `**SINGLE-STOCK DOMINATED: ${dominant.name} alone explains ${(dominant.r * dominant.r * 100).toFixed(0)}% of NPI's daily variance** (r ${fmt(dominant.r)}). Not redundant with the NLR ETF (r ${fmt(nlrR)}), but the un-rebalanced price-relative construction has let the best performer swallow the basket: ${dominant.name}'s effective weight is ${(effWeights[dominant.name as "VST"] * 100).toFixed(0)}% today vs ${(NPI_WEIGHTS[dominant.name.toLowerCase() as "vst"] * 100).toFixed(0)}% stated. The index increasingly tracks one company, not a complex.`
+      : nlrR >= 0.95
+        ? `**REDUNDANT with NLR** (daily-return r ${fmt(nlrR)}, R² ${fmt(nlrR * nlrR)}): the custom basket is an existing ETF with extra steps; its distinctiveness rests entirely on the uranium and policy judgment legs.`
+        : nlrR >= 0.85
+          ? `**LARGELY OVERLAPPING with NLR** (daily-return r ${fmt(nlrR)}, R² ${fmt(nlrR * nlrR)}): most daily variance is the nuclear-ETF complex; the merchant-power tilt and judgment legs carry the remaining distinctiveness.`
+          : `**DIFFERENTIATED from NLR** (daily-return r ${fmt(nlrR)}, R² ${fmt(nlrR * nlrR)}): the merchant-power weighting moves the basket away from the off-the-shelf ETF.`;
+
   // ── Write the seeded history file ──
   const histDates = [...aiDaily.keys()].filter((d) => d >= "2024-01-01").sort();
   const history = {
@@ -363,6 +458,7 @@ electricity output, or are they pure market sentiment?
 
 - ${verdictFor("AI Demand", aiCorr, aiConstituents)}
 - ${verdictFor("Grid Stress", gsCorr, gsConstituents)}
+- NPI: ${redundancyVerdict}
 
 Sign instability across windows (see robustness tables) is consistent with
 noise, not a weak-but-real signal.
@@ -398,8 +494,55 @@ Robustness, 2024+ only:
 NPI is a base-dated price-relative basket, not a daily momentum gauge, and
 two of its legs (uranium spot, policy score; 20% of weight) have no public
 daily history. It is reconstructed in \`server/data/index-history.json\`
-with those legs held at par for transparency, but no correlation claim is
-made for it here.
+with those legs held at par for transparency. No physical-correlation claim
+is made for it; an equity index claiming to be an equity index does not
+need one. The test it DOES need is redundancy.
+
+### NPI redundancy check
+
+Question: NLR (the VanEck Uranium+Nuclear ETF) is already 20% of NPI. Does
+the custom basket add anything beyond what that off-the-shelf ETF already
+shows? Tested on the NPI equity legs (80% of weight; uranium and policy at
+par), raw closes vs Jan-1-2024 bases, daily returns since 2024.
+
+| Benchmark | daily-return r vs NPI legs | R² | n |
+|---|---|---|---|
+${redundancy
+  .map((x) => `| ${x.name} alone | ${fmt(x.r)} | ${fmt(x.r * x.r)} | ${x.n} |`)
+  .join("\n")}
+
+${redundancyVerdict}
+
+Stated vs effective weights (${lastDate}; uranium and policy held at par):
+
+| Constituent | Stated | Effective today |
+|---|---|---|
+| CEG | ${(NPI_WEIGHTS.ceg * 100).toFixed(0)}% | ${(effWeights.CEG * 100).toFixed(0)}% |
+| VST | ${(NPI_WEIGHTS.vst * 100).toFixed(0)}% | ${(effWeights.VST * 100).toFixed(0)}% |
+| CCJ | ${(NPI_WEIGHTS.ccj * 100).toFixed(0)}% | ${(effWeights.CCJ * 100).toFixed(0)}% |
+| NLR | ${(NPI_WEIGHTS.nlr * 100).toFixed(0)}% | ${(effWeights.NLR * 100).toFixed(0)}% |
+| Uranium spot | ${(NPI_WEIGHTS.uranium * 100).toFixed(0)}% | ${(effWeights.uranium * 100).toFixed(0)}% |
+| Policy score | ${(NPI_WEIGHTS.policy * 100).toFixed(0)}% | ${(effWeights.policy * 100).toFixed(0)}% |
+
+The basket is never rebalanced, so winners compound their own influence.
+That is a legitimate index design (the S&P does it too), but it must be
+disclosed: today's NPI is mostly a merchant-power position, and "Nuclear"
+in the name overstates how nuclear-pure the exposure still is.
+
+Level tracking, both rebased to 100 on Jan 1, 2024: NPI equity legs at
+**${levelStats.npiLast.toFixed(1)}** vs NLR alone at **${levelStats.nlrLast.toFixed(1)}**
+(${levelStats.lastDate}). Mean absolute gap ${levelStats.meanAbsDiff.toFixed(1)} points,
+max ${levelStats.maxAbsDiff.toFixed(1)}. A persistent level gap with high daily
+correlation means the baskets ride the same daily news but compound
+differently; the merchant-power weighting (CEG+VST = 45%) is the driver.
+
+### Intra-product overlap: NPI vs Grid Stress
+
+CEG and VST are 45% of NPI and 75% of the Grid Stress basket. Daily
+correlation between NPI equity-leg returns and the Grid Stress signal:
+**r ${fmt(npiVsGs.r)}** (n=${npiVsGs.n}). Above ~0.8 the dashboard would be
+showing one signal twice under two names; the number here quantifies how
+much of "Grid Stress" is already inside NPI.
 
 ## Limitations
 
@@ -440,6 +583,13 @@ methodology section of the README for the formulas.
   );
   for (const c of gsConstituents)
     console.log(`  ${c.ticker}:`, leads.map((l) => fmt(c.byLead.get(l)!.r)).join(" / "));
+
+  console.log("\n=== NPI redundancy (daily-return r vs NPI equity legs) ===");
+  for (const x of redundancy) console.log(`  ${x.name}: r=${fmt(x.r)} R²=${fmt(x.r * x.r)} n=${x.n}`);
+  console.log(
+    `  Levels ${levelStats.lastDate}: NPI legs ${levelStats.npiLast.toFixed(1)} vs NLR ${levelStats.nlrLast.toFixed(1)}; mean|gap| ${levelStats.meanAbsDiff.toFixed(1)}, max ${levelStats.maxAbsDiff.toFixed(1)}`,
+  );
+  console.log(`  NPI vs Grid Stress signal: r=${fmt(npiVsGs.r)} n=${npiVsGs.n}`);
 }
 
 main().catch((err) => {

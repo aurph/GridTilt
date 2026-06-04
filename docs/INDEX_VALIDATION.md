@@ -28,6 +28,7 @@ electricity output, or are they pure market sentiment?
 
 - **AI Demand: no physical signal demonstrated** (no lead reaches r 0.2 (best -0.01); fails the single-constituent bar (best constituent reaches 0.17)). Labeled a market sentiment gauge, not a physical measurement.
 - **Grid Stress: no physical signal demonstrated** (no lead reaches r 0.2 (best 0.11); fails the single-constituent bar (best constituent reaches 0.24)). Labeled a market sentiment gauge, not a physical measurement.
+- NPI: **SINGLE-STOCK DOMINATED: VST alone explains 91% of NPI's daily variance** (r 0.95). Not redundant with the NLR ETF (r 0.72), but the un-rebalanced price-relative construction has let the best performer swallow the basket: VST's effective weight is 43% today vs 20% stated. The index increasingly tracks one company, not a complex.
 
 Sign instability across windows (see robustness tables) is consistent with
 noise, not a weak-but-real signal.
@@ -70,8 +71,56 @@ Robustness, 2024+ only:
 NPI is a base-dated price-relative basket, not a daily momentum gauge, and
 two of its legs (uranium spot, policy score; 20% of weight) have no public
 daily history. It is reconstructed in `server/data/index-history.json`
-with those legs held at par for transparency, but no correlation claim is
-made for it here.
+with those legs held at par for transparency. No physical-correlation claim
+is made for it; an equity index claiming to be an equity index does not
+need one. The test it DOES need is redundancy.
+
+### NPI redundancy check
+
+Question: NLR (the VanEck Uranium+Nuclear ETF) is already 20% of NPI. Does
+the custom basket add anything beyond what that off-the-shelf ETF already
+shows? Tested on the NPI equity legs (80% of weight; uranium and policy at
+par), raw closes vs Jan-1-2024 bases, daily returns since 2024.
+
+| Benchmark | daily-return r vs NPI legs | R² | n |
+|---|---|---|---|
+| NLR alone | 0.72 | 0.52 | 606 |
+| CEG alone | 0.88 | 0.78 | 606 |
+| VST alone | 0.95 | 0.91 | 606 |
+| CCJ alone | 0.61 | 0.37 | 606 |
+
+**SINGLE-STOCK DOMINATED: VST alone explains 91% of NPI's daily variance** (r 0.95). Not redundant with the NLR ETF (r 0.72), but the un-rebalanced price-relative construction has let the best performer swallow the basket: VST's effective weight is 43% today vs 20% stated. The index increasingly tracks one company, not a complex.
+
+Stated vs effective weights (2026-06-03; uranium and policy held at par):
+
+| Constituent | Stated | Effective today |
+|---|---|---|
+| CEG | 25% | 18% |
+| VST | 20% | 43% |
+| CCJ | 15% | 15% |
+| NLR | 20% | 16% |
+| Uranium spot | 10% | 4% |
+| Policy score | 10% | 4% |
+
+The basket is never rebalanced, so winners compound their own influence.
+That is a legitimate index design (the S&P does it too), but it must be
+disclosed: today's NPI is mostly a merchant-power position, and "Nuclear"
+in the name overstates how nuclear-pure the exposure still is.
+
+Level tracking, both rebased to 100 on Jan 1, 2024: NPI equity legs at
+**248.6** vs NLR alone at **193.9**
+(2026-06-03). Mean absolute gap 60.5 points,
+max 118.8. A persistent level gap with high daily
+correlation means the baskets ride the same daily news but compound
+differently; the merchant-power weighting (CEG+VST = 45%) is the driver.
+
+### Intra-product overlap: NPI vs Grid Stress
+
+CEG and VST are 45% of NPI and 75% of the Grid Stress basket. Daily
+correlation between NPI equity-leg returns and the Grid Stress signal:
+**r 0.96** (n=606). Above ~0.8 the dashboard would be
+showing one signal twice under two names; the number here quantifies how
+much of "Grid Stress" is already inside NPI.
 
 ## Limitations
 

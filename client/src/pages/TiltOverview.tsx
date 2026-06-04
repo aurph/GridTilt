@@ -1106,7 +1106,7 @@ export default function TiltOverview() {
               unit=""
               subtitle="Basket index, Jan 1, 2024 = 100"
               color="amber"
-              methodology="Weighted basket of CEG (25%), VST (20%), CCJ (15%), NLR ETF (20%), uranium spot (10%), and an SMR policy score (10%) derived from active nuclear PPAs in the tracked interconnection dataset. Weights are judgment calls, documented in the repo. Rebased to 100 on Jan 1, 2024."
+              methodology="Weighted basket of CEG (25%), VST (20%), CCJ (15%), NLR ETF (20%), uranium spot (10%), and an SMR policy score (10%) derived from active nuclear PPAs in the tracked interconnection dataset. Rebased to 100 on Jan 1, 2024 and never rebalanced, so winners compound their influence: as of the June 2026 study VST's effective weight had grown to ~43% and drives ~91% of daily variance. Full numbers in docs/INDEX_VALIDATION.md."
               constituents={c ? (
                 <>
                   <PerfRow label="CEG" perf={c.cegPerf} />
@@ -1125,7 +1125,7 @@ export default function TiltOverview() {
               unit="/100"
               subtitle="Market sentiment gauge"
               color="red"
-              methodology="Market sentiment gauge, 52-92 around a fixed 68 baseline. Reads today's weighted moves in VST (40%), CEG (35%), EQIX (25%). Backtested against physical electricity output: no correlation found, and the basket does not beat VST alone, so this reads power-equity momentum, not reserve margins or LMPs. Formulas and the full study are public in the repo (docs/INDEX_VALIDATION.md)."
+              methodology="Market sentiment gauge, 52-92 around a fixed 68 baseline. Reads today's weighted moves in VST (40%), CEG (35%), EQIX (25%). Backtested against physical electricity output: no correlation found, and the basket does not beat VST alone, so this reads power-equity momentum, not reserve margins or LMPs. It also co-moves with NPI at r 0.96 (CEG+VST sit in both baskets), so treat the two cards as one signal, not two. Formulas and the full study are public in the repo (docs/INDEX_VALIDATION.md)."
               constituents={c ? (
                 <>
                   <ConstituentRow label="VST" value={c.vstChange} />
