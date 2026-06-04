@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import {
   ComposedChart,
   Area,
@@ -406,7 +406,9 @@ function TopMoversSection({ topMovers, isLoading, isError }: { topMovers: TopMov
 function SectorPulseSection({ pulse, isLoading, isError }: { pulse: SectorPulseItem[]; isLoading: boolean; isError?: boolean }) {
   const maxAbs = Math.max(...(pulse.map((p) => Math.abs(p.avgChange))), 0.5);
   return (
-    <Card className="p-5 border-card-border">
+    // flex-1: stretches to the bottom of the left column so it ends flush
+    // with the right column instead of leaving a dead gap.
+    <Card className="p-5 border-card-border flex-1 flex flex-col">
       <div className="flex items-center gap-2 mb-4">
         <Activity className="h-3.5 w-3.5 text-[#F0A500]" />
         <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Sector Pulse</h2>
@@ -419,7 +421,9 @@ function SectorPulseSection({ pulse, isLoading, isError }: { pulse: SectorPulseI
           </TooltipContent>
         </UITooltip>
       </div>
-      <div className="space-y-2">
+      {/* justify-between with gap-2 as the floor: rows spread evenly when the
+          card is stretched, never tighter than the old space-y-2 rhythm. */}
+      <div className="flex-1 flex flex-col justify-between gap-2">
         {isError ? <ErrorCard label="Unable to load sector data" /> : isLoading
           ? Array(8).fill(null).map((_, i) => (
               <div key={i} className="flex items-center gap-3">
@@ -625,29 +629,13 @@ function CatalystCalendarSection() {
   );
 }
 
-function XFeedSection() {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [loaded, setLoaded] = useState(false);
-
-  useEffect(() => {
-    const w = window as any;
-    const tryLoad = () => {
-      if (w.twttr && w.twttr.widgets) {
-        w.twttr.widgets.load(containerRef.current);
-        setLoaded(true);
-      }
-    };
-    tryLoad();
-    const timer = setTimeout(tryLoad, 2000);
-    const fallback = setTimeout(() => {
-      if (!w.twttr || !w.twttr.widgets) setLoaded(true);
-    }, 6000);
-    return () => { clearTimeout(timer); clearTimeout(fallback); };
-  }, []);
-
+// X retired third-party timeline embeds, so the old widget rendered as a
+// permanently-empty box. A slim follow strip keeps the social pointer
+// without the dead space.
+function XFollowCard() {
   return (
-    <Card className="p-5 border-card-border overflow-hidden">
-      <div className="flex items-center justify-between mb-3">
+    <Card className="p-5 border-card-border">
+      <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="h-3.5 w-3.5 flex items-center justify-center">
             <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 fill-current text-[#F0A500]">
@@ -666,42 +654,6 @@ function XFeedSection() {
           Follow <ExternalLink className="h-3 w-3" />
         </a>
       </div>
-      <div ref={containerRef} className="overflow-hidden rounded-md">
-        <a
-          className="twitter-timeline"
-          data-theme="dark"
-          data-tweet-limit="5"
-          data-chrome="noheader nofooter noborders transparent"
-          data-dnt="true"
-          href="https://twitter.com/gridtilt?ref_src=twsrc%5Etfw"
-        >
-          Tweets by @gridtilt
-        </a>
-      </div>
-      {!loaded && (
-        <div className="space-y-3 mt-2">
-          {Array(3).fill(null).map((_, i) => (
-            <div key={i} className="space-y-1.5">
-              <Skeleton className="h-3 w-full" />
-              <Skeleton className="h-3 w-4/5" />
-              <Skeleton className="h-3 w-2/3" />
-            </div>
-          ))}
-        </div>
-      )}
-      {loaded && !(window as any).twttr?.widgets && (
-        <div className="text-center py-6">
-          <p className="text-xs text-muted-foreground mb-2">Feed unavailable (blocked or loading)</p>
-          <a
-            href="https://x.com/gridtilt"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs text-[#F07800] hover:text-[#F0A500] transition-colors font-medium"
-          >
-            View @gridtilt on X
-          </a>
-        </div>
-      )}
     </Card>
   );
 }
@@ -946,16 +898,14 @@ export default function TiltOverview() {
 
         {/* Dashboard density - 2-col */}
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-          <div className="lg:col-span-3 space-y-4">
+          <div className="lg:col-span-3 flex flex-col gap-4">
             <TopMoversSection topMovers={topMovers ?? []} isLoading={topMoversLoading} isError={topMoversError} />
             <SectorPulseSection pulse={sectorPulse ?? []} isLoading={sectorPulseLoading} isError={sectorPulseError} />
           </div>
           <div className="lg:col-span-2 space-y-4">
             <CatalystCalendarSection />
             <NextCatalystsWidget />
-            <div className="hidden md:block">
-              <XFeedSection />
-            </div>
+            <XFollowCard />
           </div>
         </div>
 

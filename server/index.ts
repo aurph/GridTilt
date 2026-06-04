@@ -26,11 +26,13 @@ declare module "http" {
 // ─── Security headers via helmet ─────────────────────────────────────────
 //
 // CSP rationale:
-//   script-src       'self' + platform.twitter.com    (the Twitter widget
-//                                                      is the only external
-//                                                      script today). Dev
-//                                                      mode adds 'unsafe-eval'
-//                                                      + 'unsafe-inline' for
+//   script-src       'self'                           (no external scripts;
+//                                                      the old Twitter widget
+//                                                      was removed when X
+//                                                      retired timeline
+//                                                      embeds). Dev mode adds
+//                                                      'unsafe-eval' +
+//                                                      'unsafe-inline' for
 //                                                      Vite HMR; production
 //                                                      stays tight.
 //   style-src        'self' + 'unsafe-inline'         (React inline-style
@@ -41,7 +43,7 @@ declare module "http" {
 //   img-src          'self' + data: + https:          (allow third-party
 //                                                      images we cite)
 //   connect-src      'self' (+ ws/wss in dev for HMR)
-//   frame-src        'self' + platform.twitter.com    (embedded tweets)
+//   frame-src        'self'                           (no third-party frames)
 //   frame-ancestors  'none'                           (GridTilt is never
 //                                                      embedded; prevents
 //                                                      clickjacking)
@@ -58,28 +60,23 @@ app.use(
       directives: {
         defaultSrc: ["'self'"],
         scriptSrc: isProduction
-          ? ["'self'", "https://platform.twitter.com"]
-          : [
-              "'self'",
-              "'unsafe-inline'",
-              "'unsafe-eval'",
-              "https://platform.twitter.com",
-            ],
+          ? ["'self'"]
+          : ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
         styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
         fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
         imgSrc: ["'self'", "data:", "https:"],
         connectSrc: isProduction
           ? ["'self'"]
           : ["'self'", "ws:", "wss:"],
-        frameSrc: ["'self'", "https://platform.twitter.com"],
+        frameSrc: ["'self'"],
         frameAncestors: ["'none'"],
         objectSrc: ["'none'"],
         baseUri: ["'self'"],
       },
     },
-    // Don't apply COEP — would break loading external images and the
-    // Twitter widget without per-resource Cross-Origin-Resource-Policy
-    // headers from those origins, which we don't control.
+    // Don't apply COEP — would break loading external images without
+    // per-resource Cross-Origin-Resource-Policy headers from those
+    // origins, which we don't control.
     crossOriginEmbedderPolicy: false,
     hsts: isProduction
       ? { maxAge: 31536000, includeSubDomains: true, preload: true }
