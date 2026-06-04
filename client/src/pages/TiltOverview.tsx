@@ -353,7 +353,7 @@ function ErrorCard({ label }: { label: string }) {
   );
 }
 
-function TopMoversSection({ topMovers, isLoading, isError }: { topMovers: TopMover[]; isLoading: boolean; isError?: boolean }) {
+function TopMoversSection({ topMovers, pulse, isLoading, isError }: { topMovers: TopMover[]; pulse: SectorPulseItem[]; isLoading: boolean; isError?: boolean }) {
   return (
     <Card className="p-5 border-card-border">
       <div className="flex items-center gap-2 mb-4">
@@ -399,63 +399,188 @@ function TopMoversSection({ topMovers, isLoading, isError }: { topMovers: TopMov
               );
             })}
       </div>
+      {/* Sector averages, absorbed from the old Sector Pulse card: same
+          "what moved today" fact, one card instead of two. */}
+      {pulse.length > 0 && (
+        <div className="mt-4 pt-3 border-t border-border flex flex-wrap items-center gap-1.5" data-testid="sector-chips">
+          <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground/60 mr-0.5">sectors</span>
+          {[...pulse].sort((a, b) => b.avgChange - a.avgChange).map((p) => {
+            const isUp = p.avgChange >= 0;
+            const sc = SECTOR_COLORS[p.sector] ?? "#6b7280";
+            return (
+              <span
+                key={p.sector}
+                className="font-mono text-[10px] px-1.5 py-0.5 rounded border"
+                style={{ borderColor: `${sc}30`, backgroundColor: `${sc}0d` }}
+                data-testid={`sector-chip-${p.sector}`}
+              >
+                <span className="text-muted-foreground">{p.label}</span>{" "}
+                <span className={isUp ? "text-green-400" : "text-red-400"}>
+                  {isUp ? "+" : ""}{p.avgChange.toFixed(2)}%
+                </span>
+              </span>
+            );
+          })}
+        </div>
+      )}
     </Card>
   );
 }
 
-function SectorPulseSection({ pulse, isLoading, isError }: { pulse: SectorPulseItem[]; isLoading: boolean; isError?: boolean }) {
-  const maxAbs = Math.max(...(pulse.map((p) => Math.abs(p.avgChange))), 0.5);
+interface IndexHistoryDay {
+  date: string;
+  aiDemand: number | null;
+  gridStress: number | null;
+  npiEquityLegs?: number | null;
+  npi?: number | null;
+}
+
+const MONTH_ABBR = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+function gaugeTickLabel(date: string): string {
+  const [y, m] = date.split("-");
+  return `${MONTH_ABBR[Number(m) - 1]} '${y.slice(2)}`;
+}
+
+// Replaces the old Sector Pulse card (its sector averages now live as chips
+// inside Top Movers). Plots the daily gauge history that the validation
+// study reconstructed and the server now records: one consistent series,
+// our own data, time depth instead of a second "what moved today" list.
+function GaugeHistoryCard({ live }: { live: { npi: number; ai: number; gs: number } | null }) {
+  const { data, isLoading } = useQuery<{ days: IndexHistoryDay[] }>({
+    queryKey: ["/api/index-history"],
+    refetchInterval: 30 * 60_000,
+  });
+  const series = (data?.days ?? [])
+    .filter((d) => d.npiEquityLegs != null || d.aiDemand != null)
+    .map((d) => ({ date: d.date, npi: d.npiEquityLegs ?? null, ai: d.aiDemand, gs: d.gridStress }));
+
   return (
-    // flex-1: stretches to the bottom of the left column so it ends flush
-    // with the right column instead of leaving a dead gap.
-    <Card className="p-5 border-card-border flex-1 flex flex-col">
-      <div className="flex items-center gap-2 mb-4">
+    // flex-1: fills the left column so it ends flush with the right column.
+    <Card className="p-5 border-card-border flex-1 flex flex-col" data-testid="gauge-history">
+      <div className="flex items-center gap-2 mb-1">
         <Activity className="h-3.5 w-3.5 text-[#F0A500]" />
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Sector Pulse</h2>
+        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Gauges Since Jan 2024</h2>
         <UITooltip>
           <TooltipTrigger>
             <Info className="h-3.5 w-3.5 text-muted-foreground" />
           </TooltipTrigger>
-          <TooltipContent>
-            <p className="text-xs">Average intraday % change per stack layer. Shows which sectors are leading or lagging today.</p>
+          <TooltipContent className="max-w-xs">
+            <p className="text-xs">
+              Daily series reconstructed from public prices with the shipped formulas, then recorded live going
+              forward (one methodology end to end; reproduce with npm run backtest:indices). The NPI line is the
+              equity legs with uranium and policy at par; the headline number is the full live NPI including both.
+              Sparklines show the two sentiment gauges oscillating around their fixed baselines.
+            </p>
           </TooltipContent>
         </UITooltip>
+        {live && (
+          <span className="ml-auto font-mono text-sm font-bold text-[#F0A500]" data-testid="gauge-history-npi-live">
+            NPI {live.npi.toFixed(1)}
+          </span>
+        )}
       </div>
-      {/* justify-between with gap-2 as the floor: rows spread evenly when the
-          card is stretched, never tighter than the old space-y-2 rhythm. */}
-      <div className="flex-1 flex flex-col justify-between gap-2">
-        {isError ? <ErrorCard label="Unable to load sector data" /> : isLoading
-          ? Array(8).fill(null).map((_, i) => (
-              <div key={i} className="flex items-center gap-3">
-                <Skeleton className="h-3 w-20" />
-                <Skeleton className="h-2 flex-1" />
-                <Skeleton className="h-3 w-10" />
-              </div>
-            ))
-          : pulse.length === 0 ? <ErrorCard label="No sector data available" /> : [...pulse].sort((a, b) => b.avgChange - a.avgChange).map((p) => {
-              const isUp = p.avgChange >= 0;
-              const sc = SECTOR_COLORS[p.sector] ?? "#6b7280";
-              const barWidth = Math.abs(p.avgChange) / maxAbs * 100;
-              return (
-                <div key={p.sector} className="flex items-center gap-3" data-testid={`sector-pulse-${p.sector}`}>
-                  <span className="text-xs text-muted-foreground w-24 flex-shrink-0 truncate">{p.label}</span>
-                  <div className="flex-1 h-1.5 bg-muted/30 rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all duration-500"
-                      style={{
-                        width: `${barWidth}%`,
-                        backgroundColor: isUp ? sc : "#ef4444",
-                        opacity: 0.85,
-                      }}
-                    />
-                  </div>
-                  <span className={`font-mono text-xs font-semibold w-12 text-right flex-shrink-0 ${isUp ? "text-green-400" : "text-red-400"}`}>
-                    {isUp ? "+" : ""}{p.avgChange.toFixed(2)}%
+      <p className="text-[10px] font-mono text-muted-foreground/60 mb-3">
+        line: NPI equity legs · headline: full live NPI · /api/index-history
+      </p>
+
+      {isLoading || series.length === 0 ? (
+        <div className="flex-1 flex flex-col justify-center gap-2 min-h-[180px]">
+          <Skeleton className="h-3 w-1/3" />
+          <Skeleton className="h-32 w-full" />
+        </div>
+      ) : (
+        <>
+          <div className="flex-1 min-h-[180px]" data-testid="gauge-history-chart">
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart data={series} margin={{ top: 6, right: 8, bottom: 0, left: 0 }}>
+                <defs>
+                  <linearGradient id="npiHistGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#F07800" stopOpacity={0.28} />
+                    <stop offset="100%" stopColor="#F07800" stopOpacity={0.02} />
+                  </linearGradient>
+                </defs>
+                <XAxis
+                  dataKey="date"
+                  tick={{ fill: "#9ca3af", fontSize: 10 }}
+                  tickLine={false}
+                  axisLine={{ stroke: "rgba(255,255,255,0.08)" }}
+                  tickFormatter={gaugeTickLabel}
+                  minTickGap={48}
+                />
+                <YAxis
+                  tick={{ fill: "#9ca3af", fontSize: 10 }}
+                  tickLine={false}
+                  axisLine={false}
+                  domain={["dataMin - 8", "dataMax + 8"]}
+                  width={36}
+                />
+                <Tooltip
+                  contentStyle={{
+                    background: "#131211",
+                    border: "1px solid rgba(255,255,255,0.14)",
+                    fontSize: 12,
+                    padding: "8px 10px",
+                  }}
+                  labelStyle={{ color: "#F2F1ED", fontWeight: 600, marginBottom: 4, fontFamily: "JetBrains Mono, monospace", fontSize: 11 }}
+                  itemStyle={{ color: "#F2F1ED", padding: 0 }}
+                  formatter={(value, name) =>
+                    value == null ? ["n/a", name] : [Number(value).toFixed(1), name]
+                  }
+                />
+                <ReferenceLine
+                  y={100}
+                  stroke="rgba(255,255,255,0.18)"
+                  strokeDasharray="4 3"
+                  label={{ value: "Jan 1 2024 = 100", position: "insideBottomLeft", fill: "#9ca3af", fontSize: 9 }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="npi"
+                  name="NPI (equity legs)"
+                  stroke="#F07800"
+                  strokeWidth={1.8}
+                  fill="url(#npiHistGrad)"
+                  dot={false}
+                  connectNulls
+                />
+              </ComposedChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-border">
+            {(
+              [
+                { key: "ai", label: "AI Demand", color: "#F0A500", value: live?.ai ?? null },
+                { key: "gs", label: "Grid Stress", color: "#ef4444", value: live?.gs ?? null },
+              ] as const
+            ).map((g) => (
+              <div key={g.key} data-testid={`gauge-spark-${g.key}`}>
+                <div className="flex items-baseline justify-between mb-1">
+                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{g.label}</span>
+                  <span className="font-mono text-xs font-semibold text-foreground">
+                    {g.value != null ? g.value.toFixed(1) : "–"}
                   </span>
                 </div>
-              );
-            })}
-      </div>
+                <div className="h-9">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <ComposedChart data={series} margin={{ top: 2, right: 0, bottom: 2, left: 0 }}>
+                      <Line
+                        type="monotone"
+                        dataKey={g.key}
+                        stroke={g.color}
+                        strokeWidth={1}
+                        dot={false}
+                        connectNulls
+                        isAnimationActive={false}
+                      />
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
     </Card>
   );
 }
@@ -867,7 +992,7 @@ export default function TiltOverview() {
     refetchInterval: 900000,
   });
 
-  const { data: sectorPulse, isLoading: sectorPulseLoading, isError: sectorPulseError } = useQuery<SectorPulseItem[]>({
+  const { data: sectorPulse } = useQuery<SectorPulseItem[]>({
     queryKey: ["/api/sector-pulse"],
     refetchInterval: 900000,
   });
@@ -899,8 +1024,15 @@ export default function TiltOverview() {
         {/* Dashboard density - 2-col */}
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
           <div className="lg:col-span-3 flex flex-col gap-4">
-            <TopMoversSection topMovers={topMovers ?? []} isLoading={topMoversLoading} isError={topMoversError} />
-            <SectorPulseSection pulse={sectorPulse ?? []} isLoading={sectorPulseLoading} isError={sectorPulseError} />
+            <TopMoversSection
+              topMovers={topMovers ?? []}
+              pulse={sectorPulse ?? []}
+              isLoading={topMoversLoading}
+              isError={topMoversError}
+            />
+            <GaugeHistoryCard
+              live={kpiData ? { npi: kpiData.npiValue, ai: kpiData.aiPowerIndex, gs: kpiData.gridStress } : null}
+            />
           </div>
           <div className="lg:col-span-2 space-y-4">
             <CatalystCalendarSection />
