@@ -1,0 +1,3653 @@
+{
+  "generated": "2026-06-04T02:12:39.350Z",
+  "method": "Deterministic reconstruction from public daily prices using server/indices.ts. Regenerate any time with: npm run backtest:indices",
+  "notes": {
+    "aiDemand": "Shipped formula over adjusted daily closes.",
+    "gridStress": "Shipped formula over adjusted daily closes.",
+    "npiEquityLegs": "Raw closes vs Jan-1-2024 bases with uranium and policy legs held at par (20% of weight). NOT the full production NPI."
+  },
+  "days": [
+    {
+      "date": "2024-01-02",
+      "aiDemand": 69.5,
+      "gridStress": 67.2,
+      "npiEquityLegs": 100.6
+    },
+    {
+      "date": "2024-01-03",
+      "aiDemand": 70.6,
+      "gridStress": 67.9,
+      "npiEquityLegs": 100.6
+    },
+    {
+      "date": "2024-01-04",
+      "aiDemand": 72.2,
+      "gridStress": 68,
+      "npiEquityLegs": 101.2
+    },
+    {
+      "date": "2024-01-05",
+      "aiDemand": 73.2,
+      "gridStress": 68.3,
+      "npiEquityLegs": 101.3
+    },
+    {
+      "date": "2024-01-08",
+      "aiDemand": 76.7,
+      "gridStress": 69.3,
+      "npiEquityLegs": 102.2
+    },
+    {
+      "date": "2024-01-09",
+      "aiDemand": 72.2,
+      "gridStress": 68.2,
+      "npiEquityLegs": 103.5
+    },
+    {
+      "date": "2024-01-10",
+      "aiDemand": 72.7,
+      "gridStress": 66.8,
+      "npiEquityLegs": 103
+    },
+    {
+      "date": "2024-01-11",
+      "aiDemand": 72.7,
+      "gridStress": 67.4,
+      "npiEquityLegs": 103.4
+    },
+    {
+      "date": "2024-01-12",
+      "aiDemand": 72.1,
+      "gridStress": 68.8,
+      "npiEquityLegs": 105.6
+    },
+    {
+      "date": "2024-01-16",
+      "aiDemand": 74.2,
+      "gridStress": 67.9,
+      "npiEquityLegs": 105
+    },
+    {
+      "date": "2024-01-17",
+      "aiDemand": 71.2,
+      "gridStress": 67.8,
+      "npiEquityLegs": 104.5
+    },
+    {
+      "date": "2024-01-18",
+      "aiDemand": 76,
+      "gridStress": 67.4,
+      "npiEquityLegs": 104.3
+    },
+    {
+      "date": "2024-01-19",
+      "aiDemand": 75.2,
+      "gridStress": 70,
+      "npiEquityLegs": 105
+    },
+    {
+      "date": "2024-01-22",
+      "aiDemand": 72.2,
+      "gridStress": 68.6,
+      "npiEquityLegs": 104.5
+    },
+    {
+      "date": "2024-01-23",
+      "aiDemand": 72,
+      "gridStress": 68.2,
+      "npiEquityLegs": 105.5
+    },
+    {
+      "date": "2024-01-24",
+      "aiDemand": 73.8,
+      "gridStress": 66.4,
+      "npiEquityLegs": 104.4
+    },
+    {
+      "date": "2024-01-25",
+      "aiDemand": 73,
+      "gridStress": 71.3,
+      "npiEquityLegs": 105.5
+    },
+    {
+      "date": "2024-01-26",
+      "aiDemand": 71.4,
+      "gridStress": 68.4,
+      "npiEquityLegs": 106.1
+    },
+    {
+      "date": "2024-01-29",
+      "aiDemand": 73.9,
+      "gridStress": 68.3,
+      "npiEquityLegs": 106.2
+    },
+    {
+      "date": "2024-01-30",
+      "aiDemand": 71.7,
+      "gridStress": 69.2,
+      "npiEquityLegs": 107.3
+    },
+    {
+      "date": "2024-01-31",
+      "aiDemand": 69.8,
+      "gridStress": 67.5,
+      "npiEquityLegs": 107.1
+    },
+    {
+      "date": "2024-02-01",
+      "aiDemand": 73.7,
+      "gridStress": 72.3,
+      "npiEquityLegs": 111.4
+    },
+    {
+      "date": "2024-02-02",
+      "aiDemand": 75.1,
+      "gridStress": 69.7,
+      "npiEquityLegs": 111.8
+    },
+    {
+      "date": "2024-02-05",
+      "aiDemand": 75,
+      "gridStress": 66,
+      "npiEquityLegs": 110
+    },
+    {
+      "date": "2024-02-06",
+      "aiDemand": 70.9,
+      "gridStress": 69.1,
+      "npiEquityLegs": 110.5
+    },
+    {
+      "date": "2024-02-07",
+      "aiDemand": 75.1,
+      "gridStress": 69.1,
+      "npiEquityLegs": 111.5
+    },
+    {
+      "date": "2024-02-08",
+      "aiDemand": 74,
+      "gridStress": 67,
+      "npiEquityLegs": 108.8
+    },
+    {
+      "date": "2024-02-09",
+      "aiDemand": 73.7,
+      "gridStress": 68.7,
+      "npiEquityLegs": 108.9
+    },
+    {
+      "date": "2024-02-12",
+      "aiDemand": 71.3,
+      "gridStress": 66.5,
+      "npiEquityLegs": 107.8
+    },
+    {
+      "date": "2024-02-13",
+      "aiDemand": 69.9,
+      "gridStress": 68.6,
+      "npiEquityLegs": 107.7
+    },
+    {
+      "date": "2024-02-14",
+      "aiDemand": 73.7,
+      "gridStress": 68.3,
+      "npiEquityLegs": 108.1
+    },
+    {
+      "date": "2024-02-15",
+      "aiDemand": 72.3,
+      "gridStress": 71,
+      "npiEquityLegs": 109.4
+    },
+    {
+      "date": "2024-02-16",
+      "aiDemand": 70.4,
+      "gridStress": 67.5,
+      "npiEquityLegs": 109.3
+    },
+    {
+      "date": "2024-02-20",
+      "aiDemand": 69.8,
+      "gridStress": 68.6,
+      "npiEquityLegs": 109.2
+    },
+    {
+      "date": "2024-02-21",
+      "aiDemand": 71.1,
+      "gridStress": 68.2,
+      "npiEquityLegs": 109.4
+    },
+    {
+      "date": "2024-02-22",
+      "aiDemand": 82.2,
+      "gridStress": 70.2,
+      "npiEquityLegs": 110.2
+    },
+    {
+      "date": "2024-02-23",
+      "aiDemand": 72.3,
+      "gridStress": 69,
+      "npiEquityLegs": 110.5
+    },
+    {
+      "date": "2024-02-26",
+      "aiDemand": 73,
+      "gridStress": 67.8,
+      "npiEquityLegs": 110.8
+    },
+    {
+      "date": "2024-02-27",
+      "aiDemand": 71.8,
+      "gridStress": 75.7,
+      "npiEquityLegs": 117.1
+    },
+    {
+      "date": "2024-02-28",
+      "aiDemand": 71.2,
+      "gridStress": 73.5,
+      "npiEquityLegs": 120.9
+    },
+    {
+      "date": "2024-02-29",
+      "aiDemand": 73.3,
+      "gridStress": 68.6,
+      "npiEquityLegs": 121.4
+    },
+    {
+      "date": "2024-03-01",
+      "aiDemand": 76.4,
+      "gridStress": 68.6,
+      "npiEquityLegs": 122.6
+    },
+    {
+      "date": "2024-03-04",
+      "aiDemand": 75.2,
+      "gridStress": 71.4,
+      "npiEquityLegs": 125
+    },
+    {
+      "date": "2024-03-05",
+      "aiDemand": 71,
+      "gridStress": 69,
+      "npiEquityLegs": 126.3
+    },
+    {
+      "date": "2024-03-06",
+      "aiDemand": 75.5,
+      "gridStress": 70.3,
+      "npiEquityLegs": 128.8
+    },
+    {
+      "date": "2024-03-07",
+      "aiDemand": 76.4,
+      "gridStress": 68.5,
+      "npiEquityLegs": 130.7
+    },
+    {
+      "date": "2024-03-08",
+      "aiDemand": 68.6,
+      "gridStress": 65.6,
+      "npiEquityLegs": 126.6
+    },
+    {
+      "date": "2024-03-11",
+      "aiDemand": 68.5,
+      "gridStress": 65.4,
+      "npiEquityLegs": 124.1
+    },
+    {
+      "date": "2024-03-12",
+      "aiDemand": 77.1,
+      "gridStress": 69.6,
+      "npiEquityLegs": 126.1
+    },
+    {
+      "date": "2024-03-13",
+      "aiDemand": 69.7,
+      "gridStress": 67.8,
+      "npiEquityLegs": 125.7
+    },
+    {
+      "date": "2024-03-14",
+      "aiDemand": 69.3,
+      "gridStress": 68.5,
+      "npiEquityLegs": 126.3
+    },
+    {
+      "date": "2024-03-15",
+      "aiDemand": 71.3,
+      "gridStress": 66.8,
+      "npiEquityLegs": 126.1
+    },
+    {
+      "date": "2024-03-18",
+      "aiDemand": 72.8,
+      "gridStress": 69.6,
+      "npiEquityLegs": 127.7
+    },
+    {
+      "date": "2024-03-19",
+      "aiDemand": 71.7,
+      "gridStress": 69.2,
+      "npiEquityLegs": 128.8
+    },
+    {
+      "date": "2024-03-20",
+      "aiDemand": 72.8,
+      "gridStress": 70,
+      "npiEquityLegs": 132.3
+    },
+    {
+      "date": "2024-03-21",
+      "aiDemand": 75.3,
+      "gridStress": 68.3,
+      "npiEquityLegs": 133.4
+    },
+    {
+      "date": "2024-03-22",
+      "aiDemand": 73.5,
+      "gridStress": 68.9,
+      "npiEquityLegs": 134.8
+    },
+    {
+      "date": "2024-03-25",
+      "aiDemand": 73.2,
+      "gridStress": 70.7,
+      "npiEquityLegs": 137.4
+    },
+    {
+      "date": "2024-03-26",
+      "aiDemand": 71,
+      "gridStress": 66,
+      "npiEquityLegs": 134.7
+    },
+    {
+      "date": "2024-03-27",
+      "aiDemand": 70.9,
+      "gridStress": 68.6,
+      "npiEquityLegs": 135.3
+    },
+    {
+      "date": "2024-03-28",
+      "aiDemand": 72,
+      "gridStress": 69.1,
+      "npiEquityLegs": 136.6
+    },
+    {
+      "date": "2024-04-01",
+      "aiDemand": 73.4,
+      "gridStress": 68.5,
+      "npiEquityLegs": 139.8
+    },
+    {
+      "date": "2024-04-02",
+      "aiDemand": 70.8,
+      "gridStress": 68,
+      "npiEquityLegs": 140.3
+    },
+    {
+      "date": "2024-04-03",
+      "aiDemand": 72.8,
+      "gridStress": 69.7,
+      "npiEquityLegs": 143.8
+    },
+    {
+      "date": "2024-04-04",
+      "aiDemand": 69.1,
+      "gridStress": 64.7,
+      "npiEquityLegs": 139.3
+    },
+    {
+      "date": "2024-04-05",
+      "aiDemand": 73.6,
+      "gridStress": 72.7,
+      "npiEquityLegs": 144.9
+    },
+    {
+      "date": "2024-04-08",
+      "aiDemand": 71.9,
+      "gridStress": 67.4,
+      "npiEquityLegs": 143.7
+    },
+    {
+      "date": "2024-04-09",
+      "aiDemand": 71.9,
+      "gridStress": 65.1,
+      "npiEquityLegs": 139.2
+    },
+    {
+      "date": "2024-04-10",
+      "aiDemand": 72.3,
+      "gridStress": 68.5,
+      "npiEquityLegs": 141
+    },
+    {
+      "date": "2024-04-11",
+      "aiDemand": 74.9,
+      "gridStress": 69,
+      "npiEquityLegs": 143
+    },
+    {
+      "date": "2024-04-12",
+      "aiDemand": 68.8,
+      "gridStress": 66.2,
+      "npiEquityLegs": 140.5
+    },
+    {
+      "date": "2024-04-15",
+      "aiDemand": 69.5,
+      "gridStress": 65.3,
+      "npiEquityLegs": 137.5
+    },
+    {
+      "date": "2024-04-16",
+      "aiDemand": 72.7,
+      "gridStress": 67.8,
+      "npiEquityLegs": 137
+    },
+    {
+      "date": "2024-04-17",
+      "aiDemand": 68.9,
+      "gridStress": 68.1,
+      "npiEquityLegs": 137.6
+    },
+    {
+      "date": "2024-04-18",
+      "aiDemand": 70.4,
+      "gridStress": 66.3,
+      "npiEquityLegs": 135.4
+    },
+    {
+      "date": "2024-04-19",
+      "aiDemand": 65.6,
+      "gridStress": 67.6,
+      "npiEquityLegs": 134.6
+    },
+    {
+      "date": "2024-04-22",
+      "aiDemand": 75.2,
+      "gridStress": 69.3,
+      "npiEquityLegs": 135.5
+    },
+    {
+      "date": "2024-04-23",
+      "aiDemand": 75.4,
+      "gridStress": 70.2,
+      "npiEquityLegs": 138.2
+    },
+    {
+      "date": "2024-04-24",
+      "aiDemand": 70,
+      "gridStress": 68.6,
+      "npiEquityLegs": 139.2
+    },
+    {
+      "date": "2024-04-25",
+      "aiDemand": 74,
+      "gridStress": 68.9,
+      "npiEquityLegs": 141.2
+    },
+    {
+      "date": "2024-04-26",
+      "aiDemand": 75.6,
+      "gridStress": 68,
+      "npiEquityLegs": 141.8
+    },
+    {
+      "date": "2024-04-29",
+      "aiDemand": 71.8,
+      "gridStress": 70.8,
+      "npiEquityLegs": 145.9
+    },
+    {
+      "date": "2024-04-30",
+      "aiDemand": 70.3,
+      "gridStress": 65.9,
+      "npiEquityLegs": 142
+    },
+    {
+      "date": "2024-05-01",
+      "aiDemand": 68.6,
+      "gridStress": 67.7,
+      "npiEquityLegs": 143.5
+    },
+    {
+      "date": "2024-05-02",
+      "aiDemand": 74.4,
+      "gridStress": 70,
+      "npiEquityLegs": 146.9
+    },
+    {
+      "date": "2024-05-03",
+      "aiDemand": 75.3,
+      "gridStress": 70.5,
+      "npiEquityLegs": 149.7
+    },
+    {
+      "date": "2024-05-06",
+      "aiDemand": 74.7,
+      "gridStress": 69.1,
+      "npiEquityLegs": 152.8
+    },
+    {
+      "date": "2024-05-07",
+      "aiDemand": 71.3,
+      "gridStress": 68.4,
+      "npiEquityLegs": 152.5
+    },
+    {
+      "date": "2024-05-08",
+      "aiDemand": 71.8,
+      "gridStress": 72.3,
+      "npiEquityLegs": 158.3
+    },
+    {
+      "date": "2024-05-09",
+      "aiDemand": 73.5,
+      "gridStress": 74,
+      "npiEquityLegs": 163.7
+    },
+    {
+      "date": "2024-05-10",
+      "aiDemand": 74,
+      "gridStress": 67.5,
+      "npiEquityLegs": 163
+    },
+    {
+      "date": "2024-05-13",
+      "aiDemand": 72.6,
+      "gridStress": 67,
+      "npiEquityLegs": 159.8
+    },
+    {
+      "date": "2024-05-14",
+      "aiDemand": 74.3,
+      "gridStress": 69.7,
+      "npiEquityLegs": 162
+    },
+    {
+      "date": "2024-05-15",
+      "aiDemand": 75.5,
+      "gridStress": 71.9,
+      "npiEquityLegs": 167.1
+    },
+    {
+      "date": "2024-05-16",
+      "aiDemand": 70.9,
+      "gridStress": 65,
+      "npiEquityLegs": 163.2
+    },
+    {
+      "date": "2024-05-17",
+      "aiDemand": 70.6,
+      "gridStress": 67.9,
+      "npiEquityLegs": 165
+    },
+    {
+      "date": "2024-05-20",
+      "aiDemand": 74,
+      "gridStress": 67.1,
+      "npiEquityLegs": 164.1
+    },
+    {
+      "date": "2024-05-21",
+      "aiDemand": 72.2,
+      "gridStress": 70.5,
+      "npiEquityLegs": 167.3
+    },
+    {
+      "date": "2024-05-22",
+      "aiDemand": 71.8,
+      "gridStress": 67.3,
+      "npiEquityLegs": 165.8
+    },
+    {
+      "date": "2024-05-23",
+      "aiDemand": 76.2,
+      "gridStress": 68.5,
+      "npiEquityLegs": 166.8
+    },
+    {
+      "date": "2024-05-24",
+      "aiDemand": 74.2,
+      "gridStress": 71.9,
+      "npiEquityLegs": 173.4
+    },
+    {
+      "date": "2024-05-28",
+      "aiDemand": 75.8,
+      "gridStress": 69.8,
+      "npiEquityLegs": 176.9
+    },
+    {
+      "date": "2024-05-29",
+      "aiDemand": 71,
+      "gridStress": 65.2,
+      "npiEquityLegs": 172.9
+    },
+    {
+      "date": "2024-05-30",
+      "aiDemand": 69.2,
+      "gridStress": 69.4,
+      "npiEquityLegs": 175.2
+    },
+    {
+      "date": "2024-05-31",
+      "aiDemand": 71.1,
+      "gridStress": 64.5,
+      "npiEquityLegs": 169.8
+    },
+    {
+      "date": "2024-06-03",
+      "aiDemand": 75.2,
+      "gridStress": 63.8,
+      "npiEquityLegs": 163.3
+    },
+    {
+      "date": "2024-06-04",
+      "aiDemand": 72.3,
+      "gridStress": 66,
+      "npiEquityLegs": 159.2
+    },
+    {
+      "date": "2024-06-05",
+      "aiDemand": 77.3,
+      "gridStress": 70,
+      "npiEquityLegs": 162.1
+    },
+    {
+      "date": "2024-06-06",
+      "aiDemand": 70.9,
+      "gridStress": 64.5,
+      "npiEquityLegs": 157.5
+    },
+    {
+      "date": "2024-06-07",
+      "aiDemand": 72.2,
+      "gridStress": 66.3,
+      "npiEquityLegs": 154.5
+    },
+    {
+      "date": "2024-06-10",
+      "aiDemand": 73.9,
+      "gridStress": 72.7,
+      "npiEquityLegs": 160
+    },
+    {
+      "date": "2024-06-11",
+      "aiDemand": 71.2,
+      "gridStress": 69.9,
+      "npiEquityLegs": 161.1
+    },
+    {
+      "date": "2024-06-12",
+      "aiDemand": 75.8,
+      "gridStress": 67.7,
+      "npiEquityLegs": 161.6
+    },
+    {
+      "date": "2024-06-13",
+      "aiDemand": 74.2,
+      "gridStress": 67.5,
+      "npiEquityLegs": 160.8
+    },
+    {
+      "date": "2024-06-14",
+      "aiDemand": 72.5,
+      "gridStress": 66.8,
+      "npiEquityLegs": 158.7
+    },
+    {
+      "date": "2024-06-17",
+      "aiDemand": 73.2,
+      "gridStress": 65.8,
+      "npiEquityLegs": 155.4
+    },
+    {
+      "date": "2024-06-18",
+      "aiDemand": 75.1,
+      "gridStress": 71.6,
+      "npiEquityLegs": 160
+    },
+    {
+      "date": "2024-06-20",
+      "aiDemand": 68.2,
+      "gridStress": 68.2,
+      "npiEquityLegs": 160.8
+    },
+    {
+      "date": "2024-06-21",
+      "aiDemand": 69.7,
+      "gridStress": 66.8,
+      "npiEquityLegs": 158.6
+    },
+    {
+      "date": "2024-06-24",
+      "aiDemand": 67.3,
+      "gridStress": 67.9,
+      "npiEquityLegs": 158.7
+    },
+    {
+      "date": "2024-06-25",
+      "aiDemand": 76.1,
+      "gridStress": 69.2,
+      "npiEquityLegs": 160.4
+    },
+    {
+      "date": "2024-06-26",
+      "aiDemand": 72.2,
+      "gridStress": 64.5,
+      "npiEquityLegs": 156
+    },
+    {
+      "date": "2024-06-27",
+      "aiDemand": 70.1,
+      "gridStress": 68,
+      "npiEquityLegs": 156.5
+    },
+    {
+      "date": "2024-06-28",
+      "aiDemand": 72.3,
+      "gridStress": 66.8,
+      "npiEquityLegs": 153.7
+    },
+    {
+      "date": "2024-07-01",
+      "aiDemand": 72.1,
+      "gridStress": 69.6,
+      "npiEquityLegs": 155.8
+    },
+    {
+      "date": "2024-07-02",
+      "aiDemand": 72,
+      "gridStress": 68.2,
+      "npiEquityLegs": 156.1
+    },
+    {
+      "date": "2024-07-03",
+      "aiDemand": 75.7,
+      "gridStress": 70.3,
+      "npiEquityLegs": 160.4
+    },
+    {
+      "date": "2024-07-05",
+      "aiDemand": 70.8,
+      "gridStress": 67.4,
+      "npiEquityLegs": 158.7
+    },
+    {
+      "date": "2024-07-08",
+      "aiDemand": 73.3,
+      "gridStress": 70.4,
+      "npiEquityLegs": 161.5
+    },
+    {
+      "date": "2024-07-09",
+      "aiDemand": 73.2,
+      "gridStress": 67.7,
+      "npiEquityLegs": 160.7
+    },
+    {
+      "date": "2024-07-10",
+      "aiDemand": 75.4,
+      "gridStress": 69.3,
+      "npiEquityLegs": 164.2
+    },
+    {
+      "date": "2024-07-11",
+      "aiDemand": 68.2,
+      "gridStress": 68,
+      "npiEquityLegs": 163.5
+    },
+    {
+      "date": "2024-07-12",
+      "aiDemand": 73.8,
+      "gridStress": 68.1,
+      "npiEquityLegs": 163.1
+    },
+    {
+      "date": "2024-07-15",
+      "aiDemand": 71,
+      "gridStress": 65.1,
+      "npiEquityLegs": 158.3
+    },
+    {
+      "date": "2024-07-16",
+      "aiDemand": 71.1,
+      "gridStress": 66.8,
+      "npiEquityLegs": 156.3
+    },
+    {
+      "date": "2024-07-17",
+      "aiDemand": 65,
+      "gridStress": 60.1,
+      "npiEquityLegs": 144.1
+    },
+    {
+      "date": "2024-07-18",
+      "aiDemand": 72.8,
+      "gridStress": 68,
+      "npiEquityLegs": 143.9
+    },
+    {
+      "date": "2024-07-19",
+      "aiDemand": 68.9,
+      "gridStress": 68.1,
+      "npiEquityLegs": 144.1
+    },
+    {
+      "date": "2024-07-22",
+      "aiDemand": 75.5,
+      "gridStress": 70,
+      "npiEquityLegs": 146.7
+    },
+    {
+      "date": "2024-07-23",
+      "aiDemand": 71.7,
+      "gridStress": 68.5,
+      "npiEquityLegs": 147
+    },
+    {
+      "date": "2024-07-24",
+      "aiDemand": 66.1,
+      "gridStress": 61.3,
+      "npiEquityLegs": 138.4
+    },
+    {
+      "date": "2024-07-25",
+      "aiDemand": 70,
+      "gridStress": 65.1,
+      "npiEquityLegs": 135.1
+    },
+    {
+      "date": "2024-07-26",
+      "aiDemand": 73.1,
+      "gridStress": 69.5,
+      "npiEquityLegs": 136.9
+    },
+    {
+      "date": "2024-07-29",
+      "aiDemand": 70.9,
+      "gridStress": 67.7,
+      "npiEquityLegs": 136.1
+    },
+    {
+      "date": "2024-07-30",
+      "aiDemand": 66.5,
+      "gridStress": 65.7,
+      "npiEquityLegs": 133.8
+    },
+    {
+      "date": "2024-07-31",
+      "aiDemand": 82.3,
+      "gridStress": 79,
+      "npiEquityLegs": 145.7
+    },
+    {
+      "date": "2024-08-01",
+      "aiDemand": 66.7,
+      "gridStress": 64.8,
+      "npiEquityLegs": 138.9
+    },
+    {
+      "date": "2024-08-02",
+      "aiDemand": 67.9,
+      "gridStress": 63.9,
+      "npiEquityLegs": 132.7
+    },
+    {
+      "date": "2024-08-05",
+      "aiDemand": 67,
+      "gridStress": 66.2,
+      "npiEquityLegs": 130.8
+    },
+    {
+      "date": "2024-08-06",
+      "aiDemand": 75.6,
+      "gridStress": 73.2,
+      "npiEquityLegs": 136.3
+    },
+    {
+      "date": "2024-08-07",
+      "aiDemand": 68.9,
+      "gridStress": 67.4,
+      "npiEquityLegs": 135.8
+    },
+    {
+      "date": "2024-08-08",
+      "aiDemand": 78.8,
+      "gridStress": 73.1,
+      "npiEquityLegs": 141.3
+    },
+    {
+      "date": "2024-08-09",
+      "aiDemand": 72.8,
+      "gridStress": 68.6,
+      "npiEquityLegs": 141.6
+    },
+    {
+      "date": "2024-08-12",
+      "aiDemand": 74.4,
+      "gridStress": 67.3,
+      "npiEquityLegs": 140.7
+    },
+    {
+      "date": "2024-08-13",
+      "aiDemand": 76.8,
+      "gridStress": 70,
+      "npiEquityLegs": 142.9
+    },
+    {
+      "date": "2024-08-14",
+      "aiDemand": 73.3,
+      "gridStress": 67.2,
+      "npiEquityLegs": 141.8
+    },
+    {
+      "date": "2024-08-15",
+      "aiDemand": 75.5,
+      "gridStress": 69.6,
+      "npiEquityLegs": 144.6
+    },
+    {
+      "date": "2024-08-16",
+      "aiDemand": 72.9,
+      "gridStress": 66.9,
+      "npiEquityLegs": 142.8
+    },
+    {
+      "date": "2024-08-19",
+      "aiDemand": 74.4,
+      "gridStress": 69.3,
+      "npiEquityLegs": 144.7
+    },
+    {
+      "date": "2024-08-20",
+      "aiDemand": 70.3,
+      "gridStress": 67.1,
+      "npiEquityLegs": 143.7
+    },
+    {
+      "date": "2024-08-21",
+      "aiDemand": 72.2,
+      "gridStress": 70.2,
+      "npiEquityLegs": 146.7
+    },
+    {
+      "date": "2024-08-22",
+      "aiDemand": 68.7,
+      "gridStress": 68.2,
+      "npiEquityLegs": 146.4
+    },
+    {
+      "date": "2024-08-23",
+      "aiDemand": 75.1,
+      "gridStress": 69.5,
+      "npiEquityLegs": 149.8
+    },
+    {
+      "date": "2024-08-26",
+      "aiDemand": 69.6,
+      "gridStress": 67.3,
+      "npiEquityLegs": 149
+    },
+    {
+      "date": "2024-08-27",
+      "aiDemand": 72.7,
+      "gridStress": 68.1,
+      "npiEquityLegs": 148.9
+    },
+    {
+      "date": "2024-08-28",
+      "aiDemand": 70.1,
+      "gridStress": 66.5,
+      "npiEquityLegs": 146.1
+    },
+    {
+      "date": "2024-08-29",
+      "aiDemand": 69.2,
+      "gridStress": 69.3,
+      "npiEquityLegs": 147.4
+    },
+    {
+      "date": "2024-08-30",
+      "aiDemand": 73.8,
+      "gridStress": 69.2,
+      "npiEquityLegs": 148.8
+    },
+    {
+      "date": "2024-09-03",
+      "aiDemand": 64,
+      "gridStress": 60,
+      "npiEquityLegs": 136.8
+    },
+    {
+      "date": "2024-09-04",
+      "aiDemand": 71.3,
+      "gridStress": 68.3,
+      "npiEquityLegs": 137.9
+    },
+    {
+      "date": "2024-09-05",
+      "aiDemand": 72.8,
+      "gridStress": 67.1,
+      "npiEquityLegs": 136.5
+    },
+    {
+      "date": "2024-09-06",
+      "aiDemand": 68.1,
+      "gridStress": 66.2,
+      "npiEquityLegs": 133.6
+    },
+    {
+      "date": "2024-09-09",
+      "aiDemand": 75.2,
+      "gridStress": 69.5,
+      "npiEquityLegs": 135
+    },
+    {
+      "date": "2024-09-10",
+      "aiDemand": 73.7,
+      "gridStress": 70.7,
+      "npiEquityLegs": 137.2
+    },
+    {
+      "date": "2024-09-11",
+      "aiDemand": 78.2,
+      "gridStress": 71.5,
+      "npiEquityLegs": 142.7
+    },
+    {
+      "date": "2024-09-12",
+      "aiDemand": 72.6,
+      "gridStress": 68.7,
+      "npiEquityLegs": 144
+    },
+    {
+      "date": "2024-09-13",
+      "aiDemand": 73.1,
+      "gridStress": 71.7,
+      "npiEquityLegs": 148.3
+    },
+    {
+      "date": "2024-09-16",
+      "aiDemand": 69.8,
+      "gridStress": 70.5,
+      "npiEquityLegs": 151.8
+    },
+    {
+      "date": "2024-09-17",
+      "aiDemand": 71.2,
+      "gridStress": 68.8,
+      "npiEquityLegs": 153.1
+    },
+    {
+      "date": "2024-09-18",
+      "aiDemand": 70.7,
+      "gridStress": 67.8,
+      "npiEquityLegs": 152.8
+    },
+    {
+      "date": "2024-09-19",
+      "aiDemand": 76.2,
+      "gridStress": 70.4,
+      "npiEquityLegs": 156.1
+    },
+    {
+      "date": "2024-09-20",
+      "aiDemand": 71.4,
+      "gridStress": 82.6,
+      "npiEquityLegs": 176.8
+    },
+    {
+      "date": "2024-09-23",
+      "aiDemand": 72.9,
+      "gridStress": 69.8,
+      "npiEquityLegs": 181.1
+    },
+    {
+      "date": "2024-09-24",
+      "aiDemand": 75.4,
+      "gridStress": 67.9,
+      "npiEquityLegs": 181.8
+    },
+    {
+      "date": "2024-09-25",
+      "aiDemand": 73.5,
+      "gridStress": 71.7,
+      "npiEquityLegs": 188.4
+    },
+    {
+      "date": "2024-09-26",
+      "aiDemand": 75.3,
+      "gridStress": 65.2,
+      "npiEquityLegs": 184.1
+    },
+    {
+      "date": "2024-09-27",
+      "aiDemand": 69.3,
+      "gridStress": 69.4,
+      "npiEquityLegs": 186.7
+    },
+    {
+      "date": "2024-09-30",
+      "aiDemand": 70.8,
+      "gridStress": 68.8,
+      "npiEquityLegs": 187.4
+    },
+    {
+      "date": "2024-10-01",
+      "aiDemand": 69.3,
+      "gridStress": 70,
+      "npiEquityLegs": 192
+    },
+    {
+      "date": "2024-10-02",
+      "aiDemand": 73.4,
+      "gridStress": 69,
+      "npiEquityLegs": 194.6
+    },
+    {
+      "date": "2024-10-03",
+      "aiDemand": 74.3,
+      "gridStress": 71.5,
+      "npiEquityLegs": 201.8
+    },
+    {
+      "date": "2024-10-04",
+      "aiDemand": 73.2,
+      "gridStress": 70.8,
+      "npiEquityLegs": 208.5
+    },
+    {
+      "date": "2024-10-07",
+      "aiDemand": 73.6,
+      "gridStress": 64.9,
+      "npiEquityLegs": 201.7
+    },
+    {
+      "date": "2024-10-08",
+      "aiDemand": 74.2,
+      "gridStress": 67.2,
+      "npiEquityLegs": 199.5
+    },
+    {
+      "date": "2024-10-09",
+      "aiDemand": 72.1,
+      "gridStress": 64.8,
+      "npiEquityLegs": 193.2
+    },
+    {
+      "date": "2024-10-10",
+      "aiDemand": 73.1,
+      "gridStress": 67.8,
+      "npiEquityLegs": 193.2
+    },
+    {
+      "date": "2024-10-11",
+      "aiDemand": 73,
+      "gridStress": 68.9,
+      "npiEquityLegs": 195.2
+    },
+    {
+      "date": "2024-10-14",
+      "aiDemand": 73.5,
+      "gridStress": 70.8,
+      "npiEquityLegs": 201.6
+    },
+    {
+      "date": "2024-10-15",
+      "aiDemand": 68.6,
+      "gridStress": 66.4,
+      "npiEquityLegs": 197.9
+    },
+    {
+      "date": "2024-10-16",
+      "aiDemand": 74.5,
+      "gridStress": 72.2,
+      "npiEquityLegs": 208.5
+    },
+    {
+      "date": "2024-10-17",
+      "aiDemand": 76.1,
+      "gridStress": 64.7,
+      "npiEquityLegs": 201.5
+    },
+    {
+      "date": "2024-10-18",
+      "aiDemand": 71.7,
+      "gridStress": 69.3,
+      "npiEquityLegs": 205
+    },
+    {
+      "date": "2024-10-21",
+      "aiDemand": 73.4,
+      "gridStress": 67.8,
+      "npiEquityLegs": 205.1
+    },
+    {
+      "date": "2024-10-22",
+      "aiDemand": 71.2,
+      "gridStress": 65.3,
+      "npiEquityLegs": 199.2
+    },
+    {
+      "date": "2024-10-23",
+      "aiDemand": 70.9,
+      "gridStress": 68.7,
+      "npiEquityLegs": 198.3
+    },
+    {
+      "date": "2024-10-24",
+      "aiDemand": 72.3,
+      "gridStress": 67.8,
+      "npiEquityLegs": 197.7
+    },
+    {
+      "date": "2024-10-25",
+      "aiDemand": 73.9,
+      "gridStress": 68,
+      "npiEquityLegs": 196.5
+    },
+    {
+      "date": "2024-10-28",
+      "aiDemand": 70.1,
+      "gridStress": 69.5,
+      "npiEquityLegs": 200.5
+    },
+    {
+      "date": "2024-10-29",
+      "aiDemand": 72.7,
+      "gridStress": 67.2,
+      "npiEquityLegs": 199
+    },
+    {
+      "date": "2024-10-30",
+      "aiDemand": 70.4,
+      "gridStress": 66.9,
+      "npiEquityLegs": 196
+    },
+    {
+      "date": "2024-10-31",
+      "aiDemand": 68.3,
+      "gridStress": 68.4,
+      "npiEquityLegs": 196
+    },
+    {
+      "date": "2024-11-01",
+      "aiDemand": 72.8,
+      "gridStress": 65.1,
+      "npiEquityLegs": 191.1
+    },
+    {
+      "date": "2024-11-04",
+      "aiDemand": 72.6,
+      "gridStress": 62.6,
+      "npiEquityLegs": 181.6
+    },
+    {
+      "date": "2024-11-05",
+      "aiDemand": 75,
+      "gridStress": 71.7,
+      "npiEquityLegs": 187.4
+    },
+    {
+      "date": "2024-11-06",
+      "aiDemand": 74.2,
+      "gridStress": 69.1,
+      "npiEquityLegs": 190.9
+    },
+    {
+      "date": "2024-11-07",
+      "aiDemand": 75,
+      "gridStress": 72.5,
+      "npiEquityLegs": 200.5
+    },
+    {
+      "date": "2024-11-08",
+      "aiDemand": 71.7,
+      "gridStress": 69.9,
+      "npiEquityLegs": 203.9
+    },
+    {
+      "date": "2024-11-11",
+      "aiDemand": 69.4,
+      "gridStress": 68.6,
+      "npiEquityLegs": 206
+    },
+    {
+      "date": "2024-11-12",
+      "aiDemand": 71.6,
+      "gridStress": 65.5,
+      "npiEquityLegs": 202.4
+    },
+    {
+      "date": "2024-11-13",
+      "aiDemand": 69.9,
+      "gridStress": 67.6,
+      "npiEquityLegs": 201.2
+    },
+    {
+      "date": "2024-11-14",
+      "aiDemand": 72.2,
+      "gridStress": 66.8,
+      "npiEquityLegs": 198.6
+    },
+    {
+      "date": "2024-11-15",
+      "aiDemand": 69.5,
+      "gridStress": 68.9,
+      "npiEquityLegs": 200.9
+    },
+    {
+      "date": "2024-11-18",
+      "aiDemand": 72.2,
+      "gridStress": 70.5,
+      "npiEquityLegs": 207.1
+    },
+    {
+      "date": "2024-11-19",
+      "aiDemand": 75.1,
+      "gridStress": 71.3,
+      "npiEquityLegs": 214.5
+    },
+    {
+      "date": "2024-11-20",
+      "aiDemand": 71.4,
+      "gridStress": 68,
+      "npiEquityLegs": 214.2
+    },
+    {
+      "date": "2024-11-21",
+      "aiDemand": 73.6,
+      "gridStress": 73.7,
+      "npiEquityLegs": 227.5
+    },
+    {
+      "date": "2024-11-22",
+      "aiDemand": 70.6,
+      "gridStress": 66.9,
+      "npiEquityLegs": 223.7
+    },
+    {
+      "date": "2024-11-25",
+      "aiDemand": 70.5,
+      "gridStress": 67,
+      "npiEquityLegs": 216.8
+    },
+    {
+      "date": "2024-11-26",
+      "aiDemand": 71.8,
+      "gridStress": 72.8,
+      "npiEquityLegs": 226
+    },
+    {
+      "date": "2024-11-27",
+      "aiDemand": 70.4,
+      "gridStress": 64.3,
+      "npiEquityLegs": 217.7
+    },
+    {
+      "date": "2024-11-29",
+      "aiDemand": 73.6,
+      "gridStress": 69.9,
+      "npiEquityLegs": 222.9
+    },
+    {
+      "date": "2024-12-02",
+      "aiDemand": 73.4,
+      "gridStress": 65.2,
+      "npiEquityLegs": 216.9
+    },
+    {
+      "date": "2024-12-03",
+      "aiDemand": 73.5,
+      "gridStress": 67.7,
+      "npiEquityLegs": 216.5
+    },
+    {
+      "date": "2024-12-04",
+      "aiDemand": 74.6,
+      "gridStress": 70.9,
+      "npiEquityLegs": 222.6
+    },
+    {
+      "date": "2024-12-05",
+      "aiDemand": 72.3,
+      "gridStress": 68.4,
+      "npiEquityLegs": 223.3
+    },
+    {
+      "date": "2024-12-06",
+      "aiDemand": 71.3,
+      "gridStress": 67.7,
+      "npiEquityLegs": 222.2
+    },
+    {
+      "date": "2024-12-09",
+      "aiDemand": 70.1,
+      "gridStress": 62.8,
+      "npiEquityLegs": 209.5
+    },
+    {
+      "date": "2024-12-10",
+      "aiDemand": 68.6,
+      "gridStress": 64.9,
+      "npiEquityLegs": 202.8
+    },
+    {
+      "date": "2024-12-11",
+      "aiDemand": 74.9,
+      "gridStress": 70.2,
+      "npiEquityLegs": 207.4
+    },
+    {
+      "date": "2024-12-12",
+      "aiDemand": 70.3,
+      "gridStress": 68.2,
+      "npiEquityLegs": 206.1
+    },
+    {
+      "date": "2024-12-13",
+      "aiDemand": 72.9,
+      "gridStress": 67.7,
+      "npiEquityLegs": 205.2
+    },
+    {
+      "date": "2024-12-16",
+      "aiDemand": 72.2,
+      "gridStress": 68,
+      "npiEquityLegs": 205.2
+    },
+    {
+      "date": "2024-12-17",
+      "aiDemand": 71.3,
+      "gridStress": 65.8,
+      "npiEquityLegs": 200
+    },
+    {
+      "date": "2024-12-18",
+      "aiDemand": 69.1,
+      "gridStress": 63.9,
+      "npiEquityLegs": 192.4
+    },
+    {
+      "date": "2024-12-19",
+      "aiDemand": 69.5,
+      "gridStress": 69.1,
+      "npiEquityLegs": 195.9
+    },
+    {
+      "date": "2024-12-20",
+      "aiDemand": 74.6,
+      "gridStress": 69.3,
+      "npiEquityLegs": 198
+    },
+    {
+      "date": "2024-12-23",
+      "aiDemand": 75.6,
+      "gridStress": 68.8,
+      "npiEquityLegs": 199.1
+    },
+    {
+      "date": "2024-12-24",
+      "aiDemand": 72.2,
+      "gridStress": 69.2,
+      "npiEquityLegs": 201.1
+    },
+    {
+      "date": "2024-12-26",
+      "aiDemand": 71.5,
+      "gridStress": 68,
+      "npiEquityLegs": 201.5
+    },
+    {
+      "date": "2024-12-27",
+      "aiDemand": 70.4,
+      "gridStress": 66.3,
+      "npiEquityLegs": 197.8
+    },
+    {
+      "date": "2024-12-30",
+      "aiDemand": 71.2,
+      "gridStress": 67.9,
+      "npiEquityLegs": 197.4
+    },
+    {
+      "date": "2024-12-31",
+      "aiDemand": 70.4,
+      "gridStress": 67.1,
+      "npiEquityLegs": 195.2
+    },
+    {
+      "date": "2025-01-02",
+      "aiDemand": 74.8,
+      "gridStress": 74.4,
+      "npiEquityLegs": 207.9
+    },
+    {
+      "date": "2025-01-03",
+      "aiDemand": 76.1,
+      "gridStress": 73.2,
+      "npiEquityLegs": 219.6
+    },
+    {
+      "date": "2025-01-06",
+      "aiDemand": 76.7,
+      "gridStress": 69.5,
+      "npiEquityLegs": 223.9
+    },
+    {
+      "date": "2025-01-07",
+      "aiDemand": 68.3,
+      "gridStress": 66.7,
+      "npiEquityLegs": 220.3
+    },
+    {
+      "date": "2025-01-08",
+      "aiDemand": 71.2,
+      "gridStress": 66.1,
+      "npiEquityLegs": 215.8
+    },
+    {
+      "date": "2025-01-10",
+      "aiDemand": 69.4,
+      "gridStress": 76.9,
+      "npiEquityLegs": 229.7
+    },
+    {
+      "date": "2025-01-13",
+      "aiDemand": 69.3,
+      "gridStress": 63.9,
+      "npiEquityLegs": 221.4
+    },
+    {
+      "date": "2025-01-14",
+      "aiDemand": 71.9,
+      "gridStress": 71.2,
+      "npiEquityLegs": 229.2
+    },
+    {
+      "date": "2025-01-15",
+      "aiDemand": 75.6,
+      "gridStress": 69.2,
+      "npiEquityLegs": 231.1
+    },
+    {
+      "date": "2025-01-16",
+      "aiDemand": 72.6,
+      "gridStress": 71.4,
+      "npiEquityLegs": 237
+    },
+    {
+      "date": "2025-01-17",
+      "aiDemand": 73.5,
+      "gridStress": 67.3,
+      "npiEquityLegs": 236
+    },
+    {
+      "date": "2025-01-21",
+      "aiDemand": 75.2,
+      "gridStress": 72.7,
+      "npiEquityLegs": 249.3
+    },
+    {
+      "date": "2025-01-22",
+      "aiDemand": 74.5,
+      "gridStress": 69,
+      "npiEquityLegs": 253.4
+    },
+    {
+      "date": "2025-01-23",
+      "aiDemand": 71.9,
+      "gridStress": 70.9,
+      "npiEquityLegs": 260.2
+    },
+    {
+      "date": "2025-01-24",
+      "aiDemand": 69.8,
+      "gridStress": 68,
+      "npiEquityLegs": 259.4
+    },
+    {
+      "date": "2025-01-27",
+      "aiDemand": 56.7,
+      "gridStress": 52,
+      "npiEquityLegs": 203.3
+    },
+    {
+      "date": "2025-01-28",
+      "aiDemand": 77.5,
+      "gridStress": 72.3,
+      "npiEquityLegs": 213.5
+    },
+    {
+      "date": "2025-01-29",
+      "aiDemand": 70.2,
+      "gridStress": 71.2,
+      "npiEquityLegs": 220.6
+    },
+    {
+      "date": "2025-01-30",
+      "aiDemand": 74.3,
+      "gridStress": 75.8,
+      "npiEquityLegs": 239.1
+    },
+    {
+      "date": "2025-01-31",
+      "aiDemand": 69.9,
+      "gridStress": 64.9,
+      "npiEquityLegs": 231.2
+    },
+    {
+      "date": "2025-02-03",
+      "aiDemand": 69,
+      "gridStress": 68.9,
+      "npiEquityLegs": 231.9
+    },
+    {
+      "date": "2025-02-04",
+      "aiDemand": 73.8,
+      "gridStress": 68.2,
+      "npiEquityLegs": 233.1
+    },
+    {
+      "date": "2025-02-05",
+      "aiDemand": 76.1,
+      "gridStress": 70,
+      "npiEquityLegs": 237
+    },
+    {
+      "date": "2025-02-06",
+      "aiDemand": 74,
+      "gridStress": 67.4,
+      "npiEquityLegs": 234.4
+    },
+    {
+      "date": "2025-02-07",
+      "aiDemand": 71.3,
+      "gridStress": 66.9,
+      "npiEquityLegs": 233
+    },
+    {
+      "date": "2025-02-10",
+      "aiDemand": 74.6,
+      "gridStress": 70,
+      "npiEquityLegs": 236.5
+    },
+    {
+      "date": "2025-02-11",
+      "aiDemand": 71.5,
+      "gridStress": 66.9,
+      "npiEquityLegs": 233.8
+    },
+    {
+      "date": "2025-02-12",
+      "aiDemand": 70.4,
+      "gridStress": 67.6,
+      "npiEquityLegs": 233.4
+    },
+    {
+      "date": "2025-02-13",
+      "aiDemand": 73.3,
+      "gridStress": 67.2,
+      "npiEquityLegs": 232.1
+    },
+    {
+      "date": "2025-02-14",
+      "aiDemand": 74.6,
+      "gridStress": 69.4,
+      "npiEquityLegs": 233.1
+    },
+    {
+      "date": "2025-02-18",
+      "aiDemand": 73.3,
+      "gridStress": 69.3,
+      "npiEquityLegs": 236.1
+    },
+    {
+      "date": "2025-02-19",
+      "aiDemand": 71.5,
+      "gridStress": 67.8,
+      "npiEquityLegs": 234.5
+    },
+    {
+      "date": "2025-02-20",
+      "aiDemand": 72,
+      "gridStress": 65.2,
+      "npiEquityLegs": 227.7
+    },
+    {
+      "date": "2025-02-21",
+      "aiDemand": 68.5,
+      "gridStress": 61.5,
+      "npiEquityLegs": 212.6
+    },
+    {
+      "date": "2025-02-24",
+      "aiDemand": 68.6,
+      "gridStress": 63.6,
+      "npiEquityLegs": 203.7
+    },
+    {
+      "date": "2025-02-25",
+      "aiDemand": 69.8,
+      "gridStress": 66.1,
+      "npiEquityLegs": 199.5
+    },
+    {
+      "date": "2025-02-26",
+      "aiDemand": 75.7,
+      "gridStress": 72,
+      "npiEquityLegs": 208.5
+    },
+    {
+      "date": "2025-02-27",
+      "aiDemand": 64.8,
+      "gridStress": 60.5,
+      "npiEquityLegs": 190.9
+    },
+    {
+      "date": "2025-02-28",
+      "aiDemand": 74,
+      "gridStress": 69.1,
+      "npiEquityLegs": 193.9
+    },
+    {
+      "date": "2025-03-03",
+      "aiDemand": 66.1,
+      "gridStress": 62.7,
+      "npiEquityLegs": 182.1
+    },
+    {
+      "date": "2025-03-04",
+      "aiDemand": 74.1,
+      "gridStress": 68.9,
+      "npiEquityLegs": 184.8
+    },
+    {
+      "date": "2025-03-05",
+      "aiDemand": 74.2,
+      "gridStress": 67.9,
+      "npiEquityLegs": 184.9
+    },
+    {
+      "date": "2025-03-06",
+      "aiDemand": 65.6,
+      "gridStress": 59.4,
+      "npiEquityLegs": 171.4
+    },
+    {
+      "date": "2025-03-07",
+      "aiDemand": 73.5,
+      "gridStress": 68.5,
+      "npiEquityLegs": 172.1
+    },
+    {
+      "date": "2025-03-10",
+      "aiDemand": 66.5,
+      "gridStress": 63.4,
+      "npiEquityLegs": 165.2
+    },
+    {
+      "date": "2025-03-11",
+      "aiDemand": 73.4,
+      "gridStress": 71.4,
+      "npiEquityLegs": 171.3
+    },
+    {
+      "date": "2025-03-12",
+      "aiDemand": 78,
+      "gridStress": 72.3,
+      "npiEquityLegs": 178.2
+    },
+    {
+      "date": "2025-03-13",
+      "aiDemand": 70.3,
+      "gridStress": 65.2,
+      "npiEquityLegs": 174.1
+    },
+    {
+      "date": "2025-03-14",
+      "aiDemand": 76.2,
+      "gridStress": 71.4,
+      "npiEquityLegs": 180.6
+    },
+    {
+      "date": "2025-03-17",
+      "aiDemand": 72.5,
+      "gridStress": 69.5,
+      "npiEquityLegs": 182.9
+    },
+    {
+      "date": "2025-03-18",
+      "aiDemand": 69.2,
+      "gridStress": 65.7,
+      "npiEquityLegs": 180
+    },
+    {
+      "date": "2025-03-19",
+      "aiDemand": 73.4,
+      "gridStress": 71.3,
+      "npiEquityLegs": 185.8
+    },
+    {
+      "date": "2025-03-20",
+      "aiDemand": 73.1,
+      "gridStress": 68.8,
+      "npiEquityLegs": 187.8
+    },
+    {
+      "date": "2025-03-21",
+      "aiDemand": 69.6,
+      "gridStress": 67.6,
+      "npiEquityLegs": 187.1
+    },
+    {
+      "date": "2025-03-24",
+      "aiDemand": 75.2,
+      "gridStress": 70.8,
+      "npiEquityLegs": 192.1
+    },
+    {
+      "date": "2025-03-25",
+      "aiDemand": 70.8,
+      "gridStress": 66.5,
+      "npiEquityLegs": 188.7
+    },
+    {
+      "date": "2025-03-26",
+      "aiDemand": 67.3,
+      "gridStress": 63.8,
+      "npiEquityLegs": 180.7
+    },
+    {
+      "date": "2025-03-27",
+      "aiDemand": 69.8,
+      "gridStress": 65.1,
+      "npiEquityLegs": 175.3
+    },
+    {
+      "date": "2025-03-28",
+      "aiDemand": 69.5,
+      "gridStress": 66.6,
+      "npiEquityLegs": 173.7
+    },
+    {
+      "date": "2025-03-31",
+      "aiDemand": 71.6,
+      "gridStress": 67.2,
+      "npiEquityLegs": 171.5
+    },
+    {
+      "date": "2025-04-01",
+      "aiDemand": 73.7,
+      "gridStress": 70.6,
+      "npiEquityLegs": 176.2
+    },
+    {
+      "date": "2025-04-02",
+      "aiDemand": 72.8,
+      "gridStress": 71.3,
+      "npiEquityLegs": 181.3
+    },
+    {
+      "date": "2025-04-03",
+      "aiDemand": 62.2,
+      "gridStress": 57.2,
+      "npiEquityLegs": 162.8
+    },
+    {
+      "date": "2025-04-04",
+      "aiDemand": 63.1,
+      "gridStress": 59.6,
+      "npiEquityLegs": 150
+    },
+    {
+      "date": "2025-04-07",
+      "aiDemand": 74,
+      "gridStress": 71.1,
+      "npiEquityLegs": 154.3
+    },
+    {
+      "date": "2025-04-08",
+      "aiDemand": 69.4,
+      "gridStress": 68.6,
+      "npiEquityLegs": 154.6
+    },
+    {
+      "date": "2025-04-09",
+      "aiDemand": 89.9,
+      "gridStress": 81.9,
+      "npiEquityLegs": 173.9
+    },
+    {
+      "date": "2025-04-10",
+      "aiDemand": 65.1,
+      "gridStress": 62.4,
+      "npiEquityLegs": 165
+    },
+    {
+      "date": "2025-04-11",
+      "aiDemand": 74.7,
+      "gridStress": 69.7,
+      "npiEquityLegs": 168.7
+    },
+    {
+      "date": "2025-04-14",
+      "aiDemand": 72.3,
+      "gridStress": 68.3,
+      "npiEquityLegs": 169.3
+    },
+    {
+      "date": "2025-04-15",
+      "aiDemand": 73,
+      "gridStress": 69.5,
+      "npiEquityLegs": 171.6
+    },
+    {
+      "date": "2025-04-16",
+      "aiDemand": 66.9,
+      "gridStress": 67.1,
+      "npiEquityLegs": 171.1
+    },
+    {
+      "date": "2025-04-17",
+      "aiDemand": 70.9,
+      "gridStress": 68.6,
+      "npiEquityLegs": 171.4
+    },
+    {
+      "date": "2025-04-21",
+      "aiDemand": 68,
+      "gridStress": 62,
+      "npiEquityLegs": 161.5
+    },
+    {
+      "date": "2025-04-22",
+      "aiDemand": 75.2,
+      "gridStress": 72.4,
+      "npiEquityLegs": 167.8
+    },
+    {
+      "date": "2025-04-23",
+      "aiDemand": 76.4,
+      "gridStress": 72.8,
+      "npiEquityLegs": 175.7
+    },
+    {
+      "date": "2025-04-24",
+      "aiDemand": 76.3,
+      "gridStress": 71,
+      "npiEquityLegs": 181.4
+    },
+    {
+      "date": "2025-04-25",
+      "aiDemand": 75.4,
+      "gridStress": 70.2,
+      "npiEquityLegs": 183.9
+    },
+    {
+      "date": "2025-04-28",
+      "aiDemand": 70.6,
+      "gridStress": 69.4,
+      "npiEquityLegs": 187.1
+    },
+    {
+      "date": "2025-04-29",
+      "aiDemand": 72.1,
+      "gridStress": 68.4,
+      "npiEquityLegs": 187.3
+    },
+    {
+      "date": "2025-04-30",
+      "aiDemand": 72.6,
+      "gridStress": 67.9,
+      "npiEquityLegs": 186.7
+    },
+    {
+      "date": "2025-05-01",
+      "aiDemand": 74.5,
+      "gridStress": 73.1,
+      "npiEquityLegs": 195.4
+    },
+    {
+      "date": "2025-05-02",
+      "aiDemand": 75.5,
+      "gridStress": 69.9,
+      "npiEquityLegs": 198.9
+    },
+    {
+      "date": "2025-05-05",
+      "aiDemand": 71.4,
+      "gridStress": 68.6,
+      "npiEquityLegs": 199.2
+    },
+    {
+      "date": "2025-05-06",
+      "aiDemand": 71,
+      "gridStress": 72.8,
+      "npiEquityLegs": 208.2
+    },
+    {
+      "date": "2025-05-07",
+      "aiDemand": 74.3,
+      "gridStress": 65.7,
+      "npiEquityLegs": 204.1
+    },
+    {
+      "date": "2025-05-08",
+      "aiDemand": 72.5,
+      "gridStress": 68.4,
+      "npiEquityLegs": 205.3
+    },
+    {
+      "date": "2025-05-09",
+      "aiDemand": 72.2,
+      "gridStress": 66.7,
+      "npiEquityLegs": 202.6
+    },
+    {
+      "date": "2025-05-12",
+      "aiDemand": 77.9,
+      "gridStress": 73,
+      "npiEquityLegs": 212.5
+    },
+    {
+      "date": "2025-05-13",
+      "aiDemand": 76.7,
+      "gridStress": 71.2,
+      "npiEquityLegs": 220.6
+    },
+    {
+      "date": "2025-05-14",
+      "aiDemand": 73.6,
+      "gridStress": 67.2,
+      "npiEquityLegs": 220.6
+    },
+    {
+      "date": "2025-05-15",
+      "aiDemand": 72,
+      "gridStress": 67.1,
+      "npiEquityLegs": 217.6
+    },
+    {
+      "date": "2025-05-16",
+      "aiDemand": 72.9,
+      "gridStress": 70.3,
+      "npiEquityLegs": 221.8
+    },
+    {
+      "date": "2025-05-19",
+      "aiDemand": 72.1,
+      "gridStress": 68.6,
+      "npiEquityLegs": 222.9
+    },
+    {
+      "date": "2025-05-20",
+      "aiDemand": 71.4,
+      "gridStress": 67.7,
+      "npiEquityLegs": 222.7
+    },
+    {
+      "date": "2025-05-21",
+      "aiDemand": 70.1,
+      "gridStress": 65.8,
+      "npiEquityLegs": 218.1
+    },
+    {
+      "date": "2025-05-22",
+      "aiDemand": 73.1,
+      "gridStress": 69.4,
+      "npiEquityLegs": 221.1
+    },
+    {
+      "date": "2025-05-23",
+      "aiDemand": 70.4,
+      "gridStress": 69.5,
+      "npiEquityLegs": 229
+    },
+    {
+      "date": "2025-05-27",
+      "aiDemand": 75.4,
+      "gridStress": 71.2,
+      "npiEquityLegs": 236.4
+    },
+    {
+      "date": "2025-05-28",
+      "aiDemand": 71.6,
+      "gridStress": 67.6,
+      "npiEquityLegs": 235.1
+    },
+    {
+      "date": "2025-05-29",
+      "aiDemand": 74,
+      "gridStress": 67,
+      "npiEquityLegs": 231.3
+    },
+    {
+      "date": "2025-05-30",
+      "aiDemand": 69.6,
+      "gridStress": 68.6,
+      "npiEquityLegs": 232.2
+    },
+    {
+      "date": "2025-06-02",
+      "aiDemand": 73.8,
+      "gridStress": 70.6,
+      "npiEquityLegs": 238.1
+    },
+    {
+      "date": "2025-06-03",
+      "aiDemand": 74.6,
+      "gridStress": 70.1,
+      "npiEquityLegs": 245
+    },
+    {
+      "date": "2025-06-04",
+      "aiDemand": 73.6,
+      "gridStress": 66.2,
+      "npiEquityLegs": 240.4
+    },
+    {
+      "date": "2025-06-05",
+      "aiDemand": 72,
+      "gridStress": 66.4,
+      "npiEquityLegs": 237.2
+    },
+    {
+      "date": "2025-06-06",
+      "aiDemand": 73.4,
+      "gridStress": 69.8,
+      "npiEquityLegs": 241.4
+    },
+    {
+      "date": "2025-06-09",
+      "aiDemand": 72.8,
+      "gridStress": 66.9,
+      "npiEquityLegs": 241.3
+    },
+    {
+      "date": "2025-06-10",
+      "aiDemand": 73.8,
+      "gridStress": 65.9,
+      "npiEquityLegs": 234.8
+    },
+    {
+      "date": "2025-06-11",
+      "aiDemand": 71.8,
+      "gridStress": 68.3,
+      "npiEquityLegs": 239
+    },
+    {
+      "date": "2025-06-12",
+      "aiDemand": 73.1,
+      "gridStress": 70.8,
+      "npiEquityLegs": 245.3
+    },
+    {
+      "date": "2025-06-13",
+      "aiDemand": 70.2,
+      "gridStress": 67.5,
+      "npiEquityLegs": 244.7
+    },
+    {
+      "date": "2025-06-16",
+      "aiDemand": 74.1,
+      "gridStress": 70,
+      "npiEquityLegs": 251.3
+    },
+    {
+      "date": "2025-06-17",
+      "aiDemand": 71.6,
+      "gridStress": 67.8,
+      "npiEquityLegs": 250.7
+    },
+    {
+      "date": "2025-06-18",
+      "aiDemand": 72.6,
+      "gridStress": 68.9,
+      "npiEquityLegs": 253.6
+    },
+    {
+      "date": "2025-06-20",
+      "aiDemand": 71.1,
+      "gridStress": 68.6,
+      "npiEquityLegs": 255.2
+    },
+    {
+      "date": "2025-06-23",
+      "aiDemand": 72.2,
+      "gridStress": 69.7,
+      "npiEquityLegs": 258.7
+    },
+    {
+      "date": "2025-06-24",
+      "aiDemand": 75.9,
+      "gridStress": 69,
+      "npiEquityLegs": 261
+    },
+    {
+      "date": "2025-06-25",
+      "aiDemand": 72.2,
+      "gridStress": 65.2,
+      "npiEquityLegs": 259.2
+    },
+    {
+      "date": "2025-06-26",
+      "aiDemand": 69.9,
+      "gridStress": 67.3,
+      "npiEquityLegs": 264.9
+    },
+    {
+      "date": "2025-06-27",
+      "aiDemand": 74.6,
+      "gridStress": 70,
+      "npiEquityLegs": 267
+    },
+    {
+      "date": "2025-06-30",
+      "aiDemand": 71.9,
+      "gridStress": 68.4,
+      "npiEquityLegs": 267.4
+    },
+    {
+      "date": "2025-07-01",
+      "aiDemand": 70,
+      "gridStress": 64.6,
+      "npiEquityLegs": 256.9
+    },
+    {
+      "date": "2025-07-02",
+      "aiDemand": 74.5,
+      "gridStress": 68.3,
+      "npiEquityLegs": 258.3
+    },
+    {
+      "date": "2025-07-03",
+      "aiDemand": 72.6,
+      "gridStress": 69.5,
+      "npiEquityLegs": 263.4
+    },
+    {
+      "date": "2025-07-07",
+      "aiDemand": 70.3,
+      "gridStress": 68.7,
+      "npiEquityLegs": 266.3
+    },
+    {
+      "date": "2025-07-08",
+      "aiDemand": 72.7,
+      "gridStress": 66.4,
+      "npiEquityLegs": 261
+    },
+    {
+      "date": "2025-07-09",
+      "aiDemand": 73,
+      "gridStress": 69.8,
+      "npiEquityLegs": 266.1
+    },
+    {
+      "date": "2025-07-10",
+      "aiDemand": 72,
+      "gridStress": 67.2,
+      "npiEquityLegs": 264.8
+    },
+    {
+      "date": "2025-07-11",
+      "aiDemand": 72.5,
+      "gridStress": 69,
+      "npiEquityLegs": 267.8
+    },
+    {
+      "date": "2025-07-14",
+      "aiDemand": 70.8,
+      "gridStress": 68.2,
+      "npiEquityLegs": 269.1
+    },
+    {
+      "date": "2025-07-15",
+      "aiDemand": 75.2,
+      "gridStress": 66.4,
+      "npiEquityLegs": 265.4
+    },
+    {
+      "date": "2025-07-16",
+      "aiDemand": 71.9,
+      "gridStress": 65.6,
+      "npiEquityLegs": 259.7
+    },
+    {
+      "date": "2025-07-17",
+      "aiDemand": 73.3,
+      "gridStress": 67.8,
+      "npiEquityLegs": 259.1
+    },
+    {
+      "date": "2025-07-18",
+      "aiDemand": 71.4,
+      "gridStress": 72,
+      "npiEquityLegs": 269.9
+    },
+    {
+      "date": "2025-07-21",
+      "aiDemand": 71.7,
+      "gridStress": 67,
+      "npiEquityLegs": 264.6
+    },
+    {
+      "date": "2025-07-22",
+      "aiDemand": 70,
+      "gridStress": 68.5,
+      "npiEquityLegs": 265.6
+    },
+    {
+      "date": "2025-07-23",
+      "aiDemand": 73.8,
+      "gridStress": 70.8,
+      "npiEquityLegs": 275.5
+    },
+    {
+      "date": "2025-07-24",
+      "aiDemand": 73.1,
+      "gridStress": 66.8,
+      "npiEquityLegs": 273.5
+    },
+    {
+      "date": "2025-07-25",
+      "aiDemand": 72.7,
+      "gridStress": 68.2,
+      "npiEquityLegs": 271.6
+    },
+    {
+      "date": "2025-07-28",
+      "aiDemand": 72.3,
+      "gridStress": 68.7,
+      "npiEquityLegs": 273.6
+    },
+    {
+      "date": "2025-07-29",
+      "aiDemand": 72.1,
+      "gridStress": 69.2,
+      "npiEquityLegs": 274.6
+    },
+    {
+      "date": "2025-07-30",
+      "aiDemand": 73.3,
+      "gridStress": 71,
+      "npiEquityLegs": 283.1
+    },
+    {
+      "date": "2025-07-31",
+      "aiDemand": 70.2,
+      "gridStress": 68.2,
+      "npiEquityLegs": 283.3
+    },
+    {
+      "date": "2025-08-01",
+      "aiDemand": 69,
+      "gridStress": 66.8,
+      "npiEquityLegs": 280.3
+    },
+    {
+      "date": "2025-08-04",
+      "aiDemand": 74.9,
+      "gridStress": 70.8,
+      "npiEquityLegs": 289
+    },
+    {
+      "date": "2025-08-05",
+      "aiDemand": 70.9,
+      "gridStress": 66.1,
+      "npiEquityLegs": 284.6
+    },
+    {
+      "date": "2025-08-06",
+      "aiDemand": 71.9,
+      "gridStress": 65.6,
+      "npiEquityLegs": 278.5
+    },
+    {
+      "date": "2025-08-07",
+      "aiDemand": 74.5,
+      "gridStress": 68.9,
+      "npiEquityLegs": 281.1
+    },
+    {
+      "date": "2025-08-08",
+      "aiDemand": 73.4,
+      "gridStress": 67.2,
+      "npiEquityLegs": 278.3
+    },
+    {
+      "date": "2025-08-11",
+      "aiDemand": 72.6,
+      "gridStress": 67.2,
+      "npiEquityLegs": 276.2
+    },
+    {
+      "date": "2025-08-12",
+      "aiDemand": 73.5,
+      "gridStress": 71,
+      "npiEquityLegs": 284.9
+    },
+    {
+      "date": "2025-08-13",
+      "aiDemand": 70.6,
+      "gridStress": 65.9,
+      "npiEquityLegs": 278.3
+    },
+    {
+      "date": "2025-08-14",
+      "aiDemand": 71.9,
+      "gridStress": 67,
+      "npiEquityLegs": 275.8
+    },
+    {
+      "date": "2025-08-15",
+      "aiDemand": 70.9,
+      "gridStress": 66.8,
+      "npiEquityLegs": 271.6
+    },
+    {
+      "date": "2025-08-18",
+      "aiDemand": 72.8,
+      "gridStress": 68.1,
+      "npiEquityLegs": 273.2
+    },
+    {
+      "date": "2025-08-19",
+      "aiDemand": 69.1,
+      "gridStress": 66.4,
+      "npiEquityLegs": 265.8
+    },
+    {
+      "date": "2025-08-20",
+      "aiDemand": 70.9,
+      "gridStress": 67.8,
+      "npiEquityLegs": 263.4
+    },
+    {
+      "date": "2025-08-21",
+      "aiDemand": 71.4,
+      "gridStress": 67.1,
+      "npiEquityLegs": 262.1
+    },
+    {
+      "date": "2025-08-22",
+      "aiDemand": 74.3,
+      "gridStress": 68.2,
+      "npiEquityLegs": 264.3
+    },
+    {
+      "date": "2025-08-25",
+      "aiDemand": 72.5,
+      "gridStress": 67.8,
+      "npiEquityLegs": 264.2
+    },
+    {
+      "date": "2025-08-26",
+      "aiDemand": 72.9,
+      "gridStress": 69.7,
+      "npiEquityLegs": 270.3
+    },
+    {
+      "date": "2025-08-27",
+      "aiDemand": 72.5,
+      "gridStress": 68.1,
+      "npiEquityLegs": 268.8
+    },
+    {
+      "date": "2025-08-28",
+      "aiDemand": 72,
+      "gridStress": 68.7,
+      "npiEquityLegs": 272.6
+    },
+    {
+      "date": "2025-08-29",
+      "aiDemand": 69,
+      "gridStress": 65.2,
+      "npiEquityLegs": 264.8
+    },
+    {
+      "date": "2025-09-02",
+      "aiDemand": 70.2,
+      "gridStress": 66.7,
+      "npiEquityLegs": 261.6
+    },
+    {
+      "date": "2025-09-03",
+      "aiDemand": 72.1,
+      "gridStress": 68.3,
+      "npiEquityLegs": 264.4
+    },
+    {
+      "date": "2025-09-04",
+      "aiDemand": 73.8,
+      "gridStress": 68.6,
+      "npiEquityLegs": 264.9
+    },
+    {
+      "date": "2025-09-05",
+      "aiDemand": 73,
+      "gridStress": 67,
+      "npiEquityLegs": 262.5
+    },
+    {
+      "date": "2025-09-08",
+      "aiDemand": 72.6,
+      "gridStress": 67.4,
+      "npiEquityLegs": 263
+    },
+    {
+      "date": "2025-09-09",
+      "aiDemand": 74.1,
+      "gridStress": 69.9,
+      "npiEquityLegs": 267.9
+    },
+    {
+      "date": "2025-09-10",
+      "aiDemand": 75.7,
+      "gridStress": 73.5,
+      "npiEquityLegs": 282.9
+    },
+    {
+      "date": "2025-09-11",
+      "aiDemand": 73.7,
+      "gridStress": 67.3,
+      "npiEquityLegs": 279.2
+    },
+    {
+      "date": "2025-09-12",
+      "aiDemand": 72.8,
+      "gridStress": 69.4,
+      "npiEquityLegs": 283.2
+    },
+    {
+      "date": "2025-09-15",
+      "aiDemand": 72.4,
+      "gridStress": 69.6,
+      "npiEquityLegs": 292.1
+    },
+    {
+      "date": "2025-09-16",
+      "aiDemand": 71.1,
+      "gridStress": 66,
+      "npiEquityLegs": 285
+    },
+    {
+      "date": "2025-09-17",
+      "aiDemand": 70.9,
+      "gridStress": 67.6,
+      "npiEquityLegs": 284.5
+    },
+    {
+      "date": "2025-09-18",
+      "aiDemand": 75.5,
+      "gridStress": 68.7,
+      "npiEquityLegs": 287.2
+    },
+    {
+      "date": "2025-09-19",
+      "aiDemand": 71.2,
+      "gridStress": 69.3,
+      "npiEquityLegs": 292.5
+    },
+    {
+      "date": "2025-09-22",
+      "aiDemand": 75.2,
+      "gridStress": 71.2,
+      "npiEquityLegs": 300.8
+    },
+    {
+      "date": "2025-09-23",
+      "aiDemand": 72.1,
+      "gridStress": 64.6,
+      "npiEquityLegs": 289.4
+    },
+    {
+      "date": "2025-09-24",
+      "aiDemand": 70.5,
+      "gridStress": 67.4,
+      "npiEquityLegs": 286
+    },
+    {
+      "date": "2025-09-25",
+      "aiDemand": 71,
+      "gridStress": 66.4,
+      "npiEquityLegs": 284.7
+    },
+    {
+      "date": "2025-09-26",
+      "aiDemand": 72.1,
+      "gridStress": 69.9,
+      "npiEquityLegs": 289.2
+    },
+    {
+      "date": "2025-09-29",
+      "aiDemand": 73.5,
+      "gridStress": 66.3,
+      "npiEquityLegs": 283
+    },
+    {
+      "date": "2025-09-30",
+      "aiDemand": 74.3,
+      "gridStress": 67.1,
+      "npiEquityLegs": 280.2
+    },
+    {
+      "date": "2025-10-01",
+      "aiDemand": 74.5,
+      "gridStress": 71.2,
+      "npiEquityLegs": 288.3
+    },
+    {
+      "date": "2025-10-02",
+      "aiDemand": 72.5,
+      "gridStress": 68.8,
+      "npiEquityLegs": 291.7
+    },
+    {
+      "date": "2025-10-03",
+      "aiDemand": 72.7,
+      "gridStress": 68.3,
+      "npiEquityLegs": 291.6
+    },
+    {
+      "date": "2025-10-06",
+      "aiDemand": 73.2,
+      "gridStress": 68.4,
+      "npiEquityLegs": 292.7
+    },
+    {
+      "date": "2025-10-07",
+      "aiDemand": 70.5,
+      "gridStress": 67.2,
+      "npiEquityLegs": 291.6
+    },
+    {
+      "date": "2025-10-08",
+      "aiDemand": 75.7,
+      "gridStress": 71.2,
+      "npiEquityLegs": 298.5
+    },
+    {
+      "date": "2025-10-09",
+      "aiDemand": 72.2,
+      "gridStress": 70,
+      "npiEquityLegs": 303.7
+    },
+    {
+      "date": "2025-10-10",
+      "aiDemand": 66.5,
+      "gridStress": 63.9,
+      "npiEquityLegs": 291.7
+    },
+    {
+      "date": "2025-10-13",
+      "aiDemand": 77,
+      "gridStress": 71.9,
+      "npiEquityLegs": 307.1
+    },
+    {
+      "date": "2025-10-14",
+      "aiDemand": 69,
+      "gridStress": 68.4,
+      "npiEquityLegs": 307.4
+    },
+    {
+      "date": "2025-10-15",
+      "aiDemand": 73.4,
+      "gridStress": 70.5,
+      "npiEquityLegs": 314.6
+    },
+    {
+      "date": "2025-10-16",
+      "aiDemand": 72.8,
+      "gridStress": 67,
+      "npiEquityLegs": 310.6
+    },
+    {
+      "date": "2025-10-17",
+      "aiDemand": 71.9,
+      "gridStress": 65.4,
+      "npiEquityLegs": 299.4
+    },
+    {
+      "date": "2025-10-20",
+      "aiDemand": 72.8,
+      "gridStress": 65.4,
+      "npiEquityLegs": 291.3
+    },
+    {
+      "date": "2025-10-21",
+      "aiDemand": 70.8,
+      "gridStress": 65.3,
+      "npiEquityLegs": 280.7
+    },
+    {
+      "date": "2025-10-22",
+      "aiDemand": 71.1,
+      "gridStress": 67.2,
+      "npiEquityLegs": 278.1
+    },
+    {
+      "date": "2025-10-23",
+      "aiDemand": 73.5,
+      "gridStress": 70.9,
+      "npiEquityLegs": 286.3
+    },
+    {
+      "date": "2025-10-24",
+      "aiDemand": 74.8,
+      "gridStress": 72.6,
+      "npiEquityLegs": 299.4
+    },
+    {
+      "date": "2025-10-27",
+      "aiDemand": 73.9,
+      "gridStress": 67.8,
+      "npiEquityLegs": 297.2
+    },
+    {
+      "date": "2025-10-28",
+      "aiDemand": 74.1,
+      "gridStress": 64.9,
+      "npiEquityLegs": 298.5
+    },
+    {
+      "date": "2025-10-29",
+      "aiDemand": 73.6,
+      "gridStress": 70.8,
+      "npiEquityLegs": 308.7
+    },
+    {
+      "date": "2025-10-30",
+      "aiDemand": 71.7,
+      "gridStress": 65.5,
+      "npiEquityLegs": 298.1
+    },
+    {
+      "date": "2025-10-31",
+      "aiDemand": 72,
+      "gridStress": 67.6,
+      "npiEquityLegs": 294.6
+    },
+    {
+      "date": "2025-11-03",
+      "aiDemand": 74,
+      "gridStress": 68.7,
+      "npiEquityLegs": 295.8
+    },
+    {
+      "date": "2025-11-04",
+      "aiDemand": 67.7,
+      "gridStress": 65,
+      "npiEquityLegs": 284.9
+    },
+    {
+      "date": "2025-11-05",
+      "aiDemand": 72.5,
+      "gridStress": 68.6,
+      "npiEquityLegs": 287
+    },
+    {
+      "date": "2025-11-06",
+      "aiDemand": 69.8,
+      "gridStress": 65.8,
+      "npiEquityLegs": 278
+    },
+    {
+      "date": "2025-11-07",
+      "aiDemand": 71.9,
+      "gridStress": 70.3,
+      "npiEquityLegs": 284.8
+    },
+    {
+      "date": "2025-11-10",
+      "aiDemand": 77,
+      "gridStress": 67.8,
+      "npiEquityLegs": 284.8
+    },
+    {
+      "date": "2025-11-11",
+      "aiDemand": 69.1,
+      "gridStress": 65,
+      "npiEquityLegs": 275.3
+    },
+    {
+      "date": "2025-11-12",
+      "aiDemand": 72.2,
+      "gridStress": 67.8,
+      "npiEquityLegs": 275.2
+    },
+    {
+      "date": "2025-11-13",
+      "aiDemand": 68,
+      "gridStress": 63.9,
+      "npiEquityLegs": 263.3
+    },
+    {
+      "date": "2025-11-14",
+      "aiDemand": 73.8,
+      "gridStress": 69,
+      "npiEquityLegs": 265.3
+    },
+    {
+      "date": "2025-11-17",
+      "aiDemand": 70.2,
+      "gridStress": 67.9,
+      "npiEquityLegs": 264.2
+    },
+    {
+      "date": "2025-11-18",
+      "aiDemand": 69.3,
+      "gridStress": 68,
+      "npiEquityLegs": 264
+    },
+    {
+      "date": "2025-11-19",
+      "aiDemand": 73.4,
+      "gridStress": 70.6,
+      "npiEquityLegs": 272.3
+    },
+    {
+      "date": "2025-11-20",
+      "aiDemand": 67.6,
+      "gridStress": 65.3,
+      "npiEquityLegs": 263.1
+    },
+    {
+      "date": "2025-11-21",
+      "aiDemand": 71.9,
+      "gridStress": 66.1,
+      "npiEquityLegs": 256.9
+    },
+    {
+      "date": "2025-11-24",
+      "aiDemand": 75.7,
+      "gridStress": 71.4,
+      "npiEquityLegs": 266.7
+    },
+    {
+      "date": "2025-11-25",
+      "aiDemand": 70.4,
+      "gridStress": 66.4,
+      "npiEquityLegs": 264.9
+    },
+    {
+      "date": "2025-11-26",
+      "aiDemand": 73.7,
+      "gridStress": 70.2,
+      "npiEquityLegs": 271.4
+    },
+    {
+      "date": "2025-11-28",
+      "aiDemand": 71.9,
+      "gridStress": 69.1,
+      "npiEquityLegs": 274.1
+    },
+    {
+      "date": "2025-12-01",
+      "aiDemand": 72.1,
+      "gridStress": 65.7,
+      "npiEquityLegs": 268.4
+    },
+    {
+      "date": "2025-12-02",
+      "aiDemand": 72.6,
+      "gridStress": 68,
+      "npiEquityLegs": 269.5
+    },
+    {
+      "date": "2025-12-03",
+      "aiDemand": 71.6,
+      "gridStress": 67.7,
+      "npiEquityLegs": 269.7
+    },
+    {
+      "date": "2025-12-04",
+      "aiDemand": 72,
+      "gridStress": 69.5,
+      "npiEquityLegs": 277.3
+    },
+    {
+      "date": "2025-12-05",
+      "aiDemand": 73.3,
+      "gridStress": 65.7,
+      "npiEquityLegs": 267.5
+    },
+    {
+      "date": "2025-12-08",
+      "aiDemand": 74.2,
+      "gridStress": 67.5,
+      "npiEquityLegs": 266.1
+    },
+    {
+      "date": "2025-12-09",
+      "aiDemand": 72.4,
+      "gridStress": 67.9,
+      "npiEquityLegs": 266.3
+    },
+    {
+      "date": "2025-12-10",
+      "aiDemand": 73,
+      "gridStress": 68.2,
+      "npiEquityLegs": 266.9
+    },
+    {
+      "date": "2025-12-11",
+      "aiDemand": 71.1,
+      "gridStress": 72.6,
+      "npiEquityLegs": 278.2
+    },
+    {
+      "date": "2025-12-12",
+      "aiDemand": 67.8,
+      "gridStress": 64.4,
+      "npiEquityLegs": 266.7
+    },
+    {
+      "date": "2025-12-15",
+      "aiDemand": 72,
+      "gridStress": 68.4,
+      "npiEquityLegs": 264.8
+    },
+    {
+      "date": "2025-12-16",
+      "aiDemand": 71.8,
+      "gridStress": 70,
+      "npiEquityLegs": 268.9
+    },
+    {
+      "date": "2025-12-17",
+      "aiDemand": 68.3,
+      "gridStress": 62.2,
+      "npiEquityLegs": 253.2
+    },
+    {
+      "date": "2025-12-18",
+      "aiDemand": 75.5,
+      "gridStress": 71.5,
+      "npiEquityLegs": 262.9
+    },
+    {
+      "date": "2025-12-19",
+      "aiDemand": 76.1,
+      "gridStress": 67.2,
+      "npiEquityLegs": 262
+    },
+    {
+      "date": "2025-12-22",
+      "aiDemand": 73.9,
+      "gridStress": 67.9,
+      "npiEquityLegs": 261.3
+    },
+    {
+      "date": "2025-12-23",
+      "aiDemand": 73.9,
+      "gridStress": 68.4,
+      "npiEquityLegs": 262.6
+    },
+    {
+      "date": "2025-12-24",
+      "aiDemand": 72.7,
+      "gridStress": 68.3,
+      "npiEquityLegs": 263.3
+    },
+    {
+      "date": "2025-12-26",
+      "aiDemand": 72.9,
+      "gridStress": 67.7,
+      "npiEquityLegs": 261.8
+    },
+    {
+      "date": "2025-12-29",
+      "aiDemand": 71.9,
+      "gridStress": 67.9,
+      "npiEquityLegs": 261.3
+    },
+    {
+      "date": "2025-12-30",
+      "aiDemand": 71.7,
+      "gridStress": 68.2,
+      "npiEquityLegs": 260.6
+    },
+    {
+      "date": "2025-12-31",
+      "aiDemand": 71.6,
+      "gridStress": 67.2,
+      "npiEquityLegs": 259.1
+    },
+    {
+      "date": "2026-01-02",
+      "aiDemand": 76,
+      "gridStress": 70.2,
+      "npiEquityLegs": 268.9
+    },
+    {
+      "date": "2026-01-05",
+      "aiDemand": 72.1,
+      "gridStress": 66.6,
+      "npiEquityLegs": 267.6
+    },
+    {
+      "date": "2026-01-06",
+      "aiDemand": 74.6,
+      "gridStress": 70.1,
+      "npiEquityLegs": 272.7
+    },
+    {
+      "date": "2026-01-07",
+      "aiDemand": 71.1,
+      "gridStress": 62.5,
+      "npiEquityLegs": 260.3
+    },
+    {
+      "date": "2026-01-08",
+      "aiDemand": 70.4,
+      "gridStress": 65.5,
+      "npiEquityLegs": 255
+    },
+    {
+      "date": "2026-01-09",
+      "aiDemand": 74,
+      "gridStress": 74.9,
+      "npiEquityLegs": 270.7
+    },
+    {
+      "date": "2026-01-12",
+      "aiDemand": 72.3,
+      "gridStress": 68.3,
+      "npiEquityLegs": 275.4
+    },
+    {
+      "date": "2026-01-13",
+      "aiDemand": 72.3,
+      "gridStress": 68,
+      "npiEquityLegs": 273.2
+    },
+    {
+      "date": "2026-01-14",
+      "aiDemand": 70.6,
+      "gridStress": 67,
+      "npiEquityLegs": 272.6
+    },
+    {
+      "date": "2026-01-15",
+      "aiDemand": 74.6,
+      "gridStress": 71.9,
+      "npiEquityLegs": 283.2
+    },
+    {
+      "date": "2026-01-16",
+      "aiDemand": 73.3,
+      "gridStress": 61.5,
+      "npiEquityLegs": 270.1
+    },
+    {
+      "date": "2026-01-20",
+      "aiDemand": 68.1,
+      "gridStress": 63.7,
+      "npiEquityLegs": 260.3
+    },
+    {
+      "date": "2026-01-21",
+      "aiDemand": 74.9,
+      "gridStress": 69.1,
+      "npiEquityLegs": 265.8
+    },
+    {
+      "date": "2026-01-22",
+      "aiDemand": 72.8,
+      "gridStress": 67.2,
+      "npiEquityLegs": 265.2
+    },
+    {
+      "date": "2026-01-23",
+      "aiDemand": 73.5,
+      "gridStress": 68.1,
+      "npiEquityLegs": 266
+    },
+    {
+      "date": "2026-01-26",
+      "aiDemand": 71.5,
+      "gridStress": 67.7,
+      "npiEquityLegs": 262.3
+    },
+    {
+      "date": "2026-01-27",
+      "aiDemand": 74.1,
+      "gridStress": 69.9,
+      "npiEquityLegs": 270.3
+    },
+    {
+      "date": "2026-01-28",
+      "aiDemand": 74.4,
+      "gridStress": 68.4,
+      "npiEquityLegs": 276.2
+    },
+    {
+      "date": "2026-01-29",
+      "aiDemand": 72.3,
+      "gridStress": 67.5,
+      "npiEquityLegs": 272.1
+    },
+    {
+      "date": "2026-01-30",
+      "aiDemand": 69.8,
+      "gridStress": 66,
+      "npiEquityLegs": 261.9
+    },
+    {
+      "date": "2026-02-02",
+      "aiDemand": 72.3,
+      "gridStress": 65.4,
+      "npiEquityLegs": 255.2
+    },
+    {
+      "date": "2026-02-03",
+      "aiDemand": 69.1,
+      "gridStress": 67.1,
+      "npiEquityLegs": 257.8
+    },
+    {
+      "date": "2026-02-04",
+      "aiDemand": 67.8,
+      "gridStress": 62.9,
+      "npiEquityLegs": 240.9
+    },
+    {
+      "date": "2026-02-05",
+      "aiDemand": 72.2,
+      "gridStress": 67.8,
+      "npiEquityLegs": 237
+    },
+    {
+      "date": "2026-02-06",
+      "aiDemand": 79.2,
+      "gridStress": 73.1,
+      "npiEquityLegs": 247.7
+    },
+    {
+      "date": "2026-02-09",
+      "aiDemand": 73.5,
+      "gridStress": 70.6,
+      "npiEquityLegs": 255.9
+    },
+    {
+      "date": "2026-02-10",
+      "aiDemand": 71.7,
+      "gridStress": 69.6,
+      "npiEquityLegs": 258.5
+    },
+    {
+      "date": "2026-02-11",
+      "aiDemand": 75.5,
+      "gridStress": 69.2,
+      "npiEquityLegs": 260.5
+    },
+    {
+      "date": "2026-02-12",
+      "aiDemand": 73.4,
+      "gridStress": 71.2,
+      "npiEquityLegs": 260.2
+    },
+    {
+      "date": "2026-02-13",
+      "aiDemand": 70.7,
+      "gridStress": 71.6,
+      "npiEquityLegs": 267.2
+    },
+    {
+      "date": "2026-02-17",
+      "aiDemand": 71.8,
+      "gridStress": 70.2,
+      "npiEquityLegs": 271.3
+    },
+    {
+      "date": "2026-02-18",
+      "aiDemand": 72.9,
+      "gridStress": 65.5,
+      "npiEquityLegs": 269.7
+    },
+    {
+      "date": "2026-02-19",
+      "aiDemand": 71.5,
+      "gridStress": 68,
+      "npiEquityLegs": 272.1
+    },
+    {
+      "date": "2026-02-20",
+      "aiDemand": 74.1,
+      "gridStress": 68.4,
+      "npiEquityLegs": 272.7
+    },
+    {
+      "date": "2026-02-23",
+      "aiDemand": 72.5,
+      "gridStress": 67.5,
+      "npiEquityLegs": 268.6
+    },
+    {
+      "date": "2026-02-24",
+      "aiDemand": 73.6,
+      "gridStress": 71.3,
+      "npiEquityLegs": 276.5
+    },
+    {
+      "date": "2026-02-25",
+      "aiDemand": 73.7,
+      "gridStress": 70.7,
+      "npiEquityLegs": 281.1
+    },
+    {
+      "date": "2026-02-26",
+      "aiDemand": 67.7,
+      "gridStress": 67.8,
+      "npiEquityLegs": 280.8
+    },
+    {
+      "date": "2026-02-27",
+      "aiDemand": 70.3,
+      "gridStress": 68.7,
+      "npiEquityLegs": 279.5
+    },
+    {
+      "date": "2026-03-02",
+      "aiDemand": 72.8,
+      "gridStress": 65.7,
+      "npiEquityLegs": 277.5
+    },
+    {
+      "date": "2026-03-03",
+      "aiDemand": 68.8,
+      "gridStress": 66.9,
+      "npiEquityLegs": 268.6
+    },
+    {
+      "date": "2026-03-04",
+      "aiDemand": 74.1,
+      "gridStress": 68.1,
+      "npiEquityLegs": 270.8
+    },
+    {
+      "date": "2026-03-05",
+      "aiDemand": 71.2,
+      "gridStress": 69.6,
+      "npiEquityLegs": 271.4
+    },
+    {
+      "date": "2026-03-06",
+      "aiDemand": 67.7,
+      "gridStress": 64.1,
+      "npiEquityLegs": 260.6
+    },
+    {
+      "date": "2026-03-09",
+      "aiDemand": 75.3,
+      "gridStress": 69.9,
+      "npiEquityLegs": 268.1
+    },
+    {
+      "date": "2026-03-10",
+      "aiDemand": 73.3,
+      "gridStress": 67.8,
+      "npiEquityLegs": 269.6
+    },
+    {
+      "date": "2026-03-11",
+      "aiDemand": 74.1,
+      "gridStress": 65.4,
+      "npiEquityLegs": 261.1
+    },
+    {
+      "date": "2026-03-12",
+      "aiDemand": 69.1,
+      "gridStress": 68.2,
+      "npiEquityLegs": 261.4
+    },
+    {
+      "date": "2026-03-13",
+      "aiDemand": 72.3,
+      "gridStress": 67.8,
+      "npiEquityLegs": 257.5
+    },
+    {
+      "date": "2026-03-16",
+      "aiDemand": 74,
+      "gridStress": 69.6,
+      "npiEquityLegs": 261.4
+    },
+    {
+      "date": "2026-03-17",
+      "aiDemand": 72.9,
+      "gridStress": 68.6,
+      "npiEquityLegs": 264.3
+    },
+    {
+      "date": "2026-03-18",
+      "aiDemand": 71,
+      "gridStress": 70.4,
+      "npiEquityLegs": 268.2
+    },
+    {
+      "date": "2026-03-19",
+      "aiDemand": 70.8,
+      "gridStress": 67.3,
+      "npiEquityLegs": 264.6
+    },
+    {
+      "date": "2026-03-20",
+      "aiDemand": 68.3,
+      "gridStress": 58.7,
+      "npiEquityLegs": 240.4
+    },
+    {
+      "date": "2026-03-23",
+      "aiDemand": 73.1,
+      "gridStress": 70.6,
+      "npiEquityLegs": 247.9
+    },
+    {
+      "date": "2026-03-24",
+      "aiDemand": 71.9,
+      "gridStress": 68.9,
+      "npiEquityLegs": 250.7
+    },
+    {
+      "date": "2026-03-25",
+      "aiDemand": 72.8,
+      "gridStress": 68.7,
+      "npiEquityLegs": 252.8
+    },
+    {
+      "date": "2026-03-26",
+      "aiDemand": 66.8,
+      "gridStress": 67.2,
+      "npiEquityLegs": 248.9
+    },
+    {
+      "date": "2026-03-27",
+      "aiDemand": 71.1,
+      "gridStress": 69.6,
+      "npiEquityLegs": 251.8
+    },
+    {
+      "date": "2026-03-30",
+      "aiDemand": 68.6,
+      "gridStress": 65.7,
+      "npiEquityLegs": 244.5
+    },
+    {
+      "date": "2026-03-31",
+      "aiDemand": 78,
+      "gridStress": 66.9,
+      "npiEquityLegs": 246.8
+    },
+    {
+      "date": "2026-04-01",
+      "aiDemand": 74.7,
+      "gridStress": 69.4,
+      "npiEquityLegs": 250.5
+    },
+    {
+      "date": "2026-04-02",
+      "aiDemand": 72.3,
+      "gridStress": 66.6,
+      "npiEquityLegs": 247.7
+    },
+    {
+      "date": "2026-04-06",
+      "aiDemand": 73.3,
+      "gridStress": 68.8,
+      "npiEquityLegs": 247.6
+    },
+    {
+      "date": "2026-04-07",
+      "aiDemand": 72.2,
+      "gridStress": 68,
+      "npiEquityLegs": 248
+    },
+    {
+      "date": "2026-04-08",
+      "aiDemand": 76.5,
+      "gridStress": 70.3,
+      "npiEquityLegs": 255.1
+    },
+    {
+      "date": "2026-04-09",
+      "aiDemand": 73.4,
+      "gridStress": 67,
+      "npiEquityLegs": 251.8
+    },
+    {
+      "date": "2026-04-10",
+      "aiDemand": 73.6,
+      "gridStress": 69.3,
+      "npiEquityLegs": 254.5
+    },
+    {
+      "date": "2026-04-13",
+      "aiDemand": 73,
+      "gridStress": 70.2,
+      "npiEquityLegs": 258.7
+    },
+    {
+      "date": "2026-04-14",
+      "aiDemand": 76.3,
+      "gridStress": 70.1,
+      "npiEquityLegs": 264.1
+    },
+    {
+      "date": "2026-04-15",
+      "aiDemand": 71.7,
+      "gridStress": 67.4,
+      "npiEquityLegs": 265.1
+    },
+    {
+      "date": "2026-04-16",
+      "aiDemand": 71.4,
+      "gridStress": 69.6,
+      "npiEquityLegs": 268.1
+    },
+    {
+      "date": "2026-04-17",
+      "aiDemand": 73.7,
+      "gridStress": 67.6,
+      "npiEquityLegs": 266.5
+    },
+    {
+      "date": "2026-04-20",
+      "aiDemand": 71.8,
+      "gridStress": 66.4,
+      "npiEquityLegs": 263.3
+    },
+    {
+      "date": "2026-04-21",
+      "aiDemand": 71.5,
+      "gridStress": 65.4,
+      "npiEquityLegs": 254.2
+    },
+    {
+      "date": "2026-04-22",
+      "aiDemand": 75.9,
+      "gridStress": 69.6,
+      "npiEquityLegs": 262
+    },
+    {
+      "date": "2026-04-23",
+      "aiDemand": 71,
+      "gridStress": 69.3,
+      "npiEquityLegs": 262.4
+    },
+    {
+      "date": "2026-04-24",
+      "aiDemand": 76,
+      "gridStress": 72.2,
+      "npiEquityLegs": 269.9
+    },
+    {
+      "date": "2026-04-27",
+      "aiDemand": 74.7,
+      "gridStress": 68.3,
+      "npiEquityLegs": 272.9
+    },
+    {
+      "date": "2026-04-28",
+      "aiDemand": 69.3,
+      "gridStress": 65.3,
+      "npiEquityLegs": 263.6
+    },
+    {
+      "date": "2026-04-29",
+      "aiDemand": 72,
+      "gridStress": 65.5,
+      "npiEquityLegs": 255.3
+    },
+    {
+      "date": "2026-04-30",
+      "aiDemand": 69.8,
+      "gridStress": 70.8,
+      "npiEquityLegs": 266.1
+    },
+    {
+      "date": "2026-05-01",
+      "aiDemand": 72.8,
+      "gridStress": 66.8,
+      "npiEquityLegs": 262.1
+    },
+    {
+      "date": "2026-05-04",
+      "aiDemand": 73.4,
+      "gridStress": 70.9,
+      "npiEquityLegs": 267.4
+    },
+    {
+      "date": "2026-05-05",
+      "aiDemand": 72.9,
+      "gridStress": 67.7,
+      "npiEquityLegs": 265.1
+    },
+    {
+      "date": "2026-05-06",
+      "aiDemand": 77.6,
+      "gridStress": 68,
+      "npiEquityLegs": 269.3
+    },
+    {
+      "date": "2026-05-07",
+      "aiDemand": 71.5,
+      "gridStress": 65.2,
+      "npiEquityLegs": 261.2
+    },
+    {
+      "date": "2026-05-08",
+      "aiDemand": 75.6,
+      "gridStress": 65.6,
+      "npiEquityLegs": 254
+    },
+    {
+      "date": "2026-05-11",
+      "aiDemand": 73.9,
+      "gridStress": 69,
+      "npiEquityLegs": 258.8
+    },
+    {
+      "date": "2026-05-12",
+      "aiDemand": 71,
+      "gridStress": 65.8,
+      "npiEquityLegs": 251.4
+    },
+    {
+      "date": "2026-05-13",
+      "aiDemand": 74.1,
+      "gridStress": 64.5,
+      "npiEquityLegs": 243.7
+    },
+    {
+      "date": "2026-05-14",
+      "aiDemand": 74.9,
+      "gridStress": 67.9,
+      "npiEquityLegs": 241.8
+    },
+    {
+      "date": "2026-05-15",
+      "aiDemand": 67.3,
+      "gridStress": 65.9,
+      "npiEquityLegs": 235.9
+    },
+    {
+      "date": "2026-05-18",
+      "aiDemand": 69.7,
+      "gridStress": 66.6,
+      "npiEquityLegs": 231.5
+    },
+    {
+      "date": "2026-05-19",
+      "aiDemand": 71.5,
+      "gridStress": 66.9,
+      "npiEquityLegs": 228.6
+    },
+    {
+      "date": "2026-05-20",
+      "aiDemand": 74.7,
+      "gridStress": 74,
+      "npiEquityLegs": 239.7
+    },
+    {
+      "date": "2026-05-21",
+      "aiDemand": 72.6,
+      "gridStress": 70.3,
+      "npiEquityLegs": 245
+    },
+    {
+      "date": "2026-05-22",
+      "aiDemand": 70.7,
+      "gridStress": 71,
+      "npiEquityLegs": 251.6
+    },
+    {
+      "date": "2026-05-26",
+      "aiDemand": 75.9,
+      "gridStress": 71,
+      "npiEquityLegs": 260.9
+    },
+    {
+      "date": "2026-05-27",
+      "aiDemand": 72.7,
+      "gridStress": 65.3,
+      "npiEquityLegs": 254.7
+    },
+    {
+      "date": "2026-05-28",
+      "aiDemand": 72.4,
+      "gridStress": 67.7,
+      "npiEquityLegs": 255.6
+    },
+    {
+      "date": "2026-05-29",
+      "aiDemand": 71.7,
+      "gridStress": 68.1,
+      "npiEquityLegs": 256.5
+    },
+    {
+      "date": "2026-06-01",
+      "aiDemand": 77,
+      "gridStress": 63.5,
+      "npiEquityLegs": 248.4
+    },
+    {
+      "date": "2026-06-02",
+      "aiDemand": 73.4,
+      "gridStress": 70.2,
+      "npiEquityLegs": 256.2
+    },
+    {
+      "date": "2026-06-03",
+      "aiDemand": 70,
+      "gridStress": 66.4,
+      "npiEquityLegs": 248.6
+    }
+  ]
+}
