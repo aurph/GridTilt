@@ -16,7 +16,7 @@ const BASE_URL = "https://gridtilt.com";
 const STATIC_PAGES: Record<string, { title: string; description: string; slug: string }> = {
   "/": {
     title: "GridTilt \u2014 The AI Power Buildout, Tracked Honestly",
-    description: "A research dashboard for the AI infrastructure buildout \u2014 data centers, power, compute, and the public equities behind them. Three live indices. Six modules. No Bloomberg required.",
+    description: "A research dashboard for the AI infrastructure buildout \u2014 data centers, power, compute, and the public equities behind them. Three live market gauges. Six modules. No Bloomberg required.",
     slug: "",
   },
   "/overview": {

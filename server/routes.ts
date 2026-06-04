@@ -1072,7 +1072,7 @@ async function liveIndicesStats(): Promise<OgStat[]> {
 // composers use, so the card and the tweet text stay in sync.
 async function ogCardForTemplate(template: string): Promise<OgCard> {
   if (template === "tilt_status") {
-    return { title: "today's indices", subtitle: "ai power demand · nuclear · grid stress", stats: await liveIndicesStats() };
+    return { title: "today's market gauges", subtitle: "ai demand · nuclear · grid stress", stats: await liveIndicesStats() };
   }
   if (template === "top_movers") {
     const sd = await getCachedStockData("1D");
@@ -1608,19 +1608,20 @@ async function composeTiltStatusTweet(): Promise<string> {
       ? `npi is the outlier. ${npiPctOff.toFixed(0)} points above its jan 2024 baseline of 100. the other two sit near where they started.`
       : `npi is the outlier on the downside. ${Math.abs(npiPctOff).toFixed(0)} points below its baseline.`;
   } else if (Math.abs(stressOff) > 6 && Math.abs(stressOff) >= Math.abs(aiOff)) {
+    // Sentiment gauge: describe market moves, never physical grid claims.
     line = stressOff > 0
-      ? "grid stress is the one moving. reserve margins keep tightening."
-      : "grid stress has eased back toward baseline.";
+      ? "grid stress gauge is the one moving. power equities bid up today."
+      : "grid stress gauge has eased back toward baseline.";
   } else if (Math.abs(aiOff) > 6) {
     line = aiOff > 0
-      ? "ai power demand sits above baseline. compute and dc reits doing the work."
-      : "ai power demand has cooled. watch hyperscaler capex tone.";
+      ? "ai demand gauge sits above baseline. compute and dc reits doing the work."
+      : "ai demand gauge has cooled. watch hyperscaler capex tone.";
   } else {
-    line = "all three indices sit near their baselines today.";
+    line = "all three gauges sit near their baselines today.";
   }
 
   return [
-    "gridtilt · today's indices",
+    "gridtilt · today's market gauges",
     "",
     `ai power demand  ${k.aiPowerIndex.toFixed(0)}`,
     `nuclear (npi)    ${k.npiValue.toFixed(0)}`,

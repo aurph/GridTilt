@@ -268,10 +268,10 @@ function TiltStatusBar({ aiPower, gridStress, npi }: { aiPower: number | null; g
   const statusColor = isElevated ? "#F07800" : isEasing ? "#6b7280" : "#F0A500";
   const statusBg = isElevated ? "bg-[#F07800]/10 border-[#F07800]/25" : isEasing ? "bg-muted/20 border-card-border" : "bg-[#F0A500]/10 border-[#F0A500]/20";
   const description = isElevated
-    ? `All three indices elevated. AI power demand is outpacing grid additions. Grid stress at ${gridStress.toFixed(0)}/100 signals regional capacity constraints.`
+    ? `All three gauges elevated. The market is pricing the AI-power complex aggressively today; grid-equity momentum at ${gridStress.toFixed(0)}/100. These read market positioning, not physical grid conditions.`
     : isEasing
-    ? `Indices have pulled back from peaks. Could be sector rotation or reduced procurement activity. Watch hyperscaler capex guidance.`
-    : `Tracking the structural baseline. Demand index sits above 72/100. NPI at ${npi.toFixed(0)} reflects continued momentum from 2024 PPA signings.`;
+    ? `Gauges have pulled back from peaks. Could be sector rotation or cooling sentiment. Watch hyperscaler capex guidance.`
+    : `Tracking baseline. Market gauges near their fixed baselines. NPI at ${npi.toFixed(0)} reflects nuclear-complex performance since the Jan 2024 base.`;
 
   const numbers = [
     { label: "AI Demand", val: aiPower },
@@ -1072,10 +1072,13 @@ export default function TiltOverview() {
           </div>
         </Card>
 
-        {/* Composite indices — research depth, intentionally demoted from headline */}
+        {/* Market gauges — research depth, intentionally demoted from headline.
+            Labels follow the published backtest (docs/INDEX_VALIDATION.md):
+            the momentum gauges showed no correlation with physical output,
+            so they are presented as market sentiment, not measurements. */}
         <div className="pt-2">
           <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/70 mb-3">
-            composite indices · methodology in each card
+            market gauges · methodology and validation in each card
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3" data-testid="kpi-triad">
             <KpiCard
@@ -1083,8 +1086,9 @@ export default function TiltOverview() {
               title="AI Power Demand"
               value={kpiData?.aiPowerIndex ?? null}
               unit="/100"
+              subtitle="Market sentiment gauge"
               color="amber"
-              methodology="Composite score (0-100). Baseline 72 derived from data center share of US grid (~6%), AI capex run-rate, GPU/HBM backlog. Intraday momentum layer weighted to NVDA, TSM, EQIX, MU."
+              methodology="Market sentiment gauge, 52-94 around a fixed 72 baseline. Reads today's weighted moves in NVDA (40%), TSM (25%), EQIX (20%), MU (15%). Backtested against physical electricity output (FRED, 2019-2026): no correlation at any lead, so this tracks how the market is pricing the AI buildout today, not data center load. Formulas and the full study are public in the repo (docs/INDEX_VALIDATION.md)."
               constituents={c ? (
                 <>
                   <ConstituentRow label="NVDA" value={c.nvdaChange} />
@@ -1102,7 +1106,7 @@ export default function TiltOverview() {
               unit=""
               subtitle="Basket index, Jan 1, 2024 = 100"
               color="amber"
-              methodology="Weighted basket of CEG (25%), VST (20%), CCJ (15%), NLR ETF (20%), uranium spot (10%), and SMR policy score (10%). Rebased to 100 on Jan 1, 2024."
+              methodology="Weighted basket of CEG (25%), VST (20%), CCJ (15%), NLR ETF (20%), uranium spot (10%), and an SMR policy score (10%) derived from active nuclear PPAs in the tracked interconnection dataset. Weights are judgment calls, documented in the repo. Rebased to 100 on Jan 1, 2024."
               constituents={c ? (
                 <>
                   <PerfRow label="CEG" perf={c.cegPerf} />
@@ -1119,8 +1123,9 @@ export default function TiltOverview() {
               title="Grid Stress"
               value={kpiData?.gridStress ?? null}
               unit="/100"
+              subtitle="Market sentiment gauge"
               color="red"
-              methodology="Composite score (0-100). Baseline 68 derived from PJM/MISO/ERCOT reserve margin trajectories and DC interconnection queue backlog vs new capacity additions. Intraday momentum from merchant generators (VST, CEG) and DC REIT (EQIX)."
+              methodology="Market sentiment gauge, 52-92 around a fixed 68 baseline. Reads today's weighted moves in VST (40%), CEG (35%), EQIX (25%). Backtested against physical electricity output: no correlation found, and the basket does not beat VST alone, so this reads power-equity momentum, not reserve margins or LMPs. Formulas and the full study are public in the repo (docs/INDEX_VALIDATION.md)."
               constituents={c ? (
                 <>
                   <ConstituentRow label="VST" value={c.vstChange} />

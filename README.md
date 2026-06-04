@@ -47,6 +47,8 @@ The three headline indices are deterministic functions of their published consti
 
 Baselines (72, 68) and clamps are presentation choices that keep the gauges readable; they are disclosed here so nobody mistakes them for measurements. Constituent values are exposed at `/api/kpis`.
 
+**Validation:** the gauges are backtested against physical electricity output (FRED `IPG2211A2N`, 2019–2026, leads 0–3 months) in [docs/INDEX_VALIDATION.md](./docs/INDEX_VALIDATION.md). Result: neither AI Demand nor Grid Stress shows a physical signal, so both are labeled **market sentiment gauges** in the UI, not measurements. Reproduce it yourself: `npm run backtest:indices`. The reconstructed daily series lives in `server/data/index-history.json`.
+
 ---
 
 ## Stack
