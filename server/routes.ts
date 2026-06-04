@@ -26,6 +26,7 @@ import {
   computeNpiMomentum,
 } from "./indices";
 import { recordDailyIndexValues, readIndexHistory } from "./index-history";
+import { getElectricityOutputMonthly, getHourlyDemandUS48 } from "./physical";
 
 interface SupplyChainStage {
   name: string;
@@ -1881,6 +1882,25 @@ export async function registerRoutes(
   // Powers transparency and saves anyone re-deriving the series.
   app.get("/api/index-history", (_req, res) => {
     res.json(readIndexHistory());
+  });
+
+  // Physical electricity data (see server/physical.ts). The monthly output
+  // series is the one the index validation study correlates against.
+  app.get("/api/physical/electricity-output", async (_req, res) => {
+    try {
+      res.json(await getElectricityOutputMonthly());
+    } catch {
+      res.status(502).json({ error: "Upstream FRED fetch failed. Try again later." });
+    }
+  });
+  app.get("/api/physical/load-hourly", async (_req, res) => {
+    try {
+      const result = await getHourlyDemandUS48();
+      if (!result.configured) return res.status(503).json(result);
+      res.json(result);
+    } catch {
+      res.status(502).json({ error: "Upstream EIA fetch failed. Try again later." });
+    }
   });
 
   // Stack endpoint - 8 layers, 10-min cache

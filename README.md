@@ -29,6 +29,7 @@ Live: **[gridtilt.com](https://gridtilt.com)**
 |---|---|---|
 | Equity quotes, P/E, fundamentals | Yahoo Finance via `yahoo-finance2` (unofficial, indicative) | Live, with labeled static fallback when throttled |
 | US electricity demand chart | Static annual snapshot (2010–2025) hand-transcribed from [EIA Electric Power Monthly](https://www.eia.gov/electricity/monthly/); 2026–2030 lines are GridTilt projections, not forecasts | Static, embedded in the client |
+| Physical electricity output | FRED [`IPG2211A2N`](https://fred.stlouisfed.org/series/IPG2211A2N) served live at `/api/physical/electricity-output`; EIA US48 hourly demand at `/api/physical/load-hourly` once `EIA_API_KEY` is set | Live (FRED daily cache; EIA 30-min cache) |
 | Data center locations | Public announcements (Microsoft, Google, Amazon, Meta, Apple, xAI, OpenAI, Oracle), curated through a reviewed RSS ingestion pipeline | Curated, refreshed as announcements land |
 | Industry news | Live RSS from 8 publications | Live, refreshed hourly |
 | AI Demand, Grid Stress, NPI | Composite indices computed from constituent **equity moves** (NPI also uses uranium spot and a hand-derived policy score). They are market-based gauges, **not** physical grid measurements. See [Index methodology](#index-methodology). | Live, with labeled static fallback |
@@ -85,6 +86,7 @@ npm run check    # typecheck
 | `UNSUB_TOKEN_SECRET` | yes | HMAC key for unsubscribe tokens. `openssl rand -hex 32`. |
 | `ADMIN_API_KEY` | yes | Guards `/api/admin/*` and newsletter send. `openssl rand -hex 32`. |
 | `RESEND_API_KEY` | no | Syncs subscribers to Resend and enables newsletter sends. Without it, signups only persist to local JSON (ephemeral on autoscale hosts). |
+| `EIA_API_KEY` | no | Free key from [eia.gov/opendata](https://www.eia.gov/opendata/register.php). Enables live US48 hourly demand at `/api/physical/load-hourly`. |
 | `NEWSDATA_API_KEY` | no | Optional [newsdata.io](https://newsdata.io) key. The 8 RSS feeds work without it. |
 | `DATABASE_URL` | no | Postgres connection string. Without it, the app uses in-memory storage. |
 | `X_API_*` | no | Four X credentials for the daily auto-poster; dry-run logs locally without them. |
