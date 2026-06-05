@@ -17,5 +17,24 @@
     "sourceName": "Power Engineering",
     "discoveredAt": "2026-05-19T19:41:23.132Z",
     "approxCoords": true
+  },
+  {
+    "id": 60,
+    "name": "Google Unknown (Google Intersect Power break ground on)",
+    "company": "Google",
+    "city": "Unknown",
+    "state": "TX",
+    "lat": 31.054,
+    "lng": -97.563,
+    "powerMW": 1000,
+    "status": "announced",
+    "annualMWh": 7446000,
+    "gridOperator": "Unknown",
+    "openDate": "TBD",
+    "sourceUrl": "https://www.datacenterdynamics.com/en/news/make-more-data-center-centric0916claude-responded-google-breaks-ground-on-colocated-data-center-and-1gw-energy-project-in-texasgoogle-breaks-ground-on-colocated-data-center-and-1gw-energy-project-in-texas/",
+    "sourceTitle": "Google, Intersect Power break ground on colocated data center and 1GW+ energy project in Texas",
+    "sourceName": "DCD",
+    "discoveredAt": "2026-06-05T14:22:17.200Z",
+    "approxCoords": true
   }
 ]
