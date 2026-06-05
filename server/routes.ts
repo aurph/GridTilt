@@ -27,6 +27,15 @@ import {
 } from "./indices";
 import { recordDailyIndexValues, readIndexHistory } from "./index-history";
 import { getElectricityOutputMonthly, getHourlyDemandUS48 } from "./physical";
+import {
+  buildTiltStatusTweet,
+  buildTopMoversTweet,
+  buildNpiUpdateTweet,
+  buildQueueTweet,
+  buildCatalystTweet,
+  ensureTweetLength,
+  type HistoryDayLite,
+} from "./social-format";
 
 interface SupplyChainStage {
   name: string;
@@ -1553,22 +1562,9 @@ function deriveTiltStatus(k: KpiResult): "elevated" | "tracking baseline" | "eas
 }
 
 // ─── Tweet composers ───────────────────────────────────────────────────────
-// Voice rules:
-//   - lowercase, short sentences
-//   - describe what's in the data; don't editorialize
-//   - no "running hot", "carrying the basket", "the bottleneck nobody
-//     dashboards", "the whole trade", etc. those are takes, not observations
-//   - full https:// urls so X cards the link properly
-
-function fmtPct(n: number): string {
-  const v = n.toFixed(2);
-  return n >= 0 ? `+${v}%` : `${v}%`;
-}
-
-function fmtPerf(perf: number): string {
-  const pct = ((perf - 1) * 100).toFixed(0);
-  return perf >= 1 ? `+${pct}%` : `${pct}%`;
-}
+// All copy is built by pure, unit-tested formatters in server/social-format.ts
+// (voice rules documented there). These wrappers only gather live data, so
+// the exact text the cron ships is locked by tests instead of vibes.
 
 // Map every tracked ticker back to a short sector label for inline tagging.
 const SECTOR_TAG: Record<string, string> = (() => {
@@ -1596,43 +1592,11 @@ const SECTOR_TAG: Record<string, string> = (() => {
 
 async function composeTiltStatusTweet(): Promise<string> {
   const k = await computeKpis();
-
-  // Find which index is furthest from its own baseline (each scaled).
-  // ai_demand baseline 72, grid baseline 68, npi baseline 100.
-  const aiOff = k.aiPowerIndex - 72;
-  const stressOff = k.gridStress - 68;
-  const npiOff = k.npiValue - 100;
-  const npiPctOff = npiOff;  // expressed as points vs 100 -> ~ percent
-
-  let line: string;
-  if (Math.abs(npiPctOff) > 30 && Math.abs(npiPctOff) > Math.abs(aiOff) && Math.abs(npiPctOff) > Math.abs(stressOff)) {
-    line = npiPctOff > 0
-      ? `npi is the outlier. ${npiPctOff.toFixed(0)} points above its jan 2024 baseline of 100. the other two sit near where they started.`
-      : `npi is the outlier on the downside. ${Math.abs(npiPctOff).toFixed(0)} points below its baseline.`;
-  } else if (Math.abs(stressOff) > 6 && Math.abs(stressOff) >= Math.abs(aiOff)) {
-    // Sentiment gauge: describe market moves, never physical grid claims.
-    line = stressOff > 0
-      ? "grid stress gauge is the one moving. power equities bid up today."
-      : "grid stress gauge has eased back toward baseline.";
-  } else if (Math.abs(aiOff) > 6) {
-    line = aiOff > 0
-      ? "ai demand gauge sits above baseline. compute and dc reits doing the work."
-      : "ai demand gauge has cooled. watch hyperscaler capex tone.";
-  } else {
-    line = "all three gauges sit near their baselines today.";
-  }
-
-  return [
-    "gridtilt · today's market gauges",
-    "",
-    `ai power demand  ${k.aiPowerIndex.toFixed(0)}`,
-    `nuclear (npi)    ${k.npiValue.toFixed(0)}`,
-    `grid stress      ${k.gridStress.toFixed(0)}`,
-    "",
-    line,
-    "",
-    "https://gridtilt.com",
-  ].join("\n");
+  const history = ((readIndexHistory() as { days?: HistoryDayLite[] })?.days ?? []);
+  return buildTiltStatusTweet(
+    { aiPowerIndex: k.aiPowerIndex, gridStress: k.gridStress, npiValue: k.npiValue },
+    history,
+  );
 }
 
 async function composeTopMoversTweet(): Promise<string> {
@@ -1640,166 +1604,67 @@ async function composeTopMoversTweet(): Promise<string> {
   const movers = (Object.values(stockData) as any[])
     .filter((s) => s && typeof s.changePercent === "number")
     .sort((a, b) => Math.abs(b.changePercent) - Math.abs(a.changePercent))
-    .slice(0, 4);
-
-  // Show ticker + sector tag inline.
-  const lines = movers.map((s) => {
-    const tag = SECTOR_TAG[s.ticker];
-    return `$${s.ticker} ${fmtPct(s.changePercent)}${tag ? ` (${tag})` : ""}`;
-  });
-
-  // Honest direction count + dominant sector among the shown movers.
-  const upCount = movers.filter((s) => s.changePercent > 0).length;
-  const downCount = movers.length - upCount;
-
-  // Among the displayed tickers, which sector shows up the most?
-  const tagCounts: Record<string, number> = {};
-  for (const s of movers) {
-    const tag = SECTOR_TAG[s.ticker];
-    if (tag) tagCounts[tag] = (tagCounts[tag] ?? 0) + 1;
-  }
-  const repeated = Object.entries(tagCounts).find(([, n]) => n >= 2);
-
-  let line: string;
-  if (repeated) {
-    const tag = repeated[0];
-    const repTickers = movers.filter((s) => SECTOR_TAG[s.ticker] === tag);
-    const repUp = repTickers.filter((s) => s.changePercent > 0).length;
-    const direction = repUp === repTickers.length ? "up" : repUp === 0 ? "down" : "mixed";
-    line = `${tag} shows up ${repeated[1]} times, ${direction}.`;
-  } else if (downCount === movers.length) {
-    line = "all four down today.";
-  } else if (upCount === movers.length) {
-    line = "all four up today.";
-  } else {
-    line = `${upCount} up, ${downCount} down. mixed across sectors.`;
-  }
-
-  return [
-    "today's biggest moves in ai infra:",
-    "",
-    ...lines,
-    "",
-    line,
-    "",
-    "https://gridtilt.com/stack",
-  ].join("\n");
+    .slice(0, 4)
+    .map((s) => ({ ticker: s.ticker, changePercent: s.changePercent, tag: SECTOR_TAG[s.ticker] }));
+  return buildTopMoversTweet(movers);
 }
 
 async function composeNpiUpdateTweet(): Promise<string> {
   const k = await computeKpis();
-  const c = k.constituents;
-
-  const perfs = [
-    { sym: "CEG",  perf: c.cegPerf },
-    { sym: "VST",  perf: c.vstPerf },
-    { sym: "CCJ",  perf: c.ccjPerf },
-    { sym: "NLR",  perf: c.nlrPerf },
-    { sym: "U₃O₈", perf: c.uPerf  },
-  ];
-
-  // Sort components by magnitude of move for the data block.
-  const sorted = [...perfs].sort((a, b) => Math.abs(b.perf - 1) - Math.abs(a.perf - 1));
-  const top = sorted[0];
-
-  // Find the biggest divergence in the basket.
-  const max = sorted[0].perf;
-  const min = sorted[sorted.length - 1].perf;
-  const spread = ((max - min) * 100).toFixed(0);
-
-  return [
-    `nuclear power index today: ${k.npiValue.toFixed(0)}`,
-    "(baseline 100, jan 2024)",
-    "",
-    ...sorted.map((p) => `${p.sym.padEnd(5)} ${fmtPerf(p.perf)}`),
-    "",
-    `spread between ${top.sym} and the laggard: ${spread} points.`,
-    "",
-    "https://gridtilt.com",
-  ].join("\n");
+  return buildNpiUpdateTweet(k.npiValue, k.constituents);
 }
 
 async function composeQueueUpdateTweet(): Promise<string> {
   try {
     const filePath = join(process.cwd(), "server", "data", "interconnection-queue.json");
-    const raw = readFileSync(filePath, "utf-8");
-    const data = JSON.parse(raw) as BacklogDataset;
-    const h = data.headline;
-
-    return [
-      "us interconnection backlog",
-      "",
-      `~${h.queueOverallGW.toLocaleString()} GW in the overall queue.`,
-      `median wait: ${h.medianWaitMonths} months.`,
-      `ERCOT large-load alone: ${h.ercotLargeLoadGW} GW (${h.ercotLargeLoadDataCenterPct}% datacenters).`,
-      "",
-      `gridtilt tracks ${h.trackedProjects} named projects, ${h.trackedCapacityGW} GW.`,
-      "",
-      "https://gridtilt.com/queue",
-    ].join("\n");
+    const data = JSON.parse(readFileSync(filePath, "utf-8")) as BacklogDataset;
+    return buildQueueTweet(data.headline);
   } catch {
-    return [
-      "us interconnection backlog",
-      "",
-      "dataset refreshing.",
-      "",
-      "https://gridtilt.com/queue",
-    ].join("\n");
+    return buildQueueTweet(null);
   }
 }
 
 const TIER1_EARNINGS = new Set(["NVDA", "MSFT", "GOOGL", "META", "AMZN", "TSM", "AMD", "AAPL"]);
 
 async function composeCatalystPreviewTweet(): Promise<string> {
-  let upcoming: any[] = [];
+  // The dashboard's calendar merges live earnings dates with the curated
+  // policy catalysts; the tweet previews the SAME merged week, otherwise it
+  // says "quiet docket" while the calendar shows earnings (the old bug).
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayStr = today.toISOString().split("T")[0];
+  const endStr = new Date(today.getTime() + 7 * 86400000).toISOString().split("T")[0];
+
+  // Earnings side: module-scope cache, refreshed by the dispatch handlers
+  // right before this composer runs (refreshEarningsCache is route-scoped).
+  const seen = new Set<string>();
+  const earnings: { date: string; title: string; tier1: boolean }[] = [];
+  for (const item of earningsCache?.items ?? []) {
+    const ticker = item.tickers?.[0];
+    if (!ticker || seen.has(ticker)) continue;
+    if (!item.date || item.date < todayStr || item.date > endStr) continue;
+    seen.add(ticker);
+    earnings.push({ date: item.date, title: `${ticker} earnings`, tier1: TIER1_EARNINGS.has(ticker) });
+  }
+
+  // Curated policy/catalyst side.
+  let manual: { date: string; title: string; tier1: boolean }[] = [];
   try {
     const filePath = join(process.cwd(), "server", "data", "catalysts.json");
-    const raw = readFileSync(filePath, "utf-8");
-    const catalysts = JSON.parse(raw) as any[];
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const sevenDaysOut = new Date(today.getTime() + 7 * 86400000);
-    upcoming = catalysts
-      .filter((c) => {
-        const d = new Date(c.date);
-        return d >= today && d <= sevenDaysOut;
-      })
-      .slice(0, 4);
+    const catalysts = JSON.parse(readFileSync(filePath, "utf-8")) as any[];
+    manual = catalysts
+      .filter((c) => typeof c.date === "string" && c.date >= todayStr && c.date <= endStr)
+      .map((c) => ({
+        date: c.date,
+        title: c.title,
+        tier1: Array.isArray(c.tickers) && c.tickers.some((t: string) => TIER1_EARNINGS.has(t)),
+      }));
   } catch {
-    upcoming = [];
+    // curated file is optional; earnings alone still make a post
   }
 
-  if (upcoming.length === 0) {
-    return [
-      "this week on the ai infra calendar:",
-      "",
-      "nothing scheduled. quiet docket.",
-      "",
-      "https://gridtilt.com/catalysts",
-    ].join("\n");
-  }
-
-  const lines = upcoming.map((c) => {
-    const d = new Date(c.date).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
-    return `${d}: ${c.title.toLowerCase()}`;
-  });
-
-  const tier1 = upcoming.find((c: any) =>
-    Array.isArray(c.tickers) && c.tickers.some((t: string) => TIER1_EARNINGS.has(t))
-  );
-  const tailLine = tier1
-    ? `the one to watch is ${tier1.title.toLowerCase()}.`
-    : "no tier-1 earnings on the docket this week.";
-
-  return [
-    "this week on the ai infra calendar:",
-    "",
-    ...lines,
-    "",
-    tailLine,
-    "",
-    "https://gridtilt.com/catalysts",
-  ].join("\n");
+  const upcoming = [...earnings, ...manual].sort((a, b) => (a.date < b.date ? -1 : 1)).slice(0, 4);
+  return buildCatalystTweet(upcoming);
 }
 
 const ROTATING_TEMPLATES: Record<number, { name: string; compose: () => Promise<string> }> = {
@@ -1809,18 +1674,6 @@ const ROTATING_TEMPLATES: Record<number, { name: string; compose: () => Promise<
   4: { name: "queue_update",      compose: composeQueueUpdateTweet },     // Thu
   5: { name: "catalyst_preview",  compose: composeCatalystPreviewTweet }, // Fri
 };
-
-function ensureTweetLength(text: string): string {
-  if (text.length <= 280) return text;
-  // Trim trailing lines until it fits. Always keep first line.
-  const lines = text.split("\n");
-  while (lines.length > 1 && lines.join("\n").length > 280) {
-    lines.splice(lines.length - 2, 1);
-  }
-  let out = lines.join("\n");
-  if (out.length > 280) out = out.slice(0, 277) + "…";
-  return out;
-}
 
 export async function registerRoutes(
   httpServer: Server,
@@ -3090,6 +2943,9 @@ Preferred-Languages: en
       });
     }
     try {
+      // The catalyst composer reads the module-scope earnings cache;
+      // refresh it here because refreshEarningsCache is route-scoped.
+      if (picked.name === "catalyst_preview") await refreshEarningsCache().catch(() => {});
       const text = ensureTweetLength(await picked.compose());
       res.json({ template: picked.name, text, length: text.length });
     } catch (error: any) {
@@ -3109,6 +2965,8 @@ Preferred-Languages: en
       return res.json({ skipped: true, reason: "no template for weekend", dayIdx });
     }
     try {
+      // Same cache pre-refresh as /api/social/generate (see note there).
+      if (picked.name === "catalyst_preview") await refreshEarningsCache().catch(() => {});
       const text = ensureTweetLength(await picked.compose());
 
       // Render the template's matching OG image and attach it. If the upload
