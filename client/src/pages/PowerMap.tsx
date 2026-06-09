@@ -118,6 +118,18 @@ function pushFiltersToURL(companies: string[], rtos: string[], capacity: string)
 
 type ViewMode = "dc" | "stress";
 
+// Escape user-controlled strings before interpolating them into raw Leaflet
+// divIcon HTML. Datacenter names come from the admin form / ingester pipeline,
+// so an unescaped name is a stored-XSS vector (SEC-5).
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 function pinRadius(powerMW: number): number {
   if (powerMW >= 500) return 10;
   if (powerMW >= 100) return 8;
@@ -329,7 +341,7 @@ function FacilityLabels({ viewMode, filterCompanies, filterRTOs, filterCapacity,
         const truncName = dc.name.length > 20 ? dc.name.slice(0, 18) + ".." : dc.name;
         const label = L.marker([dc.lat, dc.lng], {
           icon: L.divIcon({
-            html: `<div class="map-label">${truncName}</div>`,
+            html: `<div class="map-label">${escapeHtml(truncName)}</div>`,
             className: "leaflet-label-icon",
             iconSize: [120, 16],
             iconAnchor: [-8, 20],
