@@ -1953,7 +1953,12 @@ export async function registerRoutes(
   // Stack endpoint - 8 layers, 10-min cache
   app.get("/api/stack", async (req, res) => {
     try {
-      const timeframe = (req.query.timeframe as string) || "1D";
+      // Allowlist the timeframe and use the normalized value as the cache key.
+      // An arbitrary query string would otherwise be a permanent cache miss
+      // that fans out ~200 Yahoo calls per request (SEC-3).
+      const ALLOWED_TIMEFRAMES = ["1D", "5D", "1M"];
+      const requested = (req.query.timeframe as string) || "1D";
+      const timeframe = ALLOWED_TIMEFRAMES.includes(requested) ? requested : "1D";
       const stockData = await getCachedStockData(timeframe);
 
       const ccjCorrelationData = generateCCJCorrelationData();
@@ -2273,6 +2278,7 @@ export async function registerRoutes(
   });
 
   app.get("/api/newsletter/preview", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
     try {
       const subscribers = loadSubscribers();
       const subscriberCount = subscribers.length;
@@ -2344,7 +2350,11 @@ Sent to ${subscriberCount} subscribers. You're receiving this because you subscr
       }
 
       const previewUrl = `http://localhost:${process.env.PORT || 5000}/api/newsletter/preview`;
-      const previewRes = await fetch(previewUrl);
+      // Preview is admin-gated (SEC-1); forward the server's own key on the
+      // internal call so the send path keeps working.
+      const previewRes = await fetch(previewUrl, {
+        headers: { "x-admin-key": process.env.ADMIN_API_KEY || "" },
+      });
       const htmlTemplate = await previewRes.text();
 
       let sent = 0;
@@ -2566,10 +2576,9 @@ Sent to ${subscriberCount} subscribers. You're receiving this because you subscr
               }));
             if (items.length > 0) {
               newsCache = { items, timestamp: now };
-              // Auto-scan for backlog headline updates + market constants
-              scanNewsForBacklogUpdates(items).catch((e) => console.error("backlog scan error:", e));
-              scanNewsForMarketConstants(items).catch((e) => console.error("market constants scan error:", e));
-              maybeCheckLbnlEdition();
+              // News-driven dataset writes (backlog + uranium scanners, LBNL
+              // check) run only from the authenticated /api/admin/scan-news-now
+              // path. A public GET must never persist state (SEC-4).
               return res.json(items);
             }
           }
@@ -2583,9 +2592,7 @@ Sent to ${subscriberCount} subscribers. You're receiving this because you subscr
         const rssItems = await fetchRSSNews();
         if (rssItems.length >= 3) {
           newsCache = { items: rssItems, timestamp: now };
-          scanNewsForBacklogUpdates(rssItems).catch((e) => console.error("backlog scan error:", e));
-          scanNewsForMarketConstants(rssItems).catch((e) => console.error("market constants scan error:", e));
-          maybeCheckLbnlEdition();
+          // Scanners moved to the authenticated /api/admin/scan-news-now (SEC-4).
           return res.json(rssItems);
         }
       } catch (_e) {
@@ -3137,6 +3144,7 @@ Preferred-Languages: en
   // Compose a tweet from a named template without posting. Use this to preview
   // copy before scheduling. Returns the text + the template that was picked.
   app.post("/api/social/generate", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
     const { template } = req.body || {};
     const dayIdx = new Date().getDay();
     const onDemand = template && ON_DEMAND_TEMPLATES[template]
