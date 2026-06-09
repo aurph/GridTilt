@@ -3,7 +3,7 @@
 This file documents what's in place to protect gridtilt.com and its
 subscribers. If you find a vulnerability, see "Reporting" at the bottom.
 
-Last updated: 2026-05-23
+Last updated: 2026-06-09
 
 ---
 
@@ -31,15 +31,16 @@ Configured in `server/index.ts`:
 
 - **Content-Security-Policy**
   - `default-src 'self'`
-  - `script-src 'self' https://platform.twitter.com`
-    (production; development adds `'unsafe-eval' 'unsafe-inline'` for Vite HMR)
+  - `script-src 'self'`
+    (production; development adds `'unsafe-eval' 'unsafe-inline'` for Vite HMR.
+    The old Twitter widget origin was removed when X retired timeline embeds.)
   - `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com`
     (React inline-style props render as `style="..."` attributes; without
     `'unsafe-inline'` for styles the entire component tree breaks)
   - `font-src 'self' https://fonts.gstatic.com data:`
   - `img-src 'self' data: https:`
   - `connect-src 'self'` (production; development adds `ws: wss:`)
-  - `frame-src 'self' https://platform.twitter.com`
+  - `frame-src 'self'`
   - `frame-ancestors 'none'` (no embedding of GridTilt anywhere)
   - `object-src 'none'`
   - `base-uri 'self'`
@@ -48,7 +49,10 @@ Configured in `server/index.ts`:
 - **X-Frame-Options**: `SAMEORIGIN`
 - **X-Content-Type-Options**: `nosniff`
 - **Referrer-Policy**: `strict-origin-when-cross-origin`
-- **Permissions-Policy**: `camera=() microphone=() geolocation=()`
+- **Permissions-Policy**: not currently emitted. helmet 8 does not set this
+  header by default and the code does not add it. Sending
+  `camera=() microphone=() geolocation=()` is a cheap, recommended hardening
+  step tracked in `docs/audit/01_findings.md` (SEC-7).
 - **X-XSS-Protection**: `0` (explicit disable; modern browsers' built-in
   XSS auditor is deprecated and can be tricked into worsening security)
 - `X-Powered-By` header is **disabled** so the stack isn't advertised.

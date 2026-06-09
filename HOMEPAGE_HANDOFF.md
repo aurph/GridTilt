@@ -1,5 +1,7 @@
 # GridTilt Homepage Redesign — Handoff for a Fresh Claude Code Session
 
+> **HISTORICAL — the redesign shipped, then changed direction (2026-06-09).** The `/`→`/overview` route split is live. The Swiss anchor described here was implemented and then deliberately torn out in favor of GridTilt's own dark brand; the "Build your own" waitlist was dropped. This plan no longer matches the shipped homepage — read `client/src/pages/Home.tsx` for current reality.
+
 Created: 2026-05-21
 Owner: Jack Schwartz / aurph
 Branch to create: `redesign/home-swiss`

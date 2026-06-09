@@ -1,5 +1,7 @@
  # GridTilt — Handoff for Claude / Replit / future-you
 
+> **HISTORICAL — superseded (2026-06-09).** Kept for provenance. The "ACTIVE BLOCKER" below was resolved weeks ago: production is current, and the `/`→`/overview` route split, the LBNL interconnection queue (item #13), index-history, and live gauges all shipped. Do not act on the open items here without checking `docs/audit/` first.
+
 Last updated: 2026-05-21
 Repo: `aurph/GridTilt` (main)
 Owner: Jack Schwartz / aurph

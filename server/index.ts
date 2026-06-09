@@ -185,7 +185,9 @@ app.use((req, res, next) => {
     {
       port,
       host: "0.0.0.0",
-      reusePort: true,
+      // reusePort is a no-op on single-instance Replit and throws ENOTSUP on
+      // macOS, which breaks local `npm run dev`. Only enable it off-darwin.
+      reusePort: process.platform !== "darwin",
     },
     () => {
       log(`serving on port ${port}`);

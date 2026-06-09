@@ -13,9 +13,9 @@ Live: **[gridtilt.com](https://gridtilt.com)**
 | Module | What's inside |
 |---|---|
 | **Tilt Overview** | Top movers, sector pulse, catalyst calendar, US electricity demand chart (2010 → 2030 projection), thesis-health KPIs. |
-| **The Stack** | 60+ tickers across 8 supply-chain layers (compute, nuclear, uranium, power hardware, utilities, construction, hyperscalers, REITs). |
+| **The Stack** | 100 tickers across 13 supply-chain layers (compute, nuclear, uranium, power hardware, utilities, data-center REITs, construction, mining, natural gas, renewables, grid hardware, crypto/AI DC, ETF benchmarks). |
 | **Power Map** | US data center locations with power capacity and the utility / RTO they sit on. |
-| **Supply Chain** | D3 force graph of 21 nodes and 44 real supply relationships from raw materials to end-use compute. |
+| **Supply Chain** | D3 force graph of 24 nodes and 52 real supply relationships from raw materials to end-use compute. |
 | **Catalyst Tracker** | Earnings + thesis catalyst calendar across 80+ tickers. |
 | **Portfolio Overlay** | Score any portfolio 0–100 on AI-power exposure across 5 dimensions. |
 | **Thesis Calculator** | Sliders for demand growth, nuclear capacity, and grid stress to model scenarios. |
@@ -55,7 +55,7 @@ Baselines (72, 68) and clamps are presentation choices that keep the gauges read
 ## Stack
 
 - **Frontend** — React 18, TypeScript, Vite, Tailwind, shadcn/ui, Recharts, D3, React Leaflet
-- **Backend** — Node 20, Express 5, Drizzle ORM, optional Postgres (in-memory fallback)
+- **Backend** — Node 20, Express 5; persistence is curated JSON in `server/data/` (no database)
 - **Data** — `yahoo-finance2`, `rss-parser`, curated JSON datasets in `server/data/`
 - **Hosting** — Replit Deployments (autoscale)
 
@@ -88,7 +88,6 @@ npm run check    # typecheck
 | `RESEND_API_KEY` | no | Syncs subscribers to Resend and enables newsletter sends. Without it, signups only persist to local JSON (ephemeral on autoscale hosts). |
 | `EIA_API_KEY` | no | Free key from [eia.gov/opendata](https://www.eia.gov/opendata/register.php). Enables live US48 hourly demand at `/api/physical/load-hourly`. |
 | `NEWSDATA_API_KEY` | no | Optional [newsdata.io](https://newsdata.io) key. The 8 RSS feeds work without it. |
-| `DATABASE_URL` | no | Postgres connection string. Without it, the app uses in-memory storage. |
 | `X_API_*` | no | Four X credentials for the daily auto-poster; dry-run logs locally without them. |
 
 ---
@@ -103,8 +102,8 @@ client/         React + Vite frontend
     data/       Static config (supply chain graph, ticker metadata)
 server/         Express API
   routes.ts     All HTTP endpoints + RSS / Yahoo fetchers
-  storage.ts    IStorage interface (in-memory + Postgres impls)
-shared/         Types and Drizzle schemas shared between client and server
+  indices.ts    Pure index math (unit-tested)
+  data/         Curated JSON datasets (subscribers, queue, datacenters, ...)
 ```
 
 ---
