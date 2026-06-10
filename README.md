@@ -12,7 +12,7 @@ Live: **[gridtilt.com](https://gridtilt.com)**
 
 | Module | What's inside |
 |---|---|
-| **Tilt Overview** | Top movers, sector pulse, catalyst calendar, US electricity demand chart (2010 → 2030 projection), thesis-health KPIs. |
+| **Tilt Overview** | The buildout scoreboard (signed nuclear GW, DC pipeline GW, interconnection queue, grid pulse), top movers, catalyst calendar, US electricity demand chart (2010 → 2030 projection). |
 | **The Stack** | 100 tickers across 13 supply-chain layers (compute, nuclear, uranium, power hardware, utilities, data-center REITs, construction, mining, natural gas, renewables, grid hardware, crypto/AI DC, ETF benchmarks). |
 | **Power Map** | US data center locations with power capacity and the utility / RTO they sit on. |
 | **Supply Chain** | D3 force graph of 24 nodes and 52 real supply relationships from raw materials to end-use compute. |
@@ -32,23 +32,27 @@ Live: **[gridtilt.com](https://gridtilt.com)**
 | Physical electricity output | FRED [`IPG2211A2N`](https://fred.stlouisfed.org/series/IPG2211A2N) served live at `/api/physical/electricity-output`; EIA US48 hourly demand at `/api/physical/load-hourly` once `EIA_API_KEY` is set | Live (FRED daily cache; EIA 30-min cache) |
 | Data center locations | Public announcements (Microsoft, Google, Amazon, Meta, Apple, xAI, OpenAI, Oracle), curated through a reviewed RSS ingestion pipeline | Curated, refreshed as announcements land |
 | Industry news | Live RSS from 8 publications | Live, refreshed hourly |
-| AI Demand, Grid Stress, NPI | Composite indices computed from constituent **equity moves** (NPI also uses uranium spot and a hand-derived policy score). They are market-based gauges, **not** physical grid measurements. See [Index methodology](#index-methodology). | Live, with labeled static fallback |
+| Buildout scoreboard (nuclear deals, DC pipeline, queue, capex) | Curated datasets in `server/data/` summed in real units; every group carries its source and as-of date. See [The scoreboard](#the-scoreboard). | Curated, refreshed as deals and filings land |
 
 No proprietary data feeds and no scraped paywalled sources. All projections are clearly labeled as such.
 
 ---
 
-## Index methodology
+## The scoreboard
 
-The three headline indices are deterministic functions of their published constituents. Exact formulas, so you can check the math:
+The headline numbers are sums over curated datasets, in real units. No baselines, no clamps, no index anchors, nothing rebased to 100.
 
-- **AI Demand** = clamp(52–94, `72 + 1.2 × (NVDA% × 0.40 + TSM% × 0.25 + EQIX% × 0.20 + MU% × 0.15)`) using today's intraday percent changes. It reads how the market is pricing the AI-buildout complex **today**; it does not measure data-center load.
-- **Grid Stress** = clamp(52–92, `68 + (VST% × 0.40 + CEG% × 0.35 + EQIX% × 0.25)`). Same construction; EQIX appears in both baskets. It reads power-equity momentum, not reserve margins or LMPs.
-- **NPI (Nuclear Power Index)** = `100 × (0.25·CEG + 0.20·VST + 0.15·CCJ + 0.20·NLR + 0.10·uranium spot + 0.10·policy)` as price relatives to Jan 1, 2024 bases, times a 0.9–1.1 policy multiplier from a hand-derived SMR policy score. Weights are judgment calls and labeled as such.
+- **Nuclear-for-AI, signed** = sum of `capacityMW` over active, datacenter-relevant nuclear projects marked `firmness: "signed"` in `server/data/interconnection-queue.json`. Signed means executed contracts and restarts underway. Options, proposals, and aggregate LOI pipelines live in separate buckets and never inflate the headline.
+- **DC pipeline** = sums by build status over `server/data/datacenters.json` (tracked US sites at 400 MW or more; a curated registry, not a census), plus disclosed FY2025 hyperscaler capex with per-company source links.
+- **Interconnection queue** = LBNL "Queued Up" headline stats plus ISO filings, with as-of dates shipped in the data.
+- **Grid pulse** = live US48 demand from EIA's hourly grid monitor (free key) and year-over-year US electric output from FRED `IPG2211A2N`. Measurements, not sentiment.
+- The one market element left is a single line: an equal-weight mean of today's percent moves across the tracked tickers, with stale tickers excluded and the live count disclosed. A percent, never a level.
 
-Baselines (72, 68) and clamps are presentation choices that keep the gauges readable; they are disclosed here so nobody mistakes them for measurements. Constituent values are exposed at `/api/kpis`.
+Everything is served at `/api/metrics` with a source and as-of per group; daily snapshots append at `/api/metrics/history`.
 
-**Validation:** the gauges are backtested against physical electricity output (FRED `IPG2211A2N`, 2019–2026, leads 0–3 months) in [docs/INDEX_VALIDATION.md](./docs/INDEX_VALIDATION.md). Result: neither AI Demand nor Grid Stress shows a physical signal, so both are labeled **market sentiment gauges** in the UI, not measurements. Reproduce it yourself: `npm run backtest:indices`. The reconstructed daily series lives in `server/data/index-history.json`.
+### What happened to the indices
+
+GridTilt used to headline three composite indices (AI Demand, Grid Stress, NPI). We backtested them against physical electricity output (FRED, 2019–2026) and published the result: no physical signal at any lead, and NPI moved at r = 0.95 with a single constituent stock. So on 2026-06-10 we retired them and replaced them with the real numbers above. The study stays public in [docs/INDEX_VALIDATION.md](./docs/INDEX_VALIDATION.md), the formulas remain in `server/indices.ts`, the archived daily series is still served at `/api/index-history`, and `npm run backtest:indices` still reproduces it from public prices.
 
 ---
 

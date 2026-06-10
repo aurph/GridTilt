@@ -60,21 +60,30 @@ const annotations = [
   { year: "2024", label: "TMI restart + SMR deal", color: "rgba(240,165,0,0.5)" },
 ];
 
-interface KpiData {
-  aiPowerIndex: number;
-  npiValue: number;
-  gridStress: number;
-  smrPolicyScore: number;
-  npiBaseDate: string;
-  constituents: {
-    // AI Power Index constituents (intraday % change signals)
-    nvdaChange: number; tsmChange: number; eqixChange: number; muChange: number;
-    // NPI constituents (price performance since Jan 1, 2024 base)
-    cegPerf: number; vstPerf: number; ccjPerf: number; nlrPerf: number;
-    uPerf: number; policyPerf: number; npiPolicyMultiplier: number; npiMomentum: number;
-    // Grid Stress signals
-    vstChange: number; cegChange: number;
+// Shape of GET /api/metrics: the buildout scoreboard that replaced the
+// retired market-sentiment gauges on 2026-06-10. Real units, sourced.
+interface MetricsData {
+  nuclear: {
+    signedGW: number; announcedGW: number; aggregateGW: number;
+    signedDeals: number; totalDeals: number;
+    uraniumSpot: { usdPerLb: number; asOf: string; source: string };
+    source: string; asOf: string;
   };
+  pipeline: {
+    operationalGW: number; constructionGW: number; announcedGW: number;
+    siteCount: number;
+    capex?: { totalUsdBillions: number; asOf?: string };
+    source: string;
+  };
+  backlog: {
+    queueOverallGW: number; queueOverallProjects: number; medianWaitMonths: number;
+    historicalWithdrawalPct: number; ercotLargeLoadGW: number;
+    ercotLargeLoadDataCenterPct: number; pjmReopenedGW: number;
+    asOf: string; sourceUrl: string;
+  };
+  gridPulse: { currentGW?: number; atUtc?: string; outputYoYPct?: number; outputMonth?: string } | null;
+  market: { allPct: number; allCount: number; allTotal: number; nuclearPct: number | null; nuclearCount: number } | null;
+  asOf: string;
 }
 
 interface TopMover {
@@ -259,69 +268,6 @@ function KpiCard({
   );
 }
 
-function TiltStatusBar({ aiPower, gridStress, npi }: { aiPower: number | null; gridStress: number | null; npi: number | null }) {
-  if (aiPower === null || gridStress === null || npi === null) return null;
-
-  const isElevated = aiPower > 78 && gridStress > 70 && npi > 130;
-  const isEasing = aiPower < 68 && gridStress < 55;
-  const status = isElevated ? "elevated" : isEasing ? "easing" : "tracking baseline";
-  const statusColor = isElevated ? "#F07800" : isEasing ? "#6b7280" : "#F0A500";
-  const statusBg = isElevated ? "bg-[#F07800]/10 border-[#F07800]/25" : isEasing ? "bg-muted/20 border-card-border" : "bg-[#F0A500]/10 border-[#F0A500]/20";
-  const description = isElevated
-    ? `All three gauges elevated. The market is pricing the AI-power complex aggressively today; grid-equity momentum at ${gridStress.toFixed(0)}/100. These read market positioning, not physical grid conditions.`
-    : isEasing
-    ? `Gauges have pulled back from peaks. Could be sector rotation or cooling sentiment. Watch hyperscaler capex guidance.`
-    : `Tracking baseline. Market gauges near their fixed baselines. NPI at ${npi.toFixed(0)} reflects nuclear-complex performance since the Jan 2024 base.`;
-
-  const numbers = [
-    { label: "AI Demand", val: aiPower },
-    { label: "NPI", val: npi },
-    { label: "Grid Stress", val: gridStress },
-  ] as const;
-
-  return (
-    <Card className={`p-4 border ${statusBg}`} data-testid="tilt-status-bar">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-4">
-        {/* Status + numbers row on mobile, status only on desktop */}
-        <div className="flex items-start justify-between sm:block flex-shrink-0">
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Tilt Status</p>
-            <div className="flex items-center gap-2">
-              <div className="h-2 w-2 rounded-full animate-pulse flex-shrink-0" style={{ backgroundColor: statusColor }} />
-              <span className="text-sm font-bold font-mono tracking-wide" style={{ color: statusColor }}>{status}</span>
-            </div>
-          </div>
-          {/* Mini numbers shown beside status on mobile */}
-          <div className="flex gap-3 sm:hidden text-right">
-            {numbers.map(({ label, val }) => (
-              <div key={label}>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wide whitespace-nowrap">{label}</p>
-                <p className="text-sm font-bold font-mono text-foreground">{val.toFixed(0)}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Vertical divider - desktop only */}
-        <div className="hidden sm:block h-8 w-px bg-border flex-shrink-0" />
-
-        {/* Description */}
-        <p className="text-xs text-muted-foreground leading-relaxed flex-1">{description}</p>
-
-        {/* Mini numbers - desktop only (shown inline on mobile) */}
-        <div className="hidden sm:flex gap-4 flex-shrink-0 text-center">
-          {numbers.map(({ label, val }) => (
-            <div key={label}>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{label}</p>
-              <p className="text-sm font-bold font-mono text-foreground">{val.toFixed(0)}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </Card>
-  );
-}
-
 const SECTOR_COLORS: Record<string, string> = {
   compute: "#94a3b8",
   nuclear: "#F0A500",
@@ -364,7 +310,7 @@ function TopMoversSection({ topMovers, pulse, isLoading, isError }: { topMovers:
             <Info className="h-3.5 w-3.5 text-muted-foreground" />
           </TooltipTrigger>
           <TooltipContent>
-            <p className="text-xs">Top 5 stocks by absolute % change across all 8 stack layers. Refreshes every 10 min.</p>
+            <p className="text-xs">Top 5 stocks by absolute % change across all 13 stack layers. Refreshes every 10 min.</p>
           </TooltipContent>
         </UITooltip>
       </div>
@@ -427,12 +373,13 @@ function TopMoversSection({ topMovers, pulse, isLoading, isError }: { topMovers:
   );
 }
 
-interface IndexHistoryDay {
+interface MetricsHistoryDay {
   date: string;
-  aiDemand: number | null;
-  gridStress: number | null;
-  npiEquityLegs?: number | null;
-  npi?: number | null;
+  signedGW: number;
+  announcedGW: number;
+  constructionGW: number;
+  operationalGW: number;
+  queueOverallGW: number;
 }
 
 const MONTH_ABBR = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -441,145 +388,91 @@ function gaugeTickLabel(date: string): string {
   return `${MONTH_ABBR[Number(m) - 1]} '${y.slice(2)}`;
 }
 
-// Replaces the old Sector Pulse card (its sector averages now live as chips
-// inside Top Movers). Plots the daily gauge history that the validation
-// study reconstructed and the server now records: one consistent series,
-// our own data, time depth instead of a second "what moved today" list.
-function GaugeHistoryCard({ live }: { live: { npi: number; ai: number; gs: number } | null }) {
-  const { data, isLoading } = useQuery<{ days: IndexHistoryDay[] }>({
-    queryKey: ["/api/index-history"],
+// Replaced the retired gauge-history chart on 2026-06-10: plots the daily
+// buildout-scoreboard series the server records. No backfill, no synthetic
+// seed; depth builds one real snapshot per day.
+function BuildoutHistoryCard() {
+  const { data, isLoading } = useQuery<{ days: MetricsHistoryDay[] }>({
+    queryKey: ["/api/metrics/history"],
     refetchInterval: 30 * 60_000,
   });
-  const series = (data?.days ?? [])
-    .filter((d) => d.npiEquityLegs != null || d.aiDemand != null)
-    .map((d) => ({ date: d.date, npi: d.npiEquityLegs ?? null, ai: d.aiDemand, gs: d.gridStress }));
+  const series = (data?.days ?? []).map((d) => ({
+    date: d.date,
+    signed: d.signedGW,
+    construction: d.constructionGW,
+    queue: d.queueOverallGW,
+  }));
 
   return (
     // flex-1: fills the left column so it ends flush with the right column.
-    <Card className="p-5 border-card-border flex-1 flex flex-col" data-testid="gauge-history">
+    <Card className="p-5 border-card-border flex-1 flex flex-col" data-testid="buildout-history">
       <div className="flex items-center gap-2 mb-1">
         <Activity className="h-3.5 w-3.5 text-[#F0A500]" />
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Gauges Since Jan 2024</h2>
+        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Buildout History</h2>
         <UITooltip>
           <TooltipTrigger>
             <Info className="h-3.5 w-3.5 text-muted-foreground" />
           </TooltipTrigger>
           <TooltipContent className="max-w-xs">
             <p className="text-xs">
-              Daily series reconstructed from public prices with the shipped formulas, then recorded live going
-              forward (one methodology end to end; reproduce with npm run backtest:indices). The NPI line is the
-              equity legs with uranium and policy at par; the headline number is the full live NPI including both.
-              Sparklines show the two sentiment gauges oscillating around their fixed baselines.
+              Daily snapshots of the scoreboard: signed nuclear GW and DC construction GW on the left axis,
+              total interconnection-queue GW on the right. Recording started 2026-06-10 when the
+              market-sentiment gauges were retired, so depth builds one day at a time. Raw series at
+              /api/metrics/history; the retired gauge series stays archived at /api/index-history.
             </p>
           </TooltipContent>
         </UITooltip>
-        {live && (
-          <span className="ml-auto font-mono text-sm font-bold text-[#F0A500]" data-testid="gauge-history-npi-live">
-            NPI {live.npi.toFixed(1)}
-          </span>
-        )}
       </div>
       <p className="text-[10px] font-mono text-muted-foreground/60 mb-3">
-        line: NPI equity legs · headline: full live NPI · /api/index-history
+        signed nuclear + dc construction (left, GW) · queue total (right, GW)
       </p>
 
-      {isLoading || series.length === 0 ? (
+      {isLoading ? (
         <div className="flex-1 flex flex-col justify-center gap-2 min-h-[180px]">
           <Skeleton className="h-3 w-1/3" />
           <Skeleton className="h-32 w-full" />
         </div>
+      ) : series.length < 2 ? (
+        <div className="flex-1 flex items-center justify-center min-h-[180px]" data-testid="buildout-history-empty">
+          <p className="text-xs text-muted-foreground text-center leading-relaxed">
+            History starts now: one snapshot per day, no backfill, nothing synthetic.
+            <br />
+            {series.length === 1
+              ? `First snapshot recorded ${series[0].date}.`
+              : "The first snapshot lands with the next scoreboard refresh."}
+          </p>
+        </div>
       ) : (
-        <>
-          <div className="flex-1 min-h-[180px]" data-testid="gauge-history-chart">
-            <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={series} margin={{ top: 6, right: 8, bottom: 0, left: 0 }}>
-                <defs>
-                  <linearGradient id="npiHistGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#F07800" stopOpacity={0.28} />
-                    <stop offset="100%" stopColor="#F07800" stopOpacity={0.02} />
-                  </linearGradient>
-                </defs>
-                <XAxis
-                  dataKey="date"
-                  tick={{ fill: "#9ca3af", fontSize: 10 }}
-                  tickLine={false}
-                  axisLine={{ stroke: "rgba(255,255,255,0.08)" }}
-                  tickFormatter={gaugeTickLabel}
-                  minTickGap={48}
-                />
-                <YAxis
-                  tick={{ fill: "#9ca3af", fontSize: 10 }}
-                  tickLine={false}
-                  axisLine={false}
-                  domain={["dataMin - 8", "dataMax + 8"]}
-                  width={36}
-                />
-                <Tooltip
-                  contentStyle={{
-                    background: "#131211",
-                    border: "1px solid rgba(255,255,255,0.14)",
-                    fontSize: 12,
-                    padding: "8px 10px",
-                  }}
-                  labelStyle={{ color: "#F2F1ED", fontWeight: 600, marginBottom: 4, fontFamily: "JetBrains Mono, monospace", fontSize: 11 }}
-                  itemStyle={{ color: "#F2F1ED", padding: 0 }}
-                  formatter={(value, name) =>
-                    value == null ? ["n/a", name] : [Number(value).toFixed(1), name]
-                  }
-                />
-                <ReferenceLine
-                  y={100}
-                  stroke="rgba(255,255,255,0.18)"
-                  strokeDasharray="4 3"
-                  label={{ value: "Jan 1 2024 = 100", position: "insideBottomLeft", fill: "#9ca3af", fontSize: 9 }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="npi"
-                  name="NPI (equity legs)"
-                  stroke="#F07800"
-                  strokeWidth={1.8}
-                  fill="url(#npiHistGrad)"
-                  dot={false}
-                  connectNulls
-                />
-              </ComposedChart>
-            </ResponsiveContainer>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-border">
-            {(
-              [
-                { key: "ai", label: "AI Demand", color: "#F0A500", value: live?.ai ?? null },
-                { key: "gs", label: "Grid Stress", color: "#ef4444", value: live?.gs ?? null },
-              ] as const
-            ).map((g) => (
-              <div key={g.key} data-testid={`gauge-spark-${g.key}`}>
-                <div className="flex items-baseline justify-between mb-1">
-                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{g.label}</span>
-                  <span className="font-mono text-xs font-semibold text-foreground">
-                    {g.value != null ? g.value.toFixed(1) : "–"}
-                  </span>
-                </div>
-                <div className="h-9">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <ComposedChart data={series} margin={{ top: 2, right: 0, bottom: 2, left: 0 }}>
-                      <Line
-                        type="monotone"
-                        dataKey={g.key}
-                        stroke={g.color}
-                        strokeWidth={1}
-                        dot={false}
-                        connectNulls
-                        isAnimationActive={false}
-                      />
-                    </ComposedChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-            ))}
-          </div>
-        </>
+        <div className="flex-1 min-h-[180px]" data-testid="buildout-history-chart">
+          <ResponsiveContainer width="100%" height="100%">
+            <ComposedChart data={series} margin={{ top: 6, right: 0, bottom: 0, left: 0 }}>
+              <XAxis
+                dataKey="date"
+                tick={{ fill: "#9ca3af", fontSize: 10 }}
+                tickLine={false}
+                axisLine={{ stroke: "rgba(255,255,255,0.08)" }}
+                tickFormatter={gaugeTickLabel}
+                minTickGap={48}
+              />
+              <YAxis yAxisId="gw" tick={{ fill: "#9ca3af", fontSize: 10 }} tickLine={false} axisLine={false} width={32} />
+              <YAxis yAxisId="queue" orientation="right" tick={{ fill: "#9ca3af", fontSize: 10 }} tickLine={false} axisLine={false} width={44} />
+              <Tooltip
+                contentStyle={{
+                  background: "#131211",
+                  border: "1px solid rgba(255,255,255,0.14)",
+                  fontSize: 12,
+                  padding: "8px 10px",
+                }}
+                labelStyle={{ color: "#F2F1ED", fontWeight: 600, marginBottom: 4, fontFamily: "JetBrains Mono, monospace", fontSize: 11 }}
+                itemStyle={{ color: "#F2F1ED", padding: 0 }}
+                formatter={(value, name) => (value == null ? ["n/a", name] : [`${Number(value).toLocaleString()} GW`, name])}
+              />
+              <Line yAxisId="gw" type="stepAfter" dataKey="signed" name="Signed nuclear" stroke="#F07800" strokeWidth={1.8} dot={false} isAnimationActive={false} />
+              <Line yAxisId="gw" type="stepAfter" dataKey="construction" name="DC construction" stroke="#F0A500" strokeWidth={1.4} dot={false} isAnimationActive={false} />
+              <Line yAxisId="queue" type="stepAfter" dataKey="queue" name="Queue total" stroke="#6b7280" strokeWidth={1.2} strokeDasharray="4 3" dot={false} isAnimationActive={false} />
+            </ComposedChart>
+          </ResponsiveContainer>
+        </div>
       )}
     </Card>
   );
@@ -981,11 +874,15 @@ function ModuleGrid() {
 }
 
 export default function TiltOverview() {
-  const { data: kpiData, isLoading, isError: kpiError } = useQuery<KpiData>({
-    queryKey: ["/api/kpis"],
+  const {
+    data: metricsData,
+    isLoading,
+    isError: metricsError,
+    dataUpdatedAt,
+  } = useQuery<MetricsData>({
+    queryKey: ["/api/metrics"],
     refetchInterval: 900000,
   });
-
 
   const { data: topMovers, isLoading: topMoversLoading, isError: topMoversError } = useQuery<TopMover[]>({
     queryKey: ["/api/top-movers"],
@@ -997,9 +894,6 @@ export default function TiltOverview() {
     refetchInterval: 900000,
   });
 
-  const { dataUpdatedAt: kpiUpdatedAt } = useQuery<KpiData>({ queryKey: ["/api/kpis"] });
-  const c = kpiData?.constituents;
-
   return (
     <div className="flex flex-col h-full overflow-y-auto">
       <div className="grid-bg border-b border-border px-4 sm:px-6 py-6 sm:py-8">
@@ -1009,17 +903,129 @@ export default function TiltOverview() {
               Grid information, <span className="italic text-[#F07800]">tilted</span> in your favor
             </h1>
             <p className="text-muted-foreground text-xs sm:text-sm leading-relaxed">
-              Live equities, infrastructure, and power data across 60+ tickers tracking the AI power economy.
+              Live equities, infrastructure, and power data across 100 tickers tracking the AI power economy.
             </p>
           </div>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <div className="h-1.5 w-1.5 rounded-full bg-[#F0A500]" />
-            <span className="font-mono text-[11px] tracking-wide" data-testid="last-updated">Updated {relativeTime(kpiUpdatedAt)}</span>
+            <span className="font-mono text-[11px] tracking-wide" data-testid="last-updated">Updated {relativeTime(dataUpdatedAt)}</span>
           </div>
         </div>
       </div>
 
       <div className="flex-1 p-4 sm:p-6 space-y-4 sm:space-y-5">
+
+        {/* The buildout scoreboard. Real units from curated, sourced
+            datasets; replaced the retired market-sentiment gauges on
+            2026-06-10. The autopsy is public: docs/INDEX_VALIDATION.md. */}
+        <div data-testid="scoreboard">
+          <div className="flex items-baseline justify-between mb-3">
+            <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/70">
+              the buildout scoreboard · real units, sourced
+            </div>
+            {metricsError && (
+              <span className="text-[10px] font-mono text-red-400" data-testid="scoreboard-error">
+                scoreboard unavailable; retrying
+              </span>
+            )}
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+            {[
+              {
+                label: "Nuclear-for-AI, signed",
+                value: metricsData ? `${metricsData.nuclear.signedGW}` : null,
+                unit: "GW",
+                color: "#F07800",
+                sub: metricsData
+                  ? `${metricsData.nuclear.signedDeals} executed deals · ${metricsData.nuclear.announcedGW} GW more announced`
+                  : "",
+                info: "Executed nuclear PPAs and restarts underway, summed from GridTilt's curated deal registry. Signed means contracts: options, proposals, and aggregate LOI pipelines are tracked separately and never inflate this number. Project list and sources on the Backlog page.",
+              },
+              {
+                label: "DC under construction",
+                value: metricsData ? `${metricsData.pipeline.constructionGW}` : null,
+                unit: "GW",
+                color: "#F0A500",
+                sub: metricsData
+                  ? `${metricsData.pipeline.operationalGW} GW operational · ${metricsData.pipeline.siteCount} tracked sites`
+                  : "",
+                info: "Tracked US datacenter sites at 400 MW or more, summed by build status from public announcements. A curated registry, not a census. FY2025 hyperscaler capex rides alongside: disclosed guides total $340B.",
+              },
+              {
+                label: "Interconnection queue",
+                value: metricsData ? metricsData.backlog.queueOverallGW.toLocaleString() : null,
+                unit: "GW",
+                color: "#ef4444",
+                sub: metricsData
+                  ? `median wait ${metricsData.backlog.medianWaitMonths} mo · ${metricsData.backlog.historicalWithdrawalPct}% historically withdraw`
+                  : "",
+                info: "Lawrence Berkeley National Lab's Queued Up dataset (emp.lbl.gov/queues) covering nearly the entire US generating queue, plus ISO filings for the large-load lines. As-of dates ship with the data on the Backlog page.",
+              },
+              {
+                label: "Grid pulse",
+                value:
+                  metricsData?.gridPulse?.currentGW != null
+                    ? `${metricsData.gridPulse.currentGW}`
+                    : metricsData?.gridPulse?.outputYoYPct != null
+                      ? `${metricsData.gridPulse.outputYoYPct > 0 ? "+" : ""}${metricsData.gridPulse.outputYoYPct}`
+                      : null,
+                unit: metricsData?.gridPulse?.currentGW != null ? "GW now" : "% YoY",
+                color: "#34d399",
+                sub:
+                  metricsData?.gridPulse?.currentGW != null
+                    ? "US48 demand right now (EIA hourly)"
+                    : metricsData?.gridPulse?.outputYoYPct != null
+                      ? `US electric output, ${metricsData.gridPulse.outputMonth} (FRED)`
+                      : "",
+                info: "The physical side, measured: live lower-48 demand from EIA's Hourly Electric Grid Monitor when a key is configured, with year-over-year US electric output from FRED (IPG2211A2N) alongside. Measurements, not market sentiment.",
+              },
+            ].map((c) => (
+              <Card key={c.label} className="p-4 border-card-border" data-testid={`scoreboard-${c.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}>
+                <div className="flex items-center gap-1.5 mb-2">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider">{c.label}</p>
+                  <UITooltip>
+                    <TooltipTrigger>
+                      <Info className="h-3 w-3 text-muted-foreground/60" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                      <p className="text-xs leading-relaxed">{c.info}</p>
+                    </TooltipContent>
+                  </UITooltip>
+                </div>
+                {c.value == null ? (
+                  <Skeleton className="h-8 w-24" />
+                ) : (
+                  <p className="text-2xl font-bold tabular-nums font-mono" style={{ color: c.color }}>
+                    {c.value} <span className="text-sm font-semibold text-muted-foreground">{c.unit}</span>
+                  </p>
+                )}
+                <p className="text-xs text-muted-foreground mt-1 leading-snug min-h-[1rem]">{c.sub}</p>
+              </Card>
+            ))}
+          </div>
+          {metricsData?.market && (
+            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-mono text-muted-foreground" data-testid="market-line">
+              <span className="uppercase tracking-wider text-muted-foreground/60">market</span>
+              <span>
+                ai infra, equal weight across {metricsData.market.allCount} names:{" "}
+                <span className={metricsData.market.allPct >= 0 ? "text-green-400" : "text-red-400"}>
+                  {metricsData.market.allPct >= 0 ? "+" : ""}
+                  {metricsData.market.allPct.toFixed(2)}% today
+                </span>
+              </span>
+              {metricsData.market.nuclearPct != null && (
+                <span>
+                  nuclear names:{" "}
+                  <span className={metricsData.market.nuclearPct >= 0 ? "text-green-400" : "text-red-400"}>
+                    {metricsData.market.nuclearPct >= 0 ? "+" : ""}
+                    {metricsData.market.nuclearPct.toFixed(2)}%
+                  </span>
+                </span>
+              )}
+              <span className="text-muted-foreground/50">percent moves only · the composite indices are retired</span>
+            </div>
+          )}
+        </div>
 
         {/* Dashboard density - 2-col */}
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
@@ -1030,9 +1036,7 @@ export default function TiltOverview() {
               isLoading={topMoversLoading}
               isError={topMoversError}
             />
-            <GaugeHistoryCard
-              live={kpiData ? { npi: kpiData.npiValue, ai: kpiData.aiPowerIndex, gs: kpiData.gridStress } : null}
-            />
+            <BuildoutHistoryCard />
           </div>
           <div className="lg:col-span-2 space-y-4">
             <CatalystCalendarSection />
@@ -1204,96 +1208,19 @@ export default function TiltOverview() {
           </div>
         </Card>
 
-        {/* Market gauges — research depth, intentionally demoted from headline.
-            Labels follow the published backtest (docs/INDEX_VALIDATION.md):
-            the momentum gauges showed no correlation with physical output,
-            so they are presented as market sentiment, not measurements. */}
-        <div className="pt-2">
-          <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/70 mb-3">
-            market gauges · methodology and validation in each card
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3" data-testid="kpi-triad">
-            <KpiCard
-              icon={Cpu}
-              title="AI Power Demand"
-              value={kpiData?.aiPowerIndex ?? null}
-              unit="/100"
-              subtitle="Market sentiment gauge"
-              color="amber"
-              methodology="Market sentiment gauge, 52-94 around a fixed 72 baseline. Reads today's weighted moves in NVDA (40%), TSM (25%), EQIX (20%), MU (15%). Backtested against physical electricity output (FRED, 2019-2026): no correlation at any lead, so this tracks how the market is pricing the AI buildout today, not data center load. Formulas and the full study are public in the repo (docs/INDEX_VALIDATION.md)."
-              constituents={c ? (
-                <>
-                  <ConstituentRow label="NVDA" value={c.nvdaChange} />
-                  <ConstituentRow label="TSM" value={c.tsmChange} />
-                  <ConstituentRow label="EQIX" value={c.eqixChange} />
-                  <ConstituentRow label="MU" value={c.muChange} />
-                </>
-              ) : undefined}
-              isLoading={isLoading}
-            />
-            <KpiCard
-              icon={Zap}
-              title="Nuclear Power Index"
-              value={kpiData?.npiValue ?? null}
-              unit=""
-              subtitle="Basket index, Jan 1, 2024 = 100"
-              color="amber"
-              methodology="Weighted basket of CEG (25%), VST (20%), CCJ (15%), NLR ETF (20%), uranium spot (10%), and an SMR policy score (10%) derived from active nuclear PPAs in the tracked interconnection dataset. Rebased to 100 on Jan 1, 2024 and never rebalanced, so winners compound their influence: as of the June 2026 study VST's effective weight had grown to ~43% and drives ~91% of daily variance. Full numbers in docs/INDEX_VALIDATION.md."
-              constituents={c ? (
-                <>
-                  <PerfRow label="CEG" perf={c.cegPerf} />
-                  <PerfRow label="VST" perf={c.vstPerf} />
-                  <PerfRow label="CCJ" perf={c.ccjPerf} />
-                  <PerfRow label="NLR" perf={c.nlrPerf} />
-                  <PerfRow label="U₃O₈" perf={c.uPerf} />
-                </>
-              ) : undefined}
-              isLoading={isLoading}
-            />
-            <KpiCard
-              icon={AlertTriangle}
-              title="Grid Stress"
-              value={kpiData?.gridStress ?? null}
-              unit="/100"
-              subtitle="Market sentiment gauge"
-              color="red"
-              methodology="Market sentiment gauge, 52-92 around a fixed 68 baseline. Reads today's weighted moves in VST (40%), CEG (35%), EQIX (25%). Backtested against physical electricity output: no correlation found, and the basket does not beat VST alone, so this reads power-equity momentum, not reserve margins or LMPs. It also co-moves with NPI at r 0.96 (CEG+VST sit in both baskets), so treat the two cards as one signal, not two. Formulas and the full study are public in the repo (docs/INDEX_VALIDATION.md)."
-              constituents={c ? (
-                <>
-                  <ConstituentRow label="VST" value={c.vstChange} />
-                  <ConstituentRow label="CEG" value={c.cegChange} />
-                  <ConstituentRow label="EQIX" value={c.eqixChange} />
-                </>
-              ) : undefined}
-              isLoading={isLoading}
-            />
-          </div>
-
-          {!isLoading && kpiData && (
-            <div className="mt-3">
-              <TiltStatusBar
-                aiPower={kpiData.aiPowerIndex}
-                gridStress={kpiData.gridStress}
-                npi={kpiData.npiValue}
-              />
-            </div>
-          )}
-
-          {kpiError && (
-            <Card className="mt-3 p-4 border-red-500/20 bg-red-500/5">
-              <div className="flex items-center gap-2 text-xs text-red-400">
-                <AlertTriangle className="h-3.5 w-3.5" />
-                <span>Live index data unavailable. Showing last known values.</span>
-              </div>
-            </Card>
-          )}
-        </div>
-
-        {/* 4-column stat strip */}
+        {/* Context stat strip. The nuclear figure reads live from the same
+            registry the scoreboard uses, so the two can never disagree. */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {[
             { label: "DC Share of US Demand", value: "~6.4%", sub: "EIA 2025: ~288 TWh, up from 4.4% in 2023. DOE projects 12%+ by 2028.", color: "#a855f7" },
-            { label: "Nuclear Power Committed", value: "12+ GW", sub: "Big Tech nuclear PPAs as of Q1 2026. Meta 6.6 GW, Microsoft 1.2 GW, Amazon 2.5+ GW.", color: "#F0A500" },
+            {
+              label: "Nuclear-for-AI Committed",
+              value: metricsData ? `${(metricsData.nuclear.signedGW + metricsData.nuclear.announcedGW).toFixed(1)} GW` : "…",
+              sub: metricsData
+                ? `${metricsData.nuclear.signedDeals} signed deals (${metricsData.nuclear.signedGW} GW) plus announced and optioned projects. LOI pipelines excluded.`
+                : "Tracked deal registry.",
+              color: "#F0A500",
+            },
             { label: "Grid Reserve Margins", value: "Tightening", sub: "MISO 13.4%, ERCOT 15.8% per NERC 2026. Capacity warnings through 2028.", color: "#94a3b8" },
           ].map((s) => (
             <Card key={s.label} className="p-4 border-card-border">
@@ -1354,7 +1281,7 @@ export default function TiltOverview() {
 
         <footer className="pt-4 border-t border-border/40 text-[11px] text-muted-foreground/60 leading-relaxed space-y-1">
           <p>
-            Data: Yahoo Finance · EIA · DOE · NERC · LBNL · public RSS sources. Composite indices computed in-house; methodology in each card's info tooltip.
+            Data: Yahoo Finance · EIA · FRED · DOE · NERC · LBNL · public RSS sources. Scoreboard numbers come from curated, sourced datasets; each card's tooltip names its source. The retired composite indices are archived at /api/index-history with the validation study in the repo.
           </p>
           <p>
             Research and commentary, not investment advice. Past performance does not predict future returns.

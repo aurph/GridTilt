@@ -1,16 +1,23 @@
 // ─── Tweet formatting (pure) ─────────────────────────────────────────────
 //
-// Every template the daily poster ships is built here from plain inputs,
-// so the exact copy is unit-tested (server/__tests__/social-format.test.ts)
-// and routes.ts only gathers data.
+// Every template the poster ships is built here from plain inputs, so the
+// exact copy is unit-tested (server/__tests__/social-format.test.ts) and
+// routes.ts only gathers data.
+//
+// Posting model (2026-06-10 redesign): event-driven. The cron evaluates the
+// buildout scoreboard against the last-posted snapshot and speaks only when
+// something changed, plus one Friday digest. The retired gauge/NPI templates
+// are gone with the indices they described.
 //
 // Voice rules:
-//   - lowercase prose, short sentences; tickers and acronyms KEEP their case
+//   - lowercase prose, short sentences; tickers, names, and acronyms KEEP
+//     their case
 //   - describe what's in the data; don't editorialize
 //   - no manual column alignment ever: X renders proportional fonts, so
 //     padded columns look ragged. one item per line, or interpunct rows.
-//   - vary the insight line from real numbers (week deltas, peaks), never
-//     ship a sentence that would read identically every week
+//   - vary the copy from real numbers; never ship a sentence that would read
+//     identically every week. the digest embeds its week label so even a
+//     flat week is never byte-identical.
 //   - full https:// urls so X cards the link
 
 export function fmtPct(n: number): string {
@@ -18,9 +25,9 @@ export function fmtPct(n: number): string {
   return n >= 0 ? `+${v}%` : `${v}%`;
 }
 
-export function fmtPerf(perf: number): string {
-  const pct = ((perf - 1) * 100).toFixed(0);
-  return perf >= 1 ? `+${pct}%` : `${pct}%`;
+/** GW with one decimal, thousands separated ("2,290" / "6.5"). */
+export function fmtGw(n: number): string {
+  return n.toLocaleString("en-US", { maximumFractionDigits: 1 });
 }
 
 export function ensureTweetLength(text: string): string {
@@ -35,80 +42,160 @@ export function ensureTweetLength(text: string): string {
   return out;
 }
 
-// ── Monday: gauge status ──────────────────────────────────────────────────
+// ── Event: new signed nuclear deal ────────────────────────────────────────
 
-export interface GaugeSnapshot {
-  aiPowerIndex: number;
-  gridStress: number;
-  npiValue: number;
+export interface NewDealInput {
+  projectName: string;
+  capacityMW: number;
+  sponsor: string;
+  offtaker?: string | null;
 }
 
-export interface HistoryDayLite {
-  date: string;
-  npiEquityLegs?: number | null;
-}
-
-const MONTH_SHORT = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
-
-/** Week delta + peak context from the recorded daily series. */
-export function npiHistoryContext(days: HistoryDayLite[]): {
-  weekDelta: number | null;
-  peakValue: number | null;
-  peakLabel: string | null;
-} {
-  const legs = days.filter((d) => d.npiEquityLegs != null);
-  if (legs.length === 0) return { weekDelta: null, peakValue: null, peakLabel: null };
-  const last = legs[legs.length - 1].npiEquityLegs!;
-  const weekAgo = legs.length > 5 ? legs[legs.length - 6].npiEquityLegs! : null;
-  let peak = legs[0];
-  for (const d of legs) if (d.npiEquityLegs! > peak.npiEquityLegs!) peak = d;
-  const [y, m] = peak.date.split("-");
-  return {
-    weekDelta: weekAgo != null ? last - weekAgo : null,
-    peakValue: peak.npiEquityLegs!,
-    peakLabel: `${MONTH_SHORT[Number(m) - 1]} '${y.slice(2)}`,
-  };
-}
-
-export function buildTiltStatusTweet(k: GaugeSnapshot, history: HistoryDayLite[]): string {
-  const ctx = npiHistoryContext(history);
-
-  // Insight assembled from live numbers so the sentence changes with the
-  // data instead of repeating verbatim every monday.
-  const parts: string[] = [];
-  parts.push(`npi sits ${(k.npiValue - 100).toFixed(0)} above its jan 2024 base`);
-  if (ctx.peakValue != null && ctx.peakValue - k.npiValue > 5) {
-    parts.push(`${(ctx.peakValue - k.npiValue).toFixed(0)} below the ${ctx.peakLabel} peak`);
-  }
-  if (ctx.weekDelta != null) {
-    parts.push(
-      Math.abs(ctx.weekDelta) < 1.5
-        ? "flat on the week"
-        : `${ctx.weekDelta > 0 ? "+" : ""}${ctx.weekDelta.toFixed(0)} on the week`,
-    );
-  }
-  let insight = parts.join(", ") + ".";
-
-  const aiOff = k.aiPowerIndex - 72;
-  const gsOff = k.gridStress - 68;
-  if (Math.abs(gsOff) > 6 && Math.abs(gsOff) >= Math.abs(aiOff)) {
-    insight += ` grid stress gauge ${gsOff > 0 ? "running" : "sitting"} ${Math.abs(gsOff).toFixed(0)} ${gsOff > 0 ? "above" : "below"} baseline.`;
-  } else if (Math.abs(aiOff) > 6) {
-    insight += ` ai demand gauge ${Math.abs(aiOff).toFixed(0)} ${aiOff > 0 ? "above" : "below"} baseline.`;
-  }
-
+export function buildNewDealTweet(
+  p: NewDealInput,
+  totals: { signedGW: number; signedDeals: number },
+): string {
+  const who = p.offtaker ? `${p.sponsor}, offtaker ${p.offtaker}` : p.sponsor;
   return [
-    "gridtilt · daily gauges",
+    "new signed nuclear-for-ai deal:",
     "",
-    `ai demand ${k.aiPowerIndex.toFixed(0)} · grid stress ${k.gridStress.toFixed(0)} · npi ${k.npiValue.toFixed(0)}`,
+    `${p.projectName}: ${p.capacityMW.toLocaleString("en-US")} MW, ${who}.`,
     "",
-    insight,
+    `signed total now ${fmtGw(totals.signedGW)} GW across ${totals.signedDeals} deals.`,
+    "",
+    "https://gridtilt.com/queue",
+  ].join("\n");
+}
+
+// ── Event: datacenter pipeline moved ──────────────────────────────────────
+
+export interface PipelineBuckets {
+  operationalGW: number;
+  constructionGW: number;
+  announcedGW: number;
+}
+
+export function buildPipelineMoveTweet(
+  prev: PipelineBuckets,
+  now: PipelineBuckets,
+  siteCount: number,
+): string {
+  const rows: Array<[string, number, number]> = [
+    ["operational", prev.operationalGW, now.operationalGW],
+    ["under construction", prev.constructionGW, now.constructionGW],
+    ["announced", prev.announcedGW, now.announcedGW],
+  ];
+  const lines = rows
+    .filter(([, a, b]) => Math.abs(a - b) >= 0.05)
+    .map(([label, a, b]) => `${label}: ${fmtGw(a)} -> ${fmtGw(b)} GW`);
+  return [
+    "tracked ai datacenter pipeline moved:",
+    "",
+    ...lines,
+    "",
+    `registry: ${siteCount} sites at 400 MW or more.`,
+    "",
+    "https://gridtilt.com/power-map",
+  ].join("\n");
+}
+
+// ── Event: interconnection backlog update ─────────────────────────────────
+
+export interface BacklogChangeLite {
+  label: string;
+  before: number;
+  after: number;
+  unit: string;
+}
+
+export function buildBacklogUpdateTweet(changes: BacklogChangeLite[]): string {
+  const lines = changes.map(
+    (c) => `${c.label}: ${fmtGw(c.before)} -> ${fmtGw(c.after)}${c.unit}`,
+  );
+  return [
+    "interconnection backlog update:",
+    "",
+    ...lines,
+    "",
+    "source: lbnl queued up + iso filings.",
+    "",
+    "https://gridtilt.com/queue",
+  ].join("\n");
+}
+
+// ── Event: hyperscaler capex revision ─────────────────────────────────────
+
+export function buildCapexUpdateTweet(beforeB: number, afterB: number): string {
+  const dir = afterB > beforeB ? "up from" : "down from";
+  return [
+    "hyperscaler capex update:",
+    "",
+    `fy2025 disclosed guides now total $${fmtGw(afterB)}B, ${dir} $${fmtGw(beforeB)}B.`,
+    "",
+    "MSFT, GOOGL, META, AMZN.",
     "",
     "https://gridtilt.com",
   ].join("\n");
 }
 
-// ── Tuesday: top movers ───────────────────────────────────────────────────
+// ── Friday digest ─────────────────────────────────────────────────────────
+
+export interface DigestSnapshot {
+  signedGW: number;
+  constructionGW: number;
+  queueOverallGW: number;
+}
+
+function deltaTag(now: number, ago: number | null): string {
+  if (ago == null) return "";
+  const d = parseFloat((now - ago).toFixed(1));
+  if (Math.abs(d) < 0.1) return "";
+  return ` (${d > 0 ? "+" : ""}${fmtGw(d)})`;
+}
+
+export function buildWeeklyDigestTweet(
+  now: DigestSnapshot,
+  weekAgo: DigestSnapshot | null,
+  weekLabel: string,
+  topCatalyst?: string | null,
+): string {
+  const row = [
+    `signed nuclear ${fmtGw(now.signedGW)} GW${deltaTag(now.signedGW, weekAgo?.signedGW ?? null)}`,
+    `dc construction ${fmtGw(now.constructionGW)} GW${deltaTag(now.constructionGW, weekAgo?.constructionGW ?? null)}`,
+    `queue ${fmtGw(now.queueOverallGW)} GW${deltaTag(now.queueOverallGW, weekAgo?.queueOverallGW ?? null)}`,
+  ].join(" · ");
+
+  let insight: string;
+  if (!weekAgo) {
+    insight = "first digest; week-over-week deltas start next week.";
+  } else {
+    const all: Array<[string, number]> = [
+      ["signed nuclear", now.signedGW - weekAgo.signedGW],
+      ["dc construction", now.constructionGW - weekAgo.constructionGW],
+      ["the queue", now.queueOverallGW - weekAgo.queueOverallGW],
+    ];
+    const moves = all.filter(([, d]) => Math.abs(d) >= 0.1);
+    if (moves.length === 0) {
+      insight = "no change on the scoreboard this week.";
+    } else {
+      const [name, d] = moves.sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]))[0];
+      insight = `biggest move: ${name} ${d > 0 ? "+" : ""}${fmtGw(parseFloat(d.toFixed(1)))} GW on the week.`;
+    }
+  }
+
+  const lines = [
+    `the buildout, week of ${weekLabel}:`,
+    "",
+    row,
+    "",
+    insight,
+  ];
+  if (topCatalyst) lines.push(`next week: ${topCatalyst}.`);
+  lines.push("", "https://gridtilt.com");
+  return lines.join("\n");
+}
+
+// ── Manual template: top movers ───────────────────────────────────────────
 
 export interface MoverLite {
   ticker: string;
@@ -154,63 +241,7 @@ export function buildTopMoversTweet(movers: MoverLite[]): string {
   ].join("\n");
 }
 
-// ── Wednesday: NPI constituents ───────────────────────────────────────────
-
-export interface NpiConstituentPerfs {
-  cegPerf: number;
-  vstPerf: number;
-  ccjPerf: number;
-  nlrPerf: number;
-  uPerf: number;
-  policyPerf: number;
-}
-
-/** Effective weight of each leg after price-relative drift (no rebalance). */
-export function effectiveNpiWeights(c: NpiConstituentPerfs): Record<string, number> {
-  const terms: Record<string, number> = {
-    CEG: 0.25 * c.cegPerf,
-    VST: 0.2 * c.vstPerf,
-    CCJ: 0.15 * c.ccjPerf,
-    NLR: 0.2 * c.nlrPerf,
-    uranium: 0.1 * c.uPerf,
-    policy: 0.1 * c.policyPerf,
-  };
-  const denom = Object.values(terms).reduce((a, b) => a + b, 0);
-  return Object.fromEntries(Object.entries(terms).map(([k, v]) => [k, v / denom]));
-}
-
-export function buildNpiUpdateTweet(npiValue: number, c: NpiConstituentPerfs): string {
-  const perfs = [
-    { sym: "VST", perf: c.vstPerf },
-    { sym: "CEG", perf: c.cegPerf },
-    { sym: "NLR", perf: c.nlrPerf },
-    { sym: "CCJ", perf: c.ccjPerf },
-    { sym: "uranium", perf: c.uPerf },
-  ].sort((a, b) => b.perf - a.perf);
-
-  const row = perfs.map((p) => `${p.sym} ${fmtPerf(p.perf)}`).join(" · ");
-
-  // The honest line: disclose weight drift when one leg dominates, the
-  // same finding the validation study publishes.
-  const eff = effectiveNpiWeights(c);
-  const [domName, domW] = Object.entries(eff).sort((a, b) => b[1] - a[1])[0];
-  const insight =
-    domW >= 0.35
-      ? `un-rebalanced since the base, so ${domName.toLowerCase()} now carries ${(domW * 100).toFixed(0)}% of the basket. methodology and validation are public in the repo.`
-      : `leader ${perfs[0].sym}, laggard ${perfs[perfs.length - 1].sym}, since the jan 2024 base.`;
-
-  return [
-    `nuclear power index: ${npiValue.toFixed(0)} (jan 2024 = 100)`,
-    "",
-    row,
-    "",
-    insight,
-    "",
-    "https://gridtilt.com",
-  ].join("\n");
-}
-
-// ── Thursday: interconnection queue ───────────────────────────────────────
+// ── Manual template: interconnection queue ────────────────────────────────
 
 export interface QueueHeadline {
   queueOverallGW: number;
@@ -236,7 +267,7 @@ export function buildQueueTweet(h: QueueHeadline | null): string {
   ].join("\n");
 }
 
-// ── Friday: catalyst preview ──────────────────────────────────────────────
+// ── Manual template: catalyst preview ─────────────────────────────────────
 
 export interface CatalystLite {
   date: string;

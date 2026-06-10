@@ -1,0 +1,16 @@
+{
+  "generated": "2026-06-10T17:25:05Z",
+  "notes": "Daily buildout-scoreboard snapshots, appended on /api/metrics hits. Units: GW, $B, $/lb. Replaces the retired index-history series (see docs/INDEX_VALIDATION.md).",
+  "days": [
+    {
+      "date": "2026-06-10",
+      "signedGW": 6.5,
+      "announcedGW": 6,
+      "constructionGW": 15.6,
+      "operationalGW": 9.4,
+      "queueOverallGW": 2290,
+      "capexUsdBillions": 340,
+      "uraniumSpotUsdPerLb": 92
+    }
+  ]
+}

@@ -37,18 +37,11 @@ export interface AllCatalystsResponse {
   items: MergedCatalystItem[];
 }
 
-export interface KpiData {
-  aiPowerIndex: number;
-  npiValue: number;
-  gridStress: number;
-  smrPolicyScore: number;
-  npiBaseDate: string;
-  source?: "live" | "static";
-  asOf?: string;
-  constituents: {
-    nvdaChange: number; tsmChange: number; eqixChange: number; muChange: number;
-    cegPerf: number; vstPerf: number; ccjPerf: number; nlrPerf: number;
-    uPerf: number; policyPerf: number; npiPolicyMultiplier: number; npiMomentum: number;
-    vstChange: number; cegChange: number;
-  };
+// Minimal shape of GET /api/metrics for surfaces that only need the
+// headline numbers (the dashboard keeps its richer local interface).
+export interface MetricsSummary {
+  nuclear: { signedGW: number; announcedGW: number; signedDeals: number; totalDeals: number };
+  pipeline: { operationalGW: number; constructionGW: number; announcedGW: number; siteCount: number };
+  backlog: { queueOverallGW: number; medianWaitMonths: number };
+  asOf: string;
 }

@@ -19,22 +19,28 @@ import {
   SITEMAP_REGION_SLUGS,
   SITEMAP_OPERATOR_SLUGS,
 } from "./seo";
+import { readIndexHistory } from "./index-history";
 import {
-  computeAiPowerIndex,
-  computeGridStress,
-  computeNpi,
-  computeNpiMomentum,
-} from "./indices";
-import { recordDailyIndexValues, readIndexHistory } from "./index-history";
+  computeNuclearMetrics,
+  computePipelineMetrics,
+  computeMarketLine,
+  evaluateMetricsEvent,
+  type MetricsSnapshot,
+  type NuclearMetrics,
+  type PipelineMetrics,
+} from "./metrics";
+import { recordDailyMetrics, readMetricsHistory, snapshotDaysAgo } from "./metrics-history";
 import { getElectricityOutputMonthly, getHourlyDemandUS48 } from "./physical";
 import {
-  buildTiltStatusTweet,
+  buildNewDealTweet,
+  buildPipelineMoveTweet,
+  buildBacklogUpdateTweet,
+  buildCapexUpdateTweet,
+  buildWeeklyDigestTweet,
   buildTopMoversTweet,
-  buildNpiUpdateTweet,
   buildQueueTweet,
   buildCatalystTweet,
   ensureTweetLength,
-  type HistoryDayLite,
 } from "./social-format";
 
 interface SupplyChainStage {
@@ -382,90 +388,14 @@ function saveMarketConstants(m: MarketConstants): void {
   writeFileSync(MARKET_CONSTANTS_FILE, JSON.stringify(m, null, 2) + "\n");
 }
 
-// Derive SMR policy score from the backlog. Score scales with the count of
-// active hyperscaler-grade nuclear PPAs we're tracking. Anchored so the
-// score moves slowly and stays in the 6.5-9.5 range under normal conditions.
-function deriveSmrPolicyScore(): number {
-  try {
-    const dataPath = join(process.cwd(), "server", "data", "interconnection-queue.json");
-    const data = JSON.parse(readFileSync(dataPath, "utf-8")) as BacklogDataset;
-    const nuclearActive = data.projects.filter((p) =>
-      p.type === "nuclear" &&
-      p.status === "active" &&
-      (p.category === "ppa" || p.category === "generation") &&
-      p.dcRelevant
-    );
-    // 5.0 baseline + 0.3 per active nuclear-PPA, capped at 9.5.
-    // Tuned so current dataset (~9 nuclear PPAs) yields ~7.7, close to the
-    // historical 7.8 anchor — preserves NPI continuity.
-    return Math.min(9.5, 5.0 + 0.3 * nuclearActive.length);
-  } catch {
-    return 7.0;  // conservative fallback
-  }
-}
+// (deriveSmrPolicyScore was retired with the indices on 2026-06-10: the
+// 0-10 "policy score" was a dressed-up count of active nuclear PPAs. The
+// scoreboard now exposes the raw deal counts and GW directly.)
 
-// Generate scatter data with a target Pearson r using the standard linear noise model:
-//   y = r * x_std + sqrt(1 - r^2) * noise_std  (both in z-score space, then rescale)
-function gaussianRandom(): number {
-  // Box-Muller
-  const u1 = Math.random() || 1e-10;
-  const u2 = Math.random();
-  return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
-}
-
-// CCJ (Cameco): pure uranium miner - tight beta to U3O8 spot, target r ~ 0.82
-// Uranium spot range approx $65-$110 over 52-week scatter; CCJ approx $90-$135 (Mar 2026 price ~$113)
-function generateCCJCorrelationData() {
-  const data = [];
-  const targetR = 0.82;
-  const sqrtTerm = Math.sqrt(1 - targetR * targetR);
-  for (let i = 0; i < 52; i++) {
-    const x = gaussianRandom(); // shared factor (uranium direction)
-    const e = gaussianRandom(); // idiosyncratic noise
-    const uStd = x;
-    const cStd = targetR * x + sqrtTerm * e;
-    // Rescale: uranium mean=86, sd=11; ccj mean=112, sd=11 (2025-2026 price ranges)
-    const uranium = parseFloat((86 + uStd * 11).toFixed(2));
-    const ccj = parseFloat((112 + cStd * 11).toFixed(2));
-    data.push({
-      uranium: Math.max(60, Math.min(115, uranium)),
-      ccj: Math.max(82, Math.min(148, ccj))
-    });
-  }
-  return data;
-}
-
-// CEG (Constellation Energy): nuclear utility - looser uranium beta, target r ~ 0.65
-// CEG influenced by electricity contracts, capex, and macro beyond uranium spot (Mar 2026 price ~$315)
-function generateCEGCorrelationData() {
-  const data = [];
-  const targetR = 0.65;
-  const sqrtTerm = Math.sqrt(1 - targetR * targetR);
-  for (let i = 0; i < 52; i++) {
-    const x = gaussianRandom();
-    const e = gaussianRandom();
-    const uStd = x;
-    const cStd = targetR * x + sqrtTerm * e;
-    // Rescale: uranium mean=86, sd=11; ceg mean=310, sd=60 (2025-2026 price ranges)
-    const uranium = parseFloat((86 + uStd * 11).toFixed(2));
-    const ceg = parseFloat((310 + cStd * 60).toFixed(2));
-    data.push({
-      uranium: Math.max(60, Math.min(115, uranium)),
-      ceg: Math.max(160, Math.min(470, ceg))
-    });
-  }
-  return data;
-}
-
-function calculateCorrelation(xs: number[], ys: number[]) {
-  const n = xs.length;
-  const meanX = xs.reduce((s, v) => s + v, 0) / n;
-  const meanY = ys.reduce((s, v) => s + v, 0) / n;
-  const num = xs.reduce((s, v, i) => s + (v - meanX) * (ys[i] - meanY), 0);
-  const denX = Math.sqrt(xs.reduce((s, v) => s + Math.pow(v - meanX, 2), 0));
-  const denY = Math.sqrt(ys.reduce((s, v) => s + Math.pow(v - meanY, 2), 0));
-  return num / (denX * denY);
-}
+// (The synthetic CCJ/CEG correlation generators that lived here were removed
+// on 2026-06-10: they produced Math.random scatter tuned to a target Pearson
+// r and served it as data. No honest free daily uranium series exists to
+// compute the real thing, so the chart is gone rather than faked.)
 
 // ─── Stack + Top-Movers cache (10-min TTL per timeframe) ───────────────────
 const stackCache: Record<string, { data: Record<string, any>; timestamp: number }> = {};
@@ -1022,6 +952,10 @@ interface BacklogProject {
   expectedOnline: string | null;
   offtaker?: string | null;
   dcRelevant: boolean;
+  // Curated conviction level. "signed" = executed contracts / restarts under
+  // way and is the ONLY bucket that feeds the headline number; "aggregate"
+  // marks LOI pipelines that never headline. Unset reads as "proposed".
+  firmness?: "signed" | "optioned" | "proposed" | "aggregate";
   sources?: string[];
   notes?: string;
 }
@@ -1062,19 +996,20 @@ interface OgCard {
   stats: OgStat[];
 }
 
-async function liveIndicesStats(): Promise<OgStat[]> {
+async function liveScoreboardStats(): Promise<OgStat[]> {
   try {
-    const k = await computeKpis();
+    const sb = scoreboardSnapshot();
+    if (!sb) throw new Error("scoreboard data unavailable");
     return [
-      { label: "AI Demand", value: k.aiPowerIndex.toFixed(0) },
-      { label: "Nuclear (NPI)", value: k.npiValue.toFixed(0) },
-      { label: "Grid Stress", value: k.gridStress.toFixed(0) },
+      { label: "Signed nuclear", value: `${sb.snapshot.signedGW} GW` },
+      { label: "DC construction", value: `${sb.snapshot.constructionGW} GW` },
+      { label: "Queue backlog", value: `${sb.snapshot.queueOverallGW.toLocaleString()} GW` },
     ];
   } catch {
     return [
-      { label: "AI Demand", value: "—" },
-      { label: "Nuclear (NPI)", value: "—" },
-      { label: "Grid Stress", value: "—" },
+      { label: "Signed nuclear", value: "n/a" },
+      { label: "DC construction", value: "n/a" },
+      { label: "Queue backlog", value: "n/a" },
     ];
   }
 }
@@ -1082,8 +1017,33 @@ async function liveIndicesStats(): Promise<OgStat[]> {
 // Per-template OG card content. Pulled from the same data sources the tweet
 // composers use, so the card and the tweet text stay in sync.
 async function ogCardForTemplate(template: string): Promise<OgCard> {
-  if (template === "tilt_status") {
-    return { title: "today's market gauges", subtitle: "ai demand · nuclear · grid stress", stats: await liveIndicesStats() };
+  if (template === "new_deal") {
+    return { title: "new signed nuclear-for-ai deal", subtitle: "the nuclear-for-ai scoreboard", stats: await liveScoreboardStats() };
+  }
+  if (template === "weekly_digest") {
+    return { title: "the buildout, this week", subtitle: "signed nuclear · dc construction · queue", stats: await liveScoreboardStats() };
+  }
+  if (template === "pipeline_move") {
+    const sb = scoreboardSnapshot();
+    return {
+      title: "tracked ai datacenter pipeline",
+      subtitle: sb ? `${sb.snapshot.siteCount} sites at 400 MW or more` : "curated registry",
+      stats: sb
+        ? [
+            { label: "Operational", value: `${sb.snapshot.operationalGW} GW` },
+            { label: "Construction", value: `${sb.snapshot.constructionGW} GW` },
+            { label: "Announced", value: `${sb.snapshot.announcedPipelineGW} GW` },
+          ]
+        : [],
+    };
+  }
+  if (template === "capex_update") {
+    const sb = scoreboardSnapshot();
+    return {
+      title: "hyperscaler capex",
+      subtitle: "fy2025 disclosed guides",
+      stats: sb ? [{ label: "FY2025 total", value: `$${sb.snapshot.capexUsdBillions}B` }] : [],
+    };
   }
   if (template === "top_movers") {
     const sd = await getCachedStockData("1D");
@@ -1097,19 +1057,7 @@ async function ogCardForTemplate(template: string): Promise<OgCard> {
       stats: movers.map((s) => ({ label: `$${s.ticker}`, value: `${s.changePercent >= 0 ? "+" : ""}${s.changePercent.toFixed(2)}%` })),
     };
   }
-  if (template === "npi_update") {
-    const k = await computeKpis();
-    return {
-      title: "nuclear power index",
-      subtitle: `${k.npiValue.toFixed(0)} (baseline 100, jan 2024)`,
-      stats: [
-        { label: "VST", value: `${k.constituents.vstPerf >= 1 ? "+" : ""}${((k.constituents.vstPerf - 1) * 100).toFixed(0)}%` },
-        { label: "CEG", value: `${k.constituents.cegPerf >= 1 ? "+" : ""}${((k.constituents.cegPerf - 1) * 100).toFixed(0)}%` },
-        { label: "CCJ", value: `${k.constituents.ccjPerf >= 1 ? "+" : ""}${((k.constituents.ccjPerf - 1) * 100).toFixed(0)}%` },
-      ],
-    };
-  }
-  if (template === "queue_update") {
+  if (template === "queue_update" || template === "backlog_update") {
     try {
       const filePath = join(process.cwd(), "server", "data", "interconnection-queue.json");
       const raw = readFileSync(filePath, "utf-8");
@@ -1129,10 +1077,10 @@ async function ogCardForTemplate(template: string): Promise<OgCard> {
     }
   }
   if (template === "catalyst_preview") {
-    return { title: "this week's catalysts", subtitle: "earnings · regulatory · policy", stats: await liveIndicesStats() };
+    return { title: "this week's catalysts", subtitle: "earnings · regulatory · policy", stats: await liveScoreboardStats() };
   }
   // Fallback
-  return { title: "gridtilt", subtitle: "ai power infrastructure", stats: await liveIndicesStats() };
+  return { title: "gridtilt", subtitle: "ai power infrastructure", stats: await liveScoreboardStats() };
 }
 
 async function renderOgPng(card: OgCard): Promise<Buffer> {
@@ -1412,6 +1360,32 @@ async function xDeleteTweet(id: string): Promise<XDeleteResult> {
 }
 
 const SOCIAL_LOG_FILE = join(process.cwd(), "server", "data", "social-log.json");
+const SOCIAL_STATE_FILE = join(process.cwd(), "server", "data", "social-state.json");
+
+// Last-posted scoreboard snapshot: the diff base for the event-driven poster.
+function loadLastPostedSnapshot(): MetricsSnapshot | null {
+  try {
+    const raw = JSON.parse(readFileSync(SOCIAL_STATE_FILE, "utf-8")) as { lastSnapshot?: MetricsSnapshot | null };
+    return raw.lastSnapshot ?? null;
+  } catch {
+    return null;
+  }
+}
+function saveLastPostedSnapshot(s: MetricsSnapshot): void {
+  try {
+    writeFileSync(SOCIAL_STATE_FILE, JSON.stringify({ lastSnapshot: s }, null, 2) + "\n");
+  } catch (e) {
+    console.error("social-state write error:", e);
+  }
+}
+function recentSocialTexts(n: number): string[] {
+  try {
+    const log = JSON.parse(readFileSync(SOCIAL_LOG_FILE, "utf-8")) as SocialLogEntry[];
+    return log.slice(-n).map((e) => e.text);
+  } catch {
+    return [];
+  }
+}
 
 interface SocialLogEntry {
   timestamp: string;
@@ -1440,125 +1414,72 @@ function appendSocialLog(entry: SocialLogEntry): void {
   writeFileSync(SOCIAL_LOG_FILE, JSON.stringify(log, null, 2));
 }
 
-// ─── KPI computation (shared by /api/kpis and the cron composer) ────────────
+// ─── Buildout scoreboard assembly (shared by /api/metrics, the OG cards,
+//     /api/export/daily, and the event-driven poster) ──────────────────────
+//
+// The pure math lives in server/metrics.ts; this layer only reads the
+// curated dataset files. The market-sentiment computeKpis() that lived here
+// was retired on 2026-06-10 (autopsy: docs/INDEX_VALIDATION.md).
 
-interface KpiResult {
-  aiPowerIndex: number;
-  npiValue: number;
-  gridStress: number;
-  smrPolicyScore: number;
-  npiBaseDate: string;
-  source: "live" | "static";
-  asOf: string;
-  constituents: {
-    nvdaChange: number; tsmChange: number; eqixChange: number; muChange: number;
-    cegPerf: number; vstPerf: number; ccjPerf: number; nlrPerf: number;
-    uPerf: number; policyPerf: number; npiPolicyMultiplier: number; npiMomentum: number;
-    vstChange: number; cegChange: number;
-  };
+function easternDateStr(d: Date = new Date()): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(d);
 }
 
-async function computeKpis(): Promise<KpiResult> {
-  let nvdaChange = 2.86, tsmChange = 1.62, muChange = 2.03, eqixChange = 1.40;
-  let cegChange = 3.18, vstChange = 2.44, ccjChange = 3.10, neeChange = -0.39;
-  let cegPrice = STATIC_MARKET_DATA.CEG.price;
-  let vstPrice = STATIC_MARKET_DATA.VST.price;
-  let ccjPrice = STATIC_MARKET_DATA.CCJ.price;
-  let nlrPrice = STATIC_MARKET_DATA.NLR.price;
+interface ScoreboardData {
+  backlog: BacklogDataset;
+  datacenters: Array<{ powerMW: number; status: string }>;
+  capex: {
+    fy2025: { totalUsdBillions: number; components: unknown[]; asOf: string; notes?: string };
+    lastRefreshed: string;
+  };
+  constants: MarketConstants;
+}
 
-  // Track how many quotes returned live data so the response can honestly
-  // label itself as live vs static fallback (Yahoo throttles intermittently).
-  let liveQuoteCount = 0;
-  let yahooBlockThrew = false;
-
+function readScoreboardData(): ScoreboardData | null {
   try {
-    const YahooFinanceClass = (await import("yahoo-finance2")).default;
-    const yahooFinance = new YahooFinanceClass({ suppressNotices: ["yahooSurvey"] });
-    const quotes = await Promise.all([
-      yahooFinance.quote("NVDA").catch(() => null),
-      yahooFinance.quote("TSM").catch(() => null),
-      yahooFinance.quote("MU").catch(() => null),
-      yahooFinance.quote("EQIX").catch(() => null),
-      yahooFinance.quote("CEG").catch(() => null),
-      yahooFinance.quote("VST").catch(() => null),
-      yahooFinance.quote("CCJ").catch(() => null),
-      yahooFinance.quote("NLR").catch(() => null),
-      yahooFinance.quote("NEE").catch(() => null),
-    ]);
-    // Heartbeat: count only quotes that returned a fresh change percentage.
-    // Yahoo often returns a stale-cached regularMarketPrice while
-    // regularMarketChangePercent is null on a throttle, which would otherwise
-    // let us label "live" while the index momentum values fell back to
-    // STATIC_MARKET_DATA. Tighten the heartbeat to changePercent specifically.
-    quotes.forEach((q) => {
-      if (q?.regularMarketChangePercent != null) liveQuoteCount++;
-    });
-    if (quotes[0]?.regularMarketChangePercent != null) nvdaChange = quotes[0].regularMarketChangePercent;
-    if (quotes[1]?.regularMarketChangePercent != null) tsmChange = quotes[1].regularMarketChangePercent;
-    if (quotes[2]?.regularMarketChangePercent != null) muChange = quotes[2].regularMarketChangePercent;
-    if (quotes[3]?.regularMarketChangePercent != null) eqixChange = quotes[3].regularMarketChangePercent;
-    if (quotes[4]?.regularMarketChangePercent != null) cegChange = quotes[4].regularMarketChangePercent;
-    if (quotes[5]?.regularMarketChangePercent != null) vstChange = quotes[5].regularMarketChangePercent;
-    if (quotes[6]?.regularMarketChangePercent != null) ccjChange = quotes[6].regularMarketChangePercent;
-    if (quotes[8]?.regularMarketChangePercent != null) neeChange = quotes[8].regularMarketChangePercent;
-    if (quotes[4]?.regularMarketPrice != null) cegPrice = quotes[4].regularMarketPrice;
-    if (quotes[5]?.regularMarketPrice != null) vstPrice = quotes[5].regularMarketPrice;
-    if (quotes[6]?.regularMarketPrice != null) ccjPrice = quotes[6].regularMarketPrice;
-    if (quotes[7]?.regularMarketPrice != null) nlrPrice = quotes[7].regularMarketPrice;
-  } catch {
-    yahooBlockThrew = true;
+    const dir = join(process.cwd(), "server", "data");
+    const backlog = JSON.parse(readFileSync(join(dir, "interconnection-queue.json"), "utf-8")) as BacklogDataset;
+    const datacenters = JSON.parse(readFileSync(join(dir, "datacenters.json"), "utf-8"));
+    const capex = JSON.parse(readFileSync(join(dir, "hyperscaler-capex.json"), "utf-8"));
+    return { backlog, datacenters, capex, constants: loadMarketConstants() };
+  } catch (e) {
+    console.error("scoreboard read error:", e);
+    return null;
   }
-
-  const source: "live" | "static" = yahooBlockThrew || liveQuoteCount < 5 ? "static" : "live";
-
-  // Auto-derived market constants
-  const mc = loadMarketConstants();
-  const uraniumSpot = mc.uraniumSpotUsdPerLb;
-  const smrPolicyScore = deriveSmrPolicyScore();
-
-  // All formulas live in server/indices.ts (pure + unit-tested; the
-  // historical backtest reconstructs series with these same functions).
-  const npi = computeNpi({ cegPrice, vstPrice, ccjPrice, nlrPrice, uraniumSpot, smrPolicyScore });
-  const { npiValue, cegPerf, vstPerf, ccjPerf, nlrPerf, uPerf, policyPerf, npiPolicyMultiplier } = npi;
-  const npiMomentum = computeNpiMomentum({ cegChange, vstChange, ccjChange, neeChange });
-
-  const aiPowerIndex = computeAiPowerIndex({ nvdaChange, tsmChange, eqixChange, muChange });
-  const gridStress = computeGridStress({ vstChange, cegChange, eqixChange });
-
-  return {
-    aiPowerIndex: parseFloat(aiPowerIndex.toFixed(1)),
-    npiValue,
-    gridStress: parseFloat(gridStress.toFixed(1)),
-    smrPolicyScore: parseFloat(smrPolicyScore.toFixed(2)),
-    npiBaseDate: "Jan 1, 2024",
-    source,
-    asOf: new Date().toISOString(),
-    constituents: {
-      nvdaChange: parseFloat(nvdaChange.toFixed(2)),
-      tsmChange: parseFloat(tsmChange.toFixed(2)),
-      eqixChange: parseFloat(eqixChange.toFixed(2)),
-      muChange: parseFloat(muChange.toFixed(2)),
-      cegPerf: parseFloat(cegPerf.toFixed(3)),
-      vstPerf: parseFloat(vstPerf.toFixed(3)),
-      ccjPerf: parseFloat(ccjPerf.toFixed(3)),
-      nlrPerf: parseFloat(nlrPerf.toFixed(3)),
-      uPerf: parseFloat(uPerf.toFixed(3)),
-      policyPerf: parseFloat(policyPerf.toFixed(3)),
-      npiPolicyMultiplier: parseFloat(npiPolicyMultiplier.toFixed(3)),
-      npiMomentum: parseFloat(npiMomentum.toFixed(2)),
-      vstChange: parseFloat(vstChange.toFixed(2)),
-      cegChange: parseFloat(cegChange.toFixed(2)),
-    },
-  };
 }
 
-// Simple status label used by /api/export/daily. Most surfaces don't show
-// this word any more (the tilt-status tweet drops it). Kept narrow so the
-// export endpoint has a stable shape.
-function deriveTiltStatus(k: KpiResult): "elevated" | "tracking baseline" | "easing" {
-  if (k.aiPowerIndex > 78 && k.gridStress > 70 && k.npiValue > 130) return "elevated";
-  if (k.aiPowerIndex < 68 && k.gridStress < 55) return "easing";
-  return "tracking baseline";
+interface ScoreboardBundle {
+  snapshot: MetricsSnapshot;
+  data: ScoreboardData;
+  nuclear: NuclearMetrics;
+  pipeline: PipelineMetrics;
+}
+
+function scoreboardSnapshot(): ScoreboardBundle | null {
+  const data = readScoreboardData();
+  if (!data) return null;
+  const nuclear = computeNuclearMetrics(data.backlog.projects);
+  const pipeline = computePipelineMetrics(data.datacenters);
+  const h = data.backlog.headline;
+  const snapshot: MetricsSnapshot = {
+    date: easternDateStr(),
+    signedGW: nuclear.signedGW,
+    announcedGW: nuclear.announcedGW,
+    signedDeals: nuclear.signedDeals,
+    totalDeals: nuclear.totalDeals,
+    operationalGW: pipeline.operationalGW,
+    constructionGW: pipeline.constructionGW,
+    announcedPipelineGW: pipeline.announcedGW,
+    siteCount: pipeline.siteCount,
+    queueOverallGW: h.queueOverallGW,
+    medianWaitMonths: h.medianWaitMonths,
+    historicalWithdrawalPct: h.historicalWithdrawalPct,
+    ercotLargeLoadGW: h.ercotLargeLoadGW,
+    capexUsdBillions: data.capex?.fy2025?.totalUsdBillions ?? 0,
+    uraniumSpotUsdPerLb: data.constants.uraniumSpotUsdPerLb,
+    signedIds: nuclear.signedIds,
+  };
+  return { snapshot, data, nuclear, pipeline };
 }
 
 // ─── Tweet composers ───────────────────────────────────────────────────────
@@ -1590,12 +1511,19 @@ const SECTOR_TAG: Record<string, string> = (() => {
   return m;
 })();
 
-async function composeTiltStatusTweet(): Promise<string> {
-  const k = await computeKpis();
-  const history = ((readIndexHistory() as { days?: HistoryDayLite[] })?.days ?? []);
-  return buildTiltStatusTweet(
-    { aiPowerIndex: k.aiPowerIndex, gridStress: k.gridStress, npiValue: k.npiValue },
-    history,
+async function composeWeeklyDigestTweet(): Promise<string> {
+  const sb = scoreboardSnapshot();
+  if (!sb) throw new Error("scoreboard data unavailable");
+  const s = sb.snapshot;
+  const ago = snapshotDaysAgo(7);
+  const weekLabel = new Date()
+    .toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "America/New_York" })
+    .toLowerCase();
+  return buildWeeklyDigestTweet(
+    { signedGW: s.signedGW, constructionGW: s.constructionGW, queueOverallGW: s.queueOverallGW },
+    ago ? { signedGW: ago.signedGW, constructionGW: ago.constructionGW, queueOverallGW: ago.queueOverallGW } : null,
+    weekLabel,
+    nextTopCatalyst(),
   );
 }
 
@@ -1607,11 +1535,6 @@ async function composeTopMoversTweet(): Promise<string> {
     .slice(0, 4)
     .map((s) => ({ ticker: s.ticker, changePercent: s.changePercent, tag: SECTOR_TAG[s.ticker] }));
   return buildTopMoversTweet(movers);
-}
-
-async function composeNpiUpdateTweet(): Promise<string> {
-  const k = await computeKpis();
-  return buildNpiUpdateTweet(k.npiValue, k.constituents);
 }
 
 async function composeQueueUpdateTweet(): Promise<string> {
@@ -1667,12 +1590,30 @@ async function composeCatalystPreviewTweet(): Promise<string> {
   return buildCatalystTweet(upcoming);
 }
 
-const ROTATING_TEMPLATES: Record<number, { name: string; compose: () => Promise<string> }> = {
-  1: { name: "tilt_status",       compose: composeTiltStatusTweet },      // Mon
-  2: { name: "top_movers",        compose: composeTopMoversTweet },       // Tue
-  3: { name: "npi_update",        compose: composeNpiUpdateTweet },       // Wed
-  4: { name: "queue_update",      compose: composeQueueUpdateTweet },     // Thu
-  5: { name: "catalyst_preview",  compose: composeCatalystPreviewTweet }, // Fri
+/** Earliest tier-1 earnings in the next 7 days, for the digest's tail line. */
+function nextTopCatalyst(): string | null {
+  const todayStr = easternDateStr();
+  const endStr = easternDateStr(new Date(Date.now() + 7 * 86400000));
+  const hits: Array<{ date: string; ticker: string }> = [];
+  for (const item of earningsCache?.items ?? []) {
+    const ticker = item.tickers?.[0];
+    if (!ticker || !TIER1_EARNINGS.has(ticker)) continue;
+    if (!item.date || item.date < todayStr || item.date > endStr) continue;
+    hits.push({ date: item.date, ticker });
+  }
+  if (hits.length === 0) return null;
+  hits.sort((a, b) => (a.date < b.date ? -1 : 1));
+  return `${hits[0].ticker} earnings`;
+}
+
+// Manually composable templates (/api/social/generate, /api/admin/post-now).
+// The day-of-week rotation is gone: scheduled posting is event-driven (see
+// the cron handler), so nothing here fires on a calendar.
+const MANUAL_TEMPLATES: Record<string, () => Promise<string>> = {
+  top_movers: composeTopMoversTweet,
+  queue_update: composeQueueUpdateTweet,
+  catalyst_preview: composeCatalystPreviewTweet,
+  weekly_digest: composeWeeklyDigestTweet,
 };
 
 export async function registerRoutes(
@@ -1720,21 +1661,134 @@ export async function registerRoutes(
   app.use("/api/admin/", adminAuthFailureLimiter);
   app.use("/api/newsletter/", adminAuthFailureLimiter);
 
-  // KPI endpoint - three composite indicators
-  // Methodology lives in server/indices.ts. Both this route and the daily
-  // tweet cron call the same function so the public dashboard and the social
-  // post can never drift on what "today's numbers" are.
-  app.get("/api/kpis", async (_req, res) => {
-    const kpis = await computeKpis();
-    recordDailyIndexValues(kpis);
-    res.json(kpis);
+  // ─── The buildout scoreboard (replaced the retired indices, 2026-06-10) ──
+  // Real units from curated datasets and public feeds. Every group carries
+  // its source and as-of. The autopsy of the indices this replaced is public:
+  // docs/INDEX_VALIDATION.md.
+  app.get("/api/metrics", async (_req, res) => {
+    try {
+      const sb = scoreboardSnapshot();
+      if (!sb) return res.status(500).json({ error: "scoreboard data unavailable" });
+      const { snapshot, data, nuclear, pipeline } = sb;
+
+      // Market line: equal-weight day move from the existing stack cache.
+      // Never triggers a Yahoo fan-out; an absent cache means null, not zero.
+      let market: ReturnType<typeof computeMarketLine> = null;
+      const cachedStack = stackCache["1D"];
+      if (cachedStack && Date.now() - cachedStack.timestamp < STACK_CACHE_TTL) {
+        const stocks = (Object.values(cachedStack.data) as any[]).map((s) => ({
+          ticker: s.ticker as string,
+          changePercent: typeof s.changePercent === "number" ? (s.changePercent as number) : null,
+        }));
+        market = computeMarketLine(stocks, STACK_TICKERS.nuclear);
+      }
+
+      // Grid pulse: live physical load (EIA, keyed) + monthly output yoy (FRED).
+      let gridPulse: Record<string, unknown> | null = null;
+      try {
+        const eia = await getHourlyDemandUS48();
+        if (eia.configured && eia.points.length > 0) {
+          const latest = eia.points[eia.points.length - 1];
+          gridPulse = {
+            currentGW: parseFloat((latest.megawatts / 1000).toFixed(1)),
+            atUtc: latest.periodUtc,
+            source: eia.source,
+          };
+        }
+      } catch {
+        // EIA outage: omit the live leg rather than fake it.
+      }
+      try {
+        const fred = await getElectricityOutputMonthly();
+        const pts = fred.points;
+        const latest = pts[pts.length - 1];
+        const yearAgo = pts.find(
+          (p) => p.month === `${parseInt(latest.month.slice(0, 4), 10) - 1}${latest.month.slice(4)}`,
+        );
+        if (latest && yearAgo) {
+          gridPulse = {
+            ...(gridPulse ?? {}),
+            outputYoYPct: parseFloat(((latest.value / yearAgo.value - 1) * 100).toFixed(1)),
+            outputMonth: latest.month,
+            outputSource: fred.source,
+          };
+        }
+      } catch {
+        // FRED outage: same rule.
+      }
+
+      recordDailyMetrics(snapshot);
+
+      res.json({
+        nuclear: {
+          signedGW: nuclear.signedGW,
+          announcedGW: nuclear.announcedGW,
+          aggregateGW: nuclear.aggregateGW,
+          signedDeals: nuclear.signedDeals,
+          totalDeals: nuclear.totalDeals,
+          uraniumSpot: {
+            usdPerLb: data.constants.uraniumSpotUsdPerLb,
+            asOf: data.constants.uraniumSpotAsOf,
+            source: data.constants.uraniumSpotSource,
+          },
+          source: "GridTilt curated deal registry (signed = executed contracts and restarts underway only)",
+          asOf: data.backlog.lastRefreshed,
+        },
+        pipeline: {
+          operationalGW: pipeline.operationalGW,
+          constructionGW: pipeline.constructionGW,
+          announcedGW: pipeline.announcedGW,
+          siteCount: pipeline.siteCount,
+          capex: data.capex.fy2025,
+          source: "GridTilt curated registry of US sites at 400 MW or more (tracked, not a census)",
+        },
+        backlog: {
+          queueOverallGW: data.backlog.headline.queueOverallGW,
+          queueOverallProjects: data.backlog.headline.queueOverallProjects,
+          medianWaitMonths: data.backlog.headline.medianWaitMonths,
+          historicalWithdrawalPct: data.backlog.headline.historicalWithdrawalPct,
+          ercotLargeLoadGW: data.backlog.headline.ercotLargeLoadGW,
+          ercotLargeLoadDataCenterPct: data.backlog.headline.ercotLargeLoadDataCenterPct,
+          pjmReopenedGW: data.backlog.headline.pjmReopenedGW,
+          asOf: data.backlog.headline.queueOverallAsOf,
+          sourceUrl: data.backlog.headline.queueOverallSourceUrl,
+        },
+        gridPulse,
+        market,
+        asOf: new Date().toISOString(),
+      });
+    } catch (error) {
+      console.error("Metrics error:", error);
+      res.status(500).json({ error: "Failed to assemble the scoreboard" });
+    }
   });
 
-  // Public daily gauge history: the committed seed is reconstructed from
-  // public prices (npm run backtest:indices); live values append in place.
-  // Powers transparency and saves anyone re-deriving the series.
+  // Daily scoreboard history (sparse early; appended on /api/metrics hits).
+  app.get("/api/metrics/history", (_req, res) => {
+    res.json(readMetricsHistory());
+  });
+
+  // Tombstone for the retired gauges: one release of a pointer instead of
+  // silence, then this route goes away entirely.
+  app.get("/api/kpis", (_req, res) => {
+    res.status(410).json({
+      error: "Gone",
+      moved: "/api/metrics",
+      reason:
+        "The market-sentiment gauges were retired on 2026-06-10. The backtest that motivated it is public: docs/INDEX_VALIDATION.md.",
+    });
+  });
+
+  // The archived gauge series, frozen at retirement. Deterministically
+  // regenerable from public prices via npm run backtest:indices.
   app.get("/api/index-history", (_req, res) => {
-    res.json(readIndexHistory());
+    const archive = readIndexHistory();
+    res.json({
+      discontinued: true,
+      reason: "Gauges retired 2026-06-10; see docs/INDEX_VALIDATION.md",
+      replacedBy: "/api/metrics/history",
+      ...(typeof archive === "object" && archive !== null ? archive : {}),
+    });
   });
 
   // Physical electricity data (see server/physical.ts). The monthly output
@@ -1767,17 +1821,6 @@ export async function registerRoutes(
       const timeframe = ALLOWED_TIMEFRAMES.includes(requested) ? requested : "1D";
       const stockData = await getCachedStockData(timeframe);
 
-      const ccjCorrelationData = generateCCJCorrelationData();
-      const cegCorrelationData = generateCEGCorrelationData();
-      const ccjR = calculateCorrelation(
-        ccjCorrelationData.map((d) => d.uranium),
-        ccjCorrelationData.map((d) => d.ccj)
-      );
-      const cegR = calculateCorrelation(
-        cegCorrelationData.map((d) => d.uranium),
-        cegCorrelationData.map((d) => d.ceg)
-      );
-
       res.json({
         compute:             STACK_TICKERS.compute.map((t) => stockData[t]).filter(Boolean),
         nuclear:             STACK_TICKERS.nuclear.map((t) => stockData[t]).filter(Boolean),
@@ -1792,9 +1835,6 @@ export async function registerRoutes(
         transmissionGrid:    STACK_TICKERS.transmissionGrid.map((t) => stockData[t]).filter(Boolean),
         cryptoAIDC:          STACK_TICKERS.cryptoAIDC.map((t) => stockData[t]).filter(Boolean),
         etfsBenchmarks:      STACK_TICKERS.etfsBenchmarks.map((t) => stockData[t]).filter(Boolean),
-        correlation: ccjCorrelationData,
-        correlationCoeff: parseFloat(ccjR.toFixed(3)),
-        cegCorrelationCoeff: parseFloat(cegR.toFixed(3)),
       });
     } catch (error) {
       console.error("Stack error:", error);
@@ -2833,34 +2873,34 @@ Preferred-Languages: en
           stats: [{ label: "Sector", value: companyInfo?.primarySegment || "Unknown" }],
         };
       } else if (page === "stack") {
-        card = { title: "60+ AI Power Stocks", subtitle: "Live Data Across 8 Sectors", stats: await liveIndicesStats() };
+        card = { title: "60+ AI Power Stocks", subtitle: "Live Data Across 8 Sectors", stats: await liveScoreboardStats() };
       } else if (page === "power-map") {
-        card = { title: "US AI Data Center Map", subtitle: "Filter by operator, region, and capacity (\u2265 400 MW)", stats: await liveIndicesStats() };
+        card = { title: "US AI Data Center Map", subtitle: "Filter by operator, region, and capacity (\u2265 400 MW)", stats: await liveScoreboardStats() };
       } else if (page === "supply-chain") {
-        card = { title: "AI Power Supply Chain", subtitle: "5 systems, 20 sub-systems, silicon to substation", stats: await liveIndicesStats() };
+        card = { title: "AI Power Supply Chain", subtitle: "5 systems, 20 sub-systems, silicon to substation", stats: await liveScoreboardStats() };
       } else if (page === "queue") {
         card = await ogCardForTemplate("queue_update");
       } else if (page === "trade") {
-        card = { title: "AI Power Scenario Calculator", subtitle: "Model demand, capex, and LPT requirements through 2030", stats: await liveIndicesStats() };
+        card = { title: "AI Power Scenario Calculator", subtitle: "Model demand, capex, and LPT requirements through 2030", stats: await liveScoreboardStats() };
       } else if (page === "portfolio") {
-        card = { title: "AI Power Thesis Score", subtitle: "Rate any portfolio against the AI power buildout", stats: await liveIndicesStats() };
+        card = { title: "AI Power Thesis Score", subtitle: "Rate any portfolio against the AI power buildout", stats: await liveScoreboardStats() };
       } else if (page === "catalysts") {
-        card = { title: "Catalyst Calendar", subtitle: "Earnings, policy, and regulatory events for AI power", stats: await liveIndicesStats() };
+        card = { title: "Catalyst Calendar", subtitle: "Earnings, policy, and regulatory events for AI power", stats: await liveScoreboardStats() };
       } else if (page === "blog" && name) {
-        card = { title: name, subtitle: "GridTilt Analysis", stats: await liveIndicesStats() };
+        card = { title: name, subtitle: "GridTilt Analysis", stats: await liveScoreboardStats() };
       } else if (page === "blog") {
-        card = { title: "GridTilt Analysis", subtitle: "Research on the AI power infrastructure thesis", stats: await liveIndicesStats() };
+        card = { title: "GridTilt Analysis", subtitle: "Research on the AI power infrastructure thesis", stats: await liveScoreboardStats() };
       } else if (page === "subscribe") {
-        card = { title: "Get the Tilt", subtitle: "Weekly AI power market intel, in your inbox", stats: await liveIndicesStats() };
+        card = { title: "Get the Tilt", subtitle: "Weekly AI power market intel, in your inbox", stats: await liveScoreboardStats() };
       } else if (page === "sector" && name) {
-        card = { title: `${name} Sector`, subtitle: "AI Power Infrastructure Stocks", stats: await liveIndicesStats() };
+        card = { title: `${name} Sector`, subtitle: "AI Power Infrastructure Stocks", stats: await liveScoreboardStats() };
       } else if (page === "region" && name) {
-        card = { title: `${name} Grid Region`, subtitle: "AI Data Center Locations", stats: await liveIndicesStats() };
+        card = { title: `${name} Grid Region`, subtitle: "AI Data Center Locations", stats: await liveScoreboardStats() };
       } else if (page === "operator" && name) {
-        card = { title: `${name} AI Data Centers`, subtitle: "Locations and Capacity", stats: await liveIndicesStats() };
+        card = { title: `${name} AI Data Centers`, subtitle: "Locations and Capacity", stats: await liveScoreboardStats() };
       } else {
         // home (default)
-        card = { title: "The grid is tilting.", subtitle: "AI power infrastructure dashboard", stats: await liveIndicesStats() };
+        card = { title: "The grid is tilting.", subtitle: "AI power infrastructure dashboard", stats: await liveScoreboardStats() };
       }
 
       const png = await renderOgPng(card);
@@ -2907,7 +2947,8 @@ Preferred-Languages: en
   app.get("/api/export/daily", async (req, res) => {
     if (!requireAdmin(req, res)) return;
     try {
-      const kpis = await computeKpis();
+      const sb = scoreboardSnapshot();
+      if (!sb) return res.status(500).json({ error: "scoreboard data unavailable" });
       const stockData = await getCachedStockData("1D");
       const topMovers = (Object.values(stockData) as any[])
         .filter((s) => s && typeof s.changePercent === "number")
@@ -2921,11 +2962,14 @@ Preferred-Languages: en
 
       res.json({
         date: new Date().toISOString().split("T")[0],
-        tilt_status: deriveTiltStatus(kpis).toLowerCase(),
-        indices: {
-          ai_demand: kpis.aiPowerIndex,
-          nuclear_power: kpis.npiValue,
-          grid_stress: kpis.gridStress,
+        scoreboard: {
+          signed_nuclear_gw: sb.snapshot.signedGW,
+          announced_nuclear_gw: sb.snapshot.announcedGW,
+          signed_nuclear_deals: sb.snapshot.signedDeals,
+          dc_operational_gw: sb.snapshot.operationalGW,
+          dc_construction_gw: sb.snapshot.constructionGW,
+          queue_overall_gw: sb.snapshot.queueOverallGW,
+          capex_fy2025_usd_b: sb.snapshot.capexUsdBillions,
         },
         top_movers: topMovers,
       });
@@ -2940,49 +2984,97 @@ Preferred-Languages: en
   app.post("/api/social/generate", async (req, res) => {
     if (!requireAdmin(req, res)) return;
     const { template } = req.body || {};
-    const dayIdx = new Date().getDay();
-    const picked = template
-      ? Object.values(ROTATING_TEMPLATES).find((t) => t.name === template)
-      : ROTATING_TEMPLATES[dayIdx];
+    const picked = typeof template === "string" ? MANUAL_TEMPLATES[template] : undefined;
     if (!picked) {
       return res.status(400).json({
         error: "Unknown template",
-        available: Array.from(new Set(Object.values(ROTATING_TEMPLATES).map((t) => t.name))),
+        available: Object.keys(MANUAL_TEMPLATES),
       });
     }
     try {
-      // The catalyst composer reads the module-scope earnings cache;
+      // The catalyst-aware composers read the module-scope earnings cache;
       // refresh it here because refreshEarningsCache is route-scoped.
-      if (picked.name === "catalyst_preview") await refreshEarningsCache().catch(() => {});
-      const text = ensureTweetLength(await picked.compose());
-      res.json({ template: picked.name, text, length: text.length });
+      if (template === "catalyst_preview" || template === "weekly_digest") {
+        await refreshEarningsCache().catch(() => {});
+      }
+      const text = ensureTweetLength(await picked());
+      res.json({ template, text, length: text.length });
     } catch (error: any) {
       console.error("Social generate error:", error);
       res.status(500).json({ error: error?.message ?? "compose failed" });
     }
   });
 
-  // Cron-triggered daily tweet. Picks template by day of week, composes from
-  // live data, posts to X. Logs every attempt (success or dry-run) to
-  // server/data/social-log.json so we can audit what shipped.
+  // Cron-triggered poster, event-driven (2026-06-10 redesign). Diffs the
+  // live scoreboard against the last-posted snapshot and posts at most one
+  // thing: the highest-priority change (new signed deal > pipeline move >
+  // backlog update > capex revision), or the Friday digest, or nothing.
+  // A quiet day produces honest silence and the response says why. Every
+  // attempt (post, dry-run, skip reason) is visible via social-log + JSON.
   app.post("/api/admin/cron/daily-tweet", async (req, res) => {
     if (!requireAdmin(req, res)) return;
-    const dayIdx = new Date().getDay();
-    const picked = ROTATING_TEMPLATES[dayIdx];
-    if (!picked) {
-      return res.json({ skipped: true, reason: "no template for weekend", dayIdx });
-    }
     try {
-      // Same cache pre-refresh as /api/social/generate (see note there).
-      if (picked.name === "catalyst_preview") await refreshEarningsCache().catch(() => {});
-      const text = ensureTweetLength(await picked.compose());
+      const sb = scoreboardSnapshot();
+      if (!sb) return res.status(500).json({ error: "scoreboard data unavailable" });
+      const last = loadLastPostedSnapshot();
+      const event = evaluateMetricsEvent(sb.snapshot, last);
+
+      if (event?.type === "init") {
+        // First run: set the diff base without tweeting the entire backlog.
+        saveLastPostedSnapshot(sb.snapshot);
+        return res.json({ skipped: true, reason: "state initialized; diffs start next run" });
+      }
+
+      const isFriday =
+        new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", weekday: "short" }).format(new Date()) === "Fri";
+
+      let template: string | null = null;
+      let text: string | null = null;
+      if (event) {
+        if (event.type === "new_deal") {
+          const p = sb.data.backlog.projects.find((x) => x.id === event.projectId);
+          template = "new_deal";
+          text = buildNewDealTweet(
+            {
+              projectName: p?.projectName ?? event.projectId,
+              capacityMW: p?.capacityMW ?? 0,
+              sponsor: p?.sponsor ?? "",
+              offtaker: p?.offtaker,
+            },
+            { signedGW: sb.snapshot.signedGW, signedDeals: sb.snapshot.signedDeals },
+          );
+        } else if (event.type === "pipeline_move") {
+          template = "pipeline_move";
+          text = buildPipelineMoveTweet(event.prev, event.now, sb.snapshot.siteCount);
+        } else if (event.type === "backlog_update") {
+          template = "backlog_update";
+          text = buildBacklogUpdateTweet(event.changes);
+        } else if (event.type === "capex_update") {
+          template = "capex_update";
+          text = buildCapexUpdateTweet(event.beforeB, event.afterB);
+        }
+      } else if (isFriday) {
+        await refreshEarningsCache().catch(() => {});
+        template = "weekly_digest";
+        text = await composeWeeklyDigestTweet();
+      }
+
+      if (!text || !template) {
+        return res.json({ skipped: true, reason: "no change on the scoreboard" });
+      }
+
+      const trimmed = ensureTweetLength(text);
+      // X rejects duplicate text; never even attempt one.
+      if (recentSocialTexts(20).includes(trimmed)) {
+        return res.json({ skipped: true, reason: "identical to a recent post (dedupe guard)", template });
+      }
 
       // Render the template's matching OG image and attach it. If the upload
-      // fails (X throttling, OAuth issue), still post the text — the link card
-      // will fall back to the page's og:image meta.
+      // fails (X throttling, OAuth issue), still post the text; the link card
+      // falls back to the page's og:image meta.
       let mediaIds: string[] | undefined;
       try {
-        const card = await ogCardForTemplate(picked.name);
+        const card = await ogCardForTemplate(template);
         const png = await renderOgPng(card);
         const mediaId = await xUploadMedia(png);
         if (mediaId) mediaIds = [mediaId];
@@ -2990,19 +3082,22 @@ Preferred-Languages: en
         console.error("OG media upload skipped:", mediaErr?.message);
       }
 
-      const result = await xPostTweet(text, mediaIds);
+      const result = await xPostTweet(trimmed, mediaIds);
       appendSocialLog({
         timestamp: new Date().toISOString(),
         platform: "twitter",
-        text,
+        text: trimmed,
         ok: result.ok,
         id: result.id,
         error: result.error,
         dryRun: result.dryRun,
-        template: picked.name,
+        template,
         trigger: "cron",
       });
-      res.json({ template: picked.name, mediaAttached: !!mediaIds, ...result });
+      // Advance the diff base only when the post (or dry-run) succeeded, so
+      // a failed post retries the same event on the next cron fire.
+      if (result.ok) saveLastPostedSnapshot(sb.snapshot);
+      res.json({ template, mediaAttached: !!mediaIds, ...result });
     } catch (error: any) {
       console.error("Daily tweet cron error:", error);
       appendSocialLog({
@@ -3011,7 +3106,7 @@ Preferred-Languages: en
         text: "(compose failed)",
         ok: false,
         error: error?.message ?? "unknown",
-        template: picked.name,
+        template: "event",
         trigger: "cron",
       });
       res.status(500).json({ error: error?.message ?? "cron failed" });
@@ -3142,6 +3237,10 @@ Preferred-Languages: en
     if (!validStatuses.includes(status)) {
       return res.status(400).json({ error: `status must be one of: ${validStatuses.join(", ")}` });
     }
+    const validFirmness = ["signed", "optioned", "proposed", "aggregate"];
+    if (b.firmness !== undefined && !validFirmness.includes(b.firmness)) {
+      return res.status(400).json({ error: `firmness must be one of: ${validFirmness.join(", ")}` });
+    }
 
     try {
       const data = loadBacklog();
@@ -3159,6 +3258,7 @@ Preferred-Languages: en
         expectedOnline: b.expectedOnline ?? null,
         offtaker: b.offtaker ?? null,
         dcRelevant: b.dcRelevant === true,
+        firmness: b.firmness,
         sources: Array.isArray(b.sources) ? b.sources : undefined,
         notes: typeof b.notes === "string" ? b.notes : undefined,
       };

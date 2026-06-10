@@ -1,7 +1,7 @@
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Wordmark } from "./Wordmark";
-import type { KpiData } from "@/lib/types";
+import type { MetricsSummary } from "@/lib/types";
 import logoPath from "@assets/Image_[Vectorized]_(2)_1773890483514.png";
 import powerMapSvg from "@assets/previews/power-map.svg";
 
@@ -19,14 +19,12 @@ function formatRefreshTimeFromIso(iso: string | undefined): string | null {
 }
 
 export function Hero() {
-  const { data } = useQuery<KpiData>({
-    queryKey: ["/api/kpis"],
+  const { data } = useQuery<MetricsSummary>({
+    queryKey: ["/api/metrics"],
     refetchInterval: 5 * 60_000,
     refetchIntervalInBackground: false,
   });
   const refresh = formatRefreshTimeFromIso(data?.asOf);
-  const sourceKnown = data?.source === "live" || data?.source === "static";
-  const isLive = data?.source === "live";
 
   return (
     <section
@@ -81,7 +79,7 @@ export function Hero() {
             data-testid="home-logo-mark"
           />
         </Link>
-        {sourceKnown && refresh && (
+        {data && refresh && (
           <span
             style={{
               fontFamily: "JetBrains Mono, monospace",
@@ -89,12 +87,14 @@ export function Hero() {
               color: "var(--mkt-ink-muted)",
               letterSpacing: "0.04em",
               textAlign: "right",
-              lineHeight: 1.4,
+              lineHeight: 1.5,
               paddingTop: 14,
             }}
             data-testid="hero-refresh"
           >
-            {isLive ? "data refreshed" : "static fallback"} {refresh}
+            {data.nuclear.signedGW} GW signed nuclear · {data.pipeline.constructionGW} GW dc construction · {data.backlog.queueOverallGW.toLocaleString()} GW queued
+            <br />
+            scoreboard refreshed {refresh}
           </span>
         )}
       </div>

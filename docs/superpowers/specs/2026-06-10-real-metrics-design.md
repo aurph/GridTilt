@@ -54,7 +54,7 @@ Sources: `server/data/datacenters.json` (curated registry, >= 400 MW sites only)
 - `siteCount`: registry size (58).
 - `capexUsdBillions`: FY2025 total (340) + per-company components with source links, passthrough.
 - Labeling rule: always "tracked", never "US total". The registry is curated, not a census.
-- Data change: add a top-level `lastRefreshed` to `datacenters.json` (bumped by the admin write path) so the group has a real `asOf`.
+- Deviation (implementation): `datacenters.json` stays a bare array (changing it to an object would break the existing loaders, ingester, and PowerMap). The pipeline group ships a source label describing the live registry instead of a per-file asOf.
 
 ### 3. The backlog (replaces Grid Stress)
 

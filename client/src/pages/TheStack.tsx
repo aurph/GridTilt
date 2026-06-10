@@ -8,18 +8,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import {
-  LineChart,
-  Line,
-  ResponsiveContainer,
-  ScatterChart,
-  Scatter,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-} from "recharts";
+import { LineChart, Line, ResponsiveContainer } from "recharts";
 import { Cpu, Server, Zap, TrendingUp, TrendingDown, Info, Clock } from "lucide-react";
 
 interface StockData {
@@ -37,11 +26,6 @@ interface StockData {
   stale?: boolean;
 }
 
-interface CorrelationPoint {
-  uranium: number;
-  ccj: number;
-}
-
 interface StackData {
   compute: StockData[];
   nuclear: StockData[];
@@ -56,9 +40,6 @@ interface StackData {
   transmissionGrid: StockData[];
   cryptoAIDC: StockData[];
   etfsBenchmarks: StockData[];
-  correlation: CorrelationPoint[];
-  correlationCoeff: number;
-  cegCorrelationCoeff: number;
 }
 
 function Sparkline({ data, color }: { data: number[] | undefined; color: string }) {
@@ -182,47 +163,10 @@ function StockCardSkeleton() {
   );
 }
 
-const CustomScatterTooltip = ({ active, payload }: any) => {
-  if (active && payload && payload.length) {
-    return (
-      <div className="bg-card border border-card-border rounded-lg p-3 text-xs shadow-xl">
-        <p className="text-muted-foreground">Uranium Spot: <span className="text-foreground font-mono font-medium">${payload[0]?.value?.toFixed(2)}/lb</span></p>
-        <p className="text-muted-foreground">CCJ: <span className="text-foreground font-mono font-medium">${payload[1]?.value?.toFixed(2)}</span></p>
-      </div>
-    );
-  }
-  return null;
-};
-
-// Compute OLS regression line + confidence band from scatter data
-function computeRegression(points: { uranium: number; ccj: number }[]) {
-  if (!points || points.length < 3) return { line: [], upper: [], lower: [] };
-  const n = points.length;
-  const xs = points.map((p) => p.uranium);
-  const ys = points.map((p) => p.ccj);
-  const meanX = xs.reduce((s, v) => s + v, 0) / n;
-  const meanY = ys.reduce((s, v) => s + v, 0) / n;
-  const sxx = xs.reduce((s, x) => s + (x - meanX) ** 2, 0);
-  const sxy = xs.reduce((s, x, i) => s + (x - meanX) * (ys[i] - meanY), 0);
-  const slope = sxy / sxx;
-  const intercept = meanY - slope * meanX;
-  const residuals = xs.map((x, i) => ys[i] - (slope * x + intercept));
-  const se = Math.sqrt(residuals.reduce((s, r) => s + r * r, 0) / (n - 2));
-  const minX = Math.min(...xs);
-  const maxX = Math.max(...xs);
-  const steps = 30;
-  const line = [];
-  const upper = [];
-  const lower = [];
-  for (let i = 0; i <= steps; i++) {
-    const x = minX + ((maxX - minX) * i) / steps;
-    const fit = slope * x + intercept;
-    line.push({ uranium: parseFloat(x.toFixed(2)), ccj: parseFloat(fit.toFixed(2)) });
-    upper.push({ uranium: parseFloat(x.toFixed(2)), ccj: parseFloat((fit + 1.5 * se).toFixed(2)) });
-    lower.push({ uranium: parseFloat(x.toFixed(2)), ccj: parseFloat((fit - 1.5 * se).toFixed(2)) });
-  }
-  return { line, upper, lower };
-}
+// (The uranium-vs-CCJ/CEG correlation scatter that lived here was removed on
+// 2026-06-10: the server generated its points with Math.random tuned to a
+// target Pearson r. No honest free daily uranium series exists to draw the
+// real chart, so it is gone rather than faked.)
 
 type Timeframe = "1D" | "5D" | "1M";
 type SortBy = "change" | "marketcap" | "alpha";
@@ -257,11 +201,6 @@ export default function TheStack() {
     queryFn: () => fetch(`/api/stack?timeframe=${timeframe}`).then((r) => r.json()),
     refetchInterval: 900000,
   });
-
-  const regression = useMemo(
-    () => computeRegression(data?.correlation ?? []),
-    [data?.correlation]
-  );
 
   const layerConfig = [
     {
@@ -482,136 +421,6 @@ export default function TheStack() {
           );
         })}
 
-        {/* Uranium vs CCJ Correlation scatter */}
-        <div>
-          <Card className="p-6 border-card-border">
-            <div className="flex items-start justify-between gap-4 mb-4 flex-wrap">
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <h2 className="font-semibold text-foreground">Uranium Spot vs. CCJ Correlation</h2>
-                  <UITooltip>
-                    <TooltipTrigger>
-                      <Info className="h-3.5 w-3.5 text-muted-foreground" />
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-xs">
-                      <p className="text-xs leading-relaxed">CCJ is the largest public uranium miner with the highest direct spot price beta. CEG (utility) is influenced by electricity contracts and regulated returns. CCJ = commodity bet, CEG = infrastructure bet.</p>
-                    </TooltipContent>
-                  </UITooltip>
-                </div>
-                <p className="text-xs text-muted-foreground">52-week uranium spot price ($/lb) vs. CCJ stock price. Each dot = one week.</p>
-              </div>
-              <div className="flex items-center gap-6">
-                {data?.correlationCoeff !== undefined && (
-                  <div className="text-right">
-                    <p className="text-xs text-muted-foreground font-mono">CCJ Pearson r</p>
-                    <p className="text-2xl font-bold font-mono text-[#F0A500]">{data.correlationCoeff.toFixed(3)}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {data.correlationCoeff > 0.7 ? "Strong" : data.correlationCoeff > 0.4 ? "Moderate" : "Weak"} correlation
-                    </p>
-                  </div>
-                )}
-                {data?.cegCorrelationCoeff !== undefined && (
-                  <div className="text-right">
-                    <p className="text-xs text-muted-foreground font-mono">CEG Pearson r</p>
-                    <p className="text-2xl font-bold font-mono text-foreground">{data.cegCorrelationCoeff.toFixed(3)}</p>
-                    <p className="text-xs text-muted-foreground">Utility beta</p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {isLoading ? (
-              <Skeleton className="h-48 w-full" />
-            ) : (
-              <>
-                <ResponsiveContainer width="100%" height={260}>
-                  <ScatterChart margin={{ top: 10, right: 20, bottom: 24, left: 10 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                    <XAxis
-                      dataKey="uranium"
-                      type="number"
-                      name="Uranium"
-                      domain={["auto", "auto"]}
-                      tick={{ fill: "#6b7280", fontSize: 11 }}
-                      tickLine={false}
-                      axisLine={{ stroke: "rgba(255,255,255,0.08)" }}
-                      label={{ value: "Uranium Spot ($/lb)", position: "insideBottom", offset: -10, fill: "#6b7280", fontSize: 11 }}
-                    />
-                    <YAxis
-                      dataKey="ccj"
-                      type="number"
-                      name="CCJ"
-                      domain={["auto", "auto"]}
-                      tick={{ fill: "#6b7280", fontSize: 11 }}
-                      tickLine={false}
-                      axisLine={false}
-                      label={{ value: "CCJ ($)", angle: -90, position: "insideLeft", offset: 10, fill: "#6b7280", fontSize: 11 }}
-                    />
-                    <Tooltip content={<CustomScatterTooltip />} />
-                    {/* Upper confidence band */}
-                    <Scatter
-                      data={regression.upper}
-                      fill="none"
-                      line={{ stroke: "#F0A500", strokeWidth: 1, strokeDasharray: "5 4", strokeOpacity: 0.35 }}
-                      shape={() => null as any}
-                      legendType="none"
-                      name="Upper Band"
-                    />
-                    {/* Lower confidence band */}
-                    <Scatter
-                      data={regression.lower}
-                      fill="none"
-                      line={{ stroke: "#F0A500", strokeWidth: 1, strokeDasharray: "5 4", strokeOpacity: 0.35 }}
-                      shape={() => null as any}
-                      legendType="none"
-                      name="Lower Band"
-                    />
-                    {/* OLS regression line */}
-                    <Scatter
-                      data={regression.line}
-                      fill="none"
-                      line={{ stroke: "#F0A500", strokeWidth: 2, strokeOpacity: 0.85 }}
-                      shape={() => null as any}
-                      legendType="none"
-                      name="OLS Fit"
-                    />
-                    {/* Raw scatter dots */}
-                    <Scatter
-                      data={data?.correlation ?? []}
-                      fill="#F0A500"
-                      opacity={0.65}
-                      r={4}
-                      name="Weekly Obs."
-                    />
-                  </ScatterChart>
-                </ResponsiveContainer>
-                <div className="flex items-center gap-5 text-xs text-muted-foreground mt-1 mb-1">
-                  <div className="flex items-center gap-1.5">
-                    <div className="h-2 w-2 rounded-full bg-[#F0A500] opacity-70" />
-                    <span>Weekly observation</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-6 border-t-2 border-[#F0A500]" style={{ opacity: 0.85 }} />
-                    <span>OLS trend line</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-6 border-t border-[#F0A500] border-dashed" style={{ opacity: 0.45 }} />
-                    <span>±1.5σ channel</span>
-                  </div>
-                </div>
-              </>
-            )}
-
-            <div className="mt-3 pt-3 border-t border-border grid grid-cols-1 md:grid-cols-2 gap-3 text-xs text-muted-foreground">
-              <p>
-                <span className="text-[#F0A500] font-semibold">CCJ (pure miner)</span> has higher uranium spot beta. Its P&L moves directly with U3O8 pricing.
-              </p>
-              <p>
-                <span className="text-slate-400 font-semibold">CEG (nuclear utility)</span> is influenced by electricity contracts and regulated returns. Smoother, less volatile nuclear exposure.
-              </p>
-            </div>
-          </Card>
-        </div>
       </div>
     </div>
   );
