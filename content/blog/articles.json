@@ -1,10 +1,27 @@
 [
   {
+    "slug": "we-killed-our-indices",
+    "title": "We Killed Our Indices",
+    "description": "GridTilt retired its three headline indices after our own backtest showed no physical signal. Here is what replaced them and why.",
+    "date": "2026-06-10",
+    "keywords": [
+      "index methodology",
+      "data honesty",
+      "nuclear PPA tracker",
+      "AI power scoreboard"
+    ],
+    "content": "GridTilt launched with three headline indices: AI Demand, Grid Stress, and the Nuclear Power Index. As of today they are gone. We killed them, and this post is the receipt.\n\n## What was wrong\n\nThe indices were built from stock prices. AI Demand read a weighted basket of NVDA, TSM, EQIX, and MU around an arbitrary baseline of 72. Grid Stress did the same with VST, CEG, and EQIX around 68. NPI rebased a nuclear basket to 100 on Jan 1, 2024 and multiplied by a hand-tuned policy score.\n\nIn June we backtested all three against physical electricity output (FRED, 2019-2026, leads of 0 to 3 months) and published the results in the repo:\n\n- AI Demand: no correlation with physical output at any lead.\n- Grid Stress: no correlation, and the basket did not beat VST alone.\n- NPI: r = 0.95 with VST. One stock in a costume.\n\nWe relabeled them \"market sentiment gauges\" and disclosed everything. That was honest, but it dodged the real question: why headline numbers that measure nothing?\n\n## What replaced them\n\nThe scoreboard. Real units, summed from curated datasets, each with a source and an as-of date:\n\n**Signed nuclear for AI: 6.5 GW across 6 executed deals.** TMI's restart for Microsoft. Palisades. Talen-AWS at Susquehanna. Clinton's full output to Meta. Signed means contracts. Options, proposals, and LOI pipelines sit in separate buckets and never inflate the headline.\n\n**Datacenter pipeline: 15.6 GW under construction**, 9.4 GW operational, across 58 tracked sites of 400 MW or more.\n\n**The interconnection queue: 2,290 GW waiting**, 55-month median wait, and 77% of projects historically withdraw (LBNL Queued Up).\n\n**Grid pulse**: live US grid demand and year-over-year electric output. Measurements, not sentiment.\n\nNo baselines. No clamps. Nothing rebased to 100. If a number on the homepage moves, something physical or contractual moved.\n\nThe one market element left is a single line: an equal-weight percent move across the tracked tickers, labeled as exactly that. The same standard applied to the Stack page's correlation scatter, which turned out to be generated points tuned to a target r. Gone rather than faked.\n\n## What stays\n\nWe did not erase the indices. We archived them. The formulas are still in the repo, the daily series is still served at /api/index-history marked discontinued, and the backtest still reproduces the whole study from public prices with one command. If you want to check our work, the autopsy is public.\n\nThe lesson we are keeping: backtest your own product, publish the result, act on it. The nuclear renaissance is not a stock basket. It is reactors, contracts, and gigawatts. That is what the front page says now."
+  },
+  {
     "slug": "ai-data-center-power-demand",
     "title": "How Much Power Do AI Data Centers Actually Need?",
     "description": "AI data centers consume 288 TWh per year, about 6.4% of US grid capacity. New AI capacity could reach 50 GW by 2030.",
     "date": "2026-03-10",
-    "keywords": ["AI data center power", "AI electricity consumption", "data center energy demand"],
+    "keywords": [
+      "AI data center power",
+      "AI electricity consumption",
+      "data center energy demand"
+    ],
     "content": "The answer is somewhere between 35 and 75 GW of new capacity by 2030.\n\nThat range matters. At the low end, existing grid infrastructure can absorb it. At the high end, the US needs to build a UK-sized grid in five years.\n\n## Where we are today\n\nUS data centers consumed about 288 TWh in 2025. That is roughly 6.4% of total grid capacity, up from under 3% in 2022. The increase is driven by AI training and inference workloads.\n\nA single H100 GPU consumes about 700W under load. A modern training rack runs 40-80 kW. An AI data center campus draws 100-500 MW.\n\n## The variance drivers\n\nThe 35-75 GW range depends on three variables:\n\n**GPU power density**: Blackwell Ultra racks draw 120 kW, nearly double the prior generation. Per-rack power demand keeps climbing.\n\n**Hyperscaler capex execution**: The Big Four committed $328B in combined 2025 capex. If 60% translates to facilities, power demand steepens.\n\n**Grid interconnection speed**: The average PJM queue-to-energize timeline is 4+ years. New generation cannot come online faster than the grid connects it.\n\n## What this means for investors\n\nYou cannot download a power plant or 3D-print a transformer. Companies that build and operate power infrastructure face a multi-year demand cycle with no software shortcut.\n\nGridTilt's [Thesis Calculator](/trade) lets you model these scenarios directly."
   },
   {
@@ -12,7 +29,11 @@
     "title": "AI Power Infrastructure Stocks: The Complete Guide",
     "description": "60+ stocks across 8 sectors tied to the AI power buildout. GPU makers, nuclear utilities, and construction firms.",
     "date": "2026-03-08",
-    "keywords": ["AI power stocks", "AI infrastructure stocks", "data center stocks"],
+    "keywords": [
+      "AI power stocks",
+      "AI infrastructure stocks",
+      "data center stocks"
+    ],
     "content": "The AI power buildout spans 8 sectors and over 60 public companies. It requires silicon, steel, uranium, copper, and years of construction.\n\n## The 8 sectors\n\n### Compute\nNVIDIA, TSMC, AMD, Micron. NVIDIA holds 80%+ market share in AI training accelerators. Every GPU sold requires power infrastructure to operate.\n\n### Nuclear Power\nConstellation Energy (CEG), Vistra (VST), Talen Energy (TLN), Oklo. Nuclear provides the 24/7 baseload power AI data centers need. Meta's 6.6 GW nuclear RFP is the largest corporate nuclear procurement.\n\n### Uranium and Fuel Cycle\nCameco (CCJ), NexGen Energy (NXE), Uranium Energy Corp (UEC). Every nuclear restart requires enriched uranium fuel. Western supply is constrained.\n\n### Power Hardware\nGE Vernova (GEV), Eaton (ETN), Vertiv (VRT). Transformer lead times are 4+ years. Switchgear and cooling systems are backordered industry-wide.\n\n### Utilities\nNextEra (NEE), Dominion (D), Southern Company (SO). Regulated utilities signing long-term power purchase agreements with hyperscalers.\n\n### Data Center REITs\nEquinix (EQIX), Digital Realty (DLR), IREN. The physical facilities where AI compute runs. Major market occupancy rates above 95%.\n\n### Construction and EPC\nQuanta Services (PWR), EMCOR (EME), MasTec (MTZ). Record backlogs from data center and transmission construction.\n\n### ETF Benchmarks\nURA, URNM, NLR, GRID, PAVE. Diversified exposure to uranium, nuclear, and grid infrastructure.\n\nExplore all sectors on [The Stack](/stack)."
   },
   {
@@ -20,7 +41,11 @@
     "title": "Nuclear Energy and AI Data Centers: Why It Matters",
     "description": "Nuclear power provides 24/7 baseload electricity for AI data centers. Three Mile Island restart, Meta's 6.6 GW RFP, and SMR development.",
     "date": "2026-03-06",
-    "keywords": ["nuclear energy AI", "nuclear data center", "nuclear power stocks AI"],
+    "keywords": [
+      "nuclear energy AI",
+      "nuclear data center",
+      "nuclear power stocks AI"
+    ],
     "content": "AI data centers need reliable, 24/7 power above all else. Solar and wind are intermittent. Natural gas has carbon and price volatility concerns.\n\nNuclear is the only proven carbon-free baseload source at scale.\n\n## The baseload argument\n\nA 100,000-GPU training run costs millions per day. If power drops for seconds, the run may need to restart. Intermittent renewables cannot serve as the primary source for large AI facilities.\n\nNuclear reactors operate at 90%+ capacity factors. They run continuously for 18-24 months between refueling. No other source matches this reliability.\n\n## The restart wave\n\nMicrosoft contracted with Constellation Energy to restart Three Mile Island Unit 1 (835 MW). The plant targets 2028 return to service for Azure data centers.\n\nMeta issued a 6.6 GW nuclear RFP, the largest corporate nuclear procurement. Fulfillment would require restarting retired plants or securing existing output.\n\n## Key stocks\n\n**Constellation Energy (CEG)**: Largest US nuclear fleet with 13 plants. TMI restart and Meta contract make CEG central to the nuclear-AI thesis.\n\n**Vistra Corp (VST)**: 41 GW generation capacity including Comanche Peak nuclear. Strong merchant power exposure from rising wholesale prices.\n\n**Cameco (CCJ)**: Largest Western uranium producer. Cigar Lake mine produces about 18M lbs of U3O8 per year.\n\n**Oklo (OKLO)**: Building 15 MW Aurora microreactors. NRC approval would certify the first commercial fast spectrum reactor."
   },
   {
@@ -28,7 +53,11 @@
     "title": "The PJM Interconnection Queue: AI's Biggest Bottleneck",
     "description": "PJM's interconnection queue has 4+ year wait times and 250 GW pending. This bottleneck limits how fast AI data center power comes online.",
     "date": "2026-03-04",
-    "keywords": ["PJM interconnection queue", "PJM data centers", "grid interconnection backlog"],
+    "keywords": [
+      "PJM interconnection queue",
+      "PJM data centers",
+      "grid interconnection backlog"
+    ],
     "content": "PJM manages the largest US electricity market. It serves 65 million customers across 13 states. It also hosts Data Center Alley in Northern Virginia.\n\nThe bottleneck is the interconnection queue.\n\n## What the queue is\n\nAny new generation source or large load must pass an interconnection study. PJM checks whether the grid can handle the connection without reliability issues.\n\nAs of early 2026, PJM's queue holds over 250 GW of requests. Average time from application to energization is 4+ years. Some projects have waited 6-7 years.\n\n## Why it matters for AI\n\nEvery new data center needs grid power. Every nuclear restart needs grid connection. The queue is the biggest constraint on AI power infrastructure buildout speed.\n\nPJM's 2025/2026 capacity auction cleared at $270/MW-day, a record. Clearing prices signal that supply is not keeping up with demand.\n\n## FERC Order 1920\n\nFERC Order 1920 mandates long-range transmission planning. Regional utilities must file 20-year expansion plans that account for AI data center load growth. The first filing deadline is July 2026.\n\n## The investment implication\n\nThe queue creates a natural moat for existing generators. If new supply takes 4+ years, companies that own operating plants (CEG, VST, NRG) benefit from scarcity pricing."
   },
   {
@@ -36,7 +65,11 @@
     "title": "Where Are AI Data Centers Being Built? A Map",
     "description": "GridTilt tracks 48 AI data center facilities across the US. Virginia, Texas, Iowa, and Oregon lead in capacity.",
     "date": "2026-03-02",
-    "keywords": ["AI data center locations", "data center map", "where are data centers"],
+    "keywords": [
+      "AI data center locations",
+      "data center map",
+      "where are data centers"
+    ],
     "content": "GridTilt tracks 48 AI data center facilities across the US. The geographic distribution shows clear patterns in site selection and grid stress.\n\n## The geographic pattern\n\n**Northern Virginia (PJM)**: Data Center Alley is the largest cluster. Amazon, Google, Microsoft, and Meta all operate in Loudoun and Prince William counties. Over 70% of US internet traffic passes through here.\n\n**Central Texas (ERCOT)**: Texas attracts expansion from xAI, Oracle, and Amazon. Cheap electricity, available land, and minimal permitting barriers drive this. EIA projects ERCOT wholesale prices could rise 79% by 2027.\n\n**Iowa and Illinois (MISO)**: Meta and Google run some of their largest facilities here. Wind power and low land costs attract them. MISO reserve margins have dropped to 13.4%.\n\n**Oregon and Washington (WECC)**: Google and Amazon leverage Pacific Northwest hydroelectric power. These are some of the lowest-cost power locations in the US.\n\n## Capacity distribution\n\nOf the 48 tracked facilities: 28 operational, 15 under construction, 5 announced. Total tracked capacity exceeds 20 GW.\n\n## Operator strategies\n\nEach hyperscaler has a distinct geographic strategy. [Google](/operator/google) favors renewable-rich locations. [Amazon](/operator/amazon) clusters in established markets.\n\n[Meta](/operator/meta) is pursuing nuclear. [Microsoft](/operator/microsoft) signed the TMI restart deal.\n\nExplore all facilities on the [Power Map](/power-map)."
   },
   {
@@ -44,7 +77,11 @@
     "title": "The Transformer Shortage That Could Slow AI",
     "description": "The US produces about 60 large power transformers per year. AI demand could require 80-150+ annually. Lead times exceed 4 years.",
     "date": "2026-02-28",
-    "keywords": ["transformer shortage", "power transformer backlog", "grid hardware shortage"],
+    "keywords": [
+      "transformer shortage",
+      "power transformer backlog",
+      "grid hardware shortage"
+    ],
     "content": "A large power transformer (LPT) sits between every power plant and data center. It weighs 200-400 tons and takes 12-18 months to build.\n\nEach one costs $5-15M. There are not enough of them.\n\n## The math\n\nThe US has about 2,000 LPTs in service. Domestic production is roughly 60 per year. The fleet averages 40+ years old, so replacement demand alone consumes much of production.\n\nNow add AI data centers. GridTilt estimates the base case (50 GW by 2030) needs 80-100 additional LPTs per year. The aggressive case (75 GW) needs 150+.\n\nDomestic supply cannot meet that. Importing is difficult because LPTs are custom-engineered.\n\n## Who benefits\n\n**GE Vernova (GEV)**: Manufactures transformers and grid equipment. Backlog at record levels with 4+ year lead times.\n\n**Eaton (ETN)**: Switchgear and power distribution units. Datacenter order intake is their key earnings metric.\n\n**Hubbell (HUBB)**: Utility electrical equipment. Elevated demand from grid modernization and data center construction.\n\n## The constraint timeline\n\nThis shortage is not temporary. New factories need specialized tooling, trained workers, and 2-3 years to build. Demand will exceed supply for multiple years.\n\nModel transformer demand in GridTilt's [Thesis Calculator](/trade)."
   },
   {
@@ -52,7 +89,11 @@
     "title": "Uranium Stocks and AI: The Supply Chain Connection",
     "description": "Nuclear restarts from AI demand create new uranium fuel requirements. Western supply is constrained with 40% Kazakh import dependency.",
     "date": "2026-02-25",
-    "keywords": ["uranium stocks AI", "uranium demand data centers", "nuclear fuel stocks"],
+    "keywords": [
+      "uranium stocks AI",
+      "uranium demand data centers",
+      "nuclear fuel stocks"
+    ],
     "content": "Every nuclear reactor consumes enriched uranium fuel. Every restart creates new fuel demand. AI data centers are driving the largest nuclear procurement wave in decades.\n\n## The fuel cycle\n\nUranium goes through four steps before reaching a reactor:\n\n1. **Mining**: Extracting U3O8 (yellowcake)\n2. **Conversion**: Converting to UF6 gas\n3. **Enrichment**: Raising U-235 from 0.7% to 3-5%\n4. **Fabrication**: Building fuel assemblies\n\nEach step has its own supply chain and bottlenecks. Total timeline: 18-24 months from mine to reactor.\n\n## Supply constraints\n\nGlobal production has been below consumption since 2016. Inventory drawdowns and recycled material filled the gap. Those secondary sources are depleting.\n\nThe US imports about 40% of its uranium from Kazakhstan. Sanctions or production disruptions could tighten supply fast. Spot prices hit about $92/lb in March 2026, up from $50/lb in 2023.\n\n## Key miners\n\n**Cameco (CCJ)**: Largest Western producer. Cigar Lake produces 18M lbs/year. Strong long-term contract book.\n\n**NexGen Energy (NXE)**: Developing Rook I in Saskatchewan's Athabasca Basin. One of the highest-grade undeveloped deposits globally.\n\n**Uranium Energy Corp (UEC)**: US-focused with ISR operations in Wyoming and Texas. Benefits from domestic procurement preferences."
   },
   {
@@ -60,7 +101,10 @@
     "title": "Behind-the-Meter Power: Why Hyperscalers Are Building Their Own Plants",
     "description": "Amazon, Meta, and Microsoft contract directly with generators, bypassing the grid. This behind-the-meter strategy reshapes utility economics.",
     "date": "2026-02-22",
-    "keywords": ["behind the meter data center", "self-generation data center"],
+    "keywords": [
+      "behind the meter data center",
+      "self-generation data center"
+    ],
     "content": "The grid queue is 4+ years. Wholesale prices are rising. Renewables cannot support 24/7 AI training.\n\nHyperscalers are building their own power.\n\n## What behind-the-meter means\n\nBehind-the-meter (BTM) places a generator at the point of consumption. The data center connects directly to a dedicated power plant, bypassing the grid.\n\nIndustrial facilities have used cogeneration for decades. What is new is the scale. Hyperscalers are signing multi-hundred-megawatt BTM agreements that did not exist five years ago.\n\n## The deals\n\n**Microsoft + Constellation**: TMI Unit 1 restart (835 MW) under a 20-year PPA. Nuclear baseload delivered directly to Azure operations.\n\n**Amazon + Talen Energy**: Data center campus adjacent to Susquehanna nuclear plant. BTM arrangement provides up to 960 MW.\n\n**Meta's 6.6 GW RFP**: The largest corporate nuclear procurement. Winning bids could include BTM and traditional PPAs.\n\n**xAI Memphis Colossus**: On-site gas turbines power 100,000+ GPUs while awaiting grid interconnection.\n\n## What it means for utilities\n\nBTM bypasses transmission and distribution charges. This creates regulatory tension. Utilities like Dominion and PPL are creating specialized data center tariffs in response.\n\n## The investor angle\n\nBTM favors companies owning generation near data center sites. CEG and VST are best-positioned in nuclear. GEV benefits from gas turbine sales.\n\nModel BTM impact in GridTilt's [Thesis Calculator](/trade)."
   }
 ]
