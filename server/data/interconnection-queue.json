@@ -1,8 +1,8 @@
 {
-  "lastRefreshed": "2026-05-20",
+  "lastRefreshed": "2026-06-10",
   "headline": {
-    "trackedProjects": 60,
-    "trackedCapacityGW": 38.7,
+    "trackedProjects": 63,
+    "trackedCapacityGW": 41,
     "queueOverallGW": 2290,
     "queueOverallProjects": 10300,
     "medianWaitMonths": 55,
@@ -1146,6 +1146,65 @@
       ],
       "notes": "Multi-site agreement to keep existing PJM nuclear plants serving Meta load. Plus the separate 300 MW SMR option.",
       "firmness": "signed"
+    },
+    {
+      "id": "duane-arnold-google",
+      "projectName": "Duane Arnold restart (NextEra-Google)",
+      "sponsor": "NextEra Energy",
+      "capacityMW": 601,
+      "type": "nuclear",
+      "iso": "MISO",
+      "state": "IA",
+      "status": "active",
+      "category": "generation",
+      "expectedOnline": "2029-Q1",
+      "offtaker": "Google (25-year PPA, funds the restart)",
+      "dcRelevant": true,
+      "firmness": "signed",
+      "sources": [
+        "https://www.ans.org/news/2025-10-28/article-7501/nextera-and-google-ink-a-deal-to-restart-duane-arnold/",
+        "https://www.datacenterdynamics.com/en/news/google-signs-power-deal-with-nextenergy-to-restart-iowas-615mw-duane-arnold-nuclear-plant-for-ai-data-centers/"
+      ],
+      "notes": "Executed 25-year PPA signed Oct 2025; NextEra acquiring 100% ownership; restart >$1.6B, target Q1 2029. Found in the 2026-06-10 registry reconciliation sweep."
+    },
+    {
+      "id": "meta-terrapower-natrium",
+      "projectName": "Meta-TerraPower Natrium (2 units)",
+      "sponsor": "TerraPower",
+      "capacityMW": 690,
+      "type": "nuclear",
+      "iso": "Multiple",
+      "state": "Multiple",
+      "status": "active",
+      "category": "ppa",
+      "expectedOnline": "2032",
+      "offtaker": "Meta (funds development, offtake rights)",
+      "dcRelevant": true,
+      "firmness": "optioned",
+      "sources": [
+        "https://www.fierce-network.com/cloud/meta-goes-all-nuclear-power-66-gw-plans",
+        "https://www.energyconnects.com/news/utilities/2026/january/meta-signs-multi-gigawatt-nuclear-deals-for-ai-data-centers/"
+      ],
+      "notes": "Development funding for two Natrium SFRs plus rights to up to six more (2.1 GW) by 2035. Funding + rights, not an executed PPA for operating power: optioned, not signed."
+    },
+    {
+      "id": "aws-xenergy-cascade",
+      "projectName": "Cascade SMR project (X-energy + Energy Northwest)",
+      "sponsor": "X-energy + Energy Northwest",
+      "capacityMW": 960,
+      "type": "nuclear",
+      "iso": "WECC",
+      "state": "WA",
+      "status": "active",
+      "category": "ppa",
+      "expectedOnline": "2030",
+      "offtaker": "Amazon Web Services",
+      "dcRelevant": true,
+      "firmness": "proposed",
+      "sources": [
+        "https://smrintel.com/nuclear-data-center-deals/"
+      ],
+      "notes": "Amazon-led ~$700M investment in X-energy plus development agreement with Energy Northwest; ~320 MW initial, 960 MW target. Investment + development agreement, not a PPA: proposed."
     }
   ]
 }
