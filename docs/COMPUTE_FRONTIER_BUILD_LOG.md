@@ -20,7 +20,7 @@ and `npm run build` are run green before every commit.
 | 3 | compute-frontier page | done |
 | 4 | integration (route, sidebar, shortcut, cross-links) | done |
 | 5 | SEO + per-cluster pages | done |
-| 6 | social template (TDD) | pending |
+| 6 | social template (TDD) | done |
 | 7 | blog post | pending |
 | 8 | docs + README | pending |
 | 9 | verify + push + draft PR | pending |
@@ -321,3 +321,46 @@ per-cluster `/compute-frontier/:id` pages (server meta + client page), and
 **Next:** Phase 6 — a `compute_frontier` social template in
 `server/social-format.ts` (TDD, following main's existing template/voice),
 plus a thin composer in routes.ts. Dry-run only.
+
+---
+
+## Phase 6 — Social template, TDD (2026-06-20)
+
+**Did (test-first):** Added four failing tests for
+`buildComputeFrontierTweet` to `social-format.test.ts`, watched them fail,
+then implemented the pure template in `social-format.ts` following the
+existing voice (lowercase prose, acronyms/operator names keep case, interpunct
+data row, insight assembled from live numbers, full https url). Wired a
+module-level `composeComputeFrontierTweet` in routes.ts that reads
+`clusters.json`, runs `computeClusterMetrics`, sums distinct linked-deal
+capacity, and builds the tweet. Exposed it via a new `ON_DEMAND_TEMPLATES`
+map resolved by `/api/social/generate`.
+
+**Decisions (and why):**
+- *Dry-run only, enforced by where it is wired.* compute_frontier is in
+  `ON_DEMAND_TEMPLATES`, NOT in the Mon-Fri `ROTATING_TEMPLATES` that the
+  cron (`/api/admin/cron/daily-tweet`) auto-posts. So it can be generated on
+  demand for review but will never auto-post until a human adds it.
+- *Half-up accelerator rounding.* The first test caught `toFixed(2)` mis-
+  rounding 1,315,000 to "1.31M" (float representation). I fixed the
+  formatter to round half-up (`Math.round(n/10_000)/100`) -> "1.32M" rather
+  than weaken the test. Fix the code, not the test.
+- The insight is genuinely data-driven: on the live data it reads "Meta
+  leads at 28% of planned MW" because Hyperion's 5 GW dominates, not a
+  hard-coded operator.
+
+**Verification (real output):**
+- `npm run check` -> tsc exit 0, 0 errors.
+- `npm test` -> tests 47, pass 47, fail 0 (4 new compute-frontier cases).
+- `npm run build` -> exit 0.
+- Dry-run of the composer on live data (254 chars, under 280):
+  > gridtilt · compute frontier
+  >
+  > 32 AI superclusters tracked · 3.0 GW operational · 30.3 GW planned
+  >
+  > Meta leads at 28% of planned MW. 1.32M accelerators disclosed across 5 clusters. 3.6 GW tied to tracked nuclear deals.
+  >
+  > https://gridtilt.com/compute-frontier
+
+**Next:** Phase 7 — announcement blog post in `content/blog/articles.json`,
+plain voice, no em dashes, states sourced vs estimated.

@@ -8,6 +8,7 @@ import {
   buildNpiUpdateTweet,
   buildQueueTweet,
   buildCatalystTweet,
+  buildComputeFrontierTweet,
   npiHistoryContext,
   effectiveNpiWeights,
   ensureTweetLength,
@@ -137,4 +138,48 @@ test("ensureTweetLength keeps the first line and lands under 280", () => {
   const out = ensureTweetLength(long);
   assert.ok(out.length <= 280);
   assert.ok(out.startsWith("headline"));
+});
+
+// ── Compute Frontier template ──────────────────────────────────────────────
+
+const CF_SNAPSHOT = {
+  clusterCount: 32,
+  operationalMW: 3220,
+  totalPlannedMW: 30335,
+  totalGpus: 1315000,
+  clustersWithGpuData: 5,
+  topOperator: "OpenAI / Oracle",
+  topOperatorPlannedShare: 0.2176,
+  securedMW: 3620,
+};
+
+test("compute frontier: headline count, GW operational and planned, full url", () => {
+  const t = buildComputeFrontierTweet(CF_SNAPSHOT);
+  assert.ok(t.startsWith("gridtilt · compute frontier"));
+  assert.ok(t.includes("32 AI superclusters tracked"));
+  assert.ok(t.includes("3.2 GW operational"));
+  assert.ok(t.includes("30.3 GW planned"));
+  assert.ok(t.includes("https://gridtilt.com/compute-frontier"));
+  assert.ok(!/ {2,}/.test(t), "no manual column alignment");
+  within280(t);
+});
+
+test("compute frontier: insight is assembled from the live numbers", () => {
+  const t = buildComputeFrontierTweet(CF_SNAPSHOT);
+  assert.ok(t.includes("OpenAI / Oracle leads at 22% of planned MW"));
+  assert.ok(t.includes("1.32M accelerators disclosed across 5 clusters"));
+  assert.ok(t.includes("3.6 GW tied to tracked nuclear deals"));
+});
+
+test("compute frontier: drops the nuclear clause when nothing is secured; keeps acronym case", () => {
+  const t = buildComputeFrontierTweet({ ...CF_SNAPSHOT, securedMW: 0 });
+  assert.ok(!t.includes("nuclear deals"));
+  assert.ok(t.includes("OpenAI / Oracle"));
+  within280(t);
+});
+
+test("compute frontier: drops the accelerator clause when no GPU counts are disclosed", () => {
+  const t = buildComputeFrontierTweet({ ...CF_SNAPSHOT, totalGpus: 0, clustersWithGpuData: 0 });
+  assert.ok(!t.includes("accelerators"));
+  within280(t);
 });

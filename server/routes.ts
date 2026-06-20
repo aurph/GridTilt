@@ -35,6 +35,7 @@ import {
   buildNpiUpdateTweet,
   buildQueueTweet,
   buildCatalystTweet,
+  buildComputeFrontierTweet,
   ensureTweetLength,
   type HistoryDayLite,
 } from "./social-format";
@@ -1669,12 +1670,59 @@ async function composeCatalystPreviewTweet(): Promise<string> {
   return buildCatalystTweet(upcoming);
 }
 
+// Sum of distinct tracked nuclear-deal capacities linked from the clusters.
+// Module-scoped so the compute-frontier composer can run outside registerRoutes.
+function clusterSecuredMW(clusters: Array<{ linkedDeal: string | null }>): number {
+  let deals: any[] = [];
+  try {
+    deals = JSON.parse(readFileSync(join(process.cwd(), "server", "data", "interconnection-queue.json"), "utf-8")).projects ?? [];
+  } catch {
+    /* deals optional */
+  }
+  const dealById = new Map<string, any>(deals.map((d): [string, any] => [d.id, d]));
+  const seen = new Set<string>();
+  let mw = 0;
+  for (const c of clusters) {
+    if (c.linkedDeal && !seen.has(c.linkedDeal)) {
+      const d = dealById.get(c.linkedDeal);
+      if (d) {
+        mw += d.capacityMW ?? 0;
+        seen.add(c.linkedDeal);
+      }
+    }
+  }
+  return mw;
+}
+
+async function composeComputeFrontierTweet(): Promise<string> {
+  const root = JSON.parse(readFileSync(join(process.cwd(), "server", "data", "clusters.json"), "utf-8"));
+  const clusters = (root.clusters ?? []) as ClusterLite[];
+  const m = computeClusterMetrics(clusters);
+  return buildComputeFrontierTweet({
+    clusterCount: m.clusterCount,
+    operationalMW: m.operationalMW,
+    totalPlannedMW: m.totalPlannedMW,
+    totalGpus: m.totalGpus,
+    clustersWithGpuData: m.clustersWithGpuData,
+    topOperator: m.concentration.topOperator,
+    topOperatorPlannedShare: m.concentration.topOperatorPlannedShare,
+    securedMW: clusterSecuredMW(clusters),
+  });
+}
+
 const ROTATING_TEMPLATES: Record<number, { name: string; compose: () => Promise<string> }> = {
   1: { name: "tilt_status",       compose: composeTiltStatusTweet },      // Mon
   2: { name: "top_movers",        compose: composeTopMoversTweet },       // Tue
   3: { name: "npi_update",        compose: composeNpiUpdateTweet },       // Wed
   4: { name: "queue_update",      compose: composeQueueUpdateTweet },     // Thu
   5: { name: "catalyst_preview",  compose: composeCatalystPreviewTweet }, // Fri
+};
+
+// On-demand templates: composable via /api/social/generate for a dry run, but
+// deliberately NOT in the Mon-Fri auto-posting rotation above. compute_frontier
+// is dry-run only until a human decides to add it to the cron.
+const ON_DEMAND_TEMPLATES: Record<string, () => Promise<string>> = {
+  compute_frontier: composeComputeFrontierTweet,
 };
 
 export async function registerRoutes(
@@ -2943,13 +2991,19 @@ Preferred-Languages: en
   app.post("/api/social/generate", async (req, res) => {
     const { template } = req.body || {};
     const dayIdx = new Date().getDay();
+    const onDemand = template && ON_DEMAND_TEMPLATES[template]
+      ? { name: template, compose: ON_DEMAND_TEMPLATES[template] }
+      : undefined;
     const picked = template
-      ? Object.values(ROTATING_TEMPLATES).find((t) => t.name === template)
+      ? (Object.values(ROTATING_TEMPLATES).find((t) => t.name === template) ?? onDemand)
       : ROTATING_TEMPLATES[dayIdx];
     if (!picked) {
       return res.status(400).json({
         error: "Unknown template",
-        available: Array.from(new Set(Object.values(ROTATING_TEMPLATES).map((t) => t.name))),
+        available: Array.from(new Set([
+          ...Object.values(ROTATING_TEMPLATES).map((t) => t.name),
+          ...Object.keys(ON_DEMAND_TEMPLATES),
+        ])),
       });
     }
     try {

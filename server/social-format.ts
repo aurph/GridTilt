@@ -280,3 +280,53 @@ export function buildCatalystTweet(upcoming: CatalystLite[]): string {
     "https://gridtilt.com/catalysts",
   ].join("\n");
 }
+
+// ── Compute Frontier: AI supercluster tracker ──────────────────────────────
+
+export interface ComputeFrontierSnapshot {
+  clusterCount: number;
+  operationalMW: number;
+  totalPlannedMW: number;
+  totalGpus: number;
+  clustersWithGpuData: number;
+  topOperator: string | null;
+  topOperatorPlannedShare: number; // 0..1 share of total planned MW
+  securedMW: number; // planned nuclear capacity linked to tracked deals
+}
+
+/** Compact accelerator count: 1,315,000 -> "1.32M", 230,000 -> "230k".
+ *  Rounds half-up at two decimals of millions (toFixed alone mis-rounds
+ *  1.315 down to "1.31" because of float representation). */
+function fmtAccel(n: number): string {
+  if (n >= 1_000_000) return `${(Math.round(n / 10_000) / 100).toFixed(2)}M`;
+  if (n >= 1_000) return `${Math.round(n / 1000)}k`;
+  return String(n);
+}
+
+export function buildComputeFrontierTweet(s: ComputeFrontierSnapshot): string {
+  const gw = (mw: number) => (mw / 1000).toFixed(1);
+
+  // Insight assembled from live numbers so the sentence shifts with the data
+  // instead of repeating verbatim. Operator names KEEP their case.
+  const parts: string[] = [];
+  if (s.topOperator) {
+    parts.push(`${s.topOperator} leads at ${(s.topOperatorPlannedShare * 100).toFixed(0)}% of planned MW`);
+  }
+  if (s.totalGpus > 0) {
+    parts.push(`${fmtAccel(s.totalGpus)} accelerators disclosed across ${s.clustersWithGpuData} clusters`);
+  }
+  if (s.securedMW > 0) {
+    parts.push(`${gw(s.securedMW)} GW tied to tracked nuclear deals`);
+  }
+  const insight = (parts.length ? parts.join(". ") : "tracked from public announcements; estimates labeled") + ".";
+
+  return [
+    "gridtilt · compute frontier",
+    "",
+    `${s.clusterCount} AI superclusters tracked · ${gw(s.operationalMW)} GW operational · ${gw(s.totalPlannedMW)} GW planned`,
+    "",
+    insight,
+    "",
+    "https://gridtilt.com/compute-frontier",
+  ].join("\n");
+}
