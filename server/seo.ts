@@ -74,6 +74,11 @@ const STATIC_PAGES: Record<string, { title: string; description: string; slug: s
     description: "How GridTilt builds the AI supercluster registry: what is sourced, what is labeled an estimate, the GPU disclosure rule, and exactly how each headline number is computed.",
     slug: "compute-frontier/methodology",
   },
+  "/compute-frontier/compare": {
+    title: "Compare AI Superclusters \u00b7 Compute Frontier \u00b7 GridTilt",
+    description: "Put two or three named AI superclusters side by side: GPUs, chips, rated and planned power, grid region, energy source, and linked nuclear deals.",
+    slug: "compute-frontier/compare",
+  },
   "/subscribe": {
     title: "Get the Tilt \u2014 Weekly AI Power Market Intel \u2014 GridTilt",
     description: "Weekly digest of AI power market moves, catalysts, and thesis updates. Built for investors tracking the buildout.",
@@ -246,6 +251,12 @@ export function getPageMeta(pathname: string): PageMeta {
         { name: "GridTilt", url: BASE_URL },
         { name: "Compute Frontier", url: `${BASE_URL}/compute-frontier` },
         { name: "Methodology", url: `${BASE_URL}/compute-frontier/methodology` },
+      ]));
+    } else if (pathname === "/compute-frontier/compare") {
+      jsonLd.push(breadcrumbJsonLd([
+        { name: "GridTilt", url: BASE_URL },
+        { name: "Compute Frontier", url: `${BASE_URL}/compute-frontier` },
+        { name: "Compare", url: `${BASE_URL}/compute-frontier/compare` },
       ]));
     } else if (pathname === "/trade") {
       jsonLd.push(faqJsonLd(TRADE_FAQS), breadcrumbJsonLd([

@@ -482,3 +482,32 @@ additive commits on the same branch; the draft PR updates as they land.
   the cluster slug list.
 - `npm test` -> tests 51, pass 51, fail 0.
 - `npm run build` -> exit 0.
+
+### Ext C — cluster comparison view
+
+**Did:** Added `client/src/pages/ComputeFrontierCompare.tsx` at
+`/compute-frontier/compare`: three column pickers (seeded with the two
+largest clusters by planned MW) and a field-by-field side-by-side table
+(operator, status, location, ISO, chip, GPUs, rated/planned MW, energy,
+workload, online, nuclear deal) with est. tags and links to each cluster's
+detail page. Routed before `/compute-frontier/:id`; SEO STATIC_PAGES entry +
+breadcrumb; linked from the main page footnote.
+
+**Decisions (and why):**
+- *Route order matters.* `compare` and `methodology` are registered before
+  the `:id` route so those words are not treated as cluster ids; verified
+  that a real id (`xai-colossus-memphis`) still resolves to its Place page.
+- Kept the picker simple (3 fixed slots, "none" allowed) rather than a
+  tag-style multi-select; fewer states, clearer behavior.
+
+**Verification (real output):**
+- `npm run check` -> exit 0, 0 errors.
+- SEO: `/compute-frontier/compare` -> BreadcrumbList, in the static sitemap,
+  not a cluster slug; a real cluster id still resolves to [Place,
+  BreadcrumbList].
+- `npm test` -> tests 51, pass 51, fail 0.
+- `npm run build` -> exit 0.
+
+**Compute Frontier now spans:** the main dashboard, per-cluster pages, a
+methodology page, and a comparison view, plus the API, SEO, sitemap, social
+dry-run, and the blog post. All green.
