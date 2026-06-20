@@ -1710,6 +1710,21 @@ async function composeComputeFrontierTweet(): Promise<string> {
   });
 }
 
+// OG-card stats for the Compute Frontier pages (clusters, planned + operational GW).
+async function computeFrontierOgStats(): Promise<Array<{ label: string; value: string }>> {
+  try {
+    const root = JSON.parse(readFileSync(join(process.cwd(), "server", "data", "clusters.json"), "utf-8"));
+    const m = computeClusterMetrics((root.clusters ?? []) as ClusterLite[]);
+    return [
+      { label: "Clusters", value: String(m.clusterCount) },
+      { label: "Planned", value: `${(m.totalPlannedMW / 1000).toFixed(1)} GW` },
+      { label: "Operational", value: `${(m.operationalMW / 1000).toFixed(1)} GW` },
+    ];
+  } catch {
+    return [];
+  }
+}
+
 const ROTATING_TEMPLATES: Record<number, { name: string; compose: () => Promise<string> }> = {
   1: { name: "tilt_status",       compose: composeTiltStatusTweet },      // Mon
   2: { name: "top_movers",        compose: composeTopMoversTweet },       // Tue
@@ -2887,6 +2902,10 @@ Preferred-Languages: en
         card = { title: "60+ AI Power Stocks", subtitle: "Live Data Across 8 Sectors", stats: await liveIndicesStats() };
       } else if (page === "power-map") {
         card = { title: "US AI Data Center Map", subtitle: "Filter by operator, region, and capacity (\u2265 400 MW)", stats: await liveIndicesStats() };
+      } else if (page === "compute-frontier" && name) {
+        card = { title: name, subtitle: "AI Supercluster \u00b7 GridTilt", stats: await computeFrontierOgStats() };
+      } else if (page === "compute-frontier") {
+        card = { title: "Compute Frontier", subtitle: "AI superclusters by GPUs and power", stats: await computeFrontierOgStats() };
       } else if (page === "supply-chain") {
         card = { title: "AI Power Supply Chain", subtitle: "5 systems, 20 sub-systems, silicon to substation", stats: await liveIndicesStats() };
       } else if (page === "queue") {

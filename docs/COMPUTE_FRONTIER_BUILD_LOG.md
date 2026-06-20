@@ -511,3 +511,15 @@ breadcrumb; linked from the main page footnote.
 **Compute Frontier now spans:** the main dashboard, per-cluster pages, a
 methodology page, and a comparison view, plus the API, SEO, sitemap, social
 dry-run, and the blog post. All green.
+
+### Ext D — OG cards
+
+**Did:** The Phase 5 SEO meta points the social/preview image at
+`/api/og?page=compute-frontier`. That endpoint had no branch for the page, so
+it fell back to the generic home card. Added a proper Compute Frontier og card
+(and a per-cluster variant keyed on the `name` param) backed by a small
+`computeFrontierOgStats` helper (clusters, planned GW, operational GW). Now the
+shared link card actually reflects the module.
+
+**Verification:** `npm run check` exit 0 (0 errors) · `npm test` 51/51 ·
+`npm run build` exit 0.
