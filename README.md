@@ -15,6 +15,7 @@ Live: **[gridtilt.com](https://gridtilt.com)**
 | **Tilt Overview** | Top movers, sector pulse, catalyst calendar, US electricity demand chart (2010 → 2030 projection), thesis-health KPIs. |
 | **The Stack** | 60+ tickers across 8 supply-chain layers (compute, nuclear, uranium, power hardware, utilities, construction, hyperscalers, REITs). |
 | **Power Map** | US data center locations with power capacity and the utility / RTO they sit on. |
+| **Compute Frontier** | 32 named AI superclusters tracked by GPUs, chip type, rated and planned power, grid region, and energy source, tied to the nuclear-for-AI deals that feed them. Sourced figures are separated from labeled estimates. |
 | **Supply Chain** | D3 force graph of 21 nodes and 44 real supply relationships from raw materials to end-use compute. |
 | **Catalyst Tracker** | Earnings + thesis catalyst calendar across 80+ tickers. |
 | **Portfolio Overlay** | Score any portfolio 0–100 on AI-power exposure across 5 dimensions. |
@@ -31,6 +32,7 @@ Live: **[gridtilt.com](https://gridtilt.com)**
 | US electricity demand chart | Static annual snapshot (2010–2025) hand-transcribed from [EIA Electric Power Monthly](https://www.eia.gov/electricity/monthly/); 2026–2030 lines are GridTilt projections, not forecasts | Static, embedded in the client |
 | Physical electricity output | FRED [`IPG2211A2N`](https://fred.stlouisfed.org/series/IPG2211A2N) served live at `/api/physical/electricity-output`; EIA US48 hourly demand at `/api/physical/load-hourly` once `EIA_API_KEY` is set | Live (FRED daily cache; EIA 30-min cache) |
 | Data center locations | Public announcements (Microsoft, Google, Amazon, Meta, Apple, xAI, OpenAI, Oracle), curated through a reviewed RSS ingestion pipeline | Curated, refreshed as announcements land |
+| AI superclusters (Compute Frontier) | Public announcements (company press releases, Reuters, Tom's Hardware, Data Center Dynamics, SemiAnalysis, utility filings), cross-referenced to the Power Map registry. Each cluster carries its own source links. A per-cluster `estimated[]` list flags every value that is a GridTilt estimate or an announced target not yet realized; GPU counts appear only where an operator has disclosed one, else they read as not disclosed. Curated in `server/data/clusters.json` | Curated, refreshed as announcements land |
 | Industry news | Live RSS from 8 publications | Live, refreshed hourly |
 | AI Demand, Grid Stress, NPI | Composite indices computed from constituent **equity moves** (NPI also uses uranium spot and a hand-derived policy score). They are market-based gauges, **not** physical grid measurements. See [Index methodology](#index-methodology). | Live, with labeled static fallback |
 

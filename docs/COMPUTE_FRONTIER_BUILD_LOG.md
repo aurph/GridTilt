@@ -22,7 +22,7 @@ and `npm run build` are run green before every commit.
 | 5 | SEO + per-cluster pages | done |
 | 6 | social template (TDD) | done |
 | 7 | blog post | done |
-| 8 | docs + README | pending |
+| 8 | docs + README | done |
 | 9 | verify + push + draft PR | pending |
 
 ---
@@ -394,3 +394,28 @@ concentration metric, in GridTilt's plain voice. No em dashes, no hype.
 
 **Next:** Phase 8 — README module section (sourced vs estimated) + build log
 refresh.
+
+---
+
+## Phase 8 — Docs (2026-06-20)
+
+**Did:** Added a Compute Frontier row to the README "What it does" table and
+a dedicated "AI superclusters (Compute Frontier)" row to the "Data sources"
+table that states the sources, the `estimated[]` flagging convention, and the
+GPU-disclosure rule (counts only where disclosed, else "not disclosed").
+Refreshed this build log.
+
+**Decisions (and why):**
+- *Did not rewrite the README's index methodology section.* On `main` the
+  README still documents the live AI Demand / Grid Stress / NPI indices; the
+  metrics/scoreboard rewrite lives on `feat/real-metrics`. Rewriting it here
+  would be out of scope and would collide with that PR. I only added the
+  Compute Frontier rows.
+- *Kept my additions em-dash-free* even though the surrounding README uses
+  em dashes, honoring Jack's voice rule for new content.
+
+**Verification:** docs-only change; the authoritative `check` + `test` +
+`build` run is Phase 9 (next).
+
+**Next:** Phase 9 — full green verification with real output, push, open the
+draft PR.
