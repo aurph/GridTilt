@@ -431,6 +431,7 @@ export default function ComputeFrontier() {
           <span className="text-[#F0A500]">est.</span> tag marks GridTilt estimates and announced targets not yet realized;
           GPU counts read "—" where an operator has not disclosed one. Nuclear links point to the tracked deals on the{" "}
           <Link href="/queue" className="text-[#F07800] hover:text-[#F0A500]">Backlog</Link> page. Tracked, not exhaustive.
+          Full <Link href="/compute-frontier/methodology" className="text-[#F07800] hover:text-[#F0A500]">methodology</Link>.
         </p>
       </div>
     </div>

@@ -142,3 +142,42 @@ test("the shipped dataset satisfies the integrity contract every entry promises"
   assert.ok(m.operationalMW <= m.totalRatedMW);
   assert.ok(m.concentration.hhi >= 0 && m.concentration.hhi <= 1);
 });
+
+// ── Concentration and sorting edge cases ───────────────────────────────────
+
+test("a single operator yields HHI 1.0 and a 100% top share", () => {
+  const oneOp = FIXTURE.filter((c) => c.operator === "Acme"); // a + b, 500 planned
+  const m = computeClusterMetrics(oneOp);
+  assert.equal(m.concentration.operatorCount, 1);
+  assert.equal(m.concentration.topOperator, "Acme");
+  assert.equal(m.concentration.topOperatorPlannedShare, 1);
+  assert.equal(m.concentration.hhi, 1);
+});
+
+test("operator and ISO sorts break planned-MW ties alphabetically", () => {
+  const tie: ClusterLite[] = [
+    { id: "x", operator: "Zeta", status: "operational", gridRegion: "ZZZ", gpuCount: null, ratedPowerMW: 0, plannedPowerMW: 100, linkedDeal: null },
+    { id: "y", operator: "Alpha", status: "operational", gridRegion: "AAA", gpuCount: null, ratedPowerMW: 0, plannedPowerMW: 100, linkedDeal: null },
+  ];
+  const m = computeClusterMetrics(tie);
+  assert.deepEqual(m.byOperator.map((o) => o.operator), ["Alpha", "Zeta"]);
+  assert.deepEqual(m.byIso.map((i) => i.iso), ["AAA", "ZZZ"]);
+});
+
+test("gpusPerMW is null when the only GPU-disclosing cluster has 0 rated MW", () => {
+  const m = computeClusterMetrics([
+    { id: "z", operator: "Q", status: "announced", gridRegion: "ERCOT", gpuCount: 1000, ratedPowerMW: 0, plannedPowerMW: 500, linkedDeal: null },
+  ]);
+  assert.equal(m.totalGpus, 1000);
+  assert.equal(m.clustersWithGpuData, 1);
+  assert.equal(m.gpusPerMW, null); // GPUs disclosed but no rated MW to divide by
+});
+
+test("linkedDealCount counts every link but linkedDealIds dedupes a shared deal", () => {
+  const m = computeClusterMetrics([
+    { id: "a", operator: "Q", status: "operational", gridRegion: "ERCOT", gpuCount: null, ratedPowerMW: 0, plannedPowerMW: 100, linkedDeal: "shared" },
+    { id: "b", operator: "Q", status: "operational", gridRegion: "ERCOT", gpuCount: null, ratedPowerMW: 0, plannedPowerMW: 100, linkedDeal: "shared" },
+  ]);
+  assert.equal(m.linkedDealCount, 2);
+  assert.deepEqual(m.linkedDealIds, ["shared"]);
+});

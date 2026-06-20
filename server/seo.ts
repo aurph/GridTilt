@@ -69,6 +69,11 @@ const STATIC_PAGES: Record<string, { title: string; description: string; slug: s
     description: "Named US AI training and inference superclusters by GPUs, chip type, rated and planned power, grid region, and energy source, tied to the nuclear-for-AI deals that feed them. Sourced figures vs labeled estimates.",
     slug: "compute-frontier",
   },
+  "/compute-frontier/methodology": {
+    title: "Compute Frontier Methodology \u00b7 How the Supercluster Data Is Built \u00b7 GridTilt",
+    description: "How GridTilt builds the AI supercluster registry: what is sourced, what is labeled an estimate, the GPU disclosure rule, and exactly how each headline number is computed.",
+    slug: "compute-frontier/methodology",
+  },
   "/subscribe": {
     title: "Get the Tilt \u2014 Weekly AI Power Market Intel \u2014 GridTilt",
     description: "Weekly digest of AI power market moves, catalysts, and thesis updates. Built for investors tracking the buildout.",
@@ -235,6 +240,12 @@ export function getPageMeta(pathname: string): PageMeta {
       jsonLd.push(clusterDatasetJsonLd(), breadcrumbJsonLd([
         { name: "GridTilt", url: BASE_URL },
         { name: "Compute Frontier", url: `${BASE_URL}/compute-frontier` },
+      ]));
+    } else if (pathname === "/compute-frontier/methodology") {
+      jsonLd.push(breadcrumbJsonLd([
+        { name: "GridTilt", url: BASE_URL },
+        { name: "Compute Frontier", url: `${BASE_URL}/compute-frontier` },
+        { name: "Methodology", url: `${BASE_URL}/compute-frontier/methodology` },
       ]));
     } else if (pathname === "/trade") {
       jsonLd.push(faqJsonLd(TRADE_FAQS), breadcrumbJsonLd([

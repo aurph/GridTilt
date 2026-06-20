@@ -452,3 +452,33 @@ undisclosed (27 of 32). Marquee clusters were web-verified. Only 3
 `linkedDeal`s, all resolving to real tracked deals on this branch.
 
 **Status: COMPLETE.** Branch pushed, draft PR open, nothing merged.
+
+---
+
+## Extensions (2026-06-20, after the 9 phases)
+
+The brief said to keep deepening the module after the core phases. These are
+additive commits on the same branch; the draft PR updates as they land.
+
+### Ext A + B — methodology page and more tests
+
+**Did:**
+- *More backend tests* (`clusters.test.ts`, now 16): single-operator HHI =
+  1.0 and 100% share; operator/ISO sort tie-break is alphabetical; gpusPerMW
+  is null when disclosed GPUs sit on 0 rated MW; linkedDealCount counts every
+  link while linkedDealIds dedupes a shared deal.
+- *Methodology page* `client/src/pages/ComputeFrontierMethodology.tsx` at
+  `/compute-frontier/methodology`: what is tracked, sourced-vs-estimated,
+  how each headline number is computed, power-needed-vs-secured, sources, and
+  limitations. Plain voice, no em dashes. Routed BEFORE `/compute-frontier/:id`
+  so the word "methodology" is not treated as a cluster id. SEO entry added to
+  `STATIC_PAGES` (joins the sitemap, breadcrumb JSON-LD) and the main page
+  footnote links to it.
+
+**Verification (real output):**
+- `npm run check` -> exit 0, 0 errors.
+- Methodology SEO smoke: title correct, JSON-LD [BreadcrumbList], canonical
+  `…/compute-frontier/methodology`, present in the static sitemap, and NOT in
+  the cluster slug list.
+- `npm test` -> tests 51, pass 51, fail 0.
+- `npm run build` -> exit 0.
