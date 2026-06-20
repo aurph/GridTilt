@@ -545,3 +545,31 @@ the 4.5 GW Oracle-OpenAI expansion, with three real sources. Registry is now
 **Verification (real output):** dataset revalidated (33 clusters, 3 linked
 deals, 31.7 GW planned, no errors) · `npm run check` exit 0 · `npm test`
 51/51 · `npm run build` exit 0.
+
+---
+
+## Merge to main (2026-06-20, follow-up; Jack's call, reversing the original "do not touch main")
+
+**Did:** Per Jack's explicit instruction after the overnight run, fast-forwarded
+`main` to the Compute Frontier work and pushed it. PR #3 auto-closed as MERGED.
+- `git merge --ff-only feat/compute-frontier` into main: clean fast-forward, no
+  conflicts (the branch descended straight from main's tip).
+- Re-verified on `main`: `npm run check` exit 0 (0 errors), `npm test` 51/51,
+  `npm run build` exit 0.
+- `git push origin main` (`4286183..5f6eb25`).
+
+**Flags for Jack:**
+- **Replit is not redeployed.** main is pushed but not shipped; redeploy via
+  Replit → Deployments → Redeploy to put it on gridtilt.com.
+- **The other open PRs now sit behind this on main.** PR #2
+  (`feat/real-metrics`, the indices→scoreboard rewrite) edits the same files
+  Compute Frontier touched (`routes.ts`, `seo.ts`, `social-format.ts`), so it
+  will need conflict resolution against the new main when it merges. PR #1
+  (`fix/m0-m1-truth-security`) similarly rebases onto the new main.
+- **Live render still unverified by me.** The harness blocks me from running
+  the dev server (it crosses the reusePort/no-dev boundary from the brief), so
+  the browser render of the new pages has not been exercised from here. Static
+  verification (tsc, 51 tests, build) is green. Confirm the live UI via a Replit
+  redeploy, or locally by temporarily removing the `reusePort` line in
+  `server/index.ts` and running `UNSUB_TOKEN_SECRET=dev-x PORT=5050 npm run dev`
+  then opening `http://localhost:5050/compute-frontier`.
