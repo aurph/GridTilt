@@ -27,6 +27,7 @@ import {
 } from "./indices";
 import { recordDailyIndexValues, readIndexHistory } from "./index-history";
 import { getElectricityOutputMonthly, getHourlyDemandUS48 } from "./physical";
+import { computeClusterMetrics, type ClusterLite } from "./clusters";
 import {
   buildTiltStatusTweet,
   buildTopMoversTweet,
@@ -3469,6 +3470,92 @@ ${rssItems}
     } catch (error) {
       console.error("Blog post error:", error);
       res.status(500).json({ error: "Failed to load article" });
+    }
+  });
+
+  // ─── Compute Frontier: AI supercluster tracker ──────────────────────────
+  // Thin wrappers over the pure server/clusters.ts module. The dataset is read
+  // at request time (same pattern as every other dataset). The power-needed-
+  // vs-power-secured join lives here because it is the only place that reads
+  // two datasets (clusters + the tracked nuclear-for-AI deals).
+  const CLUSTERS_FILE = join(process.cwd(), "server", "data", "clusters.json");
+
+  function readClusterRoot(): { clusters: any[]; lastRefreshed?: string } {
+    return JSON.parse(readFileSync(CLUSTERS_FILE, "utf-8"));
+  }
+
+  // For each cluster with a linkedDeal, join to the tracked nuclear deal so the
+  // page can compare planned compute power against the nuclear power secured.
+  // Firmness is optional (older datasets omit it); we default to "tracked".
+  function computePowerSecured(clusters: any[]) {
+    let deals: any[] = [];
+    try {
+      const queuePath = join(process.cwd(), "server", "data", "interconnection-queue.json");
+      deals = (JSON.parse(readFileSync(queuePath, "utf-8")).projects as any[]) ?? [];
+    } catch {
+      /* deals are optional; the cluster list still renders without them */
+    }
+    const dealById = new Map<string, any>(deals.map((d): [string, any] => [d.id, d]));
+    const withDeal = clusters.filter((c) => c.linkedDeal);
+    const byDeal = new Map<string, { id: string; projectName: string; capacityMW: number; firmness: string; clusterIds: string[] }>();
+    for (const c of withDeal) {
+      const d = dealById.get(c.linkedDeal);
+      if (!d) continue;
+      const entry =
+        byDeal.get(d.id) ?? {
+          id: d.id,
+          projectName: d.projectName,
+          capacityMW: d.capacityMW ?? 0,
+          firmness: d.firmness ?? "tracked",
+          clusterIds: [] as string[],
+        };
+      entry.clusterIds.push(c.id);
+      byDeal.set(d.id, entry);
+    }
+    const dealList = Array.from(byDeal.values());
+    return {
+      clustersWithDeal: withDeal.length,
+      plannedMWWithDeal: withDeal.reduce((a, c) => a + (c.plannedPowerMW || 0), 0),
+      totalPlannedMW: clusters.reduce((a, c) => a + (c.plannedPowerMW || 0), 0),
+      securedMW: dealList.reduce((a, d) => a + d.capacityMW, 0),
+      signedSecuredMW: dealList.filter((d) => d.firmness === "signed").reduce((a, d) => a + d.capacityMW, 0),
+      deals: dealList,
+    };
+  }
+
+  app.get("/api/clusters", (_req, res) => {
+    try {
+      res.json(readClusterRoot().clusters ?? []);
+    } catch (err) {
+      console.error("Clusters read error:", err);
+      res.status(500).json({ error: "Failed to load clusters" });
+    }
+  });
+
+  // Registered before /:id so "metrics" is not captured as an id.
+  app.get("/api/clusters/metrics", (_req, res) => {
+    try {
+      const root = readClusterRoot();
+      const clusters = root.clusters ?? [];
+      res.json({
+        ...computeClusterMetrics(clusters as ClusterLite[]),
+        powerSecured: computePowerSecured(clusters),
+        lastRefreshed: root.lastRefreshed ?? null,
+      });
+    } catch (err) {
+      console.error("Clusters metrics error:", err);
+      res.status(500).json({ error: "Failed to compute cluster metrics" });
+    }
+  });
+
+  app.get("/api/clusters/:id", (req, res) => {
+    try {
+      const cluster = (readClusterRoot().clusters ?? []).find((c) => c.id === req.params.id);
+      if (!cluster) return res.status(404).json({ error: "Cluster not found" });
+      res.json(cluster);
+    } catch (err) {
+      console.error("Cluster read error:", err);
+      res.status(500).json({ error: "Failed to load cluster" });
     }
   });
 

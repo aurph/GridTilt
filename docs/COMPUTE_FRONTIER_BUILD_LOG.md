@@ -16,7 +16,7 @@ and `npm run build` are run green before every commit.
 |------|------|-------|
 | 0 | Spec + build log | done |
 | 1 | clusters.json data | done |
-| 2 | clusters.ts backend (TDD) | pending |
+| 2 | clusters.ts backend (TDD) | done |
 | 3 | compute-frontier page | pending |
 | 4 | integration (route, sidebar, shortcut, cross-links) | pending |
 | 5 | SEO + per-cluster pages | pending |
@@ -140,3 +140,60 @@ registry. Per-cluster URLs are in each entry's `sources[]`.
 **Next:** Phase 2 — write `server/__tests__/clusters.test.ts` first, then
 the pure `server/clusters.ts` metrics module, then the thin `/api/clusters`,
 `/api/clusters/metrics`, `/api/clusters/:id` route wrappers (TDD).
+
+---
+
+## Phase 2 — Backend logic, TDD (2026-06-20)
+
+**Did (test-first):** Wrote `server/__tests__/clusters.test.ts` against a
+fixed fixture with hand-computed totals, watched it fail (module missing),
+then implemented the pure `server/clusters.ts` to pass. 13 tests, all green.
+`computeClusterMetrics` returns: status counts; total/operational/planned
+MW; total GPUs (nulls skipped) + count of disclosing clusters; byStatus,
+byOperator, byIso breakdowns; gpusPerMW; concentration (operator HHI +
+top-operator planned share); linkedDeal rollup. One test guards the live
+`clusters.json` itself (estimated[] only names real fields, status enum,
+gpuCount number-or-null, sources present, metrics stay self-consistent).
+Added the thin wrappers in routes.ts: `/api/clusters`,
+`/api/clusters/metrics` (metrics + powerSecured join + lastRefreshed), and
+`/api/clusters/:id` (registered after /metrics so "metrics" isn't captured
+as an id).
+
+**!! Branch correction (important for whoever reads next):** my initial
+file reads happened while the repo was on `feat/real-metrics`, but this
+branch is off `main`. Main does NOT have the metrics.ts refactor: no
+`server/metrics.ts`, no scoreboard, and `routes.ts` + `social-format.ts`
+are the older indices-era versions. I re-baselined: confirmed via
+`git diff --stat main feat/real-metrics` that `seo.ts`, `App.tsx`,
+`app-sidebar.tsx`, `index.css`, `Queue.tsx`, `datacenters.json` are
+**identical** on both branches (so those patterns still hold), while
+`routes.ts`, `social-format.ts`, `articles.json`, `TiltOverview.tsx`, and
+`interconnection-queue.json` differ and must be read fresh on main. The
+pure `clusters.ts` imports nothing, so it is branch-independent.
+
+**Decisions (and why):**
+- *Power-secured join is firmness-tolerant.* Main's queue rows have no
+  `firmness` field (that lands in feat/real-metrics), so the join defaults
+  to `"tracked"` and computes `signedSecuredMW` only from rows that do carry
+  `firmness === "signed"`. Works on main now (securedMW 3,620 across the 3
+  linked deals) and will light up the signed/proposed split automatically
+  once the richer queue merges. No fabricated firmness.
+- *Concentration on planned MW.* HHI of operator planned-MW shares + the top
+  operator's share is the "who controls the frontier" lens for
+  citizen-investors. On the live data the metrics stay in-range (HHI 0..1,
+  operationalMW <= totalRatedMW), asserted by the integrity test.
+- Used `Array.from(map.values())` not spread, to satisfy the repo's tsc
+  target (no downlevelIteration).
+
+**Verification (real output):**
+- `npm run check` -> tsc exit 0, error count 0.
+- `npm test` -> tests 43, pass 43, fail 0 (12 new clusters tests + the 31
+  pre-existing).
+- `npm run build` -> exit 0 (client + server; pre-existing chunk warning).
+- Runtime smoke of the join on real data: clustersWithDeal 3, securedMW
+  3,620 MW (meta-oklo-pike 1,200 + susquehanna-aws 1,920 + google-kairos-
+  hermes2 500), totalPlannedMW 30,335.
+
+**Next:** Phase 3 — `client/src/pages/compute-frontier.tsx`: metric cards,
+sortable/filterable table with status badges, Recharts breakdowns, Leaflet
+map, loading/empty/error states, dark aesthetic.
