@@ -114,6 +114,29 @@
       "notes": "Dona Ana County NM Stargate site linked to the proposed BorderPlex 'Project Jupiter' build. Capacity is an early estimate."
     },
     {
+      "id": "stargate-michigan",
+      "name": "Stargate Michigan (Saline Township)",
+      "operator": "OpenAI / Oracle",
+      "status": "construction",
+      "location": { "city": "Saline Township", "state": "MI", "lat": 42.1664, "lng": -83.7813 },
+      "gridRegion": "MISO",
+      "gpuCount": null,
+      "chipType": "NVIDIA GB200",
+      "ratedPowerMW": 0,
+      "plannedPowerMW": 1400,
+      "energySource": "grid (DTE) + battery",
+      "workload": "training",
+      "linkedDeal": null,
+      "onlineDate": "2026",
+      "estimated": [],
+      "sources": [
+        "https://www.prnewswire.com/news-releases/openai-oracle-and-related-digital-announce-stargate-data-center-site-in-michigan-302600302.html",
+        "https://www.datacenterdynamics.com/en/news/related-digitals-michigan-1gw-data-center-project-to-serve-openai-oracle/",
+        "https://www.tomshardware.com/tech-industry/artificial-intelligence/openais-stargate-data-center-gets-approval-to-receive-1-4-gigawatts-of-power-in-michigan-some-residents-furious-as-energy-company-is-given-go-ahead-by-regulatory-body-without-hearing-opposition"
+      ],
+      "notes": "OpenAI/Oracle/Related Digital Stargate campus on 250 acres, roughly 1.4 GW supplied by DTE Energy with project-financed battery storage. Construction began in early 2026 after a contested local vote. Part of the 4.5 GW Oracle-OpenAI Stargate expansion."
+    },
+    {
       "id": "xai-colossus-memphis",
       "name": "xAI Colossus (Memphis)",
       "operator": "xAI",

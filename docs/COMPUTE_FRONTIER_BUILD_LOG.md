@@ -523,3 +523,25 @@ shared link card actually reflects the module.
 
 **Verification:** `npm run check` exit 0 (0 errors) · `npm test` 51/51 ·
 `npm run build` exit 0.
+
+### Ext E — one more verified cluster (and two integrity-driven exclusions)
+
+**Did:** Added **Stargate Michigan (Saline Township)** after a web pass:
+~1.4 GW, MISO, DTE Energy + battery, construction began early 2026, part of
+the 4.5 GW Oracle-OpenAI expansion, with three real sources. Registry is now
+33 clusters, ~31.7 GW planned. Updated the README and blog counts to match.
+
+**Decisions (and why):**
+- *Excluded Fermi America "Project Matador" (Amarillo, 11 GW), on purpose.*
+  It is an energy complex led by an energy developer, not a hyperscaler
+  cluster, and it has no published compute-only power figure. Counting its
+  full 11 GW as compute power would have distorted the planned-MW total and
+  the operator-concentration metric. No defensible compute number means no
+  entry. Integrity over count.
+- *Excluded the Anthropic/Fluidstack Texas + New York sites* for now: the
+  $50B plan is real but the announcement does not pin specific sites,
+  coordinates, or per-site MW, so a precise entry would be invented.
+
+**Verification (real output):** dataset revalidated (33 clusters, 3 linked
+deals, 31.7 GW planned, no errors) · `npm run check` exit 0 · `npm test`
+51/51 · `npm run build` exit 0.
