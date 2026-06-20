@@ -8,6 +8,7 @@ import { AppSidebar } from "@/components/app-sidebar";
 import NotFound from "@/pages/not-found";
 import TheStack from "@/pages/TheStack";
 import PowerMap from "@/pages/PowerMap";
+import ComputeFrontier from "@/pages/compute-frontier";
 import TheTrade from "@/pages/TheTrade";
 import PortfolioOverlay from "@/pages/PortfolioOverlay";
 import CatalystTracker from "@/pages/CatalystTracker";
@@ -42,6 +43,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/overview": "Tilt Overview",
   "/stack": "The Stack",
   "/power-map": "Power Map",
+  "/compute-frontier": "Compute Frontier",
   "/supply-chain": "Supply Chain",
   "/trade": "Scenario Calculator",
   "/portfolio": "Portfolio Overlay",
@@ -61,6 +63,7 @@ const SHORTCUTS = [
   { keys: ["G", "7"], description: "Go to Catalyst Tracker", path: "/catalysts" },
   { keys: ["G", "8"], description: "Go to Analysis", path: "/blog" },
   { keys: ["G", "9"], description: "Go to Interconnection Backlog", path: "/queue" },
+  { keys: ["G", "0"], description: "Go to Compute Frontier", path: "/compute-frontier" },
   { keys: ["?"], description: "Show this keyboard shortcuts panel", path: null },
 ];
 
@@ -146,6 +149,7 @@ function Router() {
       <Route path="/overview" component={TiltOverview} />
       <Route path="/stack" component={TheStack} />
       <Route path="/power-map" component={PowerMap} />
+      <Route path="/compute-frontier" component={ComputeFrontier} />
       <Route path="/supply-chain" component={SupplyChain} />
       <Route path="/trade" component={TheTrade} />
       <Route path="/portfolio" component={PortfolioOverlay} />
@@ -225,6 +229,7 @@ function App() {
           "1": "/overview", "2": "/stack", "3": "/power-map",
           "4": "/supply-chain", "5": "/portfolio", "6": "/trade",
           "7": "/catalysts", "8": "/blog", "9": "/queue",
+          "0": "/compute-frontier",
         };
         if (routes[e.key]) {
           navigate(routes[e.key]);

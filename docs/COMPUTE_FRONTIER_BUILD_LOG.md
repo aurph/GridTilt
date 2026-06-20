@@ -18,7 +18,7 @@ and `npm run build` are run green before every commit.
 | 1 | clusters.json data | done |
 | 2 | clusters.ts backend (TDD) | done |
 | 3 | compute-frontier page | done |
-| 4 | integration (route, sidebar, shortcut, cross-links) | pending |
+| 4 | integration (route, sidebar, shortcut, cross-links) | done |
 | 5 | SEO + per-cluster pages | pending |
 | 6 | social template (TDD) | pending |
 | 7 | blog post | pending |
@@ -237,3 +237,44 @@ methodology footnote.
 **Next:** Phase 4 — route + PAGE_TITLES + G+0 shortcut in App.tsx, sidebar
 entry, and cross-links from the Power Map and the dashboard; then verify the
 page bundles and renders.
+
+---
+
+## Phase 4 — Integration (2026-06-20)
+
+**Did:**
+- `App.tsx`: eager-imported the page (consistent with the other Leaflet/
+  Recharts dashboard pages), added the `/compute-frontier` route, a
+  `PAGE_TITLES` entry, and the **G+0** keyboard shortcut in both the
+  shortcuts panel and the keydown router (G+1..9 were taken).
+- `app-sidebar.tsx`: added a "Compute Frontier" nav item (lucide `Cpu`),
+  placed right after Power Map, description "AI superclusters by GPU and
+  power".
+- Cross-links: Power Map's "≥ 400 MW only" banner now points to Compute
+  Frontier for the compute layer; the dashboard (TiltOverview) Modules grid
+  gains a Compute Frontier card. (Main's TiltOverview is the indices-era
+  version; the card slots into its existing `FEATURE_SLIDES` array. `preview`
+  is unused by the grid render, so the entry reuses an existing asset
+  invisibly.)
+
+**Decisions (and why):**
+- *G+0* is the natural next nav key; keeps the existing G+digit pattern.
+- *Eager import* matches the other dashboard pages and avoids a Suspense
+  flash; the heavy deps (Recharts, Leaflet) are already in the bundle via
+  the other eager pages.
+
+**Verification (real output):**
+- `npm run check` -> tsc exit 0, 0 errors (the page is now imported, so this
+  also typechecks the route wiring end to end).
+- `npm test` -> tests 43, pass 43, fail 0.
+- `npm run build` -> exit 0; the page is bundled into the client app (no
+  separate-chunk warning beyond the pre-existing one).
+- **Honest caveat (headless session):** I verified compile + bundle, not a
+  live browser render. The page closely mirrors the verified Queue/PowerMap
+  patterns (same query fetcher, Card/Badge/Skeleton, CARTO dark tiles). A
+  human should click through `/compute-frontier` once to confirm the map and
+  charts paint; flagging it as not-yet-exercised interactively.
+
+**Next:** Phase 5 — SEO: `/compute-frontier` in STATIC_PAGES + JSON-LD,
+per-cluster `/compute-frontier/:id` pages (server meta + client page), and
+`SITEMAP_CLUSTER_SLUGS` wired into sitemap.xml.

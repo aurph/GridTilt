@@ -13,6 +13,7 @@ import {
   LayoutDashboard,
   Layers,
   Map,
+  Cpu,
   Link2,
   BarChart3,
   CalendarDays,
@@ -40,6 +41,12 @@ const navItems = [
     url: "/power-map",
     icon: Map,
     description: "US data center locations",
+  },
+  {
+    title: "Compute Frontier",
+    url: "/compute-frontier",
+    icon: Cpu,
+    description: "AI superclusters by GPU and power",
   },
   {
     title: "Supply Chain",
