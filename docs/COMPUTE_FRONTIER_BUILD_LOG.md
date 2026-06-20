@@ -17,7 +17,7 @@ and `npm run build` are run green before every commit.
 | 0 | Spec + build log | done |
 | 1 | clusters.json data | done |
 | 2 | clusters.ts backend (TDD) | done |
-| 3 | compute-frontier page | pending |
+| 3 | compute-frontier page | done |
 | 4 | integration (route, sidebar, shortcut, cross-links) | pending |
 | 5 | SEO + per-cluster pages | pending |
 | 6 | social template (TDD) | pending |
@@ -197,3 +197,43 @@ pure `clusters.ts` imports nothing, so it is branch-independent.
 **Next:** Phase 3 — `client/src/pages/compute-frontier.tsx`: metric cards,
 sortable/filterable table with status badges, Recharts breakdowns, Leaflet
 map, loading/empty/error states, dark aesthetic.
+
+---
+
+## Phase 3 — Frontend page (2026-06-20)
+
+**Did:** Built `client/src/pages/compute-frontier.tsx`, matching the Queue
+dashboard pattern and GridTilt's dark tokens (`#F07800` sparingly,
+`font-mono` figures, shadcn Card/Badge/Skeleton/Tooltip, `grid-bg` hero).
+Sections: hero with honest copy + cross-links; six headline metric cards
+(clusters, operational/rated GW, planned GW, tracked GPUs, operators with
+top-operator share, nuclear secured GW); four Recharts breakdowns (planned
+MW by operator [horizontal], by ISO, by status [status-colored cells], and a
+build timeline bucketed by first announced year); a Leaflet map; a
+sortable + filterable table; a "power needed vs power secured" card; and a
+methodology footnote.
+
+**Decisions (and why):**
+- *Declarative `CircleMarker`s* (react-leaflet) instead of Power Map's
+  imperative `L.divIcon` layer code: simpler, reliable, status-colored,
+  radius ~ sqrt(planned MW). Same CARTO `dark_nolabels` tiles so it reads as
+  one family with the Power Map.
+- *`est.` tag component* renders next to any value whose field key is in the
+  cluster's `estimated[]` (gpuCount/rated/planned/online); undisclosed GPU
+  counts render "—". The integrity rule is visible to the user, not buried.
+- *Charts use planned MW* (the forward buildout) with GW-scaled axes; status
+  chart colors each bar by status to match the map legend.
+- *Cluster name links to `/compute-frontier/:id`* (the per-cluster page lands
+  in Phase 5); nuclear-linked rows link to `/queue`.
+- The page is committed before routing (Phase 4 wires the route, sidebar,
+  shortcut, and cross-links); it is tsc-clean now and gets bundled +
+  reachable next phase.
+
+**Verification (real output):**
+- `npm run check` -> tsc exit 0, total errors 0 (page typechecks).
+- `npm run build` -> exit 0.
+- (Full `npm test` unchanged at 43 pass; no server logic touched this phase.)
+
+**Next:** Phase 4 — route + PAGE_TITLES + G+0 shortcut in App.tsx, sidebar
+entry, and cross-links from the Power Map and the dashboard; then verify the
+page bundles and renders.
