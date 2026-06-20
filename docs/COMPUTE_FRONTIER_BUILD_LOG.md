@@ -21,7 +21,7 @@ and `npm run build` are run green before every commit.
 | 4 | integration (route, sidebar, shortcut, cross-links) | done |
 | 5 | SEO + per-cluster pages | done |
 | 6 | social template (TDD) | done |
-| 7 | blog post | pending |
+| 7 | blog post | done |
 | 8 | docs + README | pending |
 | 9 | verify + push + draft PR | pending |
 
@@ -364,3 +364,33 @@ map resolved by `/api/social/generate`.
 
 **Next:** Phase 7 — announcement blog post in `content/blog/articles.json`,
 plain voice, no em dashes, states sourced vs estimated.
+
+---
+
+## Phase 7 — Content (2026-06-20)
+
+**Did:** Added the announcement post "Tracking the Compute Frontier: Every
+Named AI Supercluster We Can Verify" (slug
+`compute-frontier-ai-supercluster-tracker`) to
+`content/blog/articles.json`. It explains the module, the data model, the
+sourced-vs-estimated rules, the power-needed-vs-secured angle, and the
+concentration metric, in GridTilt's plain voice. No em dashes, no hype.
+
+**Decisions (and why):**
+- *Inserted by splicing*, not by re-serializing the whole array: the file
+  does not round-trip through `JSON.stringify(…, 2)`, so a full rewrite would
+  have reformatted all 8 existing posts. The splice leaves them byte-identical
+  and the diff is just the new entry. A temp script (deleted after) handled
+  the apostrophe-heavy content so nothing had to be hand-escaped.
+- *Asserted no em dash* programmatically before writing; the whole blog file
+  is em-dash-free, matching Jack's voice rule.
+
+**Verification (real output):**
+- Blog SEO smoke: `getPageMeta("/blog/compute-frontier-ai-supercluster-tracker")`
+  -> correct title, canonical, JSON-LD [Article, BreadcrumbList].
+- File parses; 9 entries; new post first; slug matches the `/blog/:slug`
+  route regex; no em dash anywhere in the file.
+- `npm run check` 0 errors · `npm test` 47/47 · `npm run build` exit 0.
+
+**Next:** Phase 8 — README module section (sourced vs estimated) + build log
+refresh.
