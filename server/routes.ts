@@ -18,6 +18,7 @@ import {
   SITEMAP_SECTOR_SLUGS,
   SITEMAP_REGION_SLUGS,
   SITEMAP_OPERATOR_SLUGS,
+  SITEMAP_CLUSTER_SLUGS,
 } from "./seo";
 import {
   computeAiPowerIndex,
@@ -2753,6 +2754,14 @@ Sent to ${subscriberCount} subscribers. You're receiving this because you subscr
     for (const slug of SITEMAP_OPERATOR_SLUGS) {
       urls.push({
         loc: `${BASE_URL}/operator/${slug}`,
+        priority: "0.7",
+        changefreq: "weekly",
+      });
+    }
+
+    for (const slug of SITEMAP_CLUSTER_SLUGS) {
+      urls.push({
+        loc: `${BASE_URL}/compute-frontier/${slug}`,
         priority: "0.7",
         changefreq: "weekly",
       });

@@ -9,6 +9,7 @@ import NotFound from "@/pages/not-found";
 import TheStack from "@/pages/TheStack";
 import PowerMap from "@/pages/PowerMap";
 import ComputeFrontier from "@/pages/compute-frontier";
+import ComputeFrontierDetail from "@/pages/ComputeFrontierDetail";
 import TheTrade from "@/pages/TheTrade";
 import PortfolioOverlay from "@/pages/PortfolioOverlay";
 import CatalystTracker from "@/pages/CatalystTracker";
@@ -150,6 +151,7 @@ function Router() {
       <Route path="/stack" component={TheStack} />
       <Route path="/power-map" component={PowerMap} />
       <Route path="/compute-frontier" component={ComputeFrontier} />
+      <Route path="/compute-frontier/:id" component={ComputeFrontierDetail} />
       <Route path="/supply-chain" component={SupplyChain} />
       <Route path="/trade" component={TheTrade} />
       <Route path="/portfolio" component={PortfolioOverlay} />

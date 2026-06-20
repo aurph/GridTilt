@@ -64,6 +64,11 @@ const STATIC_PAGES: Record<string, { title: string; description: string; slug: s
     description: "Five-system breakdown of the AI power supply chain. 20 sub-systems mapped from chips through compute, cooling, transmission, and generation. Live equity exposure per node.",
     slug: "supply-chain",
   },
+  "/compute-frontier": {
+    title: "Compute Frontier \u00b7 AI Supercluster Tracker \u00b7 GridTilt",
+    description: "Named US AI training and inference superclusters by GPUs, chip type, rated and planned power, grid region, and energy source, tied to the nuclear-for-AI deals that feed them. Sourced figures vs labeled estimates.",
+    slug: "compute-frontier",
+  },
   "/subscribe": {
     title: "Get the Tilt \u2014 Weekly AI Power Market Intel \u2014 GridTilt",
     description: "Weekly digest of AI power market moves, catalysts, and thesis updates. Built for investors tracking the buildout.",
@@ -147,6 +152,29 @@ function datasetJsonLd(): object {
   };
 }
 
+function loadClustersForSeo(): any[] {
+  try {
+    const root = JSON.parse(readFileSync(join(process.cwd(), "server", "data", "clusters.json"), "utf-8"));
+    return root.clusters ?? [];
+  } catch {
+    return [];
+  }
+}
+
+function clusterDatasetJsonLd(): object {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Dataset",
+    "name": "Compute Frontier: AI Superclusters",
+    "description": "Named US AI training and inference superclusters by GPUs, chip type, rated and planned power, grid region, energy source, and linked nuclear-for-AI deals.",
+    "url": `${BASE_URL}/compute-frontier`,
+    "creator": { "@type": "Organization", "name": "GridTilt" },
+    "temporalCoverage": "2024/..",
+    "spatialCoverage": "United States",
+    "variableMeasured": ["gpu_count", "rated_power_mw", "planned_power_mw", "chip_type", "grid_region", "operator", "status", "energy_source"],
+  };
+}
+
 function faqJsonLd(faqs: Array<{ question: string; answer: string }>): object {
   return {
     "@context": "https://schema.org",
@@ -202,6 +230,11 @@ export function getPageMeta(pathname: string): PageMeta {
       jsonLd.push(datasetJsonLd(), breadcrumbJsonLd([
         { name: "GridTilt", url: BASE_URL },
         { name: "Power Map", url: `${BASE_URL}/power-map` },
+      ]));
+    } else if (pathname === "/compute-frontier") {
+      jsonLd.push(clusterDatasetJsonLd(), breadcrumbJsonLd([
+        { name: "GridTilt", url: BASE_URL },
+        { name: "Compute Frontier", url: `${BASE_URL}/compute-frontier` },
       ]));
     } else if (pathname === "/trade") {
       jsonLd.push(faqJsonLd(TRADE_FAQS), breadcrumbJsonLd([
@@ -377,6 +410,48 @@ export function getPageMeta(pathname: string): PageMeta {
     };
   }
 
+  const clusterMatch = pathname.match(/^\/compute-frontier\/([a-z0-9-]+)$/);
+  if (clusterMatch) {
+    const slug = clusterMatch[1];
+    const cluster = loadClustersForSeo().find((c: any) => c.id === slug);
+    if (cluster) {
+      const loc = `${cluster.location?.city}, ${cluster.location?.state}`;
+      const desc = `${cluster.name}: ${cluster.operator}, ${cluster.status}, ${Number(cluster.plannedPowerMW).toLocaleString()} MW planned in ${cluster.gridRegion} (${loc}). Chips: ${cluster.chipType}.`.slice(0, 300);
+      return {
+        title: `${cluster.name} · AI Supercluster · GridTilt`,
+        description: desc,
+        canonical: `${BASE_URL}/compute-frontier/${slug}`,
+        ogImage: `${BASE_URL}/api/og?page=compute-frontier&name=${encodeURIComponent(cluster.name)}`,
+        ogType: "website",
+        jsonLd: [
+          {
+            "@context": "https://schema.org",
+            "@type": "Place",
+            "name": cluster.name,
+            "description": desc,
+            "url": `${BASE_URL}/compute-frontier/${slug}`,
+            "address": {
+              "@type": "PostalAddress",
+              "addressLocality": cluster.location?.city,
+              "addressRegion": cluster.location?.state,
+              "addressCountry": "US",
+            },
+            "geo": {
+              "@type": "GeoCoordinates",
+              "latitude": cluster.location?.lat,
+              "longitude": cluster.location?.lng,
+            },
+          },
+          breadcrumbJsonLd([
+            { name: "GridTilt", url: BASE_URL },
+            { name: "Compute Frontier", url: `${BASE_URL}/compute-frontier` },
+            { name: cluster.name, url: `${BASE_URL}/compute-frontier/${slug}` },
+          ]),
+        ],
+      };
+    }
+  }
+
   return {
     title: "GridTilt \u2014 AI Power Infrastructure Dashboard",
     description: "Track the AI power buildout. Live stock data, data center mapping, and thesis modeling for 60+ companies across 9 sectors.",
@@ -428,4 +503,5 @@ export const SITEMAP_STATIC_PAGES = Object.keys(STATIC_PAGES);
 export const SITEMAP_SECTOR_SLUGS = Object.keys(SECTOR_SLUGS);
 export const SITEMAP_REGION_SLUGS = Object.keys(REGION_SLUGS);
 export const SITEMAP_OPERATOR_SLUGS = Object.keys(OPERATOR_SLUGS);
+export const SITEMAP_CLUSTER_SLUGS: string[] = loadClustersForSeo().map((c: any) => c.id);
 export { BASE_URL, SECTOR_SLUGS, REGION_SLUGS, OPERATOR_SLUGS };

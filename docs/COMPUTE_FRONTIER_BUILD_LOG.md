@@ -19,7 +19,7 @@ and `npm run build` are run green before every commit.
 | 2 | clusters.ts backend (TDD) | done |
 | 3 | compute-frontier page | done |
 | 4 | integration (route, sidebar, shortcut, cross-links) | done |
-| 5 | SEO + per-cluster pages | pending |
+| 5 | SEO + per-cluster pages | done |
 | 6 | social template (TDD) | pending |
 | 7 | blog post | pending |
 | 8 | docs + README | pending |
@@ -278,3 +278,46 @@ page bundles and renders.
 **Next:** Phase 5 — SEO: `/compute-frontier` in STATIC_PAGES + JSON-LD,
 per-cluster `/compute-frontier/:id` pages (server meta + client page), and
 `SITEMAP_CLUSTER_SLUGS` wired into sitemap.xml.
+
+---
+
+## Phase 5 — SEO + programmatic pages (2026-06-20)
+
+**Did:**
+- `server/seo.ts`: added `/compute-frontier` to `STATIC_PAGES` (so it joins
+  the sitemap automatically) with a `Dataset` + breadcrumb JSON-LD branch in
+  `getPageMeta`. Added a `/^\/compute-frontier\/([a-z0-9-]+)$/` matcher that
+  reads `clusters.json` and returns per-cluster title, description, and
+  `Place` (with PostalAddress + GeoCoordinates) + breadcrumb structured data;
+  unknown ids fall through to the site default. Exported
+  `SITEMAP_CLUSTER_SLUGS` (32 ids).
+- `server/routes.ts`: imported `SITEMAP_CLUSTER_SLUGS` and added the
+  per-cluster loop to `/sitemap.xml`.
+- Client: new `client/src/pages/ComputeFrontierDetail.tsx` (a focused
+  per-cluster page: facts grid with est. tags, power/linked-deal card,
+  sources list, loading/error/not-found states) wired at
+  `/compute-frontier/:id` in `App.tsx`.
+
+**Decisions (and why):**
+- *Used `·` not an em dash* in the SEO titles, matching the existing `/queue`
+  title and honoring Jack's no-em-dash rule.
+- *`SITEMAP_CLUSTER_SLUGS` computed once at module load* (like the other
+  SITEMAP_* exports), read from `clusters.json`; cluster ids are stable, so
+  per-request freshness is unnecessary.
+- The detail page links its linked deal to `/queue` rather than duplicating
+  deal data, keeping the page clusters-only.
+
+**Verification (real output):**
+- `npm run check` -> tsc exit 0, 0 errors.
+- SEO smoke (called `getPageMeta`): `/compute-frontier` -> title
+  "Compute Frontier · AI Supercluster Tracker · GridTilt", JSON-LD
+  [Dataset, BreadcrumbList]; `/compute-frontier/stargate-abilene` -> title
+  carries the cluster name, canonical `…/compute-frontier/stargate-abilene`,
+  JSON-LD [Place, BreadcrumbList]; unknown id -> site default;
+  `SITEMAP_CLUSTER_SLUGS` count 32.
+- `npm test` -> tests 43, pass 43, fail 0.
+- `npm run build` -> exit 0.
+
+**Next:** Phase 6 — a `compute_frontier` social template in
+`server/social-format.ts` (TDD, following main's existing template/voice),
+plus a thin composer in routes.ts. Dry-run only.
