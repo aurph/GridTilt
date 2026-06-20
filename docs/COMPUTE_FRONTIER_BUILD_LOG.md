@@ -23,7 +23,7 @@ and `npm run build` are run green before every commit.
 | 6 | social template (TDD) | done |
 | 7 | blog post | done |
 | 8 | docs + README | done |
-| 9 | verify + push + draft PR | pending |
+| 9 | verify + push + draft PR | done |
 
 ---
 
@@ -419,3 +419,36 @@ Refreshed this build log.
 
 **Next:** Phase 9 — full green verification with real output, push, open the
 draft PR.
+
+---
+
+## Phase 9 — Final verification, push, draft PR (2026-06-20)
+
+**Did:** Ran the full verification trio fresh on the finished branch, pushed
+`feat/compute-frontier`, and opened the draft PR. Did not merge and did not
+touch Replit.
+
+**Verification (real output, this run):**
+- `npm run check` -> `CHECK_EXIT=0` (tsc, no errors).
+- `npm test` -> `TEST_EXIT=0`, `tests 47 · pass 47 · fail 0` (includes the
+  13 clusters tests and the 4 compute-frontier social tests).
+- `npm run build` -> `BUILD_EXIT=0` (client + server bundle; only the
+  pre-existing >500 kB chunk-size warning).
+
+**Requirements checklist (against the brief):**
+- Phase 0 spec + build log ✓ · Phase 1 32 clusters with estimated[] + real
+  sources + linkedDeal ✓ · Phase 2 TDD pure module (MW totals, GPUs, power
+  by ISO, status/operator breakdowns, GPU/MW efficiency, HHI concentration)
+  + /api/clusters, /metrics, /:id ✓ · Phase 3 page (cards, sortable/
+  filterable table, 4 Recharts breakdowns incl. build timeline, Leaflet map,
+  loading/empty/error) ✓ · Phase 4 route + sidebar + G+0 + Power Map and
+  dashboard cross-links ✓ · Phase 5 SEO static + per-cluster pages + sitemap
+  ✓ · Phase 6 social template (TDD) + dry-run composer ✓ · Phase 7 blog post
+  (plain voice, no em dashes) ✓ · Phase 8 README sourced-vs-estimated ✓.
+
+**Data integrity recap:** every numeric value is either sourced (per-cluster
+`sources[]`) or carries an `estimated[]` flag; GPU counts are null where
+undisclosed (27 of 32). Marquee clusters were web-verified. Only 3
+`linkedDeal`s, all resolving to real tracked deals on this branch.
+
+**Status: COMPLETE.** Branch pushed, draft PR open, nothing merged.
