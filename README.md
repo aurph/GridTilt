@@ -17,7 +17,7 @@ Live: **[gridtilt.com](https://gridtilt.com)**
 | **Tilt Overview** | Top movers, sector pulse, catalyst calendar, US electricity demand chart (2010 → 2030 projection), thesis-health KPIs. |
 | **The Stack** | 60+ tickers across 8 supply-chain layers (compute, nuclear, uranium, power hardware, utilities, construction, hyperscalers, REITs). |
 | **Power Map** | US data center locations with power capacity and the utility / RTO they sit on. |
-| **Compute Frontier** | 33 named AI superclusters tracked by GPUs, chip type, rated and planned power, grid region, and energy source, tied to the nuclear-for-AI deals that feed them. Sourced figures are separated from labeled estimates. |
+| **Compute Frontier** | 49 named AI superclusters across 19 operators, tracked by GPUs, chip type, rated and planned power, grid region, and energy source, tied to the nuclear-for-AI deals that feed them. Sourced figures are separated from labeled estimates. |
 | **Supply Chain** | D3 force graph of 21 nodes and 44 real supply relationships from raw materials to end-use compute. |
 | **Catalyst Tracker** | Earnings + thesis catalyst calendar across 80+ tickers. |
 | **Portfolio Overlay** | Score any portfolio 0–100 on AI-power exposure across 5 dimensions. |

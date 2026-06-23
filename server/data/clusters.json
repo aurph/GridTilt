@@ -1,5 +1,5 @@
 {
-  "lastRefreshed": "2026-06-20",
+  "lastRefreshed": "2026-06-23",
   "methodology": "Named AI training and inference superclusters compiled from public announcements (company press releases, Reuters, Tom's Hardware, Data Center Dynamics, SemiAnalysis, utility filings) plus cross-reference to GridTilt's own Power Map registry. Tracked, not exhaustive. Power in MW. 'estimated' lists the field names whose values are GridTilt estimates or announced forward targets not yet realized; sourced values are not listed there. gpuCount is null when the accelerator count is not disclosed; we do not invent one. linkedDeal references a deal id in interconnection-queue.json where a tracked nuclear-for-AI deal applies to the site.",
   "clusters": [
     {
@@ -7,7 +7,12 @@
       "name": "Stargate Abilene (OpenAI/Oracle)",
       "operator": "OpenAI / Oracle",
       "status": "construction",
-      "location": { "city": "Abilene", "state": "TX", "lat": 32.4487, "lng": -99.7331 },
+      "location": {
+        "city": "Abilene",
+        "state": "TX",
+        "lat": 32.4487,
+        "lng": -99.7331
+      },
       "gridRegion": "ERCOT",
       "gpuCount": 450000,
       "chipType": "NVIDIA GB200",
@@ -17,7 +22,10 @@
       "workload": "mixed",
       "linkedDeal": null,
       "onlineDate": "2025",
-      "estimated": ["ratedPowerMW", "gpuCount"],
+      "estimated": [
+        "ratedPowerMW",
+        "gpuCount"
+      ],
       "sources": [
         "https://openai.com/index/stargate-advances-with-partnership-with-oracle/",
         "https://www.datacenterdynamics.com/en/news/openai-and-oracle-to-deploy-450000-gb200-gpus-at-stargate-abilene-data-center/",
@@ -30,7 +38,12 @@
       "name": "Stargate Milam County (OpenAI/Oracle/SoftBank)",
       "operator": "OpenAI / Oracle",
       "status": "construction",
-      "location": { "city": "Milam County", "state": "TX", "lat": 30.7869, "lng": -96.9786 },
+      "location": {
+        "city": "Milam County",
+        "state": "TX",
+        "lat": 30.7869,
+        "lng": -96.9786
+      },
       "gridRegion": "ERCOT",
       "gpuCount": null,
       "chipType": "NVIDIA GB200",
@@ -40,7 +53,9 @@
       "workload": "training",
       "linkedDeal": null,
       "onlineDate": "2026",
-      "estimated": ["plannedPowerMW"],
+      "estimated": [
+        "plannedPowerMW"
+      ],
       "sources": [
         "https://openai.com/index/five-new-stargate-sites/",
         "https://www.datacenterfrontier.com/machine-learning/article/55319132/scaling-stargate-openais-five-new-us-data-centers-push-toward-10-gw-ai-infrastructure"
@@ -52,7 +67,12 @@
       "name": "Stargate Lordstown (OpenAI/Oracle/SoftBank)",
       "operator": "OpenAI / Oracle",
       "status": "construction",
-      "location": { "city": "Lordstown", "state": "OH", "lat": 41.1542, "lng": -80.7882 },
+      "location": {
+        "city": "Lordstown",
+        "state": "OH",
+        "lat": 41.1542,
+        "lng": -80.7882
+      },
       "gridRegion": "PJM",
       "gpuCount": null,
       "chipType": "NVIDIA GB200",
@@ -62,7 +82,9 @@
       "workload": "training",
       "linkedDeal": null,
       "onlineDate": "2026",
-      "estimated": ["plannedPowerMW"],
+      "estimated": [
+        "plannedPowerMW"
+      ],
       "sources": [
         "https://openai.com/index/five-new-stargate-sites/",
         "https://www.datacenterfrontier.com/machine-learning/article/55319132/scaling-stargate-openais-five-new-us-data-centers-push-toward-10-gw-ai-infrastructure"
@@ -74,7 +96,12 @@
       "name": "Stargate Shackelford (Vantage Frontier)",
       "operator": "OpenAI / Oracle",
       "status": "construction",
-      "location": { "city": "Shackelford County", "state": "TX", "lat": 32.72, "lng": -99.29 },
+      "location": {
+        "city": "Shackelford County",
+        "state": "TX",
+        "lat": 32.72,
+        "lng": -99.29
+      },
       "gridRegion": "ERCOT",
       "gpuCount": null,
       "chipType": "NVIDIA GB200",
@@ -95,8 +122,13 @@
       "id": "stargate-dona-ana",
       "name": "Stargate Dona Ana / Project Jupiter (OpenAI/Oracle)",
       "operator": "OpenAI / Oracle",
-      "status": "announced",
-      "location": { "city": "Santa Teresa", "state": "NM", "lat": 31.9176, "lng": -106.7118 },
+      "status": "construction",
+      "location": {
+        "city": "Santa Teresa",
+        "state": "NM",
+        "lat": 31.9176,
+        "lng": -106.7118
+      },
       "gridRegion": "WECC",
       "gpuCount": null,
       "chipType": "NVIDIA GB200",
@@ -106,19 +138,26 @@
       "workload": "training",
       "linkedDeal": null,
       "onlineDate": "2027",
-      "estimated": ["plannedPowerMW"],
+      "estimated": [
+        "plannedPowerMW"
+      ],
       "sources": [
         "https://openai.com/index/five-new-stargate-sites/",
         "https://www.datacenterfrontier.com/machine-learning/article/55319132/scaling-stargate-openais-five-new-us-data-centers-push-toward-10-gw-ai-infrastructure"
       ],
-      "notes": "Dona Ana County NM Stargate site linked to the proposed BorderPlex 'Project Jupiter' build. Capacity is an early estimate."
+      "notes": "Dona Ana County NM Stargate site (developer STACK Infrastructure), tied to the BorderPlex 'Project Jupiter' build. OpenAI describes it as 'more than a gigawatt'; Epoch AI lists up to ~2.2 GW full build-out. Now reported under construction. We hold the conservative ~1 GW figure as an estimate."
     },
     {
       "id": "stargate-michigan",
       "name": "Stargate Michigan (Saline Township)",
       "operator": "OpenAI / Oracle",
       "status": "construction",
-      "location": { "city": "Saline Township", "state": "MI", "lat": 42.1664, "lng": -83.7813 },
+      "location": {
+        "city": "Saline Township",
+        "state": "MI",
+        "lat": 42.1664,
+        "lng": -83.7813
+      },
       "gridRegion": "MISO",
       "gpuCount": null,
       "chipType": "NVIDIA GB200",
@@ -141,51 +180,71 @@
       "name": "xAI Colossus (Memphis)",
       "operator": "xAI",
       "status": "operational",
-      "location": { "city": "Memphis", "state": "TN", "lat": 35.1495, "lng": -90.049 },
+      "location": {
+        "city": "Memphis",
+        "state": "TN",
+        "lat": 35.1495,
+        "lng": -90.049
+      },
       "gridRegion": "SERC",
       "gpuCount": 230000,
       "chipType": "NVIDIA H100/H200/GB200",
-      "ratedPowerMW": 250,
-      "plannedPowerMW": 300,
+      "ratedPowerMW": 500,
+      "plannedPowerMW": 500,
       "energySource": "on-site gas + grid + battery",
       "workload": "training",
       "linkedDeal": null,
       "onlineDate": "2024",
-      "estimated": ["plannedPowerMW"],
+      "estimated": [
+        "ratedPowerMW",
+        "plannedPowerMW"
+      ],
       "sources": [
         "https://www.tomshardware.com/tech-industry/artificial-intelligence/musks-colossus-is-fully-operational-with-200-000-gpus-backed-by-tesla-batteries-phase-2-to-consume-300-mw-enough-to-power-300-000-homes",
         "https://introl.com/blog/xai-memphis-colossus-100000-gpu-supercomputer-infrastructure"
       ],
-      "notes": "Built in 122 days in a former appliance factory; ~150k H100 + 50k H200 + 30k GB200. ~250 MW drawn now; 35 on-site gas turbines (420 MW) plus Tesla Megapack batteries; served by TVA/MLGW."
+      "notes": "Built in 122 days; ~150k H100 + 50k H200 + 30k GB200 (~230k). Power has grown past the early 150-250 MW: ~250 MW grid plus 35 on-site gas turbines (~420 MW), so ~500 MW is the better current figure. The wider Memphis complex (Colossus 1+2+a third building) is cited near 2 GW / ~555k GPUs as of early 2026; that aggregate is not attributed here."
     },
     {
       "id": "xai-colossus-2",
       "name": "xAI Colossus 2 (Southaven)",
       "operator": "xAI",
-      "status": "construction",
-      "location": { "city": "Southaven", "state": "MS", "lat": 34.9889, "lng": -90.0126 },
+      "status": "operational",
+      "location": {
+        "city": "Southaven",
+        "state": "MS",
+        "lat": 34.9889,
+        "lng": -90.0126
+      },
       "gridRegion": "SERC",
       "gpuCount": null,
       "chipType": "NVIDIA GB200/GB300",
-      "ratedPowerMW": 0,
+      "ratedPowerMW": 350,
       "plannedPowerMW": 1200,
       "energySource": "on-site gas + grid",
       "workload": "training",
       "linkedDeal": null,
       "onlineDate": "2026",
-      "estimated": [],
+      "estimated": [
+        "ratedPowerMW"
+      ],
       "sources": [
         "https://newsletter.semianalysis.com/p/xais-colossus-2-first-gigawatt-datacenter",
         "https://www.tomshardware.com/tech-industry/artificial-intelligence/musks-colossus-is-fully-operational-with-200-000-gpus-backed-by-tesla-batteries-phase-2-to-consume-300-mw-enough-to-power-300-000-homes"
       ],
-      "notes": "Described as the first gigawatt-scale single datacenter; xAI's stated ambition is to scale toward 1 million GPUs. Peak draw up to ~1.2 GW."
+      "notes": "First gigawatt-scale single datacenter; began operations ~Jan 2026 and is ramping (Google/SpaceX agreed to rent capacity here in June 2026). ~350 MW is a grounded current estimate from cooling-capacity analysis vs the ~1 GW launch claim; 41 on-site gas turbines approved Mar 2026 back the path to ~1.2 GW. Compute hall is Memphis (Whitehaven) TN; power generation is Southaven MS."
     },
     {
       "id": "meta-prometheus",
       "name": "Meta Prometheus (New Albany)",
       "operator": "Meta",
       "status": "construction",
-      "location": { "city": "New Albany", "state": "OH", "lat": 40.0814, "lng": -82.7874 },
+      "location": {
+        "city": "New Albany",
+        "state": "OH",
+        "lat": 40.0814,
+        "lng": -82.7874
+      },
       "gridRegion": "PJM",
       "gpuCount": null,
       "chipType": "NVIDIA H100/GB200",
@@ -207,7 +266,12 @@
       "name": "Meta Hyperion (Richland Parish)",
       "operator": "Meta",
       "status": "construction",
-      "location": { "city": "Richland Parish", "state": "LA", "lat": 32.468, "lng": -91.61 },
+      "location": {
+        "city": "Richland Parish",
+        "state": "LA",
+        "lat": 32.468,
+        "lng": -91.61
+      },
       "gridRegion": "MISO",
       "gpuCount": null,
       "chipType": "NVIDIA",
@@ -229,7 +293,12 @@
       "name": "Meta Pike County (Oklo SMR)",
       "operator": "Meta",
       "status": "announced",
-      "location": { "city": "Pike County", "state": "OH", "lat": 39.0686, "lng": -83.0182 },
+      "location": {
+        "city": "Pike County",
+        "state": "OH",
+        "lat": 39.0686,
+        "lng": -83.0182
+      },
       "gridRegion": "PJM",
       "gpuCount": null,
       "chipType": "NVIDIA",
@@ -239,7 +308,9 @@
       "workload": "training",
       "linkedDeal": "meta-oklo-pike",
       "onlineDate": "2028",
-      "estimated": ["plannedPowerMW"],
+      "estimated": [
+        "plannedPowerMW"
+      ],
       "sources": [
         "https://www.datacenterdynamics.com/en/news/meta-to-invest-hundreds-of-billions-of-dollars-into-compute-to-build-superintelligence-with-several-multi-gw-data-center-clusters/"
       ],
@@ -249,8 +320,13 @@
       "id": "microsoft-fairwater-wi",
       "name": "Microsoft Fairwater (Mount Pleasant)",
       "operator": "Microsoft",
-      "status": "construction",
-      "location": { "city": "Mount Pleasant", "state": "WI", "lat": 42.7094, "lng": -87.8895 },
+      "status": "operational",
+      "location": {
+        "city": "Mount Pleasant",
+        "state": "WI",
+        "lat": 42.7094,
+        "lng": -87.8895
+      },
       "gridRegion": "MISO",
       "gpuCount": null,
       "chipType": "NVIDIA GB200/GB300",
@@ -260,19 +336,26 @@
       "workload": "training",
       "linkedDeal": null,
       "onlineDate": "2026",
-      "estimated": ["plannedPowerMW"],
+      "estimated": [
+        "plannedPowerMW"
+      ],
       "sources": [
         "https://blogs.microsoft.com/blog/2025/09/18/inside-the-worlds-most-powerful-ai-datacenter/",
         "https://news.microsoft.com/source/features/ai/from-wisconsin-to-atlanta-microsoft-connects-datacenters-to-build-its-first-ai-superfactory/"
       ],
-      "notes": "First Fairwater site: 315 acres, three buildings, 1.2M sq ft, hundreds of thousands of GB200/GB300. Linked to Atlanta via a dedicated AI WAN. Exact GPU count and single-site MW not disclosed."
+      "notes": "First Fairwater building went operational June 23, 2026 (Phase 1 ~400 MW peak; single-building build-out ~900 MW), hundreds of thousands of GB200/GB300. A Jan 2026 $13.3B expansion adds ~15 buildings across two more Mount Pleasant campuses; the full complex is expected to reach ~2 GW when complete (~2028). Single-building MW tracked here; campus-level is larger."
     },
     {
       "id": "microsoft-fairwater-atlanta",
       "name": "Microsoft Fairwater (Atlanta)",
       "operator": "Microsoft",
       "status": "operational",
-      "location": { "city": "Atlanta", "state": "GA", "lat": 33.749, "lng": -84.388 },
+      "location": {
+        "city": "Atlanta",
+        "state": "GA",
+        "lat": 33.749,
+        "lng": -84.388
+      },
       "gridRegion": "SERC",
       "gpuCount": null,
       "chipType": "NVIDIA GB200/GB300",
@@ -294,7 +377,12 @@
       "name": "AWS Project Rainier (Anthropic)",
       "operator": "Amazon (AWS)",
       "status": "operational",
-      "location": { "city": "New Carlisle", "state": "IN", "lat": 41.7017, "lng": -86.5039 },
+      "location": {
+        "city": "New Carlisle",
+        "state": "IN",
+        "lat": 41.7017,
+        "lng": -86.5039
+      },
       "gridRegion": "MISO",
       "gpuCount": 500000,
       "chipType": "AWS Trainium2",
@@ -304,7 +392,10 @@
       "workload": "training",
       "linkedDeal": null,
       "onlineDate": "2025",
-      "estimated": ["ratedPowerMW", "gpuCount"],
+      "estimated": [
+        "ratedPowerMW",
+        "gpuCount"
+      ],
       "sources": [
         "https://www.datacenterdynamics.com/en/news/aws-activates-project-rainier-cluster-of-nearly-500000-trainium2-chips/",
         "https://www.anthropic.com/news/anthropic-amazon-compute"
@@ -316,7 +407,12 @@
       "name": "AWS Susquehanna (Talen BTM)",
       "operator": "Amazon (AWS)",
       "status": "construction",
-      "location": { "city": "Salem Township", "state": "PA", "lat": 41.057, "lng": -76.3488 },
+      "location": {
+        "city": "Salem Township",
+        "state": "PA",
+        "lat": 41.057,
+        "lng": -76.3488
+      },
       "gridRegion": "PJM",
       "gpuCount": null,
       "chipType": "AWS Trainium2 / NVIDIA",
@@ -337,7 +433,12 @@
       "name": "AWS Madison County (Canton)",
       "operator": "Amazon (AWS)",
       "status": "construction",
-      "location": { "city": "Canton", "state": "MS", "lat": 32.6126, "lng": -90.0356 },
+      "location": {
+        "city": "Canton",
+        "state": "MS",
+        "lat": 32.6126,
+        "lng": -90.0356
+      },
       "gridRegion": "MISO",
       "gpuCount": null,
       "chipType": "AWS Trainium2 / NVIDIA",
@@ -347,7 +448,9 @@
       "workload": "mixed",
       "linkedDeal": null,
       "onlineDate": "2027",
-      "estimated": ["plannedPowerMW"],
+      "estimated": [
+        "plannedPowerMW"
+      ],
       "sources": [
         "https://www.aboutamazon.com/news/aws"
       ],
@@ -358,7 +461,12 @@
       "name": "Google Council Bluffs (TPU)",
       "operator": "Google",
       "status": "operational",
-      "location": { "city": "Council Bluffs", "state": "IA", "lat": 41.26, "lng": -95.86 },
+      "location": {
+        "city": "Council Bluffs",
+        "state": "IA",
+        "lat": 41.26,
+        "lng": -95.86
+      },
       "gridRegion": "MISO",
       "gpuCount": null,
       "chipType": "Google TPU v5p/v6e",
@@ -368,7 +476,10 @@
       "workload": "mixed",
       "linkedDeal": null,
       "onlineDate": "2021",
-      "estimated": ["ratedPowerMW", "plannedPowerMW"],
+      "estimated": [
+        "ratedPowerMW",
+        "plannedPowerMW"
+      ],
       "sources": [
         "https://www.google.com/about/datacenters/locations/",
         "https://www.datacenterdynamics.com/en/news/google-and-anthropic-confirm-massive-1gw-cloud-deal-with-up-to-one-million-google-tpus/"
@@ -380,7 +491,12 @@
       "name": "Google The Dalles (TPU)",
       "operator": "Google",
       "status": "operational",
-      "location": { "city": "The Dalles", "state": "OR", "lat": 45.5946, "lng": -121.1787 },
+      "location": {
+        "city": "The Dalles",
+        "state": "OR",
+        "lat": 45.5946,
+        "lng": -121.1787
+      },
       "gridRegion": "WECC",
       "gpuCount": null,
       "chipType": "Google TPU",
@@ -390,7 +506,10 @@
       "workload": "mixed",
       "linkedDeal": null,
       "onlineDate": "2006",
-      "estimated": ["ratedPowerMW", "plannedPowerMW"],
+      "estimated": [
+        "ratedPowerMW",
+        "plannedPowerMW"
+      ],
       "sources": [
         "https://www.google.com/about/datacenters/locations/"
       ],
@@ -401,7 +520,12 @@
       "name": "Google Dorchester County (TPU)",
       "operator": "Google",
       "status": "construction",
-      "location": { "city": "Dorchester", "state": "SC", "lat": 33.0681, "lng": -80.403 },
+      "location": {
+        "city": "Dorchester",
+        "state": "SC",
+        "lat": 33.0681,
+        "lng": -80.403
+      },
       "gridRegion": "SERC",
       "gpuCount": null,
       "chipType": "Google TPU",
@@ -411,7 +535,9 @@
       "workload": "mixed",
       "linkedDeal": null,
       "onlineDate": "2027",
-      "estimated": ["plannedPowerMW"],
+      "estimated": [
+        "plannedPowerMW"
+      ],
       "sources": [
         "https://www.google.com/about/datacenters/locations/"
       ],
@@ -422,7 +548,12 @@
       "name": "Google Clarksville (Kairos SMR)",
       "operator": "Google",
       "status": "announced",
-      "location": { "city": "Clarksville", "state": "TN", "lat": 36.5298, "lng": -87.3595 },
+      "location": {
+        "city": "Clarksville",
+        "state": "TN",
+        "lat": 36.5298,
+        "lng": -87.3595
+      },
       "gridRegion": "SERC",
       "gpuCount": null,
       "chipType": "Google TPU",
@@ -432,7 +563,9 @@
       "workload": "mixed",
       "linkedDeal": "google-kairos-hermes2",
       "onlineDate": "2027",
-      "estimated": ["plannedPowerMW"],
+      "estimated": [
+        "plannedPowerMW"
+      ],
       "sources": [
         "https://www.google.com/about/datacenters/locations/"
       ],
@@ -443,7 +576,12 @@
       "name": "Google Pryor Creek (TPU)",
       "operator": "Google",
       "status": "construction",
-      "location": { "city": "Pryor Creek", "state": "OK", "lat": 36.308, "lng": -95.317 },
+      "location": {
+        "city": "Pryor Creek",
+        "state": "OK",
+        "lat": 36.308,
+        "lng": -95.317
+      },
       "gridRegion": "SPP",
       "gpuCount": null,
       "chipType": "Google TPU",
@@ -453,7 +591,9 @@
       "workload": "mixed",
       "linkedDeal": null,
       "onlineDate": "2026",
-      "estimated": ["plannedPowerMW"],
+      "estimated": [
+        "plannedPowerMW"
+      ],
       "sources": [
         "https://www.google.com/about/datacenters/locations/"
       ],
@@ -464,7 +604,12 @@
       "name": "CoreWeave Ellendale (Applied Digital)",
       "operator": "CoreWeave",
       "status": "construction",
-      "location": { "city": "Ellendale", "state": "ND", "lat": 46.0026, "lng": -98.5274 },
+      "location": {
+        "city": "Ellendale",
+        "state": "ND",
+        "lat": 46.0026,
+        "lng": -98.5274
+      },
       "gridRegion": "MISO",
       "gpuCount": null,
       "chipType": "NVIDIA GB200",
@@ -474,7 +619,9 @@
       "workload": "mixed",
       "linkedDeal": null,
       "onlineDate": "2026",
-      "estimated": ["plannedPowerMW"],
+      "estimated": [
+        "plannedPowerMW"
+      ],
       "sources": [
         "https://www.datacenterdynamics.com/en/news/applied-digital-signs-250mw-agreement-with-coreweave-for-capacity-at-ellendale-campus-north-dakota/",
         "https://www.coreweave.com/blog/our-capacity-plans-for-coreweave-data-centers"
@@ -486,7 +633,12 @@
       "name": "CoreWeave Mebane",
       "operator": "CoreWeave",
       "status": "construction",
-      "location": { "city": "Mebane", "state": "NC", "lat": 36.1, "lng": -79.27 },
+      "location": {
+        "city": "Mebane",
+        "state": "NC",
+        "lat": 36.1,
+        "lng": -79.27
+      },
       "gridRegion": "SERC",
       "gpuCount": null,
       "chipType": "NVIDIA GB200",
@@ -496,7 +648,9 @@
       "workload": "mixed",
       "linkedDeal": null,
       "onlineDate": "2026",
-      "estimated": ["plannedPowerMW"],
+      "estimated": [
+        "plannedPowerMW"
+      ],
       "sources": [
         "https://www.coreweave.com/blog/our-capacity-plans-for-coreweave-data-centers"
       ],
@@ -507,7 +661,12 @@
       "name": "CoreWeave / NVIDIA Secaucus",
       "operator": "CoreWeave",
       "status": "operational",
-      "location": { "city": "Secaucus", "state": "NJ", "lat": 40.79, "lng": -74.06 },
+      "location": {
+        "city": "Secaucus",
+        "state": "NJ",
+        "lat": 40.79,
+        "lng": -74.06
+      },
       "gridRegion": "PJM",
       "gpuCount": null,
       "chipType": "NVIDIA GB200",
@@ -517,62 +676,55 @@
       "workload": "inference",
       "linkedDeal": null,
       "onlineDate": "2024",
-      "estimated": ["ratedPowerMW", "plannedPowerMW"],
+      "estimated": [
+        "ratedPowerMW",
+        "plannedPowerMW"
+      ],
       "sources": [
         "https://www.coreweave.com/blog/our-capacity-plans-for-coreweave-data-centers"
       ],
       "notes": "CoreWeave/NVIDIA northern New Jersey site (PJM). Power estimated; cross-referenced from GridTilt's Power Map registry."
     },
     {
-      "id": "crusoe-wyoming",
-      "name": "Crusoe / Tallgrass Wyoming",
-      "operator": "Crusoe",
-      "status": "construction",
-      "location": { "city": "Cheyenne", "state": "WY", "lat": 41.1, "lng": -104.7 },
-      "gridRegion": "WECC",
-      "gpuCount": null,
-      "chipType": "NVIDIA GB200/GB300",
-      "ratedPowerMW": 0,
-      "plannedPowerMW": 1800,
-      "energySource": "on-site gas",
-      "workload": "training",
-      "linkedDeal": null,
-      "onlineDate": "2027",
-      "estimated": [],
-      "sources": [
-        "https://www.datacenterdynamics.com/en/news/crusoe-plans-18gw-data-center-campus-in-wyoming/",
-        "https://www.crusoe.ai/resources/newsroom/crusoe-and-tallgrass-announce-ai-data-center-in-wyoming"
-      ],
-      "notes": "Crusoe + Tallgrass gas-powered AI campus near Cheyenne, approved Jan 2026; 1.8 GW initial, designed to scale toward 10 GW."
-    },
-    {
       "id": "tesla-cortex",
-      "name": "Tesla Cortex (Giga Texas)",
+      "name": "Tesla Cortex 1 (Giga Texas)",
       "operator": "Tesla",
       "status": "operational",
-      "location": { "city": "Austin", "state": "TX", "lat": 30.2206, "lng": -97.6209 },
+      "location": {
+        "city": "Austin",
+        "state": "TX",
+        "lat": 30.2206,
+        "lng": -97.6209
+      },
       "gridRegion": "ERCOT",
       "gpuCount": 100000,
       "chipType": "NVIDIA H100/H200",
       "ratedPowerMW": 130,
-      "plannedPowerMW": 500,
+      "plannedPowerMW": 130,
       "energySource": "grid + on-site gas",
       "workload": "training",
       "linkedDeal": null,
       "onlineDate": "2024",
-      "estimated": ["gpuCount"],
+      "estimated": [
+        "gpuCount"
+      ],
       "sources": [
         "https://www.datacenterdynamics.com/en/news/teslas-50000-gpu-cortex-supercomputer-went-live-in-q4-2024/",
         "https://www.tomshardware.com/desktops/servers/elon-musk-shows-off-cortex-ai-supercluster-first-look-at-teslas-50000-nvidia-h100s"
       ],
-      "notes": "Cortex training cluster at Giga Texas for FSD/Optimus video training. 50k H100 live Q4 2024; Cortex 2.0 designed for ~500 MW and ~100k H100/H200. GPU count estimated."
+      "notes": "Cortex 1 training cluster at Giga Texas for FSD/Optimus: ~100k H100/H200, ~130 MW, at full capacity since mid-2025. The separate Cortex 2 expansion is tracked as its own entry. GPU count estimated."
     },
     {
       "id": "nebius-kansas-city",
       "name": "Nebius Kansas City (Patmos)",
       "operator": "Nebius",
       "status": "operational",
-      "location": { "city": "Kansas City", "state": "MO", "lat": 39.0997, "lng": -94.5786 },
+      "location": {
+        "city": "Kansas City",
+        "state": "MO",
+        "lat": 39.0997,
+        "lng": -94.5786
+      },
       "gridRegion": "SPP",
       "gpuCount": 35000,
       "chipType": "NVIDIA H200/Blackwell",
@@ -582,7 +734,9 @@
       "workload": "mixed",
       "linkedDeal": null,
       "onlineDate": "2025",
-      "estimated": ["gpuCount"],
+      "estimated": [
+        "gpuCount"
+      ],
       "sources": [
         "https://www.businesswire.com/news/home/20241119926895/en/Patmos-Announces-Nebius-as-First-Tenant-in-New-Kansas-City-Data-Center",
         "https://nebius.com/blog/posts/nebius-opens-first-availability-zone-in-us"
@@ -594,28 +748,40 @@
       "name": "Nebius Independence (Eastgate)",
       "operator": "Nebius",
       "status": "construction",
-      "location": { "city": "Independence", "state": "MO", "lat": 39.0917, "lng": -94.414 },
+      "location": {
+        "city": "Independence",
+        "state": "MO",
+        "lat": 39.0917,
+        "lng": -94.414
+      },
       "gridRegion": "SPP",
       "gpuCount": null,
       "chipType": "NVIDIA Blackwell",
       "ratedPowerMW": 0,
-      "plannedPowerMW": 800,
+      "plannedPowerMW": 1200,
       "energySource": "grid",
       "workload": "mixed",
       "linkedDeal": null,
       "onlineDate": "2027",
-      "estimated": [],
+      "estimated": [
+        "plannedPowerMW"
+      ],
       "sources": [
         "https://www.datacenterdynamics.com/en/news/nebius-plans-800mw-data-center-campus-in-kansas-city-missouri/"
       ],
-      "notes": "Nebius's planned 800 MW campus at the Eastgate Commerce Center outside Kansas City (up to ten buildings on 400 acres)."
+      "notes": "Nebius's gigawatt-scale campus at the Eastgate Commerce Center outside Kansas City, now approved for up to ~1.2 GW (up from 800 MW). Nebius also has smaller US sites (NJ, a second PA campus) not tracked here."
     },
     {
       "id": "qts-cedar-rapids",
       "name": "QTS Cedar Rapids (Blackstone)",
       "operator": "QTS",
       "status": "announced",
-      "location": { "city": "Cedar Rapids", "state": "IA", "lat": 41.9779, "lng": -91.6656 },
+      "location": {
+        "city": "Cedar Rapids",
+        "state": "IA",
+        "lat": 41.9779,
+        "lng": -91.6656
+      },
       "gridRegion": "MISO",
       "gpuCount": null,
       "chipType": "mixed (undisclosed)",
@@ -625,7 +791,9 @@
       "workload": "mixed",
       "linkedDeal": null,
       "onlineDate": "2027",
-      "estimated": ["plannedPowerMW"],
+      "estimated": [
+        "plannedPowerMW"
+      ],
       "sources": [
         "https://www.webpronews.com/inside-blackstones-50-billion-data-center-empire-how-qts-realty-became-the-crown-jewel-of-ai-infrastructure/",
         "https://datacentremagazine.com/news/qts-data-centers-hyperscale-growth-and-sustainability"
@@ -637,7 +805,12 @@
       "name": "Meta Beaver Dam",
       "operator": "Meta",
       "status": "construction",
-      "location": { "city": "Beaver Dam", "state": "WI", "lat": 43.4578, "lng": -88.8373 },
+      "location": {
+        "city": "Beaver Dam",
+        "state": "WI",
+        "lat": 43.4578,
+        "lng": -88.8373
+      },
       "gridRegion": "MISO",
       "gpuCount": null,
       "chipType": "NVIDIA",
@@ -647,7 +820,9 @@
       "workload": "training",
       "linkedDeal": null,
       "onlineDate": "2027",
-      "estimated": ["plannedPowerMW"],
+      "estimated": [
+        "plannedPowerMW"
+      ],
       "sources": [
         "https://datacenters.atmeta.com/"
       ],
@@ -658,7 +833,12 @@
       "name": "Meta Eagle Mountain",
       "operator": "Meta",
       "status": "operational",
-      "location": { "city": "Eagle Mountain", "state": "UT", "lat": 40.3144, "lng": -112.0 },
+      "location": {
+        "city": "Eagle Mountain",
+        "state": "UT",
+        "lat": 40.3144,
+        "lng": -112
+      },
       "gridRegion": "WECC",
       "gpuCount": null,
       "chipType": "NVIDIA",
@@ -668,7 +848,10 @@
       "workload": "mixed",
       "linkedDeal": null,
       "onlineDate": "2025",
-      "estimated": ["ratedPowerMW", "plannedPowerMW"],
+      "estimated": [
+        "ratedPowerMW",
+        "plannedPowerMW"
+      ],
       "sources": [
         "https://datacenters.atmeta.com/"
       ],
@@ -679,7 +862,12 @@
       "name": "AWS Northlake",
       "operator": "Amazon (AWS)",
       "status": "construction",
-      "location": { "city": "Northlake", "state": "TX", "lat": 33.0001, "lng": -97.2856 },
+      "location": {
+        "city": "Northlake",
+        "state": "TX",
+        "lat": 33.0001,
+        "lng": -97.2856
+      },
       "gridRegion": "ERCOT",
       "gpuCount": null,
       "chipType": "AWS Trainium / NVIDIA",
@@ -689,7 +877,9 @@
       "workload": "mixed",
       "linkedDeal": null,
       "onlineDate": "2026",
-      "estimated": ["plannedPowerMW"],
+      "estimated": [
+        "plannedPowerMW"
+      ],
       "sources": [
         "https://www.aboutamazon.com/news/aws"
       ],
@@ -700,7 +890,12 @@
       "name": "AWS Puget Sound (X-energy SMR)",
       "operator": "Amazon (AWS)",
       "status": "construction",
-      "location": { "city": "Seattle", "state": "WA", "lat": 47.61, "lng": -122.33 },
+      "location": {
+        "city": "Seattle",
+        "state": "WA",
+        "lat": 47.61,
+        "lng": -122.33
+      },
       "gridRegion": "WECC",
       "gpuCount": null,
       "chipType": "AWS Trainium / NVIDIA",
@@ -710,11 +905,483 @@
       "workload": "mixed",
       "linkedDeal": null,
       "onlineDate": "2026",
-      "estimated": ["plannedPowerMW"],
+      "estimated": [
+        "plannedPowerMW"
+      ],
       "sources": [
         "https://www.aboutamazon.com/news/aws"
       ],
       "notes": "AWS Washington footprint. The X-energy + Energy Northwest Cascade SMR project (960 MW, WA) sits in the same region but is not yet in GridTilt's tracked nuclear deal set, so linkedDeal is null. Capacity estimated; cross-referenced from GridTilt's Power Map registry."
+    },
+    {
+      "id": "project-jade-cheyenne",
+      "name": "Project Jade (Cheyenne)",
+      "operator": "Tallgrass (DC developer undisclosed)",
+      "status": "construction",
+      "location": {
+        "city": "Cheyenne",
+        "state": "WY",
+        "lat": 41.1,
+        "lng": -104.7
+      },
+      "gridRegion": "WECC",
+      "gpuCount": null,
+      "chipType": "undisclosed",
+      "ratedPowerMW": 0,
+      "plannedPowerMW": 2700,
+      "energySource": "on-site gas (Tallgrass)",
+      "workload": "mixed",
+      "linkedDeal": null,
+      "onlineDate": "2027",
+      "estimated": [],
+      "sources": [
+        "https://www.datacenterdynamics.com/en/news/crusoe-pauses-work-on-18gw-cheyenne-wyoming-data-center-at-the-request-of-our-customer/",
+        "https://cowboystatedaily.com/2026/06/11/partner-pulling-out-doesnt-slow-huge-2-7gw-cheyenne-project-jade-data-center/"
+      ],
+      "notes": "The Cheyenne 'Project Jade' campus (formerly Crusoe + Tallgrass). Crusoe paused and exited development ~April-June 2026 (reportedly after Google, the customer, raised cost/timeline concerns); Tallgrass continues the power side. Grew to 2.7 GW, with headroom toward 10 GW. Data-center developer now undisclosed."
+    },
+    {
+      "id": "crusoe-goodnight",
+      "name": "Crusoe Goodnight Campus",
+      "operator": "Crusoe",
+      "status": "construction",
+      "location": {
+        "city": "Claude",
+        "state": "TX",
+        "lat": 35.04,
+        "lng": -101.18
+      },
+      "gridRegion": "SPP",
+      "gpuCount": null,
+      "chipType": "undisclosed",
+      "ratedPowerMW": 0,
+      "plannedPowerMW": 1000,
+      "energySource": "on-site gas (off-grid)",
+      "workload": "mixed",
+      "linkedDeal": null,
+      "onlineDate": "2027",
+      "estimated": [
+        "plannedPowerMW"
+      ],
+      "sources": [
+        "https://www.datacentermap.com/usa/texas/amarillo/crusoe-goodnight-campus/",
+        "https://www.latitudemedia.com/news/how-a-crusoe-google-campus-became-texas-co-location-test-case/"
+      ],
+      "notes": "Crusoe AI campus near Claude TX (Armstrong County), anchor customer Google. ~530 MW phase 1 plus ~500 MW phase 2, powered by ~933 MW of off-grid on-site gas turbines. Capacity is the announced full build-out."
+    },
+    {
+      "id": "crusoe-abilene-microsoft",
+      "name": "Crusoe Abilene II (Microsoft)",
+      "operator": "Crusoe",
+      "status": "construction",
+      "location": {
+        "city": "Abilene",
+        "state": "TX",
+        "lat": 32.43,
+        "lng": -99.78
+      },
+      "gridRegion": "ERCOT",
+      "gpuCount": null,
+      "chipType": "NVIDIA GB200/GB300",
+      "ratedPowerMW": 0,
+      "plannedPowerMW": 900,
+      "energySource": "on-site gas + battery",
+      "workload": "training",
+      "linkedDeal": null,
+      "onlineDate": "2027",
+      "estimated": [],
+      "sources": [
+        "https://www.crusoe.ai/resources/newsroom/crusoe-announces-new-900-mw-ai-factory-campus-in-abilene-texas-to-support-microsoft-ai-infrastructure",
+        "https://datacentremagazine.com/news/inside-microsoft-and-crusoes-new-ai-factory-campus-plans"
+      ],
+      "notes": "Crusoe's second Abilene campus (900 MW, two ~336 MW IT buildings), built for Microsoft, with behind-the-meter on-site gas plus battery. Distinct from and adjacent to the Oracle/OpenAI Stargate Abilene campus. First building targeted mid-2027."
+    },
+    {
+      "id": "stargate-wisconsin",
+      "name": "Stargate Wisconsin (Vantage Lighthouse)",
+      "operator": "OpenAI / Oracle",
+      "status": "construction",
+      "location": {
+        "city": "Port Washington",
+        "state": "WI",
+        "lat": 43.3872,
+        "lng": -87.8756
+      },
+      "gridRegion": "MISO",
+      "gpuCount": null,
+      "chipType": "NVIDIA GB200",
+      "ratedPowerMW": 0,
+      "plannedPowerMW": 902,
+      "energySource": "grid",
+      "workload": "training",
+      "linkedDeal": null,
+      "onlineDate": "2028",
+      "estimated": [],
+      "sources": [
+        "https://vantage-dc.com/news/openai-oracle-and-vantage-data-centers-announce-stargate-data-center-site-in-wisconsin/",
+        "https://www.datacenterknowledge.com/data-center-construction/vantage-breaks-ground-on-15b-stargate-campus-in-wisconsin"
+      ],
+      "notes": "Vantage Data Centers' 'Lighthouse' campus in Port Washington WI, a Stargate site for OpenAI/Oracle. ~902 MW IT capacity (Epoch lists ~1.3 GW gross build-out); broke ground Dec 2025, completion expected 2028."
+    },
+    {
+      "id": "meta-el-paso",
+      "name": "Meta El Paso (Project Seafox)",
+      "operator": "Meta",
+      "status": "construction",
+      "location": {
+        "city": "El Paso",
+        "state": "TX",
+        "lat": 31.7619,
+        "lng": -106.485
+      },
+      "gridRegion": "WECC",
+      "gpuCount": null,
+      "chipType": "NVIDIA",
+      "ratedPowerMW": 0,
+      "plannedPowerMW": 1000,
+      "energySource": "on-site gas + grid",
+      "workload": "training",
+      "linkedDeal": null,
+      "onlineDate": "2028",
+      "estimated": [],
+      "sources": [
+        "https://www.datacenterdynamics.com/en/news/meta-files-to-expand-campus-in-el-paso-texas-with-12-new-buildings/",
+        "https://www.cnbc.com/2026/03/26/meta-to-spend-10-billion-on-ai-data-center-in-el-paso-1gw-by-2028.html"
+      ],
+      "notes": "Meta's ~$10B, 1 GW El Paso AI campus ('Project Seafox'); broke ground Oct 2025, ~1 GW by 2028. ~366 MW of on-site modular gas generation targeted by 2027 plus grid (El Paso Electric / WECC). Accelerator details undisclosed."
+    },
+    {
+      "id": "meta-temple",
+      "name": "Meta Temple",
+      "operator": "Meta",
+      "status": "construction",
+      "location": {
+        "city": "Temple",
+        "state": "TX",
+        "lat": 31.0982,
+        "lng": -97.3428
+      },
+      "gridRegion": "ERCOT",
+      "gpuCount": null,
+      "chipType": "NVIDIA",
+      "ratedPowerMW": 0,
+      "plannedPowerMW": 1000,
+      "energySource": "grid (renewable PPAs)",
+      "workload": "training",
+      "linkedDeal": null,
+      "onlineDate": "2027",
+      "estimated": [
+        "plannedPowerMW"
+      ],
+      "sources": [
+        "https://baxtel.com/data-center/meta-temple-tx",
+        "https://www.templetx.gov/news_detail_T13_R305.php"
+      ],
+      "notes": "Meta's Temple TX (Bell County) campus, originally started 2022, paused, then redesigned for AI and resumed; ~1 GW planned, phased late 2026 into 2027, 100% renewable commitment. MW timing is an estimate; accelerator details undisclosed."
+    },
+    {
+      "id": "microsoft-kilby-pecos",
+      "name": "Microsoft Pecos (Project Kilby)",
+      "operator": "Microsoft",
+      "status": "announced",
+      "location": {
+        "city": "Pecos",
+        "state": "TX",
+        "lat": 31.4229,
+        "lng": -103.4932
+      },
+      "gridRegion": "ERCOT",
+      "gpuCount": null,
+      "chipType": "undisclosed",
+      "ratedPowerMW": 0,
+      "plannedPowerMW": 2000,
+      "energySource": "on-site gas (Chevron, behind-the-meter)",
+      "workload": "training",
+      "linkedDeal": null,
+      "onlineDate": "2028",
+      "estimated": [],
+      "sources": [
+        "https://www.datacenterdynamics.com/en/news/microsoft-plans-2gw-data-center-campus-in-pecos-texas/",
+        "https://www.chevron.com/newsroom"
+      ],
+      "notes": "Microsoft's ~2 GW data-center campus in Pecos TX (Reeves County), powered behind-the-meter by a Chevron/Engine No.1 gas plant (up to ~2.67 GW generation; 20-year PPA signed June 2026, FID expected end 2026). The 2 GW here is the disclosed compute target, distinct from generation. First power ~2028."
+    },
+    {
+      "id": "nscale-cedarvale",
+      "name": "Nscale Cedarvale (Barstow)",
+      "operator": "Nscale",
+      "status": "construction",
+      "location": {
+        "city": "Barstow",
+        "state": "TX",
+        "lat": 31.4574,
+        "lng": -103.3963
+      },
+      "gridRegion": "ERCOT",
+      "gpuCount": 104000,
+      "chipType": "NVIDIA GB300",
+      "ratedPowerMW": 0,
+      "plannedPowerMW": 1200,
+      "energySource": "grid",
+      "workload": "mixed",
+      "linkedDeal": null,
+      "onlineDate": "2026",
+      "estimated": [
+        "plannedPowerMW"
+      ],
+      "sources": [
+        "https://www.datacenterdynamics.com/en/news/nscale-to-supply-microsoft-with-additional-100000-nvidia-gpus-in-us-and-europe/",
+        "https://nscale.com/press-releases/nscale-microsoft-2025"
+      ],
+      "notes": "Nscale's Cedarvale campus in Barstow TX (Ward County), leasing from Ionic Digital, supplying Microsoft. ~234 MW firm phase 1 scaling toward ~1.2 GW (Microsoft option), ~104,000 NVIDIA GB300; phased from Q3 2026. Full capacity is a scale-to target (estimated)."
+    },
+    {
+      "id": "galaxy-helios",
+      "name": "Galaxy Helios (Dickens County)",
+      "operator": "Galaxy Digital",
+      "status": "construction",
+      "location": {
+        "city": "Dickens County",
+        "state": "TX",
+        "lat": 33.6176,
+        "lng": -100.8366
+      },
+      "gridRegion": "ERCOT",
+      "gpuCount": null,
+      "chipType": "NVIDIA",
+      "ratedPowerMW": 0,
+      "plannedPowerMW": 800,
+      "energySource": "grid",
+      "workload": "mixed",
+      "linkedDeal": null,
+      "onlineDate": "2026",
+      "estimated": [],
+      "sources": [
+        "https://www.convergedigest.com/coreweave-locks-in-800-mw-at-galaxys-helios-campus-in-texas/",
+        "https://www.datacenterdynamics.com/en/news/galaxy-digital-closes-14bn-debt-facility-for-helios-data-center-campus-in-texas/"
+      ],
+      "notes": "Galaxy Digital's Helios campus in Dickens County TX (former bitcoin-mining site), with 800 MW fully committed to CoreWeave under a 15-year lease (+1.7 GW under study). First power tranche energizing early 2026."
+    },
+    {
+      "id": "iren-sweetwater",
+      "name": "IREN Sweetwater Hub",
+      "operator": "IREN",
+      "status": "construction",
+      "location": {
+        "city": "Sweetwater",
+        "state": "TX",
+        "lat": 32.471,
+        "lng": -100.4059
+      },
+      "gridRegion": "ERCOT",
+      "gpuCount": null,
+      "chipType": "NVIDIA GB300",
+      "ratedPowerMW": 0,
+      "plannedPowerMW": 2000,
+      "energySource": "grid",
+      "workload": "mixed",
+      "linkedDeal": null,
+      "onlineDate": "2026",
+      "estimated": [],
+      "sources": [
+        "https://iren.com/data-centers/sweetwater",
+        "https://www.datacenterdynamics.com/en/news/microsoft-signs-97bn-cloud-capacity-deal-with-iren/"
+      ],
+      "notes": "IREN's two-site Sweetwater TX hub (Sweetwater 1 ~1.4 GW + Sweetwater 2 ~600 MW = ~2 GW). SW1 grid-energized May 2026 with IT ramping; SW2 in construction (~2027). NVIDIA GB300 under a $9.7B Microsoft capacity deal."
+    },
+    {
+      "id": "iren-childress",
+      "name": "IREN Childress",
+      "operator": "IREN",
+      "status": "operational",
+      "location": {
+        "city": "Childress",
+        "state": "TX",
+        "lat": 34.4264,
+        "lng": -100.2041
+      },
+      "gridRegion": "ERCOT",
+      "gpuCount": null,
+      "chipType": "NVIDIA GB300",
+      "ratedPowerMW": 50,
+      "plannedPowerMW": 200,
+      "energySource": "grid",
+      "workload": "mixed",
+      "linkedDeal": null,
+      "onlineDate": "2025",
+      "estimated": [
+        "plannedPowerMW"
+      ],
+      "sources": [
+        "https://iren.com/data-centers/childress",
+        "https://baxtel.com/data-center/iren-horizon-1"
+      ],
+      "notes": "IREN's Childress TX site. The AI portion (Horizon 1-4, direct-to-chip liquid, NVIDIA GB300) is ~200 MW critical IT; Horizon 1 (~50 MW IT) energized Q4 2025 and is live, with H2-4 through H2 2026. The wider 750 MW site is mostly legacy bitcoin and is not counted here."
+    },
+    {
+      "id": "applied-digital-harwood",
+      "name": "Applied Digital Polaris Forge 2 (Harwood)",
+      "operator": "Applied Digital",
+      "status": "construction",
+      "location": {
+        "city": "Harwood",
+        "state": "ND",
+        "lat": 46.873,
+        "lng": -96.8772
+      },
+      "gridRegion": "MISO",
+      "gpuCount": null,
+      "chipType": "undisclosed",
+      "ratedPowerMW": 0,
+      "plannedPowerMW": 280,
+      "energySource": "grid",
+      "workload": "mixed",
+      "linkedDeal": null,
+      "onlineDate": "2026",
+      "estimated": [],
+      "sources": [
+        "https://www.datacenterdynamics.com/en/news/applied-digital-plans-280mw-ai-data-center-campus-in-north-dakota/",
+        "https://ir.applieddigital.com/news-events/press-releases/detail/127"
+      ],
+      "notes": "Applied Digital's second North Dakota AI campus ('Polaris Forge 2') near Harwood/Fargo, ~280 MW initial and scalable, on wind-heavy MISO grid; broke ground Sept 2025, initial capacity 2026. Separate from the Ellendale campus that hosts CoreWeave."
+    },
+    {
+      "id": "terawulf-lake-mariner",
+      "name": "TeraWulf Lake Mariner",
+      "operator": "TeraWulf",
+      "status": "construction",
+      "location": {
+        "city": "Barker",
+        "state": "NY",
+        "lat": 43.3287,
+        "lng": -78.5361
+      },
+      "gridRegion": "NPCC",
+      "gpuCount": null,
+      "chipType": "undisclosed",
+      "ratedPowerMW": 60,
+      "plannedPowerMW": 438,
+      "energySource": "grid (low-carbon, NY)",
+      "workload": "mixed",
+      "linkedDeal": null,
+      "onlineDate": "2026",
+      "estimated": [],
+      "sources": [
+        "https://investors.terawulf.com/news-events/press-releases/detail/112",
+        "https://www.datacenterdynamics.com/en/news/anthropic-plans-50bn-us-data-center-spend-starting-with-fluidstack-sites-in-texas-and-new-york/"
+      ],
+      "notes": "TeraWulf's Lake Mariner campus in Barker NY (former coal site), hosting HPC for Core42/G42 and a Google-backed Fluidstack expansion. ~438 MW HPC contracted (up to ~750 MW), first ~60 MW IT live Q1 2026, on predominantly zero-carbon NY grid."
+    },
+    {
+      "id": "cipher-black-pearl",
+      "name": "Cipher Black Pearl (AWS)",
+      "operator": "Cipher Mining",
+      "status": "construction",
+      "location": {
+        "city": "Wink",
+        "state": "TX",
+        "lat": 31.751,
+        "lng": -103.1599
+      },
+      "gridRegion": "ERCOT",
+      "gpuCount": null,
+      "chipType": "undisclosed",
+      "ratedPowerMW": 0,
+      "plannedPowerMW": 300,
+      "energySource": "grid",
+      "workload": "mixed",
+      "linkedDeal": null,
+      "onlineDate": "2026",
+      "estimated": [],
+      "sources": [
+        "https://www.datacenterdynamics.com/en/news/cipher-mining-plans-2bn-senior-secured-notes-offering-for-amazon-leased-black-pearl-data-center-site-in-texas/",
+        "https://investors.ciphermining.com"
+      ],
+      "notes": "Cipher Mining's Black Pearl campus near Wink TX (Winkler County), leased to AWS for 15 years: 300 MW gross / ~216 MW critical IT, ERCOT grid; Phase I targeted Q4 2026, full ramp Q1 2027."
+    },
+    {
+      "id": "stack-stafford",
+      "name": "Stack Stafford Technology Campus",
+      "operator": "Stack Infrastructure",
+      "status": "construction",
+      "location": {
+        "city": "Stafford",
+        "state": "VA",
+        "lat": 38.4221,
+        "lng": -77.4083
+      },
+      "gridRegion": "PJM",
+      "gpuCount": null,
+      "chipType": "undisclosed",
+      "ratedPowerMW": 0,
+      "plannedPowerMW": 1100,
+      "energySource": "grid (Dominion)",
+      "workload": "mixed",
+      "linkedDeal": null,
+      "onlineDate": "2027",
+      "estimated": [],
+      "sources": [
+        "https://www.stackinfra.com/about/news-press/",
+        "https://www.datacenterdynamics.com/en/news/stack-plans-1gw-campus-in-stafford-county-virginia/"
+      ],
+      "notes": "Stack Infrastructure's ~1.1 GW campus in Stafford County VA (19 buildings, six 300 MW Dominion substations, ~$4B), in the PJM/Northern Virginia corridor; first phase 2027. Anchor tenant not named."
+    },
+    {
+      "id": "qts-van-wert",
+      "name": "QTS Van Wert",
+      "operator": "QTS",
+      "status": "announced",
+      "location": {
+        "city": "Van Wert",
+        "state": "OH",
+        "lat": 40.8692,
+        "lng": -84.5841
+      },
+      "gridRegion": "PJM",
+      "gpuCount": null,
+      "chipType": "undisclosed",
+      "ratedPowerMW": 0,
+      "plannedPowerMW": 500,
+      "energySource": "grid (AEP)",
+      "workload": "mixed",
+      "linkedDeal": null,
+      "onlineDate": "2029",
+      "estimated": [],
+      "sources": [
+        "https://www.datacenterdynamics.com/en/news/qts-behind-van-wert-ohio-mega-site-acquisition-announces-10-billion-data-center-campus/",
+        "https://www.qts.com/data-centers/van-wert/"
+      ],
+      "notes": "QTS (Blackstone) ~$10B Van Wert OH campus (902 acres, up to 7 buildings, ~500 MW), AEP grid with closed-loop cooling; announced May 2026, first building ~Q1 2029. Early-stage, anchor not named."
+    },
+    {
+      "id": "tesla-cortex-2",
+      "name": "Tesla Cortex 2 (Giga Texas)",
+      "operator": "Tesla",
+      "status": "operational",
+      "location": {
+        "city": "Austin",
+        "state": "TX",
+        "lat": 30.2206,
+        "lng": -97.6209
+      },
+      "gridRegion": "ERCOT",
+      "gpuCount": 100000,
+      "chipType": "NVIDIA H100/H200",
+      "ratedPowerMW": 250,
+      "plannedPowerMW": 500,
+      "energySource": "grid + battery (Megapack)",
+      "workload": "training",
+      "linkedDeal": null,
+      "onlineDate": "2026",
+      "estimated": [
+        "gpuCount",
+        "ratedPowerMW"
+      ],
+      "sources": [
+        "https://www.basenor.com/blogs/news/cortex-2-0-at-giga-texas-inside-teslas-massive-ai-training-build",
+        "https://www.notateslaapp.com/news/2703/tesla-building-cortex-20-supercomputer-at-giga-texas-to-power-fsd"
+      ],
+      "notes": "Tesla's Cortex 2 expansion at Giga Texas: first ~250 MW phase live ~April 2026, full ~500 MW targeted mid-2026, ~100k additional H100/H200, Megapack-backed. Combined Giga Texas (Cortex 1+2) is cited near ~230k GPUs. GPU and current rated MW are estimates."
     }
   ]
 }

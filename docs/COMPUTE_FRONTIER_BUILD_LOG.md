@@ -558,6 +558,54 @@ deals, 31.7 GW planned, no errors) · `npm run check` exit 0 · `npm test`
   `npm run build` exit 0.
 - `git push origin main` (`4286183..5f6eb25`).
 
+## Research pass + data refresh (2026-06-23)
+
+**Did:** Jack flagged we might be missing key players, so I ran four parallel
+research agents (Stargate ecosystem; Meta/Microsoft/Google; AWS/xAI/Tesla;
+neoclouds + miner-turned-AI). Folded in the high-confidence, multi-sourced
+findings. **Registry grew 33 -> 49 clusters, 11 -> 19 operators, ~30 -> ~47 GW
+planned, ~1.3M -> ~1.52M disclosed accelerators (now 7 disclosing clusters).**
+
+**8 operators that were missing entirely, now added:** Nscale (Cedarvale/
+Barstow TX, ~104k GB300 for Microsoft), Galaxy Digital (Helios, Dickens
+County TX, 800 MW to CoreWeave), IREN (Sweetwater 2 GW hub + Childress,
+GB300/Microsoft), Applied Digital (Polaris Forge 2, Harwood ND), TeraWulf
+(Lake Mariner NY), Cipher Mining (Black Pearl, Wink TX, AWS), Stack
+Infrastructure (Stafford VA, 1.1 GW), and Tallgrass (Project Jade, the
+re-attributed Cheyenne site). Plus new flagship sites from existing
+operators: Stargate Wisconsin (Vantage Lighthouse), Meta El Paso and Temple,
+Microsoft/Chevron Pecos (Project Kilby, clean 2 GW compute figure), QTS Van
+Wert, Crusoe Goodnight (Google) and Crusoe Abilene II (Microsoft), and a
+split Tesla Cortex 1 / Cortex 2.
+
+**Staleness fixes:** xAI Colossus 1 power 300 -> ~500 MW; Colossus 2
+construction -> operational (ramping, ~350 MW) since Google/SpaceX rent
+capacity there; Tesla single entry split into Cortex 1 (130 MW) + Cortex 2
+(500 MW); Nebius Independence 800 -> 1,200 MW; Microsoft Fairwater WI ->
+operational (first building live 6/23/2026); Stargate Dona Ana announced ->
+construction (developer STACK).
+
+**Decisions (integrity calls):**
+- *Removed `crusoe-wyoming`, re-added as `project-jade-cheyenne`.* Crusoe
+  paused/exited that project (~Apr-Jun 2026, reportedly after Google raised
+  concerns); leaving it as "Crusoe, 1.8 GW" was wrong. Re-attributed to
+  Tallgrass (DC developer undisclosed), 2.7 GW.
+- *Still excluded Fermi America (11 GW Amarillo) and Homer City* — energy
+  campuses with no published compute-only figure. Added Microsoft Pecos
+  instead because it has a clean disclosed 2 GW compute target separate from
+  generation.
+- *Did not invent Google-Anthropic TPU sites* (the 1M-TPU deal is real but
+  the 5 sites are disclosed only at state level) or speculative Anthropic/
+  Fluidstack city pins; added the better-sourced TeraWulf Lake Mariner site
+  on its own merits. Skipped pure-colo (Switch) and sub-300 MW Tier-B sites.
+- Every new figure is sourced (per-cluster `sources[]`) or flagged in
+  `estimated[]`; GPU counts null unless an operator disclosed one.
+
+**Verification (real output):** integrity revalidated (49 clusters, 19
+operators, no dup ids, every `estimated[]` a real field, every `linkedDeal`
+resolves, all https sources) · `npm run check` exit 0, 0 errors · `npm test`
+51/51 · `npm run build` exit 0. README + blog counts updated to 49/19.
+
 **Flags for Jack:**
 - **Replit is not redeployed.** main is pushed but not shipped; redeploy via
   Replit → Deployments → Redeploy to put it on gridtilt.com.
