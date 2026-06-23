@@ -6,6 +6,8 @@ GridTilt is a research dashboard for tracking the financial and physical buildou
 
 Live: **[gridtilt.com](https://gridtilt.com)**
 
+![GridTilt dashboard](docs/screenshots/home_after_return.png)
+
 ---
 
 ## What it does
