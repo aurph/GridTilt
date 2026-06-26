@@ -1,5 +1,5 @@
 {
-  "lastRefreshed": "2026-06-25",
+  "lastRefreshed": "2026-06-26",
   "methodology": "Named AI training and inference superclusters compiled from public announcements (company press releases, Reuters, Tom's Hardware, Data Center Dynamics, SemiAnalysis, utility filings) plus cross-reference to GridTilt's own Power Map registry. Tracked, not exhaustive. Power in MW. 'estimated' lists the field names whose values are GridTilt estimates or announced forward targets not yet realized; sourced values are not listed there. gpuCount is null when the accelerator count is not disclosed; we do not invent one. linkedDeal references a deal id in interconnection-queue.json where a tracked nuclear-for-AI deal applies to the site.",
   "clusters": [
     {
@@ -1384,6 +1384,1336 @@
         "https://www.notateslaapp.com/news/2703/tesla-building-cortex-20-supercomputer-at-giga-texas-to-power-fsd"
       ],
       "notes": "Tesla's Cortex 2 expansion at Giga Texas: first ~250 MW phase live ~April 2026, full ~500 MW targeted mid-2026, ~100k additional H100/H200, Megapack-backed. Combined Giga Texas (Cortex 1+2) is cited near ~230k GPUs. GPU and current rated MW are estimates."
+    },
+    {
+      "id": "meta-lebanon-in",
+      "name": "Meta Lebanon Data Center (LEAP District)",
+      "operator": "Meta",
+      "status": "construction",
+      "location": {
+        "city": "Lebanon",
+        "state": "IN",
+        "lat": 40.0481,
+        "lng": -86.4692
+      },
+      "gridRegion": "MISO",
+      "gpuCount": null,
+      "chipType": "unknown",
+      "ratedPowerMW": 0,
+      "plannedPowerMW": 1000,
+      "energySource": "grid (matched 100% clean energy via PPAs); closed-loop liquid cooling",
+      "workload": "training",
+      "linkedDeal": null,
+      "onlineDate": "2028",
+      "estimated": [
+        "plannedPowerMW",
+        "onlineDate"
+      ],
+      "sources": [
+        "https://about.fb.com/news/2026/02/metas-new-data-center-lebanon-indiana-marks-milestone-ai-investment/",
+        "https://www.datacenterdynamics.com/en/news/meta-announces-1gw-data-center-campus-in-indiana/",
+        "https://indianacapitalchronicle.com/2026/02/11/details-on-long-expected-meta-data-center-campus-unveiled/"
+      ],
+      "notes": "Meta's second Indiana campus, broke ground Feb 11, 2026 in the LEAP Innovation/Research District ~30 mi NW of Indianapolis. ~$10B investment, ~4M sq ft across 13 buildings (10 data center structures) on 1,500 acres. AI-optimized, 1 GW capacity at full build-out, closed-loop liquid cooling. Operator states campus comes online between late 2027 and early 2028; onlineDate set to 2028 conservatively (estimated). plannedPowerMW is the disclosed 1 GW target."
+    },
+    {
+      "id": "meta-jeffersonville-in",
+      "name": "Meta Jeffersonville Data Center (River Ridge)",
+      "operator": "Meta",
+      "status": "construction",
+      "location": {
+        "city": "Jeffersonville",
+        "state": "IN",
+        "lat": 38.2776,
+        "lng": -85.7372
+      },
+      "gridRegion": "MISO",
+      "gpuCount": null,
+      "chipType": "unknown",
+      "ratedPowerMW": 0,
+      "plannedPowerMW": 400,
+      "energySource": "grid (100% renewable matched via PPAs)",
+      "workload": "mixed",
+      "linkedDeal": null,
+      "onlineDate": "2026",
+      "estimated": [
+        "plannedPowerMW",
+        "onlineDate"
+      ],
+      "sources": [
+        "https://www.datacenterdynamics.com/en/news/meta-to-develop-data-center-campus-in-jeffersonville-indiana/",
+        "https://www.insideindianabusiness.com/articles/meta-to-build-800m-data-center-add-100-jobs-at-river-ridge",
+        "https://www.datacentermap.com/usa/indiana/jeffersonville/meta-jeffersonville-data-center/"
+      ],
+      "notes": "Meta's first Indiana campus, announced Jan 2024, ~$800M, ~700,000 sq ft on a 619-acre site in River Ridge Commerce Center near Louisville. Under construction with planned 2026 operations; expansions through 2029. Renewable-matched, LEED Gold. Meta did not disclose MW; third-party tracker (datacentermap) lists ~407 MW, so plannedPowerMW set to ~400 (estimated)."
+    },
+    {
+      "id": "meta-kansas-city-mo",
+      "name": "Meta Kansas City Data Center (Northland)",
+      "operator": "Meta",
+      "status": "operational",
+      "location": {
+        "city": "Kansas City",
+        "state": "MO",
+        "lat": 39.2455,
+        "lng": -94.5732
+      },
+      "gridRegion": "SPP",
+      "gpuCount": null,
+      "chipType": "unknown",
+      "ratedPowerMW": 200,
+      "plannedPowerMW": 250,
+      "energySource": "grid (electricity matched 100% clean/renewable)",
+      "workload": "mixed",
+      "linkedDeal": null,
+      "onlineDate": "2025",
+      "estimated": [
+        "ratedPowerMW",
+        "plannedPowerMW"
+      ],
+      "sources": [
+        "https://about.fb.com/news/2025/08/metas-kansas-city-data-center/",
+        "https://www.datacenterdynamics.com/en/news/metas-latest-data-center-campus-goes-live-in-kansas-city-missouri/",
+        "https://www.kcur.org/housing-development-section/2025-08-23/meta-kansas-city-data-center-northland"
+      ],
+      "notes": "Live and serving traffic as of Aug 20, 2025; Meta's first Missouri data center. ~$1B investment, 1.4M+ sq ft across three data center buildings plus a warehouse in the Northland (near I-435/Hwy 169). LEED Gold, electricity matched 100% clean/renewable. Part of Meta's AI-optimized data center build path. MW not disclosed by operator; rated/planned are conservative GridTilt estimates."
+    },
+    {
+      "id": "meta-dekalb-il",
+      "name": "Meta DeKalb Data Center",
+      "operator": "Meta",
+      "status": "operational",
+      "location": {
+        "city": "DeKalb",
+        "state": "IL",
+        "lat": 41.9289,
+        "lng": -88.7507
+      },
+      "gridRegion": "PJM",
+      "gpuCount": null,
+      "chipType": "unknown",
+      "ratedPowerMW": 150,
+      "plannedPowerMW": 250,
+      "energySource": "grid (100% renewable matched via PPAs)",
+      "workload": "mixed",
+      "linkedDeal": null,
+      "onlineDate": "2024",
+      "estimated": [
+        "ratedPowerMW",
+        "plannedPowerMW"
+      ],
+      "sources": [
+        "https://www.datacenterfrontier.com/featured/article/11427420/metaverse-building-boom-meta-adds-3-data-centers-at-illinois-cloud-campus",
+        "https://www.datacenterdynamics.com/en/news/meta-launches-data-center-in-dekalb-illinois/",
+        "https://baxtel.com/data-center/meta-dekalb-il"
+      ],
+      "notes": "Meta DeKalb campus at 515 E Gurler Road; first building online 2022, additional buildings reached operational status Dec 2024. 2.3M+ sq ft, up to five data center buildings, >$1B invested, 100% renewable matched. Supports Meta's compute including AI workloads. Note: the specific NVIDIA H100 / MTIA chip claim could not be confirmed in cited sources, so chipType set to unknown and gpuCount null. MW figures are GridTilt estimates; operator did not publish site MW."
+    },
+    {
+      "id": "meta-fort-worth-tx",
+      "name": "Meta Fort Worth Data Center (AllianceTexas)",
+      "operator": "Meta",
+      "status": "operational",
+      "location": {
+        "city": "Fort Worth",
+        "state": "TX",
+        "lat": 32.9876,
+        "lng": -97.3186
+      },
+      "gridRegion": "ERCOT",
+      "gpuCount": null,
+      "chipType": "unknown",
+      "ratedPowerMW": 200,
+      "plannedPowerMW": 250,
+      "energySource": "grid (wind energy via PPAs)",
+      "workload": "mixed",
+      "linkedDeal": null,
+      "onlineDate": "2021",
+      "estimated": [
+        "ratedPowerMW",
+        "plannedPowerMW"
+      ],
+      "sources": [
+        "https://www.datacentermap.com/usa/texas/dallas/meta-fort-worth-data-center/",
+        "https://www.dpr.com/projects/facebook-fort-worth-data-center",
+        "https://fortworthreport.org/2025/09/14/fort-worths-growth-data-centers-drive-soaring-power-demand/"
+      ],
+      "notes": "Meta's existing $1B+ hyperscale campus in AllianceTexas, ~170+ acres, 2.5M+ sq ft across multiple buildings, drawing on wind energy; expanded repeatedly. Distinct from Meta's tracked El Paso and Temple TX sites. Supports Meta's core platforms and growing AI compute. Third-party tracker (datacentermap) lists ~200 MW; figures treated as GridTilt estimates since not officially disclosed."
+    },
+    {
+      "id": "meta-montgomery-al",
+      "name": "Meta Montgomery Data Center",
+      "operator": "Meta",
+      "status": "construction",
+      "location": {
+        "city": "Montgomery",
+        "state": "AL",
+        "lat": 32.3668,
+        "lng": -86.3
+      },
+      "gridRegion": "SERC",
+      "gpuCount": null,
+      "chipType": "unknown",
+      "ratedPowerMW": 0,
+      "plannedPowerMW": 200,
+      "energySource": "grid (100% renewable matched via PPAs)",
+      "workload": "training",
+      "linkedDeal": null,
+      "onlineDate": "2026",
+      "estimated": [
+        "plannedPowerMW",
+        "onlineDate"
+      ],
+      "sources": [
+        "https://alabamanewscenter.com/2025/09/23/meta-to-expand-montgomery-alabama-data-hub-pushing-total-investment-to-1-5-billion/",
+        "https://www.datacenterdynamics.com/en/news/meta-to-add-two-more-buildings-to-alabama-campus-in-montgomery/",
+        "https://governor.alabama.gov/newsroom/2024/05/governor-ivey-announces-meta-plans-to-build-800-million-next-generation-data-center-in-montgomery/"
+      ],
+      "notes": "Announced May 2024 (~$800M), expanded Sept 2025 to bring total Montgomery investment to $1.5B and campus to 1.3M+ sq ft (two more buildings). AI-optimized, off I-65 across from the Hyundai plant. Expected online end of 2026 (estimated). plannedPowerMW is a GridTilt estimate; MW not disclosed."
+    },
+    {
+      "id": "applied-digital-adair-county-ia",
+      "name": "Applied Digital Adair County",
+      "operator": "Applied Digital",
+      "status": "announced",
+      "location": {
+        "city": "Adair",
+        "state": "IA",
+        "lat": 41.5,
+        "lng": -94.64
+      },
+      "gridRegion": "MISO",
+      "gpuCount": null,
+      "chipType": "undisclosed",
+      "ratedPowerMW": 0,
+      "plannedPowerMW": 200,
+      "energySource": "grid (MISO / MidAmerican Energy; adjacent NextEra wind substation)",
+      "workload": "mixed",
+      "linkedDeal": null,
+      "onlineDate": "2027",
+      "estimated": [
+        "plannedPowerMW",
+        "onlineDate"
+      ],
+      "sources": [
+        "https://www.datacenterdynamics.com/en/news/applied-digital-faces-opposition-to-planned-data-center-in-adair-county-iowa/",
+        "https://www.datacentermap.com/usa/iowa/greenfield/applied-digital-adair/",
+        "https://www.crestonnews.com/adair-county-free-press/2024/04/03/data-center-planned-for-se-of-adair/"
+      ],
+      "notes": "Applied Digital's proposed ~200 MW data center southeast of Adair, Adair County, IA (~$1.5B, two ~300k sqft buildings adjacent to a NextEra wind substation; connects to MidAmerican Energy grid, MISO). Announced 2024, faced local zoning/setback opposition; still in planning/permitting. Pre-construction, ratedPowerMW=0. Workload changed training->mixed (operator has not disclosed a workload split). Distinct from tracked ND Applied Digital sites."
+    },
+    {
+      "id": "hut8-river-bend-la",
+      "name": "Hut 8 River Bend AI Data Center Campus",
+      "operator": "Hut 8",
+      "status": "construction",
+      "location": {
+        "city": "St. Francisville",
+        "state": "LA",
+        "lat": 30.7785,
+        "lng": -91.3776
+      },
+      "gridRegion": "MISO",
+      "gpuCount": null,
+      "chipType": "NVIDIA (Fluidstack AI cloud tenant; NVIDIA reference architecture)",
+      "ratedPowerMW": 0,
+      "plannedPowerMW": 330,
+      "energySource": "grid (Entergy Louisiana)",
+      "workload": "training",
+      "linkedDeal": null,
+      "onlineDate": "2027",
+      "estimated": [
+        "plannedPowerMW",
+        "onlineDate"
+      ],
+      "sources": [
+        "https://www.prnewswire.com/news-releases/hut-8-signs-15-year-245-mw-ai-data-center-lease-at-river-bend-campus-with-total-contract-value-of-7-0-billion-302644600.html",
+        "https://www.hut8.com/data-centers/river-bend",
+        "https://www.opportunitylouisiana.gov/news/hut-8-selects-southeast-louisiana-as-site-of-10-billion-artificial-intelligence-data-center",
+        "https://www.datacenterdynamics.com/en/news/hut-8-signs-245mw-capacity-deal-with-fluidstack-as-part-of-multi-gigawatt-partnership-with-anthropic/"
+      ],
+      "notes": "Greenfield AI campus in West Feliciana Parish near St. Francisville; 15-year $7.0B lease with Fluidstack (Anthropic-linked, Google-backstopped) for 245 MW IT load, with Entergy Louisiana supplying ~330 MW utility capacity (MISO). Construction underway, first ops targeted Q2 2027. ROFO for up to +1,000 MW future IT capacity. Crypto-miner Hut 8 pivoting to AI/HPC. ratedPowerMW=0 (construction, not yet live)."
+    },
+    {
+      "id": "hut8-beacon-point-tx",
+      "name": "Hut 8 Beacon Point AI Data Center Campus",
+      "operator": "Hut 8",
+      "status": "construction",
+      "location": {
+        "city": "Robstown",
+        "state": "TX",
+        "lat": 27.7903,
+        "lng": -97.6694
+      },
+      "gridRegion": "ERCOT",
+      "gpuCount": null,
+      "chipType": "NVIDIA GB-class (designed to NVIDIA DSX reference architecture)",
+      "ratedPowerMW": 0,
+      "plannedPowerMW": 1000,
+      "energySource": "grid (ERCOT)",
+      "workload": "mixed",
+      "linkedDeal": null,
+      "onlineDate": "2027",
+      "estimated": [
+        "plannedPowerMW",
+        "onlineDate"
+      ],
+      "sources": [
+        "https://www.prnewswire.com/news-releases/hut-8-commercializes-first-phase-of-1-gw-beacon-point-ai-data-center-campus-with-15-year-352-mw-it-lease-with-base-term-contract-value-of-9-8-billion-302763484.html",
+        "https://www.hut8.com/data-centers/beacon-point",
+        "https://www.datacenterdynamics.com/en/news/hut-8-signs-352mw-data-center-lease-in-texas-with-investment-grade-tenant/",
+        "https://www.kristv.com/news/local-news/in-your-neighborhood/nueces-county/hut-8-signs-9-8-billion-lease-for-ai-data-center-campus-in-nueces-county"
+      ],
+      "notes": "525-acre greenfield site in Nueces County near Corpus Christi (Robstown, FM 1694, adjacent to Lon C. Hill power station). 1,000 MW interconnection secured. First phase: 15-year $9.8B lease (up to ~$25B with options) for 352 MW IT to an investment-grade tenant, built to NVIDIA DSX spec. Initial energization Q1 2027, first data hall Q3 2027. Jacobs is EPCM. Part of Hut 8's multi-GW pipeline. ratedPowerMW=0 (construction)."
+    },
+    {
+      "id": "riot-corsicana-ai-tx",
+      "name": "Riot Platforms Corsicana AI/HPC Campus",
+      "operator": "Riot Platforms",
+      "status": "construction",
+      "location": {
+        "city": "Corsicana",
+        "state": "TX",
+        "lat": 32.0954,
+        "lng": -96.4688
+      },
+      "gridRegion": "ERCOT",
+      "gpuCount": null,
+      "chipType": "undisclosed",
+      "ratedPowerMW": 0,
+      "plannedPowerMW": 600,
+      "energySource": "grid (ERCOT)",
+      "workload": "mixed",
+      "linkedDeal": null,
+      "onlineDate": "2028",
+      "estimated": [
+        "plannedPowerMW",
+        "onlineDate"
+      ],
+      "sources": [
+        "https://www.riotplatforms.com/riot-platforms-launches-formal-evaluation-of-potential-ai-hpc-uses-for-remaining-600-mw-of-power-capacity-at-corsicana-facility/",
+        "https://www.datacenterdynamics.com/en/news/riot-platforms-acquires-additional-238-acres-at-corsicana-texas-campus/",
+        "https://www.datacenterdynamics.com/en/news/riot-platforms-files-to-add-building-to-cryptomine-and-data-center-campus-in-corsicana-texas/",
+        "https://mlq.ai/news/riot-platforms-files-400m-permit-for-new-data-center-building-at-corsicana-texas-campus/"
+      ],
+      "notes": "858-acre campus in Navarro County, up to 1 GW ERCOT-approved (400 MW currently bitcoin). Jan 2025 Riot halted Phase II bitcoin expansion and engaged Altman Solon to evaluate AI/HPC use of the remaining ~600 MW; SEC filing designates an initial 600 MW for AI/HPC. Has since filed a ~$400M TDLR permit ('Project Ditto', ~335k sqft, construction from Apr 2026, completion targeted 2028) and expanded land +238 acres. No named AI tenant yet and exact AI-vs-bitcoin use of the new building is not fully specified; conversion not guaranteed. chipType cleared (none disclosed). onlineDate set to 2028 per permit completion target."
+    },
+    {
+      "id": "riot-rockdale-amd-tx",
+      "name": "Riot Platforms Rockdale AI Data Center (AMD)",
+      "operator": "Riot Platforms",
+      "status": "construction",
+      "location": {
+        "city": "Rockdale",
+        "state": "TX",
+        "lat": 30.6552,
+        "lng": -97.0011
+      },
+      "gridRegion": "ERCOT",
+      "gpuCount": null,
+      "chipType": "AMD Instinct (AMD is the lease tenant)",
+      "ratedPowerMW": 0,
+      "plannedPowerMW": 200,
+      "energySource": "grid (ERCOT)",
+      "workload": "mixed",
+      "linkedDeal": null,
+      "onlineDate": "2026",
+      "estimated": [
+        "plannedPowerMW",
+        "onlineDate"
+      ],
+      "sources": [
+        "https://www.riotplatforms.com/riot-announces-fee-simple-acquisition-of-land-and-first-data-center-lease-with-amd-at-the-rockdale-site/",
+        "https://www.datacenterdynamics.com/en/news/amd-signs-additional-25mw-data-center-lease-with-riot-in-texas/",
+        "https://www.foley.com/news/2026/02/foley-represents-riot-platforms-on-rockdale-land-acquisition-and-landmark-1-billion-data-center-lease-with-amd/",
+        "https://www.globenewswire.com/news-release/2026/01/16/3220348/0/en/Riot-Announces-Fee-Simple-Acquisition-of-Land-and-First-Data-Center-Lease-with-AMD-at-the-Rockdale-Site.html"
+      ],
+      "notes": "Distinct from the Stargate/Milam County (OpenAI/Oracle) roster entry: this is Riot's own Rockdale bitcoin-mining site (Milam County, ~700 MW interconnection) being converted to AI. Jan 2026 Riot bought 200 acres ($96M) and signed a 10-yr Data Center Lease with AMD: initial 25 MW (phased Jan-May 2026), AMD exercised +25 MW (=50 MW), with expansion option + ROFR to 200 MW total (~$1B revenue if all extensions exercised). Building retrofit underway; initial phases may be energizing in 2026. First named AI-tenant deal for Riot. ratedPowerMW=0 (campus build-out in progress)."
+    },
+    {
+      "id": "cleanspark-austin-county-tx",
+      "name": "CleanSpark Austin County AI Data Center Campus",
+      "operator": "CleanSpark",
+      "status": "construction",
+      "location": {
+        "city": "Bellville",
+        "state": "TX",
+        "lat": 29.9494,
+        "lng": -96.2575
+      },
+      "gridRegion": "ERCOT",
+      "gpuCount": null,
+      "chipType": "undisclosed",
+      "ratedPowerMW": 0,
+      "plannedPowerMW": 285,
+      "energySource": "grid (ERCOT); natural gas behind-the-meter under evaluation",
+      "workload": "mixed",
+      "linkedDeal": null,
+      "onlineDate": "2027",
+      "estimated": [
+        "plannedPowerMW",
+        "onlineDate"
+      ],
+      "sources": [
+        "https://www.prnewswire.com/news-releases/cleanspark-enters-texas-market-with-land-and-large-scale-power-acquisition-to-rapidly-deploy-an-ai-data-center-in-greater-houston-302598051.html",
+        "https://www.datacenterdynamics.com/en/news/cleanspark-expands-into-ai-data-center-development-with-270-acre-acquisition-outside-houston-texas/",
+        "https://investors.cleanspark.com/news/news-details/2025/CleanSpark-Enters-Texas-Market-with-Land-and-Large-Scale-Power-Acquisition-to-Rapidly-Deploy-an-AI-Data-Center-in-Greater-Houston/default.aspx"
+      ],
+      "notes": "Oct 2025: CleanSpark (bitcoin miner) acquired rights to ~271 acres in Austin County, TX (between Houston and Austin; Bellville/Austin County area) and signed long-term power agreements totaling 285 MW for a next-gen AI/HPC data center campus on a regional fiber backbone. Substation construction underway and long-lead items secured; energization of 200+ MW expected H1 2027. First major AI/HPC campus for CleanSpark. location.city corrected from 'Austin County' (a county, not a city) to Bellville (Austin County seat) with adjusted coords. chipType cleared (none disclosed). ratedPowerMW=0 (construction)."
+    },
+    {
+      "id": "soluna-project-kati-tx",
+      "name": "Soluna Project Kati (Kati 2 AI/HPC)",
+      "operator": "Soluna",
+      "status": "construction",
+      "location": {
+        "city": "Willacy County",
+        "state": "TX",
+        "lat": 26.4,
+        "lng": -97.7
+      },
+      "gridRegion": "ERCOT",
+      "gpuCount": null,
+      "chipType": "unknown",
+      "ratedPowerMW": 0,
+      "plannedPowerMW": 166,
+      "energySource": "wind (co-located with EDF Renewables/Masdar wind)",
+      "workload": "mixed",
+      "linkedDeal": null,
+      "onlineDate": "2026",
+      "estimated": [
+        "plannedPowerMW",
+        "onlineDate"
+      ],
+      "sources": [
+        "https://www.solunacomputing.com/news/project-kati-groundbreaking/",
+        "https://www.powermag.com/soluna-breaks-ground-on-166-mw-texas-wind-powered-data-center-for-crypto-and-ai/",
+        "https://www.datacenterknowledge.com/data-center-construction/soluna-expands-texas-campus-with-100-mw-ai-ready-data-center",
+        "https://www.datacenterdynamics.com/en/news/soluna-partners-with-metrobloks-for-texas-campus/"
+      ],
+      "notes": "Soluna's largest site; broke ground Sept 18, 2025 in Willacy County (Rio Grande Valley), 166 MW two-phase, wind-supported (EDF Renewables/Masdar/Spring Lane). Kati 1 (83 MW) is bitcoin hosting (48 MW for Galaxy + 35 MW Soluna), coming online early 2026; Kati 2 (83 MW) is the AI/HPC phase, co-developed with Metrobloks (Jan 2026). plannedPowerMW=166 is the full campus build-out; the AI/HPC slice is ~83-100 MW. Dual-purpose crypto-to-AI campus. Power figure is the DC's contracted/co-located capacity, not wind-farm nameplate."
+    },
+    {
+      "id": "soluna-project-dorothy-3-tx",
+      "name": "Soluna Project Dorothy 3 AI/HPC Campus",
+      "operator": "Soluna",
+      "status": "announced",
+      "location": {
+        "city": "Silverton",
+        "state": "TX",
+        "lat": 34.4726,
+        "lng": -101.3068
+      },
+      "gridRegion": "ERCOT",
+      "gpuCount": null,
+      "chipType": "unknown",
+      "ratedPowerMW": 0,
+      "plannedPowerMW": 300,
+      "energySource": "wind (behind-the-meter; Briscoe Wind Farm ~150 MW)",
+      "workload": "mixed",
+      "linkedDeal": null,
+      "onlineDate": "2027",
+      "estimated": [
+        "plannedPowerMW",
+        "onlineDate"
+      ],
+      "sources": [
+        "https://www.solunacomputing.com/projects/",
+        "https://www.datacenterdynamics.com/en/news/soluna-acquires-full-ownership-of-project-dorothy-1a-site-in-texas/",
+        "https://www.businesswire.com/news/home/20260416878589/en/Soluna-Acquires-Full-Ownership-of-Project-Dorothy-1A-Accelerating-Vertical-Integration-and-AI-Campus-Development",
+        "https://www.stocktitan.net/news/SLNH/soluna-announces-monthly-business-g2s5rq2sb0no.html"
+      ],
+      "notes": "Planned 300+ MW renewable-powered AI/HPC campus on 300 newly acquired acres adjacent to Soluna's existing Dorothy 1/2 wind-powered facilities and Briscoe Wind Farm near Silverton (Briscoe County), West Texas. In 2026 Soluna consolidated full ownership of Dorothy 1A/1B to clear the path for AI/HPC conversion; definitive land purchase agreement signed and formal commercial negotiations started with at least one prospective tenant. Pre-construction. plannedPowerMW reflects the DC target, not wind nameplate."
+    },
+    {
+      "id": "bitfarms-panther-creek-pa",
+      "name": "Bitfarms/Keel Panther Creek HPC/AI Campus",
+      "operator": "Keel Infrastructure",
+      "status": "construction",
+      "location": {
+        "city": "Nesquehoning",
+        "state": "PA",
+        "lat": 40.8645,
+        "lng": -75.8138
+      },
+      "gridRegion": "PJM",
+      "gpuCount": null,
+      "chipType": "unknown",
+      "ratedPowerMW": 0,
+      "plannedPowerMW": 350,
+      "energySource": "grid (PJM); former Panther Creek waste-coal power plant site",
+      "workload": "mixed",
+      "linkedDeal": null,
+      "onlineDate": "2027",
+      "estimated": [
+        "plannedPowerMW",
+        "onlineDate"
+      ],
+      "sources": [
+        "https://investor.bitfarms.com/news-releases/news-release-details/bitfarms-announces-partnership-t5-data-centers-advance-hpcai",
+        "https://t5datacenters.com/resources/bitfarms-announces-partnership-with-t5-data-centers-to-advance-hpc-ai-development-at-panther-creek-campus/",
+        "https://investor.bitfarms.com/news-releases/news-release-details/bitfarms-converts-macquarie-debt-facility-300m-project-financing",
+        "https://www.tnonline.com/20260224/nesquehoning-planners-ok-bitfarms-complex/"
+      ],
+      "notes": "Carbon County, PA campus (former Panther Creek waste-coal/cogen plant acquired by Bitfarms, now rebranded Keel Infrastructure). Aug 2025: partnership with T5 Data Centers for a 350 MW HPC/AI campus (four 315k sqft buildings on 90 acres + secondary phase); Oct 2025: $300M Macquarie project financing + $50M draw. Nesquehoning planning commission gave conditional/preliminary approval (Feb-May 2026); construction targeted to start mid-2026, phase 1 by year-end 2026. Early-stage construction, crypto-miner-to-AI conversion. Status borderline construction/announced."
+    },
+    {
+      "id": "keel-sharon-pa",
+      "name": "Keel Infrastructure Sharon AI Data Center",
+      "operator": "Keel Infrastructure",
+      "status": "construction",
+      "location": {
+        "city": "Sharon",
+        "state": "PA",
+        "lat": 41.2334,
+        "lng": -80.4937
+      },
+      "gridRegion": "PJM",
+      "gpuCount": null,
+      "chipType": "NVIDIA Vera Rubin (planned)",
+      "ratedPowerMW": 30,
+      "plannedPowerMW": 110,
+      "energySource": "grid (PJM); former Westinghouse Electric plant site",
+      "workload": "mixed",
+      "linkedDeal": null,
+      "onlineDate": "2027",
+      "estimated": [
+        "ratedPowerMW",
+        "plannedPowerMW",
+        "onlineDate"
+      ],
+      "sources": [
+        "https://www.datacenterdynamics.com/en/news/zoning-board-of-sharon-pa-approves-planned-expansion-of-keel-infrastructures-existing-data-center-development/",
+        "https://www.sahmcapital.com/news/content/does-keel-infrastructures-keel-sharon-ai-data-center-plan-reveal-a-durable-postcrypto-strategy-2026-05-03",
+        "https://www.datacentermap.com/usa/pennsylvania/pittsburgh/bitfarms-sharon/"
+      ],
+      "notes": "Mercer County, PA. Keel (formerly Bitfarms) operates a ~30 MW data center on an 18-acre former Westinghouse Electric site (Clark St, acquired Oct 2025) and in May 2026 received Sharon zoning-board approval to expand to a 110 MW AI data center, with two 80 MW substations targeted for end-2026; plans to deploy NVIDIA Vera Rubin. Conditions include 70 dB noise cap and no river water; still needs county/city sign-off. Distinct from Panther Creek. ratedPowerMW=30 is the existing operating data center; 110 MW is the announced AI build-out."
+    },
+    {
+      "id": "bitdeer-knoxville-tn",
+      "name": "Bitdeer Knoxville AI Data Center Conversion",
+      "operator": "Bitdeer",
+      "status": "construction",
+      "location": {
+        "city": "Knoxville",
+        "state": "TN",
+        "lat": 35.9606,
+        "lng": -83.9207
+      },
+      "gridRegion": "SERC",
+      "gpuCount": null,
+      "chipType": "unknown",
+      "ratedPowerMW": 0,
+      "plannedPowerMW": 35,
+      "energySource": "grid (TVA / Knoxville Utilities Board)",
+      "workload": "mixed",
+      "linkedDeal": null,
+      "onlineDate": "2026",
+      "estimated": [
+        "plannedPowerMW",
+        "onlineDate"
+      ],
+      "sources": [
+        "https://ir.bitdeer.com/news-releases/news-release-details/bitdeer-announces-november-2025-production-and-operations-update",
+        "https://www.sec.gov/Archives/edgar/data/1899123/000121390026028021/ea028179501ex99-1.htm",
+        "https://www.datacentermap.com/usa/tennessee/knoxville/bitdeer-knoxville-tennessee/"
+      ],
+      "notes": "Bitdeer's ~86 MW Knoxville bitcoin site (Carpenter Creek LLC, 5101 S. National Dr) is being partially converted: 35 MW of capacity into an AI data center, completion targeted early Q4 2026. AI design docs/building permit submitted, long-lead equipment ordered, mining rigs being decommissioned. Crypto-to-AI conversion within an existing campus. plannedPowerMW=35 reflects the AI slice, not the full 86 MW site."
+    },
+    {
+      "id": "bitdeer-shalersville-oh",
+      "name": "Bitdeer Shalersville (Turnpike Commerce Center) Data Center Campus",
+      "operator": "Bitdeer",
+      "status": "announced",
+      "location": {
+        "city": "Shalersville Township",
+        "state": "OH",
+        "lat": 41.2289,
+        "lng": -81.2076
+      },
+      "gridRegion": "PJM",
+      "gpuCount": null,
+      "chipType": "unknown",
+      "ratedPowerMW": 0,
+      "plannedPowerMW": 750,
+      "energySource": "grid (PJM)",
+      "workload": "mixed",
+      "linkedDeal": null,
+      "onlineDate": "2027",
+      "estimated": [
+        "plannedPowerMW",
+        "onlineDate"
+      ],
+      "sources": [
+        "https://www.datacenterdynamics.com/en/news/bitdeer-looks-to-develop-750mw-data-center-campus-in-ohio/",
+        "https://www.news5cleveland.com/news/local-news/local-developer-global-tech-firm-plan-major-data-center-project-in-portage-county",
+        "https://theenergymag.com/news/2026-06-17/bitdeer-ohio-ai-pushback"
+      ],
+      "notes": "Portage County, OH: Bitdeer (with developer Geis Cos.) under contract for ~257 acres at the Turnpike Commerce Center, Shalersville Township, to build what would be its largest US facility - 15 buildings, initial 150 MW scaling to 750 MW, ~5-year build, $300M+ ex-compute. Presented publicly June 16, 2026; facing local pushback (power/water/noise) and a township data-center moratorium running to ~early November. Not yet approved - announced/pre-approval stage."
+    },
+    {
+      "id": "northern-data-ardent-pittsburgh-pa",
+      "name": "Northern Data Ardent Pittsburgh AI/HPC Data Center",
+      "operator": "Northern Data",
+      "status": "operational",
+      "location": {
+        "city": "McKees Rocks",
+        "state": "PA",
+        "lat": 40.4673,
+        "lng": -80.0656
+      },
+      "gridRegion": "PJM",
+      "gpuCount": null,
+      "chipType": "NVIDIA (GPU/high-density AI compute; D2C and RDHx liquid cooling)",
+      "ratedPowerMW": 5,
+      "plannedPowerMW": 20,
+      "energySource": "grid (PJM)",
+      "workload": "mixed",
+      "linkedDeal": null,
+      "onlineDate": "2025",
+      "estimated": [
+        "ratedPowerMW",
+        "plannedPowerMW"
+      ],
+      "sources": [
+        "https://insidehpc.com/2025/06/northern-data-group-announces-20mw-hpc-and-ai-data-center-in-pittsburgh/",
+        "https://www.datacenterdynamics.com/en/news/northern-data-launches-data-center-in-pittsburgh-pennsylvania/",
+        "https://www.datacentermap.com/usa/pennsylvania/pittsburgh/ardent-pittsburgh/"
+      ],
+      "notes": "Northern Data (Northern Bitcoin/Whinstone crypto roots) opened its first North American Ardent AI/HPC data center in the Pittsburgh metro (McKees Rocks, 615 McMichael Rd; 41k sqft / 7.5 acres), June 4, 2025. ~20 MW total via phased build, ~5 MW operational at launch scaling to 20 MW by H2 2025; 135 kW+ rack densities, direct-to-chip + rear-door-HX liquid cooling, target PUE ~1.15. ratedPowerMW=5 reflects live capacity at opening (estimated, conservative); 20 MW is the planned full build. Northern Data being acquired by Rumble."
+    },
+    {
+      "id": "aligned-conesville-oh",
+      "name": "Aligned Conesville AI Campus",
+      "operator": "Aligned Data Centers",
+      "status": "construction",
+      "location": {
+        "city": "Conesville",
+        "state": "OH",
+        "lat": 40.1851,
+        "lng": -81.8915
+      },
+      "gridRegion": "PJM",
+      "gpuCount": null,
+      "chipType": "undisclosed",
+      "ratedPowerMW": 0,
+      "plannedPowerMW": 250,
+      "energySource": "grid (former AEP Conesville coal plant brownfield; AEP Ohio)",
+      "workload": "training",
+      "linkedDeal": null,
+      "onlineDate": "2026-06-30",
+      "estimated": [
+        "plannedPowerMW",
+        "onlineDate"
+      ],
+      "sources": [
+        "https://aligneddc.com/blog/aligned-data-centers-expands-in-ohio-with-new-mega-scale-ai-campus/",
+        "https://www.globenewswire.com/news-release/2025/07/24/3121182/0/en/Aligned-Data-Centers-Expands-in-Ohio-with-New-Mega-Scale-AI-Campus.html",
+        "https://convergedigest.com/aligned-data-centers-to-build-mega-scale-ai-campus-on-former-power-plant-site-in-ohio/"
+      ],
+      "notes": "Announced July 24, 2025. Multi-building mega-scale AI campus on a 197-acre brownfield parcel inside Conesville Industrial Park (Coshocton County), adjacent to the former AEP Conesville 2GW coal power plant (decommissioned 2020). Planned up to four buildings; Aligned's third Ohio campus. A foundational customer is secured for the first data center; initial capacity targeted mid-2026. Operator did not disclose total MW; plannedPowerMW ~250MW is a GridTilt order-of-magnitude estimate for a multi-building Aligned campus. Verified via search June 2026."
+    },
+    {
+      "id": "vantage-nv1-storey-county",
+      "name": "Vantage NV1 Nevada AI Campus",
+      "operator": "Vantage Data Centers",
+      "status": "construction",
+      "location": {
+        "city": "Storey County (Reno/TRIC)",
+        "state": "NV",
+        "lat": 39.5349,
+        "lng": -119.4324
+      },
+      "gridRegion": "WECC",
+      "gpuCount": null,
+      "chipType": "undisclosed",
+      "ratedPowerMW": 0,
+      "plannedPowerMW": 224,
+      "energySource": "grid (NV Energy)",
+      "workload": "training",
+      "linkedDeal": null,
+      "onlineDate": "2026-06-30",
+      "estimated": [
+        "onlineDate"
+      ],
+      "sources": [
+        "https://vantage-dc.com/news/vantage-data-centers-invests-3-billion-to-deliver-ai-campus-in-growing-nevada-market/",
+        "https://www.datacenterfrontier.com/site-selection/article/55305086/nv1-and-the-nevada-hyperscale-boom-vantage-data-centers-bets-3b-on-the-ai-future",
+        "https://www.datacenterdynamics.com/en/news/vantage-announces-224mw-data-center-campus-in-reno-nevada/"
+      ],
+      "notes": "Announced July 15, 2025. ~$3B, 224MW AI campus in Storey County (Tahoe-Reno Industrial Center, outside Reno) on ~137 acres; four multi-story data centers, >1M sq ft. Vantage's first Nevada site and eighth North American market. Engineered for AI/high-density (360-720 W/sq ft), supports air-cooled and liquid-cooled GPU loads. First two buildings fully leased; first building scheduled to open Q2 2026. 224MW is the operator-disclosed campus figure. Verified via search June 2026."
+    },
+    {
+      "id": "aligned-caprock-hale-county-tx",
+      "name": "Aligned Project Caprock",
+      "operator": "Aligned Data Centers",
+      "status": "construction",
+      "location": {
+        "city": "Abernathy (Hale County)",
+        "state": "TX",
+        "lat": 33.8351,
+        "lng": -101.8438
+      },
+      "gridRegion": "SPP",
+      "gpuCount": null,
+      "chipType": "undisclosed",
+      "ratedPowerMW": 0,
+      "plannedPowerMW": 540,
+      "energySource": "grid (Xcel Energy / Southwestern Public Service)",
+      "workload": "training",
+      "linkedDeal": null,
+      "onlineDate": "2027-03-31",
+      "estimated": [
+        "onlineDate"
+      ],
+      "sources": [
+        "https://aligneddc.com/press-release/aligned-breaks-ground-on-project-caprock/",
+        "https://www.datacenterdynamics.com/en/news/aligned-breaks-ground-on-540mw-data-center-campus-in-texas/",
+        "https://www.globenewswire.com/news-release/2026/04/09/3271435/0/en/Aligned-Data-Centers-Breaks-Ground-on-Project-Caprock-a-Sustainable-540-MW-Next-Generation-Data-Center-Campus-in-Northwest-Texas.html"
+      ],
+      "notes": "Broke ground April 9, 2026. 540MW, 313-acre next-generation campus in Hale County just outside Abernathy, northwest Texas; 1.65M sq ft across six facilities; DeltaFlow closed-loop liquid cooling for AI/hyperscale workloads. First building (LBB-01) targeted Q1 2027. Xcel Energy (SPS) is utility partner; in SPP footprint, separate from ERCOT. ~$5B regional impact. 540MW is operator-disclosed. Verified via search June 2026."
+    },
+    {
+      "id": "compass-meridian-ms",
+      "name": "Compass Meridian Campus",
+      "operator": "Compass Datacenters",
+      "status": "construction",
+      "location": {
+        "city": "Meridian (Lauderdale County)",
+        "state": "MS",
+        "lat": 32.3643,
+        "lng": -88.7037
+      },
+      "gridRegion": "SERC",
+      "gpuCount": null,
+      "chipType": "undisclosed",
+      "ratedPowerMW": 0,
+      "plannedPowerMW": 500,
+      "energySource": "grid (Mississippi Power)",
+      "workload": "mixed",
+      "linkedDeal": null,
+      "onlineDate": "2027-12-31",
+      "estimated": [
+        "onlineDate"
+      ],
+      "sources": [
+        "https://www.datacenterdynamics.com/en/news/compass-datacenters-breaks-ground-on-10bn-campus-in-meridian-mississippi/",
+        "https://www.compassdatacenters.com/news/compass-10b-investment-lauderdale-county-mississippi/",
+        "https://www.datacentermap.com/usa/mississippi/meridian/compass-meridian-campus/"
+      ],
+      "notes": "Announced Jan 2025; $10B hyperscale campus in Meridian, Lauderdale County (I-20/59 Industrial Park); eight data centers (~40MW IT each, ~320MW total IT) of ~250,000 sq ft each, built over ~8 years. Mississippi Power to supply ~500MW total grid power to the campus (plannedPowerMW reflects this disclosed power-supply figure, which exceeds the 320MW IT load). Customer not disclosed; built for hyperscale/AI demand. Distinct from AWS Canton MS. Verified via search June 2026."
+    },
+    {
+      "id": "powerhouse-95-spotsylvania-va",
+      "name": "PowerHouse 95 North Campus",
+      "operator": "PowerHouse Data Centers",
+      "status": "construction",
+      "location": {
+        "city": "Spotsylvania County",
+        "state": "VA",
+        "lat": 38.1957,
+        "lng": -77.5916
+      },
+      "gridRegion": "PJM",
+      "gpuCount": null,
+      "chipType": "undisclosed",
+      "ratedPowerMW": 0,
+      "plannedPowerMW": 800,
+      "energySource": "grid (Dominion Energy / PJM)",
+      "workload": "mixed",
+      "linkedDeal": null,
+      "onlineDate": "2025-10-31",
+      "estimated": [
+        "onlineDate"
+      ],
+      "sources": [
+        "https://www.powerhousedata.com/news/powerhouse-breaks-ground-on-800mw-data-center-campus-in-spotsylvania-county-virginia",
+        "https://www.datacenterdynamics.com/en/news/powerhouse-breaks-ground-on-800mw-data-center-campus-in-spotsylvania-county-virginia/",
+        "https://www.datacenterfrontier.com/site-selection/article/55263723/lets-go-build-some-data-centers-powerhouse-drives-hyperscale-and-ai-infrastructure-across-north-america"
+      ],
+      "notes": "PowerHouse 95 North, Spotsylvania County VA (145 acres purchased Jan 2024). Up to 800MW across three 300MW substations; up to eight three-story buildings totaling 3.5M sq ft. First 300MW substation under development, providing ~150MW by Oct 2025. Serves hyperscale/AI demand in Northern Virginia. Part of PowerHouse's >6GW pipeline. 800MW is operator-disclosed. Verified via search June 2026."
+    },
+    {
+      "id": "powerhouse-provident-ellis-county-tx",
+      "name": "PowerHouse-Provident DFW Hyperscale Campus",
+      "operator": "PowerHouse Data Centers",
+      "status": "construction",
+      "location": {
+        "city": "Grand Prairie (Ellis County)",
+        "state": "TX",
+        "lat": 32.5793,
+        "lng": -96.9978
+      },
+      "gridRegion": "ERCOT",
+      "gpuCount": null,
+      "chipType": "undisclosed",
+      "ratedPowerMW": 0,
+      "plannedPowerMW": 1800,
+      "energySource": "grid (ERCOT; on-site 1.8GW switchyard)",
+      "workload": "mixed",
+      "linkedDeal": null,
+      "onlineDate": "2026-05-31",
+      "estimated": [
+        "plannedPowerMW",
+        "onlineDate"
+      ],
+      "sources": [
+        "https://www.prnewswire.com/news-releases/powerhouse-and-provident-rewrite-the-data-center-playbook-with-new-texas-hyperscale-campus-302384924.html",
+        "https://www.datacenterdynamics.com/en/news/powerhouse-and-provident-to-develop-18gw-campus-in-dfw-texas/",
+        "https://www.providentdatacenters.net/news/powerhouse-and-provident-rewrite-the-data-center-playbook-with-new-texas-hyperscale-campus"
+      ],
+      "notes": "JV announced Feb 25, 2025. 768-acre DFW hyperscale campus just outside Grand Prairie in northern Ellis County, between Dallas and Fort Worth. On-site 1.8GW switchyard; first 500MW tranche approved through ERCOT; 24 buildings across three phases. First building slated to energize May 2026. plannedPowerMW=1800 reflects the disclosed 1.8GW switchyard capacity (a proxy for full build-out; total DC load not separately disclosed), flagged estimated. Replaced an invalid second source (datacenterknowledge hub did not mention this project) with the DCD article. Verified via search June 2026."
+    },
+    {
+      "id": "prime-phx01-avondale-az",
+      "name": "Prime PHX01 Avondale Campus",
+      "operator": "Prime Data Centers",
+      "status": "construction",
+      "location": {
+        "city": "Avondale",
+        "state": "AZ",
+        "lat": 33.4356,
+        "lng": -112.3496
+      },
+      "gridRegion": "WECC",
+      "gpuCount": null,
+      "chipType": "undisclosed",
+      "ratedPowerMW": 0,
+      "plannedPowerMW": 240,
+      "energySource": "grid (APS)",
+      "workload": "training",
+      "linkedDeal": null,
+      "onlineDate": "2027-06-30",
+      "estimated": [
+        "onlineDate"
+      ],
+      "sources": [
+        "https://www.businesswire.com/news/home/20260521146232/en/Prime-Data-Centers-Breaks-Ground-on-Three-Buildings-at-its-240MW-Campus-in-Phoenix-Advancing-$3B-Investment-in-Avondale",
+        "https://primedatacenters.com/news/prime-data-centers-breaks-ground-on-three-buildings-at-its-240mw-phoenix-campus-advancing-3billion-dollar-investment-in-avondale/",
+        "https://convergedigest.com/prime-data-centers-breaks-ground-on-240mw-ai-campus-in-phoenix/"
+      ],
+      "notes": "Broke ground May 21, 2026 on first three buildings (~48MW/267,000 sq ft each) of PHX01, a five-building, 240MW IT, ~1.3M sq ft, 66.5-acre AI campus in Avondale (Greater Phoenix); $3B investment. All three initial buildings pre-leased to a single unnamed leading hyperscaler (~144MW). AI/HPC high-density design with closed-loop zero-water cooling. Verified via BusinessWire and Prime's own newsroom."
+    },
+    {
+      "id": "tract-buckeye-az",
+      "name": "Tract Buckeye Data Center Park",
+      "operator": "Tract",
+      "status": "announced",
+      "location": {
+        "city": "Buckeye (Maricopa County)",
+        "state": "AZ",
+        "lat": 33.3703,
+        "lng": -112.5838
+      },
+      "gridRegion": "WECC",
+      "gpuCount": null,
+      "chipType": "undisclosed",
+      "ratedPowerMW": 0,
+      "plannedPowerMW": 1800,
+      "energySource": "grid (APS; new power infrastructure in planning)",
+      "workload": "mixed",
+      "linkedDeal": null,
+      "onlineDate": "2027-12-31",
+      "estimated": [
+        "plannedPowerMW",
+        "onlineDate"
+      ],
+      "sources": [
+        "https://www.datacenterdynamics.com/en/news/tract-announces-18gw-data-center-park-in-phoenix-arizona/",
+        "https://www.tract.com/news/tract-closes-acquisition-of-2069-acres-in-buckeye-arizona/",
+        "https://realestatedaily-news.com/tract-announces-20b-gigawatt-scale-data-center-park-to-be-built-in-buckeye-az/"
+      ],
+      "notes": "Tract closed on ~2,069 acres in Buckeye (Maricopa County) for $136M for a gigawatt-scale, master-planned data center park; ~$20B, up to ~20M sq ft across as many as 40 data centers, with utility (APS) work to support up to 1.8GW. Named developer with site secured and power in planning; tenants not yet named, so treated as announced. 15-18 year horizon. plannedPowerMW = announced 1.8GW utility-support target (estimated)."
+    },
+    {
+      "id": "switch-citadel-tahoe-reno-nv",
+      "name": "Switch Citadel Campus (Tahoe Reno)",
+      "operator": "Switch",
+      "status": "operational",
+      "location": {
+        "city": "Storey County (Tahoe-Reno/Sparks)",
+        "state": "NV",
+        "lat": 39.5505,
+        "lng": -119.4324
+      },
+      "gridRegion": "WECC",
+      "gpuCount": null,
+      "chipType": "undisclosed",
+      "ratedPowerMW": 130,
+      "plannedPowerMW": 650,
+      "energySource": "100% renewable (Switch Citadel; NV Energy)",
+      "workload": "mixed",
+      "linkedDeal": null,
+      "onlineDate": "2017-01-01",
+      "estimated": [
+        "ratedPowerMW",
+        "plannedPowerMW"
+      ],
+      "sources": [
+        "https://www.switch.com/tahoe-reno/",
+        "https://baxtel.com/data-center/switch-tahoe-reno-the-citadel-campus",
+        "https://www.switch.com/switch-tahoe-reno-data-center-now-open/"
+      ],
+      "notes": "Operational Switch flagship colo campus in the Tahoe-Reno Industrial Center (Storey County, near Sparks/Reno), opened 2017; ~1,000-2,000 acres, master-planned to 7.2M sq ft and up to ~650MW. Tahoe Reno 1 supports up to ~130MW (used as conservative operational ratedPowerMW, estimated). AI-positioned via Switch's EVO AI Factory / NVIDIA Omniverse DSX architecture for high-density GPU racks; TR2/TR3 under construction. Medium confidence as an AI-buildout entry since it is an existing colo campus being upgraded for AI; ratedPowerMW and full plannedPowerMW are estimates."
+    },
+    {
+      "id": "sailfish-comanche-circle-tolar",
+      "name": "Sailfish Comanche Circle",
+      "operator": "Sailfish Digital Ventures",
+      "status": "announced",
+      "location": {
+        "city": "Tolar",
+        "state": "TX",
+        "lat": 32.394,
+        "lng": -97.911
+      },
+      "gridRegion": "ERCOT",
+      "gpuCount": null,
+      "chipType": "undisclosed",
+      "ratedPowerMW": 0,
+      "plannedPowerMW": 5000,
+      "energySource": "behind-the-meter natural gas, with reserved land for SMR and solar",
+      "workload": "mixed",
+      "linkedDeal": null,
+      "onlineDate": "2027",
+      "estimated": [
+        "plannedPowerMW",
+        "onlineDate"
+      ],
+      "sources": [
+        "https://www.datacenterdynamics.com/en/news/sailfish-plans-multi-gigawatt-data-center-park-outside-dfw-texas/",
+        "https://thetechcapital.com/sailfish-digital-ventures-unveils-2600-acre-data-centre-community-in-dallas/",
+        "https://baxtel.com/data-center/sailfish-comanche-circle"
+      ],
+      "notes": "2,600-acre, nine-campus data center community near Tolar (Hood County), ~45 mi SW of Fort Worth in the DFW metro, <1 mi from Comanche Peak nuclear plant with 345kV access (ERCOT/Oncor). Published as up to 5 GW total; Phase 1 = five campuses ~3.2GW. plannedPowerMW = 5,000 (full build-out target, estimated). Up to 600MW behind-the-meter gas within 24 months; 400 acres reserved for SMR/solar. In talks with prospective tenants and seeking funding; pre-construction so ratedPowerMW 0."
+    },
+    {
+      "id": "tcdc-odessa-ector",
+      "name": "Texas Critical Data Centers (TCDC)",
+      "operator": "New Era Energy & Digital",
+      "status": "construction",
+      "location": {
+        "city": "Odessa",
+        "state": "TX",
+        "lat": 31.846,
+        "lng": -102.368
+      },
+      "gridRegion": "ERCOT",
+      "gpuCount": null,
+      "chipType": "undisclosed",
+      "ratedPowerMW": 0,
+      "plannedPowerMW": 250,
+      "energySource": "behind-the-meter natural gas (on-site power islands)",
+      "workload": "mixed",
+      "linkedDeal": null,
+      "onlineDate": "2026-12",
+      "estimated": [
+        "plannedPowerMW",
+        "onlineDate"
+      ],
+      "sources": [
+        "https://www.datacenterfrontier.com/site-selection/article/55289667/powering-ai-in-the-permian-texas-critical-data-centers-sustainable-energy-play",
+        "https://www.businesswire.com/news/home/20251030309089/en/New-Era-Energy-Digitals-Texas-Critical-Data-Centers-Selects-EYP-Mission-Critical-Facilities-for-Full-Scope-Engineering-of-438-Acre-AI-Campus-in-Odessa-Texas",
+        "https://www.businesswire.com/news/home/20251223632678/en/New-Era-Energy-Digital-Secures-Full-Ownership-of-Texas-Critical-Data-Centers-Through-Binding-Agreement-Completes-203-Acre-Land-Acquisition-Expanding-TCDC-Campus-in-Ector-County-Texas"
+      ],
+      "notes": "438-acre AI/HPC campus in Ector County near Odessa, Permian Basin; New Era now owns 100% (bought out Sharon AI). Engineering/permitting/site-prep underway, full construction ~2026, so early construction. Well-sourced data center figure is 250 MW (DCF describes a 250MW net-zero campus); plannedPowerMW = 250 (estimated). Newer Jan 2026 framing markets a scale-to '1+ GW' campus (kept conservative at 250). Phase 1 ~100 MW targeted by Dec 2026. EYP full-scope engineering; Stream Data Centers JV. ratedPowerMW 0 (no live IT load). GPU count not disclosed."
+    },
+    {
+      "id": "prometheus-hyperscale-evanston-wy1",
+      "name": "Prometheus Hyperscale Evanston (WY-1)",
+      "operator": "Prometheus Hyperscale",
+      "status": "announced",
+      "location": {
+        "city": "Evanston",
+        "state": "WY",
+        "lat": 41.268,
+        "lng": -110.963
+      },
+      "gridRegion": "WECC",
+      "gpuCount": null,
+      "chipType": "undisclosed",
+      "ratedPowerMW": 0,
+      "plannedPowerMW": 1250,
+      "energySource": "fully islanded natural gas microgrid; low-carbon/nuclear SMR + battery roadmap; closed-loop liquid cooling",
+      "workload": "mixed",
+      "linkedDeal": null,
+      "onlineDate": "2027",
+      "estimated": [
+        "plannedPowerMW",
+        "onlineDate"
+      ],
+      "sources": [
+        "https://www.datacenterdynamics.com/en/news/prometheus-hyperscale-secures-planning-approval-for-gigawatt-data-center-campus-in-wyoming/",
+        "https://www.kpcw.org/state-regional/2026-06-19/1-25gw-data-center-approved-on-ranchland-near-evanston-wyoming",
+        "https://www.prometheushyperscale.com/projects"
+      ],
+      "notes": "Status corrected construction->announced: Uinta County granted only a conditional use permit (June 2026); construction has NOT begun and is anticipated to start within six months of final permitting, built out over 48-60 months. Flagship ~506-acre campus ~12 mi east of Evanston, approved at 1.25GW with a stated path to 5GW; fully islanded gas microgrid, closed-loop cooling. plannedPowerMW = 1,250 (approved/announced power figure, estimated). ratedPowerMW 0 (pre-construction). GPU count not disclosed."
+    },
+    {
+      "id": "prometheus-hyperscale-casper-natrona",
+      "name": "Prometheus Hyperscale Casper (Natrona County)",
+      "operator": "Prometheus Hyperscale",
+      "status": "announced",
+      "location": {
+        "city": "Casper",
+        "state": "WY",
+        "lat": 42.867,
+        "lng": -106.313
+      },
+      "gridRegion": "WECC",
+      "gpuCount": null,
+      "chipType": "undisclosed",
+      "ratedPowerMW": 0,
+      "plannedPowerMW": 1500,
+      "energySource": "on-site firm natural gas with point-source + direct air carbon capture (carbon-negative)",
+      "workload": "mixed",
+      "linkedDeal": null,
+      "onlineDate": "2028",
+      "estimated": [
+        "plannedPowerMW",
+        "onlineDate"
+      ],
+      "sources": [
+        "https://www.prometheushyperscale.com/news/ph-spiritus-casper-carbon-capture-announce-strategic-partnership",
+        "https://www.datacenterdynamics.com/en/news/prometheus-hyperscale-works-with-carbon-capture-firms-on-new-data-center-campus-in-wyoming/",
+        "https://cowboystatedaily.com/2025/10/09/casper-lands-massive-1-5-gigawatt-data-center-project-on-nearby-ranch/"
+      ],
+      "notes": "Second Prometheus Hyperscale site near Casper in Natrona/Converse County (distinct from Evanston WY-1). Oct 2025 partnership with Spiritus (Orchard Power, 1.5 GW on-site firm gas) and Casper Carbon Capture targets up to 1.5 GW of IT-ready capacity over multiple phases (carbon-negative). plannedPowerMW = 1,500 (announced IT target, estimated). First IT-ready power targeted ~2026, full campus ~2028. Pre-construction so ratedPowerMW 0."
+    },
+    {
+      "id": "poolside-project-horizon-fort-stockton",
+      "name": "Poolside Project Horizon (Longfellow Ranch)",
+      "operator": "Poolside",
+      "status": "announced",
+      "location": {
+        "city": "Fort Stockton",
+        "state": "TX",
+        "lat": 30.894,
+        "lng": -102.879
+      },
+      "gridRegion": "ERCOT",
+      "gpuCount": null,
+      "chipType": "undisclosed",
+      "ratedPowerMW": 0,
+      "plannedPowerMW": 2000,
+      "energySource": "behind-the-meter aero-derivative natural gas turbines (Permian gas)",
+      "workload": "training",
+      "linkedDeal": null,
+      "onlineDate": "2027",
+      "estimated": [
+        "plannedPowerMW",
+        "onlineDate"
+      ],
+      "sources": [
+        "https://www.datacenterdynamics.com/en/news/ai-startup-poolside-teams-up-with-coreweave-on-2gw-data-center-in-texas/",
+        "https://poolside.ai/blog/announcing-project-horizon",
+        "https://www.datacenterdynamics.com/en/news/poolside-seeks-partners-for-data-center-in-texas-after-coreweave-deal-falls-apart/"
+      ],
+      "notes": "2 GW AI training campus on 568 acres of Longfellow Ranch near Fort Stockton (Pecos County), distinct from Pecos city / Microsoft Kilby. Eight 250-MW phases; plannedPowerMW = 2,000 (announced target, estimated). CoreWeave had been anchor for the first 250 MW (expandable to 500 MW) with a committed 40,000+ GB300 NVL72 GPUs, but CoreWeave terminated the 15-year lease in late March 2026 after Poolside's ~$2B Series C failed to close; that GPU/chip commitment is now void, so gpuCount set to null and chipType cleared. Poolside is now seeking new partners; site idle. ratedPowerMW 0."
+    },
+    {
+      "id": "fleet-south-valley-storey",
+      "name": "Fleet Data Centers South Valley",
+      "operator": "Fleet Data Centers",
+      "status": "construction",
+      "location": {
+        "city": "McCarran",
+        "state": "NV",
+        "lat": 39.504,
+        "lng": -119.339
+      },
+      "gridRegion": "WECC",
+      "gpuCount": null,
+      "chipType": "undisclosed",
+      "ratedPowerMW": 0,
+      "plannedPowerMW": 200,
+      "energySource": "grid (NV Energy) with planned temporary on-site natural gas generation",
+      "workload": "mixed",
+      "linkedDeal": null,
+      "onlineDate": "2027-12",
+      "estimated": [
+        "plannedPowerMW",
+        "onlineDate"
+      ],
+      "sources": [
+        "https://www.nevadaappeal.com/news/2026/jun/09/nevada-data-center-firm-working-on-two-campuses-at-tahoe-reno-industrial-center/",
+        "https://www.nnbw.com/news/2026/jun/02/fleet-data-centers-breaks-ground-on-2-facilities/",
+        "https://www.datacenterdynamics.com/en/news/tracts-fleet-data-centers-seeks-38bn-to-fuel-nevada-build-out/"
+      ],
+      "notes": "Build-to-suit megacampus at the Tahoe-Reno Industrial Center (Storey County), on USA Parkway; broke ground June 2026 with Fleet's Peru Ridge campus. Reporting gives the two Fleet campuses a combined 400 MW critical compute; South Valley ~200 MW critical compute (plus ~30 MW utility), used as plannedPowerMW (estimated). 100% leased to a AA-/$3T+-market-cap tenant (reported as Nvidia) on a ~197-month triple-net lease. Online ~Q4 2027. ratedPowerMW 0."
+    },
+    {
+      "id": "fleet-peru-ridge-storey",
+      "name": "Fleet Data Centers Peru Ridge",
+      "operator": "Fleet Data Centers",
+      "status": "construction",
+      "location": {
+        "city": "McCarran",
+        "state": "NV",
+        "lat": 39.48,
+        "lng": -119.3
+      },
+      "gridRegion": "WECC",
+      "gpuCount": null,
+      "chipType": "undisclosed",
+      "ratedPowerMW": 0,
+      "plannedPowerMW": 200,
+      "energySource": "grid (NV Energy) with planned temporary on-site natural gas generation",
+      "workload": "mixed",
+      "linkedDeal": null,
+      "onlineDate": "2027-09",
+      "estimated": [
+        "plannedPowerMW",
+        "onlineDate"
+      ],
+      "sources": [
+        "https://www.nevadaappeal.com/news/2026/jun/09/nevada-data-center-firm-working-on-two-campuses-at-tahoe-reno-industrial-center/",
+        "https://www.nnbw.com/news/2026/jun/02/fleet-data-centers-breaks-ground-on-2-facilities/",
+        "https://baxtel.com/data-center/tract-peru-ridge"
+      ],
+      "notes": "Renamed from candidate 'Peru Shelf': Fleet's actual compute campus is Peru Ridge at 2300 Peru Drive, McCarran (Storey County), one of the two Fleet campuses that broke ground June 2026. (Peru Shelf Technology Park is the adjacent ~810 MW Tract land/utility park, not the named compute campus.) Peru Ridge is part of the combined 400 MW critical compute across the two Fleet campuses; plannedPowerMW = ~200 critical compute (estimated). Initial power delivery late 2026/early 2027, online ~Q3 2027. ratedPowerMW 0. Anchor not separately disclosed."
+    },
+    {
+      "id": "novva-tahoe-reno-storey",
+      "name": "Novva Tahoe Reno Data Center",
+      "operator": "Novva Data Centers",
+      "status": "operational",
+      "location": {
+        "city": "McCarran",
+        "state": "NV",
+        "lat": 39.54,
+        "lng": -119.428
+      },
+      "gridRegion": "WECC",
+      "gpuCount": null,
+      "chipType": "undisclosed",
+      "ratedPowerMW": 60,
+      "plannedPowerMW": 60,
+      "energySource": "grid",
+      "workload": "mixed",
+      "linkedDeal": null,
+      "onlineDate": "2025-07",
+      "estimated": [],
+      "sources": [
+        "https://www.prnewswire.com/news-releases/novva-data-centers-announces-the-launch-of-tahoe-reno-data-center-302500299.html",
+        "https://www.datacenterdynamics.com/en/news/novva-plans-60mw-data-center-in-reno-nevada/"
+      ],
+      "notes": "Launched July 8, 2025 as Novva's fourth completed data center. 300,000 sq ft, 60 MW across six 10 MW halls on 20 acres at the Tahoe-Reno Industrial Center (Storey County), fed by an on-site 100 MW NV Energy substation. Water-free cooling, direct-to-chip-compatible for GPU loads. Multi-tenant colo (mixed). Additional capacity coming 2026. ratedPowerMW = 60 (disclosed live build)."
+    },
+    {
+      "id": "vantage-az1-goodyear",
+      "name": "Vantage AZ1 Goodyear Campus",
+      "operator": "Vantage Data Centers",
+      "status": "operational",
+      "location": {
+        "city": "Goodyear",
+        "state": "AZ",
+        "lat": 33.4353,
+        "lng": -112.3576
+      },
+      "gridRegion": "WECC",
+      "gpuCount": null,
+      "chipType": "undisclosed",
+      "ratedPowerMW": 160,
+      "plannedPowerMW": 176,
+      "energySource": "grid",
+      "workload": "mixed",
+      "linkedDeal": null,
+      "onlineDate": "2025-01",
+      "estimated": [
+        "ratedPowerMW"
+      ],
+      "sources": [
+        "https://www.datacenterdynamics.com/en/news/vantage-tops-out-az14-facility-outside-of-phoenix-arizona/",
+        "https://vantage-dc.com/data-center-locations/north-america/phoenix-arizona/",
+        "https://www.goodyearaz.gov/Home/Components/News/News/12503/"
+      ],
+      "notes": "50-acre AZ1 campus at 45 S Bullard Ave, Goodyear (metro Phoenix), >1M sq ft. Four facilities live/topped out (AZ11, AZ12, AZ13, AZ14) totaling 160 MW; AZ14 added liquid-cooling-capable capacity for next-gen GPU loads. Full build-out is 176 MW of critical IT across five buildings (plannedPowerMW). Multiple buildings operational, so ratedPowerMW set to 160 (conservative sourced estimate of currently delivered critical IT; flagged estimated)."
+    },
+    {
+      "id": "aligned-phx13-glendale",
+      "name": "Aligned PHX-13 Glendale Campus",
+      "operator": "Aligned Data Centers",
+      "status": "construction",
+      "location": {
+        "city": "Glendale",
+        "state": "AZ",
+        "lat": 33.5387,
+        "lng": -112.186
+      },
+      "gridRegion": "WECC",
+      "gpuCount": null,
+      "chipType": "undisclosed",
+      "ratedPowerMW": 0,
+      "plannedPowerMW": 72,
+      "energySource": "grid",
+      "workload": "mixed",
+      "linkedDeal": null,
+      "onlineDate": "2026",
+      "estimated": [
+        "plannedPowerMW",
+        "onlineDate"
+      ],
+      "sources": [
+        "https://news.constructconnect.com/aligned-data-centers-breaks-ground-in-glendale-expanding-arizona-infrastructure",
+        "https://www.glendaleaz.gov/files/assets/city/v/1/communications/documents/newsroom/press-releases/2025/aligned-data-centers-breaks-ground-4-17-25.pdf",
+        "https://ktar.com/arizona-news/glendale-data-center-groundbreaking/5695096/"
+      ],
+      "notes": "Verified: groundbreaking April 15, 2025 (multiple sources incl. City of Glendale press release) on PHX-13, first of four planned data centers on a 100-acre Glendale campus (metro Phoenix), >1M sq ft planned. PHX-13 delivers 72MW; Delta-cubed cooling, closed-loop water recycling, AI/hyperscale loads; APS building a new 230kV line. 72MW is the first building; full campus larger. plannedPowerMW reflects the 72MW PHX-13 building only (campus total not separately disclosed), so estimated. No GPU/chip disclosed."
+    },
+    {
+      "id": "vantage-millersport-fairfield-oh",
+      "name": "Vantage Millersport Campus (OH2)",
+      "operator": "Vantage Data Centers",
+      "status": "construction",
+      "location": {
+        "city": "Millersport (Fairfield County)",
+        "state": "OH",
+        "lat": 39.9006,
+        "lng": -82.5377
+      },
+      "gridRegion": "PJM",
+      "gpuCount": null,
+      "chipType": "undisclosed",
+      "ratedPowerMW": 0,
+      "plannedPowerMW": 800,
+      "energySource": "natural gas",
+      "workload": "mixed",
+      "linkedDeal": null,
+      "onlineDate": "2027",
+      "estimated": [
+        "plannedPowerMW",
+        "onlineDate"
+      ],
+      "sources": [
+        "https://www.datacenterdynamics.com/en/news/vantage-targets-data-center-campus-outside-columbus-ohio/",
+        "https://www.nbc4i.com/news/local-news/fairfield-county/2-1-billion-vantage-data-center-announced-for-fairfield-county/"
+      ],
+      "notes": "Verified: Vantage's second Ohio campus (OH2), ~28 miles west of Columbus in Millersport, Fairfield County; ~$2.1B announced (NBC4). Distinct from Vantage's New Albany OH1 and from any roster site. ~800MW across up to five single-story buildings (120-250MW each); large behind-the-meter on-site generation, possibly fully on-site powered. Construction expected to start by end of 2025, first building targeted 2027. No GPU/chip disclosed; plannedPowerMW and onlineDate are announced targets."
+    },
+    {
+      "id": "powerhouse-95-spotsylvania",
+      "name": "PowerHouse 95 (PH 95)",
+      "operator": "PowerHouse Data Centers",
+      "status": "construction",
+      "location": {
+        "city": "Spotsylvania County",
+        "state": "VA",
+        "lat": 38.1841,
+        "lng": -77.6516
+      },
+      "gridRegion": "PJM",
+      "gpuCount": null,
+      "chipType": "undisclosed",
+      "ratedPowerMW": 0,
+      "plannedPowerMW": 800,
+      "energySource": "grid",
+      "workload": "mixed",
+      "linkedDeal": null,
+      "onlineDate": "2026",
+      "estimated": [
+        "plannedPowerMW",
+        "onlineDate"
+      ],
+      "sources": [
+        "https://www.powerhousedata.com/news/powerhouse-breaks-ground-on-800mw-data-center-campus-in-spotsylvania-county-virginia",
+        "https://www.datacenterdynamics.com/en/news/powerhouse-breaks-ground-on-800mw-data-center-campus-in-spotsylvania-county-virginia/",
+        "https://www.powerhousedata.com/news/powerhouse-data-centers-announces-purchase-of-145-acres-in-spotsylvania-va-for-powerhouse-95-campus"
+      ],
+      "notes": "Verified by DCD and PowerHouse releases. PowerHouse Data Centers (American Real Estate Partners) broke ground on PH 95 in Spotsylvania County, VA (I-95 corridor, greater Data Center Alley) on a 145-acre site. Up to 800MW across three 300MW substations; up to eight three-story buildings, 3.5M sq ft; hyperscale/AI. First substation targeted to provide 150MW by Oct 2025; phased deliveries Q3 2025-Q4 2027. Distinct operator and county from roster's Stack Stafford VA. No GPU/chip disclosed."
+    },
+    {
+      "id": "gridfree-south-dallas-one-hill",
+      "name": "GridFree South Dallas One",
+      "operator": "GridFree AI",
+      "status": "announced",
+      "location": {
+        "city": "Hill County",
+        "state": "TX",
+        "lat": 32.0085,
+        "lng": -97.1253
+      },
+      "gridRegion": "ERCOT",
+      "gpuCount": null,
+      "chipType": "undisclosed",
+      "ratedPowerMW": 0,
+      "plannedPowerMW": 1500,
+      "energySource": "natural gas",
+      "workload": "mixed",
+      "linkedDeal": null,
+      "onlineDate": "2027",
+      "estimated": [
+        "plannedPowerMW",
+        "onlineDate"
+      ],
+      "sources": [
+        "https://www.datacenterknowledge.com/energy-power-supply/gridfree-unveils-first-power-foundry-site-for-ai-data-center-workloads",
+        "https://www.prnewswire.com/news-releases/gridfree-ai-unveils-first-grid-independent-data-center-site-newmark-named-exclusive-advisor-and-marketer-302650409.html"
+      ],
+      "notes": "Verified announcement (late Dec 2025), named developer (Houston-based GridFree AI), Goldman Sachs co-leading financing, Newmark exclusive marketer. South Dallas One in Hill County, ~1 hr south of DFW; first of a planned three-site South Dallas Cluster (~5GW gross, each site >1.5GW). Gas behind-the-meter (100MW modules), industrial chilled-water cooling, deliverable ~24 months from lease signing. Early-stage and speculative: no committed AI tenant and site control not publicly confirmed, but it is a named developer with an announced compute plan, not an anonymous land play. plannedPowerMW and onlineDate are announced targets; no GPU/chip disclosed."
+    },
+    {
+      "id": "hut8-river-bend-west-feliciana",
+      "name": "Hut 8 River Bend Campus",
+      "operator": "Hut 8",
+      "status": "construction",
+      "location": {
+        "city": "St. Francisville (West Feliciana Parish)",
+        "state": "LA",
+        "lat": 30.7813,
+        "lng": -91.3457
+      },
+      "gridRegion": "MISO",
+      "gpuCount": null,
+      "chipType": "undisclosed",
+      "ratedPowerMW": 0,
+      "plannedPowerMW": 1000,
+      "energySource": "grid",
+      "workload": "mixed",
+      "linkedDeal": null,
+      "onlineDate": "2027-06",
+      "estimated": [
+        "plannedPowerMW",
+        "onlineDate"
+      ],
+      "sources": [
+        "https://www.opportunitylouisiana.gov/news/hut-8-selects-southeast-louisiana-as-site-of-10-billion-artificial-intelligence-data-center",
+        "https://www.prnewswire.com/news-releases/hut-8-signs-15-year-245-mw-ai-data-center-lease-at-river-bend-campus-with-total-contract-value-of-7-0-billion-302644600.html",
+        "https://www.datacenterdynamics.com/en/news/hut-8-signs-245mw-capacity-deal-with-fluidstack-as-part-of-multi-gigawatt-partnership-with-anthropic/"
+      ],
+      "notes": "Verified by Louisiana Economic Development, Entergy, Hut 8 PR, and DCD. River Bend AI campus, West Feliciana Parish, LA (St. Francisville; Baton Rouge metro). Up to $10B Phase I. Hut 8 signed a 15-yr, 245MW IT lease ($7.0B TCV) with Fluidstack (lease obligations backstopped by Google; tied to Fluidstack's multi-GW Anthropic partnership), for AI training/inference. Entergy initial 330MW utility capacity, ROFO for +1,000MW; potential to scale beyond 1GW. Initial data hall commissioning Q2 2027. plannedPowerMW (1,000) is the announced expansion ceiling, so estimated; no GPU/chip disclosed by Hut 8."
+    },
+    {
+      "id": "t5-atl-iv-fairburn",
+      "name": "T5 @ Atlanta IV (ATL IV)",
+      "operator": "T5 Data Centers",
+      "status": "announced",
+      "location": {
+        "city": "Fairburn",
+        "state": "GA",
+        "lat": 33.5673,
+        "lng": -84.5805
+      },
+      "gridRegion": "SERC",
+      "gpuCount": null,
+      "chipType": "undisclosed",
+      "ratedPowerMW": 0,
+      "plannedPowerMW": 200,
+      "energySource": "grid",
+      "workload": "mixed",
+      "linkedDeal": null,
+      "onlineDate": "2027",
+      "estimated": [
+        "plannedPowerMW",
+        "onlineDate"
+      ],
+      "sources": [
+        "https://www.prnewswire.com/news-releases/t5-finalizes-land-acquisition-in-atlanta-to-support-a-300-mw-data-center-campus-302232913.html",
+        "https://t5datacenters.com/locations/t5-atlanta-iv/",
+        "https://www.datacenterdynamics.com/en/news/t5-announces-300mw-data-center-campus-in-atlanta-georgia/",
+        "https://www.bldup.com/posts/t5-refiles-modified-plans-for-atl-iv-data-center-campus-in-south-fulton-county"
+      ],
+      "notes": "T5's fourth Atlanta campus (ATL IV) on a 91-acre site in the Palmetto/Fairburn area of South Fulton County, GA. Originally announced Aug 2024 as a scalable-to-300MW, 7-building, 2.95M sq ft campus explicitly designed for advanced AI / high-density compute with rack-level liquid cooling. That application was withdrawn; a scaled-down 3-building plan (~200MW, ~1.32M sq ft along Gullatt Rd) was refiled May 2025 and cleared Atlanta Regional Commission DRI review in Nov 2025. On-site substation expected operational 2026, but data center Phase 1 construction is set to begin Q2 2027 with delivery in 2027, so this is announced/permitted, not yet under construction. plannedPowerMW set to the current scaled ~200MW target (down from original 300MW headline). Distinct from tracked Microsoft Fairwater Atlanta."
     }
   ]
 }

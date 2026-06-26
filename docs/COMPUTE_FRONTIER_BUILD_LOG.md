@@ -606,6 +606,36 @@ operators, no dup ids, every `estimated[]` a real field, every `linkedDeal`
 resolves, all https sources) · `npm run check` exit 0, 0 errors · `npm test`
 51/51 · `npm run build` exit 0. README + blog counts updated to 49/19.
 
+## Coverage expansion round 1 (2026-06-26)
+
+**Did:** Jack asked to maximize entries. Ran a 12-slice parallel discovery +
+adversarial-verification workflow. Discovery found 121 candidates (120 after
+dedup); the verification phase partly stalled, so it returned 44 fully-verified
+ones. Integrated 43 (dropped Fermi America's "HyperGrid"/Project Matador, which
+listed 11 GW of generation as compute power, a generation-vs-compute violation I
+hold a standing exclusion on). **Registry 49 -> 92 clusters, 19 -> 41
+operators, ~47 -> ~75.5 GW planned, ~5.2 GW operational.**
+
+New operators include the miner-turned-AI and developer long tail: Hut 8,
+Bitdeer, Riot Platforms, Soluna, CleanSpark, Keel (ex-Bitfarms), Northern Data,
+plus Aligned, Vantage, Switch, Compass, T5, Prime, PowerHouse, Tract/Fleet,
+Sailfish, Prometheus Hyperscale, Novva, GridFree AI, New Era (TCDC), Poolside,
+and six more Meta campuses (Lebanon/Jeffersonville IN, Kansas City, DeKalb,
+Fort Worth, Montgomery).
+
+**Integrity:** every added entry carries >=1 real https source; operator names
+normalized (parentheticals/tenant clauses moved out so the operator breakdown
+does not fragment); operational entries all have rated power > 0 (the guard);
+linkedDeal null on all new ones; GPU counts null unless disclosed (no new
+disclosures, so 7 clusters / ~1.52M accelerators unchanged); big announced land
+plays kept as status=announced with planned MW flagged est. Full node integrity
+check passes (no dup ids, all sources https, all estimated[] valid).
+
+**Verification:** `npm run check` 0 errors · `npm test` 53/53 · `npm run build`
+exit 0. More rounds to come (leaner, without the verify stage that stalled).
+
+---
+
 ## Headline correction + integrity guards (2026-06-25)
 
 **Did:** A multi-agent audit workflow (audit -> judge -> synthesize) picked the
