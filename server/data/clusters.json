@@ -5541,33 +5541,6 @@
       "notes": "H5 Phoenix campus at 2600 W. Germann Rd, Chandler (Arizona Technology Corridor), up to ~180,000 sq ft / ~20MW. Completed a dedicated high-performance compute (HPC) suite with Forced Physics DCT JouleForce waterless cooling cutting cooling energy >90%, built for high-density HPC/AI. Smaller but a real, named HPC-specific deployment."
     },
     {
-      "id": "qts-cedar-rapids-big-cedar-ia",
-      "name": "QTS Cedar Rapids (Big Cedar Industrial Center)",
-      "operator": "QTS",
-      "status": "construction",
-      "location": {
-        "city": "Cedar Rapids",
-        "state": "IA",
-        "lat": 41.9255,
-        "lng": -91.728
-      },
-      "gridRegion": "MISO",
-      "gpuCount": null,
-      "chipType": "undisclosed",
-      "ratedPowerMW": 0,
-      "plannedPowerMW": 0,
-      "energySource": "grid (Alliant Energy)",
-      "workload": "mixed",
-      "linkedDeal": null,
-      "onlineDate": "",
-      "estimated": [],
-      "sources": [
-        "https://q.com/news/qts-announces-new-world-class-data-center-campus-in-cedar-rapids/",
-        "https://www.datacenterdynamics.com/en/news/qts-breaks-ground-on-data-center-campus-in-iowa/"
-      ],
-      "notes": "$10B campus, 7 buildings across 612 acres at 6200 76th Ave SW within the 1,391-acre Big Cedar Industrial Center; water-free cooling, hyperscale/AI-driven. MW not disclosed. Coords from 76th Ave SW address area."
-    },
-    {
       "id": "qts-blakely-blue-hole-early-county-ga",
       "name": "QTS Blakely (Project Blue Hole)",
       "operator": "QTS",
@@ -5656,38 +5629,9 @@
       "notes": "AI-ready Austin-area campus near Cedar Creek, Bastrop County. AUS02 at 8001 Wolf Lane: 578k sq ft two-story, ~240MW, first building mid-2026; $1.4B four-building, 2.8M sq ft full campus. Adjacent second campus (EDCAUS11/12) on 180 acres at 6682 FM 535 (acquired Nov 2025). Coords near the Wolf Lane/FM 535 site."
     },
     {
-      "id": "powerhouse-provident-grand-prairie-tx",
-      "name": "PowerHouse/Provident Grand Prairie",
-      "operator": "PowerHouse",
-      "status": "construction",
-      "location": {
-        "city": "Grand Prairie (Ellis County)",
-        "state": "TX",
-        "lat": 32.4905,
-        "lng": -96.971
-      },
-      "gridRegion": "ERCOT",
-      "gpuCount": null,
-      "chipType": "undisclosed",
-      "ratedPowerMW": 0,
-      "plannedPowerMW": 1800,
-      "energySource": "grid",
-      "workload": "mixed",
-      "linkedDeal": null,
-      "onlineDate": "2026",
-      "estimated": [
-        "onlineDate"
-      ],
-      "sources": [
-        "https://www.datacenterdynamics.com/en/news/powerhouse-and-provident-to-develop-18gw-campus-in-dfw-texas/",
-        "https://www.providentdatacenters.net/grand-prairie"
-      ],
-      "notes": "768-acre JV (PowerHouse / American Real Estate Partners + Provident Data Centers) with 1.8GW switchyard, 24 buildings over 3 phases, purpose-built for hyperscale AI/HPC. First 500MW ERCOT-approved; first building energized mid-2026. Address 881 Miller Rd, northern Ellis County."
-    },
-    {
       "id": "powerhouse-pennsylvania-digital-carlisle-pa",
       "name": "Pennsylvania Digital I (Carlisle)",
-      "operator": "PowerHouse",
+      "operator": "PowerHouse Data Centers",
       "status": "announced",
       "location": {
         "city": "Carlisle (Middlesex Township)",
@@ -5716,7 +5660,7 @@
     {
       "id": "powerhouse-charlotte-nc",
       "name": "PowerHouse Charlotte",
-      "operator": "PowerHouse",
+      "operator": "PowerHouse Data Centers",
       "status": "construction",
       "location": {
         "city": "Charlotte",
@@ -6717,37 +6661,6 @@
       "notes": "Former Cayuga coal/crypto site (Lansing, NY, NYISO) rezoned for general data processing, enabling compute loads beyond bitcoin. TeraWulf cites up to 320 critical IT MW upon permitting/development as growth runway. Pre-construction. Distinct NY AI site beyond Lake Mariner/Barker."
     },
     {
-      "id": "applied-digital-polaris-forge-2-harwood-nd",
-      "name": "Polaris Forge 2 (Harwood)",
-      "operator": "Applied Digital",
-      "status": "construction",
-      "location": {
-        "city": "Harwood",
-        "state": "ND",
-        "lat": 46.999,
-        "lng": -96.905
-      },
-      "gridRegion": "MISO",
-      "gpuCount": null,
-      "chipType": "undisclosed",
-      "ratedPowerMW": 0,
-      "plannedPowerMW": 280,
-      "energySource": "grid (Cass County Electric Coop)",
-      "workload": "training",
-      "linkedDeal": null,
-      "onlineDate": "2026",
-      "estimated": [
-        "plannedPowerMW",
-        "onlineDate"
-      ],
-      "sources": [
-        "https://ir.applieddigital.com/news-events/press-releases/detail/127/applied-digital-to-break-ground-on-3-billion-polaris-forge",
-        "https://www.datacenterdynamics.com/en/news/applied-digital-plans-280mw-ai-data-center-campus-in-north-dakota/",
-        "https://www.valleynewslive.com/2026/03/10/applied-digital-closes-215b-deal-build-out-harwood-ai-campus/"
-      ],
-      "notes": "$3B, 280 MW AI factory on 900+ acres near Harwood ND, leased to Oracle; broke ground Sept 2025, initial capacity 2026, full early 2027. Scalable beyond 280 MW. Applied Digital's third ND campus beyond Ellendale/Jamestown."
-    },
-    {
       "id": "northern-data-ardent-maysville-ga",
       "name": "Ardent Maysville HPC Data Center (GA1)",
       "operator": "Northern Data",
@@ -6838,36 +6751,6 @@
         "https://baxtel.com/data-center/core-scientific-marble"
       ],
       "notes": "65 MW campus at 155 Palmer Lane, Marble NC (Cherokee County), ~73 acres, being converted from crypto mining to host CoreWeave NVIDIA GPUs for HPC/AI (transferred to CoreWeave in the acquisition). Another Core Scientific/CoreWeave AI site beyond the two tracked campuses."
-    },
-    {
-      "id": "xai-colossus-2-memphis-tn",
-      "name": "xAI Colossus 2 (Memphis)",
-      "operator": "xAI",
-      "status": "operational",
-      "location": {
-        "city": "Memphis",
-        "state": "TN",
-        "lat": 35.0508,
-        "lng": -90.0205
-      },
-      "gridRegion": "SERC",
-      "gpuCount": 110000,
-      "chipType": "NVIDIA GB200",
-      "ratedPowerMW": 170,
-      "plannedPowerMW": 1100,
-      "energySource": "on-site natural gas turbines plus grid (TVA); Southaven MS gas hub",
-      "workload": "training",
-      "linkedDeal": null,
-      "onlineDate": "2025",
-      "estimated": [
-        "plannedPowerMW"
-      ],
-      "sources": [
-        "https://www.actionnews5.com/2025/07/22/xai-begins-installing-computing-infrastructure-colossus-2/",
-        "https://baxtel.com/data-center/xai-colossus-2",
-        "https://newsletter.semianalysis.com/p/xais-colossus-2-first-gigawatt-datacenter"
-      ],
-      "notes": "xAI Colossus 2 at 5420 Tulane Road, Whitehaven, Memphis TN (~1M sq ft, 100 acres). ~110k NVIDIA GB200 GPUs installed 2025 (~170 MW load); planned to host 350k-1M+ GPUs, scaling site toward ~1 GW+. Powered partly by on-site gas and the xAI Southaven MS turbine hub. Data center is in TN, outside the TX/VA slice. gpuCount and 170 MW are disclosed; full buildout MW estimated."
     },
     {
       "id": "vantage-new-albany-oh1",
@@ -7110,37 +6993,6 @@
         "https://www.novva.com/media-center/cim-group-novva-data-centers-secure-2b-to-expand-sustainable-data-centers-in-the-western-u-s/"
       ],
       "notes": "100-acre flagship campus, 1.5M sq ft across four buildings tied to a 200MW substation; ~175MW critical IT at full build, one of the largest direct-to-chip liquid-cooled AI campuses (water-free cooling). Phase 1 live 2023; $2B JPMorgan/Starwood loan funds Phases 2-3 (each 72MW, ~2026). ratedPowerMW estimated for Phase 1 only."
-    },
-    {
-      "id": "vantage-nv1-storey-county-nv",
-      "name": "Vantage NV1",
-      "operator": "Vantage Data Centers",
-      "status": "construction",
-      "location": {
-        "city": "McCarran",
-        "state": "NV",
-        "lat": 39.4906,
-        "lng": -119.3603
-      },
-      "gridRegion": "WECC",
-      "gpuCount": null,
-      "chipType": "NVIDIA GPU",
-      "ratedPowerMW": 0,
-      "plannedPowerMW": 224,
-      "energySource": "grid",
-      "workload": "training",
-      "linkedDeal": null,
-      "onlineDate": "2026",
-      "estimated": [
-        "ratedPowerMW",
-        "plannedPowerMW",
-        "onlineDate"
-      ],
-      "sources": [
-        "https://vantage-dc.com/news/vantage-data-centers-invests-3-billion-to-deliver-ai-campus-in-growing-nevada-market/",
-        "https://www.datacenterdynamics.com/en/news/vantage-announces-224mw-data-center-campus-in-reno-nevada/"
-      ],
-      "notes": "~$3B, 137-acre AI campus at the SE corner of Electric Ave & USA Parkway in Tahoe-Reno Industrial Center, Storey County. Four multi-story buildings, 224MW critical IT; first two buildings fully leased, first online Q2 2026. Densities 360W-720W+/sq ft for AI."
     },
     {
       "id": "stream-stamp-genesee-ny",

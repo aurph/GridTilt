@@ -620,8 +620,12 @@ related-digital-the-barn == stargate-michigan, stargate-red-oak == databank-
 red-oak, fluidstack-barber-lake == cipher-barber-lake, applied-digital-forge-1
 == coreweave-ellendale, fluidstack-lake-mariner == terawulf-lake-mariner,
 edgeconnex-lambda-chicago == lambda-chicago-edgeconnex, two more Lordstown/
-Shackelford restatements). **Registry 176 -> 240 clusters, 64 -> 78 operators,
-~106 -> ~128 GW planned, ~11.4 GW operational, 13 GPU-disclosing (~1.69M).**
+Shackelford restatements). A follow-up consolidation pass then harmonized
+operator strings (PowerHouse) and removed 5 more same-operator dups
+(xai-colossus-2-memphis, qts-cedar-rapids-big-cedar, applied-digital-forge-2 ==
+applied-digital-harwood, vantage-nv1 restatement, powerhouse-provident
+restatement). **Registry 176 -> 235 clusters, 64 -> 77 operators, ~106 -> ~125
+GW planned, ~11.2 GW operational, 12 GPU-disclosing (~1.58M).**
 
 **Dedup hardening:** added a cross-operator same-site detector that compares
 coordinates AND shared non-city name tokens, so a campus listed under both its
