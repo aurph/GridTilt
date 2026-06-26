@@ -606,6 +606,29 @@ operators, no dup ids, every `estimated[]` a real field, every `linkedDeal`
 resolves, all https sources) · `npm run check` exit 0, 0 errors · `npm test`
 51/51 · `npm run build` exit 0. README + blog counts updated to 49/19.
 
+## Headline correction + integrity guards (2026-06-25)
+
+**Did:** A multi-agent audit workflow (audit -> judge -> synthesize) picked the
+single best improvement and caught a real bug: `microsoft-fairwater-wi` was the
+only operational cluster with `ratedPowerMW: 0` (introduced 2026-06-23 when its
+status flipped to operational but rated power was left at 0). That silently
+dropped ~400 MW (10%) from the "Operational power" headline on the flagship
+Compute Frontier page.
+
+- TDD fix: added two dataset-invariant tests first (no operational cluster has
+  zero rated power; every linkedDeal resolves to a tracked deal id), watched the
+  first fail on Fairwater, then set `ratedPowerMW` 0 -> 400 (flagged `est.`).
+- Sourced the number: 400 MW is Microsoft's own Phase-1 figure from the We
+  Energies / Wisconsin PSC filing (added as a source); 900 MW remains the
+  two-phase single-site figure. Both adversarially web-verified.
+- Headline `operationalMW` corrected 3,920 -> 4,320 MW (3.9 -> 4.3 GW). The two
+  new guards make this whole class of error fail the build going forward.
+
+**Verification (real output):** `npm run check` exit 0 (0 errors) · `npm test`
+53/53 pass (51 + 2 new guards) · `npm run build` exit 0. Diff review verdict:
+SHIP (surgical data edit, real guards, number flows to the headline, est. tag
+renders, no side effects).
+
 **Flags for Jack:**
 - **Replit is not redeployed.** main is pushed but not shipped; redeploy via
   Replit → Deployments → Redeploy to put it on gridtilt.com.

@@ -1,5 +1,5 @@
 {
-  "lastRefreshed": "2026-06-23",
+  "lastRefreshed": "2026-06-25",
   "methodology": "Named AI training and inference superclusters compiled from public announcements (company press releases, Reuters, Tom's Hardware, Data Center Dynamics, SemiAnalysis, utility filings) plus cross-reference to GridTilt's own Power Map registry. Tracked, not exhaustive. Power in MW. 'estimated' lists the field names whose values are GridTilt estimates or announced forward targets not yet realized; sourced values are not listed there. gpuCount is null when the accelerator count is not disclosed; we do not invent one. linkedDeal references a deal id in interconnection-queue.json where a tracked nuclear-for-AI deal applies to the site.",
   "clusters": [
     {
@@ -330,20 +330,22 @@
       "gridRegion": "MISO",
       "gpuCount": null,
       "chipType": "NVIDIA GB200/GB300",
-      "ratedPowerMW": 0,
+      "ratedPowerMW": 400,
       "plannedPowerMW": 900,
       "energySource": "grid",
       "workload": "training",
       "linkedDeal": null,
       "onlineDate": "2026",
       "estimated": [
-        "plannedPowerMW"
+        "plannedPowerMW",
+        "ratedPowerMW"
       ],
       "sources": [
         "https://blogs.microsoft.com/blog/2025/09/18/inside-the-worlds-most-powerful-ai-datacenter/",
-        "https://news.microsoft.com/source/features/ai/from-wisconsin-to-atlanta-microsoft-connects-datacenters-to-build-its-first-ai-superfactory/"
+        "https://news.microsoft.com/source/features/ai/from-wisconsin-to-atlanta-microsoft-connects-datacenters-to-build-its-first-ai-superfactory/",
+        "https://racinecountyeye.com/2026/02/10/psc-public-hearings-microsoft-rates/"
       ],
-      "notes": "First Fairwater building went operational June 23, 2026 (Phase 1 ~400 MW peak; single-building build-out ~900 MW), hundreds of thousands of GB200/GB300. A Jan 2026 $13.3B expansion adds ~15 buildings across two more Mount Pleasant campuses; the full complex is expected to reach ~2 GW when complete (~2028). Single-building MW tracked here; campus-level is larger."
+      "notes": "First building went operational June 23, 2026. Microsoft's We Energies / Wisconsin PSC filing puts Phase 1 power at ~400 MW, with the two-phase single site near 900 MW; hundreds of thousands of GB200/GB300. The wider Mount Pleasant complex is expanding across more buildings (multi-GW long term). Single-site MW tracked here; the full campus is larger."
     },
     {
       "id": "microsoft-fairwater-atlanta",

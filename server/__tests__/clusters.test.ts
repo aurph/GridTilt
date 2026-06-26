@@ -181,3 +181,36 @@ test("linkedDealCount counts every link but linkedDealIds dedupes a shared deal"
   assert.equal(m.linkedDealCount, 2);
   assert.deepEqual(m.linkedDealIds, ["shared"]);
 });
+
+// ── Dataset invariants that protect the headline numbers ───────────────────
+
+test("no operational cluster has zero rated power (operational means power is available)", () => {
+  // An operational facility with 0 MW available is logically impossible and
+  // would silently drop real capacity from the 'Operational power' headline.
+  const root = JSON.parse(
+    readFileSync(join(process.cwd(), "server", "data", "clusters.json"), "utf-8"),
+  );
+  const clusters = root.clusters as Array<{ id: string; status: string; ratedPowerMW: number }>;
+  for (const c of clusters) {
+    if (c.status === "operational") {
+      assert.ok(c.ratedPowerMW > 0, `${c.id} is operational but ratedPowerMW is ${c.ratedPowerMW}`);
+    }
+  }
+});
+
+test("every cluster linkedDeal resolves to a tracked deal id in the queue", () => {
+  // Locks the spec promise that a linkedDeal always points at a real tracked
+  // nuclear-for-AI deal, so the power-needed-vs-secured join can never dangle.
+  const root = JSON.parse(
+    readFileSync(join(process.cwd(), "server", "data", "clusters.json"), "utf-8"),
+  );
+  const queue = JSON.parse(
+    readFileSync(join(process.cwd(), "server", "data", "interconnection-queue.json"), "utf-8"),
+  );
+  const dealIds = new Set((queue.projects as Array<{ id: string }>).map((p) => p.id));
+  for (const c of root.clusters as Array<{ id: string; linkedDeal: string | null }>) {
+    if (c.linkedDeal != null) {
+      assert.ok(dealIds.has(c.linkedDeal), `${c.id} linkedDeal ${c.linkedDeal} does not resolve to a tracked deal`);
+    }
+  }
+});
