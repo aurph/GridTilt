@@ -606,6 +606,36 @@ operators, no dup ids, every `estimated[]` a real field, every `linkedDeal`
 resolves, all https sources) · `npm run check` exit 0, 0 errors · `npm test`
 51/51 · `npm run build` exit 0. README + blog counts updated to 49/19.
 
+## Coverage expansion round 3 (2026-06-26)
+
+**Did:** Third discovery-only sweep (deep tail: REIT/colo AI campuses, more
+hyperscaler regional, neoclouds, AI-chip clouds, smaller miners, full state
+sweep). 133 candidates; integrated 64 net-new after dropping, on integrity
+grounds: 2 generation-as-compute (Homer City 3.7 GW, Vermaland 3 GW land play),
+5 operational-with-zero-power (Voltage Park x3, Groq, Cerebras), 5 low-
+confidence, and a string of developer-vs-tenant / same-site duplicates that the
+operator-aware dedup missed because the operator name differs (e.g.
+vantage-port-washington == stargate-wisconsin, stargate-saline +
+related-digital-the-barn == stargate-michigan, stargate-red-oak == databank-
+red-oak, fluidstack-barber-lake == cipher-barber-lake, applied-digital-forge-1
+== coreweave-ellendale, fluidstack-lake-mariner == terawulf-lake-mariner,
+edgeconnex-lambda-chicago == lambda-chicago-edgeconnex, two more Lordstown/
+Shackelford restatements). **Registry 176 -> 240 clusters, 64 -> 78 operators,
+~106 -> ~128 GW planned, ~11.4 GW operational, 13 GPU-disclosing (~1.69M).**
+
+**Dedup hardening:** added a cross-operator same-site detector that compares
+coordinates AND shared non-city name tokens, so a campus listed under both its
+developer and its AI tenant collapses to one entry, while genuinely distinct
+operators co-located in a hub (New Albany OH, Lithia Springs GA, Eagle Mountain
+UT, Mesa AZ, Culpeper VA, the Tahoe-Reno Industrial Center) stay separate.
+Final scan shows zero residual cross-operator shared-identity pairs.
+
+**Integrity:** generation-vs-compute and tenant-in-landlord double-counts kept
+out; every entry sourced; operational entries all have rated power > 0 (guard);
+GPU null unless disclosed. Node integrity check + 53 tests + build all green.
+
+---
+
 ## Coverage expansion round 2 (2026-06-26)
 
 **Did:** Discovery-only sweep (12 deep slices, no verify stage, so no stall).
