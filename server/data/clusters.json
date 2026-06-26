@@ -3147,7 +3147,7 @@
     {
       "id": "aws-desper-creek-louisa-va",
       "name": "AWS Desper Creek Technology Campus",
-      "operator": "Amazon Web Services",
+      "operator": "Amazon (AWS)",
       "status": "announced",
       "location": {
         "city": "Louisa",
@@ -3176,7 +3176,7 @@
     {
       "id": "aws-warrenton-fauquier-va",
       "name": "AWS Warrenton Training Center Campus",
-      "operator": "Amazon Web Services",
+      "operator": "Amazon (AWS)",
       "status": "operational",
       "location": {
         "city": "Warrenton",
@@ -3206,7 +3206,7 @@
     {
       "id": "aws-salem-township-susquehanna-pa",
       "name": "AWS Salem Township (Susquehanna / Cumulus) Campus",
-      "operator": "Amazon Web Services",
+      "operator": "Amazon (AWS)",
       "status": "construction",
       "location": {
         "city": "Berwick",
@@ -3236,7 +3236,7 @@
     {
       "id": "aws-falls-township-bucks-pa",
       "name": "AWS Falls Township Bucks County Campus",
-      "operator": "Amazon Web Services",
+      "operator": "Amazon (AWS)",
       "status": "announced",
       "location": {
         "city": "Fairless Hills",
@@ -3266,7 +3266,7 @@
     {
       "id": "aws-boardman-bombing-range-or",
       "name": "AWS Boardman Bombing Range Road Campus",
-      "operator": "Amazon Web Services",
+      "operator": "Amazon (AWS)",
       "status": "construction",
       "location": {
         "city": "Boardman",
@@ -3296,7 +3296,7 @@
     {
       "id": "aws-wheatfield-jasper-in",
       "name": "AWS Wheatfield Campus",
-      "operator": "Amazon Web Services",
+      "operator": "Amazon (AWS)",
       "status": "announced",
       "location": {
         "city": "Wheatfield",
@@ -3326,7 +3326,7 @@
     {
       "id": "aws-hobart-lake-in",
       "name": "AWS Hobart Campus",
-      "operator": "Amazon Web Services",
+      "operator": "Amazon (AWS)",
       "status": "announced",
       "location": {
         "city": "Hobart",
@@ -3356,7 +3356,7 @@
     {
       "id": "aws-mesa-elliot-pecos-az",
       "name": "AWS Mesa Elliot/Pecos Road Campuses",
-      "operator": "Amazon Web Services",
+      "operator": "Amazon (AWS)",
       "status": "construction",
       "location": {
         "city": "Mesa",
@@ -3386,7 +3386,7 @@
     {
       "id": "aws-vicksburg-warren-ms",
       "name": "AWS Warren County (Vicksburg) Campus",
-      "operator": "Amazon Web Services",
+      "operator": "Amazon (AWS)",
       "status": "construction",
       "location": {
         "city": "Vicksburg",
@@ -3416,7 +3416,7 @@
     {
       "id": "aws-clinton-hinds-ms",
       "name": "AWS Clinton (Hinds County) Campus",
-      "operator": "Amazon Web Services",
+      "operator": "Amazon (AWS)",
       "status": "construction",
       "location": {
         "city": "Clinton",
@@ -3875,35 +3875,6 @@
       "notes": "Aligned's DFW-04 at 401 N. Star Road, Plano (44 acres, 425,000 sq ft), $700M project. ~72 MW of compute power for Lambda, on-site substation, air + liquid cooling, supports NVIDIA Blackwell / Blackwell Ultra; completion 2026. (Aligned's '5,000 MW future capacity' line refers to its portfolio, not this site, so excluded.)"
     },
     {
-      "id": "lambda-edgeconnex-chicago",
-      "name": "Lambda AI Factory at EdgeConneX - Chicago",
-      "operator": "Lambda",
-      "status": "construction",
-      "location": {
-        "city": "Chicago",
-        "state": "IL",
-        "lat": 41.85,
-        "lng": -87.85
-      },
-      "gridRegion": "PJM",
-      "gpuCount": null,
-      "chipType": "NVIDIA (high-density, undisclosed)",
-      "ratedPowerMW": 0,
-      "plannedPowerMW": 23,
-      "energySource": "grid (PJM/ComEd)",
-      "workload": "mixed",
-      "linkedDeal": null,
-      "onlineDate": "2026",
-      "estimated": [
-        "onlineDate"
-      ],
-      "sources": [
-        "https://www.edgeconnex.com/news/press-releases/edgeconnex-and-lambda-to-build-ai-factory-in-chicago-with-industry-leading-high-density-data-center-infrastructure/",
-        "https://lambda.ai/blog/lambda-edgeconnex-dc-pr"
-      ],
-      "notes": "EdgeConneX build-to-density, single-tenant 23 MW data center for Lambda in Chicago, Ready-for-Service 2026. Hybrid liquid-to-chip + air cooling, EdgeConneX Ingenuity, >600 kW/rack. Part of a 30+ MW Lambda/EdgeConneX two-city program (Chicago + Atlanta)."
-    },
-    {
       "id": "coreweave-lancaster-pa",
       "name": "CoreWeave Lancaster AI Data Center",
       "operator": "CoreWeave",
@@ -4272,7 +4243,7 @@
     {
       "id": "soluna-project-kati-willacy-tx",
       "name": "Soluna Project Kati AI/HPC Campus",
-      "operator": "Soluna Holdings",
+      "operator": "Soluna",
       "status": "operational",
       "location": {
         "city": "Raymondville",
@@ -4571,7 +4542,7 @@
     {
       "id": "stack-lancaster-south-dallas-tx",
       "name": "STACK South Dallas Campus (Lancaster)",
-      "operator": "STACK Infrastructure",
+      "operator": "Stack Infrastructure",
       "status": "construction",
       "location": {
         "city": "Lancaster",
@@ -4596,36 +4567,6 @@
         "https://www.globenewswire.com/news-release/2024/04/29/2871195/0/en/STACK-Infrastructure-Expands-Texas-Footprint-with-a-New-220MW-Flagship-South-Dallas-Campus.html"
       ],
       "notes": "STACK's flagship South Dallas campus in Lancaster: 220MW across six 36MW buildings on 100 acres, ~1.5M sq ft, committed power from Oncor via dedicated substation. Designed with flexible cooling for AI/cloud high-density workloads; mid-2026 delivery target."
-    },
-    {
-      "id": "aligned-phx13-glendale-az",
-      "name": "Aligned PHX-13 (Glendale)",
-      "operator": "Aligned Data Centers",
-      "status": "construction",
-      "location": {
-        "city": "Glendale",
-        "state": "AZ",
-        "lat": 33.581,
-        "lng": -112.3
-      },
-      "gridRegion": "WECC",
-      "gpuCount": null,
-      "chipType": "unspecified",
-      "ratedPowerMW": 0,
-      "plannedPowerMW": 72,
-      "energySource": "renewable (closed-loop water)",
-      "workload": "mixed",
-      "linkedDeal": null,
-      "onlineDate": "2026",
-      "estimated": [
-        "onlineDate"
-      ],
-      "sources": [
-        "https://www.constructconnect.com/construction-economic-news/aligned-data-centers-breaks-ground-on-phx-13-facility-expanding-arizona-infrastructure",
-        "https://baxtel.com/data-center/aligned-phx-13",
-        "https://dcnnmagazine.com/data-centres/aligned-data-centers-breaks-ground-on-glendale-facility/"
-      ],
-      "notes": "Aligned broke ground on PHX-13, a 72MW facility and the first of four planned data centers on a 100-acre Glendale AZ campus. Built for AI/HPC with Aligned's DeltaFlow liquid cooling (supports any density / GPU cloud) and Delta3 air arrays, closed-loop water recycling, Adaptive Modular Infrastructure."
     },
     {
       "id": "compass-hoffman-estates-il",
@@ -5223,7 +5164,7 @@
     {
       "id": "qts-excalibur-fayetteville-ga",
       "name": "QTS Fayetteville Campus (Project Excalibur)",
-      "operator": "QTS Data Centers",
+      "operator": "QTS",
       "status": "construction",
       "location": {
         "city": "Fayetteville",
