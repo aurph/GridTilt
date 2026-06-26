@@ -606,6 +606,33 @@ operators, no dup ids, every `estimated[]` a real field, every `linkedDeal`
 resolves, all https sources) · `npm run check` exit 0, 0 errors · `npm test`
 51/51 · `npm run build` exit 0. README + blog counts updated to 49/19.
 
+## Coverage expansion round 2 (2026-06-26)
+
+**Did:** Discovery-only sweep (12 deep slices, no verify stage, so no stall).
+Found 147 candidates; 53 were dups of the live set (caught by id + name +
+operator-aware coordinate proximity, e.g. google-goodnight == crusoe-goodnight,
+vantage-frontier == stargate-shackelford). Integrated 88 net-new after
+dropping a low-confidence Quincy entry, an SB-Energy framing of the existing
+Milam Stargate site, a bad-source Bitfarms entry, and one true tenant-in-
+landlord double count (lambda-cologix-col4 == cologix-col4). **Registry 90 ->
+178 clusters, 41 -> 68 operators, ~75 -> ~106 GW planned, ~9.5 GW operational,
+11 GPU-disclosing clusters (~1.57M accelerators).**
+
+**Dedup lesson (fixed mid-integration):** a naive coordinate-proximity dedup
+wrongly merged DISTINCT operators' campuses that merely share a metro (Mesa AZ,
+Culpeper Tech Zone, Frederick/Quantum Loophole, Tahoe-Reno Industrial Center).
+Fixed to operator-aware: merge only same-operator-near OR same exact facility.
+Multi-operator co-located hubs are real and now correctly listed separately.
+
+**Integrity:** spot-checked the most obscure finds (Gigaland Fauquier VA,
+Copper Ridge Culpeper VA, CloudBurst San Marcos TX) against live sources -- all
+real; agents sourced accurately. Operator strings normalized (tenant/landlord
+parentheticals stripped). Every entry sourced; operational entries all have
+rated power > 0 (guard); GPU null unless disclosed; generation-vs-compute
+excluded. Node integrity check + 53 tests + build all green.
+
+---
+
 ## Coverage expansion round 1 (2026-06-26)
 
 **Did:** Jack asked to maximize entries. Ran a 12-slice parallel discovery +
