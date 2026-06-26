@@ -1603,38 +1603,6 @@
       "notes": "Applied Digital's proposed ~200 MW data center southeast of Adair, Adair County, IA (~$1.5B, two ~300k sqft buildings adjacent to a NextEra wind substation; connects to MidAmerican Energy grid, MISO). Announced 2024, faced local zoning/setback opposition; still in planning/permitting. Pre-construction, ratedPowerMW=0. Workload changed training->mixed (operator has not disclosed a workload split). Distinct from tracked ND Applied Digital sites."
     },
     {
-      "id": "hut8-river-bend-la",
-      "name": "Hut 8 River Bend AI Data Center Campus",
-      "operator": "Hut 8",
-      "status": "construction",
-      "location": {
-        "city": "St. Francisville",
-        "state": "LA",
-        "lat": 30.7785,
-        "lng": -91.3776
-      },
-      "gridRegion": "MISO",
-      "gpuCount": null,
-      "chipType": "NVIDIA (Fluidstack AI cloud tenant; NVIDIA reference architecture)",
-      "ratedPowerMW": 0,
-      "plannedPowerMW": 330,
-      "energySource": "grid (Entergy Louisiana)",
-      "workload": "training",
-      "linkedDeal": null,
-      "onlineDate": "2027",
-      "estimated": [
-        "plannedPowerMW",
-        "onlineDate"
-      ],
-      "sources": [
-        "https://www.prnewswire.com/news-releases/hut-8-signs-15-year-245-mw-ai-data-center-lease-at-river-bend-campus-with-total-contract-value-of-7-0-billion-302644600.html",
-        "https://www.hut8.com/data-centers/river-bend",
-        "https://www.opportunitylouisiana.gov/news/hut-8-selects-southeast-louisiana-as-site-of-10-billion-artificial-intelligence-data-center",
-        "https://www.datacenterdynamics.com/en/news/hut-8-signs-245mw-capacity-deal-with-fluidstack-as-part-of-multi-gigawatt-partnership-with-anthropic/"
-      ],
-      "notes": "Greenfield AI campus in West Feliciana Parish near St. Francisville; 15-year $7.0B lease with Fluidstack (Anthropic-linked, Google-backstopped) for 245 MW IT load, with Entergy Louisiana supplying ~330 MW utility capacity (MISO). Construction underway, first ops targeted Q2 2027. ROFO for up to +1,000 MW future IT capacity. Crypto-miner Hut 8 pivoting to AI/HPC. ratedPowerMW=0 (construction, not yet live)."
-    },
-    {
       "id": "hut8-beacon-point-tx",
       "name": "Hut 8 Beacon Point AI Data Center Campus",
       "operator": "Hut 8",
@@ -2102,36 +2070,6 @@
         "https://www.datacentermap.com/usa/mississippi/meridian/compass-meridian-campus/"
       ],
       "notes": "Announced Jan 2025; $10B hyperscale campus in Meridian, Lauderdale County (I-20/59 Industrial Park); eight data centers (~40MW IT each, ~320MW total IT) of ~250,000 sq ft each, built over ~8 years. Mississippi Power to supply ~500MW total grid power to the campus (plannedPowerMW reflects this disclosed power-supply figure, which exceeds the 320MW IT load). Customer not disclosed; built for hyperscale/AI demand. Distinct from AWS Canton MS. Verified via search June 2026."
-    },
-    {
-      "id": "powerhouse-95-spotsylvania-va",
-      "name": "PowerHouse 95 North Campus",
-      "operator": "PowerHouse Data Centers",
-      "status": "construction",
-      "location": {
-        "city": "Spotsylvania County",
-        "state": "VA",
-        "lat": 38.1957,
-        "lng": -77.5916
-      },
-      "gridRegion": "PJM",
-      "gpuCount": null,
-      "chipType": "undisclosed",
-      "ratedPowerMW": 0,
-      "plannedPowerMW": 800,
-      "energySource": "grid (Dominion Energy / PJM)",
-      "workload": "mixed",
-      "linkedDeal": null,
-      "onlineDate": "2025-10-31",
-      "estimated": [
-        "onlineDate"
-      ],
-      "sources": [
-        "https://www.powerhousedata.com/news/powerhouse-breaks-ground-on-800mw-data-center-campus-in-spotsylvania-county-virginia",
-        "https://www.datacenterdynamics.com/en/news/powerhouse-breaks-ground-on-800mw-data-center-campus-in-spotsylvania-county-virginia/",
-        "https://www.datacenterfrontier.com/site-selection/article/55263723/lets-go-build-some-data-centers-powerhouse-drives-hyperscale-and-ai-infrastructure-across-north-america"
-      ],
-      "notes": "PowerHouse 95 North, Spotsylvania County VA (145 acres purchased Jan 2024). Up to 800MW across three 300MW substations; up to eight three-story buildings totaling 3.5M sq ft. First 300MW substation under development, providing ~150MW by Oct 2025. Serves hyperscale/AI demand in Northern Virginia. Part of PowerHouse's >6GW pipeline. 800MW is operator-disclosed. Verified via search June 2026."
     },
     {
       "id": "powerhouse-provident-ellis-county-tx",
