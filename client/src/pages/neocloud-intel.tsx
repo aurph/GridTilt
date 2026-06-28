@@ -10,8 +10,6 @@ import {
 } from "@/components/ui/tooltip";
 import {
   ResponsiveContainer,
-  LineChart,
-  Line,
   BarChart,
   Bar,
   Cell,
@@ -58,16 +56,12 @@ interface GpuMetrics {
 const VENDOR_COLOR: Record<string, string> = { NVIDIA: "#F07800", AMD: "#22D3EE" };
 const vendorColor = (v: string) => VENDOR_COLOR[v] ?? "#9ca3af";
 
-// Distinct per-model line colors for the trend view.
+// Per-model accent for the card stripe + row dot.
 const MODEL_COLOR: Record<string, string> = {
   GB200: "#F07800", B300: "#F0A500", B200: "#FFD166", H200: "#4dabf7", GH200: "#22b8cf",
   H100: "#51cf66", A100: "#94d82d", MI355X: "#e64980", MI325X: "#cc5de8", MI300X: "#ff8787",
 };
 const colorFor = (m: string) => MODEL_COLOR[m] ?? "#9ca3af";
-
-// Models shown in the chart by default — keeps the trend view legible instead of
-// drawing all ten sparse lines at once. The price cards always show the full roster.
-const DEFAULT_CHART = ["GB200", "B200", "H200", "H100", "MI300X"];
 
 const CONF_COLOR: Record<string, string> = { high: "#4ade80", medium: "#F0A500", low: "#f87171" };
 
@@ -78,43 +72,27 @@ const changeColor = (v: number | null) => (v === null ? "#6b7280" : v > 0 ? "#f8
 
 type SortKey = "current" | "model" | "w1" | "m1" | "ytd" | "y1";
 
+// Has the recorder accrued enough real points for any continuous series yet?
+// (Anchors are sparse and mixed-methodology, so they don't count.) Until then we
+// show the snapshot, not a fake line.
+function hasRealSeries(rows: GpuRow[]): boolean {
+  // a model with >=4 points where consecutive dates are <=45 days apart somewhere
+  return rows.some((r) => r.series.length >= 6);
+}
+
 export default function NeocloudIntel() {
   const { data, isLoading, isError } = useQuery<GpuMetrics>({ queryKey: ["/api/gpu-prices/metrics"] });
-  const [visible, setVisible] = useState<Set<string>>(new Set(DEFAULT_CHART));
-  const [view, setView] = useState<"current" | "trend">("current");
   const [sortKey, setSortKey] = useState<SortKey>("current");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
   const rows = data?.rows ?? [];
-  const isShown = (m: string) => visible.has(m);
 
-  function toggleModel(m: string) {
-    setVisible((prev) => {
-      const next = new Set(prev);
-      if (next.has(m)) next.delete(m); else next.add(m);
-      return next;
-    });
-  }
-  const selectAll = () => setVisible(new Set(rows.map((r) => r.model)));
-  const selectDefault = () => setVisible(new Set(DEFAULT_CHART));
-
-  const shownRows = rows.filter((r) => isShown(r.model));
-
-  // Trend chart: one row per date, a price per visible model.
-  const trendData = useMemo(() => {
-    const dates = Array.from(new Set(shownRows.flatMap((r) => r.series.map((p) => p.date)))).sort();
-    return dates.map((date) => {
-      const o: Record<string, number | string | null> = { date };
-      for (const r of shownRows) o[r.model] = r.series.find((s) => s.date === date)?.price ?? null;
-      return o;
-    });
-  }, [rows, visible]);
-
-  // Current view: visible models sorted by price desc.
+  // Snapshot bar chart: every model, sorted by price desc.
   const barData = useMemo(
-    () => shownRows.map((r) => ({ model: r.model, current: r.current, low: r.low, high: r.high, vendor: r.vendor }))
-      .sort((a, b) => b.current - a.current),
-    [rows, visible],
+    () => [...rows]
+      .sort((a, b) => b.current - a.current)
+      .map((r) => ({ model: r.model, current: r.current, low: r.low, high: r.high, vendor: r.vendor })),
+    [rows],
   );
   const barMax = barData.length ? Math.max(...barData.map((d) => d.current)) * 1.18 : 1;
 
@@ -156,8 +134,8 @@ export default function NeocloudIntel() {
             </div>
             <p className="text-muted-foreground text-sm leading-relaxed">
               On-demand GPU rental prices ($/GPU/hr) blended across the major neoclouds and marketplaces
-              (Lambda, RunPod, Vast.ai, CoreWeave, TensorWave, Vultr) and the getdeploying.com / Silicon Data
-              trackers. Each headline price is a sourced blended estimate (flagged <span className="text-[#F0A500]">est.</span>);
+              (Lambda, RunPod, Vast.ai, CoreWeave, TensorWave, Vultr, Nebius) and the getdeploying.com / Silicon Data
+              trackers. Each price is a sourced blended estimate (flagged <span className="text-[#F0A500]">est.</span>);
               low and high are the observed marketplace range. Open any row for its sources. Cheaper is
               <span className="text-[#4ade80]"> green</span>, pricier is <span className="text-[#f87171]">red</span>.
             </p>
@@ -221,68 +199,28 @@ export default function NeocloudIntel() {
           ))
         )}
 
-        {/* Chart with view toggle + model chips */}
+        {/* Current-price snapshot chart (all models, sorted, colored by maker) */}
         <Card className="border-card-border p-3" data-testid="ni-chart">
           <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-            <div className="inline-flex rounded border border-white/[0.08] overflow-hidden text-xs font-mono">
-              {(["current", "trend"] as const).map((v) => (
-                <button
-                  key={v}
-                  onClick={() => setView(v)}
-                  className={`px-3 py-1 transition-colors ${view === v ? "bg-[#F07800] text-black" : "text-muted-foreground hover:text-foreground"}`}
-                  data-testid={`ni-view-${v}`}
-                >
-                  {v === "current" ? "Current price" : "1Y trend"}
-                </button>
-              ))}
-            </div>
+            <span className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground">Current on-demand price · $/GPU/hr</span>
             <div className="flex items-center gap-3 text-[10px] font-mono">
               <span className="flex items-center gap-1 text-muted-foreground/60"><span className="h-2 w-2 rounded-sm" style={{ background: VENDOR_COLOR.NVIDIA }} />NVIDIA</span>
               <span className="flex items-center gap-1 text-muted-foreground/60"><span className="h-2 w-2 rounded-sm" style={{ background: VENDOR_COLOR.AMD }} />AMD</span>
             </div>
           </div>
 
-          {/* Chips */}
-          {data && (
-            <div className="flex flex-wrap items-center gap-1.5 mb-3" data-testid="ni-chips">
-              <button onClick={selectDefault} className="px-2 py-0.5 rounded text-[11px] font-mono border border-white/[0.08] text-muted-foreground hover:text-foreground" data-testid="ni-chip-default">Reset</button>
-              <button onClick={selectAll} className="px-2 py-0.5 rounded text-[11px] font-mono border border-white/[0.08] text-muted-foreground hover:text-foreground" data-testid="ni-chip-all">All</button>
-              <span className="text-muted-foreground/30 mx-0.5">|</span>
-              {[...rows].sort((a, b) => b.current - a.current).map((r) => {
-                const on = isShown(r.model);
-                return (
-                  <button
-                    key={r.model}
-                    onClick={() => toggleModel(r.model)}
-                    className="px-2 py-0.5 rounded text-[11px] font-mono border transition-colors"
-                    style={{
-                      borderColor: on ? colorFor(r.model) : "rgba(255,255,255,0.08)",
-                      color: on ? colorFor(r.model) : "#777",
-                      background: on ? `${colorFor(r.model)}14` : "transparent",
-                    }}
-                    data-testid={`ni-chip-${r.model}`}
-                  >
-                    {r.model}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-
           {isLoading ? (
-            <Skeleton className="h-[360px] w-full" />
+            <Skeleton className="h-[400px] w-full" />
           ) : isError || rows.length === 0 ? (
-            <div className="h-[360px] flex items-center justify-center text-xs text-muted-foreground" data-testid="ni-chart-empty">
+            <div className="h-[400px] flex items-center justify-center text-xs text-muted-foreground" data-testid="ni-chart-empty">
               {isError ? "Price index unavailable." : "No price data."}
             </div>
-          ) : shownRows.length === 0 ? (
-            <div className="h-[360px] flex items-center justify-center text-xs text-muted-foreground">Select a GPU above to chart it.</div>
-          ) : view === "current" ? (
-            <ResponsiveContainer width="100%" height={Math.max(220, barData.length * 40)}>
-              <BarChart data={barData} layout="vertical" margin={{ left: 8, right: 56, top: 4, bottom: 4 }}>
+          ) : (
+            <ResponsiveContainer width="100%" height={Math.max(260, barData.length * 38)}>
+              <BarChart data={barData} layout="vertical" margin={{ left: 8, right: 60, top: 4, bottom: 4 }}>
                 <CartesianGrid horizontal={false} stroke="rgba(255,255,255,0.05)" />
                 <XAxis type="number" domain={[0, barMax]} tickFormatter={(v) => `$${v}`} tick={{ fontSize: 10, fill: "#777" }} stroke="#333" />
-                <YAxis type="category" dataKey="model" width={56} tick={{ fontSize: 11, fill: "#ccc" }} stroke="#333" />
+                <YAxis type="category" dataKey="model" width={58} tick={{ fontSize: 11, fill: "#ccc" }} stroke="#333" />
                 <RTooltip
                   cursor={{ fill: "rgba(255,255,255,0.03)" }}
                   contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--card-border))", borderRadius: 8, fontSize: 12 }}
@@ -294,26 +232,10 @@ export default function NeocloudIntel() {
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
-          ) : (
-            <ResponsiveContainer width="100%" height={380}>
-              <LineChart data={trendData} margin={{ left: 4, right: 12, top: 8, bottom: 4 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#999" }} stroke="#333" minTickGap={24} />
-                <YAxis scale="log" domain={[0.5, "auto"]} allowDataOverflow ticks={[0.5, 1, 2, 3, 5, 10, 20]}
-                  tick={{ fontSize: 10, fill: "#777" }} stroke="#333" tickFormatter={(v) => `$${v}`} width={40} />
-                <RTooltip
-                  contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--card-border))", borderRadius: 8, fontSize: 12 }}
-                  formatter={(v: number, name: string) => [`$${v.toFixed(2)}/hr`, name]}
-                />
-                {shownRows.map((r) => (
-                  <Line key={r.model} type="monotone" dataKey={r.model} stroke={colorFor(r.model)} strokeWidth={2}
-                    dot={{ r: 2.5, fill: colorFor(r.model), strokeWidth: 0 }} connectNulls isAnimationActive={false} />
-                ))}
-              </LineChart>
-            </ResponsiveContainer>
           )}
           <p className="text-[10px] text-muted-foreground/50 mt-1 font-mono">
-            {view === "current" ? "$/GPU/hr · bar = blended on-demand estimate · color = maker" : "$/GPU/hr, log scale · dots are real sourced price points · history fills daily forward"}
+            Bar = blended on-demand estimate · color = maker · hover for the marketplace range.
+            {data && !hasRealSeries(rows) && " A price-history chart will appear here once enough daily points accrue."}
           </p>
         </Card>
 
@@ -321,7 +243,7 @@ export default function NeocloudIntel() {
         <Card className="border-card-border overflow-hidden" data-testid="ni-table">
           <div className="px-4 py-2 bg-[#0E0E0C] border-b border-border">
             <span className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground">Weighted Price Index</span>
-            <span className="text-[10px] font-mono text-muted-foreground/40 ml-2">click a row for sources</span>
+            <span className="text-[10px] font-mono text-muted-foreground/40 ml-2">hover a row for sources</span>
           </div>
           <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-[#0E0E0C]/60 border-b border-border text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
             <SortHeader label="Model" k="model" cur={sortKey} dir={sortDir} onClick={toggleSort} className="col-span-3" />
@@ -353,7 +275,7 @@ export default function NeocloudIntel() {
                     </span>
                     <span className="col-span-1 font-mono text-right tabular-nums" style={{ color: changeColor(r.changes.w1) }}>{fmtChange(r.changes.w1)}</span>
                     <span className="col-span-1 font-mono text-right tabular-nums" style={{ color: changeColor(r.changes.m1) }}>{fmtChange(r.changes.m1)}</span>
-                    <span className="col-span-1 font-mono text-right tabular-nums" style={{ color: changeColor(r.changes.ytd) }}>{fmtChange(r.changes.ytd)}</span>
+                    <span className="col-span-2 font-mono text-right tabular-nums" style={{ color: changeColor(r.changes.ytd) }}>{fmtChange(r.changes.ytd)}</span>
                     <span className="col-span-1 font-mono text-right tabular-nums" style={{ color: changeColor(r.changes.y1) }}>{fmtChange(r.changes.y1)}</span>
                     <span className="col-span-2 font-mono text-muted-foreground text-right tabular-nums text-[11px]">${r.low}–${r.high}</span>
                   </div>
@@ -378,7 +300,7 @@ export default function NeocloudIntel() {
 
         <p className="text-[11px] text-muted-foreground/60 leading-relaxed px-1" data-testid="ni-methodology">
           {data?.methodology ?? "Blended on-demand rental prices from public neocloud and marketplace listings and the getdeploying.com / Silicon Data trackers."}
-          {" "}Sources are listed per model (open a table row) and in <span className="font-mono">server/data/gpu-rental-prices.json</span>. Prices move constantly and vary widely by provider, term, and availability; treat these as indicative, not quotes.
+          {" "}Sources are listed per model (hover a table row) and in <span className="font-mono">server/data/gpu-rental-prices.json</span>. Prices move constantly and vary widely by provider, term, and availability; treat these as indicative, not quotes.
         </p>
       </div>
     </div>
