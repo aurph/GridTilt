@@ -20,6 +20,7 @@ import {
   FileText,
   Calculator,
   Cable,
+  LineChart,
 } from "lucide-react";
 import logoPath from "@assets/Image_[Vectorized]_(2)_1773890483514.png";
 
@@ -47,6 +48,12 @@ const navItems = [
     url: "/compute-frontier",
     icon: Cpu,
     description: "AI superclusters by GPU and power",
+  },
+  {
+    title: "Neocloud Intel",
+    url: "/neocloud-intel",
+    icon: LineChart,
+    description: "GPU rental price index",
   },
   {
     title: "Supply Chain",

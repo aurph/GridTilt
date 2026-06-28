@@ -79,6 +79,11 @@ const STATIC_PAGES: Record<string, { title: string; description: string; slug: s
     description: "Put two or three named AI superclusters side by side: GPUs, chips, rated and planned power, grid region, energy source, and linked nuclear deals.",
     slug: "compute-frontier/compare",
   },
+  "/neocloud-intel": {
+    title: "Neocloud Intel \u00b7 GPU Rental Price Index \u00b7 GridTilt",
+    description: "On-demand GPU rental prices ($/GPU/hr) for H100, H200, GB200, B200, B300, MI300X and more, blended across the major neoclouds and marketplaces. Sourced blended estimates with marketplace ranges and 1W/1M/YTD/1Y changes.",
+    slug: "neocloud-intel",
+  },
   "/subscribe": {
     title: "Get the Tilt \u2014 Weekly AI Power Market Intel \u2014 GridTilt",
     description: "Weekly digest of AI power market moves, catalysts, and thesis updates. Built for investors tracking the buildout.",

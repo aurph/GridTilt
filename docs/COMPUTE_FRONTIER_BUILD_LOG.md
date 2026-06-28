@@ -765,3 +765,54 @@ renders, no side effects).
   redeploy, or locally by temporarily removing the `reusePort` line in
   `server/index.ts` and running `UNSUB_TOKEN_SECRET=dev-x PORT=5050 npm run dev`
   then opening `http://localhost:5050/compute-frontier`.
+
+---
+
+## Neocloud Intel — GPU Rental Price Index (new sibling tool, 2026-06-27)
+
+A second module under the compute thesis: a live-ish GPU rental price index
+($/GPU/hr, on-demand) across 10 accelerators (GB200, B300, B200, H200, GH200,
+H100, MI355X, MI325X, MI300X, A100). Built to match a reference layout the user
+liked — headline price cards, model filter chips, a multi-line time-series
+chart, and a weighted price index table (MODEL / AVG / 1W / 1M / YTD / 1Y /
+RANGE) — in GridTilt's dark + #F07800 aesthetic.
+
+**Data integrity (same discipline as Compute Frontier):**
+- `currentUsdPerHr` is a blended estimate, flagged in `estimated[]` and rendered
+  with an `est.` tag. `low`/`high` are the observed marketplace range. Real
+  sourced anchor points only — no fabricated smooth series.
+- Period changes (1W/1M/YTD/1Y) are computed ONLY where the series has a real
+  point within tolerance of the lookback date; otherwise they read `—` rather
+  than an invented number. Today only 1Y resolves (from anchors); 1W/1M/YTD fill
+  as the daily recorder accrues a consistent series.
+- Integrity fix during build: H100's year-ago anchor was a $2.00 neocloud-floor
+  figure against a $2.99 blended current, which wrongly printed 1Y +49.5%.
+  Reconciled to a same-methodology $2.90 anchor (1Y +3.1%, "roughly flat" —
+  matches the sourced trend) and flagged H100 `historyAnchors` as estimated.
+
+**Auto-updating:** `server/gpu-history.ts` appends one US-Eastern snapshot per
+day to `server/data/gpu-price-history.json` on each `/api/gpu-prices/metrics`
+hit (deduped per day), so the chart accrues a real single-methodology series
+forward. Same Replit-ephemeral-disk caveat as `index-history`: the committed
+seed (`[]`) restores the baseline and the series rebuilds after a redeploy.
+
+**Files:** `server/data/gpu-rental-prices.json` (curated, sourced) ·
+`server/data/gpu-price-history.json` (recorder seed) · `server/gpu-index.ts`
+(pure index math) · `server/gpu-history.ts` (daily recorder) ·
+`server/__tests__/gpu-index.test.ts` (5 tests) · routes `/api/gpu-prices` and
+`/api/gpu-prices/metrics` in `server/routes.ts` · page
+`client/src/pages/neocloud-intel.tsx` · wired into `App.tsx` (route, title,
+`G N` shortcut), `app-sidebar.tsx` (nav), `seo.ts` (static page).
+
+**Verification (real output):** `npm run check` exit 0 · `npm test` 59/59 pass
+(54 + 5 new GPU-index tests) · `npm run build` exit 0. End-to-end route-body
+smoke confirmed: 10 models, fleet avg $5.03/hr, fleet 1Y -5.2%, recorder writes
+today's point and it feeds the series.
+
+**Flags for Jack:**
+- **Replit not redeployed.** Pushed ≠ shipped; redeploy to put it on
+  gridtilt.com.
+- **Live render unverified from here** (same dev-server boundary). Static gates
+  are green; confirm the UI after redeploy or via a local dev run.
+- **Prices are indicative, not quotes.** They move constantly and vary widely by
+  provider/term/availability; sources are listed per model in the JSON.

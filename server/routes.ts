@@ -29,6 +29,8 @@ import {
 import { recordDailyIndexValues, readIndexHistory } from "./index-history";
 import { getElectricityOutputMonthly, getHourlyDemandUS48 } from "./physical";
 import { computeClusterMetrics, type ClusterLite } from "./clusters";
+import { computeGpuIndex } from "./gpu-index";
+import { recordDailyGpuPrices, recordedByModel } from "./gpu-history";
 import {
   buildTiltStatusTweet,
   buildTopMoversTweet,
@@ -3638,6 +3640,43 @@ ${rssItems}
     } catch (err) {
       console.error("Cluster read error:", err);
       res.status(500).json({ error: "Failed to load cluster" });
+    }
+  });
+
+  // ─── Neocloud Intel: GPU rental price index ─────────────────────────────
+  // Thin wrappers over the pure server/gpu-index.ts module. The curated prices
+  // carry sparse sourced anchors; the metrics endpoint records today's blended
+  // price (once per day) so the chart accrues a real series going forward, then
+  // merges anchors + recorded points to compute period changes.
+  const GPU_PRICES_FILE = join(process.cwd(), "server", "data", "gpu-rental-prices.json");
+
+  function readGpuRoot(): { models: any[]; lastRefreshed?: string; unit?: string; methodology?: string } {
+    return JSON.parse(readFileSync(GPU_PRICES_FILE, "utf-8"));
+  }
+
+  function easternDay(): string {
+    return new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date());
+  }
+
+  app.get("/api/gpu-prices", (_req, res) => {
+    try {
+      res.json(readGpuRoot());
+    } catch (err) {
+      console.error("GPU prices read error:", err);
+      res.status(500).json({ error: "Failed to load GPU prices" });
+    }
+  });
+
+  app.get("/api/gpu-prices/metrics", (_req, res) => {
+    try {
+      const root = readGpuRoot();
+      const models = root.models ?? [];
+      recordDailyGpuPrices(models); // append today's snapshot (deduped per day)
+      const metrics = computeGpuIndex(models, easternDay(), recordedByModel());
+      res.json({ ...metrics, unit: root.unit ?? null, methodology: root.methodology ?? null, lastRefreshed: root.lastRefreshed ?? null });
+    } catch (err) {
+      console.error("GPU metrics error:", err);
+      res.status(500).json({ error: "Failed to compute GPU index" });
     }
   });
 
