@@ -22,6 +22,13 @@ export interface GpuPriceLite {
   currentUsdPerHr: number;
   low: number;
   high: number;
+  architecture?: string;
+  vramGB?: number;
+  vramType?: string;
+  launchYear?: number;
+  confidence?: string;
+  oneYearTrend?: string;
+  sources?: string[];
   historyAnchors?: GpuHistoryAnchor[];
   estimated?: string[];
 }
@@ -36,6 +43,13 @@ export interface GpuChanges {
 export interface GpuRow {
   model: string;
   vendor: string;
+  architecture: string | null;
+  vramGB: number | null;
+  vramType: string | null;
+  launchYear: number | null;
+  confidence: string | null;
+  oneYearTrend: string | null;
+  sources: string[];
   current: number;
   low: number;
   high: number;
@@ -110,6 +124,13 @@ export function computeGpuIndex(
     return {
       model: g.model,
       vendor: g.vendor,
+      architecture: g.architecture ?? null,
+      vramGB: g.vramGB ?? null,
+      vramType: g.vramType ?? null,
+      launchYear: g.launchYear ?? null,
+      confidence: g.confidence ?? null,
+      oneYearTrend: g.oneYearTrend ?? null,
+      sources: g.sources ?? [],
       current: g.currentUsdPerHr,
       low: g.low,
       high: g.high,

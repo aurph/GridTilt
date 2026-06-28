@@ -49,6 +49,36 @@ test("rows sort by current price desc and fleetAvg is the mean current", () => {
   assert.equal(m.modelCount, 2);
 });
 
+test("spec metadata (maker, architecture, VRAM, launch year) passes through to the row", () => {
+  const models: GpuPriceLite[] = [
+    {
+      model: "H100", vendor: "NVIDIA", currentUsdPerHr: 2.99, low: 1.38, high: 6.98,
+      architecture: "Hopper", vramGB: 80, vramType: "HBM3", launchYear: 2022,
+      confidence: "high", oneYearTrend: "Roughly flat YoY.",
+      sources: ["https://getdeploying.com/gpus/nvidia-h100"],
+      historyAnchors: [], estimated: [],
+    },
+  ];
+  const row = computeGpuIndex(models, "2026-06-15").rows[0];
+  assert.equal(row.vendor, "NVIDIA");
+  assert.equal(row.architecture, "Hopper");
+  assert.equal(row.vramGB, 80);
+  assert.equal(row.vramType, "HBM3");
+  assert.equal(row.launchYear, 2022);
+  assert.equal(row.confidence, "high");
+  assert.equal(row.oneYearTrend, "Roughly flat YoY.");
+  assert.deepEqual(row.sources, ["https://getdeploying.com/gpus/nvidia-h100"]);
+});
+
+test("spec metadata is optional and reads null/undefined when absent", () => {
+  const models: GpuPriceLite[] = [
+    { model: "X", vendor: "NVIDIA", currentUsdPerHr: 2.0, low: 1, high: 3, historyAnchors: [], estimated: [] },
+  ];
+  const row = computeGpuIndex(models, "2026-06-15").rows[0];
+  assert.equal(row.architecture, null);
+  assert.equal(row.vramGB, null);
+});
+
 test("the shipped gpu-rental-prices.json is well-formed and computes", () => {
   const root = JSON.parse(readFileSync(join(process.cwd(), "server", "data", "gpu-rental-prices.json"), "utf-8"));
   const models = root.models as Array<Record<string, unknown>>;
