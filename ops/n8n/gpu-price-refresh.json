@@ -1,0 +1,390 @@
+{
+  "name": "GridTilt GPU Price Refresh",
+  "nodes": [
+    {
+      "id": "n-sticky",
+      "name": "Setup notes",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -360,
+        -40
+      ],
+      "parameters": {
+        "width": 460,
+        "height": 360,
+        "content": "## GridTilt GPU Price Refresh (weekly)\n\nCommits an updated server/data/gpu-rental-prices.json straight to main, gated by hard validation.\n\n### One-time setup\n1. Create an **HTTP Header Auth** credential named `Anthropic x-api-key`:\n   - Name: `x-api-key`  Value: your Anthropic API key\n   - Map it on the *Claude refresh* node.\n2. Create an **HTTP Header Auth** credential named `GitHub PAT`:\n   - Name: `Authorization`  Value: `Bearer <your GitHub PAT>`\n   - Map it on both GitHub nodes.\n3. Set your ntfy topic on the *Notify* node (default: gridtilt-gpu-refresh).\n4. Repo is hard-coded to aurph/GridTilt on main; change in the URLs if needed.\n\n### Integrity gate (auto, no review needed)\nThe *Parse + validate* node ABORTS the run (no commit) if: model set changes,\nlow<=current<=high fails, any source is not https, est. flag missing,\nanchors shrink, or any price moves >60% vs last week.\n\nAfter a commit, redeploy on Replit to put it live (push != shipped)."
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "weeksBetweenTriggers": 1,
+              "triggerAtDay": [
+                1
+              ],
+              "triggerAtHour": 6,
+              "triggerAtMinute": 0
+            }
+          ]
+        }
+      },
+      "id": "n-weekly",
+      "name": "Weekly trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        180,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.github.com/repos/aurph/GridTilt/contents/server/data/gpu-rental-prices.json?ref=main",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "User-Agent",
+              "value": "gridtilt-n8n"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "n-ghget",
+      "name": "GitHub get current file",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        400,
+        0
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_GITHUB",
+          "name": "GitHub PAT (Authorization Bearer)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Decode the current gpu-rental-prices.json fetched from GitHub\nconst b64 = ($json.content || \"\").replace(/\\n/g, \"\");\nconst text = Buffer.from(b64, \"base64\").toString(\"utf-8\");\nconst current = JSON.parse(text);\nreturn [{ json: { current, sha: $json.sha } }];"
+      },
+      "id": "n-decode",
+      "name": "Decode current file",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        620,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Build the Anthropic Messages API request (Claude + web search)\nconst current = $json.current;\nconst today = new Date().toISOString().slice(0, 10);\nconst month = today.slice(0, 7);\n\nconst prompt = [\n  \"You are refreshing GridTilt's GPU rental price dataset. Today is \" + today + \".\",\n  \"\",\n  \"Here is the CURRENT dataset JSON:\",\n  JSON.stringify(current, null, 2),\n  \"\",\n  \"Using web search, update the on-demand rental price for EACH of the \" + current.models.length +\n    \" models to reflect this month (\" + month + \"), across neoclouds and GPU marketplaces (getdeploying.com, Silicon Data, aimultiple, Lambda, RunPod, Vast.ai, CoreWeave, Together, Hyperstack, TensorWave, Vultr, Nebius, DigitalOcean).\",\n  \"\",\n  \"Rules:\",\n  \"- currentUsdPerHr is a BLENDED neocloud/marketplace on-demand estimate. Keep hyperscaler list prices (AWS, Azure, Oracle) inside \\\"high\\\" but do NOT let them drive the representative value.\",\n  \"- Update low and high to the observed marketplace range you actually find this month.\",\n  \"- Refresh oneYearTrend to one sourced sentence and refresh sources to 3-4 real https URLs you actually checked.\",\n  \"- PRESERVE every existing historyAnchors entry exactly, and APPEND one new anchor {\\\"date\\\":\\\"\" + month + \"\\\",\\\"price\\\":<new currentUsdPerHr>} (overwrite only if a \" + month + \" anchor already exists).\",\n  \"- Keep model, vendor, architecture, vramGB, vramType, launchYear unless you have a sourced correction.\",\n  \"- Only report prices you find. Do not invent precision. If a model is barely listed, set confidence \\\"low\\\".\",\n  \"- Set lastRefreshed to \\\"\" + today + \"\\\" and each model's asOf to \\\"\" + month + \"\\\".\",\n  \"\",\n  \"Output ONLY the full updated JSON object (same shape and same models in the same order), no prose and no markdown fences.\"\n].join(\"\\n\");\n\nconst requestBody = {\n  model: \"claude-sonnet-4-6\",\n  max_tokens: 8000,\n  tools: [{ type: \"web_search_20250305\", name: \"web_search\", max_uses: 12 }],\n  messages: [{ role: \"user\", content: prompt }]\n};\nreturn [{ json: { requestBody } }];"
+      },
+      "id": "n-buildreq",
+      "name": "Build Claude request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        840,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.requestBody) }}",
+        "options": {
+          "timeout": 300000
+        }
+      },
+      "id": "n-claude",
+      "name": "Claude refresh (web search)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1060,
+        0
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_ANTHROPIC",
+          "name": "Anthropic x-api-key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse Claude's response, then HARD-VALIDATE before anything can be committed.\nconst resp = $json;\nlet text = \"\";\nif (Array.isArray(resp.content)) {\n  for (const b of resp.content) { if (b.type === \"text\" && b.text) text += b.text; }\n} else if (typeof resp.content === \"string\") {\n  text = resp.content;\n}\ntext = text.trim();\nconst s = text.indexOf(\"{\");\nconst e = text.lastIndexOf(\"}\");\nif (s === -1 || e === -1) throw new Error(\"No JSON found in Claude response\");\nconst obj = JSON.parse(text.slice(s, e + 1));\n\nconst prev = $(\"Decode current file\").item.json.current;\nconst prevByModel = Object.fromEntries(prev.models.map((m) => [m.model, m]));\n\nif (!Array.isArray(obj.models) || obj.models.length !== prev.models.length) {\n  throw new Error(\"model count changed: \" + ((obj.models || []).length) + \" vs \" + prev.models.length);\n}\nfor (const m of obj.models) {\n  const p = prevByModel[m.model];\n  if (!p) throw new Error(\"unknown / renamed model: \" + m.model);\n  if (typeof m.currentUsdPerHr !== \"number\" || m.currentUsdPerHr <= 0 || m.currentUsdPerHr > 80)\n    throw new Error(m.model + \" current out of range: \" + m.currentUsdPerHr);\n  if (!(m.low <= m.currentUsdPerHr && m.currentUsdPerHr <= m.high))\n    throw new Error(m.model + \" range invalid: \" + m.low + \" <= \" + m.currentUsdPerHr + \" <= \" + m.high);\n  if (!Array.isArray(m.sources) || m.sources.length < 1 || !m.sources.every((x) => /^https:\\/\\//.test(x)))\n    throw new Error(m.model + \" bad/empty sources\");\n  if (!Array.isArray(m.estimated) || !m.estimated.includes(\"currentUsdPerHr\"))\n    throw new Error(m.model + \" missing est. flag\");\n  if (!Array.isArray(m.historyAnchors) || m.historyAnchors.length < p.historyAnchors.length)\n    throw new Error(m.model + \" history anchors shrank\");\n  const chg = Math.abs(m.currentUsdPerHr - p.currentUsdPerHr) / p.currentUsdPerHr;\n  if (chg > 0.6)\n    throw new Error(m.model + \" moved >60% (\" + p.currentUsdPerHr + \" -> \" + m.currentUsdPerHr + \"); blocked for manual review\");\n}\n\nobj.lastRefreshed = new Date().toISOString().slice(0, 10);\nconst fileContent = JSON.stringify(obj, null, 2) + \"\\n\";\n\nlet changed = 0;\nconst lines = obj.models.map((m) => {\n  const p = prevByModel[m.model];\n  const d = m.currentUsdPerHr - p.currentUsdPerHr;\n  if (Math.abs(d) >= 0.005) changed++;\n  const sign = d > 0 ? \"+\" : \"\";\n  return m.model + \": $\" + p.currentUsdPerHr + \" -> $\" + m.currentUsdPerHr + \" (\" + sign + d.toFixed(2) + \")\";\n});\nconst summary = \"GridTilt GPU prices refreshed \" + obj.lastRefreshed + \" (\" + changed + \" moved):\\n\" + lines.join(\"\\n\");\nreturn [{ json: { fileContent, summary } }];"
+      },
+      "id": "n-parse",
+      "name": "Parse + validate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1280,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Base64-encode the validated file and assemble the GitHub commit payload\nconst content = $json.fileContent;\nconst b64 = Buffer.from(content, \"utf-8\").toString(\"base64\");\nconst sha = $(\"Decode current file\").item.json.sha;\nconst commitBody = {\n  message: \"Neocloud Intel: weekly GPU price refresh (\" + new Date().toISOString().slice(0, 10) + \")\",\n  content: b64,\n  sha,\n  branch: \"main\"\n};\nreturn [{ json: { commitBody, summary: $json.summary } }];"
+      },
+      "id": "n-commit",
+      "name": "Build commit",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1500,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "https://api.github.com/repos/aurph/GridTilt/contents/server/data/gpu-rental-prices.json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "User-Agent",
+              "value": "gridtilt-n8n"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.commitBody) }}",
+        "options": {}
+      },
+      "id": "n-ghput",
+      "name": "Commit to main",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1720,
+        0
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_GITHUB",
+          "name": "GitHub PAT (Authorization Bearer)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://ntfy.sh/gridtilt-gpu-refresh",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "text/plain",
+        "body": "={{ $('Build commit').item.json.summary }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Title",
+              "value": "GridTilt GPU prices updated"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "n-notify",
+      "name": "Notify (ntfy)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1940,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "daysBetweenTriggers": 1,
+              "triggerAtHour": 5,
+              "triggerAtMinute": 0
+            }
+          ]
+        }
+      },
+      "id": "n-daily",
+      "name": "Daily trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        180,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://gridtilt.com/api/gpu-prices/metrics",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "n-ping",
+      "name": "Ping recorder (accrue daily point)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        400,
+        320
+      ]
+    }
+  ],
+  "connections": {
+    "Weekly trigger": {
+      "main": [
+        [
+          {
+            "node": "GitHub get current file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GitHub get current file": {
+      "main": [
+        [
+          {
+            "node": "Decode current file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decode current file": {
+      "main": [
+        [
+          {
+            "node": "Build Claude request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Claude request": {
+      "main": [
+        [
+          {
+            "node": "Claude refresh (web search)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude refresh (web search)": {
+      "main": [
+        [
+          {
+            "node": "Parse + validate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse + validate": {
+      "main": [
+        [
+          {
+            "node": "Build commit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build commit": {
+      "main": [
+        [
+          {
+            "node": "Commit to main",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Commit to main": {
+      "main": [
+        [
+          {
+            "node": "Notify (ntfy)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Daily trigger": {
+      "main": [
+        [
+          {
+            "node": "Ping recorder (accrue daily point)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "gridtilt-neocloud-intel"
+  },
+  "tags": []
+}
