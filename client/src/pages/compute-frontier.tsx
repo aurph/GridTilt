@@ -48,6 +48,7 @@ interface Cluster {
 interface OperatorBucket { operator: string; count: number; ratedMW: number; plannedMW: number; gpus: number; }
 interface IsoBucket { iso: string; count: number; ratedMW: number; plannedMW: number; }
 interface StatusBucket { status: string; count: number; ratedMW: number; plannedMW: number; }
+interface EnergyBucket { source: string; count: number; ratedMW: number; plannedMW: number; }
 interface PowerSecuredDeal { id: string; projectName: string; capacityMW: number; firmness: string; clusterIds: string[]; }
 interface ClusterMetrics {
   clusterCount: number;
@@ -62,6 +63,7 @@ interface ClusterMetrics {
   byStatus: StatusBucket[];
   byOperator: OperatorBucket[];
   byIso: IsoBucket[];
+  byEnergySource: EnergyBucket[];
   gpusPerMW: number | null;
   concentration: { topOperator: string | null; topOperatorPlannedShare: number; hhi: number; operatorCount: number };
   linkedDealCount: number;
@@ -83,6 +85,15 @@ const STATUS_COLOR: Record<string, string> = {
   operational: "#F07800",
   construction: "#F0A500",
   announced: "rgba(255,255,255,0.45)",
+};
+
+const ENERGY_COLOR: Record<string, string> = {
+  nuclear: "#a855f7",
+  "on-site gas": "#F0A500",
+  grid: "#7B8FA1",
+  hydro: "#1E90FF",
+  renewables: "#22c55e",
+  other: "#6b7280",
 };
 
 const STATUS_LABEL: Record<string, string> = {
@@ -173,6 +184,21 @@ export default function ComputeFrontier() {
       .map(([year, mw]) => ({ year, gw: parseFloat((mw / 1000).toFixed(2)) }));
   }, [clusters]);
 
+  // Operator chart: cap at the 15 largest by planned MW and roll the rest into
+  // an "Others" bar, so the chart stays legible across dozens of operators.
+  const OP_TOP_N = 15;
+  const topOperators = useMemo(() => {
+    if (!metrics) return [];
+    const top = metrics.byOperator.slice(0, OP_TOP_N);
+    const rest = metrics.byOperator.slice(OP_TOP_N);
+    if (rest.length === 0) return top;
+    const others = rest.reduce(
+      (a, o) => ({ operator: a.operator, count: a.count + o.count, ratedMW: a.ratedMW + o.ratedMW, plannedMW: a.plannedMW + o.plannedMW, gpus: a.gpus + o.gpus }),
+      { operator: `Others (${rest.length})`, count: 0, ratedMW: 0, plannedMW: 0, gpus: 0 },
+    );
+    return [...top, others];
+  }, [metrics]);
+
   const ps = metrics?.powerSecured;
 
   return (
@@ -220,19 +246,19 @@ export default function ComputeFrontier() {
 
         {/* Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3" data-testid="cf-charts">
-          <ChartCard title="Planned MW by operator">
+          <ChartCard title={`Planned MW by operator${metrics && metrics.concentration.operatorCount > OP_TOP_N ? ` (top ${OP_TOP_N})` : ""}`}>
             {metrics ? (
-              <ResponsiveContainer width="100%" height={260}>
-                <BarChart data={metrics.byOperator} layout="vertical" margin={{ left: 8, right: 16, top: 4, bottom: 4 }}>
+              <ResponsiveContainer width="100%" height={280}>
+                <BarChart data={topOperators} layout="vertical" margin={{ left: 8, right: 16, top: 4, bottom: 4 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
                   <XAxis type="number" tick={{ fontSize: 10, fill: "#777" }} stroke="#333" tickFormatter={(v) => `${(v / 1000).toFixed(0)}`} />
-                  <YAxis type="category" dataKey="operator" width={92} tick={{ fontSize: 9, fill: "#999" }} stroke="#333" />
-                  <RTooltip formatter={(v: number) => [`${v.toLocaleString()} MW`, "planned"]} cursor={{ fill: "rgba(240,120,0,0.06)" }} />
+                  <YAxis type="category" dataKey="operator" width={110} tick={{ fontSize: 9, fill: "#999" }} stroke="#333" interval={0} />
+                  <RTooltip formatter={(v: number, _n, p: any) => [`${v.toLocaleString()} MW`, `${p.payload.count} clusters`]} cursor={{ fill: "rgba(240,120,0,0.06)" }} />
                   <Bar dataKey="plannedMW" fill="#F07800" radius={[0, 2, 2, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             ) : <ChartSkeleton />}
-            <p className="text-[10px] text-muted-foreground/50 mt-1 font-mono">x axis in GW</p>
+            <p className="text-[10px] text-muted-foreground/50 mt-1 font-mono">x axis in GW{metrics && metrics.concentration.operatorCount > OP_TOP_N ? ` · ${metrics.concentration.operatorCount} operators total` : ""}</p>
           </ChartCard>
 
           <ChartCard title="Planned MW by grid region (ISO)">
@@ -280,6 +306,23 @@ export default function ComputeFrontier() {
               </ResponsiveContainer>
             ) : <ChartSkeleton />}
             <p className="text-[10px] text-muted-foreground/50 mt-1 font-mono">bucketed by first announced year</p>
+          </ChartCard>
+
+          <ChartCard title="Planned MW by energy source">
+            {metrics ? (
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={metrics.byEnergySource} layout="vertical" margin={{ left: 8, right: 16, top: 4, bottom: 4 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
+                  <XAxis type="number" tick={{ fontSize: 10, fill: "#777" }} stroke="#333" tickFormatter={(v) => `${(v / 1000).toFixed(0)}`} />
+                  <YAxis type="category" dataKey="source" width={80} tick={{ fontSize: 10, fill: "#999" }} stroke="#333" interval={0} />
+                  <RTooltip formatter={(v: number, _n, p: any) => [`${v.toLocaleString()} MW`, `${p.payload.count} clusters`]} cursor={{ fill: "rgba(240,120,0,0.06)" }} />
+                  <Bar dataKey="plannedMW" radius={[0, 2, 2, 0]}>
+                    {metrics.byEnergySource.map((e) => <Cell key={e.source} fill={ENERGY_COLOR[e.source] ?? "#6b7280"} />)}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            ) : <ChartSkeleton />}
+            <p className="text-[10px] text-muted-foreground/50 mt-1 font-mono">x axis in GW · grid vs behind-the-meter gas, nuclear, renewables</p>
           </ChartCard>
         </div>
 

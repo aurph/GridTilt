@@ -20,6 +20,7 @@ export interface ClusterLite {
   ratedPowerMW: number;
   plannedPowerMW: number;
   linkedDeal: string | null;
+  energySource?: string;
 }
 
 export interface StatusBucket {
@@ -39,6 +40,13 @@ export interface OperatorBucket {
 
 export interface IsoBucket {
   iso: string;
+  count: number;
+  ratedMW: number;
+  plannedMW: number;
+}
+
+export interface EnergyBucket {
+  source: string; // bucketed: nuclear | on-site gas | hydro | grid | other
   count: number;
   ratedMW: number;
   plannedMW: number;
@@ -64,6 +72,7 @@ export interface ClusterMetrics {
   byStatus: StatusBucket[];
   byOperator: OperatorBucket[];
   byIso: IsoBucket[];
+  byEnergySource: EnergyBucket[];
   gpusPerMW: number | null;
   concentration: Concentration;
   linkedDealCount: number;
@@ -76,6 +85,19 @@ function round(n: number, dp: number): number {
 
 // Fixed display order for the status buckets present in the data.
 const STATUS_ORDER = ["operational", "construction", "announced"];
+
+/** Collapse a free-text energySource into one primary fuel bucket. Order is
+ *  deliberate: behind-the-meter gas, nuclear, and hydro are the salient story,
+ *  so they win over a plain "grid" mention when both appear. */
+function bucketEnergySource(s?: string): string {
+  const t = (s ?? "").toLowerCase();
+  if (/nuclear|smr|reactor/.test(t)) return "nuclear";
+  if (/gas/.test(t)) return "on-site gas";
+  if (/hydro/.test(t)) return "hydro";
+  if (/grid/.test(t)) return "grid"; // grid wins over a renewable-PPA mention (physical supply is the grid)
+  if (/solar|wind|renewable/.test(t)) return "renewables"; // on-site/standalone renewables, no grid tie stated
+  return "other";
+}
 
 /** All Compute Frontier headline + breakdown metrics from the cluster rows. */
 export function computeClusterMetrics(clusters: ClusterLite[]): ClusterMetrics {
@@ -92,6 +114,7 @@ export function computeClusterMetrics(clusters: ClusterLite[]): ClusterMetrics {
   const statusMap = new Map<string, StatusBucket>();
   const opMap = new Map<string, OperatorBucket>();
   const isoMap = new Map<string, IsoBucket>();
+  const energyMap = new Map<string, EnergyBucket>();
   const seenDeals = new Set<string>();
   const linkedDealIds: string[] = [];
   let linkedDealCount = 0;
@@ -133,6 +156,13 @@ export function computeClusterMetrics(clusters: ClusterLite[]): ClusterMetrics {
     ib.plannedMW += c.plannedPowerMW;
     isoMap.set(c.gridRegion, ib);
 
+    const src = bucketEnergySource(c.energySource);
+    const eb = energyMap.get(src) ?? { source: src, count: 0, ratedMW: 0, plannedMW: 0 };
+    eb.count++;
+    eb.ratedMW += c.ratedPowerMW;
+    eb.plannedMW += c.plannedPowerMW;
+    energyMap.set(src, eb);
+
     if (c.linkedDeal) {
       linkedDealCount++;
       if (!seenDeals.has(c.linkedDeal)) {
@@ -148,6 +178,9 @@ export function computeClusterMetrics(clusters: ClusterLite[]): ClusterMetrics {
   );
   const byIso = Array.from(isoMap.values()).sort(
     (a, b) => b.plannedMW - a.plannedMW || a.iso.localeCompare(b.iso),
+  );
+  const byEnergySource = Array.from(energyMap.values()).sort(
+    (a, b) => b.plannedMW - a.plannedMW || a.source.localeCompare(b.source),
   );
 
   const gpusPerMW = gpuRatedMW > 0 ? round(totalGpus / gpuRatedMW, 2) : null;
@@ -178,6 +211,7 @@ export function computeClusterMetrics(clusters: ClusterLite[]): ClusterMetrics {
     byStatus,
     byOperator,
     byIso,
+    byEnergySource,
     gpusPerMW,
     concentration: { topOperator, topOperatorPlannedShare, hhi, operatorCount },
     linkedDealCount,

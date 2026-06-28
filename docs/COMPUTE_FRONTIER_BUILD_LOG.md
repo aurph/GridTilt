@@ -606,6 +606,36 @@ operators, no dup ids, every `estimated[]` a real field, every `linkedDeal`
 resolves, all https sources) · `npm run check` exit 0, 0 errors · `npm test`
 51/51 · `npm run build` exit 0. README + blog counts updated to 49/19.
 
+## Page scaling + energy-mix breakdown (2026-06-27)
+
+**Did:** The page was built for ~49 clusters; at 235 the "Planned MW by
+operator" chart tried to draw all 77 operators in 260px (unreadable) and there
+was no fuel-mix view. Fixed both:
+- Backend (TDD): added `byEnergySource` to `computeClusterMetrics`, bucketing
+  the free-text energy field into nuclear / on-site gas / hydro / renewables /
+  grid / other (gas/nuclear/hydro/renewables win over a plain "grid" mention;
+  grid wins over a renewable-PPA mention since the physical supply is the grid).
+  Wrote the test first, watched it fail, implemented. `byEnergySource` flows
+  through `/api/clusters/metrics` automatically.
+- Frontend: the operator chart now caps at the top 15 by planned MW with the
+  rest rolled into an "Others (N)" bar (chart total still equals the metrics
+  total, no data dropped), and a new "Planned MW by energy source" chart with a
+  fuel-colored legend.
+
+**Why it's the right call:** it corrects a regression I introduced by 5x-ing
+the dataset, and the energy cut is on-mission, it shows ~33 GW of the planned
+buildout is behind-the-meter gas vs ~10 GW nuclear and ~71 GW grid, which is
+exactly the obfuscation-cutting "where does the power come from" story.
+
+**Verification (real output):** `npm run check` 0 errors; `npm test` 54/54
+(new byEnergySource test); `npm run build` exit 0. Rollup conserves total
+(top15 + Others = 124.6 GW = metrics total); energy buckets cover all 235
+clusters. Headless caveat: compile + data logic verified; not browser-rendered
+from here (harness blocks running the server), but it reuses the existing
+Recharts patterns on the page.
+
+---
+
 ## Coverage expansion round 3 (2026-06-26)
 
 **Did:** Third discovery-only sweep (deep tail: REIT/colo AI campuses, more

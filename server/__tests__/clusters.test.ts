@@ -198,6 +198,22 @@ test("no operational cluster has zero rated power (operational means power is av
   }
 });
 
+test("byEnergySource buckets the fuel mix, gas/nuclear/hydro winning over grid, sorted by planned MW", () => {
+  const fx: ClusterLite[] = [
+    { id: "a", operator: "X", status: "operational", gridRegion: "ERCOT", gpuCount: null, ratedPowerMW: 100, plannedPowerMW: 100, linkedDeal: null, energySource: "grid + on-site gas" },
+    { id: "b", operator: "X", status: "construction", gridRegion: "ERCOT", gpuCount: null, ratedPowerMW: 0, plannedPowerMW: 200, linkedDeal: null, energySource: "nuclear (Oklo SMR, planned) + grid" },
+    { id: "c", operator: "X", status: "operational", gridRegion: "WECC", gpuCount: null, ratedPowerMW: 50, plannedPowerMW: 50, linkedDeal: null, energySource: "grid (hydro)" },
+    { id: "d", operator: "X", status: "operational", gridRegion: "PJM", gpuCount: null, ratedPowerMW: 10, plannedPowerMW: 10, linkedDeal: null, energySource: "grid" },
+  ];
+  const m = computeClusterMetrics(fx);
+  const get = (s: string) => m.byEnergySource.find((x) => x.source === s);
+  assert.deepEqual(get("on-site gas"), { source: "on-site gas", count: 1, ratedMW: 100, plannedMW: 100 }); // gas wins over grid
+  assert.deepEqual(get("nuclear"), { source: "nuclear", count: 1, ratedMW: 0, plannedMW: 200 });
+  assert.deepEqual(get("hydro"), { source: "hydro", count: 1, ratedMW: 50, plannedMW: 50 });
+  assert.deepEqual(get("grid"), { source: "grid", count: 1, ratedMW: 10, plannedMW: 10 });
+  assert.equal(m.byEnergySource[0].source, "nuclear"); // 200 MW planned, sorted first
+});
+
 test("every cluster linkedDeal resolves to a tracked deal id in the queue", () => {
   // Locks the spec promise that a linkedDeal always points at a real tracked
   // nuclear-for-AI deal, so the power-needed-vs-secured join can never dangle.
