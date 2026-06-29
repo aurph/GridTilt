@@ -22,6 +22,7 @@ import {
   Cable,
   LineChart,
   Handshake,
+  Newspaper,
 } from "lucide-react";
 import logoPath from "@assets/Image_[Vectorized]_(2)_1773890483514.png";
 
@@ -61,6 +62,12 @@ const navItems = [
     url: "/power-deals",
     icon: Handshake,
     description: "Corporate power procurement for AI",
+  },
+  {
+    title: "The Buildout Brief",
+    url: "/brief",
+    icon: Newspaper,
+    description: "One read across every module",
   },
   {
     title: "Supply Chain",

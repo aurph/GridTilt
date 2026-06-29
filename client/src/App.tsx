@@ -14,6 +14,7 @@ import ComputeFrontierCompare from "@/pages/ComputeFrontierCompare";
 import ComputeFrontierDetail from "@/pages/ComputeFrontierDetail";
 import NeocloudIntel from "@/pages/neocloud-intel";
 import PowerDeals from "@/pages/power-deals";
+import BriefPage from "@/pages/brief";
 import TheTrade from "@/pages/TheTrade";
 import PortfolioOverlay from "@/pages/PortfolioOverlay";
 import CatalystTracker from "@/pages/CatalystTracker";
@@ -51,6 +52,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/compute-frontier": "Compute Frontier",
   "/neocloud-intel": "Neocloud Intel",
   "/power-deals": "AI Power Deals",
+  "/brief": "The Buildout Brief",
   "/supply-chain": "Supply Chain",
   "/trade": "Scenario Calculator",
   "/portfolio": "Portfolio Overlay",
@@ -73,6 +75,7 @@ const SHORTCUTS = [
   { keys: ["G", "0"], description: "Go to Compute Frontier", path: "/compute-frontier" },
   { keys: ["G", "N"], description: "Go to Neocloud Intel", path: "/neocloud-intel" },
   { keys: ["G", "D"], description: "Go to AI Power Deals", path: "/power-deals" },
+  { keys: ["G", "B"], description: "Go to The Buildout Brief", path: "/brief" },
   { keys: ["?"], description: "Show this keyboard shortcuts panel", path: null },
 ];
 
@@ -164,6 +167,7 @@ function Router() {
       <Route path="/compute-frontier/:id" component={ComputeFrontierDetail} />
       <Route path="/neocloud-intel" component={NeocloudIntel} />
       <Route path="/power-deals" component={PowerDeals} />
+      <Route path="/brief" component={BriefPage} />
       <Route path="/supply-chain" component={SupplyChain} />
       <Route path="/trade" component={TheTrade} />
       <Route path="/portfolio" component={PortfolioOverlay} />
@@ -243,7 +247,7 @@ function App() {
           "1": "/overview", "2": "/stack", "3": "/power-map",
           "4": "/supply-chain", "5": "/portfolio", "6": "/trade",
           "7": "/catalysts", "8": "/blog", "9": "/queue",
-          "0": "/compute-frontier", "n": "/neocloud-intel", "d": "/power-deals",
+          "0": "/compute-frontier", "n": "/neocloud-intel", "d": "/power-deals", "b": "/brief",
         };
         if (routes[e.key]) {
           navigate(routes[e.key]);

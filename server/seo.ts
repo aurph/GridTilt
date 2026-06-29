@@ -89,6 +89,11 @@ const STATIC_PAGES: Record<string, { title: string; description: string; slug: s
     description: "Every named deal where a hyperscaler or AI company contracted generation to feed its compute: PPAs, reactor restarts, and SMR options by buyer, energy type, capacity, and online date. Microsoft, Meta, Google, Amazon and more.",
     slug: "power-deals",
   },
+  "/brief": {
+    title: "The Buildout Brief \u00b7 State of the AI Power Buildout \u00b7 GridTilt",
+    description: "One synthesized read on the AI power buildout, generated live from every GridTilt module: compute clusters, GPU rental prices, the interconnection queue, and corporate power deals.",
+    slug: "brief",
+  },
   "/subscribe": {
     title: "Get the Tilt \u2014 Weekly AI Power Market Intel \u2014 GridTilt",
     description: "Weekly digest of AI power market moves, catalysts, and thesis updates. Built for investors tracking the buildout.",

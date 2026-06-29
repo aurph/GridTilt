@@ -32,6 +32,7 @@ import { computeClusterMetrics, type ClusterLite } from "./clusters";
 import { computeGpuIndex } from "./gpu-index";
 import { recordDailyGpuPrices, recordedByModel } from "./gpu-history";
 import { computeDealMetrics, type DealProject } from "./deals";
+import { composeBrief, renderBriefText, type BriefInput } from "./brief";
 import {
   buildBuildoutTweet,
   buildGpuRentalTweet,
@@ -3815,6 +3816,65 @@ ${rssItems}
     } catch (err) {
       console.error("Deals metrics error:", err);
       res.status(500).json({ error: "Failed to compute deals" });
+    }
+  });
+
+  // Weekly Buildout Brief: one synthesized read across every module.
+  app.get("/api/brief", (_req, res) => {
+    try {
+      const cwd = process.cwd();
+      const clustersRoot = JSON.parse(readFileSync(join(cwd, "server", "data", "clusters.json"), "utf-8"));
+      const clusters = (clustersRoot.clusters ?? []) as ClusterLite[];
+      const cm = computeClusterMetrics(clusters);
+      const biggest = [...clusters].sort((a, b) => (b.plannedPowerMW ?? 0) - (a.plannedPowerMW ?? 0))[0] as any;
+
+      const gpuRoot = readGpuRoot();
+      const gi = computeGpuIndex(gpuRoot.models ?? [], easternDay());
+      const byModel = Object.fromEntries(gi.rows.map((r) => [r.model, r]));
+      const mover = gi.rows.filter((r) => r.changes.y1 != null).sort((a, b) => Math.abs(b.changes.y1 as number) - Math.abs(a.changes.y1 as number))[0];
+      const cheapest = [...gi.rows].sort((a, b) => a.current - b.current)[0];
+
+      const queueRoot = JSON.parse(readFileSync(join(cwd, "server", "data", "interconnection-queue.json"), "utf-8"));
+      const qh = queueRoot.headline;
+      const dm = computeDealMetrics((queueRoot.projects ?? []) as DealProject[]);
+
+      const input: BriefInput = {
+        asOf: easternDay(),
+        compute: {
+          clusterCount: cm.clusterCount,
+          plannedGW: Math.round(cm.totalPlannedMW / 1000),
+          operationalGW: Math.round(cm.operationalMW / 1000),
+          operatorCount: cm.concentration.operatorCount,
+          topOperator: cm.concentration.topOperator,
+          topOperatorSharePct: cm.concentration.topOperatorPlannedShare * 100,
+          biggestName: biggest ? String(biggest.name).replace(/\s*\([^)]*\)\s*$/, "").trim() : null,
+          biggestGW: biggest ? (biggest.plannedPowerMW ?? 0) / 1000 : 0,
+        },
+        gpu: {
+          fleetAvg: gi.fleetAvg,
+          fleetAvg1yChange: gi.fleetAvg1yChange,
+          h100: byModel.H100?.current ?? 0,
+          gb200: byModel.GB200?.current ?? 0,
+          moverModel: mover?.model ?? "A100",
+          moverChangePct: (mover?.changes.y1 as number) ?? 0,
+          cheapestModel: cheapest?.model ?? "A100",
+          cheapestPrice: cheapest?.current ?? 0,
+        },
+        grid: { queueGW: qh.queueOverallGW, medianWaitMonths: qh.medianWaitMonths, ercotGW: qh.ercotLargeLoadGW },
+        deals: {
+          dealCount: dm.dealCount,
+          contractedGW: +(dm.totalContractedMW / 1000).toFixed(1),
+          topBuyer: dm.topBuyer,
+          topBuyerGW: +((dm.byOfftaker[0]?.mw ?? 0) / 1000).toFixed(1),
+          topType: dm.byType[0]?.key ?? null,
+          topTypeGW: +((dm.byType[0]?.mw ?? 0) / 1000).toFixed(1),
+        },
+      };
+      const brief = composeBrief(input);
+      res.json({ ...brief, text: renderBriefText(brief) });
+    } catch (err) {
+      console.error("Brief error:", err);
+      res.status(500).json({ error: "Failed to build brief" });
     }
   });
 
