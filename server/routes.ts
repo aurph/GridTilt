@@ -1328,6 +1328,14 @@ async function xUploadMedia(pngBuf: Buffer): Promise<string | null> {
 }
 
 async function xPostTweet(text: string, mediaIds?: string[]): Promise<XPostResult> {
+  // Master kill switch. Live X posting is OFF unless X_POSTING_ENABLED === "true",
+  // even when credentials are present. This is the safe default so the daily cron,
+  // a stray scheduler, or a fresh deploy can never post on its own. To post again,
+  // a human must deliberately set X_POSTING_ENABLED=true.
+  if (process.env.X_POSTING_ENABLED !== "true") {
+    return { ok: true, text, dryRun: true };
+  }
+
   const consumerKey = process.env.X_API_KEY;
   const consumerSecret = process.env.X_API_SECRET;
   const accessToken = process.env.X_ACCESS_TOKEN;
