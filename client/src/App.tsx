@@ -13,6 +13,7 @@ import ComputeFrontierMethodology from "@/pages/ComputeFrontierMethodology";
 import ComputeFrontierCompare from "@/pages/ComputeFrontierCompare";
 import ComputeFrontierDetail from "@/pages/ComputeFrontierDetail";
 import NeocloudIntel from "@/pages/neocloud-intel";
+import GpuEconomics from "@/pages/gpu-economics";
 import PowerDeals from "@/pages/power-deals";
 import BriefPage from "@/pages/brief";
 import TheTrade from "@/pages/TheTrade";
@@ -51,6 +52,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/power-map": "Power Map",
   "/compute-frontier": "Compute Frontier",
   "/neocloud-intel": "Neocloud Intel",
+  "/gpu-economics": "GPU Economics",
   "/power-deals": "AI Power Deals",
   "/brief": "The Buildout Brief",
   "/supply-chain": "Supply Chain",
@@ -76,6 +78,7 @@ const SHORTCUTS = [
   { keys: ["G", "N"], description: "Go to Neocloud Intel", path: "/neocloud-intel" },
   { keys: ["G", "D"], description: "Go to AI Power Deals", path: "/power-deals" },
   { keys: ["G", "B"], description: "Go to The Buildout Brief", path: "/brief" },
+  { keys: ["G", "E"], description: "Go to GPU Economics", path: "/gpu-economics" },
   { keys: ["?"], description: "Show this keyboard shortcuts panel", path: null },
 ];
 
@@ -166,6 +169,7 @@ function Router() {
       <Route path="/compute-frontier/compare" component={ComputeFrontierCompare} />
       <Route path="/compute-frontier/:id" component={ComputeFrontierDetail} />
       <Route path="/neocloud-intel" component={NeocloudIntel} />
+      <Route path="/gpu-economics" component={GpuEconomics} />
       <Route path="/power-deals" component={PowerDeals} />
       <Route path="/brief" component={BriefPage} />
       <Route path="/supply-chain" component={SupplyChain} />
@@ -247,7 +251,7 @@ function App() {
           "1": "/overview", "2": "/stack", "3": "/power-map",
           "4": "/supply-chain", "5": "/portfolio", "6": "/trade",
           "7": "/catalysts", "8": "/blog", "9": "/queue",
-          "0": "/compute-frontier", "n": "/neocloud-intel", "d": "/power-deals", "b": "/brief",
+          "0": "/compute-frontier", "n": "/neocloud-intel", "d": "/power-deals", "b": "/brief", "e": "/gpu-economics",
         };
         if (routes[e.key]) {
           navigate(routes[e.key]);

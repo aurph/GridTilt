@@ -84,6 +84,11 @@ const STATIC_PAGES: Record<string, { title: string; description: string; slug: s
     description: "On-demand GPU rental prices ($/GPU/hr) for H100, H200, GB200, B200, B300, MI300X and more, blended across the major neoclouds and marketplaces. Sourced blended estimates with marketplace ranges and 1W/1M/YTD/1Y changes.",
     slug: "neocloud-intel",
   },
+  "/gpu-economics": {
+    title: "GPU Economics \u00b7 Cost of Compute and Training \u00b7 GridTilt",
+    description: "What renting AI GPUs actually costs: hourly rates rolled out to a year, normalized by compute ($/PFLOP-hour) so you can see the cheapest GPU per unit of work, plus a transparent training-cost calculator with adjustable assumptions.",
+    slug: "gpu-economics",
+  },
   "/power-deals": {
     title: "AI Power Deals \u00b7 Corporate Power Procurement for AI \u00b7 GridTilt",
     description: "Every named deal where a hyperscaler or AI company contracted generation to feed its compute: PPAs, reactor restarts, and SMR options by buyer, energy type, capacity, and online date. Microsoft, Meta, Google, Amazon and more.",

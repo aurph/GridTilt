@@ -33,6 +33,7 @@ import { computeGpuIndex } from "./gpu-index";
 import { recordDailyGpuPrices, recordedByModel } from "./gpu-history";
 import { computeDealMetrics, type DealProject } from "./deals";
 import { composeBrief, renderBriefText, type BriefInput } from "./brief";
+import { computeGpuEconomics, TRAINING_PRESETS } from "./gpu-economics";
 import {
   buildBuildoutTweet,
   buildGpuRentalTweet,
@@ -3816,6 +3817,27 @@ ${rssItems}
     } catch (err) {
       console.error("Deals metrics error:", err);
       res.status(500).json({ error: "Failed to compute deals" });
+    }
+  });
+
+  // GPU economics: rental cost over time + cost-per-compute + training presets.
+  app.get("/api/gpu-economics", (_req, res) => {
+    try {
+      const root = readGpuRoot();
+      const models = (root.models ?? []).map((m: any) => ({
+        model: m.model,
+        vendor: m.vendor,
+        currentUsdPerHr: m.currentUsdPerHr,
+        tflopsBf16: m.tflopsBf16 ?? 0,
+      }));
+      res.json({
+        rows: computeGpuEconomics(models),
+        trainingPresets: TRAINING_PRESETS,
+        lastRefreshed: root.lastRefreshed ?? null,
+      });
+    } catch (err) {
+      console.error("GPU economics error:", err);
+      res.status(500).json({ error: "Failed to compute GPU economics" });
     }
   });
 

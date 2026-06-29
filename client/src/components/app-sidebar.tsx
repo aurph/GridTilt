@@ -58,6 +58,12 @@ const navItems = [
     description: "GPU rental price index",
   },
   {
+    title: "GPU Economics",
+    url: "/gpu-economics",
+    icon: Calculator,
+    description: "Cost of compute + training calculator",
+  },
+  {
     title: "AI Power Deals",
     url: "/power-deals",
     icon: Handshake,
