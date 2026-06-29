@@ -84,6 +84,11 @@ const STATIC_PAGES: Record<string, { title: string; description: string; slug: s
     description: "On-demand GPU rental prices ($/GPU/hr) for H100, H200, GB200, B200, B300, MI300X and more, blended across the major neoclouds and marketplaces. Sourced blended estimates with marketplace ranges and 1W/1M/YTD/1Y changes.",
     slug: "neocloud-intel",
   },
+  "/power-deals": {
+    title: "AI Power Deals \u00b7 Corporate Power Procurement for AI \u00b7 GridTilt",
+    description: "Every named deal where a hyperscaler or AI company contracted generation to feed its compute: PPAs, reactor restarts, and SMR options by buyer, energy type, capacity, and online date. Microsoft, Meta, Google, Amazon and more.",
+    slug: "power-deals",
+  },
   "/subscribe": {
     title: "Get the Tilt \u2014 Weekly AI Power Market Intel \u2014 GridTilt",
     description: "Weekly digest of AI power market moves, catalysts, and thesis updates. Built for investors tracking the buildout.",

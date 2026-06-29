@@ -31,6 +31,7 @@ import { getElectricityOutputMonthly, getHourlyDemandUS48 } from "./physical";
 import { computeClusterMetrics, type ClusterLite } from "./clusters";
 import { computeGpuIndex } from "./gpu-index";
 import { recordDailyGpuPrices, recordedByModel } from "./gpu-history";
+import { computeDealMetrics, type DealProject } from "./deals";
 import {
   buildBuildoutTweet,
   buildGpuRentalTweet,
@@ -3801,6 +3802,19 @@ ${rssItems}
     } catch (err) {
       console.error("GPU metrics error:", err);
       res.status(500).json({ error: "Failed to compute GPU index" });
+    }
+  });
+
+  // AI power deals: corporate power procurement for AI, from the queue dataset.
+  app.get("/api/deals/metrics", (_req, res) => {
+    try {
+      const filePath = join(process.cwd(), "server", "data", "interconnection-queue.json");
+      const root = JSON.parse(readFileSync(filePath, "utf-8"));
+      const metrics = computeDealMetrics((root.projects ?? []) as DealProject[]);
+      res.json({ ...metrics, lastRefreshed: root.lastRefreshed ?? null });
+    } catch (err) {
+      console.error("Deals metrics error:", err);
+      res.status(500).json({ error: "Failed to compute deals" });
     }
   });
 

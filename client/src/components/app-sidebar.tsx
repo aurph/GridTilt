@@ -21,6 +21,7 @@ import {
   Calculator,
   Cable,
   LineChart,
+  Handshake,
 } from "lucide-react";
 import logoPath from "@assets/Image_[Vectorized]_(2)_1773890483514.png";
 
@@ -54,6 +55,12 @@ const navItems = [
     url: "/neocloud-intel",
     icon: LineChart,
     description: "GPU rental price index",
+  },
+  {
+    title: "AI Power Deals",
+    url: "/power-deals",
+    icon: Handshake,
+    description: "Corporate power procurement for AI",
   },
   {
     title: "Supply Chain",
