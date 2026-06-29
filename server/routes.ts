@@ -1367,6 +1367,9 @@ interface XPostResult {
 // that /2/tweets accepts. OAuth 1.0a, but the multipart body is NOT part of
 // the signature base string (oauth params + URL + method only).
 async function xUploadMedia(pngBuf: Buffer): Promise<string | null> {
+  // Same kill switch as xPostTweet: no writes to X (not even a media upload)
+  // unless posting is explicitly enabled.
+  if (process.env.X_POSTING_ENABLED !== "true") return null;
   const consumerKey = process.env.X_API_KEY;
   const consumerSecret = process.env.X_API_SECRET;
   const accessToken = process.env.X_ACCESS_TOKEN;
