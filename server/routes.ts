@@ -1087,6 +1087,86 @@ async function liveIndicesStats(): Promise<OgStat[]> {
 // Per-template OG card content. Pulled from the same data sources the tweet
 // composers use, so the card and the tweet text stay in sync.
 async function ogCardForTemplate(template: string): Promise<OgCard> {
+  // ── Daily rotation cards (real data, matched to the tweet copy) ──
+  if (template === "buildout") {
+    const root = JSON.parse(readFileSync(join(process.cwd(), "server", "data", "clusters.json"), "utf-8"));
+    const m = computeClusterMetrics((root.clusters ?? []) as ClusterLite[]);
+    return {
+      title: "the AI buildout, tracked",
+      subtitle: "named US AI compute clusters",
+      stats: [
+        { label: "Clusters", value: String(m.clusterCount) },
+        { label: "Planned", value: `${Math.round(m.totalPlannedMW / 1000)} GW` },
+        { label: "Operators", value: String(m.concentration.operatorCount) },
+      ],
+    };
+  }
+  if (template === "gpu_rental") {
+    const root = JSON.parse(readFileSync(join(process.cwd(), "server", "data", "gpu-rental-prices.json"), "utf-8"));
+    const g = computeGpuIndex(root.models ?? [], new Date().toISOString().slice(0, 10));
+    const by = Object.fromEntries(g.rows.map((r) => [r.model, r]));
+    const px = (n?: number) => (n == null ? "n/a" : Number.isInteger(n) ? `$${n}` : `$${n.toFixed(2)}`);
+    return {
+      title: "GPU rental prices",
+      subtitle: "on-demand, blended $/GPU-hr",
+      stats: [
+        { label: "H100", value: px(by.H100?.current) },
+        { label: "H200", value: px(by.H200?.current) },
+        { label: "GB200", value: px(by.GB200?.current) },
+      ],
+    };
+  }
+  if (template === "cluster_spotlight") {
+    const root = JSON.parse(readFileSync(join(process.cwd(), "server", "data", "clusters.json"), "utf-8"));
+    const clusters = (root.clusters ?? []) as Array<any>;
+    const eligible = clusters
+      .filter((c) => (c.plannedPowerMW ?? 0) >= 500 && c.name)
+      .sort((a, b) => (b.plannedPowerMW ?? 0) - (a.plannedPowerMW ?? 0));
+    if (eligible.length) {
+      const c = eligible[Math.floor(Date.now() / (7 * 86_400_000)) % eligible.length];
+      const name = String(c.name).replace(/\s*\([^)]*\)\s*$/, "").trim();
+      const city = c.location?.city as string | undefined;
+      const state = c.location?.state as string | undefined;
+      const loc = city && state ? (name.includes(city) ? state : `${city}, ${state}`) : (state ?? c.gridRegion ?? "");
+      const g = (c.plannedPowerMW ?? 0) / 1000;
+      return {
+        title: name,
+        subtitle: loc ? `${loc} · AI compute cluster` : "AI compute cluster",
+        stats: [
+          { label: "Planned", value: `${Number.isInteger(g) ? g : g.toFixed(1)} GW` },
+          { label: "Operator", value: (c.operator as string) ?? "n/a" },
+          { label: "Region", value: (c.gridRegion as string) ?? state ?? "n/a" },
+        ],
+      };
+    }
+    return { title: "Compute Frontier", subtitle: "AI superclusters by GPUs and power", stats: await computeFrontierOgStats() };
+  }
+  if (template === "grid_backlog") {
+    try {
+      const data = JSON.parse(readFileSync(join(process.cwd(), "server", "data", "interconnection-queue.json"), "utf-8")) as BacklogDataset;
+      const h = data.headline;
+      return {
+        title: "the grid is the bottleneck",
+        subtitle: "US interconnection backlog",
+        stats: [
+          { label: "Total queue", value: `${h.queueOverallGW.toLocaleString()} GW` },
+          { label: "Median wait", value: `${h.medianWaitMonths} mo` },
+          { label: "ERCOT large-load", value: `${h.ercotLargeLoadGW} GW` },
+        ],
+      };
+    } catch {
+      return { title: "the grid is the bottleneck", subtitle: "US interconnection backlog", stats: [] };
+    }
+  }
+  if (template === "power_mix") {
+    const root = JSON.parse(readFileSync(join(process.cwd(), "server", "data", "clusters.json"), "utf-8"));
+    const m = computeClusterMetrics((root.clusters ?? []) as ClusterLite[]);
+    return {
+      title: "how the buildout gets power",
+      subtitle: "planned AI compute by source",
+      stats: m.byEnergySource.slice(0, 3).map((b) => ({ label: b.source, value: `${Math.round(b.plannedMW / 1000)} GW` })),
+    };
+  }
   if (template === "tilt_status") {
     return { title: "today's market gauges", subtitle: "ai demand · nuclear · grid stress", stats: await liveIndicesStats() };
   }
