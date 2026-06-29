@@ -32,14 +32,14 @@ import { computeClusterMetrics, type ClusterLite } from "./clusters";
 import { computeGpuIndex } from "./gpu-index";
 import { recordDailyGpuPrices, recordedByModel } from "./gpu-history";
 import {
-  buildTiltStatusTweet,
+  buildBuildoutTweet,
+  buildGpuRentalTweet,
+  buildClusterSpotlightTweet,
+  buildGridBacklogTweet,
+  buildPowerMixTweet,
   buildTopMoversTweet,
-  buildNpiUpdateTweet,
-  buildQueueTweet,
   buildCatalystTweet,
-  buildComputeFrontierTweet,
   ensureTweetLength,
-  type HistoryDayLite,
 } from "./social-format";
 
 interface SupplyChainStage {
@@ -1603,13 +1603,39 @@ const SECTOR_TAG: Record<string, string> = (() => {
   return m;
 })();
 
-async function composeTiltStatusTweet(): Promise<string> {
-  const k = await computeKpis();
-  const history = ((readIndexHistory() as { days?: HistoryDayLite[] })?.days ?? []);
-  return buildTiltStatusTweet(
-    { aiPowerIndex: k.aiPowerIndex, gridStress: k.gridStress, npiValue: k.npiValue },
-    history,
-  );
+// Strip parenthetical vendor names from an energySource string and normalize.
+// "gas (Entergy) + grid" -> "gas + grid".
+function cleanEnergy(s?: string): string {
+  return (s ?? "").replace(/\s*\([^)]*\)/g, "").replace(/\s+/g, " ").trim().toLowerCase();
+}
+
+async function composeBuildoutTweet(): Promise<string> {
+  const root = JSON.parse(readFileSync(join(process.cwd(), "server", "data", "clusters.json"), "utf-8"));
+  const m = computeClusterMetrics((root.clusters ?? []) as ClusterLite[]);
+  return buildBuildoutTweet({
+    clusterCount: m.clusterCount,
+    plannedGW: Math.round(m.totalPlannedMW / 1000),
+    operationalGW: Math.round(m.operationalMW / 1000),
+    operatorCount: m.concentration.operatorCount,
+  });
+}
+
+async function composeGpuRentalTweet(): Promise<string> {
+  const root = JSON.parse(readFileSync(join(process.cwd(), "server", "data", "gpu-rental-prices.json"), "utf-8"));
+  const today = new Date().toISOString().slice(0, 10);
+  const g = computeGpuIndex(root.models ?? [], today);
+  const byModel = Object.fromEntries(g.rows.map((r) => [r.model, r]));
+  // Biggest 1Y mover (by absolute change) among models with a 1Y figure.
+  const mover = g.rows
+    .filter((r) => r.changes.y1 != null)
+    .sort((a, b) => Math.abs(b.changes.y1 as number) - Math.abs(a.changes.y1 as number))[0];
+  return buildGpuRentalTweet({
+    h100: byModel.H100?.current ?? 0,
+    h200: byModel.H200?.current ?? 0,
+    gb200: byModel.GB200?.current ?? 0,
+    moverModel: mover?.model ?? "A100",
+    moverChangePct: (mover?.changes.y1 as number) ?? 0,
+  });
 }
 
 async function composeTopMoversTweet(): Promise<string> {
@@ -1622,18 +1648,19 @@ async function composeTopMoversTweet(): Promise<string> {
   return buildTopMoversTweet(movers);
 }
 
-async function composeNpiUpdateTweet(): Promise<string> {
-  const k = await computeKpis();
-  return buildNpiUpdateTweet(k.npiValue, k.constituents);
-}
-
-async function composeQueueUpdateTweet(): Promise<string> {
+async function composeGridBacklogTweet(): Promise<string> {
   try {
     const filePath = join(process.cwd(), "server", "data", "interconnection-queue.json");
     const data = JSON.parse(readFileSync(filePath, "utf-8")) as BacklogDataset;
-    return buildQueueTweet(data.headline);
+    const h = data.headline;
+    return buildGridBacklogTweet(h ? {
+      queueOverallGW: h.queueOverallGW,
+      medianWaitMonths: h.medianWaitMonths,
+      ercotLargeLoadGW: h.ercotLargeLoadGW,
+      ercotLargeLoadDataCenterPct: h.ercotLargeLoadDataCenterPct,
+    } : null);
   } catch {
-    return buildQueueTweet(null);
+    return buildGridBacklogTweet(null);
   }
 }
 
@@ -1680,43 +1707,48 @@ async function composeCatalystPreviewTweet(): Promise<string> {
   return buildCatalystTweet(upcoming);
 }
 
-// Sum of distinct tracked nuclear-deal capacities linked from the clusters.
-// Module-scoped so the compute-frontier composer can run outside registerRoutes.
-function clusterSecuredMW(clusters: Array<{ linkedDeal: string | null }>): number {
-  let deals: any[] = [];
-  try {
-    deals = JSON.parse(readFileSync(join(process.cwd(), "server", "data", "interconnection-queue.json"), "utf-8")).projects ?? [];
-  } catch {
-    /* deals optional */
-  }
-  const dealById = new Map<string, any>(deals.map((d): [string, any] => [d.id, d]));
-  const seen = new Set<string>();
-  let mw = 0;
-  for (const c of clusters) {
-    if (c.linkedDeal && !seen.has(c.linkedDeal)) {
-      const d = dealById.get(c.linkedDeal);
-      if (d) {
-        mw += d.capacityMW ?? 0;
-        seen.add(c.linkedDeal);
-      }
-    }
-  }
-  return mw;
+// Pick a different real cluster each week (deterministic by week) among sizable
+// clusters with a known name, so the Wednesday spotlight stays fresh.
+async function composeClusterSpotlightTweet(): Promise<string> {
+  const root = JSON.parse(readFileSync(join(process.cwd(), "server", "data", "clusters.json"), "utf-8"));
+  const clusters = (root.clusters ?? []) as Array<any>;
+  const m = computeClusterMetrics(clusters as ClusterLite[]);
+  const eligible = clusters
+    .filter((c) => (c.plannedPowerMW ?? 0) >= 500 && c.name)
+    .sort((a, b) => (b.plannedPowerMW ?? 0) - (a.plannedPowerMW ?? 0));
+  if (eligible.length === 0) return composeBuildoutTweet();
+
+  const weekIdx = Math.floor(Date.now() / (7 * 86_400_000));
+  const c = eligible[weekIdx % eligible.length];
+  const name = String(c.name).replace(/\s*\([^)]*\)\s*$/, "").trim();
+  const city = c.location?.city as string | undefined;
+  const state = c.location?.state as string | undefined;
+  // Avoid "Stargate Milam County, Milam County, TX" when the name already
+  // carries the place: if the name includes the city, show just the state.
+  let loc = "";
+  if (city && state) loc = name.includes(city) ? state : `${city}, ${state}`;
+  else if (state) loc = state;
+  else loc = (c.gridRegion as string) ?? "";
+  return buildClusterSpotlightTweet({
+    name,
+    plannedGW: (c.plannedPowerMW ?? 0) / 1000,
+    location: loc,
+    energy: cleanEnergy(c.energySource),
+    clusterCount: m.clusterCount,
+  });
 }
 
-async function composeComputeFrontierTweet(): Promise<string> {
+async function composePowerMixTweet(): Promise<string> {
   const root = JSON.parse(readFileSync(join(process.cwd(), "server", "data", "clusters.json"), "utf-8"));
-  const clusters = (root.clusters ?? []) as ClusterLite[];
-  const m = computeClusterMetrics(clusters);
-  return buildComputeFrontierTweet({
-    clusterCount: m.clusterCount,
-    operationalMW: m.operationalMW,
-    totalPlannedMW: m.totalPlannedMW,
-    totalGpus: m.totalGpus,
-    clustersWithGpuData: m.clustersWithGpuData,
-    topOperator: m.concentration.topOperator,
-    topOperatorPlannedShare: m.concentration.topOperatorPlannedShare,
-    securedMW: clusterSecuredMW(clusters),
+  const m = computeClusterMetrics((root.clusters ?? []) as ClusterLite[]);
+  const top = m.byEnergySource[0];
+  const next = m.byEnergySource[1];
+  return buildPowerMixTweet({
+    topSource: top?.source ?? "grid",
+    topGW: Math.round((top?.plannedMW ?? 0) / 1000),
+    nextSource: next?.source ?? "on-site gas",
+    nextGW: Math.round((next?.plannedMW ?? 0) / 1000),
+    linkedDealCount: m.linkedDealCount,
   });
 }
 
@@ -1736,18 +1768,19 @@ async function computeFrontierOgStats(): Promise<Array<{ label: string; value: s
 }
 
 const ROTATING_TEMPLATES: Record<number, { name: string; compose: () => Promise<string> }> = {
-  1: { name: "tilt_status",       compose: composeTiltStatusTweet },      // Mon
-  2: { name: "top_movers",        compose: composeTopMoversTweet },       // Tue
-  3: { name: "npi_update",        compose: composeNpiUpdateTweet },       // Wed
-  4: { name: "queue_update",      compose: composeQueueUpdateTweet },     // Thu
-  5: { name: "catalyst_preview",  compose: composeCatalystPreviewTweet }, // Fri
+  1: { name: "buildout",          compose: composeBuildoutTweet },         // Mon
+  2: { name: "gpu_rental",        compose: composeGpuRentalTweet },        // Tue
+  3: { name: "cluster_spotlight", compose: composeClusterSpotlightTweet }, // Wed
+  4: { name: "grid_backlog",      compose: composeGridBacklogTweet },      // Thu
+  5: { name: "power_mix",         compose: composePowerMixTweet },         // Fri
 };
 
 // On-demand templates: composable via /api/social/generate for a dry run, but
-// deliberately NOT in the Mon-Fri auto-posting rotation above. compute_frontier
-// is dry-run only until a human decides to add it to the cron.
+// deliberately NOT in the Mon-Fri auto-posting rotation above. These pull live
+// market/earnings data and are kept for manual use.
 const ON_DEMAND_TEMPLATES: Record<string, () => Promise<string>> = {
-  compute_frontier: composeComputeFrontierTweet,
+  top_movers: composeTopMoversTweet,
+  catalyst_preview: composeCatalystPreviewTweet,
 };
 
 export async function registerRoutes(

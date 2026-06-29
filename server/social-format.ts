@@ -4,23 +4,20 @@
 // so the exact copy is unit-tested (server/__tests__/social-format.test.ts)
 // and routes.ts only gathers data.
 //
+// The daily rotation posts real, concrete facts about the AI buildout drawn
+// from GridTilt's own datasets (clusters, GPU rental prices, the grid queue).
+// No "indices", no sentiment "gauges" — those were removed on purpose.
+//
 // Voice rules:
-//   - lowercase prose, short sentences; tickers and acronyms KEEP their case
-//   - describe what's in the data; don't editorialize
-//   - no manual column alignment ever: X renders proportional fonts, so
-//     padded columns look ragged. one item per line, or interpunct rows.
-//   - vary the insight line from real numbers (week deltas, peaks), never
-//     ship a sentence that would read identically every week
-//   - full https:// urls so X cards the link
+//   - lowercase prose, short sentences; tickers, acronyms and units KEEP case
+//     (H100, GB200, GW, US, AI, ERCOT)
+//   - state what's in the data; don't editorialize
+//   - one info paragraph, a blank line, then the full https:// url so X cards it
+//   - no manual column alignment ever (X uses proportional fonts)
 
 export function fmtPct(n: number): string {
   const v = n.toFixed(2);
   return n >= 0 ? `+${v}%` : `${v}%`;
-}
-
-export function fmtPerf(perf: number): string {
-  const pct = ((perf - 1) * 100).toFixed(0);
-  return perf >= 1 ? `+${pct}%` : `${pct}%`;
 }
 
 export function ensureTweetLength(text: string): string {
@@ -35,80 +32,124 @@ export function ensureTweetLength(text: string): string {
   return out;
 }
 
-// ── Monday: gauge status ──────────────────────────────────────────────────
+// ── shared number formatting ───────────────────────────────────────────────
 
-export interface GaugeSnapshot {
-  aiPowerIndex: number;
-  gridStress: number;
-  npiValue: number;
+/** GW value: whole numbers print plain, fractions to one decimal. 125 -> "125",
+ *  5 -> "5", 1.2 -> "1.2", 4.32 -> "4.3". */
+function gwStr(g: number): string {
+  return Number.isInteger(g) ? String(g) : g.toFixed(1);
 }
 
-export interface HistoryDayLite {
-  date: string;
-  npiEquityLegs?: number | null;
+/** Price: whole dollars print plain, cents to two decimals. 13 -> "$13",
+ *  2.79 -> "$2.79". */
+function usd(n: number): string {
+  return Number.isInteger(n) ? `$${n}` : `$${n.toFixed(2)}`;
 }
 
-const MONTH_SHORT = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
-
-/** Week delta + peak context from the recorded daily series. */
-export function npiHistoryContext(days: HistoryDayLite[]): {
-  weekDelta: number | null;
-  peakValue: number | null;
-  peakLabel: string | null;
-} {
-  const legs = days.filter((d) => d.npiEquityLegs != null);
-  if (legs.length === 0) return { weekDelta: null, peakValue: null, peakLabel: null };
-  const last = legs[legs.length - 1].npiEquityLegs!;
-  const weekAgo = legs.length > 5 ? legs[legs.length - 6].npiEquityLegs! : null;
-  let peak = legs[0];
-  for (const d of legs) if (d.npiEquityLegs! > peak.npiEquityLegs!) peak = d;
-  const [y, m] = peak.date.split("-");
-  return {
-    weekDelta: weekAgo != null ? last - weekAgo : null,
-    peakValue: peak.npiEquityLegs!,
-    peakLabel: `${MONTH_SHORT[Number(m) - 1]} '${y.slice(2)}`,
-  };
+/** Thousands separators, locale-pinned so tests are deterministic. */
+function withCommas(n: number): string {
+  return n.toLocaleString("en-US");
 }
 
-export function buildTiltStatusTweet(k: GaugeSnapshot, history: HistoryDayLite[]): string {
-  const ctx = npiHistoryContext(history);
+// ── Monday: buildout snapshot (Compute Frontier) ───────────────────────────
 
-  // Insight assembled from live numbers so the sentence changes with the
-  // data instead of repeating verbatim every monday.
-  const parts: string[] = [];
-  parts.push(`npi sits ${(k.npiValue - 100).toFixed(0)} above its jan 2024 base`);
-  if (ctx.peakValue != null && ctx.peakValue - k.npiValue > 5) {
-    parts.push(`${(ctx.peakValue - k.npiValue).toFixed(0)} below the ${ctx.peakLabel} peak`);
-  }
-  if (ctx.weekDelta != null) {
-    parts.push(
-      Math.abs(ctx.weekDelta) < 1.5
-        ? "flat on the week"
-        : `${ctx.weekDelta > 0 ? "+" : ""}${ctx.weekDelta.toFixed(0)} on the week`,
-    );
-  }
-  let insight = parts.join(", ") + ".";
+export interface BuildoutSnapshot {
+  clusterCount: number;
+  plannedGW: number;
+  operationalGW: number;
+  operatorCount: number;
+}
 
-  const aiOff = k.aiPowerIndex - 72;
-  const gsOff = k.gridStress - 68;
-  if (Math.abs(gsOff) > 6 && Math.abs(gsOff) >= Math.abs(aiOff)) {
-    insight += ` grid stress gauge ${gsOff > 0 ? "running" : "sitting"} ${Math.abs(gsOff).toFixed(0)} ${gsOff > 0 ? "above" : "below"} baseline.`;
-  } else if (Math.abs(aiOff) > 6) {
-    insight += ` ai demand gauge ${Math.abs(aiOff).toFixed(0)} ${aiOff > 0 ? "above" : "below"} baseline.`;
-  }
-
+export function buildBuildoutTweet(s: BuildoutSnapshot): string {
   return [
-    "gridtilt · daily gauges",
+    `the AI buildout, tracked: ${s.clusterCount} named US compute clusters, ${gwStr(s.plannedGW)} GW of planned power across ${s.operatorCount} operators. ${gwStr(s.operationalGW)} GW already live.`,
     "",
-    `ai demand ${k.aiPowerIndex.toFixed(0)} · grid stress ${k.gridStress.toFixed(0)} · npi ${k.npiValue.toFixed(0)}`,
-    "",
-    insight,
-    "",
-    "https://gridtilt.com",
+    "https://gridtilt.com/compute-frontier",
   ].join("\n");
 }
 
-// ── Tuesday: top movers ───────────────────────────────────────────────────
+// ── Tuesday: GPU rental watch (Neocloud Intel) ─────────────────────────────
+
+export interface GpuRentalSnapshot {
+  h100: number;
+  h200: number;
+  gb200: number;
+  moverModel: string;
+  moverChangePct: number; // 1Y % change of the biggest mover
+}
+
+export function buildGpuRentalTweet(s: GpuRentalSnapshot): string {
+  const dir = s.moverChangePct < 0 ? "down" : "up";
+  const abs = Math.abs(Math.round(s.moverChangePct));
+  return [
+    `renting a GPU by the hour right now: H100 ~${usd(s.h100)}, H200 ~${usd(s.h200)}, GB200 ~${usd(s.gb200)}/GPU-hr. ${s.moverModel} ${dir} ${abs}% over the past year.`,
+    "",
+    "https://gridtilt.com/neocloud-intel",
+  ].join("\n");
+}
+
+// ── Wednesday: cluster spotlight (rotates weekly) ──────────────────────────
+
+export interface ClusterSpotlight {
+  name: string;
+  plannedGW: number;
+  location: string; // "City, ST" or "" if unknown
+  energy: string; // cleaned, lowercase
+  clusterCount: number;
+}
+
+export function buildClusterSpotlightTweet(s: ClusterSpotlight): string {
+  const loc = s.location ? `, ${s.location}` : "";
+  const power = s.energy ? `, powered by ${s.energy}` : "";
+  return [
+    `${s.name}${loc}: ${gwStr(s.plannedGW)} GW of compute planned${power}. one of ${s.clusterCount} AI clusters we track.`,
+    "",
+    "https://gridtilt.com/compute-frontier",
+  ].join("\n");
+}
+
+// ── Thursday: grid backlog (interconnection queue) ─────────────────────────
+
+export interface BacklogHeadline {
+  queueOverallGW: number;
+  medianWaitMonths: number;
+  ercotLargeLoadGW: number;
+  ercotLargeLoadDataCenterPct: number;
+}
+
+export function buildGridBacklogTweet(h: BacklogHeadline | null): string {
+  if (!h) {
+    return ["us interconnection backlog: dataset refreshing.", "", "https://gridtilt.com/queue"].join("\n");
+  }
+  return [
+    `the grid is the bottleneck: ~${withCommas(h.queueOverallGW)} GW waiting in US interconnection queues, ~${h.medianWaitMonths}-month median wait. ERCOT's large-load queue alone is ${h.ercotLargeLoadGW} GW, ${Math.round(h.ercotLargeLoadDataCenterPct)}% data centers.`,
+    "",
+    "https://gridtilt.com/queue",
+  ].join("\n");
+}
+
+// ── Friday: power mix (how the buildout gets power) ─────────────────────────
+
+export interface PowerMixSnapshot {
+  topSource: string;
+  topGW: number;
+  nextSource: string;
+  nextGW: number;
+  linkedDealCount: number;
+}
+
+export function buildPowerMixTweet(s: PowerMixSnapshot): string {
+  const deals = s.linkedDealCount > 0
+    ? ` ${s.linkedDealCount} nuclear-for-AI deals tracked.`
+    : "";
+  return [
+    `how the AI buildout plans to get power: ${s.topSource} leads at ${gwStr(s.topGW)} GW of planned compute, then ${s.nextSource} at ${gwStr(s.nextGW)} GW.${deals}`,
+    "",
+    "https://gridtilt.com/compute-frontier",
+  ].join("\n");
+}
+
+// ── On-demand: top movers (real market moves, manual dry-run only) ──────────
 
 export interface MoverLite {
   ticker: string;
@@ -154,89 +195,7 @@ export function buildTopMoversTweet(movers: MoverLite[]): string {
   ].join("\n");
 }
 
-// ── Wednesday: NPI constituents ───────────────────────────────────────────
-
-export interface NpiConstituentPerfs {
-  cegPerf: number;
-  vstPerf: number;
-  ccjPerf: number;
-  nlrPerf: number;
-  uPerf: number;
-  policyPerf: number;
-}
-
-/** Effective weight of each leg after price-relative drift (no rebalance). */
-export function effectiveNpiWeights(c: NpiConstituentPerfs): Record<string, number> {
-  const terms: Record<string, number> = {
-    CEG: 0.25 * c.cegPerf,
-    VST: 0.2 * c.vstPerf,
-    CCJ: 0.15 * c.ccjPerf,
-    NLR: 0.2 * c.nlrPerf,
-    uranium: 0.1 * c.uPerf,
-    policy: 0.1 * c.policyPerf,
-  };
-  const denom = Object.values(terms).reduce((a, b) => a + b, 0);
-  return Object.fromEntries(Object.entries(terms).map(([k, v]) => [k, v / denom]));
-}
-
-export function buildNpiUpdateTweet(npiValue: number, c: NpiConstituentPerfs): string {
-  const perfs = [
-    { sym: "VST", perf: c.vstPerf },
-    { sym: "CEG", perf: c.cegPerf },
-    { sym: "NLR", perf: c.nlrPerf },
-    { sym: "CCJ", perf: c.ccjPerf },
-    { sym: "uranium", perf: c.uPerf },
-  ].sort((a, b) => b.perf - a.perf);
-
-  const row = perfs.map((p) => `${p.sym} ${fmtPerf(p.perf)}`).join(" · ");
-
-  // The honest line: disclose weight drift when one leg dominates, the
-  // same finding the validation study publishes.
-  const eff = effectiveNpiWeights(c);
-  const [domName, domW] = Object.entries(eff).sort((a, b) => b[1] - a[1])[0];
-  const insight =
-    domW >= 0.35
-      ? `un-rebalanced since the base, so ${domName.toLowerCase()} now carries ${(domW * 100).toFixed(0)}% of the basket. methodology and validation are public in the repo.`
-      : `leader ${perfs[0].sym}, laggard ${perfs[perfs.length - 1].sym}, since the jan 2024 base.`;
-
-  return [
-    `nuclear power index: ${npiValue.toFixed(0)} (jan 2024 = 100)`,
-    "",
-    row,
-    "",
-    insight,
-    "",
-    "https://gridtilt.com",
-  ].join("\n");
-}
-
-// ── Thursday: interconnection queue ───────────────────────────────────────
-
-export interface QueueHeadline {
-  queueOverallGW: number;
-  medianWaitMonths: number;
-  ercotLargeLoadGW: number;
-  ercotLargeLoadDataCenterPct: number;
-  trackedProjects: number;
-  trackedCapacityGW: number;
-}
-
-export function buildQueueTweet(h: QueueHeadline | null): string {
-  if (!h) {
-    return ["us interconnection backlog", "", "dataset refreshing.", "", "https://gridtilt.com/queue"].join("\n");
-  }
-  return [
-    "us interconnection backlog",
-    "",
-    `~${h.queueOverallGW.toLocaleString()} GW waiting in queues. median wait ${h.medianWaitMonths} months. ERCOT large-load alone: ${h.ercotLargeLoadGW} GW, ${h.ercotLargeLoadDataCenterPct}% of it datacenters.`,
-    "",
-    `gridtilt tracks ${h.trackedProjects} named projects, ${h.trackedCapacityGW} GW.`,
-    "",
-    "https://gridtilt.com/queue",
-  ].join("\n");
-}
-
-// ── Friday: catalyst preview ──────────────────────────────────────────────
+// ── On-demand: catalyst preview (real calendar, manual dry-run only) ────────
 
 export interface CatalystLite {
   date: string;
@@ -278,55 +237,5 @@ export function buildCatalystTweet(upcoming: CatalystLite[]): string {
     tail,
     "",
     "https://gridtilt.com/catalysts",
-  ].join("\n");
-}
-
-// ── Compute Frontier: AI supercluster tracker ──────────────────────────────
-
-export interface ComputeFrontierSnapshot {
-  clusterCount: number;
-  operationalMW: number;
-  totalPlannedMW: number;
-  totalGpus: number;
-  clustersWithGpuData: number;
-  topOperator: string | null;
-  topOperatorPlannedShare: number; // 0..1 share of total planned MW
-  securedMW: number; // planned nuclear capacity linked to tracked deals
-}
-
-/** Compact accelerator count: 1,315,000 -> "1.32M", 230,000 -> "230k".
- *  Rounds half-up at two decimals of millions (toFixed alone mis-rounds
- *  1.315 down to "1.31" because of float representation). */
-function fmtAccel(n: number): string {
-  if (n >= 1_000_000) return `${(Math.round(n / 10_000) / 100).toFixed(2)}M`;
-  if (n >= 1_000) return `${Math.round(n / 1000)}k`;
-  return String(n);
-}
-
-export function buildComputeFrontierTweet(s: ComputeFrontierSnapshot): string {
-  const gw = (mw: number) => (mw / 1000).toFixed(1);
-
-  // Insight assembled from live numbers so the sentence shifts with the data
-  // instead of repeating verbatim. Operator names KEEP their case.
-  const parts: string[] = [];
-  if (s.topOperator) {
-    parts.push(`${s.topOperator} leads at ${(s.topOperatorPlannedShare * 100).toFixed(0)}% of planned MW`);
-  }
-  if (s.totalGpus > 0) {
-    parts.push(`${fmtAccel(s.totalGpus)} accelerators disclosed across ${s.clustersWithGpuData} clusters`);
-  }
-  if (s.securedMW > 0) {
-    parts.push(`${gw(s.securedMW)} GW tied to tracked nuclear deals`);
-  }
-  const insight = (parts.length ? parts.join(". ") : "tracked from public announcements; estimates labeled") + ".";
-
-  return [
-    "gridtilt · compute frontier",
-    "",
-    `${s.clusterCount} AI superclusters tracked · ${gw(s.operationalMW)} GW operational · ${gw(s.totalPlannedMW)} GW planned`,
-    "",
-    insight,
-    "",
-    "https://gridtilt.com/compute-frontier",
   ].join("\n");
 }

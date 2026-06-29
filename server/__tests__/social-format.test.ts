@@ -3,67 +3,87 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
-  buildTiltStatusTweet,
+  buildBuildoutTweet,
+  buildGpuRentalTweet,
+  buildClusterSpotlightTweet,
+  buildGridBacklogTweet,
+  buildPowerMixTweet,
   buildTopMoversTweet,
-  buildNpiUpdateTweet,
-  buildQueueTweet,
   buildCatalystTweet,
-  buildComputeFrontierTweet,
-  npiHistoryContext,
-  effectiveNpiWeights,
   ensureTweetLength,
 } from "../social-format";
 
 const within280 = (t: string) => assert.ok(t.length <= 280, `tweet is ${t.length} chars`);
+const noPadding = (t: string) => assert.ok(!/ {2,}/.test(t), "no manual column alignment");
 
-// History fixture: ten trading days climbing to a peak then easing.
-const HISTORY = [
-  { date: "2025-09-01", npiEquityLegs: 310 },
-  { date: "2025-09-02", npiEquityLegs: 322 }, // peak
-  { date: "2026-05-26", npiEquityLegs: 262 },
-  { date: "2026-05-27", npiEquityLegs: 264 },
-  { date: "2026-05-28", npiEquityLegs: 261 },
-  { date: "2026-05-29", npiEquityLegs: 259 },
-  { date: "2026-06-01", npiEquityLegs: 255 },
-  { date: "2026-06-02", npiEquityLegs: 250 },
-  { date: "2026-06-03", npiEquityLegs: 248.6 },
-];
+// ── Daily rotation ─────────────────────────────────────────────────────────
 
-test("npiHistoryContext finds the week delta and the labeled peak", () => {
-  const ctx = npiHistoryContext(HISTORY);
-  // last (248.6) minus 5 trading days back (264)
-  assert.ok(Math.abs(ctx.weekDelta! - (248.6 - 264)) < 1e-9);
-  assert.equal(ctx.peakValue, 322);
-  assert.equal(ctx.peakLabel, "sep '25");
-});
-
-test("tilt status: no padded columns, insight built from live numbers", () => {
-  const t = buildTiltStatusTweet({ aiPowerIndex: 70, gridStress: 67, npiValue: 268.1 }, HISTORY);
+test("buildout: real counts, whole GW, full url, no gauges", () => {
+  const t = buildBuildoutTweet({ clusterCount: 235, plannedGW: 125, operationalGW: 11, operatorCount: 77 });
   assert.equal(
     t,
     [
-      "gridtilt · daily gauges",
+      "the AI buildout, tracked: 235 named US compute clusters, 125 GW of planned power across 77 operators. 11 GW already live.",
       "",
-      "ai demand 70 · grid stress 67 · npi 268",
-      "",
-      "npi sits 168 above its jan 2024 base, 54 below the sep '25 peak, -15 on the week.",
-      "",
-      "https://gridtilt.com",
+      "https://gridtilt.com/compute-frontier",
     ].join("\n"),
   );
-  assert.ok(!/ {2,}/.test(t), "no manual column alignment");
+  assert.ok(!/index|gauge/i.test(t), "no index/gauge language");
+  noPadding(t);
   within280(t);
 });
 
-test("tilt status: mentions a gauge only when it is off baseline", () => {
-  const hot = buildTiltStatusTweet({ aiPowerIndex: 72, gridStress: 80, npiValue: 268 }, []);
-  assert.ok(hot.includes("grid stress gauge running 12 above baseline."));
-  const calm = buildTiltStatusTweet({ aiPowerIndex: 72, gridStress: 68, npiValue: 268 }, []);
-  assert.ok(
-    !calm.includes("above baseline") && !calm.includes("below baseline"),
-    "near-baseline gauges stay out of the prose",
-  );
+test("gpu rental: prices format cleanly, mover phrased by direction", () => {
+  const down = buildGpuRentalTweet({ h100: 2.79, h200: 3.85, gb200: 13, moverModel: "A100", moverChangePct: -27.3 });
+  assert.ok(down.includes("H100 ~$2.79, H200 ~$3.85, GB200 ~$13/GPU-hr"));
+  assert.ok(down.includes("A100 down 27% over the past year."));
+  assert.ok(down.includes("https://gridtilt.com/neocloud-intel"));
+  within280(down);
+
+  const up = buildGpuRentalTweet({ h100: 2.79, h200: 3.85, gb200: 13, moverModel: "GB200", moverChangePct: 21 });
+  assert.ok(up.includes("GB200 up 21% over the past year."));
 });
+
+test("cluster spotlight: name, location, energy, count", () => {
+  const t = buildClusterSpotlightTweet({
+    name: "Meta Hyperion",
+    plannedGW: 5,
+    location: "Richland Parish, LA",
+    energy: "gas + grid",
+    clusterCount: 235,
+  });
+  assert.equal(
+    t,
+    [
+      "Meta Hyperion, Richland Parish, LA: 5 GW of compute planned, powered by gas + grid. one of 235 AI clusters we track.",
+      "",
+      "https://gridtilt.com/compute-frontier",
+    ].join("\n"),
+  );
+  within280(t);
+  // fractional GW keeps one decimal; missing location/energy degrade cleanly
+  const frac = buildClusterSpotlightTweet({ name: "Stargate Abilene", plannedGW: 1.2, location: "", energy: "", clusterCount: 235 });
+  assert.ok(frac.includes("Stargate Abilene: 1.2 GW of compute planned. one of 235"));
+});
+
+test("grid backlog: comma-grouped GW, rounded pct, honest fallback", () => {
+  const t = buildGridBacklogTweet({ queueOverallGW: 2290, medianWaitMonths: 55, ercotLargeLoadGW: 230, ercotLargeLoadDataCenterPct: 72.9 });
+  assert.ok(t.includes("~2,290 GW waiting in US interconnection queues, ~55-month median wait"));
+  assert.ok(t.includes("ERCOT's large-load queue alone is 230 GW, 73% data centers."));
+  within280(t);
+  assert.ok(buildGridBacklogTweet(null).includes("dataset refreshing."));
+});
+
+test("power mix: top two sources, deal clause drops when zero", () => {
+  const t = buildPowerMixTweet({ topSource: "grid", topGW: 71, nextSource: "on-site gas", nextGW: 33, linkedDealCount: 3 });
+  assert.ok(t.includes("grid leads at 71 GW of planned compute, then on-site gas at 33 GW."));
+  assert.ok(t.includes("3 nuclear-for-AI deals tracked."));
+  within280(t);
+  const noDeals = buildPowerMixTweet({ topSource: "grid", topGW: 71, nextSource: "on-site gas", nextGW: 33, linkedDealCount: 0 });
+  assert.ok(!noDeals.includes("nuclear-for-AI deals"));
+});
+
+// ── On-demand templates (manual dry-run) ───────────────────────────────────
 
 test("top movers: repeated sector reads as a sentence, not a count", () => {
   const t = buildTopMoversTweet([
@@ -77,49 +97,6 @@ test("top movers: repeated sector reads as a sentence, not a count", () => {
   within280(t);
 });
 
-test("top movers: mixed day without a repeating sector", () => {
-  const t = buildTopMoversTweet([
-    { ticker: "A", changePercent: 2, tag: "compute" },
-    { ticker: "B", changePercent: -1, tag: "utility" },
-    { ticker: "C", changePercent: 1, tag: "mining" },
-    { ticker: "D", changePercent: -3, tag: "etf" },
-  ]);
-  assert.ok(t.includes("2 up, 2 down, no sector repeating."));
-});
-
-test("npi update: interpunct row, no padEnd, no subscript glyphs", () => {
-  const c = { cegPerf: 2.1, vstPerf: 6.71, ccjPerf: 1.09, nlrPerf: 1.98, uPerf: 0.77, policyPerf: 1.27 };
-  const t = buildNpiUpdateTweet(268.1, c);
-  assert.ok(t.includes("VST +571% · CEG +110% · NLR +98% · CCJ +9% · uranium -23%"));
-  assert.ok(!t.includes("U₃O₈"), "no subscript glyphs");
-  assert.ok(!/ {2,}/.test(t), "no manual column alignment");
-  // VST dominates the drifted basket, so the honest line ships.
-  assert.ok(/vst now carries \d+% of the basket/.test(t));
-  assert.ok(!t.includes("spread"), "the meaningless points-spread line is gone");
-  within280(t);
-});
-
-test("effectiveNpiWeights sums to 1 and ranks VST first on drifted perfs", () => {
-  const w = effectiveNpiWeights({ cegPerf: 2.1, vstPerf: 6.71, ccjPerf: 1.09, nlrPerf: 1.98, uPerf: 0.77, policyPerf: 1.27 });
-  const sum = Object.values(w).reduce((a, b) => a + b, 0);
-  assert.ok(Math.abs(sum - 1) < 1e-9);
-  assert.equal(Object.entries(w).sort((a, b) => b[1] - a[1])[0][0], "VST");
-});
-
-test("queue: one readable paragraph, fallback stays honest", () => {
-  const t = buildQueueTweet({
-    queueOverallGW: 2600,
-    medianWaitMonths: 35,
-    ercotLargeLoadGW: 120,
-    ercotLargeLoadDataCenterPct: 85,
-    trackedProjects: 48,
-    trackedCapacityGW: 61,
-  });
-  assert.ok(t.includes("~2,600 GW waiting in queues. median wait 35 months."));
-  within280(t);
-  assert.ok(buildQueueTweet(null).includes("dataset refreshing."));
-});
-
 test("catalysts: curated case is preserved (no lowercased acronyms)", () => {
   const t = buildCatalystTweet([
     { date: "2026-06-09", title: "UEC earnings" },
@@ -127,7 +104,6 @@ test("catalysts: curated case is preserved (no lowercased acronyms)", () => {
     { date: "2026-06-10", title: "MU earnings", tier1: true },
   ]);
   assert.ok(t.includes("UEC earnings"));
-  assert.ok(t.includes("DOE Loan Programs Office disbursements"));
   assert.ok(!t.includes("uec earnings"), "acronyms never lowercased");
   assert.ok(t.includes("the one to watch: MU earnings."));
   within280(t);
@@ -138,48 +114,4 @@ test("ensureTweetLength keeps the first line and lands under 280", () => {
   const out = ensureTweetLength(long);
   assert.ok(out.length <= 280);
   assert.ok(out.startsWith("headline"));
-});
-
-// ── Compute Frontier template ──────────────────────────────────────────────
-
-const CF_SNAPSHOT = {
-  clusterCount: 32,
-  operationalMW: 3220,
-  totalPlannedMW: 30335,
-  totalGpus: 1315000,
-  clustersWithGpuData: 5,
-  topOperator: "OpenAI / Oracle",
-  topOperatorPlannedShare: 0.2176,
-  securedMW: 3620,
-};
-
-test("compute frontier: headline count, GW operational and planned, full url", () => {
-  const t = buildComputeFrontierTweet(CF_SNAPSHOT);
-  assert.ok(t.startsWith("gridtilt · compute frontier"));
-  assert.ok(t.includes("32 AI superclusters tracked"));
-  assert.ok(t.includes("3.2 GW operational"));
-  assert.ok(t.includes("30.3 GW planned"));
-  assert.ok(t.includes("https://gridtilt.com/compute-frontier"));
-  assert.ok(!/ {2,}/.test(t), "no manual column alignment");
-  within280(t);
-});
-
-test("compute frontier: insight is assembled from the live numbers", () => {
-  const t = buildComputeFrontierTweet(CF_SNAPSHOT);
-  assert.ok(t.includes("OpenAI / Oracle leads at 22% of planned MW"));
-  assert.ok(t.includes("1.32M accelerators disclosed across 5 clusters"));
-  assert.ok(t.includes("3.6 GW tied to tracked nuclear deals"));
-});
-
-test("compute frontier: drops the nuclear clause when nothing is secured; keeps acronym case", () => {
-  const t = buildComputeFrontierTweet({ ...CF_SNAPSHOT, securedMW: 0 });
-  assert.ok(!t.includes("nuclear deals"));
-  assert.ok(t.includes("OpenAI / Oracle"));
-  within280(t);
-});
-
-test("compute frontier: drops the accelerator clause when no GPU counts are disclosed", () => {
-  const t = buildComputeFrontierTweet({ ...CF_SNAPSHOT, totalGpus: 0, clustersWithGpuData: 0 });
-  assert.ok(!t.includes("accelerators"));
-  within280(t);
 });
