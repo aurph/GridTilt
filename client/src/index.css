@@ -95,6 +95,76 @@
   --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
 }
 
+/*
+ * GridTilt data tokens (Lake 1)
+ * Single source of truth for every color, size, and chart value in the
+ * dashboard. TS mirror for chart code: client/src/lib/tokens.ts - keep in sync.
+ * The Swiss homepage (/) has its own isolated contract in styles/anchor.css.
+ */
+:root {
+  /* Surface scale - 4 elevations, dark only */
+  --surface-sunken: #0A0A08;
+  --surface-base: #0E0E0C;
+  --surface-raised: #1A1917;
+  --surface-overlay: #26241F;
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-strong: rgba(255, 255, 255, 0.14);
+
+  /* Brand */
+  --brand: #F07800;
+  --brand-2: #F0A500;
+  --brand-glow: rgba(240, 120, 0, 0.12);
+  --brand-wash: rgba(240, 120, 0, 0.05);
+
+  /* Ink scale (text on dark surfaces) */
+  --ink: #F2F1ED;
+  --ink-secondary: #B0AEA6;
+  --ink-muted: #7A7871;
+  --ink-faint: #55534E;
+
+  /* Semantic - state, never series identity */
+  --positive: #4ade80;
+  --positive-deep: #22c55e;
+  --negative: #f87171;
+  --negative-deep: #ef4444;
+  --warning: #eab308;
+  --critical: #dc2626;
+  --info: #4dabf7;
+
+  /* Data quality - sourced vs estimated vs synthetic fill */
+  --estimate: #d4a843;
+  --dq-estimated-opacity: 0.55;
+  --dq-synthetic-opacity: 0.35;
+
+  /* Categorical series - fixed order, CVD-validated (min adjacent dE 13.9
+     on both surfaces). Assign in order, never cycle; >4 series need direct
+     labels. Do not reorder: the order IS the colorblind-safety mechanism. */
+  --series-1: #3987e5;  /* blue */
+  --series-2: #c98500;  /* amber */
+  --series-3: #199e70;  /* teal */
+  --series-4: #9085e9;  /* violet */
+  --series-5: #d55181;  /* magenta */
+  --series-6: #1f9fb5;  /* cyan */
+  --series-7: #d95926;  /* rust */
+  --series-8: #3d9e3d;  /* green */
+  --series-9: #bd6bce;  /* pink */
+  --series-10: #b07d3f; /* brown */
+
+  /* Chart chrome */
+  --chart-axis: #55534E;
+  --chart-tick: #7A7871;
+  --chart-grid: rgba(255, 255, 255, 0.05);
+  --chart-crosshair: rgba(255, 255, 255, 0.25);
+  --chart-ref-line: rgba(255, 255, 255, 0.18);
+
+  /* Focus + motion */
+  --focus-ring-color: #F0A500;
+  --focus-ring-width: 2px;
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+  --duration-slow: 350ms;
+}
+
 /* Force dark mode always */
 html {
   color-scheme: dark;
@@ -107,6 +177,14 @@ html {
 
   body {
     @apply font-sans antialiased bg-background text-foreground;
+  }
+
+  /* Tabular figures on all data type so numbers never jitter on refresh */
+  .font-mono,
+  code,
+  td,
+  th {
+    font-variant-numeric: tabular-nums;
   }
 }
 

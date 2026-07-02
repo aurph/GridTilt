@@ -87,6 +87,67 @@ export default {
         "green-low": "#22c55e",
         "yellow-mid": "#eab308",
         "red-high": "#ef4444",
+        // GridTilt data tokens (Lake 1) - values live in index.css :root
+        surface: {
+          sunken: "var(--surface-sunken)",
+          DEFAULT: "var(--surface-base)",
+          base: "var(--surface-base)",
+          raised: "var(--surface-raised)",
+          overlay: "var(--surface-overlay)",
+        },
+        brand: {
+          DEFAULT: "var(--brand)",
+          "2": "var(--brand-2)",
+        },
+        ink: {
+          DEFAULT: "var(--ink)",
+          secondary: "var(--ink-secondary)",
+          muted: "var(--ink-muted)",
+          faint: "var(--ink-faint)",
+        },
+        positive: {
+          DEFAULT: "var(--positive)",
+          deep: "var(--positive-deep)",
+        },
+        negative: {
+          DEFAULT: "var(--negative)",
+          deep: "var(--negative-deep)",
+        },
+        warning: "var(--warning)",
+        critical: "var(--critical)",
+        info: "var(--info)",
+        estimate: "var(--estimate)",
+        series: {
+          "1": "var(--series-1)",
+          "2": "var(--series-2)",
+          "3": "var(--series-3)",
+          "4": "var(--series-4)",
+          "5": "var(--series-5)",
+          "6": "var(--series-6)",
+          "7": "var(--series-7)",
+          "8": "var(--series-8)",
+          "9": "var(--series-9)",
+          "10": "var(--series-10)",
+        },
+      },
+      borderColor: {
+        subtle: "var(--border-subtle)",
+        strong: "var(--border-strong)",
+      },
+      fontSize: {
+        // Data type scale - replaces the ad-hoc text-[NNpx] values.
+        // 12/14/16px stay on the default xs/sm/base steps.
+        "8": ["0.5rem", { lineHeight: "0.75rem" }],
+        "9": ["0.5625rem", { lineHeight: "0.75rem" }],
+        "10": ["0.625rem", { lineHeight: "0.875rem" }],
+        "11": ["0.6875rem", { lineHeight: "1rem" }],
+        "13": ["0.8125rem", { lineHeight: "1.25rem" }],
+        "15": ["0.9375rem", { lineHeight: "1.375rem" }],
+      },
+      transitionDuration: {
+        fast: "var(--duration-fast)",
+        base: "var(--duration-base)",
+        slow: "var(--duration-slow)",
       },
       fontFamily: {
         sans: ["Inter", "sans-serif"],
