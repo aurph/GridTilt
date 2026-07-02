@@ -1,11 +1,16 @@
+import { SERIES } from '@/lib/tokens';
+
 export type CatalystCategory = 'Regulatory' | 'Policy' | 'Infrastructure' | 'Market' | 'Industry';
 
+// Categories not in tokens.ts CATEGORY_COLORS: assigned SERIES slots in order
+// of appearance so the categories are actually distinguishable (the old map
+// put them all on near-identical oranges).
 export const catalystCategoryColors: Record<CatalystCategory, string> = {
-  Regulatory:     '#F0A500',
-  Policy:         '#D4A843',
-  Infrastructure: '#C87533',
-  Market:         '#F07800',
-  Industry:       '#F07800',
+  Regulatory:     SERIES[0], // series slot 1 (blue)
+  Policy:         SERIES[1], // series slot 2 (amber)
+  Infrastructure: SERIES[2], // series slot 3 (teal)
+  Market:         SERIES[3], // series slot 4 (violet)
+  Industry:       SERIES[4], // series slot 5 (magenta)
 };
 
 export interface ManualCatalyst {
@@ -126,10 +131,13 @@ export const SUPPLY_CHAIN_STAGE_MAP: Record<string, string> = {
   IREN: 'End Use', CLSK: 'End Use', MARA: 'End Use',
 };
 
+// Supply-chain stages are not in tokens.ts CATEGORY_COLORS: SERIES slots
+// continue in order of appearance (slots 6-10) so stage dots and catalyst
+// category dots stay distinguishable when they co-occur on the calendar.
 export const STAGE_COLORS: Record<string, string> = {
-  'Raw Materials': '#C87533',
-  'Generation': '#F07800',
-  'Transmission': '#D4A843',
-  'Distribution': '#B8860B',
-  'End Use': '#F0A500',
+  'Raw Materials': SERIES[5], // series slot 6 (cyan)
+  'Generation': SERIES[6],    // series slot 7 (rust)
+  'Transmission': SERIES[7],  // series slot 8 (green)
+  'Distribution': SERIES[8],  // series slot 9 (pink)
+  'End Use': SERIES[9],       // series slot 10 (brown)
 };

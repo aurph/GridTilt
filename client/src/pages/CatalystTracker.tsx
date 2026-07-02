@@ -11,6 +11,7 @@ import {
   SUPPLY_CHAIN_STAGE_MAP,
   type CatalystCategory,
 } from "@/data/catalyst-config";
+import { BRAND, INK, SURFACE, BORDER } from "@/lib/tokens";
 
 interface EarningsItem {
   id: string;
@@ -68,7 +69,7 @@ function formatDateFull(dateStr: string): string {
 
 function getStageColor(ticker: string): string {
   const stage = SUPPLY_CHAIN_STAGE_MAP[ticker];
-  return stage ? (STAGE_COLORS[stage] || "#888") : "#888";
+  return stage ? (STAGE_COLORS[stage] || INK.muted) : INK.muted;
 }
 
 function CalendarGrid({
@@ -116,24 +117,24 @@ function CalendarGrid({
   return (
     <div data-testid="catalyst-calendar">
       <div className="flex items-center justify-between mb-4">
-        <button onClick={prevMonth} className="p-2 hover:text-white text-[#888] transition-colors" data-testid="calendar-prev">
+        <button onClick={prevMonth} className="p-2 hover:text-white text-ink-muted transition-colors" data-testid="calendar-prev">
           <ChevronLeft style={{ width: 18, height: 18 }} />
         </button>
-        <span className="text-[15px] font-bold text-white">{monthName}</span>
-        <button onClick={nextMonth} className="p-2 hover:text-white text-[#888] transition-colors" data-testid="calendar-next">
+        <span className="text-15 font-bold text-white">{monthName}</span>
+        <button onClick={nextMonth} className="p-2 hover:text-white text-ink-muted transition-colors" data-testid="calendar-next">
           <ChevronRight style={{ width: 18, height: 18 }} />
         </button>
       </div>
 
-      <div className="grid grid-cols-7 gap-px" style={{ background: "rgba(255,255,255,0.03)" }}>
+      <div className="grid grid-cols-7 gap-px" style={{ background: BORDER.subtle }}>
         {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
-          <div key={d} className="text-center text-[11px] font-medium py-2" style={{ color: "#666", background: "#151513" }}>
+          <div key={d} className="text-center text-11 font-medium py-2" style={{ color: INK.faint, background: SURFACE.raised }}>
             {d}
           </div>
         ))}
         {cells.map((day, i) => {
           if (day === null) {
-            return <div key={`empty-${i}`} style={{ background: "#161614", minHeight: 56 }} />;
+            return <div key={`empty-${i}`} style={{ background: SURFACE.raised, minHeight: 56 }} />;
           }
           const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
           const dayItems = itemsByDate[dateStr] || [];
@@ -146,25 +147,25 @@ function CalendarGrid({
               key={dateStr}
               className="cursor-pointer transition-all"
               style={{
-                background: isSelected ? "#1E1D1A" : isToday ? "#1C1B18" : "#161614",
+                background: SURFACE.raised,
                 minHeight: 56,
                 padding: "4px 6px",
-                borderLeft: isToday ? "2px solid #F07800" : isSelected ? "2px solid rgba(255,255,255,0.2)" : "2px solid transparent",
+                borderLeft: isToday ? `2px solid ${BRAND.primary}` : isSelected ? `2px solid ${BORDER.strong}` : "2px solid transparent",
                 opacity: isWeekend && dayItems.length === 0 ? 0.6 : 1,
               }}
               onClick={() => onDateSelect(isSelected ? null : dateStr)}
               data-testid={`calendar-day-${dateStr}`}
             >
-              <div className="text-[13px] font-medium mb-1" style={{ color: isToday ? "#F07800" : "#ccc" }}>
+              <div className="text-13 font-medium mb-1" style={{ color: isToday ? BRAND.primary : INK.secondary }}>
                 {day}
               </div>
               <div className="flex flex-wrap gap-1">
                 {dayItems.map((item, j) => {
-                  let color = "#888";
+                  let color: string = INK.muted;
                   if (item.type === "earnings") {
                     color = (item as EarningsItem).stageColor || getStageColor((item as EarningsItem).ticker);
                   } else {
-                    color = catalystCategoryColors[(item as CatalystItem).category] || "#888";
+                    color = catalystCategoryColors[(item as CatalystItem).category] || INK.muted;
                   }
                   return (
                     <div
@@ -177,7 +178,7 @@ function CalendarGrid({
                 })}
               </div>
               {dayItems.length > 0 && (
-                <div className="text-[9px] mt-1 truncate" style={{ color: "#666" }}>
+                <div className="text-9 mt-1 truncate" style={{ color: INK.faint }}>
                   {dayItems.length === 1
                     ? (dayItems[0].type === "earnings" ? (dayItems[0] as EarningsItem).ticker : "Event")
                     : `${dayItems.length} events`}
@@ -190,7 +191,7 @@ function CalendarGrid({
 
       {selectedItems.length > 0 && (
         <div className="mt-3 space-y-2" data-testid="calendar-day-detail">
-          <div className="text-[14px] font-semibold text-white mb-2">
+          <div className="text-sm font-semibold text-white mb-2">
             {formatDateFull(selectedDate!)}
           </div>
           {selectedItems.map((item) => (
@@ -210,24 +211,24 @@ function DayDetailCard({ item }: { item: MergedItem }) {
     return (
       <div
         className="rounded-lg p-4"
-        style={{ background: "#1A1917", border: `1px solid ${e.stageColor}25` }}
+        style={{ background: SURFACE.raised, border: `1px solid ${e.stageColor}25` }}
         data-testid={`detail-${e.ticker}`}
       >
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center gap-2">
-            <span className="text-[15px] font-bold text-white">{e.ticker}</span>
-            <span className="text-[13px]" style={{ color: "#aaa" }}>{e.company}</span>
+            <span className="text-15 font-bold text-white">{e.ticker}</span>
+            <span className="text-13" style={{ color: INK.muted }}>{e.company}</span>
           </div>
           <span
-            className="text-[11px] font-medium px-2 py-0.5 rounded"
-            style={{ background: "#2A2925", color: "#aaa" }}
+            className="text-11 font-medium px-2 py-0.5 rounded"
+            style={{ background: SURFACE.overlay, color: INK.muted }}
           >
             {e.time}
           </span>
         </div>
-        <div className="flex items-center gap-2 text-[12px]" style={{ color: "#888" }}>
+        <div className="flex items-center gap-2 text-xs" style={{ color: INK.muted }}>
           <span
-            className="px-1.5 py-0.5 rounded text-[10px] font-medium"
+            className="px-1.5 py-0.5 rounded text-10 font-medium"
             style={{ background: `${e.stageColor}18`, color: e.stageColor }}
           >
             {e.stage}
@@ -235,7 +236,7 @@ function DayDetailCard({ item }: { item: MergedItem }) {
           {e.quarter && <span>{e.quarter}</span>}
         </div>
         <button
-          className="flex items-center gap-1 mt-2 text-[12px] transition-colors"
+          className="flex items-center gap-1 mt-2 text-xs transition-colors"
           style={{ color: e.stageColor }}
           onClick={() => navigate(`/stock/${e.ticker}`)}
           data-testid={`view-${e.ticker}`}
@@ -247,24 +248,24 @@ function DayDetailCard({ item }: { item: MergedItem }) {
   }
 
   const c = item as CatalystItem;
-  const catColor = catalystCategoryColors[c.category] || "#888";
+  const catColor = catalystCategoryColors[c.category] || INK.muted;
   return (
     <div
       className="rounded-lg p-4"
-      style={{ background: "#1A1917", borderLeft: `3px solid ${catColor}` }}
+      style={{ background: SURFACE.raised, borderLeft: `3px solid ${catColor}` }}
       data-testid={`detail-${c.id}`}
     >
       <div className="flex items-center gap-2 mb-1">
         <span
-          className="text-[10px] font-semibold px-2 py-0.5 rounded"
+          className="text-10 font-semibold px-2 py-0.5 rounded"
           style={{ background: `${catColor}18`, color: catColor }}
         >
           {c.category}
         </span>
-        <span className="text-[12px]" style={{ color: "#888" }}>{c.dateLabel}</span>
+        <span className="text-xs" style={{ color: INK.muted }}>{c.dateLabel}</span>
       </div>
-      <div className="text-[14px] font-semibold text-white mb-1">{c.title}</div>
-      <p className="text-[12px] leading-relaxed" style={{ color: "#aaa" }}>{c.description}</p>
+      <div className="text-sm font-semibold text-white mb-1">{c.title}</div>
+      <p className="text-xs leading-relaxed" style={{ color: INK.muted }}>{c.description}</p>
     </div>
   );
 }
@@ -279,8 +280,8 @@ function UpcomingTimeline({ items }: { items: MergedItem[] }) {
   return (
     <div data-testid="upcoming-timeline">
       <div className="flex items-center gap-2 mb-4">
-        <Clock style={{ width: 14, height: 14, color: "#F07800" }} />
-        <span className="text-[13px] font-semibold text-white uppercase tracking-wider">
+        <Clock style={{ width: 14, height: 14, color: BRAND.primary }} />
+        <span className="text-13 font-semibold text-white uppercase tracking-wider">
           Upcoming Earnings
         </span>
       </div>
@@ -288,16 +289,16 @@ function UpcomingTimeline({ items }: { items: MergedItem[] }) {
       <div className="relative pl-6">
         <div
           className="absolute left-[9px] top-0 bottom-0 w-[2px]"
-          style={{ background: "#2A2925" }}
+          style={{ background: SURFACE.overlay }}
         />
 
         {upcoming.map((item) => {
           const days = daysUntil(item.sortDate);
           let timeLabel = `${formatDateShort(item.sortDate)}`;
-          let timeLabelColor = "#888";
-          if (days === 0) { timeLabel = "TODAY"; timeLabelColor = "#F07800"; }
-          else if (days === 1) { timeLabel = "TOMORROW"; timeLabelColor = "#F0A500"; }
-          else if (days <= 7) { timeLabel = `In ${days}d`; timeLabelColor = "#aaa"; }
+          let timeLabelColor: string = INK.muted;
+          if (days === 0) { timeLabel = "TODAY"; timeLabelColor = BRAND.primary; }
+          else if (days === 1) { timeLabel = "TOMORROW"; timeLabelColor = BRAND.secondary; }
+          else if (days <= 7) { timeLabel = `In ${days}d`; timeLabelColor = INK.muted; }
 
           if (item.type === "earnings") {
             const e = item as EarningsItem;
@@ -306,32 +307,32 @@ function UpcomingTimeline({ items }: { items: MergedItem[] }) {
               <div key={item.id} className="relative flex items-start gap-3 pb-4" data-testid={`timeline-${e.ticker}`}>
                 <div
                   className="absolute left-[-18px] top-[6px] w-[10px] h-[10px] rounded-full border-2"
-                  style={{ background: dotColor, borderColor: "#0E0E0C" }}
+                  style={{ background: dotColor, borderColor: SURFACE.base }}
                 />
                 <div className="flex-1 flex items-center gap-3 flex-wrap">
                   <span
-                    className="text-[11px] font-bold uppercase min-w-[60px]"
+                    className="text-11 font-bold uppercase min-w-[60px]"
                     style={{ color: timeLabelColor }}
                   >
                     {timeLabel}
                   </span>
                   <span
-                    className="text-[13px] font-bold cursor-pointer hover:underline"
-                    style={{ color: "#fff" }}
+                    className="text-13 font-bold cursor-pointer hover:underline"
+                    style={{ color: INK.primary }}
                     onClick={() => navigate(`/stock/${e.ticker}`)}
                   >
                     {e.ticker}
                   </span>
-                  <span className="text-[12px]" style={{ color: "#888" }}>{e.company}</span>
+                  <span className="text-xs" style={{ color: INK.muted }}>{e.company}</span>
                   <span
-                    className="text-[10px] px-1.5 py-0.5 rounded font-medium"
+                    className="text-10 px-1.5 py-0.5 rounded font-medium"
                     style={{ background: `${dotColor}18`, color: dotColor }}
                   >
                     {e.stage}
                   </span>
                   <span
-                    className="text-[10px] px-1.5 py-0.5 rounded"
-                    style={{ background: "#2A2925", color: "#aaa" }}
+                    className="text-10 px-1.5 py-0.5 rounded"
+                    style={{ background: SURFACE.overlay, color: INK.muted }}
                   >
                     {e.time}
                   </span>
@@ -341,20 +342,20 @@ function UpcomingTimeline({ items }: { items: MergedItem[] }) {
           }
 
           const c = item as CatalystItem;
-          const catColor = catalystCategoryColors[c.category] || "#888";
+          const catColor = catalystCategoryColors[c.category] || INK.muted;
           return (
             <div key={item.id} className="relative flex items-start gap-3 pb-4" data-testid={`timeline-${c.id}`}>
               <div
                 className="absolute left-[-18px] top-[6px] w-[10px] h-[10px] rounded-full border-2"
-                style={{ background: catColor, borderColor: "#0E0E0C" }}
+                style={{ background: catColor, borderColor: SURFACE.base }}
               />
               <div className="flex-1 flex items-center gap-3 flex-wrap">
-                <span className="text-[11px] font-bold uppercase min-w-[60px]" style={{ color: timeLabelColor }}>
+                <span className="text-11 font-bold uppercase min-w-[60px]" style={{ color: timeLabelColor }}>
                   {timeLabel}
                 </span>
-                <span className="text-[13px] font-semibold text-white">{c.title}</span>
+                <span className="text-13 font-semibold text-white">{c.title}</span>
                 <span
-                  className="text-[10px] px-1.5 py-0.5 rounded font-medium"
+                  className="text-10 px-1.5 py-0.5 rounded font-medium"
                   style={{ background: `${catColor}18`, color: catColor }}
                 >
                   {c.category}
@@ -367,8 +368,8 @@ function UpcomingTimeline({ items }: { items: MergedItem[] }) {
 
       {past.length > 0 && (
         <button
-          className="flex items-center gap-1.5 text-[12px] mt-2 transition-colors"
-          style={{ color: "#666" }}
+          className="flex items-center gap-1.5 text-xs mt-2 transition-colors"
+          style={{ color: INK.faint }}
           onClick={() => setShowPast(!showPast)}
           data-testid="toggle-past"
         >
@@ -379,17 +380,17 @@ function UpcomingTimeline({ items }: { items: MergedItem[] }) {
 
       {showPast && past.length > 0 && (
         <div className="relative pl-6 mt-4 opacity-50">
-          <div className="absolute left-[9px] top-0 bottom-0 w-[2px]" style={{ background: "#1E1D1A" }} />
+          <div className="absolute left-[9px] top-0 bottom-0 w-[2px]" style={{ background: SURFACE.raised }} />
           {past.map((item) => {
             if (item.type !== "earnings") return null;
             const e = item as EarningsItem;
             return (
               <div key={item.id} className="relative flex items-start gap-3 pb-3">
-                <div className="absolute left-[-18px] top-[6px] w-[8px] h-[8px] rounded-full" style={{ background: "#444" }} />
+                <div className="absolute left-[-18px] top-[6px] w-[8px] h-[8px] rounded-full" style={{ background: INK.faint }} />
                 <div className="flex items-center gap-3 flex-wrap">
-                  <span className="text-[11px] min-w-[60px]" style={{ color: "#555" }}>{formatDateShort(e.date)}</span>
-                  <span className="text-[12px] font-bold" style={{ color: "#666" }}>{e.ticker}</span>
-                  <span className="text-[11px]" style={{ color: "#555" }}>{e.company}</span>
+                  <span className="text-11 min-w-[60px]" style={{ color: INK.faint }}>{formatDateShort(e.date)}</span>
+                  <span className="text-xs font-bold" style={{ color: INK.faint }}>{e.ticker}</span>
+                  <span className="text-11" style={{ color: INK.faint }}>{e.company}</span>
                 </div>
               </div>
             );
@@ -406,44 +407,44 @@ function ThesisCatalysts({ catalysts }: { catalysts: CatalystItem[] }) {
   return (
     <div data-testid="thesis-catalysts">
       <div className="flex items-center gap-2 mb-4">
-        <TrendingUp style={{ width: 14, height: 14, color: "#F0A500" }} />
-        <span className="text-[13px] font-semibold text-white uppercase tracking-wider">
+        <TrendingUp style={{ width: 14, height: 14, color: BRAND.secondary }} />
+        <span className="text-13 font-semibold text-white uppercase tracking-wider">
           Thesis Catalysts
         </span>
       </div>
 
       <div className="space-y-3">
         {catalysts.map((c) => {
-          const catColor = catalystCategoryColors[c.category] || "#888";
+          const catColor = catalystCategoryColors[c.category] || INK.muted;
           return (
             <div
               key={c.id}
               className="rounded-lg p-5"
               style={{
-                background: "#1A1917",
+                background: SURFACE.raised,
                 borderLeft: `3px solid ${catColor}`,
               }}
               data-testid={`catalyst-${c.id}`}
             >
               <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
                 <span
-                  className="text-[11px] font-semibold px-2.5 py-1 rounded"
+                  className="text-11 font-semibold px-2.5 py-1 rounded"
                   style={{ background: `${catColor}15`, color: catColor }}
                 >
                   {c.category}
                 </span>
-                <span className="text-[12px]" style={{ color: "#888" }}>{c.dateLabel}</span>
+                <span className="text-xs" style={{ color: INK.muted }}>{c.dateLabel}</span>
               </div>
-              <h3 className="text-[15px] font-semibold text-white mb-2">{c.title}</h3>
-              <p className="text-[13px] leading-relaxed mb-3" style={{ color: "#aaa" }}>
+              <h3 className="text-15 font-semibold text-white mb-2">{c.title}</h3>
+              <p className="text-13 leading-relaxed mb-3" style={{ color: INK.muted }}>
                 {c.description}
               </p>
               <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-[11px]" style={{ color: "#666" }}>Affects:</span>
+                <span className="text-11" style={{ color: INK.faint }}>Affects:</span>
                 {c.affectedTickers.map((t) => (
                   <span
                     key={t}
-                    className="text-[11px] font-bold font-mono px-2 py-0.5 rounded cursor-pointer transition-colors hover:opacity-80"
+                    className="text-11 font-bold font-mono px-2 py-0.5 rounded cursor-pointer transition-colors hover:opacity-80"
                     style={{
                       color: getStageColor(t),
                       background: `${getStageColor(t)}14`,
@@ -456,7 +457,7 @@ function ThesisCatalysts({ catalysts }: { catalysts: CatalystItem[] }) {
                   </span>
                 ))}
                 {c.affectedSectors.length > 0 && (
-                  <span className="text-[10px] ml-1" style={{ color: "#555" }}>
+                  <span className="text-10 ml-1" style={{ color: INK.faint }}>
                     {c.affectedSectors.join(", ")}
                   </span>
                 )}
@@ -487,16 +488,16 @@ export default function CatalystTracker() {
     <div className="h-full overflow-y-auto" data-testid="catalyst-tracker-page">
       <div
         className="flex items-center gap-2 px-4 md:px-8 flex-wrap sticky top-0 z-10"
-        style={{ height: 48, background: "#151513", borderBottom: "1px solid rgba(255,255,255,0.06)" }}
+        style={{ height: 48, background: SURFACE.raised, borderBottom: `1px solid ${BORDER.subtle}` }}
       >
-        <CalendarDays style={{ width: 16, height: 16, color: "#F07800" }} />
-        <span className="text-[16px] font-bold text-white">Catalyst Tracker</span>
-        <span className="text-[13px]" style={{ color: "#666" }}>·</span>
-        <span className="text-[13px]" style={{ color: "#aaa" }}>
+        <CalendarDays style={{ width: 16, height: 16, color: BRAND.primary }} />
+        <span className="text-base font-bold text-white">Catalyst Tracker</span>
+        <span className="text-13" style={{ color: INK.faint }}>·</span>
+        <span className="text-13" style={{ color: INK.muted }}>
           {earnings.length} earnings
         </span>
-        <span className="text-[13px]" style={{ color: "#666" }}>·</span>
-        <span className="text-[13px]" style={{ color: "#aaa" }}>
+        <span className="text-13" style={{ color: INK.faint }}>·</span>
+        <span className="text-13" style={{ color: INK.muted }}>
           {catalysts.length} thesis catalysts
         </span>
       </div>
@@ -505,7 +506,7 @@ export default function CatalystTracker() {
         {isLoading ? (
           <div className="space-y-4">
             {[...Array(3)].map((_, i) => (
-              <div key={i} className="h-32 rounded-lg animate-pulse" style={{ background: "#1A1917" }} />
+              <div key={i} className="h-32 rounded-lg animate-pulse" style={{ background: SURFACE.raised }} />
             ))}
           </div>
         ) : (
@@ -520,12 +521,12 @@ export default function CatalystTracker() {
                   onDateSelect={setSelectedDate}
                 />
               </div>
-              <div className="flex-1 min-w-0 border-t lg:border-t-0 lg:border-l pt-6 lg:pt-0 lg:pl-6" style={{ borderColor: "rgba(255,255,255,0.06)" }}>
+              <div className="flex-1 min-w-0 border-t lg:border-t-0 lg:border-l pt-6 lg:pt-0 lg:pl-6" style={{ borderColor: BORDER.subtle }}>
                 <UpcomingTimeline items={items} />
               </div>
             </div>
 
-            <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 32 }}>
+            <div style={{ borderTop: `1px solid ${BORDER.subtle}`, paddingTop: 32 }}>
               <ThesisCatalysts catalysts={catalysts} />
             </div>
           </>

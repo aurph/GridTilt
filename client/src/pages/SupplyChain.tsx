@@ -10,6 +10,7 @@ import {
   MemoryStick, Network, Users,
 } from "lucide-react";
 import { SiBitcoin } from "react-icons/si";
+import { BRAND, INK, SURFACE, SEMANTIC, DATA_QUALITY, CHART_CHROME } from "@/lib/tokens";
 import {
   Tooltip as UITooltip,
   TooltipContent,
@@ -69,9 +70,9 @@ const STAGE_KEY_MAP: Record<string, string> = {
 };
 
 const STATUS_COLOR: Record<BottleneckStatus, string> = {
-  Flowing: '#22C55E',
-  Tightening: '#F0A500',
-  Bottlenecked: '#EF4444',
+  Flowing: SEMANTIC.positiveDeep,
+  Tightening: SEMANTIC.warning,
+  Bottlenecked: SEMANTIC.negativeDeep,
 };
 
 interface SimNode extends d3.SimulationNodeDatum {
@@ -331,7 +332,7 @@ function NetworkGraph({
             y1={36}
             x2={frac * GRAPH_W}
             y2={GRAPH_H - 10}
-            stroke="rgba(255,255,255,0.03)"
+            stroke={CHART_CHROME.grid}
             strokeWidth={1}
           />
         ))}
@@ -360,7 +361,7 @@ function NetworkGraph({
               key={i}
               d={path}
               fill="none"
-              stroke={`rgba(240,120,0,${opacity})`}
+              stroke={`rgba(${hexToRgb(BRAND.primary)},${opacity})`}
               strokeWidth={width}
               className={entrancePhase >= 2 ? "sc-link-enter" : "sc-link-hidden"}
               style={{ animationDelay: `${delay}s` }}
@@ -370,7 +371,7 @@ function NetworkGraph({
         })}
 
         {nodes.map((node) => {
-          const color = STAGE_COLORS[node.stage] || '#F07800';
+          const color = STAGE_COLORS[node.stage] || BRAND.primary;
           const isActive = activeNode === node.id;
           const isConnected = connectedSet?.has(node.id);
           const isDimmed = connectedSet && !isConnected;
@@ -380,11 +381,11 @@ function NetworkGraph({
             ? color
             : isConnected
               ? color
-              : 'rgba(240,120,0,0.15)';
+              : `rgba(${hexToRgb(BRAND.primary)},0.15)`;
           const strokeWidth = isActive ? 3 : isConnected ? 2 : 1.5;
           const fillColor = isActive
             ? `rgba(${hexToRgb(color)},0.12)`
-            : '#1C1B18';
+            : SURFACE.raised;
           const filterVal = isActive
             ? `drop-shadow(0 0 12px ${color})`
             : isConnected
@@ -424,7 +425,7 @@ function NetworkGraph({
                   <IconComp
                     size={iconSize}
                     strokeWidth={2}
-                    color={isActive || isConnected ? color : '#888'}
+                    color={isActive || isConnected ? color : INK.muted}
                     style={{ transition: 'color 0.25s' }}
                   />
                 </div>
@@ -433,7 +434,7 @@ function NetworkGraph({
                 y={r + 14}
                 textAnchor="middle"
                 className="sc-node-label"
-                fill="white"
+                fill={INK.primary}
               >
                 {node.name}
               </text>
@@ -441,7 +442,7 @@ function NetworkGraph({
                 y={r + 26}
                 textAnchor="middle"
                 className="sc-node-sublabel"
-                fill="#666"
+                fill={INK.faint}
               >
                 {node.companies.length} co.
               </text>
@@ -466,8 +467,8 @@ function NetworkGraph({
                 width={link.label.length * 6.4 + 12}
                 height={16}
                 rx={3}
-                fill="rgba(14,14,12,0.9)"
-                stroke="rgba(240,120,0,0.15)"
+                fill={`rgba(${hexToRgb(SURFACE.base)},0.9)`}
+                stroke={`rgba(${hexToRgb(BRAND.primary)},0.15)`}
                 strokeWidth={0.5}
               />
               <text
@@ -594,7 +595,7 @@ function FlowView({
             key={i}
             d={path}
             fill="none"
-            stroke="#F07800"
+            stroke={BRAND.primary}
             strokeWidth={3}
             strokeOpacity={opacity}
             data-testid={`flow-link-${i}`}
@@ -606,7 +607,7 @@ function FlowView({
       {supplyNodes.map((node) => {
         const pos = layout.positions[node.id];
         if (!pos) return null;
-        const color = STAGE_COLORS[node.stage] || '#F07800';
+        const color = STAGE_COLORS[node.stage] || BRAND.primary;
         const isActive = activeNode === node.id;
         const isConnected = connectedSet?.has(node.id);
         const isDimmed = connectedSet && !isConnected;
@@ -625,7 +626,7 @@ function FlowView({
               width={NODE_W}
               height={pos.h}
               fill={color}
-              stroke={isActive ? '#fff' : color}
+              stroke={isActive ? INK.primary : color}
               strokeWidth={isActive ? 2 : 0}
               rx={2}
             />
@@ -633,7 +634,7 @@ function FlowView({
               x={pos.x + NODE_W + 6}
               y={pos.y + pos.h / 2 + 3}
               className="sc-node-label"
-              fill={isActive || isConnected ? '#fff' : '#aaa'}
+              fill={isActive || isConnected ? INK.primary : INK.muted}
               style={{ pointerEvents: 'none' }}
             >
               {node.name}
@@ -658,7 +659,7 @@ function DetailPanel({
   onNavigate: (path: string) => void;
   onSelectNode: (id: string) => void;
 }) {
-  const stageColor = STAGE_COLORS[node.stage] || '#F07800';
+  const stageColor = STAGE_COLORS[node.stage] || BRAND.primary;
   const Icon = ICON_MAP[node.icon] || Zap;
 
   const upstreamLinks = supplyLinks.filter((l) => l.target === node.id);
@@ -679,31 +680,31 @@ function DetailPanel({
         <div className="flex items-center gap-3">
           <Icon style={{ width: 18, height: 18, color: stageColor }} />
           <div>
-            <span className="sc-mono text-[15px] font-bold text-white">{node.name}</span>
-            <span className="text-[11px] ml-2 uppercase" style={{ color: '#555' }}>
+            <span className="sc-mono text-15 font-bold text-ink">{node.name}</span>
+            <span className="text-11 ml-2 uppercase" style={{ color: INK.faint }}>
               {STAGE_LABELS.find((s) => s.id === node.stage)?.name}
             </span>
           </div>
         </div>
-        <button onClick={onClose} className="text-[#555] hover:text-white transition-colors" data-testid="close-detail">
+        <button onClick={onClose} className="text-ink-faint hover:text-ink transition-colors" data-testid="close-detail">
           <X style={{ width: 16, height: 16 }} />
         </button>
       </div>
 
       {node.keyMetric && (
-        <div className="sc-mono text-[11px] mb-2" style={{ color: stageColor }}>
+        <div className="sc-mono text-11 mb-2" style={{ color: stageColor }}>
           {node.keyMetric.label}: {node.keyMetric.value}
         </div>
       )}
 
       <div className="sc-divider mb-3" />
 
-      <p className="text-[12px] leading-[1.6] mb-4" style={{ color: '#999' }}>{node.description}</p>
+      <p className="text-xs leading-[1.6] mb-4" style={{ color: INK.muted }}>{node.description}</p>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
         {upstreamNodes.length > 0 && (
           <div>
-            <div className="sc-section-label" style={{ color: '#D4A843' }}>RECEIVES FROM</div>
+            <div className="sc-section-label" style={{ color: DATA_QUALITY.estimateFlag }}>RECEIVES FROM</div>
             <div className="flex flex-wrap gap-1">
               {upstreamNodes.map((u, i) => (
                 <span
@@ -713,7 +714,7 @@ function DetailPanel({
                   data-testid={`upstream-${i}`}
                 >
                   {u.name}
-                  {u.label && <span className="text-[#555]"> ({u.label})</span>}
+                  {u.label && <span className="text-ink-faint"> ({u.label})</span>}
                 </span>
               ))}
             </div>
@@ -721,7 +722,7 @@ function DetailPanel({
         )}
         {downstreamNodes.length > 0 && (
           <div>
-            <div className="sc-section-label" style={{ color: '#F0A500' }}>FEEDS INTO</div>
+            <div className="sc-section-label" style={{ color: BRAND.secondary }}>FEEDS INTO</div>
             <div className="flex flex-wrap gap-1">
               {downstreamNodes.map((d, i) => (
                 <span
@@ -731,7 +732,7 @@ function DetailPanel({
                   data-testid={`downstream-${i}`}
                 >
                   {d.name}
-                  {d.label && <span className="text-[#555]"> ({d.label})</span>}
+                  {d.label && <span className="text-ink-faint"> ({d.label})</span>}
                 </span>
               ))}
             </div>
@@ -753,10 +754,10 @@ function DetailPanel({
           const price = stock?.price;
           const hasLiveChg = typeof chg === "number" && Number.isFinite(chg);
           const chgColor = !hasLiveChg
-            ? "text-[#555]"
+            ? "text-ink-faint"
             : chg! >= 0
-              ? "text-[#22C55E]"
-              : "text-[#EF4444]";
+              ? "text-positive"
+              : "text-negative";
           return (
             <div
               key={c.ticker}
@@ -764,9 +765,9 @@ function DetailPanel({
               onClick={() => onNavigate(`/stock/${c.ticker}`)}
               data-testid={`company-${c.ticker}`}
             >
-              <span className="sc-stock-col-ticker sc-mono font-bold text-white">{c.ticker}</span>
-              <span className="sc-stock-col-name text-[#777] truncate">{c.name}</span>
-              <span className="sc-stock-col-price sc-mono text-[#aaa]">{price ? `$${price.toFixed(2)}` : "--"}</span>
+              <span className="sc-stock-col-ticker sc-mono font-bold text-ink">{c.ticker}</span>
+              <span className="sc-stock-col-name text-ink-faint truncate">{c.name}</span>
+              <span className="sc-stock-col-price sc-mono text-ink-muted">{price ? `$${price.toFixed(2)}` : "--"}</span>
               <span className={`sc-stock-col-chg sc-mono font-medium ${chgColor} inline-flex items-center justify-end gap-1`}>
                 {hasLiveChg ? `${chg! >= 0 ? "+" : ""}${chg!.toFixed(2)}%` : "--"}
                 {stock?.stale && (
@@ -777,7 +778,7 @@ function DetailPanel({
                         onClick={(e) => e.stopPropagation()}
                         data-testid={`stale-indicator-${c.ticker}`}
                       >
-                        <Clock className="h-3 w-3 text-[#F0A500]/70" />
+                        <Clock className="h-3 w-3 text-brand-2/70" />
                       </span>
                     </TooltipTrigger>
                     <TooltipContent side="left" className="text-xs max-w-[220px]">
@@ -855,19 +856,19 @@ export default function SupplyChain() {
     <div className="sc-page" data-testid="supply-chain-page" onClick={() => setActiveNode(null)}>
       <div className="sc-topbar" data-testid="sc-summary-bar">
         <div className="sc-topbar-left">
-          <span className="sc-mono text-[13px] font-bold" style={{ color: "#F07800" }}>SUPPLY CHAIN</span>
+          <span className="sc-mono text-13 font-bold" style={{ color: BRAND.primary }}>SUPPLY CHAIN</span>
           <span className="sc-topbar-sep">|</span>
-          <span className="sc-mono text-[11px] text-white">AI Power Infrastructure</span>
+          <span className="sc-mono text-11 text-ink">AI Power Infrastructure</span>
         </div>
         <div className="sc-topbar-right">
-          <span className="sc-mono text-[10px]" style={{ color: "#555" }}>NODES</span>
-          <span className="sc-mono text-[11px] text-white">{supplyNodes.length}</span>
+          <span className="sc-mono text-10" style={{ color: INK.faint }}>NODES</span>
+          <span className="sc-mono text-11 text-ink">{supplyNodes.length}</span>
           <span className="sc-topbar-sep">|</span>
-          <span className="sc-mono text-[10px]" style={{ color: "#555" }}>CONNECTIONS</span>
-          <span className="sc-mono text-[11px] text-white">{supplyLinks.length}</span>
+          <span className="sc-mono text-10" style={{ color: INK.faint }}>CONNECTIONS</span>
+          <span className="sc-mono text-11 text-ink">{supplyLinks.length}</span>
           <span className="sc-topbar-sep">|</span>
-          <span className="sc-mono text-[10px]" style={{ color: "#555" }}>SECURITIES</span>
-          <span className="sc-mono text-[11px] text-white">{totalCompanies}</span>
+          <span className="sc-mono text-10" style={{ color: INK.faint }}>SECURITIES</span>
+          <span className="sc-mono text-11 text-ink">{totalCompanies}</span>
           <span className="sc-topbar-sep">|</span>
           <div className="sc-view-toggle" data-testid="sc-view-toggle" onClick={(e) => e.stopPropagation()}>
             <button

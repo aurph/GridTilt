@@ -87,7 +87,7 @@ export const CATEGORY_COLORS: Record<string, string> = {
   datacenters: SERIES[2], // teal
   construction: SERIES[9], // brown
   power: SERIES[1], // amber
-  utilities: SERIES[5], // cyan
+  utilities: SERIES[8], // pink (grid owns cyan; both appear on The Stack)
   uranium: SERIES[4], // magenta
   // Energy sources (TheTrade + Compute Frontier co-occur: must be distinct)
   nuclear: SERIES[3], // violet - matches existing purple convention
@@ -97,7 +97,7 @@ export const CATEGORY_COLORS: Record<string, string> = {
   solar: SERIES[1], // amber (never co-charts with power)
   wind: SERIES[0], // blue (never co-charts with compute)
   hydro: SERIES[2], // teal
-  storage: SERIES[8], // pink
+  storage: SERIES[4], // magenta (never co-charts with uranium)
   coal: INK.faint,
 };
 

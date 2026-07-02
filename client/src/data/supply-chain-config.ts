@@ -1,3 +1,5 @@
+import { BRAND, SERIES } from "@/lib/tokens";
+
 export interface SupplyNode {
   id: string;
   name: string;
@@ -15,12 +17,14 @@ export interface SupplyLink {
   label?: string;
 }
 
+// Supply-chain stages are not in CATEGORY_COLORS; per the migration map,
+// brand hexes go to BRAND and the rest take SERIES slots in order of appearance.
 export const STAGE_COLORS: Record<string, string> = {
-  'raw-materials': '#C87533',
-  'generation':    '#F07800',
-  'transmission':  '#D4A843',
-  'distribution':  '#B8860B',
-  'end-use':       '#F0A500',
+  'raw-materials': SERIES[0],      // series slot 1
+  'generation':    BRAND.primary,
+  'transmission':  SERIES[1],      // series slot 2
+  'distribution':  SERIES[2],      // series slot 3
+  'end-use':       BRAND.secondary,
 };
 
 export const STAGE_LABELS: { id: string; name: string; index: number }[] = [

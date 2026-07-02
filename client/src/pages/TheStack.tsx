@@ -21,6 +21,8 @@ import {
   Legend,
 } from "recharts";
 import { Cpu, Server, Zap, TrendingUp, TrendingDown, Info, Clock } from "lucide-react";
+import { BRAND, CATEGORY_COLORS, CHART_CHROME, INK, SEMANTIC, SERIES } from "@/lib/tokens";
+import { axisProps, gridProps } from "@/lib/chart-theme";
 
 interface StockData {
   ticker: string;
@@ -78,7 +80,7 @@ function StaleBadge({ ticker }: { ticker: string }) {
     <UITooltip>
       <TooltipTrigger asChild>
         <span
-          className="inline-flex items-center gap-1 rounded-sm border border-[#F0A500]/30 bg-[#F0A500]/10 px-1.5 py-0 text-[10px] font-mono text-[#F0A500]/90 leading-4"
+          className="inline-flex items-center gap-1 rounded-sm border border-brand-2/30 bg-brand-2/10 px-1.5 py-0 text-10 font-mono text-brand-2/90 leading-4"
           data-testid={`stale-indicator-${ticker}`}
         >
           <Clock className="h-2.5 w-2.5" />
@@ -99,8 +101,8 @@ function StockCard({ stock, showPower, showVsSP500 }: { stock: StockData; showPo
   const isDown = !isStale && stock.changePercent < -2;
   return (
     <Card
-      className={`p-4 border-card-border transition-all duration-200 cursor-pointer hover:-translate-y-0.5 hover:shadow-lg ${isDown ? "border-red-500/20 bg-red-950/5" : ""}`}
-      style={{ boxShadow: isDown ? "inset 0 0 20px rgba(239,68,68,0.04)" : undefined }}
+      className={`p-4 border-card-border transition-all duration-200 cursor-pointer hover:-translate-y-0.5 hover:shadow-lg ${isDown ? "border-negative-deep/20 bg-negative-deep/5" : ""}`}
+      style={{ boxShadow: isDown ? `inset 0 0 20px ${SEMANTIC.negativeDeep}0A` : undefined }}
       data-testid={`stock-card-${stock.ticker}`}
     >
       <div className="flex items-start justify-between mb-2">
@@ -110,7 +112,7 @@ function StockCard({ stock, showPower, showVsSP500 }: { stock: StockData; showPo
             {isStale ? (
               <StaleBadge ticker={stock.ticker} />
             ) : (
-              <Badge className={`text-xs px-1.5 py-0 font-mono ${isUp ? "bg-green-500/15 text-green-400" : "bg-red-500/15 text-red-400"}`}>
+              <Badge className={`text-xs px-1.5 py-0 font-mono ${isUp ? "bg-positive-deep/15 text-positive" : "bg-negative-deep/15 text-negative"}`}>
                 {isUp ? "+" : ""}{stock.changePercent.toFixed(2)}%
               </Badge>
             )}
@@ -122,14 +124,14 @@ function StockCard({ stock, showPower, showVsSP500 }: { stock: StockData; showPo
         </div>
         <div className="text-right flex-shrink-0">
           <p className="font-semibold text-sm text-foreground font-mono">${stock.price.toFixed(2)}</p>
-          <p className={`text-xs font-mono ${isStale ? "text-muted-foreground" : isUp ? "text-green-400" : "text-red-400"}`}>
+          <p className={`text-xs font-mono ${isStale ? "text-muted-foreground" : isUp ? "text-positive" : "text-negative"}`}>
             {isStale ? "--" : `${isUp ? "+" : ""}${stock.change.toFixed(2)}`}
           </p>
         </div>
       </div>
 
       <div className="mb-2">
-        <Sparkline data={stock.sparkline} color={isUp ? "#22c55e" : "#ef4444"} />
+        <Sparkline data={stock.sparkline} color={isUp ? SEMANTIC.positiveDeep : SEMANTIC.negativeDeep} />
       </div>
 
       <div className="grid grid-cols-2 gap-2 text-xs">
@@ -139,20 +141,20 @@ function StockCard({ stock, showPower, showVsSP500 }: { stock: StockData; showPo
         </div>
         <div className="bg-muted/40 rounded-sm p-2">
           <p className="text-muted-foreground mb-0.5">Rev Growth YoY</p>
-          <p className={`font-semibold font-mono ${stock.revenueGrowth && stock.revenueGrowth > 0 ? "text-green-400" : stock.revenueGrowth ? "text-red-400" : "text-muted-foreground"}`}>
+          <p className={`font-semibold font-mono ${stock.revenueGrowth && stock.revenueGrowth > 0 ? "text-positive" : stock.revenueGrowth ? "text-negative" : "text-muted-foreground"}`}>
             {stock.revenueGrowth ? `${stock.revenueGrowth > 0 ? "+" : ""}${stock.revenueGrowth.toFixed(1)}%` : "N/A"}
           </p>
         </div>
         {showPower && stock.powerMW && (
           <div className="bg-muted/40 rounded-sm p-2 col-span-2">
             <p className="text-muted-foreground mb-0.5">Power / Facility</p>
-            <p className="font-semibold font-mono text-[#F0A500]">{stock.powerMW} MW avg</p>
+            <p className="font-semibold font-mono text-brand-2">{stock.powerMW} MW avg</p>
           </div>
         )}
         {showVsSP500 && stock.vs_sp500 !== undefined && (
           <div className="bg-muted/40 rounded-sm p-2 col-span-2">
             <p className="text-muted-foreground mb-0.5">vs S&P 500 (1Y)</p>
-            <p className={`font-semibold font-mono flex items-center gap-1 ${stock.vs_sp500 > 0 ? "text-green-400" : "text-red-400"}`}>
+            <p className={`font-semibold font-mono flex items-center gap-1 ${stock.vs_sp500 > 0 ? "text-positive" : "text-negative"}`}>
               {stock.vs_sp500 > 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
               {stock.vs_sp500 > 0 ? "+" : ""}{stock.vs_sp500.toFixed(1)}%
             </p>
@@ -268,7 +270,7 @@ export default function TheStack() {
       key: "compute",
       title: "Compute Layer",
       icon: Cpu,
-      color: "#94a3b8",
+      color: CATEGORY_COLORS.compute,
       description: "AI chips, hyperscalers, and the foundries powering model training.",
       tooltip: "NVIDIA's H100/B200 GPUs power virtually every major AI training cluster. TSMC manufactures all advanced AI chips. Hyperscalers (MSFT, GOOGL, META, AMZN) are both the largest compute consumers and primary drivers of data center power demand.",
     },
@@ -276,7 +278,7 @@ export default function TheStack() {
       key: "nuclear",
       title: "Nuclear Power",
       icon: Zap,
-      color: "#F0A500",
+      color: CATEGORY_COLORS.nuclear,
       description: "Nuclear operators, SMR developers, and advanced reactor companies.",
       tooltip: "AI requires uninterruptible clean baseload. Microsoft restarted Three Mile Island. Amazon co-located with Talen's Susquehanna plant. Oklo has a 14 GW DC customer pipeline. BWXT is the sole US naval reactor manufacturer.",
     },
@@ -284,7 +286,7 @@ export default function TheStack() {
       key: "uranium",
       title: "Uranium & Fuel Cycle",
       icon: Zap,
-      color: "#fb923c",
+      color: CATEGORY_COLORS.uranium,
       description: "Uranium miners and fuel cycle companies supplying the nuclear renaissance.",
       tooltip: "Uranium spot ~$92/lb (Mar 2026). Cameco is the largest public miner with direct spot beta. NexGen's Rook I is the highest-grade undeveloped uranium deposit. Centrus is the only US-licensed HALEU producer.",
     },
@@ -292,7 +294,7 @@ export default function TheStack() {
       key: "powerHardware",
       title: "Power Hardware",
       icon: Server,
-      color: "#F0A500",
+      color: CATEGORY_COLORS.power,
       description: "Transformers, switchgear, cooling, and electrical equipment.",
       tooltip: "GE Vernova's turbine order book leads DC buildout pace. Eaton is at max switchgear/transformer capacity. Vertiv is the fastest-growing power/cooling infrastructure company. Transformer shortages remain the primary bottleneck on DC energization.",
     },
@@ -300,7 +302,7 @@ export default function TheStack() {
       key: "utilities",
       title: "Utilities",
       icon: Zap,
-      color: "#34d399",
+      color: CATEGORY_COLORS.utilities,
       description: "Utilities signing long-term power agreements with hyperscalers.",
       tooltip: "Dominion serves Northern Virginia (70% of global internet traffic). NextEra signed a 2.5 GW deal with Meta. Southern Company's Georgia territory is the center of Southeast DC growth. Regulated utilities benefit from structurally rising electricity demand.",
     },
@@ -308,7 +310,7 @@ export default function TheStack() {
       key: "dataCenters",
       title: "Data Centers",
       icon: Server,
-      color: "#a855f7",
+      color: CATEGORY_COLORS.datacenters,
       description: "REITs and colocation operators. Direct proxies for AI capacity buildout.",
       tooltip: "Equinix operates 273 data centers across 77 markets. Digital Realty has 300+ facilities globally. IREN is pivoting from Bitcoin mining to GPU-as-a-Service. Power contracts and land-bank are the critical metrics.",
     },
@@ -316,7 +318,7 @@ export default function TheStack() {
       key: "construction",
       title: "Construction & EPC",
       icon: Server,
-      color: "#f472b6",
+      color: CATEGORY_COLORS.construction,
       description: "Electrical contractors and engineers building grid connections for AI campuses.",
       tooltip: "Quanta is the largest electrical utility contractor in North America, building transmission lines and substations for DC campuses. EMCOR has a record $4.3B backlog. Sterling Infrastructure has 125% YoY DC revenue growth.",
     },
@@ -324,7 +326,7 @@ export default function TheStack() {
       key: "rawMaterialsMining",
       title: "Raw Materials - Mining & Metals",
       icon: Server,
-      color: "#d97706",
+      color: INK.secondary, // periphery tier: gray = supporting layer, hues are reserved for the 10 thesis layers
       description: "Copper, steel, and rare earth producers supplying data center and grid buildout.",
       tooltip: "Copper is the essential conductor in every transformer, busbar, and cable connecting grid to rack. Steel is the structural backbone of data center campuses. Rare earths power wind turbines and EV motors in the energy transition.",
     },
@@ -332,7 +334,7 @@ export default function TheStack() {
       key: "rawMaterialsNatGas",
       title: "Raw Materials - Natural Gas",
       icon: Zap,
-      color: "#0ea5e9",
+      color: CATEGORY_COLORS.gas,
       description: "Natural gas producers fueling bridge power generation for data centers.",
       tooltip: "Gas-fired generation is the bridge fuel while nuclear and renewables scale. Appalachian and Haynesville producers benefit from rising gas demand as hyperscalers seek reliable, dispatchable power generation capacity.",
     },
@@ -340,7 +342,7 @@ export default function TheStack() {
       key: "renewableGeneration",
       title: "Renewable Generation",
       icon: Zap,
-      color: "#10b981",
+      color: CATEGORY_COLORS.renewables,
       description: "Solar manufacturers and renewable energy companies powering clean data center commitments.",
       tooltip: "Hyperscalers have committed to 100% renewable energy targets. First Solar is the largest US panel maker. AES has signed multi-GW PPAs with Google and Microsoft. Solar and wind are the fastest-growing power sources for data center operations.",
     },
@@ -348,7 +350,7 @@ export default function TheStack() {
       key: "transmissionGrid",
       title: "Transmission & Grid Hardware",
       icon: Server,
-      color: "#8b5cf6",
+      color: CATEGORY_COLORS.grid,
       description: "Wire, generators, and grid equipment connecting power to data center campuses.",
       tooltip: "Every data center requires extensive copper wiring (Encore Wire), backup generators (Generac), and electrical infrastructure. Grid interconnection is the bottleneck for new data center energization timelines.",
     },
@@ -356,7 +358,7 @@ export default function TheStack() {
       key: "cryptoAIDC",
       title: "Crypto/AI DC Operators",
       icon: Cpu,
-      color: "#ec4899",
+      color: INK.secondary, // periphery tier (non-adjacent to mining in display order, always labeled)
       description: "Bitcoin miners pivoting infrastructure and power contracts toward AI/HPC hosting.",
       tooltip: "CleanSpark and MARA Holdings are the largest public Bitcoin miners exploring AI/HPC hosting. Their existing power contracts, cooling infrastructure, and facility footprints are directly transferable to GPU-as-a-Service operations.",
     },
@@ -364,7 +366,7 @@ export default function TheStack() {
       key: "etfsBenchmarks",
       title: "ETF Benchmarks",
       icon: TrendingUp,
-      color: "#6b7280",
+      color: INK.muted, // benchmarks are neutral, not a category
       description: "Sector ETFs for uranium, data centers, grid infrastructure, and utilities.",
       tooltip: "URA and URNM track uranium mining. DTCR tracks data center/digital infrastructure. GRID tracks smart grid companies. XLU tracks utilities. Compare individual picks against these benchmarks.",
     },
@@ -378,7 +380,7 @@ export default function TheStack() {
             <h1 className="text-2xl font-bold text-foreground tracking-tight">The Stack</h1>
             <p className="text-muted-foreground text-sm mt-1">100+ equities across 13 layers of the AI power supply chain. Intraday prices via Yahoo Finance.</p>
           </div>
-          <Badge className="bg-[#F0A500]/15 text-[#F0A500] border-[#F0A500]/30 font-mono text-xs">
+          <Badge className="bg-brand-2/15 text-brand-2 border-brand-2/30 font-mono text-xs">
             Yahoo Finance · Live
           </Badge>
         </div>
@@ -393,7 +395,7 @@ export default function TheStack() {
                 data-testid={`timeframe-${tf.toLowerCase()}`}
                 className={`px-3 py-1 text-xs font-mono font-semibold rounded transition-all ${
                   timeframe === tf
-                    ? "bg-[#F07800] text-white"
+                    ? "bg-brand text-white"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
@@ -504,7 +506,7 @@ export default function TheStack() {
                 {data?.correlationCoeff !== undefined && (
                   <div className="text-right">
                     <p className="text-xs text-muted-foreground font-mono">CCJ Pearson r</p>
-                    <p className="text-2xl font-bold font-mono text-[#F0A500]">{data.correlationCoeff.toFixed(3)}</p>
+                    <p className="text-2xl font-bold font-mono text-brand-2">{data.correlationCoeff.toFixed(3)}</p>
                     <p className="text-xs text-muted-foreground">
                       {data.correlationCoeff > 0.7 ? "Strong" : data.correlationCoeff > 0.4 ? "Moderate" : "Weak"} correlation
                     </p>
@@ -526,33 +528,30 @@ export default function TheStack() {
               <>
                 <ResponsiveContainer width="100%" height={260}>
                   <ScatterChart margin={{ top: 10, right: 20, bottom: 24, left: 10 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                    <CartesianGrid {...gridProps} />
                     <XAxis
+                      {...axisProps}
                       dataKey="uranium"
                       type="number"
                       name="Uranium"
                       domain={["auto", "auto"]}
-                      tick={{ fill: "#6b7280", fontSize: 11 }}
-                      tickLine={false}
-                      axisLine={{ stroke: "rgba(255,255,255,0.08)" }}
-                      label={{ value: "Uranium Spot ($/lb)", position: "insideBottom", offset: -10, fill: "#6b7280", fontSize: 11 }}
+                      label={{ value: "Uranium Spot ($/lb)", position: "insideBottom", offset: -10, fill: CHART_CHROME.tick, fontSize: 11 }}
                     />
                     <YAxis
+                      {...axisProps}
                       dataKey="ccj"
                       type="number"
                       name="CCJ"
                       domain={["auto", "auto"]}
-                      tick={{ fill: "#6b7280", fontSize: 11 }}
-                      tickLine={false}
                       axisLine={false}
-                      label={{ value: "CCJ ($)", angle: -90, position: "insideLeft", offset: 10, fill: "#6b7280", fontSize: 11 }}
+                      label={{ value: "CCJ ($)", angle: -90, position: "insideLeft", offset: 10, fill: CHART_CHROME.tick, fontSize: 11 }}
                     />
                     <Tooltip content={<CustomScatterTooltip />} />
                     {/* Upper confidence band */}
                     <Scatter
                       data={regression.upper}
                       fill="none"
-                      line={{ stroke: "#F0A500", strokeWidth: 1, strokeDasharray: "5 4", strokeOpacity: 0.35 }}
+                      line={{ stroke: BRAND.secondary, strokeWidth: 1, strokeDasharray: "5 4", strokeOpacity: 0.35 }}
                       shape={() => null as any}
                       legendType="none"
                       name="Upper Band"
@@ -561,7 +560,7 @@ export default function TheStack() {
                     <Scatter
                       data={regression.lower}
                       fill="none"
-                      line={{ stroke: "#F0A500", strokeWidth: 1, strokeDasharray: "5 4", strokeOpacity: 0.35 }}
+                      line={{ stroke: BRAND.secondary, strokeWidth: 1, strokeDasharray: "5 4", strokeOpacity: 0.35 }}
                       shape={() => null as any}
                       legendType="none"
                       name="Lower Band"
@@ -570,7 +569,7 @@ export default function TheStack() {
                     <Scatter
                       data={regression.line}
                       fill="none"
-                      line={{ stroke: "#F0A500", strokeWidth: 2, strokeOpacity: 0.85 }}
+                      line={{ stroke: BRAND.secondary, strokeWidth: 2, strokeOpacity: 0.85 }}
                       shape={() => null as any}
                       legendType="none"
                       name="OLS Fit"
@@ -578,7 +577,7 @@ export default function TheStack() {
                     {/* Raw scatter dots */}
                     <Scatter
                       data={data?.correlation ?? []}
-                      fill="#F0A500"
+                      fill={BRAND.secondary}
                       opacity={0.65}
                       r={4}
                       name="Weekly Obs."
@@ -587,15 +586,15 @@ export default function TheStack() {
                 </ResponsiveContainer>
                 <div className="flex items-center gap-5 text-xs text-muted-foreground mt-1 mb-1">
                   <div className="flex items-center gap-1.5">
-                    <div className="h-2 w-2 rounded-full bg-[#F0A500] opacity-70" />
+                    <div className="h-2 w-2 rounded-full bg-brand-2 opacity-70" />
                     <span>Weekly observation</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <div className="w-6 border-t-2 border-[#F0A500]" style={{ opacity: 0.85 }} />
+                    <div className="w-6 border-t-2 border-brand-2" style={{ opacity: 0.85 }} />
                     <span>OLS trend line</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <div className="w-6 border-t border-[#F0A500] border-dashed" style={{ opacity: 0.45 }} />
+                    <div className="w-6 border-t border-brand-2 border-dashed" style={{ opacity: 0.45 }} />
                     <span>±1.5σ channel</span>
                   </div>
                 </div>
@@ -604,10 +603,10 @@ export default function TheStack() {
 
             <div className="mt-3 pt-3 border-t border-border grid grid-cols-1 md:grid-cols-2 gap-3 text-xs text-muted-foreground">
               <p>
-                <span className="text-[#F0A500] font-semibold">CCJ (pure miner)</span> has higher uranium spot beta. Its P&L moves directly with U3O8 pricing.
+                <span className="text-brand-2 font-semibold">CCJ (pure miner)</span> has higher uranium spot beta. Its P&L moves directly with U3O8 pricing.
               </p>
               <p>
-                <span className="text-slate-400 font-semibold">CEG (nuclear utility)</span> is influenced by electricity contracts and regulated returns. Smoother, less volatile nuclear exposure.
+                <span className="text-ink-muted font-semibold">CEG (nuclear utility)</span> is influenced by electricity contracts and regulated returns. Smoother, less volatile nuclear exposure.
               </p>
             </div>
           </Card>

@@ -22,6 +22,8 @@ import {
   Cell,
 } from "recharts";
 import { Cpu, Zap, ArrowUpDown, ExternalLink, Atom, MapPin } from "lucide-react";
+import { BRAND, INK, SURFACE, CATEGORY_COLORS, STATUS_COLORS } from "@/lib/tokens";
+import { axisProps, gridProps } from "@/lib/chart-theme";
 
 // ─── Types (mirror /api/clusters and /api/clusters/metrics) ────────────────
 
@@ -81,19 +83,15 @@ interface ClusterMetrics {
 
 // ─── Display helpers ───────────────────────────────────────────────────────
 
-const STATUS_COLOR: Record<string, string> = {
-  operational: "#F07800",
-  construction: "#F0A500",
-  announced: "rgba(255,255,255,0.45)",
-};
+const STATUS_COLOR: Record<string, string> = STATUS_COLORS;
 
 const ENERGY_COLOR: Record<string, string> = {
-  nuclear: "#a855f7",
-  "on-site gas": "#F0A500",
-  grid: "#7B8FA1",
-  hydro: "#1E90FF",
-  renewables: "#22c55e",
-  other: "#6b7280",
+  nuclear: CATEGORY_COLORS.nuclear,
+  "on-site gas": CATEGORY_COLORS.gas,
+  grid: CATEGORY_COLORS.grid,
+  hydro: CATEGORY_COLORS.hydro,
+  renewables: CATEGORY_COLORS.renewables,
+  other: INK.faint,
 };
 
 const STATUS_LABEL: Record<string, string> = {
@@ -121,7 +119,7 @@ function gpuCell(n: number | null): string {
 /** Small "est." tag for any value whose field is in the cluster's estimated[]. */
 function Est({ on }: { on: boolean }) {
   if (!on) return null;
-  return <span className="ml-1 text-[8px] font-mono uppercase tracking-wide text-[#F0A500]/80 align-top">est.</span>;
+  return <span className="ml-1 text-8 font-mono uppercase tracking-wide text-brand-2/80 align-top">est.</span>;
 }
 
 type SortKey = "name" | "operator" | "plannedPowerMW" | "ratedPowerMW" | "gpuCount" | "onlineDate";
@@ -208,24 +206,24 @@ export default function ComputeFrontier() {
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="max-w-3xl">
             <div className="flex items-center gap-2 mb-2">
-              <Cpu className="h-5 w-5 text-[#F07800]" />
+              <Cpu className="h-5 w-5 text-brand" />
               <h1 className="text-2xl sm:text-3xl font-semibold text-foreground tracking-tight">Compute Frontier</h1>
             </div>
             <p className="text-muted-foreground text-sm leading-relaxed">
               The named AI training and inference superclusters being built across the US, by GPUs, chips, and power,
               tied to the nuclear-for-AI deals GridTilt already tracks. This registry is tracked, not exhaustive.
               Power is in MW. Every figure that is a GridTilt estimate or an announced target carries an{" "}
-              <span className="text-[#F0A500]">est.</span> tag; GPU counts are shown only where an operator has
+              <span className="text-brand-2">est.</span> tag; GPU counts are shown only where an operator has
               disclosed them.
             </p>
           </div>
-          <div className="text-[11px] text-muted-foreground/70 font-mono tracking-wide text-right space-y-0.5" data-testid="cf-sources">
+          <div className="text-11 text-muted-foreground/70 font-mono tracking-wide text-right space-y-0.5" data-testid="cf-sources">
             {metrics?.lastRefreshed && <div className="text-muted-foreground/60">refreshed {metrics.lastRefreshed}</div>}
-            <Link href="/power-map" className="text-[#F07800] hover:text-[#F0A500] inline-flex items-center gap-0.5">
+            <Link href="/power-map" className="text-brand hover:text-brand-2 inline-flex items-center gap-0.5">
               Power Map <MapPin className="h-3 w-3" />
             </Link>
             <div>
-              <Link href="/queue" className="text-[#F07800] hover:text-[#F0A500] inline-flex items-center gap-0.5">
+              <Link href="/queue" className="text-brand hover:text-brand-2 inline-flex items-center gap-0.5">
                 Nuclear deals <Atom className="h-3 w-3" />
               </Link>
             </div>
@@ -250,95 +248,95 @@ export default function ComputeFrontier() {
             {metrics ? (
               <ResponsiveContainer width="100%" height={280}>
                 <BarChart data={topOperators} layout="vertical" margin={{ left: 8, right: 16, top: 4, bottom: 4 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
-                  <XAxis type="number" tick={{ fontSize: 10, fill: "#777" }} stroke="#333" tickFormatter={(v) => `${(v / 1000).toFixed(0)}`} />
-                  <YAxis type="category" dataKey="operator" width={110} tick={{ fontSize: 9, fill: "#999" }} stroke="#333" interval={0} />
-                  <RTooltip formatter={(v: number, _n, p: any) => [`${v.toLocaleString()} MW`, `${p.payload.count} clusters`]} cursor={{ fill: "rgba(240,120,0,0.06)" }} />
-                  <Bar dataKey="plannedMW" fill="#F07800" radius={[0, 2, 2, 0]} />
+                  <CartesianGrid {...gridProps} vertical={true} horizontal={false} />
+                  <XAxis {...axisProps} type="number" tickFormatter={(v) => `${(v / 1000).toFixed(0)}`} />
+                  <YAxis {...axisProps} type="category" dataKey="operator" width={110} interval={0} />
+                  <RTooltip formatter={(v: number, _n, p: any) => [`${v.toLocaleString()} MW`, `${p.payload.count} clusters`]} cursor={{ fill: BRAND.glow }} />
+                  <Bar dataKey="plannedMW" fill={BRAND.primary} radius={[0, 2, 2, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             ) : <ChartSkeleton />}
-            <p className="text-[10px] text-muted-foreground/50 mt-1 font-mono">x axis in GW{metrics && metrics.concentration.operatorCount > OP_TOP_N ? ` · ${metrics.concentration.operatorCount} operators total` : ""}</p>
+            <p className="text-10 text-muted-foreground/50 mt-1 font-mono">x axis in GW{metrics && metrics.concentration.operatorCount > OP_TOP_N ? ` · ${metrics.concentration.operatorCount} operators total` : ""}</p>
           </ChartCard>
 
           <ChartCard title="Planned MW by grid region (ISO)">
             {metrics ? (
               <ResponsiveContainer width="100%" height={260}>
                 <BarChart data={metrics.byIso} margin={{ left: 0, right: 8, top: 4, bottom: 4 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                  <XAxis dataKey="iso" tick={{ fontSize: 10, fill: "#999" }} stroke="#333" />
-                  <YAxis tick={{ fontSize: 10, fill: "#777" }} stroke="#333" tickFormatter={(v) => `${(v / 1000).toFixed(0)}`} />
-                  <RTooltip formatter={(v: number) => [`${v.toLocaleString()} MW`, "planned"]} cursor={{ fill: "rgba(240,120,0,0.06)" }} />
-                  <Bar dataKey="plannedMW" fill="#F0A500" radius={[2, 2, 0, 0]} />
+                  <CartesianGrid {...gridProps} />
+                  <XAxis {...axisProps} dataKey="iso" />
+                  <YAxis {...axisProps} tickFormatter={(v) => `${(v / 1000).toFixed(0)}`} />
+                  <RTooltip formatter={(v: number) => [`${v.toLocaleString()} MW`, "planned"]} cursor={{ fill: BRAND.glow }} />
+                  <Bar dataKey="plannedMW" fill={BRAND.secondary} radius={[2, 2, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             ) : <ChartSkeleton />}
-            <p className="text-[10px] text-muted-foreground/50 mt-1 font-mono">y axis in GW</p>
+            <p className="text-10 text-muted-foreground/50 mt-1 font-mono">y axis in GW</p>
           </ChartCard>
 
           <ChartCard title="Planned MW by status">
             {metrics ? (
               <ResponsiveContainer width="100%" height={220}>
                 <BarChart data={metrics.byStatus} margin={{ left: 0, right: 8, top: 4, bottom: 4 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                  <XAxis dataKey="status" tick={{ fontSize: 10, fill: "#999" }} stroke="#333" />
-                  <YAxis tick={{ fontSize: 10, fill: "#777" }} stroke="#333" tickFormatter={(v) => `${(v / 1000).toFixed(0)}`} />
-                  <RTooltip formatter={(v: number, _n, p: any) => [`${v.toLocaleString()} MW`, `${p.payload.count} clusters`]} cursor={{ fill: "rgba(240,120,0,0.06)" }} />
+                  <CartesianGrid {...gridProps} />
+                  <XAxis {...axisProps} dataKey="status" />
+                  <YAxis {...axisProps} tickFormatter={(v) => `${(v / 1000).toFixed(0)}`} />
+                  <RTooltip formatter={(v: number, _n, p: any) => [`${v.toLocaleString()} MW`, `${p.payload.count} clusters`]} cursor={{ fill: BRAND.glow }} />
                   <Bar dataKey="plannedMW" radius={[2, 2, 0, 0]}>
-                    {metrics.byStatus.map((s) => <Cell key={s.status} fill={STATUS_COLOR[s.status] ?? "#888"} />)}
+                    {metrics.byStatus.map((s) => <Cell key={s.status} fill={STATUS_COLOR[s.status] ?? INK.muted} />)}
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
             ) : <ChartSkeleton />}
-            <p className="text-[10px] text-muted-foreground/50 mt-1 font-mono">y axis in GW</p>
+            <p className="text-10 text-muted-foreground/50 mt-1 font-mono">y axis in GW</p>
           </ChartCard>
 
           <ChartCard title="Build timeline (planned GW online by year)">
             {clusters ? (
               <ResponsiveContainer width="100%" height={220}>
                 <BarChart data={timeline} margin={{ left: 0, right: 8, top: 4, bottom: 4 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                  <XAxis dataKey="year" tick={{ fontSize: 10, fill: "#999" }} stroke="#333" />
-                  <YAxis tick={{ fontSize: 10, fill: "#777" }} stroke="#333" />
-                  <RTooltip formatter={(v: number) => [`${v} GW`, "planned online"]} cursor={{ fill: "rgba(240,120,0,0.06)" }} />
-                  <Bar dataKey="gw" fill="#F07800" radius={[2, 2, 0, 0]} />
+                  <CartesianGrid {...gridProps} />
+                  <XAxis {...axisProps} dataKey="year" />
+                  <YAxis {...axisProps} />
+                  <RTooltip formatter={(v: number) => [`${v} GW`, "planned online"]} cursor={{ fill: BRAND.glow }} />
+                  <Bar dataKey="gw" fill={BRAND.primary} radius={[2, 2, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             ) : <ChartSkeleton />}
-            <p className="text-[10px] text-muted-foreground/50 mt-1 font-mono">bucketed by first announced year</p>
+            <p className="text-10 text-muted-foreground/50 mt-1 font-mono">bucketed by first announced year</p>
           </ChartCard>
 
           <ChartCard title="Planned MW by energy source">
             {metrics ? (
               <ResponsiveContainer width="100%" height={220}>
                 <BarChart data={metrics.byEnergySource} layout="vertical" margin={{ left: 8, right: 16, top: 4, bottom: 4 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
-                  <XAxis type="number" tick={{ fontSize: 10, fill: "#777" }} stroke="#333" tickFormatter={(v) => `${(v / 1000).toFixed(0)}`} />
-                  <YAxis type="category" dataKey="source" width={80} tick={{ fontSize: 10, fill: "#999" }} stroke="#333" interval={0} />
-                  <RTooltip formatter={(v: number, _n, p: any) => [`${v.toLocaleString()} MW`, `${p.payload.count} clusters`]} cursor={{ fill: "rgba(240,120,0,0.06)" }} />
+                  <CartesianGrid {...gridProps} vertical={true} horizontal={false} />
+                  <XAxis {...axisProps} type="number" tickFormatter={(v) => `${(v / 1000).toFixed(0)}`} />
+                  <YAxis {...axisProps} type="category" dataKey="source" width={80} interval={0} />
+                  <RTooltip formatter={(v: number, _n, p: any) => [`${v.toLocaleString()} MW`, `${p.payload.count} clusters`]} cursor={{ fill: BRAND.glow }} />
                   <Bar dataKey="plannedMW" radius={[0, 2, 2, 0]}>
-                    {metrics.byEnergySource.map((e) => <Cell key={e.source} fill={ENERGY_COLOR[e.source] ?? "#6b7280"} />)}
+                    {metrics.byEnergySource.map((e) => <Cell key={e.source} fill={ENERGY_COLOR[e.source] ?? INK.faint} />)}
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
             ) : <ChartSkeleton />}
-            <p className="text-[10px] text-muted-foreground/50 mt-1 font-mono">x axis in GW · grid vs behind-the-meter gas, nuclear, renewables</p>
+            <p className="text-10 text-muted-foreground/50 mt-1 font-mono">x axis in GW · grid vs behind-the-meter gas, nuclear, renewables</p>
           </ChartCard>
         </div>
 
         {/* Map */}
         <Card className="border-card-border overflow-hidden" data-testid="cf-map">
-          <div className="flex items-center justify-between px-4 py-2 bg-[#0E0E0C] border-b border-border">
-            <span className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground">Cluster map</span>
-            <div className="flex items-center gap-3 text-[10px] text-muted-foreground font-mono">
+          <div className="flex items-center justify-between px-4 py-2 bg-surface-base border-b border-border">
+            <span className="text-11 font-mono uppercase tracking-wider text-muted-foreground">Cluster map</span>
+            <div className="flex items-center gap-3 text-10 text-muted-foreground font-mono">
               <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ background: STATUS_COLOR.operational }} />operational</span>
               <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ background: STATUS_COLOR.construction }} />construction</span>
-              <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ background: "#9a9a9a" }} />announced</span>
+              <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ background: STATUS_COLOR.announced }} />announced</span>
             </div>
           </div>
           <div style={{ height: 420 }}>
             {clusters && clusters.length > 0 ? (
-              <MapContainer center={[39.5, -98.5]} zoom={4} minZoom={3} maxZoom={10} zoomControl={false} style={{ width: "100%", height: "100%", background: "#0E0E0C" }}>
+              <MapContainer center={[39.5, -98.5]} zoom={4} minZoom={3} maxZoom={10} zoomControl={false} style={{ width: "100%", height: "100%", background: SURFACE.base }}>
                 <TileLayer
                   url="https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png"
                   attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
@@ -350,8 +348,8 @@ export default function ComputeFrontier() {
                     center={[c.location.lat, c.location.lng]}
                     radius={Math.max(4, Math.min(22, Math.sqrt(c.plannedPowerMW) / 3.2))}
                     pathOptions={{
-                      color: STATUS_COLOR[c.status] === "rgba(255,255,255,0.45)" ? "#9a9a9a" : STATUS_COLOR[c.status],
-                      fillColor: STATUS_COLOR[c.status] === "rgba(255,255,255,0.45)" ? "#9a9a9a" : STATUS_COLOR[c.status],
+                      color: STATUS_COLOR[c.status] ?? INK.muted,
+                      fillColor: STATUS_COLOR[c.status] ?? INK.muted,
                       fillOpacity: 0.5,
                       weight: 1,
                     }}
@@ -377,8 +375,8 @@ export default function ComputeFrontier() {
           <ChipSelect label="Operator" value={operatorFilter} onChange={setOperatorFilter} options={[{ value: "all", label: "all" }, ...operators.map((o) => ({ value: o, label: o }))]} />
           <ChipSelect label="Status" value={statusFilter} onChange={setStatusFilter} options={[{ value: "all", label: "all" }, { value: "operational", label: "operational" }, { value: "construction", label: "construction" }, { value: "announced", label: "announced" }]} />
           <ChipSelect label="Region" value={isoFilter} onChange={setIsoFilter} options={[{ value: "all", label: "all" }, ...isos.map((i) => ({ value: i, label: i }))]} />
-          <label className="flex items-center gap-1.5 text-muted-foreground cursor-pointer px-2 py-1 rounded border border-white/[0.06] hover:border-white/[0.12]" data-testid="cf-filter-deal">
-            <input type="checkbox" checked={dealOnly} onChange={(e) => setDealOnly(e.target.checked)} className="accent-[#F07800]" />
+          <label className="flex items-center gap-1.5 text-muted-foreground cursor-pointer px-2 py-1 rounded border border-subtle hover:border-strong" data-testid="cf-filter-deal">
+            <input type="checkbox" checked={dealOnly} onChange={(e) => setDealOnly(e.target.checked)} className="accent-brand" />
             Nuclear-linked only
           </label>
           <span className="text-muted-foreground/60 font-mono ml-auto">{filtered.length} of {clusters?.length ?? 0}</span>
@@ -386,7 +384,7 @@ export default function ComputeFrontier() {
 
         {/* Table */}
         <Card className="border-card-border overflow-hidden" data-testid="cf-table">
-          <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-[#0E0E0C] border-b border-border text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+          <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-surface-base border-b border-border text-10 font-mono uppercase tracking-wider text-muted-foreground">
             <SortHeader label="Cluster" k="name" cur={sortKey} dir={sortDir} onClick={toggleSort} className="col-span-3" />
             <span className="col-span-1">Status</span>
             <SortHeader label="GPUs" k="gpuCount" cur={sortKey} dir={sortDir} onClick={toggleSort} className="col-span-1 justify-end" />
@@ -407,13 +405,13 @@ export default function ComputeFrontier() {
             filtered.map((c) => (
               <UITooltip key={c.id}>
                 <TooltipTrigger asChild>
-                  <div className="grid grid-cols-12 gap-2 px-4 py-2.5 border-b border-border/30 last:border-0 text-xs hover:bg-[#F07800]/5" data-testid={`cf-row-${c.id}`}>
+                  <div className="grid grid-cols-12 gap-2 px-4 py-2.5 border-b border-border/30 last:border-0 text-xs hover:bg-brand/5" data-testid={`cf-row-${c.id}`}>
                     <div className="col-span-3 min-w-0">
-                      <Link href={`/compute-frontier/${c.id}`} className="font-medium text-foreground truncate hover:text-[#F07800] block no-underline">{c.name}</Link>
-                      <div className="text-[10px] text-muted-foreground truncate">{c.operator}</div>
+                      <Link href={`/compute-frontier/${c.id}`} className="font-medium text-foreground truncate hover:text-brand block no-underline">{c.name}</Link>
+                      <div className="text-10 text-muted-foreground truncate">{c.operator}</div>
                     </div>
                     <span className="col-span-1">
-                      <Badge variant="outline" className="text-[9px] font-mono px-1.5 py-0" style={{ color: c.status === "announced" ? "#9a9a9a" : STATUS_COLOR[c.status], borderColor: `${c.status === "announced" ? "#9a9a9a" : STATUS_COLOR[c.status]}55` }}>
+                      <Badge variant="outline" className="text-9 font-mono px-1.5 py-0" style={{ color: STATUS_COLOR[c.status] ?? INK.muted, borderColor: `${STATUS_COLOR[c.status] ?? INK.muted}55` }}>
                         {STATUS_LABEL[c.status]}
                       </Badge>
                     </span>
@@ -422,18 +420,18 @@ export default function ComputeFrontier() {
                     <span className="col-span-1 font-mono text-muted-foreground text-right tabular-nums">{mwCell(c.ratedPowerMW)}<Est on={c.estimated.includes("ratedPowerMW")} /></span>
                     <span className="col-span-1 font-mono text-foreground text-right tabular-nums">{mwCell(c.plannedPowerMW)}<Est on={c.estimated.includes("plannedPowerMW")} /></span>
                     <span className="col-span-1 font-mono text-muted-foreground truncate">{c.gridRegion}</span>
-                    <span className="col-span-1 font-mono text-muted-foreground text-[10px] truncate">{c.onlineDate}<Est on={c.estimated.includes("onlineDate")} /></span>
-                    <span className="col-span-1 text-center font-mono text-[10px]">
-                      {c.linkedDeal ? <Link href="/queue" className="text-[#F07800] hover:text-[#F0A500]">★</Link> : <span className="text-muted-foreground/30">—</span>}
+                    <span className="col-span-1 font-mono text-muted-foreground text-10 truncate">{c.onlineDate}<Est on={c.estimated.includes("onlineDate")} /></span>
+                    <span className="col-span-1 text-center font-mono text-10">
+                      {c.linkedDeal ? <Link href="/queue" className="text-brand hover:text-brand-2">★</Link> : <span className="text-muted-foreground/30">—</span>}
                     </span>
                   </div>
                 </TooltipTrigger>
                 <TooltipContent side="top" className="max-w-md p-3">
                   <div className="text-xs font-semibold mb-1">{c.name} · {c.location.city}, {c.location.state}</div>
-                  <div className="text-[11px] text-muted-foreground mb-1">{c.workload} · {c.energySource}{c.linkedDeal ? ` · nuclear deal: ${c.linkedDeal}` : ""}</div>
+                  <div className="text-11 text-muted-foreground mb-1">{c.workload} · {c.energySource}{c.linkedDeal ? ` · nuclear deal: ${c.linkedDeal}` : ""}</div>
                   {c.notes && <p className="text-xs leading-relaxed mb-1.5">{c.notes}</p>}
                   {c.sources.length > 0 && (
-                    <p className="text-[10px] text-muted-foreground break-all">sources: {c.sources.map((s, i) => (<a key={i} href={s} target="_blank" rel="noopener noreferrer" className="text-[#F07800] hover:text-[#F0A500]">[{i + 1}]</a>))}</p>
+                    <p className="text-10 text-muted-foreground break-all">sources: {c.sources.map((s, i) => (<a key={i} href={s} target="_blank" rel="noopener noreferrer" className="text-brand hover:text-brand-2">[{i + 1}]</a>))}</p>
                   )}
                 </TooltipContent>
               </UITooltip>
@@ -445,8 +443,8 @@ export default function ComputeFrontier() {
         {ps && ps.deals.length > 0 && (
           <Card className="border-card-border p-4" data-testid="cf-power-secured">
             <div className="flex items-center gap-2 mb-2">
-              <Atom className="h-4 w-4 text-[#F07800]" />
-              <span className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground">Power needed vs power secured</span>
+              <Atom className="h-4 w-4 text-brand" />
+              <span className="text-11 font-mono uppercase tracking-wider text-muted-foreground">Power needed vs power secured</span>
             </div>
             <p className="text-xs text-muted-foreground leading-relaxed mb-3">
               Of <span className="text-foreground font-mono">{gw(ps.totalPlannedMW)} GW</span> planned across the tracked frontier,{" "}
@@ -457,7 +455,7 @@ export default function ComputeFrontier() {
             </p>
             <div className="space-y-1.5">
               {ps.deals.map((d) => (
-                <div key={d.id} className="flex items-center justify-between text-[11px] font-mono border-t border-border/30 pt-1.5">
+                <div key={d.id} className="flex items-center justify-between text-11 font-mono border-t border-border/30 pt-1.5">
                   <span className="text-foreground">{d.projectName}</span>
                   <span className="text-muted-foreground">{d.capacityMW.toLocaleString()} MW · {d.firmness} · {d.clusterIds.join(", ")}</span>
                 </div>
@@ -467,15 +465,15 @@ export default function ComputeFrontier() {
         )}
 
         {/* Methodology footnote */}
-        <p className="text-[11px] text-muted-foreground/60 leading-relaxed px-1" data-testid="cf-methodology">
+        <p className="text-11 text-muted-foreground/60 leading-relaxed px-1" data-testid="cf-methodology">
           Compiled from public announcements (company press releases, Reuters, Tom's Hardware, Data Center Dynamics,
           SemiAnalysis, utility filings) and cross-referenced against GridTilt's{" "}
-          <Link href="/power-map" className="text-[#F07800] hover:text-[#F0A500]">Power Map</Link> registry. The{" "}
-          <span className="text-[#F0A500]">est.</span> tag marks GridTilt estimates and announced targets not yet realized;
+          <Link href="/power-map" className="text-brand hover:text-brand-2">Power Map</Link> registry. The{" "}
+          <span className="text-brand-2">est.</span> tag marks GridTilt estimates and announced targets not yet realized;
           GPU counts read "—" where an operator has not disclosed one. Nuclear links point to the tracked deals on the{" "}
-          <Link href="/queue" className="text-[#F07800] hover:text-[#F0A500]">Backlog</Link> page. Tracked, not exhaustive.
-          Full <Link href="/compute-frontier/methodology" className="text-[#F07800] hover:text-[#F0A500]">methodology</Link>, or{" "}
-          <Link href="/compute-frontier/compare" className="text-[#F07800] hover:text-[#F0A500]">compare clusters side by side</Link>.
+          <Link href="/queue" className="text-brand hover:text-brand-2">Backlog</Link> page. Tracked, not exhaustive.
+          Full <Link href="/compute-frontier/methodology" className="text-brand hover:text-brand-2">methodology</Link>, or{" "}
+          <Link href="/compute-frontier/compare" className="text-brand hover:text-brand-2">compare clusters side by side</Link>.
         </p>
       </div>
     </div>
@@ -486,10 +484,10 @@ export default function ComputeFrontier() {
 
 function MetricCard({ label, value, sub, accent }: { label: string; value: string; sub?: string; accent?: boolean }) {
   return (
-    <Card className={`border-card-border p-3 ${accent ? "ring-1 ring-[#F07800]/20" : ""}`}>
-      <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground/70">{label}</div>
-      <div className={`text-lg font-semibold tabular-nums mt-0.5 ${accent ? "text-[#F07800]" : "text-foreground"}`}>{value}</div>
-      {sub && <div className="text-[10px] text-muted-foreground/60 truncate">{sub}</div>}
+    <Card className={`border-card-border p-3 ${accent ? "ring-1 ring-brand/20" : ""}`}>
+      <div className="text-10 font-mono uppercase tracking-wider text-muted-foreground/70">{label}</div>
+      <div className={`text-lg font-semibold tabular-nums mt-0.5 ${accent ? "text-brand" : "text-foreground"}`}>{value}</div>
+      {sub && <div className="text-10 text-muted-foreground/60 truncate">{sub}</div>}
     </Card>
   );
 }
@@ -497,7 +495,7 @@ function MetricCard({ label, value, sub, accent }: { label: string; value: strin
 function ChartCard({ title, children }: { title: string; children: ReactNode }) {
   return (
     <Card className="border-card-border p-3">
-      <div className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground mb-2">{title}</div>
+      <div className="text-11 font-mono uppercase tracking-wider text-muted-foreground mb-2">{title}</div>
       {children}
     </Card>
   );
@@ -510,10 +508,10 @@ function ChartSkeleton() {
 function SortHeader({ label, k, cur, dir, onClick, className = "" }: { label: string; k: SortKey; cur: SortKey; dir: SortDir; onClick: (k: SortKey) => void; className?: string }) {
   const active = cur === k;
   return (
-    <button onClick={() => onClick(k)} className={`flex items-center gap-1 hover:text-foreground transition-colors ${active ? "text-[#F07800]" : ""} ${className}`} data-testid={`cf-sort-${k}`}>
+    <button onClick={() => onClick(k)} className={`flex items-center gap-1 hover:text-foreground transition-colors ${active ? "text-brand" : ""} ${className}`} data-testid={`cf-sort-${k}`}>
       {label}
       <ArrowUpDown className="h-3 w-3" style={{ opacity: active ? 1 : 0.3 }} />
-      {active && <span className="text-[8px]">{dir === "asc" ? "▲" : "▼"}</span>}
+      {active && <span className="text-8">{dir === "asc" ? "▲" : "▼"}</span>}
     </button>
   );
 }
@@ -525,7 +523,7 @@ function ChipSelect({ label, value, onChange, options }: { label: string; value:
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="bg-[#0E0E0C] border border-white/[0.08] rounded px-1.5 py-1 text-xs text-foreground focus:outline-none focus:border-[#F07800]/40"
+        className="bg-surface-base border border-subtle rounded px-1.5 py-1 text-xs text-foreground focus:outline-none focus:border-brand/40"
         data-testid={`cf-select-${label.toLowerCase()}`}
       >
         {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
