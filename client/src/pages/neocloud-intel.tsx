@@ -19,6 +19,8 @@ import {
   Tooltip as RTooltip,
 } from "recharts";
 import { Cpu, ArrowUpDown } from "lucide-react";
+import { BORDER, BRAND, FONT, INK, SEMANTIC, SERIES } from "@/lib/tokens";
+import { axisProps, gridProps, tooltipContentStyle } from "@/lib/chart-theme";
 
 // ─── Types (mirror /api/gpu-prices/metrics) ────────────────────────────────
 
@@ -53,22 +55,22 @@ interface GpuMetrics {
 }
 
 // Maker colors — the primary "who made this" signal (orange vs cyan, colorblind-safe).
-const VENDOR_COLOR: Record<string, string> = { NVIDIA: "#F07800", AMD: "#22D3EE" };
-const vendorColor = (v: string) => VENDOR_COLOR[v] ?? "#9ca3af";
+const VENDOR_COLOR: Record<string, string> = { NVIDIA: BRAND.primary, AMD: SERIES[5] };
+const vendorColor = (v: string) => VENDOR_COLOR[v] ?? INK.muted;
 
-// Per-model accent for the card stripe + row dot.
+// Per-model accent for the card stripe + row dot (categorical SERIES slots, fixed order).
 const MODEL_COLOR: Record<string, string> = {
-  GB200: "#F07800", B300: "#F0A500", B200: "#FFD166", H200: "#4dabf7", GH200: "#22b8cf",
-  H100: "#51cf66", A100: "#94d82d", MI355X: "#e64980", MI325X: "#cc5de8", MI300X: "#ff8787",
+  GB200: SERIES[0], B300: SERIES[1], B200: SERIES[2], H200: SERIES[3], GH200: SERIES[4],
+  H100: SERIES[5], A100: SERIES[6], MI355X: SERIES[7], MI325X: SERIES[8], MI300X: SERIES[9],
 };
-const colorFor = (m: string) => MODEL_COLOR[m] ?? "#9ca3af";
+const colorFor = (m: string) => MODEL_COLOR[m] ?? INK.muted;
 
-const CONF_COLOR: Record<string, string> = { high: "#4ade80", medium: "#F0A500", low: "#f87171" };
+const CONF_COLOR: Record<string, string> = { high: SEMANTIC.positive, medium: SEMANTIC.warning, low: SEMANTIC.negative };
 
 const fmtUsd = (n: number) => `$${n.toFixed(2)}`;
 const fmtChange = (v: number | null) => (v === null ? "—" : `${v > 0 ? "+" : ""}${v.toFixed(1)}%`);
 // Renter-side convention: pricier = red, cheaper = green.
-const changeColor = (v: number | null) => (v === null ? "#6b7280" : v > 0 ? "#f87171" : v < 0 ? "#4ade80" : "#9ca3af");
+const changeColor = (v: number | null): string => (v === null ? INK.faint : v > 0 ? SEMANTIC.negative : v < 0 ? SEMANTIC.positive : INK.muted);
 
 type SortKey = "current" | "model" | "w1" | "m1" | "ytd" | "y1";
 
@@ -127,26 +129,26 @@ export default function NeocloudIntel() {
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="max-w-3xl">
             <div className="flex items-center gap-2 mb-2">
-              <Cpu className="h-5 w-5 text-[#F07800]" />
-              <h1 className="text-2xl sm:text-3xl font-semibold text-foreground tracking-tight" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+              <Cpu className="h-5 w-5 text-brand" />
+              <h1 className="text-2xl sm:text-3xl font-semibold text-foreground tracking-tight" style={{ fontFamily: FONT.mono }}>
                 Neocloud Intel <span className="text-muted-foreground/50">/ GPU Rental Price Index</span>
               </h1>
             </div>
             <p className="text-muted-foreground text-sm leading-relaxed">
               On-demand GPU rental prices ($/GPU/hr) blended across the major neoclouds and marketplaces
               (Lambda, RunPod, Vast.ai, CoreWeave, TensorWave, Vultr, Nebius) and the getdeploying.com / Silicon Data
-              trackers. Each price is a sourced blended estimate (flagged <span className="text-[#F0A500]">est.</span>);
+              trackers. Each price is a sourced blended estimate (flagged <span className="text-estimate">est.</span>);
               low and high are the observed marketplace range. Open any row for its sources. Cheaper is
-              <span className="text-[#4ade80]"> green</span>, pricier is <span className="text-[#f87171]">red</span>.
+              <span className="text-positive"> green</span>, pricier is <span className="text-negative">red</span>.
             </p>
           </div>
-          <div className="text-[11px] text-muted-foreground/70 font-mono tracking-wide text-right space-y-0.5" data-testid="ni-sync">
+          <div className="text-11 text-muted-foreground/70 font-mono tracking-wide text-right space-y-0.5" data-testid="ni-sync">
             {data?.lastRefreshed && <div className="text-muted-foreground/60">data as of {data.lastRefreshed}</div>}
             {data && <div>{data.modelCount} models · fleet avg {fmtUsd(data.fleetAvg)}/hr</div>}
             {data?.fleetAvg1yChange !== null && data?.fleetAvg1yChange !== undefined && (
               <div style={{ color: changeColor(data.fleetAvg1yChange) }}>fleet {fmtChange(data.fleetAvg1yChange)} 1Y</div>
             )}
-            <Link href="/compute-frontier" className="text-[#F07800] hover:text-[#F0A500]">Compute Frontier →</Link>
+            <Link href="/compute-frontier" className="text-brand hover:text-brand-2">Compute Frontier →</Link>
           </div>
         </div>
       </div>
@@ -163,7 +165,7 @@ export default function NeocloudIntel() {
               <div className="flex items-center gap-2">
                 <span className="h-2.5 w-2.5 rounded-sm" style={{ background: vendorColor(vendor) }} />
                 <span className="text-xs font-mono uppercase tracking-wider text-muted-foreground">{vendor}</span>
-                <span className="text-[10px] font-mono text-muted-foreground/40">{vrows.length} GPUs</span>
+                <span className="text-10 font-mono text-muted-foreground/40">{vrows.length} GPUs</span>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                 {vrows.map((r) => (
@@ -172,23 +174,23 @@ export default function NeocloudIntel() {
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-mono font-semibold" style={{ color: colorFor(r.model) }}>{r.model}</span>
                       {r.confidence && (
-                        <span className="flex items-center gap-1 text-[8px] font-mono uppercase text-muted-foreground/50" title={`price confidence: ${r.confidence}`}>
-                          <span className="h-1.5 w-1.5 rounded-full" style={{ background: CONF_COLOR[r.confidence] ?? "#777" }} />
+                        <span className="flex items-center gap-1 text-8 font-mono uppercase text-muted-foreground/50" title={`price confidence: ${r.confidence}`}>
+                          <span className="h-1.5 w-1.5 rounded-full" style={{ background: CONF_COLOR[r.confidence] ?? INK.faint }} />
                           {r.confidence}
                         </span>
                       )}
                     </div>
-                    <div className="text-[9px] font-mono text-muted-foreground/55 mt-0.5 leading-tight">
+                    <div className="text-9 font-mono text-muted-foreground/55 mt-0.5 leading-tight">
                       {[r.architecture, r.vramGB ? `${r.vramGB}GB ${r.vramType ?? ""}`.trim() : null, r.launchYear ? `'${String(r.launchYear).slice(2)}` : null].filter(Boolean).join(" · ")}
                     </div>
                     <div className="text-xl font-semibold tabular-nums text-foreground mt-1.5">
                       {fmtUsd(r.current)}
-                      {r.estimated.includes("currentUsdPerHr") && <span className="ml-1 text-[8px] font-mono uppercase text-[#F0A500]/80 align-top">est.</span>}
-                      <span className="text-[10px] font-normal text-muted-foreground/50"> /hr</span>
+                      {r.estimated.includes("currentUsdPerHr") && <span className="ml-1 text-8 font-mono uppercase text-estimate align-top">est.</span>}
+                      <span className="text-10 font-normal text-muted-foreground/50"> /hr</span>
                     </div>
                     <div className="flex items-center justify-between mt-0.5">
-                      <span className="text-[10px] font-mono text-muted-foreground/45">${r.low}–${r.high}</span>
-                      <span className="text-[10px] font-mono" style={{ color: changeColor(r.changes.y1) }}>
+                      <span className="text-10 font-mono text-muted-foreground/45">${r.low}–${r.high}</span>
+                      <span className="text-10 font-mono" style={{ color: changeColor(r.changes.y1) }}>
                         {r.changes.y1 === null ? "1Y —" : `${fmtChange(r.changes.y1)} 1Y`}
                       </span>
                     </div>
@@ -202,8 +204,8 @@ export default function NeocloudIntel() {
         {/* Current-price snapshot chart (all models, sorted, colored by maker) */}
         <Card className="border-card-border p-3" data-testid="ni-chart">
           <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-            <span className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground">Current on-demand price · $/GPU/hr</span>
-            <div className="flex items-center gap-3 text-[10px] font-mono">
+            <span className="text-11 font-mono uppercase tracking-wider text-muted-foreground">Current on-demand price · $/GPU/hr</span>
+            <div className="flex items-center gap-3 text-10 font-mono">
               <span className="flex items-center gap-1 text-muted-foreground/60"><span className="h-2 w-2 rounded-sm" style={{ background: VENDOR_COLOR.NVIDIA }} />NVIDIA</span>
               <span className="flex items-center gap-1 text-muted-foreground/60"><span className="h-2 w-2 rounded-sm" style={{ background: VENDOR_COLOR.AMD }} />AMD</span>
             </div>
@@ -218,22 +220,22 @@ export default function NeocloudIntel() {
           ) : (
             <ResponsiveContainer width="100%" height={Math.max(260, barData.length * 38)}>
               <BarChart data={barData} layout="vertical" margin={{ left: 8, right: 60, top: 4, bottom: 4 }}>
-                <CartesianGrid horizontal={false} stroke="rgba(255,255,255,0.05)" />
-                <XAxis type="number" domain={[0, barMax]} tickFormatter={(v) => `$${v}`} tick={{ fontSize: 10, fill: "#777" }} stroke="#333" />
-                <YAxis type="category" dataKey="model" width={58} tick={{ fontSize: 11, fill: "#ccc" }} stroke="#333" />
+                <CartesianGrid {...gridProps} vertical={true} horizontal={false} />
+                <XAxis {...axisProps} type="number" domain={[0, barMax]} tickFormatter={(v) => `$${v}`} />
+                <YAxis {...axisProps} type="category" dataKey="model" width={58} />
                 <RTooltip
-                  cursor={{ fill: "rgba(255,255,255,0.03)" }}
-                  contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--card-border))", borderRadius: 8, fontSize: 12 }}
+                  cursor={{ fill: BORDER.subtle }}
+                  contentStyle={tooltipContentStyle}
                   formatter={(v: number, _n, p: any) => [`$${v.toFixed(2)}/hr  (range $${p.payload.low}–$${p.payload.high})`, p.payload.model]}
                 />
                 <Bar dataKey="current" radius={[0, 3, 3, 0]} isAnimationActive={false}
-                  label={{ position: "right", formatter: (v: number) => `$${v.toFixed(2)}`, fill: "#999", fontSize: 10, fontFamily: "monospace" }}>
+                  label={{ position: "right", formatter: (v: number) => `$${v.toFixed(2)}`, fill: INK.muted, fontSize: 10, fontFamily: FONT.mono }}>
                   {barData.map((d) => <Cell key={d.model} fill={vendorColor(d.vendor)} />)}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
           )}
-          <p className="text-[10px] text-muted-foreground/50 mt-1 font-mono">
+          <p className="text-10 text-muted-foreground/50 mt-1 font-mono">
             Bar = blended on-demand estimate · color = maker · hover for the marketplace range.
             {data && !hasRealSeries(rows) && " A price-history chart will appear here once enough daily points accrue."}
           </p>
@@ -241,11 +243,11 @@ export default function NeocloudIntel() {
 
         {/* Weighted price index table */}
         <Card className="border-card-border overflow-hidden" data-testid="ni-table">
-          <div className="px-4 py-2 bg-[#0E0E0C] border-b border-border">
-            <span className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground">Weighted Price Index</span>
-            <span className="text-[10px] font-mono text-muted-foreground/40 ml-2">hover a row for sources</span>
+          <div className="px-4 py-2 bg-surface-base border-b border-border">
+            <span className="text-11 font-mono uppercase tracking-wider text-muted-foreground">Weighted Price Index</span>
+            <span className="text-10 font-mono text-muted-foreground/40 ml-2">hover a row for sources</span>
           </div>
-          <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-[#0E0E0C]/60 border-b border-border text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+          <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-surface-base border-b border-border text-10 font-mono uppercase tracking-wider text-muted-foreground">
             <SortHeader label="Model" k="model" cur={sortKey} dir={sortDir} onClick={toggleSort} className="col-span-3" />
             <span className="col-span-2">Memory</span>
             <SortHeader label="Avg" k="current" cur={sortKey} dir={sortDir} onClick={toggleSort} className="col-span-1 justify-end" />
@@ -258,47 +260,47 @@ export default function NeocloudIntel() {
           {isLoading ? (
             <div className="p-4 space-y-2">{Array(10).fill(null).map((_, i) => <Skeleton key={i} className="h-7" />)}</div>
           ) : isError ? (
-            <div className="p-6 text-center text-xs text-red-400">Price index unavailable.</div>
+            <div className="p-6 text-center text-xs text-negative">Price index unavailable.</div>
           ) : (
             sortedRows.map((r) => (
               <UITooltip key={r.model}>
                 <TooltipTrigger asChild>
-                  <div className="grid grid-cols-12 gap-2 px-4 py-2.5 border-b border-border/30 last:border-0 text-xs hover:bg-[#F07800]/5 cursor-help items-center" data-testid={`ni-row-${r.model}`}>
+                  <div className="grid grid-cols-12 gap-2 px-4 py-2.5 border-b border-border/30 last:border-0 text-xs hover:bg-brand/5 cursor-help items-center" data-testid={`ni-row-${r.model}`}>
                     <span className="col-span-3 font-mono font-semibold flex items-center gap-1.5" style={{ color: colorFor(r.model) }}>
                       <span className="h-2 w-2 rounded-full flex-shrink-0" style={{ background: colorFor(r.model) }} />
                       {r.model}
-                      <span className="text-[8px] font-normal px-1 rounded-sm" style={{ color: vendorColor(r.vendor), border: `1px solid ${vendorColor(r.vendor)}55` }}>{r.vendor}</span>
+                      <span className="text-8 font-normal px-1 rounded-sm" style={{ color: vendorColor(r.vendor), border: `1px solid ${vendorColor(r.vendor)}55` }}>{r.vendor}</span>
                     </span>
-                    <span className="col-span-2 font-mono text-muted-foreground/70 text-[10px]">{r.vramGB ? `${r.vramGB}GB ${r.vramType ?? ""}`.trim() : "—"}</span>
+                    <span className="col-span-2 font-mono text-muted-foreground/70 text-10">{r.vramGB ? `${r.vramGB}GB ${r.vramType ?? ""}`.trim() : "—"}</span>
                     <span className="col-span-1 font-mono text-foreground text-right tabular-nums">
-                      {fmtUsd(r.current)}{r.estimated.includes("currentUsdPerHr") && <span className="ml-0.5 text-[8px] text-[#F0A500]/70">e</span>}
+                      {fmtUsd(r.current)}{r.estimated.includes("currentUsdPerHr") && <span className="ml-0.5 text-8 text-estimate">e</span>}
                     </span>
                     <span className="col-span-1 font-mono text-right tabular-nums" style={{ color: changeColor(r.changes.w1) }}>{fmtChange(r.changes.w1)}</span>
                     <span className="col-span-1 font-mono text-right tabular-nums" style={{ color: changeColor(r.changes.m1) }}>{fmtChange(r.changes.m1)}</span>
                     <span className="col-span-2 font-mono text-right tabular-nums" style={{ color: changeColor(r.changes.ytd) }}>{fmtChange(r.changes.ytd)}</span>
                     <span className="col-span-1 font-mono text-right tabular-nums" style={{ color: changeColor(r.changes.y1) }}>{fmtChange(r.changes.y1)}</span>
-                    <span className="col-span-2 font-mono text-muted-foreground text-right tabular-nums text-[11px]">${r.low}–${r.high}</span>
+                    <span className="col-span-2 font-mono text-muted-foreground text-right tabular-nums text-11">${r.low}–${r.high}</span>
                   </div>
                 </TooltipTrigger>
                 <TooltipContent side="top" className="max-w-md p-3">
                   <div className="text-xs font-semibold mb-1" style={{ color: colorFor(r.model) }}>
                     {r.model} · {r.vendor} {r.architecture ? `· ${r.architecture}` : ""} {r.vramGB ? `· ${r.vramGB}GB ${r.vramType ?? ""}` : ""} {r.launchYear ? `· ${r.launchYear}` : ""}
                   </div>
-                  {r.oneYearTrend && <p className="text-[11px] text-muted-foreground mb-1.5">{r.oneYearTrend}</p>}
+                  {r.oneYearTrend && <p className="text-11 text-muted-foreground mb-1.5">{r.oneYearTrend}</p>}
                   {r.sources.length > 0 && (
-                    <div className="text-[10px] font-mono text-muted-foreground/70 break-all space-y-0.5">
+                    <div className="text-10 font-mono text-muted-foreground/70 break-all space-y-0.5">
                       <div className="uppercase tracking-wider text-muted-foreground/50 mb-0.5">Sources</div>
                       {r.sources.slice(0, 4).map((s) => <div key={s}>{s.replace(/^https?:\/\//, "")}</div>)}
                     </div>
                   )}
-                  <p className="text-[10px] text-muted-foreground/50 mt-1.5">1W/1M/YTD read "—" until the daily recorder accrues history; 1Y is from sourced anchors.</p>
+                  <p className="text-10 text-muted-foreground/50 mt-1.5">1W/1M/YTD read "—" until the daily recorder accrues history; 1Y is from sourced anchors.</p>
                 </TooltipContent>
               </UITooltip>
             ))
           )}
         </Card>
 
-        <p className="text-[11px] text-muted-foreground/60 leading-relaxed px-1" data-testid="ni-methodology">
+        <p className="text-11 text-muted-foreground/60 leading-relaxed px-1" data-testid="ni-methodology">
           {data?.methodology ?? "Blended on-demand rental prices from public neocloud and marketplace listings and the getdeploying.com / Silicon Data trackers."}
           {" "}Sources are listed per model (hover a table row) and in <span className="font-mono">server/data/gpu-rental-prices.json</span>. Prices move constantly and vary widely by provider, term, and availability; treat these as indicative, not quotes.
         </p>
@@ -310,7 +312,7 @@ export default function NeocloudIntel() {
 function SortHeader({ label, k, cur, dir, onClick, className = "" }: { label: string; k: SortKey; cur: SortKey; dir: "asc" | "desc"; onClick: (k: SortKey) => void; className?: string }) {
   const active = cur === k;
   return (
-    <button onClick={() => onClick(k)} className={`flex items-center gap-1 hover:text-foreground transition-colors ${active ? "text-[#F07800]" : ""} ${className}`} data-testid={`ni-sort-${k}`}>
+    <button onClick={() => onClick(k)} className={`flex items-center gap-1 hover:text-foreground transition-colors ${active ? "text-brand" : ""} ${className}`} data-testid={`ni-sort-${k}`}>
       {label}
       <ArrowUpDown className="h-3 w-3" style={{ opacity: active ? 1 : 0.3 }} />
     </button>

@@ -53,11 +53,11 @@ export default function BlogIndex() {
                           {new Date(article.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                         </div>
                         {article.keywords.slice(0, 2).map((kw) => (
-                          <Badge key={kw} className="text-[10px] bg-muted/40 text-muted-foreground">{kw}</Badge>
+                          <Badge key={kw} className="text-10 bg-muted/40 text-muted-foreground">{kw}</Badge>
                         ))}
                       </div>
                     </div>
-                    <ArrowRight className="h-4 w-4 text-[#F07800] flex-shrink-0 mt-1" />
+                    <ArrowRight className="h-4 w-4 text-brand flex-shrink-0 mt-1" />
                   </div>
                 </Card>
               </Link>

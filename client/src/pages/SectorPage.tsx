@@ -75,10 +75,10 @@ export default function SectorPage() {
     return (
       <div className="max-w-5xl mx-auto p-6">
         <Card className="p-8 border-card-border text-center">
-          <AlertTriangle className="h-8 w-8 text-red-400 mx-auto mb-3" />
+          <AlertTriangle className="h-8 w-8 text-negative mx-auto mb-3" />
           <h1 className="text-lg font-semibold mb-2">Sector Not Found</h1>
           <p className="text-sm text-muted-foreground">
-            <Link href="/stack" className="text-[#F07800]">Browse The Stack</Link> to see all sectors.
+            <Link href="/stack" className="text-brand">Browse The Stack</Link> to see all sectors.
           </p>
         </Card>
       </div>
@@ -109,18 +109,18 @@ export default function SectorPage() {
 
       <div className="grid grid-cols-3 gap-4">
         <Card className="p-4 border-card-border text-center" data-testid="stat-avg-change">
-          <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1">Avg Change</p>
-          <p className={`text-xl font-bold font-mono ${avgChange >= 0 ? "text-green-400" : "text-red-400"}`}>
+          <p className="text-10 uppercase tracking-widest text-muted-foreground mb-1">Avg Change</p>
+          <p className={`text-xl font-bold font-mono ${avgChange >= 0 ? "text-positive" : "text-negative"}`}>
             {avgChange >= 0 ? "+" : ""}{avgChange.toFixed(2)}%
           </p>
         </Card>
         <Card className="p-4 border-card-border text-center" data-testid="stat-best">
-          <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1">Best Performer</p>
-          <p className="text-sm font-bold font-mono text-green-400">{best ? `${best.ticker} +${best.changePercent.toFixed(2)}%` : "N/A"}</p>
+          <p className="text-10 uppercase tracking-widest text-muted-foreground mb-1">Best Performer</p>
+          <p className="text-sm font-bold font-mono text-positive">{best ? `${best.ticker} +${best.changePercent.toFixed(2)}%` : "N/A"}</p>
         </Card>
         <Card className="p-4 border-card-border text-center" data-testid="stat-worst">
-          <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1">Worst Performer</p>
-          <p className="text-sm font-bold font-mono text-red-400">{worst ? `${worst.ticker} ${worst.changePercent.toFixed(2)}%` : "N/A"}</p>
+          <p className="text-10 uppercase tracking-widest text-muted-foreground mb-1">Worst Performer</p>
+          <p className="text-sm font-bold font-mono text-negative">{worst ? `${worst.ticker} ${worst.changePercent.toFixed(2)}%` : "N/A"}</p>
         </Card>
       </div>
 
@@ -146,7 +146,7 @@ export default function SectorPage() {
                       </div>
                       <div className="text-right">
                         <p className="font-semibold text-sm font-mono">${s.price.toFixed(2)}</p>
-                        <Badge className={`text-xs font-mono ${up ? "bg-green-500/15 text-green-400" : "bg-red-500/15 text-red-400"}`}>
+                        <Badge className={`text-xs font-mono ${up ? "bg-positive-deep/15 text-positive" : "bg-negative-deep/15 text-negative"}`}>
                           {up ? <TrendingUp className="h-2.5 w-2.5 mr-0.5" /> : <TrendingDown className="h-2.5 w-2.5 mr-0.5" />}
                           {up ? "+" : ""}{s.changePercent.toFixed(2)}%
                         </Badge>
@@ -169,7 +169,7 @@ export default function SectorPage() {
         <div className="flex flex-wrap gap-2">
           {sector.related.map((r) => (
             <Link key={r} href={`/sector/${r}`}>
-              <Badge className="bg-[#F07800]/15 text-[#F07800] border-[#F07800]/25 hover:bg-[#F07800]/25 cursor-pointer" data-testid={`link-sector-${r}`}>
+              <Badge className="bg-brand/15 text-brand border-brand/25 hover:bg-brand/25 cursor-pointer" data-testid={`link-sector-${r}`}>
                 {SECTOR_SLUG_LABELS[r] || r}
               </Badge>
             </Link>

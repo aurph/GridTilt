@@ -51,10 +51,10 @@ export default function RegionPage() {
     return (
       <div className="max-w-5xl mx-auto p-6">
         <Card className="p-8 border-card-border text-center">
-          <AlertTriangle className="h-8 w-8 text-red-400 mx-auto mb-3" />
+          <AlertTriangle className="h-8 w-8 text-negative mx-auto mb-3" />
           <h1 className="text-lg font-semibold mb-2">Region Not Found</h1>
           <p className="text-sm text-muted-foreground">
-            <Link href="/power-map" className="text-[#F07800]">View the Power Map</Link> to see all grid regions.
+            <Link href="/power-map" className="text-brand">View the Power Map</Link> to see all grid regions.
           </p>
         </Card>
       </div>
@@ -73,7 +73,7 @@ export default function RegionPage() {
 
       <div>
         <div className="flex items-center gap-3 mb-2">
-          <MapPin className="h-5 w-5 text-[#F07800]" />
+          <MapPin className="h-5 w-5 text-brand" />
           <h1 className="text-2xl font-bold" data-testid="region-heading">{region.fullName} ({region.name})</h1>
         </div>
         <p className="text-xs text-muted-foreground mb-4">Coverage: {region.states}</p>
@@ -87,7 +87,7 @@ export default function RegionPage() {
         </p>
         <Link
           href={`/power-map?region=${slug}`}
-          className="inline-flex items-center gap-1.5 text-sm text-[#F07800] hover:text-[#F0A500] font-medium"
+          className="inline-flex items-center gap-1.5 text-sm text-brand hover:text-brand-2 font-medium"
           data-testid="link-filtered-map"
         >
           Open Power Map filtered to {region.name}
@@ -110,9 +110,9 @@ export default function RegionPage() {
       <Card className="p-5 border-card-border">
         <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">Related Tools</h2>
         <div className="space-y-2 text-sm">
-          <Link href="/power-map" className="block text-[#F07800] hover:text-[#F0A500]">Power Map</Link>
-          <Link href="/trade" className="block text-[#F07800] hover:text-[#F0A500]">Scenario Calculator</Link>
-          <Link href="/stack" className="block text-[#F07800] hover:text-[#F0A500]">The Stack</Link>
+          <Link href="/power-map" className="block text-brand hover:text-brand-2">Power Map</Link>
+          <Link href="/trade" className="block text-brand hover:text-brand-2">Scenario Calculator</Link>
+          <Link href="/stack" className="block text-brand hover:text-brand-2">The Stack</Link>
         </div>
       </Card>
     </div>

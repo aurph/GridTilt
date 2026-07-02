@@ -1,5 +1,15 @@
 import type { Config } from "tailwindcss";
 
+/**
+ * Alpha-capable token color for Tailwind 3: keeps index.css :root as the
+ * single source of truth while letting slash-opacity modifiers compile.
+ * With no modifier <alpha-value> becomes 1 (100% = the raw token); with
+ * bg-brand/10 it becomes 0.1 (10% mix into transparent).
+ */
+function tokenColor(cssVar: string): string {
+  return `color-mix(in srgb, var(${cssVar}) calc(<alpha-value> * 100%), transparent)`;
+}
+
 export default {
   darkMode: ["class"],
   content: ["./client/index.html", "./client/src/**/*.{js,jsx,ts,tsx}"],
@@ -87,47 +97,50 @@ export default {
         "green-low": "#22c55e",
         "yellow-mid": "#eab308",
         "red-high": "#ef4444",
-        // GridTilt data tokens (Lake 1) - values live in index.css :root
+        // GridTilt data tokens (Lake 1) - values live in index.css :root.
+        // color-mix wrapper makes slash-opacity modifiers (bg-brand/10) work
+        // with var()-based colors under Tailwind 3; plain var() silently
+        // drops the alpha and emits no CSS at all.
         surface: {
-          sunken: "var(--surface-sunken)",
-          DEFAULT: "var(--surface-base)",
-          base: "var(--surface-base)",
-          raised: "var(--surface-raised)",
-          overlay: "var(--surface-overlay)",
+          sunken: tokenColor("--surface-sunken"),
+          DEFAULT: tokenColor("--surface-base"),
+          base: tokenColor("--surface-base"),
+          raised: tokenColor("--surface-raised"),
+          overlay: tokenColor("--surface-overlay"),
         },
         brand: {
-          DEFAULT: "var(--brand)",
-          "2": "var(--brand-2)",
+          DEFAULT: tokenColor("--brand"),
+          "2": tokenColor("--brand-2"),
         },
         ink: {
-          DEFAULT: "var(--ink)",
-          secondary: "var(--ink-secondary)",
-          muted: "var(--ink-muted)",
-          faint: "var(--ink-faint)",
+          DEFAULT: tokenColor("--ink"),
+          secondary: tokenColor("--ink-secondary"),
+          muted: tokenColor("--ink-muted"),
+          faint: tokenColor("--ink-faint"),
         },
         positive: {
-          DEFAULT: "var(--positive)",
-          deep: "var(--positive-deep)",
+          DEFAULT: tokenColor("--positive"),
+          deep: tokenColor("--positive-deep"),
         },
         negative: {
-          DEFAULT: "var(--negative)",
-          deep: "var(--negative-deep)",
+          DEFAULT: tokenColor("--negative"),
+          deep: tokenColor("--negative-deep"),
         },
-        warning: "var(--warning)",
-        critical: "var(--critical)",
-        info: "var(--info)",
-        estimate: "var(--estimate)",
+        warning: tokenColor("--warning"),
+        critical: tokenColor("--critical"),
+        info: tokenColor("--info"),
+        estimate: tokenColor("--estimate"),
         series: {
-          "1": "var(--series-1)",
-          "2": "var(--series-2)",
-          "3": "var(--series-3)",
-          "4": "var(--series-4)",
-          "5": "var(--series-5)",
-          "6": "var(--series-6)",
-          "7": "var(--series-7)",
-          "8": "var(--series-8)",
-          "9": "var(--series-9)",
-          "10": "var(--series-10)",
+          "1": tokenColor("--series-1"),
+          "2": tokenColor("--series-2"),
+          "3": tokenColor("--series-3"),
+          "4": tokenColor("--series-4"),
+          "5": tokenColor("--series-5"),
+          "6": tokenColor("--series-6"),
+          "7": tokenColor("--series-7"),
+          "8": tokenColor("--series-8"),
+          "9": tokenColor("--series-9"),
+          "10": tokenColor("--series-10"),
         },
       },
       borderColor: {

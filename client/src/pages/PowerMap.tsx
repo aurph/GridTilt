@@ -10,6 +10,14 @@ import {
   X, Zap, MapPin, Building2, Calendar, Activity, Network,
   SlidersHorizontal, ChevronDown,
 } from "lucide-react";
+import {
+  BRAND, BORDER, CATEGORY_COLORS, FONT, INK, SEMANTIC, SERIES, STATUS_COLORS, SURFACE,
+} from "@/lib/tokens";
+
+/** Token hex + alpha -> rgba() string, so composed tints stay on token values. */
+function alpha(hex: string, a: number): string {
+  return `rgba(${parseInt(hex.slice(1, 3), 16)},${parseInt(hex.slice(3, 5), 16)},${parseInt(hex.slice(5, 7), 16)},${a})`;
+}
 
 interface DataCenter {
   id: number;
@@ -46,14 +54,17 @@ interface RTOConfig {
   legendColor: string;
 }
 
+// Stress colors are STATE -> SEMANTIC tokens. legendColor keeps each RTO's
+// pre-existing hue mapped to the nearest token; the legend-vs-map color
+// contradictions are known and get reconciled in a later lake.
 const RTO_CONFIG: Record<string, RTOConfig> = {
-  PJM:  { label: "PJM",  reserveMargin: 17.5, aiSignal: "Elevated", dcColor: "rgba(240,165,0,0.12)",   stressColor: "rgba(234,179,8,0.28)",  stressBadgeClass: "bg-yellow-500/20 text-yellow-400", legendColor: "#F0A500" },
-  MISO: { label: "MISO", reserveMargin: 13.4, aiSignal: "Critical", dcColor: "rgba(34,197,94,0.08)",   stressColor: "rgba(239,68,68,0.42)",  stressBadgeClass: "bg-red-500/20 text-red-400",       legendColor: "#22c55e" },
-  ERCOT:{ label: "ERCOT",reserveMargin: 15.8, aiSignal: "Critical", dcColor: "rgba(239,68,68,0.10)",   stressColor: "rgba(239,68,68,0.32)",  stressBadgeClass: "bg-red-500/20 text-red-400",       legendColor: "#ef4444" },
-  WECC: { label: "WECC", reserveMargin: 24.6, aiSignal: "Moderate", dcColor: "rgba(168,85,247,0.08)",  stressColor: "rgba(132,204,22,0.18)", stressBadgeClass: "bg-green-500/20 text-green-400",   legendColor: "#a855f7" },
-  SERC: { label: "SERC", reserveMargin: 23.1, aiSignal: "Moderate", dcColor: "rgba(20,184,166,0.08)",  stressColor: "rgba(34,197,94,0.18)",  stressBadgeClass: "bg-green-500/20 text-green-400",   legendColor: "#14b8a6" },
-  SPP:  { label: "SPP",  reserveMargin: 27.8, aiSignal: "Low",      dcColor: "rgba(244,63,94,0.07)",   stressColor: "rgba(34,197,94,0.12)", stressBadgeClass: "bg-green-500/15 text-green-500",   legendColor: "#f43f5e" },
-  NPCC: { label: "NPCC", reserveMargin: 26.4, aiSignal: "Low",      dcColor: "rgba(148,163,184,0.08)", stressColor: "rgba(34,197,94,0.12)", stressBadgeClass: "bg-green-500/15 text-green-500",   legendColor: "#94a3b8" },
+  PJM:  { label: "PJM",  reserveMargin: 17.5, aiSignal: "Elevated", dcColor: alpha(BRAND.secondary, 0.12),         stressColor: alpha(SEMANTIC.warning, 0.28),      stressBadgeClass: "bg-warning/20 text-warning",        legendColor: BRAND.secondary },
+  MISO: { label: "MISO", reserveMargin: 13.4, aiSignal: "Critical", dcColor: alpha(SEMANTIC.positiveDeep, 0.08),   stressColor: alpha(SEMANTIC.negativeDeep, 0.42), stressBadgeClass: "bg-negative-deep/20 text-negative", legendColor: SEMANTIC.positiveDeep },
+  ERCOT:{ label: "ERCOT",reserveMargin: 15.8, aiSignal: "Critical", dcColor: alpha(SEMANTIC.negativeDeep, 0.10),   stressColor: alpha(SEMANTIC.negativeDeep, 0.32), stressBadgeClass: "bg-negative-deep/20 text-negative", legendColor: SEMANTIC.negativeDeep },
+  WECC: { label: "WECC", reserveMargin: 24.6, aiSignal: "Moderate", dcColor: alpha(CATEGORY_COLORS.nuclear, 0.08), stressColor: alpha(SEMANTIC.positiveDeep, 0.18), stressBadgeClass: "bg-positive-deep/20 text-positive", legendColor: CATEGORY_COLORS.nuclear },
+  SERC: { label: "SERC", reserveMargin: 23.1, aiSignal: "Moderate", dcColor: alpha(SERIES[5], 0.08),               stressColor: alpha(SEMANTIC.positiveDeep, 0.18), stressBadgeClass: "bg-positive-deep/20 text-positive", legendColor: SERIES[5] /* series slot 6 */ },
+  SPP:  { label: "SPP",  reserveMargin: 27.8, aiSignal: "Low",      dcColor: alpha(SERIES[4], 0.07),               stressColor: alpha(SEMANTIC.positiveDeep, 0.12), stressBadgeClass: "bg-positive-deep/15 text-positive", legendColor: SERIES[4] /* series slot 5 */ },
+  NPCC: { label: "NPCC", reserveMargin: 26.4, aiSignal: "Low",      dcColor: alpha(INK.muted, 0.08),               stressColor: alpha(SEMANTIC.positiveDeep, 0.12), stressBadgeClass: "bg-positive-deep/15 text-positive", legendColor: INK.muted },
 };
 
 function gridOpToRTO(op: string): string {
@@ -71,6 +82,7 @@ function gridOpToRTO(op: string): string {
   return "WECC";
 }
 
+// External company brand colors stay literal (migration map exception).
 const companyColors: Record<string, string> = {
   Microsoft: "#0078d4",
   Google:    "#4285f4",
@@ -86,9 +98,9 @@ const companyColors: Record<string, string> = {
 
 function getStatusBadge(status: DataCenter["status"]) {
   const map = {
-    operational:  { label: "Operational",        class: "bg-green-500/15 text-green-400" },
-    construction: { label: "Under Construction",  class: "bg-yellow-500/15 text-yellow-400" },
-    announced:    { label: "Announced",           class: "bg-slate-500/15 text-slate-400" },
+    operational:  { label: "Operational",        class: "bg-positive-deep/15 text-positive" },
+    construction: { label: "Under Construction",  class: "bg-warning/15 text-warning" },
+    announced:    { label: "Announced",           class: "bg-ink-muted/15 text-ink-muted" },
   };
   return map[status];
 }
@@ -125,20 +137,22 @@ function pinRadius(powerMW: number): number {
   return 6;
 }
 
+// Pin hues keep the current brand-orange convention for built/under-way
+// facilities (the STATUS_COLORS unification lands in a later lake).
 function pinColor(status: DataCenter["status"]): string {
-  if (status === "operational") return "#F07800";
-  if (status === "construction") return "#F0A500";
-  return "rgba(255,255,255,0.6)";
+  if (status === "operational") return BRAND.primary;
+  if (status === "construction") return BRAND.secondary;
+  return STATUS_COLORS.announced;
 }
 
 function stressColorForRTO(dc: DataCenter): string {
   const rto = gridOpToRTO(dc.gridOperator);
   const cfg = RTO_CONFIG[rto];
-  if (!cfg) return "#22c55e";
-  if (cfg.aiSignal === "Critical") return "#ef4444";
-  if (cfg.aiSignal === "Elevated") return "#eab308";
-  if (cfg.aiSignal === "Moderate") return "#22c55e";
-  return "#4ade80";
+  if (!cfg) return SEMANTIC.positiveDeep;
+  if (cfg.aiSignal === "Critical") return SEMANTIC.negativeDeep;
+  if (cfg.aiSignal === "Elevated") return SEMANTIC.warning;
+  if (cfg.aiSignal === "Moderate") return SEMANTIC.positiveDeep;
+  return SEMANTIC.positive;
 }
 
 function createGlowIcon(dc: DataCenter, passes: boolean, dimmed: boolean, viewMode: ViewMode): L.DivIcon {
@@ -188,24 +202,28 @@ const STATE_TO_RTO: Record<string, string> = {
   Alaska: "WECC", Hawaii: "WECC",
 };
 
+// RTO regions are a category with no CATEGORY_COLORS entry, so they fall
+// back to SERIES slots in order of appearance (rendered at low fill opacity).
 const RTO_MUTED_COLORS: Record<string, string> = {
-  PJM: "#7B8FA1",
-  MISO: "#6B8E6B",
-  ERCOT: "#A18072",
-  WECC: "#7B8BA0",
-  SERC: "#6B9E9E",
-  SPP: "#9B8B7B",
-  NPCC: "#8B8B9B",
+  PJM: SERIES[0],   // series slot 1
+  MISO: SERIES[1],  // series slot 2
+  ERCOT: SERIES[2], // series slot 3
+  WECC: SERIES[3],  // series slot 4
+  SERC: SERIES[4],  // series slot 5
+  SPP: SERIES[5],   // series slot 6
+  NPCC: SERIES[6],  // series slot 7
 };
 
+// Stress view is STATE -> SEMANTIC steps (WECC's old lime folds into the
+// same Moderate green used by stressColorForRTO).
 const RTO_STRESS_COLORS: Record<string, string> = {
-  PJM: "#eab308",
-  MISO: "#ef4444",
-  ERCOT: "#ef4444",
-  WECC: "#84cc16",
-  SERC: "#22c55e",
-  SPP: "#4ade80",
-  NPCC: "#4ade80",
+  PJM: SEMANTIC.warning,
+  MISO: SEMANTIC.negativeDeep,
+  ERCOT: SEMANTIC.negativeDeep,
+  WECC: SEMANTIC.positiveDeep,
+  SERC: SEMANTIC.positiveDeep,
+  SPP: SEMANTIC.positive,
+  NPCC: SEMANTIC.positive,
 };
 
 const GEO_URL = "https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json";
@@ -245,14 +263,14 @@ function RTORegions({ viewMode }: { viewMode: ViewMode }) {
             const stateName = stateNames[stateId] || feature?.properties?.name || "";
             const rto = STATE_TO_RTO[stateName];
             if (!rto) {
-              return { fillColor: "#ffffff", fillOpacity: 0.02, color: "rgba(255,255,255,0.08)", weight: 0.5 };
+              return { fillColor: INK.primary, fillOpacity: 0.02, color: BORDER.subtle, weight: 0.5 };
             }
-            const fillColor = isDC ? (RTO_MUTED_COLORS[rto] || "#888") : (RTO_STRESS_COLORS[rto] || "#22c55e");
+            const fillColor = isDC ? (RTO_MUTED_COLORS[rto] || INK.muted) : (RTO_STRESS_COLORS[rto] || SEMANTIC.positiveDeep);
             const fillOpacity = isDC ? 0.08 : 0.22;
             return {
               fillColor,
               fillOpacity,
-              color: "rgba(255,255,255,0.15)",
+              color: BORDER.strong,
               weight: 1,
             };
           },
@@ -619,7 +637,7 @@ export default function PowerMap() {
           border: none !important;
         }
         .leaflet-container {
-          background: #0E0E0C !important;
+          background: ${SURFACE.base} !important;
           font-family: inherit;
         }
         .leaflet-control-zoom-in {
@@ -630,7 +648,7 @@ export default function PowerMap() {
           border-radius: 0 0 6px 6px !important;
         }
         .leaflet-control-attribution a {
-          color: rgba(255,255,255,0.25) !important;
+          color: ${INK.faint} !important;
         }
         .pin-wrapper {
           transition: opacity 0.2s ease-out, transform 0.2s ease-out;
@@ -653,7 +671,7 @@ export default function PowerMap() {
         }
         .pin-construction svg circle:first-child {
           stroke-dasharray: 4 3;
-          stroke: #F0A500;
+          stroke: ${BRAND.secondary};
           stroke-width: 1;
           fill: none !important;
           animation: pin-construction-rotate 8s linear infinite;
@@ -671,9 +689,9 @@ export default function PowerMap() {
           border: none !important;
         }
         .map-label {
-          font-family: system-ui, -apple-system, sans-serif;
+          font-family: ${FONT.sans};
           font-size: 10px;
-          color: #fff;
+          color: ${INK.primary};
           background: rgba(0,0,0,0.7);
           padding: 2px 5px;
           border-radius: 3px;
@@ -688,25 +706,25 @@ export default function PowerMap() {
           margin-right: 16px !important;
         }
         .leaflet-control-zoom a {
-          background: #1A1917 !important;
-          color: rgba(255,255,255,0.7) !important;
-          border: 1px solid rgba(255,255,255,0.08) !important;
+          background: ${SURFACE.raised} !important;
+          color: ${INK.secondary} !important;
+          border: 1px solid ${BORDER.subtle} !important;
           width: 28px !important;
           height: 28px !important;
           line-height: 28px !important;
           font-size: 14px !important;
         }
         .leaflet-control-zoom a:hover {
-          background: #252420 !important;
-          color: #F07800 !important;
+          background: ${SURFACE.overlay} !important;
+          color: ${BRAND.primary} !important;
         }
         .leaflet-control-attribution {
           background: rgba(0,0,0,0.4) !important;
-          color: rgba(255,255,255,0.3) !important;
+          color: ${INK.faint} !important;
           font-size: 9px !important;
         }
         .leaflet-control-attribution a {
-          color: rgba(255,255,255,0.4) !important;
+          color: ${INK.faint} !important;
         }
       `}</style>
 
@@ -720,43 +738,43 @@ export default function PowerMap() {
             className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] pointer-events-auto max-w-[min(640px,calc(100%-280px))] hidden md:block"
             data-testid="threshold-banner"
           >
-            <div className="bg-[#1A1917]/95 backdrop-blur-md border border-[#F07800]/40 rounded-lg px-4 py-2.5 shadow-xl shadow-black/40">
+            <div className="bg-surface-raised/95 backdrop-blur-md border border-brand/40 rounded-lg px-4 py-2.5 shadow-xl shadow-black/40">
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2 flex-shrink-0">
-                  <Zap className="h-4 w-4 text-[#F07800]" />
-                  <span className="text-[11px] font-mono font-bold tracking-widest text-[#F07800] uppercase">≥ 400 MW only</span>
+                  <Zap className="h-4 w-4 text-brand" />
+                  <span className="text-11 font-mono font-bold tracking-widest text-brand uppercase">≥ 400 MW only</span>
                 </div>
                 <span className="h-4 w-px bg-white/15" />
-                <p className="text-[11px] leading-tight text-white/70">
-                  We track hyperscale AI campuses. Smaller sites exist by the thousands. Sources like <span className="text-white/90 font-medium">DC Map</span> and <span className="text-white/90 font-medium">Data Center Knowledge</span> cover them better. For the compute layer (GPUs, chips, secured power) see <Link href="/compute-frontier" className="text-[#F07800] hover:text-[#F0A500]">Compute Frontier</Link>.
+                <p className="text-11 leading-tight text-white/70">
+                  We track hyperscale AI campuses. Smaller sites exist by the thousands. Sources like <span className="text-white/90 font-medium">DC Map</span> and <span className="text-white/90 font-medium">Data Center Knowledge</span> cover them better. For the compute layer (GPUs, chips, secured power) see <Link href="/compute-frontier" className="text-brand hover:text-brand-2">Compute Frontier</Link>.
                 </p>
               </div>
             </div>
           </div>
 
           <div className="absolute top-16 left-1/2 -translate-x-1/2 z-[1000] pointer-events-auto md:hidden" data-testid="threshold-banner-mobile">
-            <div className="bg-[#1A1917]/95 backdrop-blur-md border border-[#F07800]/40 rounded-md px-3 py-1.5 shadow-xl">
-              <span className="text-[10px] font-mono font-bold tracking-wider text-[#F07800] uppercase">≥ 400 MW only</span>
+            <div className="bg-surface-raised/95 backdrop-blur-md border border-brand/40 rounded-md px-3 py-1.5 shadow-xl">
+              <span className="text-10 font-mono font-bold tracking-wider text-brand uppercase">≥ 400 MW only</span>
             </div>
           </div>
 
           <div className="absolute top-3 left-3 z-[1000] pointer-events-auto" data-testid="stats-overlay">
-            <div className="bg-[#1A1917]/90 backdrop-blur-md border border-white/[0.06] rounded-lg px-4 py-3 shadow-xl">
+            <div className="bg-surface-raised/90 backdrop-blur-md border border-subtle rounded-lg px-4 py-3 shadow-xl">
               <div className="flex items-center gap-2 mb-2">
-                <Zap className="h-3.5 w-3.5 text-[#F07800]" />
+                <Zap className="h-3.5 w-3.5 text-brand" />
                 <span className="text-xs font-semibold text-white/90 tracking-tight">Power Map</span>
-                <span className="text-[10px] font-mono text-white/40">
+                <span className="text-10 font-mono text-white/40">
                   {dcLoading ? "loading…" : dcError ? "load failed" : `${dataCenters.length} facilities`}
                 </span>
               </div>
-              <div className="flex items-center gap-3 text-[11px] font-mono">
-                <span className="text-[#F0A500] font-bold">{(totalMW / 1000).toFixed(1)} GW</span>
+              <div className="flex items-center gap-3 text-11 font-mono">
+                <span className="text-brand-2 font-bold">{(totalMW / 1000).toFixed(1)} GW</span>
                 <span className="text-white/20">|</span>
                 <span className="text-white/50">{totalTWh} TWh/yr</span>
                 <span className="text-white/20">|</span>
                 <div className="flex items-center gap-1.5">
-                  <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-[#F07800] inline-block" /><span className="text-white/60">{opCount}</span></span>
-                  <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-[#F0A500] inline-block" /><span className="text-white/60">{conCount}</span></span>
+                  <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-brand inline-block" /><span className="text-white/60">{opCount}</span></span>
+                  <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-brand-2 inline-block" /><span className="text-white/60">{conCount}</span></span>
                   <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-white/50 inline-block" /><span className="text-white/60">{annCount}</span></span>
                 </div>
               </div>
@@ -764,16 +782,16 @@ export default function PowerMap() {
           </div>
 
           <div className="absolute top-3 right-3 z-[1000] flex flex-col gap-2 pointer-events-auto">
-            <div className="flex rounded-md overflow-hidden border border-white/[0.08] text-xs font-mono shadow-lg">
+            <div className="flex rounded-md overflow-hidden border border-subtle text-xs font-mono shadow-lg">
               <button
-                className={`px-3 py-1.5 transition-all duration-500 ${viewMode === "dc" ? "bg-[#F07800] text-black font-semibold" : "bg-[#1A1917]/90 text-white/60 hover:text-white/90 backdrop-blur-md"}`}
+                className={`px-3 py-1.5 transition-all duration-500 ${viewMode === "dc" ? "bg-brand text-black font-semibold" : "bg-surface-raised/90 text-white/60 hover:text-white/90 backdrop-blur-md"}`}
                 onClick={() => setViewMode("dc")}
                 data-testid="toggle-dc-locations"
               >
                 DC Locations
               </button>
               <button
-                className={`px-3 py-1.5 transition-all duration-500 ${viewMode === "stress" ? "bg-[#F07800] text-black font-semibold" : "bg-[#1A1917]/90 text-white/60 hover:text-white/90 backdrop-blur-md"}`}
+                className={`px-3 py-1.5 transition-all duration-500 ${viewMode === "stress" ? "bg-brand text-black font-semibold" : "bg-surface-raised/90 text-white/60 hover:text-white/90 backdrop-blur-md"}`}
                 onClick={() => setViewMode("stress")}
                 data-testid="toggle-grid-stress"
               >
@@ -790,50 +808,50 @@ export default function PowerMap() {
                   setFiltersExpanded(!filtersExpanded);
                 }
               }}
-              className="flex items-center gap-2 bg-[#1A1917]/90 backdrop-blur-md border border-white/[0.08] rounded-md px-3 py-1.5 text-xs font-mono text-white/60 hover:text-white/90 transition-colors shadow-lg"
+              className="flex items-center gap-2 bg-surface-raised/90 backdrop-blur-md border border-subtle rounded-md px-3 py-1.5 text-xs font-mono text-white/60 hover:text-white/90 transition-colors shadow-lg"
               data-testid="filter-bar-toggle"
             >
               <SlidersHorizontal className="h-3 w-3" />
               <span>Filters</span>
               {anyFilterActive && (
-                <span className="bg-[#F07800] text-black text-[10px] font-bold rounded-full px-1.5 py-0.5 leading-none">
+                <span className="bg-brand text-black text-10 font-bold rounded-full px-1.5 py-0.5 leading-none">
                   {activeFilterCount}
                 </span>
               )}
-              <span className="text-[10px] text-white/40 ml-1">{anyFilterActive ? `${filteredCount}/${dataCenters.length}` : `${dataCenters.length}`}</span>
+              <span className="text-10 text-white/40 ml-1">{anyFilterActive ? `${filteredCount}/${dataCenters.length}` : `${dataCenters.length}`}</span>
               <ChevronDown className={`h-3 w-3 transition-transform ${filtersExpanded ? "rotate-180" : ""}`} />
             </button>
           </div>
 
           {filtersExpanded && (
             <div className="absolute top-[88px] right-3 z-[1000] pointer-events-auto" data-testid="filter-panel">
-              <div className="bg-[#1A1917]/95 backdrop-blur-md border border-white/[0.08] rounded-lg p-4 shadow-2xl w-[320px] max-h-[60vh] overflow-y-auto">
+              <div className="bg-surface-raised/95 backdrop-blur-md border border-subtle rounded-lg p-4 shadow-2xl w-[320px] max-h-[60vh] overflow-y-auto">
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-xs font-semibold text-white/80">Filter Facilities</span>
                   {anyFilterActive && (
-                    <button onClick={clearAllFilters} className="text-[10px] text-white/40 hover:text-white/70 underline underline-offset-2" data-testid="filter-clear-all">
+                    <button onClick={clearAllFilters} className="text-10 text-white/40 hover:text-white/70 underline underline-offset-2" data-testid="filter-clear-all">
                       Clear all
                     </button>
                   )}
                 </div>
 
                 {anyFilterActive && (
-                  <div className="flex flex-wrap gap-1.5 mb-3 pb-3 border-b border-white/[0.06]">
+                  <div className="flex flex-wrap gap-1.5 mb-3 pb-3 border-b border-subtle">
                     {filterCompanies.map((c) => (
-                      <Badge key={c} className="bg-[#F07800]/15 text-[#F07800] border-[#F07800]/30 text-[10px] font-mono gap-1 cursor-pointer hover:bg-[#F07800]/25" onClick={() => removeCompanyFilter(c)}>
-                        <div className="h-1.5 w-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: companyColors[c] ?? "#666" }} />
+                      <Badge key={c} className="bg-brand/15 text-brand border-brand/30 text-10 font-mono gap-1 cursor-pointer hover:bg-brand/25" onClick={() => removeCompanyFilter(c)}>
+                        <div className="h-1.5 w-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: companyColors[c] ?? INK.faint }} />
                         {c}
                         <X className="h-2.5 w-2.5" />
                       </Badge>
                     ))}
                     {filterRTOs.map((rto) => (
-                      <Badge key={rto} className="bg-[#F07800]/15 text-[#F07800] border-[#F07800]/30 text-[10px] font-mono gap-1 cursor-pointer hover:bg-[#F07800]/25" onClick={() => removeRTOFilter(rto)}>
+                      <Badge key={rto} className="bg-brand/15 text-brand border-brand/30 text-10 font-mono gap-1 cursor-pointer hover:bg-brand/25" onClick={() => removeRTOFilter(rto)}>
                         {rto}
                         <X className="h-2.5 w-2.5" />
                       </Badge>
                     ))}
                     {filterCapacity !== "all" && (
-                      <Badge className="bg-[#F07800]/15 text-[#F07800] border-[#F07800]/30 text-[10px] font-mono gap-1 cursor-pointer hover:bg-[#F07800]/25" onClick={removeCapacityFilter}>
+                      <Badge className="bg-brand/15 text-brand border-brand/30 text-10 font-mono gap-1 cursor-pointer hover:bg-brand/25" onClick={removeCapacityFilter}>
                         {capacityLabels[filterCapacity]}
                         <X className="h-2.5 w-2.5" />
                       </Badge>
@@ -843,25 +861,25 @@ export default function PowerMap() {
 
                 <div className="space-y-3">
                   <div>
-                    <p className="text-[10px] font-mono text-white/40 uppercase tracking-wider mb-2">Operator</p>
+                    <p className="text-10 font-mono text-white/40 uppercase tracking-wider mb-2">Operator</p>
                     <div className="flex flex-wrap gap-1.5">
                       {allCompanies.map((c) => {
                         const active = filterCompanies.includes(c);
-                        const color = companyColors[c] ?? "#666";
+                        const color = companyColors[c] ?? INK.faint;
                         return (
                           <button
                             key={c}
                             data-testid={`filter-company-${c.toLowerCase().replace(/\s+/g, "-")}`}
                             onClick={() => toggleCompany(c)}
-                            className={`flex items-center gap-1.5 px-2 py-1 rounded text-[10px] font-medium transition-all ${
+                            className={`flex items-center gap-1.5 px-2 py-1 rounded text-10 font-medium transition-all ${
                               active
-                                ? "bg-[#F07800]/20 text-[#F07800] border border-[#F07800]/40"
-                                : "bg-white/[0.04] text-white/50 border border-white/[0.06] hover:text-white/80 hover:bg-white/[0.08]"
+                                ? "bg-brand/20 text-brand border border-brand/40"
+                                : "bg-white/[0.04] text-white/50 border border-subtle hover:text-white/80 hover:bg-white/[0.08]"
                             }`}
                           >
                             <div className="h-1.5 w-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
                             {c}
-                            <span className="text-[9px] opacity-50">({companyCounts[c] ?? 0})</span>
+                            <span className="text-9 opacity-50">({companyCounts[c] ?? 0})</span>
                           </button>
                         );
                       })}
@@ -869,25 +887,25 @@ export default function PowerMap() {
                   </div>
 
                   <div>
-                    <p className="text-[10px] font-mono text-white/40 uppercase tracking-wider mb-2">Grid Region</p>
+                    <p className="text-10 font-mono text-white/40 uppercase tracking-wider mb-2">Grid Region</p>
                     <div className="flex flex-wrap gap-1.5">
                       {ALL_RTOS.map((rto) => {
                         const active = filterRTOs.includes(rto);
-                        const color = RTO_CONFIG[rto]?.legendColor ?? "#666";
+                        const color = RTO_CONFIG[rto]?.legendColor ?? INK.faint;
                         return (
                           <button
                             key={rto}
                             data-testid={`filter-rto-${rto.toLowerCase()}`}
                             onClick={() => toggleRTO(rto)}
-                            className={`flex items-center gap-1.5 px-2 py-1 rounded text-[10px] font-medium transition-all ${
+                            className={`flex items-center gap-1.5 px-2 py-1 rounded text-10 font-medium transition-all ${
                               active
-                                ? "bg-[#F07800]/20 text-[#F07800] border border-[#F07800]/40"
-                                : "bg-white/[0.04] text-white/50 border border-white/[0.06] hover:text-white/80 hover:bg-white/[0.08]"
+                                ? "bg-brand/20 text-brand border border-brand/40"
+                                : "bg-white/[0.04] text-white/50 border border-subtle hover:text-white/80 hover:bg-white/[0.08]"
                             }`}
                           >
                             <div className="h-1.5 w-1.5 rounded-sm flex-shrink-0" style={{ backgroundColor: color, opacity: 0.85 }} />
                             {rto}
-                            <span className="text-[9px] opacity-50">({rtoCounts[rto] ?? 0})</span>
+                            <span className="text-9 opacity-50">({rtoCounts[rto] ?? 0})</span>
                           </button>
                         );
                       })}
@@ -895,7 +913,7 @@ export default function PowerMap() {
                   </div>
 
                   <div>
-                    <p className="text-[10px] font-mono text-white/40 uppercase tracking-wider mb-2">Capacity</p>
+                    <p className="text-10 font-mono text-white/40 uppercase tracking-wider mb-2">Capacity</p>
                     <div className="flex flex-wrap gap-1.5">
                       {[
                         { key: "all",    label: "All" },
@@ -907,10 +925,10 @@ export default function PowerMap() {
                           key={key}
                           data-testid={`filter-capacity-${key}`}
                           onClick={() => setCapacity(key)}
-                          className={`px-2 py-1 rounded text-[10px] font-medium transition-all ${
+                          className={`px-2 py-1 rounded text-10 font-medium transition-all ${
                             filterCapacity === key
-                              ? "bg-[#F07800]/20 text-[#F07800] border border-[#F07800]/40"
-                              : "bg-white/[0.04] text-white/50 border border-white/[0.06] hover:text-white/80 hover:bg-white/[0.08]"
+                              ? "bg-brand/20 text-brand border border-brand/40"
+                              : "bg-white/[0.04] text-white/50 border border-subtle hover:text-white/80 hover:bg-white/[0.08]"
                           }`}
                         >
                           {label}
@@ -925,13 +943,13 @@ export default function PowerMap() {
 
           {viewMode === "stress" && (
             <div className="absolute bottom-10 left-3 z-[1000] pointer-events-none">
-              <div className="bg-[#1A1917]/90 backdrop-blur-md border border-white/[0.06] rounded-lg px-3 py-2.5 shadow-lg">
-                <p className="text-[9px] font-mono text-white/40 uppercase tracking-wider mb-1.5">Grid Stress</p>
-                <div className="space-y-1 text-[10px] font-mono text-white/60">
-                  <div className="flex items-center gap-1.5"><div className="h-2 w-4 rounded-sm bg-red-500/60" /> Critical (&lt;16%)</div>
-                  <div className="flex items-center gap-1.5"><div className="h-2 w-4 rounded-sm bg-orange-500/50" /> Elevated (16-18%)</div>
-                  <div className="flex items-center gap-1.5"><div className="h-2 w-4 rounded-sm bg-yellow-500/40" /> Moderate (18-25%)</div>
-                  <div className="flex items-center gap-1.5"><div className="h-2 w-4 rounded-sm bg-green-500/30" /> Low (&gt;25%)</div>
+              <div className="bg-surface-raised/90 backdrop-blur-md border border-subtle rounded-lg px-3 py-2.5 shadow-lg">
+                <p className="text-9 font-mono text-white/40 uppercase tracking-wider mb-1.5">Grid Stress</p>
+                <div className="space-y-1 text-10 font-mono text-white/60">
+                  <div className="flex items-center gap-1.5"><div className="h-2 w-4 rounded-sm bg-negative-deep/60" /> Critical (&lt;16%)</div>
+                  <div className="flex items-center gap-1.5"><div className="h-2 w-4 rounded-sm bg-brand/50" /> Elevated (16-18%)</div>
+                  <div className="flex items-center gap-1.5"><div className="h-2 w-4 rounded-sm bg-warning/40" /> Moderate (18-25%)</div>
+                  <div className="flex items-center gap-1.5"><div className="h-2 w-4 rounded-sm bg-positive-deep/30" /> Low (&gt;25%)</div>
                 </div>
               </div>
             </div>
@@ -939,10 +957,10 @@ export default function PowerMap() {
 
           {viewMode === "dc" && (
             <div className="absolute bottom-3 left-3 z-[1000] pointer-events-none">
-              <div className="bg-[#1A1917]/90 backdrop-blur-md border border-white/[0.06] rounded-lg px-3 py-2 shadow-lg">
-                <div className="flex items-center gap-3 text-[10px] font-mono text-white/50">
-                  <div className="flex items-center gap-1.5"><div className="h-2 w-2 rounded-full bg-[#F07800]" />Operational</div>
-                  <div className="flex items-center gap-1.5"><div className="h-2 w-2 rounded-full bg-[#F0A500]" />Construction</div>
+              <div className="bg-surface-raised/90 backdrop-blur-md border border-subtle rounded-lg px-3 py-2 shadow-lg">
+                <div className="flex items-center gap-3 text-10 font-mono text-white/50">
+                  <div className="flex items-center gap-1.5"><div className="h-2 w-2 rounded-full bg-brand" />Operational</div>
+                  <div className="flex items-center gap-1.5"><div className="h-2 w-2 rounded-full bg-brand-2" />Construction</div>
                   <div className="flex items-center gap-1.5"><div className="h-2 w-2 rounded-full bg-white/50" />Announced</div>
                 </div>
               </div>
@@ -956,7 +974,7 @@ export default function PowerMap() {
             maxZoom={12}
             zoomControl={false}
             attributionControl={true}
-            style={{ width: "100%", height: "100%", minHeight: 520, background: "#0E0E0C" }}
+            style={{ width: "100%", height: "100%", minHeight: 520, background: SURFACE.base }}
             className="rounded-none"
           >
             <TileLayer
@@ -1001,21 +1019,21 @@ export default function PowerMap() {
               <div
                 className="border rounded-lg shadow-2xl text-xs font-mono min-w-[260px] max-w-[280px] overflow-hidden"
                 style={{
-                  background: "#1A1917",
-                  borderColor: "rgba(240, 120, 0, 0.3)",
+                  background: SURFACE.raised,
+                  borderColor: alpha(BRAND.primary, 0.3),
                   boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
                   backdropFilter: "blur(8px)",
                 }}
                 data-testid="pin-detail-tooltip"
               >
-                <div className="px-4 pt-3 pb-2 border-b" style={{ borderColor: "rgba(255,255,255,0.06)" }}>
+                <div className="px-4 pt-3 pb-2 border-b" style={{ borderColor: BORDER.subtle }}>
                   <div className="flex items-center justify-between gap-2">
-                    <p className="font-bold text-white text-[14px] leading-tight">{displayDC.name}</p>
+                    <p className="font-bold text-white text-sm leading-tight">{displayDC.name}</p>
                     <span
-                      className="text-[10px] px-2 py-0.5 rounded-full font-medium whitespace-nowrap"
+                      className="text-10 px-2 py-0.5 rounded-full font-medium whitespace-nowrap"
                       style={{
-                        backgroundColor: displayDC.status === "operational" ? "rgba(34,197,94,0.15)" : displayDC.status === "construction" ? "rgba(240,165,0,0.15)" : "rgba(148,163,184,0.15)",
-                        color: displayDC.status === "operational" ? "#4ade80" : displayDC.status === "construction" ? "#F0A500" : "#94a3b8",
+                        backgroundColor: alpha(STATUS_COLORS[displayDC.status], 0.15),
+                        color: displayDC.status === "operational" ? SEMANTIC.positive : STATUS_COLORS[displayDC.status],
                       }}
                     >
                       {getStatusBadge(displayDC.status).label}
@@ -1024,40 +1042,40 @@ export default function PowerMap() {
                 </div>
                 <div className="px-4 py-3 space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-white/40 text-[12px]">Operator</span>
+                    <span className="text-white/40 text-xs">Operator</span>
                     <div className="flex items-center gap-1.5">
-                      <div className="h-2 w-2 rounded-full" style={{ backgroundColor: companyColors[displayDC.company] ?? "#666" }} />
-                      <span className="text-white text-[12px]">{displayDC.company}</span>
+                      <div className="h-2 w-2 rounded-full" style={{ backgroundColor: companyColors[displayDC.company] ?? INK.faint }} />
+                      <span className="text-white text-xs">{displayDC.company}</span>
                     </div>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-white/40 text-[12px]">Location</span>
-                    <span className="text-white text-[12px]">{displayDC.city}, {displayDC.state}</span>
+                    <span className="text-white/40 text-xs">Location</span>
+                    <span className="text-white text-xs">{displayDC.city}, {displayDC.state}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-white/40 text-[12px]">Capacity</span>
-                    <span className="text-[#F0A500] font-bold text-[13px]">{displayDC.powerMW} MW</span>
+                    <span className="text-white/40 text-xs">Capacity</span>
+                    <span className="text-brand-2 font-bold text-13">{displayDC.powerMW} MW</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-white/40 text-[12px]">Grid Region</span>
-                    <span className="text-white text-[12px]">{gridOpToRTO(displayDC.gridOperator)}</span>
+                    <span className="text-white/40 text-xs">Grid Region</span>
+                    <span className="text-white text-xs">{gridOpToRTO(displayDC.gridOperator)}</span>
                   </div>
                   {selected && (
                     <>
                       <div className="flex items-center justify-between">
-                        <span className="text-white/40 text-[12px]">Annual Power</span>
-                        <span className="text-white text-[12px]">{(displayDC.annualMWh / 1_000_000).toFixed(2)} TWh</span>
+                        <span className="text-white/40 text-xs">Annual Power</span>
+                        <span className="text-white text-xs">{(displayDC.annualMWh / 1_000_000).toFixed(2)} TWh</span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-white/40 text-[12px]">Online</span>
-                        <span className="text-white text-[12px]">{displayDC.openDate}</span>
+                        <span className="text-white/40 text-xs">Online</span>
+                        <span className="text-white text-xs">{displayDC.openDate}</span>
                       </div>
                     </>
                   )}
-                  <div className="pt-1.5 mt-1" style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+                  <div className="pt-1.5 mt-1" style={{ borderTop: `1px solid ${BORDER.subtle}` }}>
                     <a
                       href="/stack"
-                      className="text-[11px] text-[#F07800] hover:text-[#F0A500] transition-colors pointer-events-auto"
+                      className="text-11 text-brand hover:text-brand-2 transition-colors pointer-events-auto"
                       data-testid="link-view-in-stack"
                     >
                       View in The Stack &rarr;
@@ -1074,13 +1092,13 @@ export default function PowerMap() {
         <div className="flex items-center gap-2 mb-3">
           <Calendar className="h-4 w-4 text-muted-foreground" />
           <h2 className="text-xs font-semibold tracking-wider uppercase text-muted-foreground">Upcoming Projects</h2>
-          <span className="text-[10px] font-mono text-muted-foreground/50">Announced facilities not yet built</span>
+          <span className="text-10 font-mono text-muted-foreground/50">Announced facilities not yet built</span>
         </div>
         <div className="flex gap-3 overflow-x-auto pb-2">
           {announced.map((dc) => {
             const rto = gridOpToRTO(dc.gridOperator);
             const rtoCfg = RTO_CONFIG[rto];
-            const cColor = companyColors[dc.company] ?? "#666";
+            const cColor = companyColors[dc.company] ?? INK.faint;
             return (
               <button
                 key={dc.id}
@@ -1090,18 +1108,18 @@ export default function PowerMap() {
               >
                 <div className="flex items-center gap-1.5 mb-2">
                   <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: cColor }} />
-                  <span className="text-[10px] font-mono font-semibold" style={{ color: cColor }}>{dc.company}</span>
+                  <span className="text-10 font-mono font-semibold" style={{ color: cColor }}>{dc.company}</span>
                 </div>
                 <p className="text-xs font-semibold text-foreground leading-tight mb-2">{dc.name}</p>
-                <div className="flex items-center justify-between text-[10px] font-mono text-muted-foreground">
-                  <span className="text-[#F0A500] font-semibold">{dc.powerMW} MW</span>
+                <div className="flex items-center justify-between text-10 font-mono text-muted-foreground">
+                  <span className="text-brand-2 font-semibold">{dc.powerMW} MW</span>
                   <span>{dc.openDate}</span>
                 </div>
                 {rtoCfg && (
                   <div className="flex items-center gap-1 mt-1.5">
                     <div className="h-1.5 w-1.5 rounded-sm" style={{ backgroundColor: rtoCfg.legendColor, opacity: 0.8 }} />
-                    <span className="text-[9px] font-mono text-muted-foreground/70">{rto}</span>
-                    <span className="text-[9px] font-mono text-muted-foreground/50 ml-auto">{dc.city}, {dc.state}</span>
+                    <span className="text-9 font-mono text-muted-foreground/70">{rto}</span>
+                    <span className="text-9 font-mono text-muted-foreground/50 ml-auto">{dc.city}, {dc.state}</span>
                   </div>
                 )}
               </button>
@@ -1114,7 +1132,7 @@ export default function PowerMap() {
         <div className="flex items-center gap-2 mb-3">
           <Network className="h-4 w-4 text-muted-foreground" />
           <h2 className="text-xs font-semibold tracking-wider uppercase text-muted-foreground">Grid Operator Load Analysis</h2>
-          <span className="text-[10px] font-mono text-muted-foreground/50">Reserve margins: NERC LTRA 2025 (2026 projections)</span>
+          <span className="text-10 font-mono text-muted-foreground/50">Reserve margins: NERC LTRA 2025 (2026 projections)</span>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-xs font-mono">
@@ -1141,13 +1159,13 @@ export default function PowerMap() {
                     </td>
                     <td className="py-2 pr-6 text-right text-foreground">{loadMW.toLocaleString()} MW</td>
                     <td className="py-2 pr-6 text-right">
-                      <span className={cfg.reserveMargin < 16 ? "text-red-400" : cfg.reserveMargin < 19 ? "text-yellow-400" : "text-green-400"}>
+                      <span className={cfg.reserveMargin < 16 ? "text-negative" : cfg.reserveMargin < 19 ? "text-warning" : "text-positive"}>
                         {cfg.reserveMargin}%
                       </span>
                     </td>
                     <td className="py-2 pr-6 text-muted-foreground">{cfg.aiSignal}</td>
                     <td className="py-2">
-                      <Badge className={cfg.stressBadgeClass + " text-[10px] font-mono"}>
+                      <Badge className={cfg.stressBadgeClass + " text-10 font-mono"}>
                         {cfg.aiSignal}
                       </Badge>
                     </td>
@@ -1162,18 +1180,18 @@ export default function PowerMap() {
       {mobileFiltersOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div className="absolute inset-0 bg-black/60" onClick={() => setMobileFiltersOpen(false)} />
-          <div className="absolute bottom-0 left-0 right-0 bg-[#1A1917] border-t border-white/[0.08] rounded-t-xl p-5 max-h-[80vh] overflow-y-auto">
+          <div className="absolute bottom-0 left-0 right-0 bg-surface-raised border-t border-subtle rounded-t-xl p-5 max-h-[80vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <SlidersHorizontal className="h-4 w-4 text-white/60" />
                 <span className="font-semibold text-sm text-white">Filters</span>
                 {anyFilterActive && (
-                  <span className="text-[10px] font-mono text-[#F07800]">{filteredCount} of {dataCenters.length}</span>
+                  <span className="text-10 font-mono text-brand">{filteredCount} of {dataCenters.length}</span>
                 )}
               </div>
               <div className="flex items-center gap-2">
                 {anyFilterActive && (
-                  <button onClick={clearAllFilters} className="text-xs text-white/40 border border-white/[0.1] rounded px-2 py-1">
+                  <button onClick={clearAllFilters} className="text-xs text-white/40 border border-strong rounded px-2 py-1">
                     Clear all
                   </button>
                 )}
@@ -1185,17 +1203,17 @@ export default function PowerMap() {
 
             <div className="space-y-5">
               <div>
-                <p className="text-[10px] font-mono text-white/40 uppercase tracking-wider mb-2">Operator</p>
+                <p className="text-10 font-mono text-white/40 uppercase tracking-wider mb-2">Operator</p>
                 <div className="flex flex-wrap gap-2">
                   {allCompanies.map((c) => {
                     const active = filterCompanies.includes(c);
-                    const color = companyColors[c] ?? "#666";
+                    const color = companyColors[c] ?? INK.faint;
                     return (
                       <button
                         key={c}
                         onClick={() => toggleCompany(c)}
                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium transition-all ${
-                          active ? "bg-[#F07800]/20 text-[#F07800] border border-[#F07800]/40" : "bg-white/[0.04] text-white/50 border border-white/[0.06]"
+                          active ? "bg-brand/20 text-brand border border-brand/40" : "bg-white/[0.04] text-white/50 border border-subtle"
                         }`}
                       >
                         <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: color }} />
@@ -1207,17 +1225,17 @@ export default function PowerMap() {
               </div>
 
               <div>
-                <p className="text-[10px] font-mono text-white/40 uppercase tracking-wider mb-2">Grid Region</p>
+                <p className="text-10 font-mono text-white/40 uppercase tracking-wider mb-2">Grid Region</p>
                 <div className="flex flex-wrap gap-2">
                   {ALL_RTOS.map((rto) => {
                     const active = filterRTOs.includes(rto);
-                    const color = RTO_CONFIG[rto]?.legendColor ?? "#666";
+                    const color = RTO_CONFIG[rto]?.legendColor ?? INK.faint;
                     return (
                       <button
                         key={rto}
                         onClick={() => toggleRTO(rto)}
                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium transition-all ${
-                          active ? "bg-[#F07800]/20 text-[#F07800] border border-[#F07800]/40" : "bg-white/[0.04] text-white/50 border border-white/[0.06]"
+                          active ? "bg-brand/20 text-brand border border-brand/40" : "bg-white/[0.04] text-white/50 border border-subtle"
                         }`}
                       >
                         <div className="h-1.5 w-1.5 rounded-sm" style={{ backgroundColor: color, opacity: 0.85 }} />
@@ -1229,7 +1247,7 @@ export default function PowerMap() {
               </div>
 
               <div>
-                <p className="text-[10px] font-mono text-white/40 uppercase tracking-wider mb-2">Capacity</p>
+                <p className="text-10 font-mono text-white/40 uppercase tracking-wider mb-2">Capacity</p>
                 <div className="flex flex-wrap gap-2">
                   {[
                     { key: "all",    label: "All Sizes" },
@@ -1241,7 +1259,7 @@ export default function PowerMap() {
                       key={key}
                       onClick={() => setCapacity(key)}
                       className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
-                        filterCapacity === key ? "bg-[#F07800]/20 text-[#F07800] border border-[#F07800]/40" : "bg-white/[0.04] text-white/50 border border-white/[0.06]"
+                        filterCapacity === key ? "bg-brand/20 text-brand border border-brand/40" : "bg-white/[0.04] text-white/50 border border-subtle"
                       }`}
                     >
                       {label}
@@ -1253,7 +1271,7 @@ export default function PowerMap() {
 
             <button
               onClick={() => setMobileFiltersOpen(false)}
-              className="w-full mt-5 py-2.5 rounded-md bg-[#F07800] text-black text-sm font-semibold"
+              className="w-full mt-5 py-2.5 rounded-md bg-brand text-black text-sm font-semibold"
             >
               Apply Filters
             </button>

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Mail, CheckCircle2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { apiRequest } from "@/lib/queryClient";
+import { BORDER, BRAND, FONT, INK, SURFACE } from "@/lib/tokens";
 
 interface ExtraField {
   // Constrained to body keys /api/subscribe knows how to persist. Adding a
@@ -71,8 +72,8 @@ export function EmailCapture({
       return (
         <div
           style={{
-            border: "1px solid #F07800",
-            background: "rgba(240,120,0,0.06)",
+            border: `1px solid ${BRAND.primary}`,
+            background: BRAND.wash,
             padding: 22,
             borderRadius: 4,
           }}
@@ -80,9 +81,9 @@ export function EmailCapture({
         >
           <p
             style={{
-              fontFamily: "Inter, sans-serif",
+              fontFamily: FONT.sans,
               fontSize: 14,
-              color: "#F2F1ED",
+              color: INK.primary,
               lineHeight: 1.55,
             }}
           >
@@ -95,8 +96,8 @@ export function EmailCapture({
     return (
       <div
         style={{
-          border: "1px solid rgba(255,255,255,0.06)",
-          background: "#131211",
+          border: `1px solid ${BORDER.subtle}`,
+          background: SURFACE.base,
           padding: 24,
           borderRadius: 4,
         }}
@@ -105,10 +106,10 @@ export function EmailCapture({
         {heading && (
           <h3
             style={{
-              fontFamily: "JetBrains Mono, monospace",
+              fontFamily: FONT.mono,
               fontSize: 15,
               fontWeight: 700,
-              color: "#F2F1ED",
+              color: INK.primary,
               marginBottom: 8,
               letterSpacing: "-0.005em",
             }}
@@ -119,9 +120,9 @@ export function EmailCapture({
         {subheading && (
           <p
             style={{
-              fontFamily: "Inter, sans-serif",
+              fontFamily: FONT.sans,
               fontSize: 13,
-              color: "#9C9A93",
+              color: INK.muted,
               marginBottom: 22,
               lineHeight: 1.55,
             }}
@@ -139,9 +140,9 @@ export function EmailCapture({
                 htmlFor="email-capture-extra"
                 style={{
                   display: "block",
-                  fontFamily: "JetBrains Mono, monospace",
+                  fontFamily: FONT.mono,
                   fontSize: 10,
-                  color: "#9C9A93",
+                  color: INK.muted,
                   letterSpacing: "0.16em",
                   textTransform: "uppercase",
                   marginBottom: 10,
@@ -163,20 +164,20 @@ export function EmailCapture({
                 style={{
                   width: "100%",
                   padding: "11px 13px",
-                  background: "#0B0B0A",
-                  border: "1px solid rgba(255,255,255,0.06)",
+                  background: SURFACE.sunken,
+                  border: `1px solid ${BORDER.subtle}`,
                   borderRadius: 4,
-                  color: "#F2F1ED",
-                  fontFamily: "Inter, sans-serif",
+                  color: INK.primary,
+                  fontFamily: FONT.sans,
                   fontSize: 13,
                   lineHeight: 1.5,
                   resize: "none",
                   outline: "none",
                   transition: "border-color 180ms ease-out",
                 }}
-                onFocus={(e) => (e.currentTarget.style.borderColor = "#F07800")}
+                onFocus={(e) => (e.currentTarget.style.borderColor = BRAND.primary)}
                 onBlur={(e) =>
-                  (e.currentTarget.style.borderColor = "rgba(255,255,255,0.06)")
+                  (e.currentTarget.style.borderColor = BORDER.subtle)
                 }
                 data-testid="input-extra-field"
               />
@@ -195,18 +196,18 @@ export function EmailCapture({
               style={{
                 flex: 1,
                 padding: "11px 13px",
-                background: "#0B0B0A",
-                border: "1px solid rgba(255,255,255,0.06)",
+                background: SURFACE.sunken,
+                border: `1px solid ${BORDER.subtle}`,
                 borderRadius: 4,
-                color: "#F2F1ED",
-                fontFamily: "Inter, sans-serif",
+                color: INK.primary,
+                fontFamily: FONT.sans,
                 fontSize: 13,
                 outline: "none",
                 transition: "border-color 180ms ease-out",
               }}
-              onFocus={(e) => (e.currentTarget.style.borderColor = "#F07800")}
+              onFocus={(e) => (e.currentTarget.style.borderColor = BRAND.primary)}
               onBlur={(e) =>
-                (e.currentTarget.style.borderColor = "rgba(255,255,255,0.06)")
+                (e.currentTarget.style.borderColor = BORDER.subtle)
               }
               data-testid="input-email-marketing"
             />
@@ -215,11 +216,11 @@ export function EmailCapture({
               disabled={status === "loading"}
               style={{
                 padding: "11px 18px",
-                background: "#F07800",
-                color: "#0B0B0A",
-                border: "1px solid #F07800",
+                background: BRAND.primary,
+                color: SURFACE.sunken,
+                border: `1px solid ${BRAND.primary}`,
                 borderRadius: 4,
-                fontFamily: "JetBrains Mono, monospace",
+                fontFamily: FONT.mono,
                 fontSize: 11,
                 fontWeight: 600,
                 letterSpacing: "0.14em",
@@ -230,7 +231,7 @@ export function EmailCapture({
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.transform = "translateY(-1px)";
-                e.currentTarget.style.boxShadow = "0 0 24px -6px rgba(240,120,0,0.4)";
+                e.currentTarget.style.boxShadow = `0 0 24px -6px ${BRAND.glow}`;
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.transform = "";
@@ -245,9 +246,9 @@ export function EmailCapture({
         {status === "error" && (
           <p
             style={{
-              fontFamily: "Inter, sans-serif",
+              fontFamily: FONT.sans,
               fontSize: 12,
-              color: "#F07800",
+              color: BRAND.primary,
               marginTop: 12,
             }}
           >
@@ -257,9 +258,9 @@ export function EmailCapture({
         {status === "exists" && (
           <p
             style={{
-              fontFamily: "Inter, sans-serif",
+              fontFamily: FONT.sans,
               fontSize: 12,
-              color: "#9C9A93",
+              color: INK.muted,
               marginTop: 12,
             }}
           >
@@ -274,10 +275,10 @@ export function EmailCapture({
   if (status === "success") {
     return (
       <div className={`${variant === "banner" ? "fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-lg" : ""}`}>
-        <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4 flex items-center gap-3" data-testid="email-capture-success">
-          <CheckCircle2 className="h-5 w-5 text-green-400 flex-shrink-0" />
+        <div className="bg-positive-deep/10 border border-positive-deep/20 rounded-lg p-4 flex items-center gap-3" data-testid="email-capture-success">
+          <CheckCircle2 className="h-5 w-5 text-positive flex-shrink-0" />
           <div>
-            <span className="text-sm font-semibold text-green-400">You're in.</span>
+            <span className="text-sm font-semibold text-positive">You're in.</span>
             <span className="text-xs text-white/40 ml-2">First brief arrives next month.</span>
           </div>
         </div>
@@ -287,13 +288,13 @@ export function EmailCapture({
 
   if (variant === "inline") {
     return (
-      <div className="bg-[#161614]/80 border border-white/[0.06] rounded-lg p-5" data-testid="email-capture-inline">
+      <div className="bg-surface-raised/80 border border-subtle rounded-lg p-5" data-testid="email-capture-inline">
         <div className="flex items-start gap-3 mb-3">
-          <div className="h-8 w-8 rounded-lg bg-[#F07800]/10 border border-[#F07800]/20 flex items-center justify-center flex-shrink-0">
-            <Mail className="h-4 w-4 text-[#F07800]" />
+          <div className="h-8 w-8 rounded-lg bg-brand/10 border border-brand/20 flex items-center justify-center flex-shrink-0">
+            <Mail className="h-4 w-4 text-brand" />
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-white">The GridTilt Brief</h3>
+            <h3 className="text-sm font-semibold text-ink">The GridTilt Brief</h3>
             <p className="text-xs text-white/40 mt-0.5">Monthly thesis check, top movers, new facilities. No spam.</p>
           </div>
         </div>
@@ -303,27 +304,27 @@ export function EmailCapture({
             value={email}
             onChange={(e) => { setEmail(e.target.value); setStatus("idle"); }}
             placeholder="you@example.com"
-            className="flex-1 bg-[#0E0E0C] border border-white/[0.08] rounded-md px-3 py-2 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-[#F07800]/40 transition-colors"
+            className="flex-1 bg-surface-base border border-subtle rounded-md px-3 py-2 text-sm text-ink placeholder:text-white/25 focus:outline-none focus:border-brand/40 transition-colors"
             data-testid="input-email-inline"
           />
           <Button
             type="submit"
             disabled={status === "loading"}
-            className="bg-[#F07800] hover:bg-[#F07800]/90 text-black font-semibold px-4 text-xs"
+            className="bg-brand hover:bg-brand/90 text-black font-semibold px-4 text-xs"
             data-testid="button-subscribe-inline"
           >
             {status === "loading" ? "..." : "Subscribe"}
           </Button>
         </form>
-        {status === "error" && <p className="text-xs text-red-400 mt-2">Something went wrong, try again</p>}
-        {status === "exists" && <p className="text-xs text-[#F0A500] mt-2">You're already on the list</p>}
+        {status === "error" && <p className="text-xs text-negative mt-2">Something went wrong, try again</p>}
+        {status === "exists" && <p className="text-xs text-brand-2 mt-2">You're already on the list</p>}
       </div>
     );
   }
 
   return (
     <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-lg" data-testid="email-capture-banner">
-      <div className="bg-[#161614]/95 backdrop-blur-md border border-white/[0.08] rounded-xl p-4 shadow-2xl shadow-black/60">
+      <div className="bg-surface-raised/95 backdrop-blur-md border border-subtle rounded-xl p-4 shadow-2xl shadow-black/60">
         <button
           onClick={() => { setDismissed(true); sessionStorage.setItem("gridtilt-banner-dismissed", "1"); }}
           className="absolute top-2 right-2 text-white/30 hover:text-white/60 transition-colors"
@@ -332,8 +333,8 @@ export function EmailCapture({
           <X className="h-4 w-4" />
         </button>
         <div className="flex items-center gap-3 mb-3">
-          <Mail className="h-4 w-4 text-[#F07800]" />
-          <span className="text-sm font-semibold text-white">Get the GridTilt Brief</span>
+          <Mail className="h-4 w-4 text-brand" />
+          <span className="text-sm font-semibold text-ink">Get the GridTilt Brief</span>
           <span className="text-xs text-white/30">Monthly. No spam.</span>
         </div>
         <form onSubmit={handleSubmit} className="flex gap-2">
@@ -342,20 +343,20 @@ export function EmailCapture({
             value={email}
             onChange={(e) => { setEmail(e.target.value); setStatus("idle"); }}
             placeholder="you@example.com"
-            className="flex-1 bg-[#0E0E0C] border border-white/[0.08] rounded-md px-3 py-2 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-[#F07800]/40 transition-colors"
+            className="flex-1 bg-surface-base border border-subtle rounded-md px-3 py-2 text-sm text-ink placeholder:text-white/25 focus:outline-none focus:border-brand/40 transition-colors"
             data-testid="input-email-banner"
           />
           <Button
             type="submit"
             disabled={status === "loading"}
-            className="bg-[#F07800] hover:bg-[#F07800]/90 text-black font-semibold px-4 text-xs"
+            className="bg-brand hover:bg-brand/90 text-black font-semibold px-4 text-xs"
             data-testid="button-subscribe-banner"
           >
             {status === "loading" ? "..." : "Subscribe"}
           </Button>
         </form>
-        {status === "error" && <p className="text-xs text-red-400 mt-2">Something went wrong, try again</p>}
-        {status === "exists" && <p className="text-xs text-[#F0A500] mt-2">You're already on the list</p>}
+        {status === "error" && <p className="text-xs text-negative mt-2">Something went wrong, try again</p>}
+        {status === "exists" && <p className="text-xs text-brand-2 mt-2">You're already on the list</p>}
       </div>
     </div>
   );

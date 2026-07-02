@@ -31,6 +31,8 @@ import {
   ChevronDown,
   AlertTriangle,
 } from "lucide-react";
+import { CATEGORY_COLORS, SERIES } from "@/lib/tokens";
+import { axisProps, gridProps } from "@/lib/chart-theme";
 
 const BASE_POWER_TWH = 4490;
 const BASE_YEAR = 2025;
@@ -77,15 +79,23 @@ const PRESET_RAMPS: Record<Exclude<PresetName, "Custom">, number[]> = {
 
 const YEARS = ["2025", "2026", "2027", "2028", "2029", "2030"];
 
+// Segment colors: compute/power from CATEGORY_COLORS; Infrastructure has no
+// token category, so it takes series slot 3 (teal, shared with datacenters).
+const SEGMENT_COLORS: Record<string, string> = {
+  Compute: CATEGORY_COLORS.compute,
+  Infrastructure: SERIES[2], // series slot 3
+  Power: CATEGORY_COLORS.power,
+};
+
 const TOP_COMPANIES = [
-  { ticker: "NVDA", name: "NVIDIA Corporation",    segment: "Compute",        thesisScore: 9.5, rationale: "GPU monopoly, >80% AI accelerator share",       color: "#94a3b8" },
-  { ticker: "EQIX", name: "Equinix Inc",           segment: "Infrastructure", thesisScore: 9.0, rationale: "100% DC revenue, highest power density growth",   color: "#a855f7" },
-  { ticker: "VRT",  name: "Vertiv Holdings",       segment: "Infrastructure", thesisScore: 8.8, rationale: "Critical thermal mgmt for every AI data center",   color: "#a855f7" },
-  { ticker: "CEG",  name: "Constellation Energy",  segment: "Power",          thesisScore: 8.2, rationale: "Largest nuclear utility + first AI baseload PPA",  color: "#F0A500" },
-  { ticker: "CCJ",  name: "Cameco Corporation",    segment: "Power",          thesisScore: 7.5, rationale: "Pure uranium miner, highest spot price beta",      color: "#F0A500" },
-  { ticker: "TSM",  name: "Taiwan Semiconductor",  segment: "Compute",        thesisScore: 7.2, rationale: "Manufactures all advanced AI chips",               color: "#94a3b8" },
-  { ticker: "VST",  name: "Vistra Corp",           segment: "Power",          thesisScore: 7.0, rationale: "Merchant power, direct power price beneficiary",   color: "#F0A500" },
-  { ticker: "AMD",  name: "Advanced Micro Devices",segment: "Compute",        thesisScore: 6.0, rationale: "GPU inference competition, DC revenue +122% YoY",  color: "#94a3b8" },
+  { ticker: "NVDA", name: "NVIDIA Corporation",    segment: "Compute",        thesisScore: 9.5, rationale: "GPU monopoly, >80% AI accelerator share",       color: SEGMENT_COLORS.Compute },
+  { ticker: "EQIX", name: "Equinix Inc",           segment: "Infrastructure", thesisScore: 9.0, rationale: "100% DC revenue, highest power density growth",   color: SEGMENT_COLORS.Infrastructure },
+  { ticker: "VRT",  name: "Vertiv Holdings",       segment: "Infrastructure", thesisScore: 8.8, rationale: "Critical thermal mgmt for every AI data center",   color: SEGMENT_COLORS.Infrastructure },
+  { ticker: "CEG",  name: "Constellation Energy",  segment: "Power",          thesisScore: 8.2, rationale: "Largest nuclear utility + first AI baseload PPA",  color: SEGMENT_COLORS.Power },
+  { ticker: "CCJ",  name: "Cameco Corporation",    segment: "Power",          thesisScore: 7.5, rationale: "Pure uranium miner, highest spot price beta",      color: SEGMENT_COLORS.Power },
+  { ticker: "TSM",  name: "Taiwan Semiconductor",  segment: "Compute",        thesisScore: 7.2, rationale: "Manufactures all advanced AI chips",               color: SEGMENT_COLORS.Compute },
+  { ticker: "VST",  name: "Vistra Corp",           segment: "Power",          thesisScore: 7.0, rationale: "Merchant power, direct power price beneficiary",   color: SEGMENT_COLORS.Power },
+  { ticker: "AMD",  name: "Advanced Micro Devices",segment: "Compute",        thesisScore: 6.0, rationale: "GPU inference competition, DC revenue +122% YoY",  color: SEGMENT_COLORS.Compute },
 ];
 
 const segmentIcons: Record<string, React.ElementType> = {
@@ -102,7 +112,7 @@ function NumField({
     <div className="space-y-1">
       <div className="flex items-center justify-between">
         <span className="text-xs text-muted-foreground">{label}</span>
-        {unit && <span className="text-[10px] font-mono text-muted-foreground/60">{unit}</span>}
+        {unit && <span className="text-10 font-mono text-muted-foreground/60">{unit}</span>}
       </div>
       <Input
         type="number"
@@ -111,13 +121,13 @@ function NumField({
         step={step}
         value={value}
         data-testid={testId}
-        className="h-8 font-mono text-sm bg-muted/20 border-border/60 focus:border-[#F0A500]/60"
+        className="h-8 font-mono text-sm bg-muted/20 border-border/60 focus:border-brand-2/60"
         onChange={(e) => {
           const v = parseFloat(e.target.value);
           if (!isNaN(v)) onChange(Math.max(min, Math.min(max, v)));
         }}
       />
-      {hint && <p className="text-[10px] text-muted-foreground/50">{hint}</p>}
+      {hint && <p className="text-10 text-muted-foreground/50">{hint}</p>}
     </div>
   );
 }
@@ -214,10 +224,10 @@ export default function TheTrade() {
   }, [inputs.nuclearPct, inputs.aiCagrPct]);
 
   const lptColor = outputs.lptRatio < 0.5
-    ? "text-green-400"
+    ? "text-positive"
     : outputs.lptRatio < 1.0
-    ? "text-yellow-400"
-    : "text-red-400";
+    ? "text-warning"
+    : "text-negative";
 
   const presetButtons: { key: PresetName; label: string }[] = [
     { key: "Conservative", label: "Conservative" },
@@ -238,7 +248,7 @@ export default function TheTrade() {
           </div>
           <UITooltip>
             <TooltipTrigger asChild>
-              <Badge className="bg-[#F0A500]/15 text-[#F0A500] border-[#F0A500]/30 cursor-help">
+              <Badge className="bg-brand-2/15 text-brand-2 border-brand-2/30 cursor-help">
                 <Info className="h-3 w-3 mr-1" />
                 Sourced + Defensible
               </Badge>
@@ -251,7 +261,7 @@ export default function TheTrade() {
 
         {/* Preset selector */}
         <div className="flex items-center gap-2 mt-4 flex-wrap">
-          <span className="text-[10px] font-mono text-muted-foreground/60 tracking-wider uppercase mr-1">Scenario:</span>
+          <span className="text-10 font-mono text-muted-foreground/60 tracking-wider uppercase mr-1">Scenario:</span>
           {presetButtons.map(({ key, label }) => (
             <button
               key={key}
@@ -259,7 +269,7 @@ export default function TheTrade() {
               onClick={() => applyPreset(key as Exclude<PresetName, "Custom">)}
               className={`px-4 py-1.5 rounded text-xs font-semibold border transition-all ${
                 activePreset === key
-                  ? "bg-[#F0A500] text-black border-[#F0A500]"
+                  ? "bg-brand-2 text-black border-brand-2"
                   : "bg-card border-border text-muted-foreground hover:text-foreground hover:border-border/80"
               }`}
             >
@@ -268,7 +278,7 @@ export default function TheTrade() {
           ))}
           {activePreset === "Custom" && (
             <span
-              className="px-4 py-1.5 rounded text-xs font-semibold border bg-[#F07800]/15 text-[#F07800] border-[#F07800]/40"
+              className="px-4 py-1.5 rounded text-xs font-semibold border bg-brand/15 text-brand border-brand/40"
               data-testid="preset-custom-badge"
             >
               Custom
@@ -281,12 +291,12 @@ export default function TheTrade() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* ---- LEFT: INPUTS ---- */}
           <div className="space-y-5">
-            <h2 className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Scenario Inputs</h2>
+            <h2 className="text-10 font-semibold uppercase tracking-widest text-muted-foreground">Scenario Inputs</h2>
 
             {/* Infrastructure Buildout */}
             <Card className="p-4 border-card-border space-y-4">
               <div className="flex items-center gap-2">
-                <DollarSign className="h-3.5 w-3.5 text-[#F0A500]" />
+                <DollarSign className="h-3.5 w-3.5 text-brand-2" />
                 <p className="text-xs font-semibold text-foreground tracking-wide">Infrastructure Buildout</p>
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -324,7 +334,7 @@ export default function TheTrade() {
                   <div className="h-8 flex items-center px-3 rounded-md border border-border/60 bg-muted/20 text-sm font-mono text-foreground">
                     {inputs.interconnectYears}
                   </div>
-                  <p className="text-[10px] text-muted-foreground/50">Avg queue-to-energize lead time</p>
+                  <p className="text-10 text-muted-foreground/50">Avg queue-to-energize lead time</p>
                 </div>
               </div>
             </Card>
@@ -333,67 +343,67 @@ export default function TheTrade() {
             <Card className="p-4 border-card-border space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Zap className="h-3.5 w-3.5 text-[#F0A500]" />
+                  <Zap className="h-3.5 w-3.5 text-brand-2" />
                   <p className="text-xs font-semibold text-foreground tracking-wide">New Power Supply Mix</p>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <span className={`text-xs font-mono font-bold ${mixValid ? "text-green-400" : "text-red-400"}`}>
+                  <span className={`text-xs font-mono font-bold ${mixValid ? "text-positive" : "text-negative"}`}>
                     {mixSum.toFixed(0)}%
                   </span>
-                  {!mixValid && <AlertTriangle className="h-3.5 w-3.5 text-red-400" />}
+                  {!mixValid && <AlertTriangle className="h-3.5 w-3.5 text-negative" />}
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <div className="flex items-center gap-1.5">
-                    <div className="h-2 w-2 rounded-full bg-red-400" />
+                    <div className="h-2 w-2 rounded-full" style={{ background: CATEGORY_COLORS.gas }} />
                     <span className="text-xs text-muted-foreground">Natural Gas</span>
                   </div>
                   <Input
                     type="number" min={0} max={100} step={1}
                     value={inputs.gasPct}
                     data-testid="input-gas-pct"
-                    className="h-8 font-mono text-sm bg-muted/20 border-border/60 focus:border-[#F0A500]/60"
+                    className="h-8 font-mono text-sm bg-muted/20 border-border/60 focus:border-brand-2/60"
                     onChange={(e) => { const v = parseFloat(e.target.value); if (!isNaN(v)) setField("gasPct", Math.max(0, Math.min(100, v))); }}
                   />
                 </div>
                 <div className="space-y-1">
                   <div className="flex items-center gap-1.5">
-                    <div className="h-2 w-2 rounded-full bg-[#F0A500]" />
+                    <div className="h-2 w-2 rounded-full" style={{ background: CATEGORY_COLORS.nuclear }} />
                     <span className="text-xs text-muted-foreground">Nuclear</span>
                   </div>
                   <Input
                     type="number" min={0} max={100} step={1}
                     value={inputs.nuclearPct}
                     data-testid="input-nuclear-pct"
-                    className="h-8 font-mono text-sm bg-muted/20 border-border/60 focus:border-[#F0A500]/60"
+                    className="h-8 font-mono text-sm bg-muted/20 border-border/60 focus:border-brand-2/60"
                     onChange={(e) => { const v = parseFloat(e.target.value); if (!isNaN(v)) setField("nuclearPct", Math.max(0, Math.min(100, v))); }}
                   />
                 </div>
                 <div className="space-y-1">
                   <div className="flex items-center gap-1.5">
-                    <div className="h-2 w-2 rounded-full bg-green-400" />
+                    <div className="h-2 w-2 rounded-full" style={{ background: CATEGORY_COLORS.renewables }} />
                     <span className="text-xs text-muted-foreground">Renewables + Storage</span>
                   </div>
                   <Input
                     type="number" min={0} max={100} step={1}
                     value={inputs.renewablesPct}
                     data-testid="input-renewables-pct"
-                    className="h-8 font-mono text-sm bg-muted/20 border-border/60 focus:border-[#F0A500]/60"
+                    className="h-8 font-mono text-sm bg-muted/20 border-border/60 focus:border-brand-2/60"
                     onChange={(e) => { const v = parseFloat(e.target.value); if (!isNaN(v)) setField("renewablesPct", Math.max(0, Math.min(100, v))); }}
                   />
                 </div>
                 <div className="space-y-1">
                   <div className="flex items-center gap-1.5">
-                    <div className="h-2 w-2 rounded-full bg-slate-400" />
+                    <div className="h-2 w-2 rounded-full" style={{ background: CATEGORY_COLORS.grid }} />
                     <span className="text-xs text-muted-foreground">Grid Purchases</span>
                   </div>
                   <Input
                     type="number" min={0} max={100} step={1}
                     value={inputs.gridPurchasePct}
                     data-testid="input-grid-pct"
-                    className="h-8 font-mono text-sm bg-muted/20 border-border/60 focus:border-[#F0A500]/60"
+                    className="h-8 font-mono text-sm bg-muted/20 border-border/60 focus:border-brand-2/60"
                     onChange={(e) => { const v = parseFloat(e.target.value); if (!isNaN(v)) setField("gridPurchasePct", Math.max(0, Math.min(100, v))); }}
                   />
                 </div>
@@ -402,10 +412,10 @@ export default function TheTrade() {
               {/* Mix visual */}
               {mixValid && (
                 <div className="flex h-2 rounded-full overflow-hidden gap-px mt-1">
-                  <div className="bg-red-400/70" style={{ width: `${inputs.gasPct}%` }} />
-                  <div className="bg-[#F0A500]/80" style={{ width: `${inputs.nuclearPct}%` }} />
-                  <div className="bg-green-400/70" style={{ width: `${inputs.renewablesPct}%` }} />
-                  <div className="bg-slate-400/60" style={{ width: `${inputs.gridPurchasePct}%` }} />
+                  <div style={{ width: `${inputs.gasPct}%`, background: CATEGORY_COLORS.gas, opacity: 0.7 }} />
+                  <div style={{ width: `${inputs.nuclearPct}%`, background: CATEGORY_COLORS.nuclear, opacity: 0.8 }} />
+                  <div style={{ width: `${inputs.renewablesPct}%`, background: CATEGORY_COLORS.renewables, opacity: 0.7 }} />
+                  <div style={{ width: `${inputs.gridPurchasePct}%`, background: CATEGORY_COLORS.grid, opacity: 0.6 }} />
                 </div>
               )}
             </Card>
@@ -413,7 +423,7 @@ export default function TheTrade() {
             {/* Demand Model */}
             <Card className="p-4 border-card-border space-y-4">
               <div className="flex items-center gap-2">
-                <Cpu className="h-3.5 w-3.5 text-[#F0A500]" />
+                <Cpu className="h-3.5 w-3.5 text-brand-2" />
                 <p className="text-xs font-semibold text-foreground tracking-wide">AI Demand Model</p>
                 <UITooltip>
                   <TooltipTrigger>
@@ -446,12 +456,12 @@ export default function TheTrade() {
               </div>
               <div className="grid grid-cols-3 gap-3">
                 {[
-                  { label: "2030 AI Grid Share", value: `${outputs.aiShareIn2030.toFixed(1)}%`, color: "text-[#F0A500]" },
+                  { label: "2030 AI Grid Share", value: `${outputs.aiShareIn2030.toFixed(1)}%`, color: "text-brand-2" },
                   { label: "2030 US Demand", value: `${(outputs.demandIn2030 / 1000).toFixed(1)}k TWh`, color: "text-foreground" },
                   { label: "Annual DC Pace", value: `${(inputs.newCapacityGW / 5).toFixed(1)} GW/yr`, color: "text-foreground" },
                 ].map((s) => (
                   <div key={s.label} className="rounded-md p-2.5 bg-muted/30 border border-border text-center">
-                    <p className="text-[10px] text-muted-foreground mb-1 leading-tight">{s.label}</p>
+                    <p className="text-10 text-muted-foreground mb-1 leading-tight">{s.label}</p>
                     <p className={`text-base font-bold font-mono ${s.color}`}>{s.value}</p>
                   </div>
                 ))}
@@ -461,41 +471,41 @@ export default function TheTrade() {
 
           {/* ---- RIGHT: OUTPUTS ---- */}
           <div className="space-y-5">
-            <h2 className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Scenario Outputs</h2>
+            <h2 className="text-10 font-semibold uppercase tracking-widest text-muted-foreground">Scenario Outputs</h2>
 
             {/* 4 KPI output cards */}
             <div className="grid grid-cols-2 gap-3">
               <Card className="p-3.5 border-card-border" data-testid="output-total-capex">
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Total Capex</p>
-                <p className="text-2xl font-bold font-mono text-[#F0A500]">${outputs.totalCapexB.toFixed(0)}B</p>
-                <p className="text-[10px] text-muted-foreground/60 mt-0.5">{inputs.newCapacityGW} GW × ${inputs.capexPerMW}M/MW</p>
+                <p className="text-10 text-muted-foreground uppercase tracking-wider mb-1">Total Capex</p>
+                <p className="text-2xl font-bold font-mono text-brand-2">${outputs.totalCapexB.toFixed(0)}B</p>
+                <p className="text-10 text-muted-foreground/60 mt-0.5">{inputs.newCapacityGW} GW × ${inputs.capexPerMW}M/MW</p>
               </Card>
 
               <Card className={`p-3.5 border-card-border`} data-testid="output-lpt-demand">
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Annual LPTs Needed</p>
+                <p className="text-10 text-muted-foreground uppercase tracking-wider mb-1">Annual LPTs Needed</p>
                 <p className={`text-2xl font-bold font-mono ${lptColor}`}>{outputs.annualLPT.toFixed(0)}/yr</p>
-                <p className="text-[10px] text-muted-foreground/60 mt-0.5">
+                <p className="text-10 text-muted-foreground/60 mt-0.5">
                   vs. {US_LPT_CAPACITY} domestic · {(outputs.lptRatio * 100).toFixed(0)}% of US capacity
                 </p>
               </Card>
 
               <Card className="p-3.5 border-card-border" data-testid="output-nuclear-gw">
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Nuclear Build by 2030</p>
+                <p className="text-10 text-muted-foreground uppercase tracking-wider mb-1">Nuclear Build by 2030</p>
                 <p className="text-2xl font-bold font-mono text-foreground">{outputs.nuclearGW.toFixed(1)} GW</p>
-                <p className="text-[10px] text-muted-foreground/60 mt-0.5">{inputs.nuclearPct}% of {inputs.newCapacityGW} GW new supply</p>
+                <p className="text-10 text-muted-foreground/60 mt-0.5">{inputs.nuclearPct}% of {inputs.newCapacityGW} GW new supply</p>
               </Card>
 
               <Card className="p-3.5 border-card-border" data-testid="output-interconnect">
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Grid Interconnect</p>
+                <p className="text-10 text-muted-foreground uppercase tracking-wider mb-1">Grid Interconnect</p>
                 <p className="text-lg font-bold font-mono text-foreground leading-snug mt-0.5">{inputs.interconnectYears}</p>
-                <p className="text-[10px] text-muted-foreground/60 mt-1">Avg queue-to-energize lead time</p>
+                <p className="text-10 text-muted-foreground/60 mt-1">Avg queue-to-energize lead time</p>
               </Card>
             </div>
 
             {/* Buildout timeline chart */}
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <h2 className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Annual Buildout Timeline</h2>
+                <h2 className="text-10 font-semibold uppercase tracking-widest text-muted-foreground">Annual Buildout Timeline</h2>
                 <UITooltip>
                   <TooltipTrigger>
                     <Info className="h-3.5 w-3.5 text-muted-foreground/60" />
@@ -508,9 +518,9 @@ export default function TheTrade() {
               <Card className="p-4 border-card-border">
                 <ResponsiveContainer width="100%" height={190}>
                   <BarChart data={buildoutChart} margin={{ top: 5, right: 5, left: 0, bottom: 5 }} barSize={28}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                    <XAxis dataKey="year" tick={{ fill: "#6b7280", fontSize: 11 }} tickLine={false} axisLine={false} />
-                    <YAxis tick={{ fill: "#6b7280", fontSize: 11 }} tickLine={false} axisLine={false} tickFormatter={(v) => `${v}GW`} />
+                    <CartesianGrid {...gridProps} />
+                    <XAxis {...axisProps} dataKey="year" axisLine={false} />
+                    <YAxis {...axisProps} axisLine={false} tickFormatter={(v) => `${v}GW`} />
                     <Tooltip
                       content={({ active, payload, label }) => {
                         if (!active || !payload?.length) return null;
@@ -527,21 +537,21 @@ export default function TheTrade() {
                         );
                       }}
                     />
-                    <Bar dataKey="gas"        name="Natural Gas" stackId="a" fill="rgba(248,113,113,0.75)" radius={[0,0,0,0]} />
-                    <Bar dataKey="nuclear"    name="Nuclear"     stackId="a" fill="#F0A500"                radius={[0,0,0,0]} />
-                    <Bar dataKey="renewables" name="Renewables"  stackId="a" fill="rgba(74,222,128,0.75)"  radius={[0,0,0,0]} />
-                    <Bar dataKey="grid"       name="Grid"        stackId="a" fill="rgba(148,163,184,0.6)"  radius={[2,2,0,0]} />
+                    <Bar dataKey="gas"        name="Natural Gas" stackId="a" fill={CATEGORY_COLORS.gas}        radius={[0,0,0,0]} />
+                    <Bar dataKey="nuclear"    name="Nuclear"     stackId="a" fill={CATEGORY_COLORS.nuclear}    radius={[0,0,0,0]} />
+                    <Bar dataKey="renewables" name="Renewables"  stackId="a" fill={CATEGORY_COLORS.renewables} radius={[0,0,0,0]} />
+                    <Bar dataKey="grid"       name="Grid"        stackId="a" fill={CATEGORY_COLORS.grid}       radius={[2,2,0,0]} />
                   </BarChart>
                 </ResponsiveContainer>
                 <div className="flex flex-wrap gap-4 text-xs mt-1">
                   {[
-                    { color: "bg-red-400/75",    label: "Natural Gas" },
-                    { color: "bg-[#F0A500]",     label: "Nuclear" },
-                    { color: "bg-green-400/75",  label: "Renewables" },
-                    { color: "bg-slate-400/60",  label: "Grid Purchases" },
+                    { color: CATEGORY_COLORS.gas,        label: "Natural Gas" },
+                    { color: CATEGORY_COLORS.nuclear,    label: "Nuclear" },
+                    { color: CATEGORY_COLORS.renewables, label: "Renewables" },
+                    { color: CATEGORY_COLORS.grid,       label: "Grid Purchases" },
                   ].map((l) => (
                     <div key={l.label} className="flex items-center gap-1.5">
-                      <div className={`h-2 w-3 rounded-sm ${l.color}`} />
+                      <div className="h-2 w-3 rounded-sm" style={{ background: l.color }} />
                       <span className="text-muted-foreground">{l.label}</span>
                     </div>
                   ))}
@@ -552,7 +562,7 @@ export default function TheTrade() {
             {/* Company rankings */}
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <h2 className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Scenario-Adjusted Positions</h2>
+                <h2 className="text-10 font-semibold uppercase tracking-widest text-muted-foreground">Scenario-Adjusted Positions</h2>
                 <UITooltip>
                   <TooltipTrigger>
                     <Info className="h-3.5 w-3.5 text-muted-foreground/60" />
@@ -564,10 +574,10 @@ export default function TheTrade() {
               </div>
               <Card className="border-card-border overflow-hidden">
                 <div className="grid grid-cols-[1.5rem_1fr_auto_auto] gap-x-3 px-3 py-2 border-b border-border bg-muted/20">
-                  <span className="text-[10px] text-muted-foreground font-mono">#</span>
-                  <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Position</span>
-                  <span className="text-[10px] text-muted-foreground uppercase tracking-wider text-right">Score</span>
-                  <span className="text-[10px] text-muted-foreground uppercase tracking-wider text-right w-12">Delta</span>
+                  <span className="text-10 text-muted-foreground font-mono">#</span>
+                  <span className="text-10 text-muted-foreground uppercase tracking-wider">Position</span>
+                  <span className="text-10 text-muted-foreground uppercase tracking-wider text-right">Score</span>
+                  <span className="text-10 text-muted-foreground uppercase tracking-wider text-right w-12">Delta</span>
                 </div>
                 {rankedCompanies.map((company, index) => {
                   const SegIcon = segmentIcons[company.segment] ?? DollarSign;
@@ -582,7 +592,7 @@ export default function TheTrade() {
                         <div className="flex items-center gap-2 mb-0.5">
                           <span className="font-bold text-sm text-foreground font-mono">{company.ticker}</span>
                           <span
-                            className="text-[10px] px-1.5 py-0.5 rounded font-medium leading-none"
+                            className="text-10 px-1.5 py-0.5 rounded font-medium leading-none"
                             style={{ backgroundColor: `${company.color}18`, color: company.color }}
                           >
                             <SegIcon className="h-2.5 w-2.5 inline mr-0.5 -mt-0.5" />
@@ -596,17 +606,17 @@ export default function TheTrade() {
                               style={{ width: `${(company.adjusted / 10) * 100}%`, backgroundColor: company.color, opacity: 0.8 }}
                             />
                           </div>
-                          <span className="text-[10px] text-muted-foreground/60 font-mono truncate max-w-[90px]">{company.rationale}</span>
+                          <span className="text-10 text-muted-foreground/60 font-mono truncate max-w-[90px]">{company.rationale}</span>
                         </div>
                       </div>
                       <div className="text-right">
                         <span className="font-bold text-sm font-mono tabular-nums" style={{ color: company.color }}>
                           {company.adjusted.toFixed(1)}
                         </span>
-                        <span className="text-[10px] text-muted-foreground font-mono">/10</span>
+                        <span className="text-10 text-muted-foreground font-mono">/10</span>
                       </div>
                       <div className="text-right w-12">
-                        <span className={`text-[10px] font-mono tabular-nums font-medium ${company.delta > 0.05 ? "text-green-400" : "text-muted-foreground/40"}`}>
+                        <span className={`text-10 font-mono tabular-nums font-medium ${company.delta > 0.05 ? "text-positive" : "text-muted-foreground/40"}`}>
                           {company.delta > 0.05 ? `+${company.delta.toFixed(2)}` : "base"}
                         </span>
                       </div>
@@ -630,7 +640,7 @@ export default function TheTrade() {
                   <div className="flex items-center gap-2">
                     <Info className="h-3.5 w-3.5 text-muted-foreground" />
                     <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">Methodology</span>
-                    <span className="text-[10px] text-muted-foreground/50 font-mono">Sources, formulas, and key sensitivities</span>
+                    <span className="text-10 text-muted-foreground/50 font-mono">Sources, formulas, and key sensitivities</span>
                   </div>
                   <ChevronDown
                     className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${methodologyOpen ? "rotate-180" : ""}`}
@@ -641,26 +651,26 @@ export default function TheTrade() {
                 <div className="border-t border-border px-5 py-5 grid grid-cols-1 md:grid-cols-3 gap-6 text-xs">
                   {/* Sources */}
                   <div className="space-y-3">
-                    <p className="font-semibold text-foreground uppercase tracking-wider text-[10px]">Sources</p>
+                    <p className="font-semibold text-foreground uppercase tracking-wider text-10">Sources</p>
                     <ul className="space-y-2 text-muted-foreground leading-relaxed">
                       <li className="flex gap-2">
-                        <span className="text-[#F0A500] font-mono flex-shrink-0">IEA</span>
+                        <span className="text-brand-2 font-mono flex-shrink-0">IEA</span>
                         <span>Electricity 2025: AI data centers projected at 400-1,000 TWh global consumption by 2026</span>
                       </li>
                       <li className="flex gap-2">
-                        <span className="text-[#F0A500] font-mono flex-shrink-0">EIA</span>
+                        <span className="text-brand-2 font-mono flex-shrink-0">EIA</span>
                         <span>Annual Energy Outlook 2025: US baseline consumption ~4,490 TWh (2025E); data centers = 6.4% of US load</span>
                       </li>
                       <li className="flex gap-2">
-                        <span className="text-[#F0A500] font-mono flex-shrink-0">McKinsey</span>
+                        <span className="text-brand-2 font-mono flex-shrink-0">McKinsey</span>
                         <span>$5.2T global AI infrastructure investment projection through 2030 (2024 Global Technology Report)</span>
                       </li>
                       <li className="flex gap-2">
-                        <span className="text-[#F0A500] font-mono flex-shrink-0">DOE</span>
+                        <span className="text-brand-2 font-mono flex-shrink-0">DOE</span>
                         <span>Transformer Supply Chain Study 2023: US domestic large power transformer (LPT) manufacturing capacity ~60 units/year</span>
                       </li>
                       <li className="flex gap-2">
-                        <span className="text-[#F0A500] font-mono flex-shrink-0">Hyperscalers</span>
+                        <span className="text-brand-2 font-mono flex-shrink-0">Hyperscalers</span>
                         <span>2024-2025 earnings calls: all-in capex guidance of $7-12M/MW for hyperscale AI data centers (AWS, Google, Microsoft, Meta)</span>
                       </li>
                     </ul>
@@ -668,22 +678,22 @@ export default function TheTrade() {
 
                   {/* Formulas */}
                   <div className="space-y-3">
-                    <p className="font-semibold text-foreground uppercase tracking-wider text-[10px]">Formulas</p>
+                    <p className="font-semibold text-foreground uppercase tracking-wider text-10">Formulas</p>
                     <div className="space-y-3 text-muted-foreground">
                       <div>
-                        <p className="font-mono text-[10px] text-foreground/80 mb-0.5">Total Capex ($B)</p>
+                        <p className="font-mono text-10 text-foreground/80 mb-0.5">Total Capex ($B)</p>
                         <p className="leading-relaxed">GW × 1,000 (MW/GW) × Capex ($/MW in millions) / 1,000 = GW × Capex/MW. Example: 50 GW × $9M/MW = $450B.</p>
                       </div>
                       <div>
-                        <p className="font-mono text-[10px] text-foreground/80 mb-0.5">Annual LPT Demand</p>
+                        <p className="font-mono text-10 text-foreground/80 mb-0.5">Annual LPT Demand</p>
                         <p className="leading-relaxed">Total GW × LPTs per GW / 5 years. Default 4 LPTs/GW sourced from DOE interconnection studies. Compare against {US_LPT_CAPACITY} units/year domestic manufacturing capacity.</p>
                       </div>
                       <div>
-                        <p className="font-mono text-[10px] text-foreground/80 mb-0.5">Generation Breakdown</p>
+                        <p className="font-mono text-10 text-foreground/80 mb-0.5">Generation Breakdown</p>
                         <p className="leading-relaxed">New Capacity (GW) × Supply Mix %. Annual ramp × mix applied year-by-year in the chart.</p>
                       </div>
                       <div>
-                        <p className="font-mono text-[10px] text-foreground/80 mb-0.5">AI Demand (TWh)</p>
+                        <p className="font-mono text-10 text-foreground/80 mb-0.5">AI Demand (TWh)</p>
                         <p className="leading-relaxed">Base Grid (4,490 TWh) × AI share (4.5% 2025E) × (1 + CAGR)^years × PUE. Compounded annually from 2025 baseline.</p>
                       </div>
                     </div>
@@ -691,7 +701,7 @@ export default function TheTrade() {
 
                   {/* Sensitivities + Disclaimer */}
                   <div className="space-y-3">
-                    <p className="font-semibold text-foreground uppercase tracking-wider text-[10px]">Key Sensitivities</p>
+                    <p className="font-semibold text-foreground uppercase tracking-wider text-10">Key Sensitivities</p>
                     <div className="space-y-2 text-muted-foreground leading-relaxed">
                       <p><span className="text-foreground font-medium">Nuclear %</span> is the highest-leverage input. Each 10pp increase re-rates CEG, CCJ, and VST scores.</p>
                       <p><span className="text-foreground font-medium">Capex per MW</span> drives total capital deployed. At 50 GW, the $7M-$12M range = $150B swing.</p>

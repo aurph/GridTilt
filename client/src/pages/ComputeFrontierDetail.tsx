@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft, Cpu, Atom, ExternalLink } from "lucide-react";
+import { STATUS_COLORS } from "@/lib/tokens";
 
 interface Cluster {
   id: string;
@@ -26,21 +27,17 @@ interface Cluster {
   notes?: string;
 }
 
-const STATUS_COLOR: Record<string, string> = {
-  operational: "#F07800",
-  construction: "#F0A500",
-  announced: "#9a9a9a",
-};
+const STATUS_COLOR: Record<string, string> = STATUS_COLORS;
 
 function Est({ on }: { on: boolean }) {
   if (!on) return null;
-  return <span className="ml-1 text-[9px] font-mono uppercase tracking-wide text-[#F0A500]/80 align-top">est.</span>;
+  return <span className="ml-1 text-9 font-mono uppercase tracking-wide text-brand-2/80 align-top">est.</span>;
 }
 
 function Fact({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="border border-card-border rounded p-3 bg-card/40">
-      <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground/70 mb-0.5">{label}</div>
+      <div className="text-10 font-mono uppercase tracking-wider text-muted-foreground/70 mb-0.5">{label}</div>
       <div className="text-sm text-foreground tabular-nums">{children}</div>
     </div>
   );
@@ -66,13 +63,13 @@ export default function ComputeFrontierDetail() {
           <h1 className="text-xl font-semibold text-foreground">Cluster not found</h1>
         ) : (
           <div className="flex items-start gap-3">
-            <Cpu className="h-6 w-6 text-[#F07800] mt-0.5 flex-shrink-0" />
+            <Cpu className="h-6 w-6 text-brand mt-0.5 flex-shrink-0" />
             <div>
               <h1 className="text-2xl font-semibold text-foreground tracking-tight">{cluster.name}</h1>
               <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
                 <span>{cluster.operator}</span>
                 <span className="text-muted-foreground/30">·</span>
-                <Badge variant="outline" className="text-[10px] font-mono px-1.5 py-0" style={{ color: STATUS_COLOR[cluster.status], borderColor: `${STATUS_COLOR[cluster.status]}55` }}>
+                <Badge variant="outline" className="text-10 font-mono px-1.5 py-0" style={{ color: STATUS_COLOR[cluster.status], borderColor: `${STATUS_COLOR[cluster.status]}55` }}>
                   {cluster.status}
                 </Badge>
                 <span className="text-muted-foreground/30">·</span>
@@ -87,7 +84,7 @@ export default function ComputeFrontierDetail() {
         {isError || (!isLoading && !cluster) ? (
           <p className="text-sm text-muted-foreground" data-testid="cfd-error">
             No cluster matches this id. Back to the{" "}
-            <Link href="/compute-frontier" className="text-[#F07800] hover:text-[#F0A500]">Compute Frontier</Link>.
+            <Link href="/compute-frontier" className="text-brand hover:text-brand-2">Compute Frontier</Link>.
           </p>
         ) : isLoading ? (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">{Array(8).fill(null).map((_, i) => <Skeleton key={i} className="h-16" />)}</div>
@@ -106,21 +103,21 @@ export default function ComputeFrontierDetail() {
 
             {cluster.notes && (
               <Card className="border-card-border p-4">
-                <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground/70 mb-1">Context</div>
+                <div className="text-10 font-mono uppercase tracking-wider text-muted-foreground/70 mb-1">Context</div>
                 <p className="text-sm text-muted-foreground leading-relaxed">{cluster.notes}</p>
               </Card>
             )}
 
             <Card className="border-card-border p-4" data-testid="cfd-power">
               <div className="flex items-center gap-2 mb-1.5">
-                <Atom className="h-4 w-4 text-[#F07800]" />
-                <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground/70">Power</span>
+                <Atom className="h-4 w-4 text-brand" />
+                <span className="text-10 font-mono uppercase tracking-wider text-muted-foreground/70">Power</span>
               </div>
               {cluster.linkedDeal ? (
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   This cluster's power is tied to a tracked nuclear-for-AI deal,{" "}
                   <span className="text-foreground font-mono">{cluster.linkedDeal}</span>. See it on the{" "}
-                  <Link href="/queue" className="text-[#F07800] hover:text-[#F0A500]">Backlog</Link> page.
+                  <Link href="/queue" className="text-brand hover:text-brand-2">Backlog</Link> page.
                 </p>
               ) : (
                 <p className="text-sm text-muted-foreground leading-relaxed">
@@ -131,11 +128,11 @@ export default function ComputeFrontierDetail() {
             </Card>
 
             <Card className="border-card-border p-4" data-testid="cfd-sources">
-              <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground/70 mb-2">Sources</div>
+              <div className="text-10 font-mono uppercase tracking-wider text-muted-foreground/70 mb-2">Sources</div>
               <ul className="space-y-1">
                 {cluster.sources.map((s, i) => (
                   <li key={i}>
-                    <a href={s} target="_blank" rel="noopener noreferrer" className="text-xs text-[#F07800] hover:text-[#F0A500] inline-flex items-center gap-1 break-all">
+                    <a href={s} target="_blank" rel="noopener noreferrer" className="text-xs text-brand hover:text-brand-2 inline-flex items-center gap-1 break-all">
                       {s} <ExternalLink className="h-3 w-3 flex-shrink-0" />
                     </a>
                   </li>
@@ -143,8 +140,8 @@ export default function ComputeFrontierDetail() {
               </ul>
             </Card>
 
-            <p className="text-[11px] text-muted-foreground/60 leading-relaxed">
-              Figures marked <span className="text-[#F0A500]">est.</span> are GridTilt estimates or announced targets not
+            <p className="text-11 text-muted-foreground/60 leading-relaxed">
+              Figures marked <span className="text-brand-2">est.</span> are GridTilt estimates or announced targets not
               yet realized. GPU counts read "not disclosed" where an operator has not published one. Tracked from public
               announcements; this registry is not exhaustive.
             </p>

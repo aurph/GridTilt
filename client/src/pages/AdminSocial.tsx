@@ -165,7 +165,7 @@ export default function AdminSocial() {
       <div className="p-6 max-w-md mx-auto">
         <Card className="p-6 space-y-4">
           <div className="flex items-center gap-2">
-            <KeyRound className="h-4 w-4 text-[#F07800]" />
+            <KeyRound className="h-4 w-4 text-brand" />
             <h1 className="text-sm font-semibold">Admin key required</h1>
           </div>
           <p className="text-xs text-muted-foreground">
@@ -219,7 +219,7 @@ export default function AdminSocial() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="p-5 space-y-4">
           <div className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-[#F07800]" />
+            <Sparkles className="h-4 w-4 text-brand" />
             <h2 className="text-sm font-semibold">Compose</h2>
           </div>
 
@@ -252,12 +252,12 @@ export default function AdminSocial() {
               onChange={(e) => setComposeText(e.target.value)}
               placeholder="What's happening in AI infra today..."
               rows={8}
-              className="w-full font-mono text-sm rounded-[0.35rem] border border-border bg-background p-3 text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-[#F07800]"
+              className="w-full font-mono text-sm rounded-[0.35rem] border border-border bg-background p-3 text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-[var(--brand)]"
               data-testid="input-compose-text"
             />
             <div className="flex items-center justify-between text-xs">
               <span
-                className={overLimit ? "text-red-500" : "text-muted-foreground"}
+                className={overLimit ? "text-negative" : "text-muted-foreground"}
                 data-testid="text-char-count"
               >
                 {charCount} / {TWEET_MAX}
@@ -269,7 +269,7 @@ export default function AdminSocial() {
                   overLimit ||
                   postMutation.isPending
                 }
-                className="bg-[#F07800] hover:bg-[#D86A00] text-white"
+                className="bg-brand hover:bg-brand/90 text-white"
                 data-testid="button-post-tweet"
               >
                 <Send className="h-3.5 w-3.5 mr-1.5" />
@@ -281,7 +281,7 @@ export default function AdminSocial() {
 
         <Card className="p-5 space-y-4">
           <div className="flex items-center gap-2">
-            <Trash2 className="h-4 w-4 text-[#F07800]" />
+            <Trash2 className="h-4 w-4 text-brand" />
             <h2 className="text-sm font-semibold">Delete tweet</h2>
           </div>
           <p className="text-xs text-muted-foreground">
@@ -315,7 +315,7 @@ export default function AdminSocial() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <h2 className="text-sm font-semibold">Recent activity</h2>
-            <Badge variant="outline" className="text-[10px] font-mono">
+            <Badge variant="outline" className="text-10 font-mono">
               {log.length}
             </Badge>
           </div>
@@ -349,22 +349,22 @@ export default function AdminSocial() {
             >
               <div className="flex items-center gap-2 flex-wrap text-xs">
                 {entry.ok ? (
-                  <Badge className="bg-green-600/20 text-green-400 border-green-600/40 text-[10px] gap-1">
+                  <Badge className="bg-positive-deep/20 text-positive border-positive-deep/40 text-10 gap-1">
                     <Check className="h-2.5 w-2.5" /> ok
                   </Badge>
                 ) : (
-                  <Badge className="bg-red-600/20 text-red-400 border-red-600/40 text-[10px] gap-1">
+                  <Badge className="bg-negative-deep/20 text-negative border-negative-deep/40 text-10 gap-1">
                     <XIcon className="h-2.5 w-2.5" /> fail
                   </Badge>
                 )}
                 {entry.dryRun && (
-                  <Badge variant="outline" className="text-[10px]">dry run</Badge>
+                  <Badge variant="outline" className="text-10">dry run</Badge>
                 )}
                 {entry.template && (
-                  <Badge variant="outline" className="text-[10px]">{entry.template}</Badge>
+                  <Badge variant="outline" className="text-10">{entry.template}</Badge>
                 )}
                 {entry.trigger && (
-                  <Badge variant="outline" className="text-[10px]">{entry.trigger}</Badge>
+                  <Badge variant="outline" className="text-10">{entry.trigger}</Badge>
                 )}
                 <span className="text-muted-foreground font-mono ml-auto">
                   {fmtTime(entry.timestamp)}
@@ -376,7 +376,7 @@ export default function AdminSocial() {
               </pre>
 
               {entry.error && (
-                <pre className="text-[11px] text-red-400 whitespace-pre-wrap font-mono">
+                <pre className="text-11 text-negative whitespace-pre-wrap font-mono">
                   {entry.error}
                 </pre>
               )}
@@ -388,14 +388,14 @@ export default function AdminSocial() {
                     href={`https://x.com/gridtilt/status/${entry.id}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-[#F07800] hover:underline inline-flex items-center gap-1"
+                    className="text-brand hover:underline inline-flex items-center gap-1"
                     data-testid={`link-tweet-${entry.id}`}
                   >
                     Open <ExternalLink className="h-3 w-3" />
                   </a>
                   <button
                     onClick={() => setDeleteId(entry.id!)}
-                    className="text-muted-foreground hover:text-red-400"
+                    className="text-muted-foreground hover:text-negative"
                     data-testid={`button-stage-delete-${entry.id}`}
                   >
                     Stage delete

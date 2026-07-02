@@ -11,6 +11,7 @@ import {
 import {
   Zap, ArrowUpDown, ExternalLink, Sun, Wind, Atom, Flame, Battery, Cable, Server, Layers,
 } from "lucide-react";
+import { CATEGORY_COLORS, INK, SEMANTIC, SERIES } from "@/lib/tokens";
 
 interface BacklogProject {
   id: string;
@@ -55,15 +56,17 @@ interface BacklogResponse {
   projects: BacklogProject[];
 }
 
+// Energy types from CATEGORY_COLORS; hybrid/load have no token category, so
+// they take free SERIES slots (distinct from every co-occurring type here).
 const TYPE_COLORS: Record<string, string> = {
-  nuclear: "#a855f7",
-  gas: "#F07800",
-  solar: "#F0A500",
-  wind: "#22c55e",
-  storage: "#1E90FF",
-  hybrid: "#D4A843",
-  load: "#ef4444",
-  other: "#94a3b8",
+  nuclear: CATEGORY_COLORS.nuclear,
+  gas: CATEGORY_COLORS.gas,
+  solar: CATEGORY_COLORS.solar,
+  wind: CATEGORY_COLORS.wind,
+  storage: CATEGORY_COLORS.storage,
+  hybrid: SERIES[5], // series slot 6
+  load: SERIES[2], // series slot 3 (teal, shared with datacenters - load rows are DC demand)
+  other: INK.muted,
 };
 
 const TYPE_ICONS: Record<string, any> = {
@@ -216,7 +219,7 @@ export default function Queue() {
             )}
           </div>
           {data && (
-            <div className="text-[11px] text-muted-foreground/70 font-mono tracking-wide text-right space-y-0.5" data-testid="backlog-sources">
+            <div className="text-11 text-muted-foreground/70 font-mono tracking-wide text-right space-y-0.5" data-testid="backlog-sources">
               <FreshnessChip lastRefreshed={data.lastRefreshed} />
               <div className="text-muted-foreground/50">queue totals · {h?.queueOverallAsOf}</div>
               <div className="text-muted-foreground/50">PJM cycle · {h?.pjmReopenedAsOf}</div>
@@ -225,7 +228,7 @@ export default function Queue() {
                 href={h?.queueOverallSourceUrl ?? "https://emp.lbl.gov/queues"}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-[#F07800] hover:text-[#F0A500] inline-flex items-center gap-0.5"
+                className="text-brand hover:text-brand-2 inline-flex items-center gap-0.5"
                 data-testid="link-lbnl"
               >
                 LBNL dataset <ExternalLink className="h-3 w-3" />
@@ -239,7 +242,7 @@ export default function Queue() {
 
         {/* One compact summary strip (replaces 4 stat boxes) */}
         {h && (
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-1.5 px-1 text-[11px] font-mono text-muted-foreground" data-testid="summary-strip">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-1.5 px-1 text-11 font-mono text-muted-foreground" data-testid="summary-strip">
             <span><span className="text-foreground">{h.trackedProjects}</span> named projects tracked</span>
             <span className="text-muted-foreground/30">·</span>
             <span><span className="text-foreground">{h.trackedCapacityGW.toLocaleString()} GW</span> across those projects</span>
@@ -267,8 +270,8 @@ export default function Queue() {
           ]} />
           <ChipSelect label="Type" value={typeFilter} onChange={setTypeFilter} options={[{ value: "all", label: "all" }, ...types.map((t) => ({ value: t, label: t }))]} />
           <ChipSelect label="Region" value={isoFilter} onChange={setIsoFilter} options={[{ value: "all", label: "all" }, ...isos.map((i) => ({ value: i, label: i }))]} />
-          <label className="flex items-center gap-1.5 text-muted-foreground cursor-pointer px-2 py-1 rounded border border-white/[0.06] hover:border-white/[0.12]" data-testid="filter-dc-only">
-            <input type="checkbox" checked={dcOnly} onChange={(e) => setDcOnly(e.target.checked)} className="accent-[#F07800]" />
+          <label className="flex items-center gap-1.5 text-muted-foreground cursor-pointer px-2 py-1 rounded border border-subtle hover:border-strong" data-testid="filter-dc-only">
+            <input type="checkbox" checked={dcOnly} onChange={(e) => setDcOnly(e.target.checked)} className="accent-brand" />
             DC-relevant only
           </label>
           <span className="text-muted-foreground/60 font-mono ml-auto">{filtered.length} of {data?.projects?.length ?? 0}</span>
@@ -276,7 +279,7 @@ export default function Queue() {
 
         {/* Projects table — the page is THIS now */}
         <Card className="border-card-border overflow-hidden" data-testid="backlog-table">
-          <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-[#0E0E0C] border-b border-border text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+          <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-surface-base border-b border-border text-10 font-mono uppercase tracking-wider text-muted-foreground">
             <SortHeader label="Project" sortKey="projectName" current={sortKey} dir={sortDir} onClick={toggleSort} className="col-span-4" />
             <SortHeader label="Type" sortKey="type" current={sortKey} dir={sortDir} onClick={toggleSort} className="col-span-1" />
             <SortHeader label="MW" sortKey="capacityMW" current={sortKey} dir={sortDir} onClick={toggleSort} className="col-span-1 text-right" />
@@ -291,33 +294,33 @@ export default function Queue() {
               {Array(12).fill(null).map((_, i) => <Skeleton key={i} className="h-7" />)}
             </div>
           ) : isError ? (
-            <div className="p-6 text-center text-xs text-red-400" data-testid="backlog-error">Backlog dataset unavailable.</div>
+            <div className="p-6 text-center text-xs text-negative" data-testid="backlog-error">Backlog dataset unavailable.</div>
           ) : filtered.length === 0 ? (
             <div className="p-6 text-center text-xs text-muted-foreground" data-testid="backlog-empty">No projects match the current filters.</div>
           ) : (
             filtered.map((p) => {
               const Icon = TYPE_ICONS[p.type] ?? Zap;
-              const statusColor = p.status === "active" ? "#F0A500" : p.status === "operational" ? "#22C55E" : "#6b7280";
+              const statusColor = p.status === "active" ? SEMANTIC.warning : p.status === "operational" ? SEMANTIC.positiveDeep : INK.faint;
               const isAggregate = p.category === "aggregate";
               return (
                 <UITooltip key={p.id}>
                   <TooltipTrigger asChild>
                     <div
-                      className={`grid grid-cols-12 gap-2 px-4 py-2.5 border-b border-border/30 last:border-0 text-xs hover:bg-[#F07800]/5 cursor-help ${isAggregate ? "bg-[#0a0a08]" : ""}`}
+                      className={`grid grid-cols-12 gap-2 px-4 py-2.5 border-b border-border/30 last:border-0 text-xs hover:bg-brand/5 cursor-help ${isAggregate ? "bg-surface-sunken" : ""}`}
                       data-testid={`backlog-row-${p.id}`}
                     >
                       <div className="col-span-4 min-w-0">
                         <div className="font-medium text-foreground truncate flex items-center gap-1.5">
                           {p.projectName}
                           {p.status === "operational" && (
-                            <Badge variant="outline" className="text-[8px] font-mono px-1 py-0 text-green-400 border-green-400/30">live</Badge>
+                            <Badge variant="outline" className="text-8 font-mono px-1 py-0 text-positive border-positive/30">live</Badge>
                           )}
                         </div>
-                        <div className="text-[10px] text-muted-foreground truncate">
+                        <div className="text-10 text-muted-foreground truncate">
                           {p.sponsor}{p.offtaker ? ` → ${p.offtaker}` : ""}
                         </div>
                       </div>
-                      <span className="col-span-1 inline-flex items-center gap-1 capitalize" style={{ color: TYPE_COLORS[p.type] ?? "#94a3b8" }}>
+                      <span className="col-span-1 inline-flex items-center gap-1 capitalize" style={{ color: TYPE_COLORS[p.type] ?? INK.muted }}>
                         <Icon className="h-3 w-3 flex-shrink-0" />
                         <span className="truncate">{p.type}</span>
                       </span>
@@ -326,21 +329,21 @@ export default function Queue() {
                       </span>
                       <span className="col-span-1 font-mono text-foreground truncate">{p.iso}</span>
                       <span className="col-span-1 font-mono text-muted-foreground truncate">{p.state}</span>
-                      <span className="col-span-2 font-mono text-muted-foreground text-[10px] truncate">{p.expectedOnline ?? "—"}</span>
+                      <span className="col-span-2 font-mono text-muted-foreground text-10 truncate">{p.expectedOnline ?? "—"}</span>
                       <span className="col-span-1 text-center">
-                        <Badge variant="outline" className="text-[9px] font-mono px-1.5 py-0" style={{ color: statusColor, borderColor: `${statusColor}40` }}>
+                        <Badge variant="outline" className="text-9 font-mono px-1.5 py-0" style={{ color: statusColor, borderColor: `${statusColor}40` }}>
                           {CATEGORY_LABELS[p.category] ?? p.category}
                         </Badge>
                       </span>
-                      <span className="col-span-1 text-center font-mono text-[10px]">
-                        {p.dcRelevant ? <span className="text-[#F07800]">★</span> : <span className="text-muted-foreground/30">—</span>}
+                      <span className="col-span-1 text-center font-mono text-10">
+                        {p.dcRelevant ? <span className="text-brand">★</span> : <span className="text-muted-foreground/30">—</span>}
                       </span>
                     </div>
                   </TooltipTrigger>
                   <TooltipContent side="top" className="max-w-md p-3">
                     {p.notes && <p className="text-xs leading-relaxed mb-1.5">{p.notes}</p>}
                     {p.sources && p.sources.length > 0 && (
-                      <p className="text-[10px] text-muted-foreground">
+                      <p className="text-10 text-muted-foreground">
                         sources: {p.sources.join(" · ")}
                       </p>
                     )}
@@ -351,11 +354,11 @@ export default function Queue() {
           )}
         </Card>
 
-        <p className="text-[11px] text-muted-foreground/60 leading-relaxed px-1">
+        <p className="text-11 text-muted-foreground/60 leading-relaxed px-1">
           Specific projects are verified against SEC filings, utility press releases, FERC dockets, NRC documents, and trade press.
           Aggregate rows roll up entire ISO cycles or fleet positions; toggle "specific only" to filter them out.
           The full ~{h?.queueOverallProjects?.toLocaleString() ?? "10,300"}-project LBNL dataset is at{" "}
-          <a href="https://emp.lbl.gov/queues" target="_blank" rel="noopener noreferrer" className="text-[#F07800] hover:text-[#F0A500]">emp.lbl.gov/queues</a>.
+          <a href="https://emp.lbl.gov/queues" target="_blank" rel="noopener noreferrer" className="text-brand hover:text-brand-2">emp.lbl.gov/queues</a>.
         </p>
       </div>
     </div>
@@ -367,9 +370,9 @@ function FreshnessChip({ lastRefreshed }: { lastRefreshed: string }) {
   const days = Math.max(0, Math.floor((Date.now() - refreshDate.getTime()) / 86400000));
   const label = days === 0 ? "refreshed today" : days === 1 ? "refreshed yesterday" : `refreshed ${days} days ago`;
   const color =
-    days <= 14 ? "text-green-400/80 border-green-400/30" :
-    days <= 60 ? "text-[#F0A500] border-[#F0A500]/30" :
-    "text-red-400 border-red-400/30";
+    days <= 14 ? "text-positive border-positive/30" :
+    days <= 60 ? "text-warning border-warning/30" :
+    "text-negative border-negative/30";
   return (
     <span className={`inline-block px-1.5 py-0.5 rounded border ${color}`} data-testid="freshness-chip">
       {label}
@@ -379,8 +382,8 @@ function FreshnessChip({ lastRefreshed }: { lastRefreshed: string }) {
 
 function ChipSelect({ label, value, onChange, options }: { label: string; value: string; onChange: (v: string) => void; options: { value: string; label: string }[] }) {
   return (
-    <label className="flex items-center gap-1.5 text-muted-foreground px-2 py-1 rounded border border-white/[0.06] hover:border-white/[0.12]">
-      <span className="text-[10px] uppercase tracking-wider text-muted-foreground/60">{label}</span>
+    <label className="flex items-center gap-1.5 text-muted-foreground px-2 py-1 rounded border border-subtle hover:border-strong">
+      <span className="text-10 uppercase tracking-wider text-muted-foreground/60">{label}</span>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
@@ -388,7 +391,7 @@ function ChipSelect({ label, value, onChange, options }: { label: string; value:
         data-testid={`filter-${label.toLowerCase()}`}
       >
         {options.map((o) => (
-          <option key={o.value} value={o.value} className="bg-[#1a1917]">{o.label}</option>
+          <option key={o.value} value={o.value} className="bg-surface-raised">{o.label}</option>
         ))}
       </select>
     </label>

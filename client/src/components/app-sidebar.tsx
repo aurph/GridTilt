@@ -25,6 +25,7 @@ import {
   Newspaper,
 } from "lucide-react";
 import logoPath from "@assets/Image_[Vectorized]_(2)_1773890483514.png";
+import { BORDER, BRAND, FONT, INK } from "@/lib/tokens";
 
 const navItems = [
   {
@@ -126,10 +127,10 @@ export function AppSidebar() {
             className="h-16 w-16 rounded-md object-contain logo-entrance"
           />
           <div>
-            <div className="font-bold text-base tracking-tight text-foreground" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-              Grid<span className="text-[#F07800]">Tilt</span>
+            <div className="font-bold text-base tracking-tight text-foreground" style={{ fontFamily: FONT.mono }}>
+              Grid<span className="text-brand">Tilt</span>
             </div>
-            <div className="text-[10px] text-muted-foreground tracking-wide font-mono">AI Power Economy</div>
+            <div className="text-10 text-muted-foreground tracking-wide font-mono">AI Power Economy</div>
           </div>
         </div>
       </SidebarHeader>
@@ -147,8 +148,8 @@ export function AppSidebar() {
                       data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, "-")}`}
                       className={`sidebar-nav-link flex items-center gap-3 px-3 py-2.5 no-underline ${isActive ? "sidebar-nav-active" : ""}`}
                       style={{
-                        background: isActive ? "rgba(240, 120, 0, 0.08)" : "transparent",
-                        borderLeft: isActive ? "3px solid #F07800" : "3px solid transparent",
+                        background: isActive ? BRAND.wash : "transparent",
+                        borderLeft: isActive ? `3px solid ${BRAND.primary}` : "3px solid transparent",
                       }}
                     >
                       <div
@@ -157,27 +158,27 @@ export function AppSidebar() {
                           width: 34,
                           height: 34,
                           borderRadius: 7,
-                          background: isActive ? "rgba(240, 120, 0, 0.12)" : "rgba(255, 255, 255, 0.03)",
+                          background: isActive ? BRAND.glow : BORDER.subtle,
                         }}
                       >
                         <item.icon
                           style={{
                             width: 20,
                             height: 20,
-                            color: isActive ? "#F07800" : "#777",
+                            color: isActive ? BRAND.primary : INK.faint,
                           }}
                         />
                       </div>
                       <div className="flex flex-col gap-0.5 min-w-0">
                         <span
-                          className="sidebar-nav-title text-[13px] font-medium leading-tight"
-                          style={{ color: isActive ? "#F07800" : "#d4d4d4" }}
+                          className="sidebar-nav-title text-13 font-medium leading-tight"
+                          style={{ color: isActive ? BRAND.primary : INK.secondary }}
                         >
                           {item.title}
                         </span>
                         <span
-                          className="text-[11px] leading-tight truncate"
-                          style={{ color: "#666" }}
+                          className="text-11 leading-tight truncate"
+                          style={{ color: INK.faint }}
                         >
                           {item.description}
                         </span>
@@ -195,16 +196,16 @@ export function AppSidebar() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="relative h-2 w-2">
-              <div className="h-2 w-2 rounded-full bg-green-500 live-pulse" />
+              <div className="h-2 w-2 rounded-full bg-positive-deep live-pulse" />
             </div>
-            <span className="text-[11px] font-mono text-green-400/80">Live</span>
+            <span className="text-11 font-mono text-positive/80">Live</span>
           </div>
-          <span className="text-[10px] font-mono text-muted-foreground/50">15-min refresh</span>
+          <span className="text-10 font-mono text-muted-foreground/50">15-min refresh</span>
         </div>
-        <p className="text-[10px] text-muted-foreground/40 mt-2">
+        <p className="text-10 text-muted-foreground/40 mt-2">
           Yahoo Finance · EIA · Public Sources
         </p>
-        <p className="text-[10px] text-muted-foreground/35 mt-1.5 tracking-wide">
+        <p className="text-10 text-muted-foreground/35 mt-1.5 tracking-wide">
           Made by <span className="text-muted-foreground/50">Jack Schwartz</span> · aurph
         </p>
       </SidebarFooter>

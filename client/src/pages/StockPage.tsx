@@ -6,6 +6,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft, ExternalLink, TrendingUp, TrendingDown, AlertTriangle, Share2, Clock } from "lucide-react";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip as RTooltip } from "recharts";
 import { useToast } from "@/hooks/use-toast";
+import { SEMANTIC } from "@/lib/tokens";
+import { tooltipContentStyle } from "@/lib/chart-theme";
 
 interface StockInfo {
   ticker: string;
@@ -69,14 +71,14 @@ export default function StockPage() {
   if (isError || !data) {
     return (
       <div className="max-w-5xl mx-auto p-6">
-        <Link href="/stack" className="flex items-center gap-1 text-sm text-[#F07800] mb-6" data-testid="link-back-stack">
+        <Link href="/stack" className="flex items-center gap-1 text-sm text-brand mb-6" data-testid="link-back-stack">
           <ArrowLeft className="h-4 w-4" /> Back to The Stack
         </Link>
         <Card className="p-8 border-card-border text-center">
-          <AlertTriangle className="h-8 w-8 text-red-400 mx-auto mb-3" />
+          <AlertTriangle className="h-8 w-8 text-negative mx-auto mb-3" />
           <h1 className="text-lg font-semibold mb-2">Ticker Not Found</h1>
           <p className="text-sm text-muted-foreground">
-            ${upperTicker} is not tracked on GridTilt. <Link href="/stack" className="text-[#F07800]">Browse The Stack</Link> to see all 60+ tracked equities.
+            ${upperTicker} is not tracked on GridTilt. <Link href="/stack" className="text-brand">Browse The Stack</Link> to see all 60+ tracked equities.
           </p>
         </Card>
       </div>
@@ -116,17 +118,17 @@ export default function StockPage() {
             <Badge className="text-sm font-mono bg-muted/50 text-muted-foreground">${data.ticker}</Badge>
           </div>
           <div className="flex items-center gap-3 flex-wrap">
-            <Badge className="bg-[#F07800]/15 text-[#F07800] border-[#F07800]/25">{data.primarySegment}</Badge>
+            <Badge className="bg-brand/15 text-brand border-brand/25">{data.primarySegment}</Badge>
             {data.stockData && (
               <>
                 <span className="text-xl font-bold font-mono" data-testid="stock-price">${data.stockData.price.toFixed(2)}</span>
                 {hasLiveChg ? (
-                  <Badge className={`font-mono ${isUp ? "bg-green-500/15 text-green-400" : "bg-red-500/15 text-red-400"}`} data-testid="stock-change">
+                  <Badge className={`font-mono ${isUp ? "bg-positive-deep/15 text-positive" : "bg-negative-deep/15 text-negative"}`} data-testid="stock-change">
                     {isUp ? <TrendingUp className="h-3 w-3 mr-1" /> : <TrendingDown className="h-3 w-3 mr-1" />}
                     {isUp ? "+" : ""}{(data.stockData.changePercent as number).toFixed(2)}%
                   </Badge>
                 ) : (
-                  <Badge className="font-mono bg-[#F0A500]/15 text-[#F0A500] border-[#F0A500]/30 inline-flex items-center gap-1" data-testid="stock-stale">
+                  <Badge className="font-mono bg-brand-2/15 text-brand-2 border-brand-2/30 inline-flex items-center gap-1" data-testid="stock-stale">
                     <Clock className="h-3 w-3" />
                     {isStale ? "delayed" : "—"}
                   </Badge>
@@ -160,16 +162,16 @@ export default function StockPage() {
           <Card className="p-5 border-card-border" data-testid="thesis-score-card">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Thesis Alignment Score</h2>
-              <span className="text-3xl font-bold font-mono text-[#F0A500]" data-testid="thesis-score">{data.thesisScore}/100</span>
+              <span className="text-3xl font-bold font-mono text-brand-2" data-testid="thesis-score">{data.thesisScore}/100</span>
             </div>
             <p className="text-sm text-muted-foreground mb-4">{data.explanation}</p>
             <div className="grid grid-cols-5 gap-2">
               {Object.entries(data.sectors).map(([key, val]) => (
                 <div key={key} className="text-center">
                   <div className="h-1.5 rounded-full bg-muted/30 overflow-hidden mb-1">
-                    <div className="h-full rounded-full bg-[#F07800]" style={{ width: `${val}%` }} />
+                    <div className="h-full rounded-full bg-brand" style={{ width: `${val}%` }} />
                   </div>
-                  <p className="text-[10px] text-muted-foreground">{key}</p>
+                  <p className="text-10 text-muted-foreground">{key}</p>
                   <p className="text-xs font-mono font-semibold">{val}</p>
                 </div>
               ))}
@@ -184,11 +186,11 @@ export default function StockPage() {
                   <XAxis dataKey="i" hide />
                   <YAxis domain={["auto", "auto"]} hide />
                   <RTooltip
-                    contentStyle={{ background: "#1a1917", border: "1px solid #333", borderRadius: "6px" }}
+                    contentStyle={tooltipContentStyle}
                     labelStyle={{ display: "none" }}
                     formatter={(val: number) => [`$${val.toFixed(2)}`, "Price"]}
                   />
-                  <Line type="monotone" dataKey="price" stroke={isUp ? "#22c55e" : "#ef4444"} strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="price" stroke={isUp ? SEMANTIC.positiveDeep : SEMANTIC.negativeDeep} strokeWidth={2} dot={false} />
                 </LineChart>
               </ResponsiveContainer>
             </Card>
@@ -200,7 +202,7 @@ export default function StockPage() {
               <div className="space-y-3">
                 {data.relatedCatalysts.map((c) => (
                   <div key={c.id} className="flex items-start gap-3 text-sm">
-                    <Badge className="text-[10px] font-mono bg-muted/40 text-muted-foreground flex-shrink-0">{c.date}</Badge>
+                    <Badge className="text-10 font-mono bg-muted/40 text-muted-foreground flex-shrink-0">{c.date}</Badge>
                     <div>
                       <p className="font-medium text-foreground">{c.title}</p>
                       <p className="text-xs text-muted-foreground mt-0.5">{c.thesisImpact.slice(0, 150)}...</p>
@@ -227,13 +229,13 @@ export default function StockPage() {
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Rev Growth YoY</span>
-                  <span className={`font-mono font-semibold ${(data.stockData.revenueGrowth ?? 0) > 0 ? "text-green-400" : "text-red-400"}`}>
+                  <span className={`font-mono font-semibold ${(data.stockData.revenueGrowth ?? 0) > 0 ? "text-positive" : "text-negative"}`}>
                     {data.stockData.revenueGrowth != null ? `${data.stockData.revenueGrowth > 0 ? "+" : ""}${data.stockData.revenueGrowth.toFixed(1)}%` : "N/A"}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Daily Change</span>
-                  <span className={`font-mono font-semibold ${isUp ? "text-green-400" : "text-red-400"}`}>
+                  <span className={`font-mono font-semibold ${isUp ? "text-positive" : "text-negative"}`}>
                     {data.stockData.change != null ? `${isUp ? "+" : ""}$${data.stockData.change.toFixed(2)}` : "--"}
                   </span>
                 </div>
@@ -243,7 +245,7 @@ export default function StockPage() {
 
           <Card className="p-5 border-card-border" data-testid="sector-context">
             <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">Sector Context</h2>
-            <Link href={`/sector/${sectorSlug}`} className="text-sm text-[#F07800] hover:text-[#F0A500] font-medium" data-testid="link-sector">
+            <Link href={`/sector/${sectorSlug}`} className="text-sm text-brand hover:text-brand-2 font-medium" data-testid="link-sector">
               {SECTOR_LABELS[data.layerKey] || data.layerKey} Sector
             </Link>
           </Card>
@@ -256,7 +258,7 @@ export default function StockPage() {
                   <Link
                     key={t}
                     href={`/stock/${t}`}
-                    className="block text-sm font-mono text-[#F07800] hover:text-[#F0A500]"
+                    className="block text-sm font-mono text-brand hover:text-brand-2"
                     data-testid={`link-related-${t}`}
                   >
                     ${t}
@@ -269,9 +271,9 @@ export default function StockPage() {
           <Card className="p-5 border-card-border">
             <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">Tools</h2>
             <div className="space-y-2 text-sm">
-              <Link href="/stack" className="block text-[#F07800] hover:text-[#F0A500]" data-testid="link-tool-stack">The Stack</Link>
-              <Link href="/portfolio" className="block text-[#F07800] hover:text-[#F0A500]" data-testid="link-tool-portfolio">Portfolio Overlay</Link>
-              <Link href="/catalysts" className="block text-[#F07800] hover:text-[#F0A500]" data-testid="link-tool-catalysts">Catalyst Tracker</Link>
+              <Link href="/stack" className="block text-brand hover:text-brand-2" data-testid="link-tool-stack">The Stack</Link>
+              <Link href="/portfolio" className="block text-brand hover:text-brand-2" data-testid="link-tool-portfolio">Portfolio Overlay</Link>
+              <Link href="/catalysts" className="block text-brand hover:text-brand-2" data-testid="link-tool-catalysts">Catalyst Tracker</Link>
             </div>
           </Card>
         </div>

@@ -46,7 +46,7 @@ function renderMarkdown(content: string) {
     } else if (line.startsWith("**")) {
       const parts = line.split(/(\*\*[^*]+\*\*)/);
       elements.push(
-        <p key={i} className="text-[15px] text-muted-foreground leading-[1.7] mb-4">
+        <p key={i} className="text-15 text-muted-foreground leading-[1.7] mb-4">
           {parts.map((part, j) => {
             if (part.startsWith("**") && part.endsWith("**")) {
               return <strong key={j} className="text-foreground font-semibold">{part.slice(2, -2)}</strong>;
@@ -55,7 +55,7 @@ function renderMarkdown(content: string) {
             return linkParts.map((lp, k) => {
               const linkMatch = lp.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
               if (linkMatch) {
-                return <Link key={k} href={linkMatch[2]} className="text-[#F07800] hover:text-[#F0A500]">{linkMatch[1]}</Link>;
+                return <Link key={k} href={linkMatch[2]} className="text-brand hover:text-brand-2">{linkMatch[1]}</Link>;
               }
               return lp;
             });
@@ -69,7 +69,7 @@ function renderMarkdown(content: string) {
         i++;
       }
       elements.push(
-        <ol key={`ol-${i}`} className="list-decimal list-inside space-y-2 text-[15px] text-muted-foreground mb-5 ml-3 leading-[1.7]">
+        <ol key={`ol-${i}`} className="list-decimal list-inside space-y-2 text-15 text-muted-foreground mb-5 ml-3 leading-[1.7]">
           {items.map((item, j) => <li key={j}>{renderInlineText(item)}</li>)}
         </ol>
       );
@@ -79,11 +79,11 @@ function renderMarkdown(content: string) {
     } else {
       const linkParts = line.split(/(\[[^\]]+\]\([^)]+\))/);
       elements.push(
-        <p key={i} className="text-[15px] text-muted-foreground leading-[1.7] mb-4">
+        <p key={i} className="text-15 text-muted-foreground leading-[1.7] mb-4">
           {linkParts.map((part, j) => {
             const linkMatch = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
             if (linkMatch) {
-              return <Link key={j} href={linkMatch[2]} className="text-[#F07800] hover:text-[#F0A500]">{linkMatch[1]}</Link>;
+              return <Link key={j} href={linkMatch[2]} className="text-brand hover:text-brand-2">{linkMatch[1]}</Link>;
             }
             return part;
           })}
@@ -136,10 +136,10 @@ export default function BlogPost() {
       <div className="h-full overflow-y-auto">
         <div className="max-w-[720px] mx-auto p-6">
           <Card className="p-8 border-card-border text-center">
-            <AlertTriangle className="h-8 w-8 text-red-400 mx-auto mb-3" />
+            <AlertTriangle className="h-8 w-8 text-negative mx-auto mb-3" />
             <h1 className="text-lg font-semibold mb-2">Article Not Found</h1>
             <p className="text-sm text-muted-foreground">
-              <Link href="/blog" className="text-[#F07800]">Browse all articles</Link>
+              <Link href="/blog" className="text-brand">Browse all articles</Link>
             </p>
           </Card>
         </div>
@@ -164,7 +164,7 @@ export default function BlogPost() {
     <div className="h-full overflow-y-auto scroll-smooth" data-testid="blog-post-scroll-container">
       <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-sm border-b border-border">
         <div className="max-w-[720px] mx-auto px-6 py-2">
-          <Link href="/blog" className="flex items-center gap-1.5 text-xs text-[#F07800] hover:text-[#F0A500]" data-testid="link-back-blog-sticky">
+          <Link href="/blog" className="flex items-center gap-1.5 text-xs text-brand hover:text-brand-2" data-testid="link-back-blog-sticky">
             <ArrowLeft className="h-3.5 w-3.5" /> Back to articles
           </Link>
         </div>
@@ -188,10 +188,10 @@ export default function BlogPost() {
                 {new Date(article.date).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
               </div>
               {article.keywords.map((kw) => (
-                <Badge key={kw} className="text-[10px] bg-muted/40 text-muted-foreground">{kw}</Badge>
+                <Badge key={kw} className="text-10 bg-muted/40 text-muted-foreground">{kw}</Badge>
               ))}
             </div>
-            <p className="text-[15px] text-muted-foreground italic leading-[1.6]">{article.description}</p>
+            <p className="text-15 text-muted-foreground italic leading-[1.6]">{article.description}</p>
           </header>
 
           {toc.length > 2 && (
@@ -202,7 +202,7 @@ export default function BlogPost() {
                   <li key={i}>
                     <button
                       onClick={() => handleTocClick(heading)}
-                      className="text-sm text-[#F07800] hover:text-[#F0A500] transition-colors text-left"
+                      className="text-sm text-brand hover:text-brand-2 transition-colors text-left"
                       data-testid={`toc-link-${i}`}
                     >
                       {heading}
@@ -221,10 +221,10 @@ export default function BlogPost() {
         <Card className="p-5 border-card-border" data-testid="article-cta">
           <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">Track this on GridTilt</h2>
           <div className="flex flex-wrap gap-3 text-sm">
-            <Link href="/overview" className="text-[#F07800] hover:text-[#F0A500]">Dashboard</Link>
-            <Link href="/stack" className="text-[#F07800] hover:text-[#F0A500]">The Stack</Link>
-            <Link href="/power-map" className="text-[#F07800] hover:text-[#F0A500]">Power Map</Link>
-            <Link href="/trade" className="text-[#F07800] hover:text-[#F0A500]">Scenario Calculator</Link>
+            <Link href="/overview" className="text-brand hover:text-brand-2">Dashboard</Link>
+            <Link href="/stack" className="text-brand hover:text-brand-2">The Stack</Link>
+            <Link href="/power-map" className="text-brand hover:text-brand-2">Power Map</Link>
+            <Link href="/trade" className="text-brand hover:text-brand-2">Scenario Calculator</Link>
           </div>
         </Card>
 
@@ -250,7 +250,7 @@ export default function BlogPost() {
           </a>
         </div>
 
-        <Link href="/blog" className="flex items-center gap-1 text-sm text-[#F07800] hover:text-[#F0A500]" data-testid="link-back-blog">
+        <Link href="/blog" className="flex items-center gap-1 text-sm text-brand hover:text-brand-2" data-testid="link-back-blog">
           <ArrowLeft className="h-4 w-4" /> All Articles
         </Link>
       </div>

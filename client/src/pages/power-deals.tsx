@@ -19,6 +19,8 @@ import {
   Tooltip as RTooltip,
 } from "recharts";
 import { Handshake, ArrowUpDown } from "lucide-react";
+import { BORDER, BRAND, CATEGORY_COLORS, FONT, INK, SEMANTIC, SERIES, STATUS_COLORS } from "@/lib/tokens";
+import { axisProps, gridProps, tooltipContentStyle } from "@/lib/chart-theme";
 
 interface Bucket { key: string; count: number; mw: number; }
 interface DealRow {
@@ -47,21 +49,24 @@ interface DealMetrics {
   lastRefreshed: string | null;
 }
 
+// Energy types from CATEGORY_COLORS; hybrid/geothermal have no token
+// category, so they take free SERIES slots (distinct from co-occurring types;
+// hybrid matches Queue's slot).
 const TYPE_COLOR: Record<string, string> = {
-  nuclear: "#F07800",
-  solar: "#FFD166",
-  wind: "#4dabf7",
-  gas: "#ff8787",
-  hybrid: "#cc5de8",
-  hydro: "#22b8cf",
-  geothermal: "#51cf66",
+  nuclear: CATEGORY_COLORS.nuclear,
+  solar: CATEGORY_COLORS.solar,
+  wind: CATEGORY_COLORS.wind,
+  gas: CATEGORY_COLORS.gas,
+  hybrid: SERIES[5], // series slot 6
+  hydro: CATEGORY_COLORS.hydro,
+  geothermal: SERIES[4], // series slot 5
 };
-const typeColor = (t: string) => TYPE_COLOR[t] ?? "#9ca3af";
+const typeColor = (t: string) => TYPE_COLOR[t] ?? INK.muted;
 
 const STATUS_COLOR: Record<string, string> = {
-  operational: "#4ade80",
-  active: "#F0A500",
-  announced: "#777",
+  operational: STATUS_COLORS.operational,
+  active: SEMANTIC.warning,
+  announced: STATUS_COLORS.announced,
 };
 
 const gw = (mw: number) => (mw / 1000).toFixed(mw >= 10_000 ? 0 : 1);
@@ -105,22 +110,22 @@ export default function PowerDeals() {
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="max-w-3xl">
             <div className="flex items-center gap-2 mb-2">
-              <Handshake className="h-5 w-5 text-[#F07800]" />
-              <h1 className="text-2xl sm:text-3xl font-semibold text-foreground tracking-tight" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+              <Handshake className="h-5 w-5 text-brand" />
+              <h1 className="text-2xl sm:text-3xl font-semibold text-foreground tracking-tight" style={{ fontFamily: FONT.mono }}>
                 AI Power Deals
               </h1>
             </div>
             <p className="text-muted-foreground text-sm leading-relaxed">
               Corporate power procurement for AI: every named deal where a hyperscaler or AI company has
               contracted generation (a PPA, a reactor restart, an SMR option) to feed its compute. The data-center
-              sites themselves live in <Link href="/compute-frontier" className="text-[#F07800] hover:text-[#F0A500]">Compute Frontier</Link>;
+              sites themselves live in <Link href="/compute-frontier" className="text-brand hover:text-brand-2">Compute Frontier</Link>;
               this is the power behind them. Capacity is the contracted figure; open a row for terms and sources.
             </p>
           </div>
-          <div className="text-[11px] text-muted-foreground/70 font-mono tracking-wide text-right space-y-0.5" data-testid="deals-sync">
+          <div className="text-11 text-muted-foreground/70 font-mono tracking-wide text-right space-y-0.5" data-testid="deals-sync">
             {data?.lastRefreshed && <div className="text-muted-foreground/60">data as of {data.lastRefreshed}</div>}
             {data && <div>{data.dealCount} deals · {gw(data.totalContractedMW)} GW contracted</div>}
-            {data?.topBuyer && <div>top buyer: <span className="text-[#F07800]">{data.topBuyer}</span></div>}
+            {data?.topBuyer && <div>top buyer: <span className="text-brand">{data.topBuyer}</span></div>}
           </div>
         </div>
       </div>
@@ -136,7 +141,7 @@ export default function PowerDeals() {
 
         {/* Contracted power by buyer */}
         <Card className="border-card-border p-3" data-testid="deals-buyers">
-          <span className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground">Contracted power by buyer · GW</span>
+          <span className="text-11 font-mono uppercase tracking-wider text-muted-foreground">Contracted power by buyer · GW</span>
           {isLoading ? (
             <Skeleton className="h-[300px] w-full mt-2" />
           ) : isError || byBuyer.length === 0 ? (
@@ -144,16 +149,16 @@ export default function PowerDeals() {
           ) : (
             <ResponsiveContainer width="100%" height={Math.max(220, byBuyer.length * 32)}>
               <BarChart data={byBuyer} layout="vertical" margin={{ left: 8, right: 56, top: 8, bottom: 4 }}>
-                <CartesianGrid horizontal={false} stroke="rgba(255,255,255,0.05)" />
-                <XAxis type="number" tickFormatter={(v) => `${v}`} tick={{ fontSize: 10, fill: "#777" }} stroke="#333" />
-                <YAxis type="category" dataKey="buyer" width={140} tick={{ fontSize: 10, fill: "#ccc" }} stroke="#333" />
+                <CartesianGrid {...gridProps} vertical={true} horizontal={false} />
+                <XAxis {...axisProps} type="number" tickFormatter={(v) => `${v}`} />
+                <YAxis {...axisProps} type="category" dataKey="buyer" width={140} />
                 <RTooltip
-                  cursor={{ fill: "rgba(255,255,255,0.03)" }}
-                  contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--card-border))", borderRadius: 8, fontSize: 12 }}
+                  cursor={{ fill: BORDER.subtle }}
+                  contentStyle={tooltipContentStyle}
                   formatter={(v: number, _n, p: any) => [`${v} GW across ${p.payload.count} deal${p.payload.count === 1 ? "" : "s"}`, p.payload.buyer]}
                 />
-                <Bar dataKey="gw" fill="#F07800" radius={[0, 3, 3, 0]} isAnimationActive={false}
-                  label={{ position: "right", formatter: (v: number) => `${v}`, fill: "#999", fontSize: 10, fontFamily: "monospace" }} />
+                <Bar dataKey="gw" fill={BRAND.primary} radius={[0, 3, 3, 0]} isAnimationActive={false}
+                  label={{ position: "right", formatter: (v: number) => `${v}`, fill: INK.muted, fontSize: 10, fontFamily: FONT.mono }} />
               </BarChart>
             </ResponsiveContainer>
           )}
@@ -164,7 +169,7 @@ export default function PowerDeals() {
           <div className="flex flex-wrap items-center gap-1.5" data-testid="deals-type-filter">
             <button
               onClick={() => setTypeFilter(null)}
-              className={`px-2.5 py-1 rounded text-xs font-mono border transition-colors ${typeFilter === null ? "border-[#F07800] text-[#F07800] bg-[#F07800]/10" : "border-white/[0.08] text-muted-foreground hover:text-foreground"}`}
+              className={`px-2.5 py-1 rounded text-xs font-mono border transition-colors ${typeFilter === null ? "border-brand text-brand bg-brand/10" : "border-subtle text-muted-foreground hover:text-foreground"}`}
             >
               all types
             </button>
@@ -176,8 +181,8 @@ export default function PowerDeals() {
                   onClick={() => setTypeFilter(on ? null : b.key)}
                   className="px-2.5 py-1 rounded text-xs font-mono border transition-colors"
                   style={{
-                    borderColor: on ? typeColor(b.key) : "rgba(255,255,255,0.08)",
-                    color: on ? typeColor(b.key) : "#999",
+                    borderColor: on ? typeColor(b.key) : BORDER.subtle,
+                    color: on ? typeColor(b.key) : INK.muted,
                     background: on ? `${typeColor(b.key)}14` : "transparent",
                   }}
                 >
@@ -190,11 +195,11 @@ export default function PowerDeals() {
 
         {/* Deals table */}
         <Card className="border-card-border overflow-hidden" data-testid="deals-table">
-          <div className="px-4 py-2 bg-[#0E0E0C] border-b border-border">
-            <span className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground">Deals</span>
-            <span className="text-[10px] font-mono text-muted-foreground/40 ml-2">{visibleRows.length} shown · hover for terms + sources</span>
+          <div className="px-4 py-2 bg-surface-base border-b border-border">
+            <span className="text-11 font-mono uppercase tracking-wider text-muted-foreground">Deals</span>
+            <span className="text-10 font-mono text-muted-foreground/40 ml-2">{visibleRows.length} shown · hover for terms + sources</span>
           </div>
-          <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-[#0E0E0C]/60 border-b border-border text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+          <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-surface-base border-b border-border text-10 font-mono uppercase tracking-wider text-muted-foreground">
             <SortHeader label="Buyer" k="offtaker" cur={sortKey} dir={sortDir} onClick={toggleSort} className="col-span-2" />
             <span className="col-span-4">Generator / project</span>
             <SortHeader label="Type" k="type" cur={sortKey} dir={sortDir} onClick={toggleSort} className="col-span-2" />
@@ -204,12 +209,12 @@ export default function PowerDeals() {
           {isLoading ? (
             <div className="p-4 space-y-2">{Array(10).fill(null).map((_, i) => <Skeleton key={i} className="h-7" />)}</div>
           ) : isError ? (
-            <div className="p-6 text-center text-xs text-red-400">Deals unavailable.</div>
+            <div className="p-6 text-center text-xs text-negative">Deals unavailable.</div>
           ) : (
             visibleRows.map((r) => (
               <UITooltip key={r.id}>
                 <TooltipTrigger asChild>
-                  <div className="grid grid-cols-12 gap-2 px-4 py-2.5 border-b border-border/30 last:border-0 text-xs hover:bg-[#F07800]/5 cursor-help items-center" data-testid={`deal-row-${r.id}`}>
+                  <div className="grid grid-cols-12 gap-2 px-4 py-2.5 border-b border-border/30 last:border-0 text-xs hover:bg-brand/5 cursor-help items-center" data-testid={`deal-row-${r.id}`}>
                     <span className="col-span-2 font-mono font-semibold text-foreground truncate">{r.offtaker}</span>
                     <span className="col-span-4 text-muted-foreground truncate">{r.name} <span className="text-muted-foreground/40">· {r.sponsor}</span></span>
                     <span className="col-span-2 font-mono">
@@ -219,18 +224,18 @@ export default function PowerDeals() {
                       </span>
                     </span>
                     <span className="col-span-2 font-mono text-foreground text-right tabular-nums">{gw(r.capacityMW)} GW</span>
-                    <span className="col-span-2 font-mono text-muted-foreground text-right tabular-nums text-[11px]">{r.online ?? "—"}</span>
+                    <span className="col-span-2 font-mono text-muted-foreground text-right tabular-nums text-11">{r.online ?? "—"}</span>
                   </div>
                 </TooltipTrigger>
                 <TooltipContent side="top" className="max-w-md p-3">
                   <div className="text-xs font-semibold mb-1 text-foreground">{r.name}</div>
-                  <div className="text-[11px] text-muted-foreground mb-1.5">
+                  <div className="text-11 text-muted-foreground mb-1.5">
                     <span style={{ color: typeColor(r.type) }}>{r.type}</span> · {gw(r.capacityMW)} GW · {r.sponsor} → {r.offtakerRaw}
-                    {r.state ? ` · ${r.state}` : ""}{r.iso ? ` (${r.iso})` : ""} · <span style={{ color: STATUS_COLOR[r.status] ?? "#999" }}>{r.status}</span>
+                    {r.state ? ` · ${r.state}` : ""}{r.iso ? ` (${r.iso})` : ""} · <span style={{ color: STATUS_COLOR[r.status] ?? INK.muted }}>{r.status}</span>
                   </div>
-                  {r.notes && <p className="text-[11px] text-muted-foreground/80 mb-1.5">{r.notes}</p>}
+                  {r.notes && <p className="text-11 text-muted-foreground/80 mb-1.5">{r.notes}</p>}
                   {r.sources.length > 0 && (
-                    <div className="text-[10px] font-mono text-muted-foreground/60">
+                    <div className="text-10 font-mono text-muted-foreground/60">
                       <span className="uppercase tracking-wider text-muted-foreground/50">sources: </span>{r.sources.join(" · ")}
                     </div>
                   )}
@@ -240,7 +245,7 @@ export default function PowerDeals() {
           )}
         </Card>
 
-        <p className="text-[11px] text-muted-foreground/60 leading-relaxed px-1">
+        <p className="text-11 text-muted-foreground/60 leading-relaxed px-1">
           Deals are corporate power-purchase agreements, reactor restarts, and SMR options with a named AI / hyperscaler
           offtaker, drawn from <span className="font-mono">server/data/interconnection-queue.json</span>. Capacity is the
           contracted figure as disclosed; staged deals show their full target. Terms and sources are on each row.
@@ -253,7 +258,7 @@ export default function PowerDeals() {
 function StatTile({ label, value, loading }: { label: string; value: string; loading: boolean }) {
   return (
     <Card className="border-card-border p-3">
-      <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground/60">{label}</div>
+      <div className="text-10 font-mono uppercase tracking-wider text-muted-foreground/60">{label}</div>
       {loading ? <Skeleton className="h-6 w-16 mt-1" /> : <div className="text-lg font-semibold text-foreground mt-0.5 truncate">{value}</div>}
     </Card>
   );
@@ -262,7 +267,7 @@ function StatTile({ label, value, loading }: { label: string; value: string; loa
 function SortHeader({ label, k, cur, dir, onClick, className = "" }: { label: string; k: SortKey; cur: SortKey; dir: "asc" | "desc"; onClick: (k: SortKey) => void; className?: string }) {
   const active = cur === k;
   return (
-    <button onClick={() => onClick(k)} className={`flex items-center gap-1 hover:text-foreground transition-colors ${active ? "text-[#F07800]" : ""} ${className}`}>
+    <button onClick={() => onClick(k)} className={`flex items-center gap-1 hover:text-foreground transition-colors ${active ? "text-brand" : ""} ${className}`}>
       {label}
       <ArrowUpDown className="h-3 w-3" style={{ opacity: active ? 1 : 0.3 }} />
     </button>

@@ -22,6 +22,7 @@ import {
 import { apiRequest } from "@/lib/queryClient";
 import { Info, BarChart3, Search, Loader2, AlertCircle, Plus, Share2, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { BORDER, BRAND, CATEGORY_COLORS, CHART_CHROME, INK, SEMANTIC, SERIES } from "@/lib/tokens";
 
 interface PortfolioResult {
   ticker: string;
@@ -51,11 +52,11 @@ const EXAMPLE_PORTFOLIOS = [
 ];
 
 const SEGMENT_COLORS: Record<string, string> = {
-  Compute: "#94a3b8",
-  Infrastructure: "#a855f7",
-  Power: "#F0A500",
-  Cooling: "#22c55e",
-  Grid: "#ef4444",
+  Compute: CATEGORY_COLORS.compute,
+  Infrastructure: CATEGORY_COLORS.construction,
+  Power: CATEGORY_COLORS.power,
+  Cooling: SERIES[2], // series slot 3 - no category token for cooling
+  Grid: CATEGORY_COLORS.grid,
 };
 
 const CustomRadarTooltip = ({ active, payload }: any) => {
@@ -71,11 +72,11 @@ const CustomRadarTooltip = ({ active, payload }: any) => {
 };
 
 function ScoreRing({ score }: { score: number }) {
-  const color = score >= 70 ? "#F0A500" : score >= 40 ? "#F07800" : "#6b7280";
+  const color = score >= 70 ? SEMANTIC.positive : score >= 40 ? SEMANTIC.warning : INK.faint;
   return (
     <div className="relative flex h-14 w-14 items-center justify-center flex-shrink-0">
       <svg viewBox="0 0 56 56" className="absolute inset-0 h-full w-full -rotate-90">
-        <circle cx="28" cy="28" r="22" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="4" />
+        <circle cx="28" cy="28" r="22" fill="none" stroke={BORDER.subtle} strokeWidth="4" />
         <circle
           cx="28" cy="28" r="22"
           fill="none"
@@ -183,7 +184,7 @@ export default function PortfolioOverlay() {
           </div>
           <UITooltip>
             <TooltipTrigger>
-              <Badge className="bg-[#F0A500]/15 text-[#F0A500] border-[#F0A500]/30 cursor-help">
+              <Badge className="bg-brand-2/15 text-brand-2 border-brand-2/30 cursor-help">
                 <Info className="h-3 w-3 mr-1" />
                 Scoring Methodology
               </Badge>
@@ -224,7 +225,7 @@ export default function PortfolioOverlay() {
           </div>
 
           {error && (
-            <div className="mt-3 flex items-center gap-2 text-red-400 text-xs">
+            <div className="mt-3 flex items-center gap-2 text-negative text-xs">
               <AlertCircle className="h-3.5 w-3.5" />
               <span>{error}</span>
             </div>
@@ -280,7 +281,7 @@ export default function PortfolioOverlay() {
                 {avgScore !== null && (
                   <div className="text-right">
                     <p className="text-xs text-muted-foreground">Portfolio Avg</p>
-                    <p className="text-lg font-bold font-mono text-[#F0A500]">{avgScore}<span className="text-sm text-muted-foreground">/100</span></p>
+                    <p className="text-lg font-bold font-mono text-brand-2">{avgScore}<span className="text-sm text-muted-foreground">/100</span></p>
                   </div>
                 )}
               </div>
@@ -297,8 +298,8 @@ export default function PortfolioOverlay() {
                           <Badge
                             className="text-xs px-1.5 py-0"
                             style={{
-                              backgroundColor: `${SEGMENT_COLORS[r.primarySegment] ?? "#666"}20`,
-                              color: SEGMENT_COLORS[r.primarySegment] ?? "#999",
+                              backgroundColor: `${SEGMENT_COLORS[r.primarySegment] ?? INK.faint}20`,
+                              color: SEGMENT_COLORS[r.primarySegment] ?? INK.muted,
                             }}
                           >
                             {r.primarySegment}
@@ -315,7 +316,7 @@ export default function PortfolioOverlay() {
                           <div className="bg-muted/30 rounded-full h-1 mb-1">
                             <div
                               className="h-1 rounded-full"
-                              style={{ width: `${val}%`, backgroundColor: SEGMENT_COLORS[seg] ?? "#666" }}
+                              style={{ width: `${val}%`, backgroundColor: SEGMENT_COLORS[seg] ?? INK.faint }}
                             />
                           </div>
                           <p className="text-xs text-muted-foreground">{seg.slice(0, 3)}</p>
@@ -344,20 +345,20 @@ export default function PortfolioOverlay() {
               <Card className="p-5 border-card-border">
                 <ResponsiveContainer width="100%" height={300}>
                   <RadarChart data={radarData} margin={{ top: 20, right: 30, bottom: 20, left: 30 }}>
-                    <PolarGrid stroke="rgba(255,255,255,0.08)" />
-                    <PolarAngleAxis dataKey="axis" tick={{ fill: "#9ca3af", fontSize: 12 }} />
+                    <PolarGrid stroke={CHART_CHROME.grid} />
+                    <PolarAngleAxis dataKey="axis" tick={{ fill: CHART_CHROME.tick, fontSize: 12 }} />
                     <PolarRadiusAxis
                       angle={90}
                       domain={[0, 100]}
-                      tick={{ fill: "#6b7280", fontSize: 10 }}
+                      tick={{ fill: CHART_CHROME.axis, fontSize: 10 }}
                       tickCount={4}
                     />
                     <Tooltip content={<CustomRadarTooltip />} />
                     <Radar
                       name="Exposure"
                       dataKey="value"
-                      stroke="#F0A500"
-                      fill="#F0A500"
+                      stroke={BRAND.secondary}
+                      fill={BRAND.secondary}
                       fillOpacity={0.12}
                       strokeWidth={2}
                     />
@@ -376,7 +377,7 @@ export default function PortfolioOverlay() {
 
               <Card className="p-4 border-card-border bg-muted/10">
                 <div className="flex items-start gap-2">
-                  <BarChart3 className="h-4 w-4 text-[#F0A500] mt-0.5 flex-shrink-0" />
+                  <BarChart3 className="h-4 w-4 text-brand-2 mt-0.5 flex-shrink-0" />
                   <div>
                     <p className="text-xs font-semibold text-foreground mb-1">Score interpretation</p>
                     <p className="text-xs text-muted-foreground leading-relaxed">

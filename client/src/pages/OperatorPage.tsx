@@ -56,10 +56,10 @@ export default function OperatorPage() {
     return (
       <div className="max-w-5xl mx-auto p-6">
         <Card className="p-8 border-card-border text-center">
-          <AlertTriangle className="h-8 w-8 text-red-400 mx-auto mb-3" />
+          <AlertTriangle className="h-8 w-8 text-negative mx-auto mb-3" />
           <h1 className="text-lg font-semibold mb-2">Operator Not Found</h1>
           <p className="text-sm text-muted-foreground">
-            <Link href="/power-map" className="text-[#F07800]">View the Power Map</Link> to see all operators.
+            <Link href="/power-map" className="text-brand">View the Power Map</Link> to see all operators.
           </p>
         </Card>
       </div>
@@ -78,7 +78,7 @@ export default function OperatorPage() {
 
       <div>
         <div className="flex items-center gap-3 mb-2">
-          <Building2 className="h-5 w-5 text-[#F07800]" />
+          <Building2 className="h-5 w-5 text-brand" />
           <h1 className="text-2xl font-bold" data-testid="operator-heading">{operator.name} AI Data Centers</h1>
         </div>
         <p className="text-sm text-muted-foreground max-w-3xl mb-4">{operator.description}</p>
@@ -96,7 +96,7 @@ export default function OperatorPage() {
         </p>
         <Link
           href={`/power-map?company=${slug}`}
-          className="inline-flex items-center gap-1.5 text-sm text-[#F07800] hover:text-[#F0A500] font-medium"
+          className="inline-flex items-center gap-1.5 text-sm text-brand hover:text-brand-2 font-medium"
           data-testid="link-filtered-map"
         >
           Open Power Map filtered to {operator.name}
@@ -119,9 +119,9 @@ export default function OperatorPage() {
       <Card className="p-5 border-card-border">
         <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">Related Tools</h2>
         <div className="space-y-2 text-sm">
-          <Link href="/power-map" className="block text-[#F07800] hover:text-[#F0A500]">Power Map</Link>
-          <Link href="/trade" className="block text-[#F07800] hover:text-[#F0A500]">Scenario Calculator</Link>
-          <Link href="/catalysts" className="block text-[#F07800] hover:text-[#F0A500]">Catalyst Tracker</Link>
+          <Link href="/power-map" className="block text-brand hover:text-brand-2">Power Map</Link>
+          <Link href="/trade" className="block text-brand hover:text-brand-2">Scenario Calculator</Link>
+          <Link href="/catalysts" className="block text-brand hover:text-brand-2">Catalyst Tracker</Link>
         </div>
       </Card>
     </div>

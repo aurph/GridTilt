@@ -22,6 +22,10 @@ import {
 } from "@/components/ui/tooltip";
 import { Zap, TrendingUp, Activity, AlertTriangle, Info, ArrowUp, ArrowDown, Calendar, ChevronRight, ExternalLink, Cpu, BarChart3, Calculator, Layers, Map, Link2, CalendarDays } from "lucide-react";
 import { EmailCapture, ScrollTriggeredBanner } from "@/components/EmailCapture";
+import {
+  BRAND, CATEGORY_COLORS as TOKEN_CATEGORY_COLORS, CHART_CHROME, DATA_QUALITY, INK, SEMANTIC, SERIES,
+} from "@/lib/tokens";
+import { axisProps, gridProps, tooltipContentStyle, tooltipItemStyle, tooltipLabelStyle } from "@/lib/chart-theme";
 
 import stackPreview from "@assets/previews/stack.svg";
 import supplyChainPreview from "@assets/previews/supply-chain.svg";
@@ -29,6 +33,11 @@ import powerMapPreview from "@assets/previews/power-map.svg";
 import catalystPreview from "@assets/previews/catalyst.svg";
 import portfolioPreview from "@assets/previews/portfolio.svg";
 import calculatorPreview from "@assets/previews/calculator.svg";
+
+/** Token hex + alpha -> rgba() string, so composed tints stay on token values. */
+function alpha(hex: string, a: number): string {
+  return `rgba(${parseInt(hex.slice(1, 3), 16)},${parseInt(hex.slice(3, 5), 16)},${parseInt(hex.slice(5, 7), 16)},${a})`;
+}
 
 const electricityData = [
   { year: "2010", demand: 3879, dcDemand: 140, projected: null, dcProjected: null },
@@ -55,9 +64,9 @@ const electricityData = [
 ];
 
 const annotations = [
-  { year: "2020", label: "COVID drop", color: "rgba(239,68,68,0.4)" },
-  { year: "2022", label: "IRA signed + ChatGPT", color: "rgba(240,165,0,0.4)" },
-  { year: "2024", label: "TMI restart + SMR deal", color: "rgba(240,165,0,0.5)" },
+  { year: "2020", label: "COVID drop", color: alpha(SEMANTIC.negativeDeep, 0.4) },
+  { year: "2022", label: "IRA signed + ChatGPT", color: alpha(BRAND.secondary, 0.4) },
+  { year: "2024", label: "TMI restart + SMR deal", color: alpha(BRAND.secondary, 0.5) },
 ];
 
 interface KpiData {
@@ -93,13 +102,15 @@ interface SectorPulseItem {
   avgChange: number;
 }
 
+// Catalyst categories (brand-accent family, distinct from the sector
+// palette in tokens.ts CATEGORY_COLORS).
 const CATEGORY_COLORS: Record<string, string> = {
-  Earnings:       "#F0A500",
-  Regulatory:     "#F0A500",
-  Policy:         "#D4A843",
-  Market:         "#F07800",
-  Infrastructure: "#C87533",
-  Industry:       "#F07800",
+  Earnings:       BRAND.secondary,
+  Regulatory:     BRAND.secondary,
+  Policy:         DATA_QUALITY.estimateFlag,
+  Market:         BRAND.primary,
+  Infrastructure: TOKEN_CATEGORY_COLORS.construction,
+  Industry:       BRAND.primary,
 };
 
 function daysUntil(dateStr: string): number {
@@ -117,10 +128,10 @@ function formatDateShort(dateStr: string): string {
 }
 
 const SECTOR_DEMAND = [
-  { sector: "Residential", twh: 1658, yoy: 2.1, color: "#6b7280" },
-  { sector: "Commercial", twh: 1569, yoy: 2.4, color: "#8b5cf6" },
-  { sector: "Industrial", twh: 975, yoy: -3.2, color: "#94a3b8" },
-  { sector: "Data Centers", twh: 288, yoy: 33.3, color: "#a855f7" },
+  { sector: "Residential", twh: 1658, yoy: 2.1, color: INK.muted },
+  { sector: "Commercial", twh: 1569, yoy: 2.4, color: SERIES[3] }, // series slot 4
+  { sector: "Industrial", twh: 975, yoy: -3.2, color: INK.secondary },
+  { sector: "Data Centers", twh: 288, yoy: 33.3, color: TOKEN_CATEGORY_COLORS.datacenters },
 ];
 
 const CustomTooltip = ({ active, payload, label }: any) => {
@@ -136,7 +147,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
             </p>
           )
         ))}
-        {ann && <p className="text-amber-400 mt-1 font-medium">* {ann.label}</p>}
+        {ann && <p className="text-warning mt-1 font-medium">* {ann.label}</p>}
       </div>
     );
   }
@@ -148,7 +159,7 @@ function ConstituentRow({ label, value }: { label: string; value: number }) {
   return (
     <div className="flex items-center justify-between text-xs py-0.5">
       <span className="text-muted-foreground">{label}</span>
-      <span className={`font-mono font-semibold ${isUp ? "text-green-400" : "text-red-400"}`}>
+      <span className={`font-mono font-semibold ${isUp ? "text-positive" : "text-negative"}`}>
         {isUp ? "+" : ""}{value.toFixed(2)}%
       </span>
     </div>
@@ -163,7 +174,7 @@ function PerfRow({ label, perf, base }: { label: string; perf: number; base?: st
       <span className="text-muted-foreground">{label}</span>
       <div className="flex items-center gap-2">
         {base && <span className="text-muted-foreground/50 font-mono">{base}</span>}
-        <span className={`font-mono font-semibold ${isUp ? "text-green-400" : "text-red-400"}`}>
+        <span className={`font-mono font-semibold ${isUp ? "text-positive" : "text-negative"}`}>
           {isUp ? "+" : ""}{pct}%
         </span>
       </div>
@@ -200,10 +211,10 @@ function KpiCard({
       value: "text-foreground",
     },
     amber: {
-      icon: "text-[#F0A500]",
-      bg: "bg-[#F0A500]/10",
-      border: "border-[#F0A500]/25",
-      value: "text-[#F0A500]",
+      icon: "text-brand-2",
+      bg: "bg-brand-2/10",
+      border: "border-brand-2/25",
+      value: "text-brand-2",
     },
     red: {
       icon: "text-orange-400",
@@ -265,8 +276,8 @@ function TiltStatusBar({ aiPower, gridStress, npi }: { aiPower: number | null; g
   const isElevated = aiPower > 78 && gridStress > 70 && npi > 130;
   const isEasing = aiPower < 68 && gridStress < 55;
   const status = isElevated ? "elevated" : isEasing ? "easing" : "tracking baseline";
-  const statusColor = isElevated ? "#F07800" : isEasing ? "#6b7280" : "#F0A500";
-  const statusBg = isElevated ? "bg-[#F07800]/10 border-[#F07800]/25" : isEasing ? "bg-muted/20 border-card-border" : "bg-[#F0A500]/10 border-[#F0A500]/20";
+  const statusColor = isElevated ? BRAND.primary : isEasing ? INK.muted : BRAND.secondary;
+  const statusBg = isElevated ? "bg-brand/10 border-brand/25" : isEasing ? "bg-muted/20 border-card-border" : "bg-brand-2/10 border-brand-2/20";
   const description = isElevated
     ? `All three gauges elevated. The market is pricing the AI-power complex aggressively today; grid-equity momentum at ${gridStress.toFixed(0)}/100. These read market positioning, not physical grid conditions.`
     : isEasing
@@ -285,7 +296,7 @@ function TiltStatusBar({ aiPower, gridStress, npi }: { aiPower: number | null; g
         {/* Status + numbers row on mobile, status only on desktop */}
         <div className="flex items-start justify-between sm:block flex-shrink-0">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Tilt Status</p>
+            <p className="text-10 font-bold uppercase tracking-widest text-muted-foreground mb-1">Tilt Status</p>
             <div className="flex items-center gap-2">
               <div className="h-2 w-2 rounded-full animate-pulse flex-shrink-0" style={{ backgroundColor: statusColor }} />
               <span className="text-sm font-bold font-mono tracking-wide" style={{ color: statusColor }}>{status}</span>
@@ -295,7 +306,7 @@ function TiltStatusBar({ aiPower, gridStress, npi }: { aiPower: number | null; g
           <div className="flex gap-3 sm:hidden text-right">
             {numbers.map(({ label, val }) => (
               <div key={label}>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wide whitespace-nowrap">{label}</p>
+                <p className="text-10 text-muted-foreground uppercase tracking-wide whitespace-nowrap">{label}</p>
                 <p className="text-sm font-bold font-mono text-foreground">{val.toFixed(0)}</p>
               </div>
             ))}
@@ -312,7 +323,7 @@ function TiltStatusBar({ aiPower, gridStress, npi }: { aiPower: number | null; g
         <div className="hidden sm:flex gap-4 flex-shrink-0 text-center">
           {numbers.map(({ label, val }) => (
             <div key={label}>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{label}</p>
+              <p className="text-10 text-muted-foreground uppercase tracking-wide">{label}</p>
               <p className="text-sm font-bold font-mono text-foreground">{val.toFixed(0)}</p>
             </div>
           ))}
@@ -322,15 +333,17 @@ function TiltStatusBar({ aiPower, gridStress, npi }: { aiPower: number | null; g
   );
 }
 
+// Mover/sector tags draw from the stable category palette so each sector
+// keeps one color across the whole app.
 const SECTOR_COLORS: Record<string, string> = {
-  compute: "#94a3b8",
-  nuclear: "#F0A500",
-  uranium: "#fb923c",
-  powerHardware: "#F0A500",
-  utilities: "#34d399",
-  dataCenters: "#a855f7",
-  construction: "#f472b6",
-  etfsBenchmarks: "#6b7280",
+  compute: TOKEN_CATEGORY_COLORS.compute,
+  nuclear: TOKEN_CATEGORY_COLORS.nuclear,
+  uranium: TOKEN_CATEGORY_COLORS.uranium,
+  powerHardware: TOKEN_CATEGORY_COLORS.power,
+  utilities: TOKEN_CATEGORY_COLORS.utilities,
+  dataCenters: TOKEN_CATEGORY_COLORS.datacenters,
+  construction: TOKEN_CATEGORY_COLORS.construction,
+  etfsBenchmarks: INK.muted, // neutral benchmark bucket (no category token)
 };
 
 const SECTOR_LABEL_SHORT: Record<string, string> = {
@@ -357,7 +370,7 @@ function TopMoversSection({ topMovers, pulse, isLoading, isError }: { topMovers:
   return (
     <Card className="p-5 border-card-border">
       <div className="flex items-center gap-2 mb-4">
-        <TrendingUp className="h-3.5 w-3.5 text-[#F0A500]" />
+        <TrendingUp className="h-3.5 w-3.5 text-brand-2" />
         <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Top Movers Today</h2>
         <UITooltip>
           <TooltipTrigger>
@@ -379,19 +392,19 @@ function TopMoversSection({ topMovers, pulse, isLoading, isError }: { topMovers:
             ))
           : topMovers.length === 0 ? <ErrorCard label="No movers data available" /> : topMovers.filter((m) => m.price != null && m.changePercent != null).map((m) => {
               const isUp = m.changePercent >= 0;
-              const sc = SECTOR_COLORS[m.sector] ?? "#6b7280";
+              const sc = SECTOR_COLORS[m.sector] ?? INK.muted;
               return (
                 <div key={m.ticker} className="flex items-center gap-3 py-1.5 border-b border-border/30 last:border-0" data-testid={`top-mover-${m.ticker}`}>
                   <span className="font-mono font-bold text-xs text-foreground w-12 flex-shrink-0">{m.ticker}</span>
                   <span className="text-xs text-muted-foreground flex-1 truncate min-w-0">{m.name}</span>
                   <span
-                    className="hidden sm:inline text-[10px] font-medium px-1.5 py-0.5 rounded border flex-shrink-0"
+                    className="hidden sm:inline text-10 font-medium px-1.5 py-0.5 rounded border flex-shrink-0"
                     style={{ color: sc, backgroundColor: `${sc}15`, borderColor: `${sc}30` }}
                   >
                     {SECTOR_LABEL_SHORT[m.sector] ?? m.sector}
                   </span>
                   <span className="font-mono text-xs text-foreground flex-shrink-0 w-16 text-right">${m.price.toFixed(m.price < 10 ? 2 : m.price < 100 ? 2 : 2)}</span>
-                  <div className={`flex items-center gap-0.5 font-mono font-semibold text-xs flex-shrink-0 w-14 justify-end ${isUp ? "text-green-400" : "text-red-400"}`}>
+                  <div className={`flex items-center gap-0.5 font-mono font-semibold text-xs flex-shrink-0 w-14 justify-end ${isUp ? "text-positive" : "text-negative"}`}>
                     {isUp ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
                     {Math.abs(m.changePercent).toFixed(2)}%
                   </div>
@@ -403,19 +416,19 @@ function TopMoversSection({ topMovers, pulse, isLoading, isError }: { topMovers:
           "what moved today" fact, one card instead of two. */}
       {pulse.length > 0 && (
         <div className="mt-4 pt-3 border-t border-border flex flex-wrap items-center gap-1.5" data-testid="sector-chips">
-          <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground/60 mr-0.5">sectors</span>
+          <span className="text-10 font-mono uppercase tracking-wider text-muted-foreground/60 mr-0.5">sectors</span>
           {[...pulse].sort((a, b) => b.avgChange - a.avgChange).map((p) => {
             const isUp = p.avgChange >= 0;
-            const sc = SECTOR_COLORS[p.sector] ?? "#6b7280";
+            const sc = SECTOR_COLORS[p.sector] ?? INK.muted;
             return (
               <span
                 key={p.sector}
-                className="font-mono text-[10px] px-1.5 py-0.5 rounded border"
+                className="font-mono text-10 px-1.5 py-0.5 rounded border"
                 style={{ borderColor: `${sc}30`, backgroundColor: `${sc}0d` }}
                 data-testid={`sector-chip-${p.sector}`}
               >
                 <span className="text-muted-foreground">{p.label}</span>{" "}
-                <span className={isUp ? "text-green-400" : "text-red-400"}>
+                <span className={isUp ? "text-positive" : "text-negative"}>
                   {isUp ? "+" : ""}{p.avgChange.toFixed(2)}%
                 </span>
               </span>
@@ -458,7 +471,7 @@ function GaugeHistoryCard({ live }: { live: { npi: number; ai: number; gs: numbe
     // flex-1: fills the left column so it ends flush with the right column.
     <Card className="p-5 border-card-border flex-1 flex flex-col" data-testid="gauge-history">
       <div className="flex items-center gap-2 mb-1">
-        <Activity className="h-3.5 w-3.5 text-[#F0A500]" />
+        <Activity className="h-3.5 w-3.5 text-brand-2" />
         <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Gauges Since Jan 2024</h2>
         <UITooltip>
           <TooltipTrigger>
@@ -474,12 +487,12 @@ function GaugeHistoryCard({ live }: { live: { npi: number; ai: number; gs: numbe
           </TooltipContent>
         </UITooltip>
         {live && (
-          <span className="ml-auto font-mono text-sm font-bold text-[#F0A500]" data-testid="gauge-history-npi-live">
+          <span className="ml-auto font-mono text-sm font-bold text-brand-2" data-testid="gauge-history-npi-live">
             NPI {live.npi.toFixed(1)}
           </span>
         )}
       </div>
-      <p className="text-[10px] font-mono text-muted-foreground/60 mb-3">
+      <p className="text-10 font-mono text-muted-foreground/60 mb-3">
         line: NPI equity legs · headline: full live NPI · /api/index-history
       </p>
 
@@ -495,49 +508,41 @@ function GaugeHistoryCard({ live }: { live: { npi: number; ai: number; gs: numbe
               <ComposedChart data={series} margin={{ top: 6, right: 8, bottom: 0, left: 0 }}>
                 <defs>
                   <linearGradient id="npiHistGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#F07800" stopOpacity={0.28} />
-                    <stop offset="100%" stopColor="#F07800" stopOpacity={0.02} />
+                    <stop offset="0%" stopColor={BRAND.primary} stopOpacity={0.28} />
+                    <stop offset="100%" stopColor={BRAND.primary} stopOpacity={0.02} />
                   </linearGradient>
                 </defs>
                 <XAxis
+                  {...axisProps}
                   dataKey="date"
-                  tick={{ fill: "#9ca3af", fontSize: 10 }}
-                  tickLine={false}
-                  axisLine={{ stroke: "rgba(255,255,255,0.08)" }}
                   tickFormatter={gaugeTickLabel}
                   minTickGap={48}
                 />
                 <YAxis
-                  tick={{ fill: "#9ca3af", fontSize: 10 }}
-                  tickLine={false}
+                  {...axisProps}
                   axisLine={false}
                   domain={["dataMin - 8", "dataMax + 8"]}
                   width={36}
                 />
                 <Tooltip
-                  contentStyle={{
-                    background: "#131211",
-                    border: "1px solid rgba(255,255,255,0.14)",
-                    fontSize: 12,
-                    padding: "8px 10px",
-                  }}
-                  labelStyle={{ color: "#F2F1ED", fontWeight: 600, marginBottom: 4, fontFamily: "JetBrains Mono, monospace", fontSize: 11 }}
-                  itemStyle={{ color: "#F2F1ED", padding: 0 }}
+                  contentStyle={tooltipContentStyle}
+                  labelStyle={tooltipLabelStyle}
+                  itemStyle={tooltipItemStyle}
                   formatter={(value, name) =>
                     value == null ? ["n/a", name] : [Number(value).toFixed(1), name]
                   }
                 />
                 <ReferenceLine
                   y={100}
-                  stroke="rgba(255,255,255,0.18)"
+                  stroke={CHART_CHROME.refLine}
                   strokeDasharray="4 3"
-                  label={{ value: "Jan 1 2024 = 100", position: "insideBottomLeft", fill: "#9ca3af", fontSize: 9 }}
+                  label={{ value: "Jan 1 2024 = 100", position: "insideBottomLeft", fill: INK.muted, fontSize: 9 }}
                 />
                 <Area
                   type="monotone"
                   dataKey="npi"
                   name="NPI (equity legs)"
-                  stroke="#F07800"
+                  stroke={BRAND.primary}
                   strokeWidth={1.8}
                   fill="url(#npiHistGrad)"
                   dot={false}
@@ -550,13 +555,13 @@ function GaugeHistoryCard({ live }: { live: { npi: number; ai: number; gs: numbe
           <div className="grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-border">
             {(
               [
-                { key: "ai", label: "AI Demand", color: "#F0A500", value: live?.ai ?? null },
-                { key: "gs", label: "Grid Stress", color: "#ef4444", value: live?.gs ?? null },
+                { key: "ai", label: "AI Demand", color: BRAND.secondary, value: live?.ai ?? null },
+                { key: "gs", label: "Grid Stress", color: SEMANTIC.negativeDeep, value: live?.gs ?? null },
               ] as const
             ).map((g) => (
               <div key={g.key} data-testid={`gauge-spark-${g.key}`}>
                 <div className="flex items-baseline justify-between mb-1">
-                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{g.label}</span>
+                  <span className="text-10 uppercase tracking-wider text-muted-foreground">{g.label}</span>
                   <span className="font-mono text-xs font-semibold text-foreground">
                     {g.value != null ? g.value.toFixed(1) : "–"}
                   </span>
@@ -617,8 +622,8 @@ function CatalystCalendarSection() {
     .slice(0, 5);
 
   function getItemColor(item: MergedCatalystItem): string {
-    if (item.type === 'earnings') return item.stageColor || "#F0A500";
-    return CATEGORY_COLORS[item.category || ''] ?? "#6b7280";
+    if (item.type === 'earnings') return item.stageColor || BRAND.secondary;
+    return CATEGORY_COLORS[item.category || ''] ?? INK.muted;
   }
 
   function getItemLabel(item: MergedCatalystItem): string {
@@ -635,12 +640,12 @@ function CatalystCalendarSection() {
     <Card className="p-5 border-card-border" data-testid="catalyst-calendar">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <Calendar className="h-3.5 w-3.5 text-[#F0A500]" />
+          <Calendar className="h-3.5 w-3.5 text-brand-2" />
           <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Catalyst Tracker</h2>
         </div>
         <Link
           href="/catalysts"
-          className="flex items-center gap-1 text-xs text-[#F07800] hover:text-[#F0A500] transition-colors font-medium"
+          className="flex items-center gap-1 text-xs text-brand hover:text-brand-2 transition-colors font-medium"
           data-testid="link-all-catalysts"
         >
           All Catalysts <ChevronRight className="h-3 w-3" />
@@ -673,7 +678,7 @@ function CatalystCalendarSection() {
 
       <div className="grid grid-cols-7 gap-px mb-1">
         {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((d) => (
-          <div key={d} className="text-center text-[10px] text-muted-foreground/60 py-0.5">{d}</div>
+          <div key={d} className="text-center text-10 text-muted-foreground/60 py-0.5">{d}</div>
         ))}
       </div>
 
@@ -692,7 +697,7 @@ function CatalystCalendarSection() {
               key={day}
               onClick={() => setSelectedDay(isSelected ? null : dateKey)}
               className={`relative flex flex-col items-center justify-center h-8 rounded text-xs transition-colors ${
-                isSelected ? "bg-[#F07800]/20 text-[#F0A500]" :
+                isSelected ? "bg-brand/20 text-brand-2" :
                 isToday ? "bg-muted/40 text-foreground font-semibold" :
                 "text-muted-foreground hover:bg-muted/20 hover:text-foreground"
               }`}
@@ -724,7 +729,7 @@ function CatalystCalendarSection() {
                 <div className="h-1.5 w-1.5 rounded-full mt-1.5 flex-shrink-0" style={{ backgroundColor: cc }} />
                 <div className="min-w-0">
                   <p className="text-xs font-medium text-foreground leading-tight">{getItemLabel(item)}</p>
-                  <span className="text-[10px]" style={{ color: cc }}>{getItemCategory(item)}</span>
+                  <span className="text-10" style={{ color: cc }}>{getItemCategory(item)}</span>
                 </div>
               </div>
             );
@@ -733,14 +738,14 @@ function CatalystCalendarSection() {
       )}
 
       <div className="mt-4 pt-3 border-t border-border">
-        <p className="text-[10px] uppercase tracking-wider text-muted-foreground/60 mb-2">Next 5 Upcoming</p>
+        <p className="text-10 uppercase tracking-wider text-muted-foreground/60 mb-2">Next 5 Upcoming</p>
         <div className="space-y-2">
           {upcoming.map((item) => {
             const days = daysUntil(item.sortDate);
             const cc = getItemColor(item);
             return (
               <div key={item.id} className="flex items-center gap-2" data-testid={`upcoming-catalyst-${item.id}`}>
-                <span className="text-[10px] font-mono text-muted-foreground w-8 flex-shrink-0">
+                <span className="text-10 font-mono text-muted-foreground w-8 flex-shrink-0">
                   {days === 0 ? "TODAY" : `${days}d`}
                 </span>
                 <div className="h-1 w-1 rounded-full flex-shrink-0" style={{ backgroundColor: cc }} />
@@ -763,7 +768,7 @@ function XFollowCard() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="h-3.5 w-3.5 flex items-center justify-center">
-            <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 fill-current text-[#F0A500]">
+            <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 fill-current text-brand-2">
               <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.259 5.632zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
             </svg>
           </div>
@@ -773,7 +778,7 @@ function XFollowCard() {
           href="https://x.com/gridtilt"
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-1 text-xs text-[#F07800] hover:text-[#F0A500] transition-colors font-medium"
+          className="flex items-center gap-1 text-xs text-brand hover:text-brand-2 transition-colors font-medium"
           data-testid="link-gridtilt-x"
         >
           Follow <ExternalLink className="h-3 w-3" />
@@ -807,12 +812,12 @@ interface AllCatalystsResponse {
 }
 
 const MERGED_CATEGORY_COLORS: Record<string, string> = {
-  Earnings:       "#F0A500",
-  Regulatory:     "#F0A500",
-  Policy:         "#D4A843",
-  Infrastructure: "#C87533",
-  Market:         "#F07800",
-  Industry:       "#F07800",
+  Earnings:       BRAND.secondary,
+  Regulatory:     BRAND.secondary,
+  Policy:         DATA_QUALITY.estimateFlag,
+  Infrastructure: TOKEN_CATEGORY_COLORS.construction,
+  Market:         BRAND.primary,
+  Industry:       BRAND.primary,
 };
 
 function NextCatalystsWidget() {
@@ -831,14 +836,14 @@ function NextCatalystsWidget() {
     <Card className="p-5 border-card-border" data-testid="next-catalysts-widget">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <Calendar className="h-3.5 w-3.5 text-[#F0A500]" />
+          <Calendar className="h-3.5 w-3.5 text-brand-2" />
           <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
             Next 5 Catalysts
           </h2>
         </div>
         <Link
           href="/catalysts"
-          className="flex items-center gap-1 text-xs text-[#F07800] hover:text-[#F0A500] transition-colors font-medium"
+          className="flex items-center gap-1 text-xs text-brand hover:text-brand-2 transition-colors font-medium"
           data-testid="link-view-all-catalysts"
         >
           View All <ChevronRight className="h-3 w-3" />
@@ -851,25 +856,25 @@ function NextCatalystsWidget() {
           const label = isEarnings ? `${item.ticker} Earnings` : (item.title || "");
           const catLabel = isEarnings ? item.stage || "Earnings" : item.category || "Event";
           const catColor = isEarnings
-            ? (item.stageColor || "#F0A500")
-            : (MERGED_CATEGORY_COLORS[item.category || ""] ?? "#9ca3af");
+            ? (item.stageColor || BRAND.secondary)
+            : (MERGED_CATEGORY_COLORS[item.category || ""] ?? INK.muted);
 
           return (
             <div key={item.id} className="flex items-start gap-3" data-testid={`catalyst-preview-${item.id}`}>
               <div className="text-center flex-shrink-0 w-12">
                 <p className="text-lg font-bold font-mono text-foreground leading-none">{days === 0 ? "0" : days}</p>
-                <p className="text-[10px] text-muted-foreground">{days === 0 ? "TODAY" : "days"}</p>
+                <p className="text-10 text-muted-foreground">{days === 0 ? "TODAY" : "days"}</p>
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 flex-wrap mb-0.5">
                   <p className="text-xs font-medium text-foreground truncate">{label}</p>
                   {isEarnings && item.time && (
-                    <span className="text-[10px] text-muted-foreground/50 font-mono">{item.time}</span>
+                    <span className="text-10 text-muted-foreground/50 font-mono">{item.time}</span>
                   )}
                 </div>
                 <div className="flex items-center gap-2">
                   <span
-                    className="text-[10px] font-medium px-1.5 py-0.5 rounded border"
+                    className="text-10 font-medium px-1.5 py-0.5 rounded border"
                     style={{
                       color: catColor,
                       backgroundColor: `${catColor}15`,
@@ -878,7 +883,7 @@ function NextCatalystsWidget() {
                   >
                     {catLabel}
                   </span>
-                  <span className="text-[10px] text-muted-foreground/60">{formatDateShort(item.sortDate)}</span>
+                  <span className="text-10 text-muted-foreground/60">{formatDateShort(item.sortDate)}</span>
                 </div>
               </div>
             </div>
@@ -905,7 +910,7 @@ const FEATURE_SLIDES = [
     title: "The Stack",
     description: "60+ equities across 8 supply chain layers. Compute, nuclear, uranium, power hardware, utilities, construction, and more.",
     href: "/stack",
-    accent: "#F07800",
+    accent: BRAND.primary,
     preview: stackPreview,
   },
   {
@@ -913,7 +918,7 @@ const FEATURE_SLIDES = [
     title: "Supply Chain Tracker",
     description: "Interactive D3 force network mapping 21 nodes and 44 real supply relationships from raw materials to end-use compute.",
     href: "/supply-chain",
-    accent: "#F0A500",
+    accent: BRAND.secondary,
     preview: supplyChainPreview,
   },
   {
@@ -921,7 +926,7 @@ const FEATURE_SLIDES = [
     title: "Power Map",
     description: "US data center locations, power capacity, and utility interconnection points. See where the load is landing.",
     href: "/power-map",
-    accent: "#C87533",
+    accent: SERIES[9], // series slot 10 (copper accent)
     preview: powerMapPreview,
   },
   {
@@ -929,7 +934,7 @@ const FEATURE_SLIDES = [
     title: "Compute Frontier",
     description: "Named AI superclusters by GPUs, chips, and power, tied to the nuclear-for-AI deals that feed them.",
     href: "/compute-frontier",
-    accent: "#F07800",
+    accent: BRAND.primary,
     preview: powerMapPreview,
   },
   {
@@ -937,7 +942,7 @@ const FEATURE_SLIDES = [
     title: "Catalyst Tracker",
     description: "Live earnings calendar with 80+ tickers from Yahoo Finance, plus thesis catalysts. Never miss a market-moving event.",
     href: "/catalysts",
-    accent: "#D4A843",
+    accent: DATA_QUALITY.estimateFlag,
     preview: catalystPreview,
   },
   {
@@ -945,7 +950,7 @@ const FEATURE_SLIDES = [
     title: "Portfolio Overlay",
     description: "Score any portfolio for AI power exposure. See how your holdings map to the infrastructure buildout.",
     href: "/portfolio",
-    accent: "#F07800",
+    accent: BRAND.primary,
     preview: portfolioPreview,
   },
   {
@@ -953,7 +958,7 @@ const FEATURE_SLIDES = [
     title: "Scenario Calculator",
     description: "Model scenarios across demand growth, nuclear capacity, and grid stress variables.",
     href: "/trade",
-    accent: "#F0A500",
+    accent: BRAND.secondary,
     preview: calculatorPreview,
   },
 ];
@@ -963,7 +968,7 @@ function ModuleGrid() {
     <div data-testid="module-grid">
       <div className="flex items-baseline justify-between mb-3">
         <h2 className="text-sm font-semibold text-foreground">Modules</h2>
-        <span className="text-[11px] text-muted-foreground/70">{FEATURE_SLIDES.length} tools</span>
+        <span className="text-11 text-muted-foreground/70">{FEATURE_SLIDES.length} tools</span>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {FEATURE_SLIDES.map((slide) => {
@@ -1014,15 +1019,15 @@ export default function TiltOverview() {
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="max-w-2xl">
             <h1 className="text-2xl sm:text-3xl font-semibold text-foreground tracking-tight mb-1.5">
-              Grid information, <span className="italic text-[#F07800]">tilted</span> in your favor
+              Grid information, <span className="italic text-brand">tilted</span> in your favor
             </h1>
             <p className="text-muted-foreground text-xs sm:text-sm leading-relaxed">
               Live equities, infrastructure, and power data across 60+ tickers tracking the AI power economy.
             </p>
           </div>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <div className="h-1.5 w-1.5 rounded-full bg-[#F0A500]" />
-            <span className="font-mono text-[11px] tracking-wide" data-testid="last-updated">Updated {relativeTime(kpiUpdatedAt)}</span>
+            <div className="h-1.5 w-1.5 rounded-full bg-brand-2" />
+            <span className="font-mono text-11 tracking-wide" data-testid="last-updated">Updated {relativeTime(kpiUpdatedAt)}</span>
           </div>
         </div>
       </div>
@@ -1068,15 +1073,15 @@ export default function TiltOverview() {
             </div>
             <div className="flex flex-wrap items-center gap-4 text-xs">
               <div className="flex items-center gap-1.5">
-                <div className="h-2 w-4 rounded-sm bg-[#1E90FF]" />
+                <div className="h-2 w-4 rounded-sm bg-series-1" />
                 <span className="text-muted-foreground">Total Actual</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <div className="h-2 w-4 rounded-sm bg-[#F0A500]" />
+                <div className="h-2 w-4 rounded-sm bg-brand-2" />
                 <span className="text-muted-foreground">GridTilt Projection (2026-2030)</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <div className="h-2 w-4 rounded-sm" style={{ backgroundColor: "#a855f7" }} />
+                <div className="h-2 w-4 rounded-sm" style={{ backgroundColor: TOKEN_CATEGORY_COLORS.datacenters }} />
                 <span className="text-muted-foreground">DC Demand</span>
               </div>
             </div>
@@ -1086,40 +1091,36 @@ export default function TiltOverview() {
             <ComposedChart data={electricityData} margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
               <defs>
                 <linearGradient id="demandGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#1E90FF" stopOpacity={0.25} />
-                  <stop offset="95%" stopColor="#1E90FF" stopOpacity={0.02} />
+                  <stop offset="5%" stopColor={SERIES[0]} stopOpacity={0.25} />
+                  <stop offset="95%" stopColor={SERIES[0]} stopOpacity={0.02} />
                 </linearGradient>
                 <linearGradient id="projGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#F0A500" stopOpacity={0.18} />
-                  <stop offset="95%" stopColor="#F0A500" stopOpacity={0.02} />
+                  <stop offset="5%" stopColor={BRAND.secondary} stopOpacity={0.18} />
+                  <stop offset="95%" stopColor={BRAND.secondary} stopOpacity={0.02} />
                 </linearGradient>
                 <linearGradient id="dcGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#a855f7" stopOpacity={0.25} />
-                  <stop offset="95%" stopColor="#a855f7" stopOpacity={0.02} />
+                  <stop offset="5%" stopColor={TOKEN_CATEGORY_COLORS.datacenters} stopOpacity={0.25} />
+                  <stop offset="95%" stopColor={TOKEN_CATEGORY_COLORS.datacenters} stopOpacity={0.02} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
+              <CartesianGrid {...gridProps} />
               <XAxis
+                {...axisProps}
                 dataKey="year"
-                tick={{ fill: "#9ca3af", fontSize: 11 }}
-                tickLine={false}
-                axisLine={{ stroke: "rgba(255,255,255,0.08)" }}
                 interval={2}
               />
               <YAxis
+                {...axisProps}
                 yAxisId="total"
-                tick={{ fill: "#9ca3af", fontSize: 11 }}
-                tickLine={false}
                 axisLine={false}
                 tickFormatter={(v) => `${(v / 1000).toFixed(1)}k`}
                 domain={[3600, 6600]}
                 width={42}
               />
               <YAxis
+                {...axisProps}
                 yAxisId="dc"
                 orientation="right"
-                tick={{ fill: "#9ca3af", fontSize: 11 }}
-                tickLine={false}
                 axisLine={false}
                 tickFormatter={(v) => `${v}`}
                 domain={[0, 2500]}
@@ -1131,9 +1132,9 @@ export default function TiltOverview() {
               <ReferenceLine
                 yAxisId="total"
                 y={5100}
-                stroke="rgba(239,68,68,0.35)"
+                stroke={alpha(SEMANTIC.negativeDeep, 0.35)}
                 strokeDasharray="5 3"
-                label={{ value: "Grid Capacity ~5,100 TWh", position: "right", fill: "#ef4444", fontSize: 9, dx: -90 }}
+                label={{ value: "Grid Capacity ~5,100 TWh", position: "right", fill: SEMANTIC.negativeDeep, fontSize: 9, dx: -90 }}
               />
 
               {/* Event annotations */}
@@ -1151,7 +1152,7 @@ export default function TiltOverview() {
               <ReferenceLine
                 yAxisId="total"
                 x="2010"
-                stroke="rgba(107,114,128,0.2)"
+                stroke={alpha(INK.muted, 0.2)}
               />
 
               <Area
@@ -1159,11 +1160,11 @@ export default function TiltOverview() {
                 type="monotone"
                 dataKey="demand"
                 name="Total Actual"
-                stroke="#1E90FF"
+                stroke={SERIES[0]} // series slot 1
                 strokeWidth={2.5}
                 fill="url(#demandGrad)"
                 dot={false}
-                activeDot={{ r: 4, fill: "#1E90FF" }}
+                activeDot={{ r: 4, fill: SERIES[0] }}
                 connectNulls={false}
               />
               <Area
@@ -1171,12 +1172,12 @@ export default function TiltOverview() {
                 type="monotone"
                 dataKey="projected"
                 name="AI-Era Projection"
-                stroke="#F0A500"
+                stroke={BRAND.secondary}
                 strokeWidth={2}
                 strokeDasharray="6 3"
                 fill="url(#projGrad)"
                 dot={false}
-                activeDot={{ r: 4, fill: "#F0A500" }}
+                activeDot={{ r: 4, fill: BRAND.secondary }}
                 connectNulls={false}
               />
               <Area
@@ -1184,7 +1185,7 @@ export default function TiltOverview() {
                 type="monotone"
                 dataKey="dcDemand"
                 name="DC Actual"
-                stroke="#a855f7"
+                stroke={TOKEN_CATEGORY_COLORS.datacenters}
                 strokeWidth={1.5}
                 fill="url(#dcGrad)"
                 dot={false}
@@ -1195,7 +1196,7 @@ export default function TiltOverview() {
                 type="monotone"
                 dataKey="dcProjected"
                 name="DC Projected"
-                stroke="#a855f7"
+                stroke={TOKEN_CATEGORY_COLORS.datacenters}
                 strokeWidth={1.5}
                 strokeDasharray="5 3"
                 dot={false}
@@ -1206,9 +1207,9 @@ export default function TiltOverview() {
 
           {/* Annotation key */}
           <div className="flex flex-wrap gap-4 mt-3 pt-3 border-t border-border text-xs text-muted-foreground">
-            <span className="text-amber-400/80">* 2022: IRA signed + ChatGPT launch</span>
-            <span className="text-amber-400/80">* 2024: TMI restart + first commercial SMR contract</span>
-            <span className="text-red-400/70">--- Grid capacity ceiling</span>
+            <span className="text-warning/80">* 2022: IRA signed + ChatGPT launch</span>
+            <span className="text-warning/80">* 2024: TMI restart + first commercial SMR contract</span>
+            <span className="text-negative/70">--- Grid capacity ceiling</span>
           </div>
         </Card>
 
@@ -1217,7 +1218,7 @@ export default function TiltOverview() {
             the momentum gauges showed no correlation with physical output,
             so they are presented as market sentiment, not measurements. */}
         <div className="pt-2">
-          <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/70 mb-3">
+          <div className="text-10 font-mono uppercase tracking-widest text-muted-foreground/70 mb-3">
             market gauges · methodology and validation in each card
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3" data-testid="kpi-triad">
@@ -1288,8 +1289,8 @@ export default function TiltOverview() {
           )}
 
           {kpiError && (
-            <Card className="mt-3 p-4 border-red-500/20 bg-red-500/5">
-              <div className="flex items-center gap-2 text-xs text-red-400">
+            <Card className="mt-3 p-4 border-negative-deep/20 bg-negative-deep/5">
+              <div className="flex items-center gap-2 text-xs text-negative">
                 <AlertTriangle className="h-3.5 w-3.5" />
                 <span>Live index data unavailable. Showing last known values.</span>
               </div>
@@ -1300,9 +1301,9 @@ export default function TiltOverview() {
         {/* 4-column stat strip */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {[
-            { label: "DC Share of US Demand", value: "~6.4%", sub: "EIA 2025: ~288 TWh, up from 4.4% in 2023. DOE projects 12%+ by 2028.", color: "#a855f7" },
-            { label: "Nuclear Power Committed", value: "12+ GW", sub: "Big Tech nuclear PPAs as of Q1 2026. Meta 6.6 GW, Microsoft 1.2 GW, Amazon 2.5+ GW.", color: "#F0A500" },
-            { label: "Grid Reserve Margins", value: "Tightening", sub: "MISO 13.4%, ERCOT 15.8% per NERC 2026. Capacity warnings through 2028.", color: "#94a3b8" },
+            { label: "DC Share of US Demand", value: "~6.4%", sub: "EIA 2025: ~288 TWh, up from 4.4% in 2023. DOE projects 12%+ by 2028.", color: TOKEN_CATEGORY_COLORS.datacenters },
+            { label: "Nuclear Power Committed", value: "12+ GW", sub: "Big Tech nuclear PPAs as of Q1 2026. Meta 6.6 GW, Microsoft 1.2 GW, Amazon 2.5+ GW.", color: BRAND.secondary },
+            { label: "Grid Reserve Margins", value: "Tightening", sub: "MISO 13.4%, ERCOT 15.8% per NERC 2026. Capacity warnings through 2028.", color: INK.muted },
           ].map((s) => (
             <Card key={s.label} className="p-4 border-card-border">
               <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">{s.label}</p>
@@ -1343,7 +1344,7 @@ export default function TiltOverview() {
                   </div>
                 </div>
                 <p className="text-xs font-mono text-foreground w-20 text-right">{s.twh.toLocaleString()} TWh</p>
-                <div className={`flex items-center gap-1 w-16 justify-end text-xs font-mono font-semibold ${s.yoy >= 0 ? "text-green-400" : "text-red-400"}`}>
+                <div className={`flex items-center gap-1 w-16 justify-end text-xs font-mono font-semibold ${s.yoy >= 0 ? "text-positive" : "text-negative"}`}>
                   {s.yoy >= 0 ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
                   {Math.abs(s.yoy)}% YoY
                 </div>
@@ -1360,7 +1361,7 @@ export default function TiltOverview() {
 
         <EmailCapture variant="inline" />
 
-        <footer className="pt-4 border-t border-border/40 text-[11px] text-muted-foreground/60 leading-relaxed space-y-1">
+        <footer className="pt-4 border-t border-border/40 text-11 text-muted-foreground/60 leading-relaxed space-y-1">
           <p>
             Data: Yahoo Finance · EIA · DOE · NERC · LBNL · public RSS sources. Composite indices computed in-house; methodology in each card's info tooltip.
           </p>

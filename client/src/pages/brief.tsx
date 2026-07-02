@@ -4,6 +4,7 @@ import { Link } from "wouter";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Newspaper, Copy, Check } from "lucide-react";
+import { FONT } from "@/lib/tokens";
 
 interface BriefSection { heading: string; points: string[]; }
 interface Brief {
@@ -42,8 +43,8 @@ export default function BriefPage() {
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="max-w-3xl">
             <div className="flex items-center gap-2 mb-2">
-              <Newspaper className="h-5 w-5 text-[#F07800]" />
-              <h1 className="text-2xl sm:text-3xl font-semibold text-foreground tracking-tight" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+              <Newspaper className="h-5 w-5 text-brand" />
+              <h1 className="text-2xl sm:text-3xl font-semibold text-foreground tracking-tight" style={{ fontFamily: FONT.mono }}>
                 The Buildout Brief
               </h1>
             </div>
@@ -56,10 +57,10 @@ export default function BriefPage() {
           {data && (
             <button
               onClick={copy}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded border border-white/[0.08] text-xs font-mono text-muted-foreground hover:text-foreground hover:border-[#F07800]/40 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded border border-subtle text-xs font-mono text-muted-foreground hover:text-foreground hover:border-brand/40 transition-colors"
               data-testid="brief-copy"
             >
-              {copied ? <Check className="h-3.5 w-3.5 text-[#4ade80]" /> : <Copy className="h-3.5 w-3.5" />}
+              {copied ? <Check className="h-3.5 w-3.5 text-positive" /> : <Copy className="h-3.5 w-3.5" />}
               {copied ? "copied" : "copy as text"}
             </button>
           )}
@@ -79,24 +80,24 @@ export default function BriefPage() {
           ) : (
             <article className="space-y-5">
               <header className="border-b border-border pb-4">
-                <h2 className="text-xl font-semibold text-foreground" style={{ fontFamily: "'JetBrains Mono', monospace" }}>{data.title}</h2>
+                <h2 className="text-xl font-semibold text-foreground" style={{ fontFamily: FONT.mono }}>{data.title}</h2>
               </header>
 
-              <p className="text-[15px] leading-relaxed text-foreground/90">{data.summary}</p>
+              <p className="text-15 leading-relaxed text-foreground/90">{data.summary}</p>
 
               <div className="space-y-4">
                 {data.sections.map((s) => (
                   <section key={s.heading} data-testid={`brief-section-${s.heading}`}>
                     <div className="flex items-center justify-between mb-1.5">
-                      <h3 className="text-xs font-mono uppercase tracking-wider text-[#F07800]">{s.heading}</h3>
+                      <h3 className="text-xs font-mono uppercase tracking-wider text-brand">{s.heading}</h3>
                       {SECTION_LINK[s.heading] && (
-                        <Link href={SECTION_LINK[s.heading]} className="text-[10px] font-mono text-muted-foreground/50 hover:text-[#F07800]">open →</Link>
+                        <Link href={SECTION_LINK[s.heading]} className="text-10 font-mono text-muted-foreground/50 hover:text-brand">open →</Link>
                       )}
                     </div>
                     <ul className="space-y-1">
                       {s.points.map((p, i) => (
                         <li key={i} className="text-sm text-foreground/80 leading-relaxed flex gap-2">
-                          <span className="text-[#F07800]/50 flex-shrink-0">·</span>
+                          <span className="text-brand/50 flex-shrink-0">·</span>
                           <span>{p}</span>
                         </li>
                       ))}
@@ -105,11 +106,11 @@ export default function BriefPage() {
                 ))}
               </div>
 
-              <div className="border-l-2 border-[#F07800] pl-4 py-1 bg-[#F07800]/5 rounded-r" data-testid="brief-takeaway">
+              <div className="border-l-2 border-brand pl-4 py-1 bg-brand/5 rounded-r" data-testid="brief-takeaway">
                 <p className="text-sm text-foreground/90 leading-relaxed">{data.takeaway}</p>
               </div>
 
-              <p className="text-[11px] text-muted-foreground/50 pt-2 border-t border-border">
+              <p className="text-11 text-muted-foreground/50 pt-2 border-t border-border">
                 Auto-generated from live data. The weekly cadence is what the daily social posts roll up into.
               </p>
             </article>

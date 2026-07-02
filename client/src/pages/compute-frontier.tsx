@@ -398,7 +398,7 @@ export default function ComputeFrontier() {
           {isLoading ? (
             <div className="p-4 space-y-2">{Array(10).fill(null).map((_, i) => <Skeleton key={i} className="h-7" />)}</div>
           ) : isError ? (
-            <div className="p-6 text-center text-xs text-red-400" data-testid="cf-error">Cluster dataset unavailable.</div>
+            <div className="p-6 text-center text-xs text-negative" data-testid="cf-error">Cluster dataset unavailable.</div>
           ) : filtered.length === 0 ? (
             <div className="p-6 text-center text-xs text-muted-foreground" data-testid="cf-empty">No clusters match the current filters.</div>
           ) : (

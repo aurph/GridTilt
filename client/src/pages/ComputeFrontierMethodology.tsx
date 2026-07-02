@@ -20,7 +20,7 @@ export default function ComputeFrontierMethodology() {
           <ArrowLeft className="h-3.5 w-3.5" /> Compute Frontier
         </Link>
         <div className="flex items-center gap-2">
-          <FileText className="h-5 w-5 text-[#F07800]" />
+          <FileText className="h-5 w-5 text-brand" />
           <h1 className="text-2xl font-semibold text-foreground tracking-tight">Compute Frontier methodology</h1>
         </div>
         <p className="text-sm text-muted-foreground mt-2 max-w-3xl">
@@ -44,7 +44,7 @@ export default function ComputeFrontierMethodology() {
           <p>
             Data integrity is the point of the project, so the data is explicit about what is known. Each cluster carries
             a list of the fields whose values are GridTilt estimates or announced targets that have not been built yet.
-            Those values render with an <span className="text-[#F0A500]">est.</span> tag. Everything else is taken from a
+            Those values render with an <span className="text-brand-2">est.</span> tag. Everything else is taken from a
             cited source, and every cluster lists its own source links.
           </p>
           <p>
@@ -70,7 +70,7 @@ export default function ComputeFrontierMethodology() {
             deal by its id, and the deal's contracted capacity is rolled up against the planned compute power. Firmness
             (signed versus proposed) is shown where the deal carries it. Most clusters run on the grid or on-site gas and
             carry no nuclear link, which the data states plainly rather than implying coverage that does not exist. Linked
-            deals point to the <Link href="/queue" className="text-[#F07800] hover:text-[#F0A500]">Backlog</Link> page.
+            deals point to the <Link href="/queue" className="text-brand hover:text-brand-2">Backlog</Link> page.
           </p>
         </Section>
 
@@ -91,8 +91,8 @@ export default function ComputeFrontierMethodology() {
           </ul>
         </Section>
 
-        <p className="text-[11px] text-muted-foreground/60">
-          Back to the <Link href="/compute-frontier" className="text-[#F07800] hover:text-[#F0A500]">Compute Frontier</Link>.
+        <p className="text-11 text-muted-foreground/60">
+          Back to the <Link href="/compute-frontier" className="text-brand hover:text-brand-2">Compute Frontier</Link>.
         </p>
       </div>
     </div>

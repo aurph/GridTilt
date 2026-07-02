@@ -92,7 +92,7 @@ function KeyboardShortcutsModal({ onClose }: { onClose: () => void }) {
       <div className="relative bg-card border border-card-border rounded-lg p-6 shadow-2xl w-full max-w-sm mx-4">
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-2">
-            <Keyboard className="h-4 w-4 text-[#F07800]" />
+            <Keyboard className="h-4 w-4 text-brand" />
             <h2 className="text-sm font-semibold text-foreground">Keyboard Shortcuts</h2>
           </div>
           <button
@@ -110,11 +110,11 @@ function KeyboardShortcutsModal({ onClose }: { onClose: () => void }) {
               <div className="flex items-center gap-1">
                 {sc.keys.map((k, j) => (
                   <span key={j} className="flex items-center gap-1">
-                    <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-semibold bg-muted border border-border rounded text-foreground">
+                    <kbd className="px-1.5 py-0.5 text-10 font-mono font-semibold bg-muted border border-border rounded text-foreground">
                       {k}
                     </kbd>
                     {j < sc.keys.length - 1 && (
-                      <span className="text-[10px] text-muted-foreground">then</span>
+                      <span className="text-10 text-muted-foreground">then</span>
                     )}
                   </span>
                 ))}
@@ -122,7 +122,7 @@ function KeyboardShortcutsModal({ onClose }: { onClose: () => void }) {
             </div>
           ))}
         </div>
-        <p className="text-[10px] text-muted-foreground/50 mt-4 pt-3 border-t border-border text-center">
+        <p className="text-10 text-muted-foreground/50 mt-4 pt-3 border-t border-border text-center">
           Press Esc or click outside to close
         </p>
       </div>

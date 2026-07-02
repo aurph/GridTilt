@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft, GitCompare } from "lucide-react";
+import { STATUS_COLORS } from "@/lib/tokens";
 
 interface Cluster {
   id: string;
@@ -25,11 +26,7 @@ interface Cluster {
   sources: string[];
 }
 
-const STATUS_COLOR: Record<string, string> = {
-  operational: "#F07800",
-  construction: "#F0A500",
-  announced: "#9a9a9a",
-};
+const STATUS_COLOR: Record<string, string> = STATUS_COLORS;
 
 function est(c: Cluster, field: string): string {
   return c.estimated.includes(field) ? " est." : "";
@@ -56,7 +53,7 @@ export default function ComputeFrontierCompare() {
 
   const rows: Array<{ label: string; render: (c: Cluster) => ReactNode }> = [
     { label: "Operator", render: (c) => c.operator },
-    { label: "Status", render: (c) => <Badge variant="outline" className="text-[9px] font-mono px-1.5 py-0" style={{ color: STATUS_COLOR[c.status], borderColor: `${STATUS_COLOR[c.status]}55` }}>{c.status}</Badge> },
+    { label: "Status", render: (c) => <Badge variant="outline" className="text-9 font-mono px-1.5 py-0" style={{ color: STATUS_COLOR[c.status], borderColor: `${STATUS_COLOR[c.status]}55` }}>{c.status}</Badge> },
     { label: "Location", render: (c) => `${c.location.city}, ${c.location.state}` },
     { label: "Grid region", render: (c) => c.gridRegion },
     { label: "Chip", render: (c) => c.chipType },
@@ -66,7 +63,7 @@ export default function ComputeFrontierCompare() {
     { label: "Energy", render: (c) => c.energySource },
     { label: "Workload", render: (c) => c.workload },
     { label: "Online", render: (c) => `${c.onlineDate}${est(c, "onlineDate")}` },
-    { label: "Nuclear deal", render: (c) => (c.linkedDeal ? <Link href="/queue" className="text-[#F07800] hover:text-[#F0A500]">{c.linkedDeal}</Link> : "none") },
+    { label: "Nuclear deal", render: (c) => (c.linkedDeal ? <Link href="/queue" className="text-brand hover:text-brand-2">{c.linkedDeal}</Link> : "none") },
   ];
 
   return (
@@ -76,10 +73,10 @@ export default function ComputeFrontierCompare() {
           <ArrowLeft className="h-3.5 w-3.5" /> Compute Frontier
         </Link>
         <div className="flex items-center gap-2">
-          <GitCompare className="h-5 w-5 text-[#F07800]" />
+          <GitCompare className="h-5 w-5 text-brand" />
           <h1 className="text-2xl font-semibold text-foreground tracking-tight">Compare clusters</h1>
         </div>
-        <p className="text-sm text-muted-foreground mt-2 max-w-3xl">Put two or three superclusters side by side. Values marked <span className="text-[#F0A500]">est.</span> are GridTilt estimates or announced targets.</p>
+        <p className="text-sm text-muted-foreground mt-2 max-w-3xl">Put two or three superclusters side by side. Values marked <span className="text-brand-2">est.</span> are GridTilt estimates or announced targets.</p>
       </div>
 
       <div className="flex-1 p-4 sm:p-6 space-y-4">
@@ -97,7 +94,7 @@ export default function ComputeFrontierCompare() {
                   <select
                     value={sel[i]}
                     onChange={(e) => setSel((s) => s.map((v, j) => (j === i ? e.target.value : v)))}
-                    className="bg-[#0E0E0C] border border-white/[0.08] rounded px-1.5 py-1 text-xs text-foreground focus:outline-none focus:border-[#F07800]/40 max-w-[220px]"
+                    className="bg-surface-base border border-subtle rounded px-1.5 py-1 text-xs text-foreground focus:outline-none focus:border-brand/40 max-w-[220px]"
                     data-testid={`cfc-select-${i}`}
                   >
                     <option value="">none</option>
@@ -114,11 +111,11 @@ export default function ComputeFrontierCompare() {
               <Card className="border-card-border overflow-x-auto" data-testid="cfc-table">
                 <table className="w-full text-xs">
                   <thead>
-                    <tr className="bg-[#0E0E0C] border-b border-border">
-                      <th className="text-left px-4 py-2 text-[10px] font-mono uppercase tracking-wider text-muted-foreground font-medium w-32">Field</th>
+                    <tr className="bg-surface-base border-b border-border">
+                      <th className="text-left px-4 py-2 text-10 font-mono uppercase tracking-wider text-muted-foreground font-medium w-32">Field</th>
                       {chosen.map((c) => (
                         <th key={c.id} className="text-left px-4 py-2 min-w-[180px]">
-                          <Link href={`/compute-frontier/${c.id}`} className="text-foreground hover:text-[#F07800] font-semibold no-underline">{c.name}</Link>
+                          <Link href={`/compute-frontier/${c.id}`} className="text-foreground hover:text-brand font-semibold no-underline">{c.name}</Link>
                         </th>
                       ))}
                     </tr>
@@ -126,7 +123,7 @@ export default function ComputeFrontierCompare() {
                   <tbody>
                     {rows.map((row) => (
                       <tr key={row.label} className="border-b border-border/30 last:border-0">
-                        <td className="px-4 py-2 text-[10px] font-mono uppercase tracking-wider text-muted-foreground/70 align-top">{row.label}</td>
+                        <td className="px-4 py-2 text-10 font-mono uppercase tracking-wider text-muted-foreground/70 align-top">{row.label}</td>
                         {chosen.map((c) => (
                           <td key={c.id} className="px-4 py-2 text-foreground align-top">{row.render(c)}</td>
                         ))}
@@ -139,9 +136,9 @@ export default function ComputeFrontierCompare() {
           </>
         )}
 
-        <p className="text-[11px] text-muted-foreground/60">
-          Back to the <Link href="/compute-frontier" className="text-[#F07800] hover:text-[#F0A500]">Compute Frontier</Link> or read the{" "}
-          <Link href="/compute-frontier/methodology" className="text-[#F07800] hover:text-[#F0A500]">methodology</Link>.
+        <p className="text-11 text-muted-foreground/60">
+          Back to the <Link href="/compute-frontier" className="text-brand hover:text-brand-2">Compute Frontier</Link> or read the{" "}
+          <Link href="/compute-frontier/methodology" className="text-brand hover:text-brand-2">methodology</Link>.
         </p>
       </div>
     </div>

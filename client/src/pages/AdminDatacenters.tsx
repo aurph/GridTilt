@@ -216,7 +216,7 @@ export default function AdminDatacenters() {
   const keyCard = (
       <Card className="p-4 space-y-3">
         <div className="flex items-center gap-2">
-          <KeyRound className="h-4 w-4 text-[#F07800]" />
+          <KeyRound className="h-4 w-4 text-brand" />
           <h2 className="text-sm font-semibold">Admin Key</h2>
         </div>
         <div className="flex gap-2 items-end">
@@ -237,14 +237,14 @@ export default function AdminDatacenters() {
             Save
           </Button>
         </div>
-        <p className="text-[11px] text-muted-foreground">
+        <p className="text-11 text-muted-foreground">
           Status:{" "}
           {adminKey ? (
-            <span className="text-green-500" data-testid="text-key-status">
+            <span className="text-positive" data-testid="text-key-status">
               Key loaded
             </span>
           ) : (
-            <span className="text-amber-500" data-testid="text-key-status">
+            <span className="text-warning" data-testid="text-key-status">
               No key set
             </span>
           )}
@@ -275,7 +275,7 @@ export default function AdminDatacenters() {
       <Card className="p-4">
         <form onSubmit={handleSubmit} className="space-y-4" data-testid="form-add-datacenter">
           <div className="flex items-center gap-2">
-            <Plus className="h-4 w-4 text-[#F07800]" />
+            <Plus className="h-4 w-4 text-brand" />
             <h2 className="text-sm font-semibold">Add New Site</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -449,7 +449,7 @@ export default function AdminDatacenters() {
                         }}
                         data-testid={`button-delete-${d.id}`}
                       >
-                        <Trash2 className="h-3.5 w-3.5 text-red-500" />
+                        <Trash2 className="h-3.5 w-3.5 text-negative" />
                       </Button>
                     </td>
                   </tr>
