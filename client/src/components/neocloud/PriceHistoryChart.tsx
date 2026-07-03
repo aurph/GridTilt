@@ -19,9 +19,8 @@ import { scaleUtc, scaleLog } from "@visx/scale";
 import { LinePath } from "@visx/shape";
 import { Group } from "@visx/group";
 import { localPoint } from "@visx/event";
-import { utcMonth, utcYear } from "d3-time";
 import { BORDER, INK, SURFACE } from "@/lib/tokens";
-import { chartTheme } from "@/lib/chart-theme";
+import { chartTheme, timeTicks } from "@/lib/chart-theme";
 import {
   ChartSeries,
   ClippedPoint,
@@ -94,23 +93,7 @@ export default function PriceHistoryChart(props: PriceHistoryChartProps) {
 
 type ClippedSeries = ChartSeries & { clipped: ClippedPoint[] };
 
-function xTicks(x0: number, x1: number, width: number): Date[] {
-  const spanDays = (x1 - x0) / 86_400_000;
-  const targetCount = Math.max(3, Math.min(10, Math.floor(width / 90)));
-  let interval;
-  if (spanDays > 900) {
-    const months = Math.ceil(spanDays / 30 / targetCount / 3) * 3;
-    interval = utcMonth.every(Math.max(3, months)) ?? utcYear.every(1);
-  } else if (spanDays > 240) {
-    interval = utcMonth.every(Math.max(1, Math.round(spanDays / 30 / targetCount)));
-  } else if (spanDays > 70) {
-    interval = utcMonth.every(1);
-  } else {
-    // short window: month boundaries + we accept sparse ticks
-    interval = utcMonth.every(1);
-  }
-  return (interval ?? utcMonth.every(1))!.range(new Date(x0), new Date(x1 + 1));
-}
+const xTicks = timeTicks;
 
 function spanDash(quality: "observed" | "interpolated"): { dash?: string; opacity: number } {
   return quality === "observed" ? { opacity: 1 } : { dash: "5 4", opacity: 0.55 };

@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   ComposedChart,
   Area,
@@ -25,7 +25,9 @@ import { EmailCapture, ScrollTriggeredBanner } from "@/components/EmailCapture";
 import {
   BRAND, CATEGORY_COLORS as TOKEN_CATEGORY_COLORS, CHART_CHROME, DATA_QUALITY, INK, SEMANTIC, SERIES,
 } from "@/lib/tokens";
-import { axisProps, gridProps, tooltipContentStyle, tooltipItemStyle, tooltipLabelStyle } from "@/lib/chart-theme";
+import { axisProps, gridProps, timeTicks, tooltipContentStyle, tooltipItemStyle, tooltipLabelStyle } from "@/lib/chart-theme";
+import { fmtDate } from "@/lib/gpu-series";
+import { heatColor, heatTextColor } from "@/lib/stack-transforms";
 
 import stackPreview from "@assets/previews/stack.svg";
 import supplyChainPreview from "@assets/previews/supply-chain.svg";
@@ -54,7 +56,10 @@ const electricityData = [
   { year: "2021", demand: 3930, dcDemand: 230, projected: null, dcProjected: null },
   { year: "2022", demand: 4050, dcDemand: 260, projected: null, dcProjected: null },
   { year: "2023", demand: 4195, dcDemand: 310, projected: null, dcProjected: null },
-  { year: "2024", demand: 4380, dcDemand: 420, projected: 4380, dcProjected: 420 },
+  { year: "2024", demand: 4380, dcDemand: 420, projected: null, dcProjected: null },
+  // 2025 carries both series: the single shared point where the projection
+  // line takes over from actuals (double-encoding 2024 too drew the amber
+  // projection on top of a full year of real data).
   { year: "2025", demand: 4490, dcDemand: 576, projected: 4490, dcProjected: 576 },
   { year: "2026", demand: null, dcDemand: null, projected: 4890, dcProjected: 800 },
   { year: "2027", demand: null, dcDemand: null, projected: 5180, dcProjected: 1050 },
@@ -217,10 +222,10 @@ function KpiCard({
       value: "text-brand-2",
     },
     red: {
-      icon: "text-orange-400",
-      bg: "bg-orange-500/10",
-      border: "border-orange-500/25",
-      value: "text-orange-400",
+      icon: "text-negative",
+      bg: "bg-negative-deep/10",
+      border: "border-negative-deep/25",
+      value: "text-negative",
     },
   };
   const c = colorMap[color];
@@ -354,6 +359,11 @@ const SECTOR_LABEL_SHORT: Record<string, string> = {
   utilities: "Utilities",
   dataCenters: "Data Ctrs",
   construction: "Construct",
+  rawMaterialsMining: "Mining",
+  rawMaterialsNatGas: "Nat Gas",
+  renewableGeneration: "Renewables",
+  transmissionGrid: "Grid HW",
+  cryptoAIDC: "Crypto DC",
   etfsBenchmarks: "ETFs",
 };
 
@@ -412,28 +422,29 @@ function TopMoversSection({ topMovers, pulse, isLoading, isError }: { topMovers:
               );
             })}
       </div>
-      {/* Sector averages, absorbed from the old Sector Pulse card: same
-          "what moved today" fact, one card instead of two. */}
+      {/* Sector averages (Lake 4C): uniform chip anatomy in an aligned grid,
+          color purely SEMANTIC - green/red intensity by magnitude on the same
+          diverging ramp as The Stack heatmap. Sector identity comes from the
+          label, not a hue. */}
       {pulse.length > 0 && (
-        <div className="mt-4 pt-3 border-t border-border flex flex-wrap items-center gap-1.5" data-testid="sector-chips">
-          <span className="text-10 font-mono uppercase tracking-wider text-muted-foreground/60 mr-0.5">sectors</span>
-          {[...pulse].sort((a, b) => b.avgChange - a.avgChange).map((p) => {
-            const isUp = p.avgChange >= 0;
-            const sc = SECTOR_COLORS[p.sector] ?? INK.muted;
-            return (
+        <div className="mt-4 pt-3 border-t border-border" data-testid="sector-chips">
+          <span className="text-10 font-mono uppercase tracking-wider text-muted-foreground/60">sectors · avg % today</span>
+          <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-1.5 mt-1.5">
+            {[...pulse].sort((a, b) => b.avgChange - a.avgChange).map((p) => (
               <span
                 key={p.sector}
-                className="font-mono text-10 px-1.5 py-0.5 rounded border"
-                style={{ borderColor: `${sc}30`, backgroundColor: `${sc}0d` }}
+                className="flex items-center justify-between gap-1 font-mono text-10 px-1.5 py-1 rounded-sm min-w-0"
+                style={{ background: heatColor(p.avgChange) }}
                 data-testid={`sector-chip-${p.sector}`}
+                title={`${p.label} average ${p.avgChange >= 0 ? "+" : ""}${p.avgChange.toFixed(2)}% today`}
               >
-                <span className="text-muted-foreground">{p.label}</span>{" "}
-                <span className={isUp ? "text-positive" : "text-negative"}>
-                  {isUp ? "+" : ""}{p.avgChange.toFixed(2)}%
+                <span className="truncate" style={{ color: heatTextColor(p.avgChange), opacity: 0.9 }}>{p.label}</span>
+                <span className="tabular-nums font-semibold" style={{ color: heatTextColor(p.avgChange) }}>
+                  {p.avgChange >= 0 ? "+" : ""}{p.avgChange.toFixed(2)}%
                 </span>
               </span>
-            );
-          })}
+            ))}
+          </div>
         </div>
       )}
     </Card>
@@ -458,21 +469,51 @@ function gaugeTickLabel(date: string): string {
 // inside Top Movers). Plots the daily gauge history that the validation
 // study reconstructed and the server now records: one consistent series,
 // our own data, time depth instead of a second "what moved today" list.
+// Gauge baselines mirror server/indices.ts (AI_INDEX.BASELINE, GRID_STRESS.BASELINE).
+const GAUGE_BASELINES = { ai: 72, gs: 68 } as const;
+
+type GaugeRange = "3M" | "6M" | "1Y" | "ALL";
+const GAUGE_RANGES: GaugeRange[] = ["3M", "6M", "1Y", "ALL"];
+
+function gaugeRangeStart(range: GaugeRange, now: number): number | null {
+  const d = new Date(now);
+  if (range === "3M") return Date.UTC(d.getUTCFullYear(), d.getUTCMonth() - 3, d.getUTCDate());
+  if (range === "6M") return Date.UTC(d.getUTCFullYear(), d.getUTCMonth() - 6, d.getUTCDate());
+  if (range === "1Y") return Date.UTC(d.getUTCFullYear() - 1, d.getUTCMonth(), d.getUTCDate());
+  return null;
+}
+
 function GaugeHistoryCard({ live }: { live: { npi: number; ai: number; gs: number } | null }) {
   const { data, isLoading } = useQuery<{ days: IndexHistoryDay[] }>({
     queryKey: ["/api/index-history"],
     refetchInterval: 30 * 60_000,
   });
-  const series = (data?.days ?? [])
-    .filter((d) => d.npiEquityLegs != null || d.aiDemand != null)
-    .map((d) => ({ date: d.date, npi: d.npiEquityLegs ?? null, ai: d.aiDemand, gs: d.gridStress }));
+  const [range, setRange] = useState<GaugeRange>("ALL");
+
+  // True time axis: date strings -> UTC ms so gaps in the recorder render as
+  // gaps in time, not as one category step.
+  const series = useMemo(
+    () =>
+      (data?.days ?? [])
+        .filter((d) => d.npiEquityLegs != null || d.aiDemand != null)
+        .map((d) => ({ t: Date.parse(`${d.date}T00:00:00Z`), npi: d.npiEquityLegs ?? null, ai: d.aiDemand, gs: d.gridStress }))
+        .filter((d) => Number.isFinite(d.t)),
+    [data],
+  );
+  const now = series.length ? series[series.length - 1].t : Date.now();
+  const start = gaugeRangeStart(range, now);
+  const windowed = useMemo(() => (start === null ? series : series.filter((d) => d.t >= start)), [series, start]);
+  const ticks = useMemo(() => {
+    if (windowed.length < 2) return [];
+    return timeTicks(windowed[0].t, windowed[windowed.length - 1].t, 560).map((d) => +d);
+  }, [windowed]);
 
   return (
     // flex-1: fills the left column so it ends flush with the right column.
     <Card className="p-5 border-card-border flex-1 flex flex-col" data-testid="gauge-history">
       <div className="flex items-center gap-2 mb-1">
         <Activity className="h-3.5 w-3.5 text-brand-2" />
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Gauges Since Jan 2024</h2>
+        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">NPI Gauge History</h2>
         <UITooltip>
           <TooltipTrigger>
             <Info className="h-3.5 w-3.5 text-muted-foreground" />
@@ -482,30 +523,50 @@ function GaugeHistoryCard({ live }: { live: { npi: number; ai: number; gs: numbe
               Daily series reconstructed from public prices with the shipped formulas, then recorded live going
               forward (one methodology end to end; reproduce with npm run backtest:indices). The NPI line is the
               equity legs with uranium and policy at par; the headline number is the full live NPI including both.
-              Sparklines show the two sentiment gauges oscillating around their fixed baselines.
+              Sparklines show the two sentiment gauges against their fixed formula baselines (dashed).
             </p>
           </TooltipContent>
         </UITooltip>
-        {live && (
-          <span className="ml-auto font-mono text-sm font-bold text-brand-2" data-testid="gauge-history-npi-live">
-            NPI {live.npi.toFixed(1)}
-          </span>
-        )}
+        <div className="ml-auto flex items-center gap-1.5">
+          {GAUGE_RANGES.map((r) => (
+            <button
+              key={r}
+              onClick={() => setRange(r)}
+              className={`px-2 py-0.5 rounded border text-10 font-mono transition-colors ${
+                range === r ? "border-brand/60 text-brand bg-brand/10" : "border-subtle text-muted-foreground hover:text-foreground"
+              }`}
+              data-testid={`gauge-range-${r}`}
+            >
+              {r}
+            </button>
+          ))}
+          {live && (
+            <span className="font-mono text-sm font-bold text-brand-2 ml-2" data-testid="gauge-history-npi-live">
+              NPI {live.npi.toFixed(1)}
+            </span>
+          )}
+        </div>
       </div>
       <p className="text-10 font-mono text-muted-foreground/60 mb-3">
-        line: NPI equity legs · headline: full live NPI · /api/index-history
+        line: NPI equity legs · Jan 1 2024 = 100 · headline: full live NPI
       </p>
 
-      {isLoading || series.length === 0 ? (
-        <div className="flex-1 flex flex-col justify-center gap-2 min-h-[180px]">
-          <Skeleton className="h-3 w-1/3" />
-          <Skeleton className="h-32 w-full" />
-        </div>
+      {isLoading || windowed.length === 0 ? (
+        isLoading ? (
+          <div className="flex-1 flex flex-col justify-center gap-2 min-h-[180px]">
+            <Skeleton className="h-3 w-1/3" />
+            <Skeleton className="h-32 w-full" />
+          </div>
+        ) : (
+          <div className="flex-1 min-h-[180px] flex items-center justify-center text-xs text-muted-foreground">
+            No recorded days in this window.
+          </div>
+        )
       ) : (
         <>
           <div className="flex-1 min-h-[180px]" data-testid="gauge-history-chart">
             <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={series} margin={{ top: 6, right: 8, bottom: 0, left: 0 }}>
+              <ComposedChart data={windowed} margin={{ top: 6, right: 8, bottom: 0, left: 0 }}>
                 <defs>
                   <linearGradient id="npiHistGrad" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor={BRAND.primary} stopOpacity={0.28} />
@@ -514,9 +575,12 @@ function GaugeHistoryCard({ live }: { live: { npi: number; ai: number; gs: numbe
                 </defs>
                 <XAxis
                   {...axisProps}
-                  dataKey="date"
-                  tickFormatter={gaugeTickLabel}
-                  minTickGap={48}
+                  dataKey="t"
+                  type="number"
+                  scale="time"
+                  domain={["dataMin", "dataMax"]}
+                  ticks={ticks}
+                  tickFormatter={(t: number) => fmtDate(t, false)}
                 />
                 <YAxis
                   {...axisProps}
@@ -528,18 +592,14 @@ function GaugeHistoryCard({ live }: { live: { npi: number; ai: number; gs: numbe
                   contentStyle={tooltipContentStyle}
                   labelStyle={tooltipLabelStyle}
                   itemStyle={tooltipItemStyle}
+                  labelFormatter={(t: number) => fmtDate(t, true)}
                   formatter={(value, name) =>
                     value == null ? ["n/a", name] : [Number(value).toFixed(1), name]
                   }
                 />
-                <ReferenceLine
-                  y={100}
-                  stroke={CHART_CHROME.refLine}
-                  strokeDasharray="4 3"
-                  label={{ value: "Jan 1 2024 = 100", position: "insideBottomLeft", fill: INK.muted, fontSize: 9 }}
-                />
+                <ReferenceLine y={100} stroke={CHART_CHROME.refLine} strokeDasharray="4 3" />
                 <Area
-                  type="monotone"
+                  type="linear"
                   dataKey="npi"
                   name="NPI (equity legs)"
                   stroke={BRAND.primary}
@@ -558,31 +618,45 @@ function GaugeHistoryCard({ live }: { live: { npi: number; ai: number; gs: numbe
                 { key: "ai", label: "AI Demand", color: BRAND.secondary, value: live?.ai ?? null },
                 { key: "gs", label: "Grid Stress", color: SEMANTIC.negativeDeep, value: live?.gs ?? null },
               ] as const
-            ).map((g) => (
-              <div key={g.key} data-testid={`gauge-spark-${g.key}`}>
-                <div className="flex items-baseline justify-between mb-1">
-                  <span className="text-10 uppercase tracking-wider text-muted-foreground">{g.label}</span>
-                  <span className="font-mono text-xs font-semibold text-foreground">
-                    {g.value != null ? g.value.toFixed(1) : "–"}
-                  </span>
+            ).map((g) => {
+              // Honest domain: the window's own values UNION the formula
+              // baseline, padded - so distance from baseline is real, and a
+              // one-point wiggle can't fill the full height.
+              const vals = windowed.map((d) => d[g.key]).filter((v): v is number => v != null);
+              const base = GAUGE_BASELINES[g.key];
+              const lo = Math.min(...vals, base);
+              const hi = Math.max(...vals, base);
+              const pad = Math.max((hi - lo) * 0.15, 1);
+              return (
+                <div key={g.key} data-testid={`gauge-spark-${g.key}`}>
+                  <div className="flex items-baseline justify-between mb-1">
+                    <span className="text-10 uppercase tracking-wider text-muted-foreground">{g.label}</span>
+                    <span className="font-mono text-xs font-semibold text-foreground">
+                      {g.value != null ? g.value.toFixed(1) : "–"}
+                    </span>
+                  </div>
+                  <div className="h-9">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <ComposedChart data={windowed} margin={{ top: 2, right: 0, bottom: 2, left: 0 }}>
+                        <XAxis dataKey="t" type="number" scale="time" domain={["dataMin", "dataMax"]} hide />
+                        <YAxis domain={[lo - pad, hi + pad]} hide />
+                        <ReferenceLine y={base} stroke={CHART_CHROME.refLine} strokeDasharray="3 3" />
+                        <Line
+                          type="linear"
+                          dataKey={g.key}
+                          stroke={g.color}
+                          strokeWidth={1}
+                          dot={false}
+                          connectNulls
+                          isAnimationActive={false}
+                        />
+                      </ComposedChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <p className="text-8 font-mono text-muted-foreground/50 mt-0.5">baseline {base}</p>
                 </div>
-                <div className="h-9">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <ComposedChart data={series} margin={{ top: 2, right: 0, bottom: 2, left: 0 }}>
-                      <Line
-                        type="monotone"
-                        dataKey={g.key}
-                        stroke={g.color}
-                        strokeWidth={1}
-                        dot={false}
-                        connectNulls
-                        isAnimationActive={false}
-                      />
-                    </ComposedChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </>
       )}
@@ -994,11 +1068,10 @@ function ModuleGrid() {
 }
 
 export default function TiltOverview() {
-  const { data: kpiData, isLoading, isError: kpiError } = useQuery<KpiData>({
+  const { data: kpiData, isLoading, isError: kpiError, dataUpdatedAt: kpiUpdatedAt } = useQuery<KpiData>({
     queryKey: ["/api/kpis"],
     refetchInterval: 900000,
   });
-
 
   const { data: topMovers, isLoading: topMoversLoading, isError: topMoversError } = useQuery<TopMover[]>({
     queryKey: ["/api/top-movers"],
@@ -1010,22 +1083,46 @@ export default function TiltOverview() {
     refetchInterval: 900000,
   });
 
-  const { dataUpdatedAt: kpiUpdatedAt } = useQuery<KpiData>({ queryKey: ["/api/kpis"] });
+  // Shares the cache with GaugeHistoryCard (same key) - powers the header's
+  // NPI change, labeled by its TRUE span: the recorder has gaps, and calling
+  // a 22-day move "1D" would lie.
+  const { data: historyData } = useQuery<{ days: IndexHistoryDay[] }>({
+    queryKey: ["/api/index-history"],
+    refetchInterval: 30 * 60_000,
+  });
+  const npiDelta = useMemo(() => {
+    const days = (historyData?.days ?? []).filter((d) => d.npi != null);
+    if (days.length < 2 || !kpiData) return null;
+    const prev = days[days.length - 2];
+    const latest = days[days.length - 1];
+    const prevT = Date.parse(`${prev.date}T00:00:00Z`);
+    const latestT = Date.parse(`${latest.date}T00:00:00Z`);
+    const gapDays = Math.round((latestT - prevT) / 86_400_000);
+    const pct = ((latest.npi! - prev.npi!) / prev.npi!) * 100;
+    return { pct, label: gapDays <= 4 ? "1D" : `vs ${fmtDate(prevT, true)}` };
+  }, [historyData, kpiData]);
+
   const c = kpiData?.constituents;
 
   return (
     <div className="flex flex-col h-full overflow-y-auto">
-      <div className="grid-bg border-b border-border px-4 sm:px-6 py-6 sm:py-8">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="max-w-2xl">
-            <h1 className="text-2xl sm:text-3xl font-semibold text-foreground tracking-tight mb-1.5">
-              Grid information, <span className="italic text-brand">tilted</span> in your favor
-            </h1>
-            <p className="text-muted-foreground text-xs sm:text-sm leading-relaxed">
-              Live equities, infrastructure, and power data across 60+ tickers tracking the AI power economy.
-            </p>
-          </div>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+      {/* Compact header strip - data starts above the fold (Lake 4A) */}
+      <div className="border-b border-border px-4 sm:px-6 py-3">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+          <h1 className="text-sm font-semibold text-foreground tracking-tight">Tilt Overview</h1>
+          <span className="hidden sm:block h-4 w-px bg-border" />
+          {kpiData && (
+            <span className="flex items-baseline gap-2 font-mono" data-testid="header-npi">
+              <span className="text-10 uppercase tracking-wider text-muted-foreground">NPI</span>
+              <span className="text-sm font-bold text-brand-2 tabular-nums">{kpiData.npiValue.toFixed(1)}</span>
+              {npiDelta && (
+                <span className={`text-11 tabular-nums ${npiDelta.pct >= 0 ? "text-positive" : "text-negative"}`}>
+                  {npiDelta.pct >= 0 ? "+" : ""}{npiDelta.pct.toFixed(1)}% {npiDelta.label}
+                </span>
+              )}
+            </span>
+          )}
+          <div className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
             <div className="h-1.5 w-1.5 rounded-full bg-brand-2" />
             <span className="font-mono text-11 tracking-wide" data-testid="last-updated">Updated {relativeTime(kpiUpdatedAt)}</span>
           </div>

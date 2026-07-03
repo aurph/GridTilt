@@ -5,6 +5,7 @@
  * style after this file exists.
  */
 import type { CSSProperties } from "react";
+import { utcMonth, utcYear } from "d3-time";
 import { BORDER, CHART_CHROME, FONT, INK, SURFACE } from "./tokens";
 
 export const chartTheme = {
@@ -97,3 +98,23 @@ export const tooltipCursor = {
   strokeWidth: chartTheme.crosshair.strokeWidth,
   strokeDasharray: chartTheme.crosshair.strokeDasharray,
 };
+
+/**
+ * Clean month/quarter boundary ticks for a true time axis, densifying as the
+ * range shortens. Returns UTC Dates; feed `+d` values to Recharts `ticks` or
+ * map over them in an SVG chart.
+ */
+export function timeTicks(x0: number, x1: number, width: number): Date[] {
+  const spanDays = (x1 - x0) / 86_400_000;
+  const targetCount = Math.max(3, Math.min(10, Math.floor(width / 90)));
+  let interval;
+  if (spanDays > 900) {
+    const months = Math.ceil(spanDays / 30 / targetCount / 3) * 3;
+    interval = utcMonth.every(Math.max(3, months)) ?? utcYear.every(1);
+  } else if (spanDays > 240) {
+    interval = utcMonth.every(Math.max(1, Math.round(spanDays / 30 / targetCount)));
+  } else {
+    interval = utcMonth.every(1);
+  }
+  return (interval ?? utcMonth.every(1))!.range(new Date(x0), new Date(x1 + 1));
+}
