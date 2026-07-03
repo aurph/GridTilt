@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Calendar, ArrowRight } from "lucide-react";
+import BriefPage from "@/pages/brief";
 
 interface BlogArticle {
   slug: string;
@@ -33,6 +34,14 @@ export default function BlogIndex() {
             Research and analysis on the AI power infrastructure thesis. Data-driven, no hype.
           </p>
         </div>
+
+        {/* Today's read: the daily brief, self-contained (own loading/error state),
+            so it can never blank the post list below. */}
+        <BriefPage embedded />
+
+        <h2 className="text-xs font-mono uppercase tracking-wider text-muted-foreground pt-2" data-testid="blog-archive-heading">
+          Long-form posts
+        </h2>
 
         {isLoading ? (
           <div className="space-y-4">
