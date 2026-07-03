@@ -30,7 +30,7 @@ import { recordDailyIndexValues, readIndexHistory } from "./index-history";
 import { getElectricityOutputMonthly, getHourlyDemandUS48 } from "./physical";
 import { computeClusterMetrics, type ClusterLite } from "./clusters";
 import { computeGpuIndex } from "./gpu-index";
-import { hasTodaySnapshot, latestLiveByModel, recordDailyLivePrices, recordedByModel } from "./gpu-history";
+import { hasTodayLiveSnapshot, latestLiveByModel, recordDailyLivePrices, recordedByModel } from "./gpu-history";
 import { fetchLivePrices } from "./gpu-live";
 import { computeDealMetrics, type DealProject } from "./deals";
 import { composeBrief, renderBriefText, type BriefInput } from "./brief";
@@ -3822,7 +3822,7 @@ ${rssItems}
 
       // First request of the Eastern day kicks off the live sweep in the
       // background; the response never waits on provider APIs.
-      if (!hasTodaySnapshot() && !gpuLiveSweepInFlight) {
+      if (!hasTodayLiveSnapshot() && !gpuLiveSweepInFlight) {
         gpuLiveSweepInFlight = true;
         fetchLivePrices(models.map((m: any) => ({ model: m.model, currentUsdPerHr: m.currentUsdPerHr })))
           .then((live) => {

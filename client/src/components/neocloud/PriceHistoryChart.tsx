@@ -52,7 +52,7 @@ export interface PriceHistoryChartProps {
 const MARGIN = { top: 14, right: 118, bottom: 26, left: 44 };
 const GRID_MARGIN = { top: 22, right: 12, bottom: 20, left: 38 };
 const OVERLAY_HEIGHT = 380;
-const PANEL_HEIGHT = 150;
+const PANEL_HEIGHT = 168;
 const LABEL_GAP = 15;
 
 interface TooltipState {
@@ -310,6 +310,23 @@ function Overlay({
                     strokeWidth={p.kind === "anchor" ? 0 : 1.4}
                   />
                 ))}
+                {/* sparse-series value labels (only when the view is uncrowded) */}
+                {clipped.length <= 3 &&
+                  s.clipped.filter((p) => !p.edge).length <= 4 &&
+                  s.clipped.filter((p) => !p.edge).map((p, i) => (
+                    <text
+                      key={`vlbl-${p.t}`}
+                      x={Math.min(Math.max(xScale(p.t), 16), innerW - 16)}
+                      y={yScale(p.price) + (i % 2 === 0 ? -9 : 16)}
+                      textAnchor="middle"
+                      fill={s.color}
+                      fontSize={9}
+                      fontFamily={chartTheme.axis.fontFamily}
+                      pointerEvents="none"
+                    >
+                      ${p.price >= 10 ? p.price.toFixed(0) : p.price.toFixed(2)}
+                    </text>
+                  ))}
                 {/* launch marker: ring on the series' true first point when in window */}
                 {s.launch && s.clipped.some((p) => !p.edge && p.t === s.launch!.t) && (
                   <circle cx={xScale(s.launch.t)} cy={yScale(s.launch.price)} r={6} fill="none" stroke={s.color} strokeWidth={1} opacity={0.7}>
@@ -444,6 +461,7 @@ function SmallMultiples({
   hovered,
   onHover,
   estimatedModels,
+  ranges,
 }: PriceHistoryChartProps & { clipped: ClippedSeries[]; start: number | null }) {
   const cols = width >= 1100 ? 5 : width >= 760 ? 4 : width >= 560 ? 3 : 2;
   const panelW = Math.floor(width / cols);
@@ -463,6 +481,7 @@ function SmallMultiples({
           dim={hovered !== null && hovered !== s.model}
           onHover={onHover}
           est={estimatedModels.has(s.model)}
+          range={ranges[s.model] ?? null}
         />
       ))}
     </div>
@@ -478,6 +497,7 @@ function Panel({
   dim,
   onHover,
   est,
+  range,
 }: {
   series: ClippedSeries;
   x0: number;
@@ -487,16 +507,27 @@ function Panel({
   dim: boolean;
   onHover: (m: string | null) => void;
   est: boolean;
+  range: { low: number; high: number } | null;
 }) {
   const innerW = Math.max(20, width - GRID_MARGIN.left - GRID_MARGIN.right);
   const innerH = height - GRID_MARGIN.top - GRID_MARGIN.bottom;
   const xScale = scaleUtc({ domain: [x0, x1], range: [0, innerW] });
-  const yDomain = logDomain(s.clipped.map((p) => p.price));
+  // Domain includes the observed marketplace range so the band gives every
+  // panel real spread context even when the line itself is sparse.
+  const domainVals = [
+    ...s.clipped.map((p) => p.price),
+    ...(range && range.low > 0 && range.high > 0 ? [range.low, range.high] : []),
+  ];
+  const yDomain = logDomain(domainVals);
   const yScale = scaleLog({ domain: yDomain, range: [innerH, 0] });
   const yTicks = logTicks125(yDomain[0], yDomain[1]).filter((_, i, a) => a.length <= 3 || i % 2 === 0);
   const ticks = xTicks(x0, x1, innerW).filter((_, i, a) => a.length <= 3 || i % Math.ceil(a.length / 3) === 0);
   const spans = spansFromClipped(s.clipped);
   const last = s.clipped[s.clipped.length - 1];
+  const realPoints = s.clipped.filter((p) => !p.edge);
+  // Sparse series annotate every point - the panel reads as data, not gaps.
+  const labelPoints = realPoints.length <= 5 ? realPoints : [];
+  const isLive = !est && last.kind === "recorded";
 
   return (
     <div
@@ -510,6 +541,7 @@ function Panel({
         <span className="font-semibold" style={{ color: s.color }}>{s.model}</span>
         <span className="text-ink-secondary tabular-nums">${last.price.toFixed(2)}</span>
         {est && <span className="text-8 text-estimate">est.</span>}
+        {isLive && <span className="text-8 text-positive" title="latest point observed live from provider APIs">live</span>}
       </div>
       <svg width={width} height={height} role="img" aria-label={`${s.model} price history`}>
         <Group left={GRID_MARGIN.left} top={GRID_MARGIN.top}>
@@ -527,6 +559,22 @@ function Panel({
             </text>
           ))}
           <line x1={0} x2={innerW} y1={innerH} y2={innerH} stroke={chartTheme.axis.stroke} />
+          {/* observed marketplace range: real spread context behind the line */}
+          {range && range.low > 0 && range.high > 0 && (
+            <g pointerEvents="none">
+              <rect
+                x={0}
+                width={innerW}
+                y={yScale(range.high)}
+                height={Math.max(0, yScale(range.low) - yScale(range.high))}
+                fill={s.color}
+                opacity={0.07}
+              />
+              <text x={innerW - 2} y={yScale(range.high) + 7} textAnchor="end" fill={s.color} opacity={0.55} fontSize={7} fontFamily={chartTheme.axis.fontFamily}>
+                mkt ${range.low}–${range.high}
+              </text>
+            </g>
+          )}
           {spans.map((span, i) => {
             const st = spanDash(span.quality);
             return (
@@ -543,7 +591,7 @@ function Panel({
               />
             );
           })}
-          {s.clipped.filter((p) => !p.edge).map((p) => (
+          {realPoints.map((p) => (
             <circle
               key={p.t}
               cx={xScale(p.t)}
@@ -553,6 +601,21 @@ function Panel({
               stroke={s.color}
               strokeWidth={p.kind === "anchor" ? 0 : 1.2}
             />
+          ))}
+          {/* sparse-series value labels: every real point annotated */}
+          {labelPoints.map((p, i) => (
+            <text
+              key={`lbl-${p.t}`}
+              x={Math.min(Math.max(xScale(p.t), 12), innerW - 12)}
+              y={yScale(p.price) + (i % 2 === 0 ? -6 : 12)}
+              textAnchor="middle"
+              fill={INK.secondary}
+              fontSize={8}
+              fontFamily={chartTheme.axis.fontFamily}
+              pointerEvents="none"
+            >
+              ${p.price >= 10 ? p.price.toFixed(0) : p.price.toFixed(2)}
+            </text>
           ))}
         </Group>
       </svg>

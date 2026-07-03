@@ -47,10 +47,11 @@ export function readGpuHistory(): Snapshot[] {
   return [];
 }
 
-/** Has today (US-Eastern) already been recorded? */
-export function hasTodaySnapshot(): boolean {
+/** Has today (US-Eastern) already been recorded from LIVE sources? A legacy
+ * static row does not count - the sweep should upgrade it. */
+export function hasTodayLiveSnapshot(): boolean {
   const today = easternDateStr();
-  return readGpuHistory().some((s) => s.date === today);
+  return readGpuHistory().some((s) => s.date === today && s.source === "live");
 }
 
 /**
@@ -63,9 +64,12 @@ export function recordDailyLivePrices(live: Record<string, LiveModelPrice>): voi
   try {
     const models = Object.keys(live);
     if (models.length === 0) return;
-    const hist = readGpuHistory();
+    let hist = readGpuHistory();
     const today = easternDateStr();
-    if (hist.some((s) => s.date === today)) return;
+    if (hist.some((s) => s.date === today && s.source === "live")) return;
+    // A same-day legacy row (static curated copy) is superseded by real
+    // observations, never kept alongside them.
+    hist = hist.filter((s) => !(s.date === today && s.source !== "live"));
     const prices: Record<string, number> = {};
     const meta: Record<string, SnapshotMeta> = {};
     for (const m of models) {

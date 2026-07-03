@@ -24,7 +24,7 @@ import { Zap, TrendingUp, Activity, AlertTriangle, Info, ArrowUp, ArrowDown, Cal
 import { EmailCapture, ScrollTriggeredBanner } from "@/components/EmailCapture";
 import { AsOf, ErrorState, SrChartTable } from "@/components/Freshness";
 import {
-  BRAND, CATEGORY_COLORS as TOKEN_CATEGORY_COLORS, CHART_CHROME, DATA_QUALITY, INK, SEMANTIC, SERIES,
+  BRAND, CATEGORY_COLORS as TOKEN_CATEGORY_COLORS, CHART_CHROME, DATA_QUALITY, FONT, INK, SEMANTIC, SERIES,
 } from "@/lib/tokens";
 import { axisProps, gridProps, timeTicks, tooltipContentStyle, tooltipItemStyle, tooltipLabelStyle } from "@/lib/chart-theme";
 import { RTO_CONFIG, RTO_SOURCE_NOTE } from "@/data/rto-config";
@@ -345,6 +345,53 @@ function RealGaugeCard({
 }
 
 /**
+ * Chart end-value label: annotates the LAST point of a series with its value
+ * ("18.8 GW online" / "33.4 GW committed") so the chart's two headline
+ * numbers read without hovering.
+ */
+function EndLabel({
+  x,
+  y,
+  index,
+  data,
+  field,
+  color,
+}: {
+  x?: number;
+  y?: number;
+  index?: number;
+  data: Array<{ online: number | null; pipeline: number | null }>;
+  field: "online" | "pipeline";
+  color: string;
+}) {
+  if (x === undefined || y === undefined || index === undefined) return null;
+  // last index carrying a value for this series
+  let lastIdx = -1;
+  for (let i = data.length - 1; i >= 0; i--) {
+    if (data[i][field] !== null) {
+      lastIdx = i;
+      break;
+    }
+  }
+  if (index !== lastIdx) return null;
+  const v = data[lastIdx][field];
+  if (v === null) return null;
+  return (
+    <text
+      x={x}
+      y={y - 8}
+      textAnchor="end"
+      fill={color}
+      fontSize={10}
+      fontFamily={FONT.mono}
+      fontWeight={600}
+    >
+      {fmtGW(v)} {field === "online" ? "online" : "committed"}
+    </text>
+  );
+}
+
+/**
  * Real buildout history: cumulative tracked capacity from facility open
  * dates. Solid = operational (observed history), dashed = construction
  * pipeline by planned open date (committed, not yet online).
@@ -459,6 +506,7 @@ function BuildoutHistoryCard({
                   fill="url(#buildoutGrad)"
                   dot={false}
                   connectNulls
+                  label={(props: any) => <EndLabel {...props} data={series} field="online" color={BRAND.primary} />}
                 />
                 <Line
                   type="stepAfter"
@@ -471,6 +519,7 @@ function BuildoutHistoryCard({
                   dot={false}
                   connectNulls
                   isAnimationActive={false}
+                  label={(props: any) => <EndLabel {...props} data={series} field="pipeline" color={BRAND.secondary} />}
                 />
               </ComposedChart>
             </ResponsiveContainer>

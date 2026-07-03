@@ -1,32 +1,73 @@
 [
   {
-    "date": "2026-07-02",
-    "prices": {
-      "GB200": 13,
-      "B300": 8,
-      "B200": 6.11,
-      "H200": 3.85,
-      "GH200": 2.25,
-      "H100": 2.79,
-      "MI355X": 2.85,
-      "MI325X": 2.1,
-      "MI300X": 2.1,
-      "A100": 1.65
-    }
-  },
-  {
     "date": "2026-07-03",
     "prices": {
-      "GB200": 13,
-      "B300": 8,
-      "B200": 6.11,
-      "H200": 3.85,
-      "GH200": 2.25,
-      "H100": 2.79,
-      "MI355X": 2.85,
-      "MI325X": 2.1,
-      "MI300X": 2.1,
-      "A100": 1.65
-    }
+      "B300": 7.17,
+      "B200": 5.89,
+      "H200": 3.59,
+      "H100": 2.69,
+      "MI300X": 2.19,
+      "A100": 1.39
+    },
+    "meta": {
+      "B300": {
+        "low": 6.94,
+        "high": 7.39,
+        "sources": [
+          "runpod-secure",
+          "runpod-community"
+        ],
+        "n": 2
+      },
+      "B200": {
+        "low": 5.29,
+        "high": 5.98,
+        "sources": [
+          "runpod-secure",
+          "runpod-community",
+          "vast"
+        ],
+        "n": 3
+      },
+      "H200": {
+        "low": 3.52,
+        "high": 4.39,
+        "sources": [
+          "runpod-secure",
+          "runpod-community",
+          "vast"
+        ],
+        "n": 3
+      },
+      "H100": {
+        "low": 2.18,
+        "high": 3.29,
+        "sources": [
+          "runpod-secure",
+          "runpod-community",
+          "vast"
+        ],
+        "n": 3
+      },
+      "MI300X": {
+        "low": 2.19,
+        "high": 2.19,
+        "sources": [
+          "runpod-secure"
+        ],
+        "n": 1
+      },
+      "A100": {
+        "low": 0.95,
+        "high": 1.49,
+        "sources": [
+          "runpod-secure",
+          "runpod-community",
+          "vast"
+        ],
+        "n": 3
+      }
+    },
+    "source": "live"
   }
 ]
