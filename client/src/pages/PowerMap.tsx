@@ -4,14 +4,20 @@ import { Link } from "wouter";
 import { MapContainer, TileLayer, ZoomControl, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import "leaflet.markercluster";
+import "leaflet.markercluster/dist/MarkerCluster.css";
+import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
-  X, Zap, MapPin, Building2, Calendar, Activity, Network,
-  SlidersHorizontal, ChevronDown,
+  Tooltip as UITooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  X, Zap, Calendar, Network, SlidersHorizontal, ChevronDown, Info,
 } from "lucide-react";
 import {
-  BRAND, BORDER, CATEGORY_COLORS, FONT, INK, SEMANTIC, SERIES, STATUS_COLORS, SURFACE,
+  BRAND, BORDER, FONT, INK, SEMANTIC, SERIES, STATUS_COLORS, SURFACE,
 } from "@/lib/tokens";
 
 /** Token hex + alpha -> rgba() string, so composed tints stay on token values. */
@@ -48,23 +54,28 @@ interface RTOConfig {
   label: string;
   reserveMargin: number;
   aiSignal: "Critical" | "Elevated" | "Moderate" | "Low";
-  dcColor: string;
-  stressColor: string;
-  stressBadgeClass: string;
-  legendColor: string;
 }
 
-// Stress colors are STATE -> SEMANTIC tokens. legendColor keeps each RTO's
-// pre-existing hue mapped to the nearest token; the legend-vs-map color
-// contradictions are known and get reconciled in a later lake.
 const RTO_CONFIG: Record<string, RTOConfig> = {
-  PJM:  { label: "PJM",  reserveMargin: 17.5, aiSignal: "Elevated", dcColor: alpha(BRAND.secondary, 0.12),         stressColor: alpha(SEMANTIC.warning, 0.28),      stressBadgeClass: "bg-warning/20 text-warning",        legendColor: BRAND.secondary },
-  MISO: { label: "MISO", reserveMargin: 13.4, aiSignal: "Critical", dcColor: alpha(SEMANTIC.positiveDeep, 0.08),   stressColor: alpha(SEMANTIC.negativeDeep, 0.42), stressBadgeClass: "bg-negative-deep/20 text-negative", legendColor: SEMANTIC.positiveDeep },
-  ERCOT:{ label: "ERCOT",reserveMargin: 15.8, aiSignal: "Critical", dcColor: alpha(SEMANTIC.negativeDeep, 0.10),   stressColor: alpha(SEMANTIC.negativeDeep, 0.32), stressBadgeClass: "bg-negative-deep/20 text-negative", legendColor: SEMANTIC.negativeDeep },
-  WECC: { label: "WECC", reserveMargin: 24.6, aiSignal: "Moderate", dcColor: alpha(CATEGORY_COLORS.nuclear, 0.08), stressColor: alpha(SEMANTIC.positiveDeep, 0.18), stressBadgeClass: "bg-positive-deep/20 text-positive", legendColor: CATEGORY_COLORS.nuclear },
-  SERC: { label: "SERC", reserveMargin: 23.1, aiSignal: "Moderate", dcColor: alpha(SERIES[5], 0.08),               stressColor: alpha(SEMANTIC.positiveDeep, 0.18), stressBadgeClass: "bg-positive-deep/20 text-positive", legendColor: SERIES[5] /* series slot 6 */ },
-  SPP:  { label: "SPP",  reserveMargin: 27.8, aiSignal: "Low",      dcColor: alpha(SERIES[4], 0.07),               stressColor: alpha(SEMANTIC.positiveDeep, 0.12), stressBadgeClass: "bg-positive-deep/15 text-positive", legendColor: SERIES[4] /* series slot 5 */ },
-  NPCC: { label: "NPCC", reserveMargin: 26.4, aiSignal: "Low",      dcColor: alpha(INK.muted, 0.08),               stressColor: alpha(SEMANTIC.positiveDeep, 0.12), stressBadgeClass: "bg-positive-deep/15 text-positive", legendColor: INK.muted },
+  PJM:   { label: "PJM",   reserveMargin: 17.5, aiSignal: "Elevated" },
+  MISO:  { label: "MISO",  reserveMargin: 13.4, aiSignal: "Critical" },
+  ERCOT: { label: "ERCOT", reserveMargin: 15.8, aiSignal: "Critical" },
+  WECC:  { label: "WECC",  reserveMargin: 24.6, aiSignal: "Moderate" },
+  SERC:  { label: "SERC",  reserveMargin: 23.1, aiSignal: "Moderate" },
+  SPP:   { label: "SPP",   reserveMargin: 27.8, aiSignal: "Low" },
+  NPCC:  { label: "NPCC",  reserveMargin: 26.4, aiSignal: "Low" },
+};
+
+/**
+ * ONE stress ramp for the whole page: region fills (stress view), the map
+ * legend, marker colors in stress view, and the table badges all read from
+ * this SEMANTIC mapping. Nothing else may color a stress level.
+ */
+const STRESS_COLOR: Record<RTOConfig["aiSignal"], string> = {
+  Critical: SEMANTIC.negativeDeep,
+  Elevated: SEMANTIC.warning,
+  Moderate: SEMANTIC.positiveDeep,
+  Low:      SEMANTIC.positive,
 };
 
 function gridOpToRTO(op: string): string {
@@ -131,44 +142,60 @@ function pushFiltersToURL(companies: string[], rtos: string[], capacity: string)
 
 type ViewMode = "dc" | "stress";
 
+/**
+ * Continuous sqrt scale: marker AREA ~ facility MW. Dataset floor (400 MW)
+ * maps to 6px radius; the current max (1.5 GW) lands near 11.6px.
+ */
 function pinRadius(powerMW: number): number {
-  if (powerMW >= 500) return 10;
-  if (powerMW >= 100) return 8;
-  return 6;
+  return Math.min(13, Math.max(5, 6 * Math.sqrt(powerMW / MIN_TRACKED_MW)));
 }
 
-// Pin hues keep the current brand-orange convention for built/under-way
-// facilities (the STATUS_COLORS unification lands in a later lake).
+/** Facility status is state -> STATUS_COLORS. Same mapping as legend + badges. */
 function pinColor(status: DataCenter["status"]): string {
-  if (status === "operational") return BRAND.primary;
-  if (status === "construction") return BRAND.secondary;
-  return STATUS_COLORS.announced;
+  return STATUS_COLORS[status];
 }
 
 function stressColorForRTO(dc: DataCenter): string {
-  const rto = gridOpToRTO(dc.gridOperator);
-  const cfg = RTO_CONFIG[rto];
-  if (!cfg) return SEMANTIC.positiveDeep;
-  if (cfg.aiSignal === "Critical") return SEMANTIC.negativeDeep;
-  if (cfg.aiSignal === "Elevated") return SEMANTIC.warning;
-  if (cfg.aiSignal === "Moderate") return SEMANTIC.positiveDeep;
-  return SEMANTIC.positive;
+  const cfg = RTO_CONFIG[gridOpToRTO(dc.gridOperator)];
+  return cfg ? STRESS_COLOR[cfg.aiSignal] : SEMANTIC.positiveDeep;
 }
 
-function createGlowIcon(dc: DataCenter, passes: boolean, dimmed: boolean, viewMode: ViewMode): L.DivIcon {
+/**
+ * Capacity buckets match the tracked dataset (400 MW floor, 1.5 GW max):
+ * 400-600 / 600-1000 / >= 1 GW. Keys keep the legacy small/medium/large
+ * values so shared filter URLs and data-testids stay stable.
+ */
+function passesCapacity(powerMW: number, capacity: string): boolean {
+  if (capacity === "small"  && powerMW >= 600) return false;
+  if (capacity === "medium" && (powerMW < 600 || powerMW >= 1000)) return false;
+  if (capacity === "large"  && powerMW < 1000) return false;
+  return true;
+}
+
+/** Single filter predicate shared by markers, labels, and counts. */
+function dcPassesFilters(
+  dc: DataCenter,
+  filterCompanies: string[],
+  filterRTOs: string[],
+  filterCapacity: string,
+  rtoFocus: string | null,
+): boolean {
+  if (filterCompanies.length > 0 && !filterCompanies.includes(dc.company)) return false;
+  if (filterRTOs.length > 0 && !filterRTOs.includes(gridOpToRTO(dc.gridOperator))) return false;
+  if (rtoFocus && gridOpToRTO(dc.gridOperator) !== rtoFocus) return false;
+  if (!passesCapacity(dc.powerMW, filterCapacity)) return false;
+  return true;
+}
+
+function createGlowIcon(dc: DataCenter, viewMode: ViewMode): L.DivIcon {
   const r = pinRadius(dc.powerMW);
   const color = viewMode === "stress" ? stressColorForRTO(dc) : pinColor(dc.status);
-  const size = (r + 12) * 2;
+  const size = Math.ceil((r + 12) * 2);
   const center = size / 2;
 
-  const baseOpacity = !passes ? 0.12 : dimmed ? 0.3 : dc.status === "announced" && viewMode === "dc" ? 0.6 : 1;
-  const glowOpacity = !passes ? 0 : dimmed ? 0.1 : viewMode === "stress" ? 0.45 : 0.3;
-
-  let animClass = "";
-  if (passes && !dimmed && viewMode === "dc") {
-    if (dc.status === "operational") animClass = "pin-pulse";
-    else if (dc.status === "construction") animClass = "pin-construction";
-  }
+  const baseOpacity = dc.status === "announced" && viewMode === "dc" ? 0.75 : 1;
+  const glowOpacity = viewMode === "stress" ? 0.45 : 0.3;
+  const animClass = viewMode === "dc" && dc.status === "operational" ? "pin-pulse" : "";
 
   const svg = `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">
     <circle cx="${center}" cy="${center}" r="${r + 8}" fill="${color}" opacity="${glowOpacity}" class="${animClass}-glow" />
@@ -176,7 +203,7 @@ function createGlowIcon(dc: DataCenter, passes: boolean, dimmed: boolean, viewMo
   </svg>`;
 
   return L.divIcon({
-    html: `<div class="pin-wrapper ${animClass}" style="opacity:${baseOpacity}">${svg}</div>`,
+    html: `<div class="pin-wrapper ${animClass}">${svg}</div>`,
     className: "leaflet-pin-icon",
     iconSize: [size, size],
     iconAnchor: [center, center],
@@ -202,8 +229,10 @@ const STATE_TO_RTO: Record<string, string> = {
   Alaska: "WECC", Hawaii: "WECC",
 };
 
-// RTO regions are a category with no CATEGORY_COLORS entry, so they fall
-// back to SERIES slots in order of appearance (rendered at low fill opacity).
+/**
+ * RTO IDENTITY hue (dc view fills, filter chips, upcoming cards, table row
+ * chips): SERIES slots in fixed order. One truth for "which color is PJM".
+ */
 const RTO_MUTED_COLORS: Record<string, string> = {
   PJM: SERIES[0],   // series slot 1
   MISO: SERIES[1],  // series slot 2
@@ -212,18 +241,6 @@ const RTO_MUTED_COLORS: Record<string, string> = {
   SERC: SERIES[4],  // series slot 5
   SPP: SERIES[5],   // series slot 6
   NPCC: SERIES[6],  // series slot 7
-};
-
-// Stress view is STATE -> SEMANTIC steps (WECC's old lime folds into the
-// same Moderate green used by stressColorForRTO).
-const RTO_STRESS_COLORS: Record<string, string> = {
-  PJM: SEMANTIC.warning,
-  MISO: SEMANTIC.negativeDeep,
-  ERCOT: SEMANTIC.negativeDeep,
-  WECC: SEMANTIC.positiveDeep,
-  SERC: SEMANTIC.positiveDeep,
-  SPP: SEMANTIC.positive,
-  NPCC: SEMANTIC.positive,
 };
 
 const GEO_URL = "https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json";
@@ -265,7 +282,10 @@ function RTORegions({ viewMode }: { viewMode: ViewMode }) {
             if (!rto) {
               return { fillColor: INK.primary, fillOpacity: 0.02, color: BORDER.subtle, weight: 0.5 };
             }
-            const fillColor = isDC ? (RTO_MUTED_COLORS[rto] || INK.muted) : (RTO_STRESS_COLORS[rto] || SEMANTIC.positiveDeep);
+            const cfg = RTO_CONFIG[rto];
+            const fillColor = isDC
+              ? (RTO_MUTED_COLORS[rto] || INK.muted)
+              : (cfg ? STRESS_COLOR[cfg.aiSignal] : SEMANTIC.positiveDeep);
             const fillOpacity = isDC ? 0.08 : 0.22;
             return {
               fillColor,
@@ -309,24 +329,20 @@ function RTORegions({ viewMode }: { viewMode: ViewMode }) {
   return null;
 }
 
-function FacilityLabels({ viewMode, filterCompanies, filterRTOs, filterCapacity, dataCenters }: {
+function FacilityLabels({ viewMode, filterCompanies, filterRTOs, filterCapacity, rtoFocus, dataCenters }: {
   viewMode: ViewMode;
   filterCompanies: string[];
   filterRTOs: string[];
   filterCapacity: string;
+  rtoFocus: string | null;
   dataCenters: DataCenter[];
 }) {
   const map = useMap();
   const labelsRef = useRef<L.LayerGroup | null>(null);
 
   const passesFilter = useCallback((dc: DataCenter): boolean => {
-    if (filterCompanies.length > 0 && !filterCompanies.includes(dc.company)) return false;
-    if (filterRTOs.length > 0 && !filterRTOs.includes(gridOpToRTO(dc.gridOperator))) return false;
-    if (filterCapacity === "small" && dc.powerMW >= 100) return false;
-    if (filterCapacity === "medium" && (dc.powerMW < 100 || dc.powerMW > 500)) return false;
-    if (filterCapacity === "large" && dc.powerMW <= 500) return false;
-    return true;
-  }, [filterCompanies, filterRTOs, filterCapacity]);
+    return dcPassesFilters(dc, filterCompanies, filterRTOs, filterCapacity, rtoFocus);
+  }, [filterCompanies, filterRTOs, filterCapacity, rtoFocus]);
 
   useEffect(() => {
     function updateLabels() {
@@ -380,6 +396,7 @@ function FacilityMarkers({
   filterCompanies,
   filterRTOs,
   filterCapacity,
+  rtoFocus,
   hoveredId,
   setHoveredId,
   selected,
@@ -392,6 +409,7 @@ function FacilityMarkers({
   filterCompanies: string[];
   filterRTOs: string[];
   filterCapacity: string;
+  rtoFocus: string | null;
   hoveredId: number | null;
   setHoveredId: (id: number | null) => void;
   selected: DataCenter | null;
@@ -402,39 +420,52 @@ function FacilityMarkers({
 }) {
   const map = useMap();
   const markersRef = useRef<Record<number, L.Marker>>({});
-  const layerRef = useRef<L.LayerGroup | null>(null);
+  const clusterRef = useRef<L.MarkerClusterGroup | null>(null);
 
   const passesFilter = useCallback((dc: DataCenter): boolean => {
-    if (filterCompanies.length > 0 && !filterCompanies.includes(dc.company)) return false;
-    if (filterRTOs.length > 0 && !filterRTOs.includes(gridOpToRTO(dc.gridOperator))) return false;
-    if (filterCapacity === "small" && dc.powerMW >= 100) return false;
-    if (filterCapacity === "medium" && (dc.powerMW < 100 || dc.powerMW > 500)) return false;
-    if (filterCapacity === "large" && dc.powerMW <= 500) return false;
-    return true;
-  }, [filterCompanies, filterRTOs, filterCapacity]);
+    return dcPassesFilters(dc, filterCompanies, filterRTOs, filterCapacity, rtoFocus);
+  }, [filterCompanies, filterRTOs, filterCapacity, rtoFocus]);
 
+  // Build the cluster layer + markers. NOTE: hoveredId/selected are
+  // deliberately NOT deps here - hover/selection restyle imperatively below,
+  // so mouseover no longer tears down and rebuilds every layer (audit perf fix).
   useEffect(() => {
-    if (layerRef.current) {
-      layerRef.current.clearLayers();
-    } else {
-      layerRef.current = L.layerGroup().addTo(map);
+    if (!clusterRef.current) {
+      clusterRef.current = L.markerClusterGroup({
+        maxClusterRadius: 42,
+        showCoverageOnHover: false,
+        spiderfyOnMaxZoom: true,
+        zoomToBoundsOnClick: true,
+        spiderfyDistanceMultiplier: 1.4,
+        spiderLegPolylineOptions: { weight: 1, color: BRAND.primary, opacity: 0.4 },
+        iconCreateFunction: (cluster) => {
+          const count = cluster.getChildCount();
+          const d = count >= 10 ? 38 : 32;
+          return L.divIcon({
+            html: `<div class="gt-cluster" style="width:${d}px;height:${d}px;">${count}</div>`,
+            className: "gt-cluster-wrap",
+            iconSize: [d, d],
+            iconAnchor: [d / 2, d / 2],
+          });
+        },
+      });
+      map.addLayer(clusterRef.current);
     }
+
+    const group = clusterRef.current;
+    group.clearLayers();
 
     const markers: Record<number, L.Marker> = {};
 
     dataCenters.forEach((dc) => {
-      const passes = passesFilter(dc);
-      const dimmed = hoveredId !== null && hoveredId !== dc.id && selected?.id !== dc.id;
-      const icon = createGlowIcon(dc, passes, dimmed, viewMode);
+      if (!passesFilter(dc)) return;
 
       const marker = L.marker([dc.lat, dc.lng], {
-        icon,
-        interactive: passes,
+        icon: createGlowIcon(dc, viewMode),
         zIndexOffset: dc.status === "operational" ? 100 : dc.status === "construction" ? 50 : 0,
       });
 
       marker.on("mouseover", (e) => {
-        if (!passes) return;
         setHoveredId(dc.id);
         setTooltipDC(dc);
         const point = map.latLngToContainerPoint(e.latlng);
@@ -448,7 +479,6 @@ function FacilityMarkers({
       });
 
       marker.on("click", (e) => {
-        if (!passes) return;
         setSelected(dc);
         setHoveredId(null);
         setTooltipDC(null);
@@ -456,18 +486,62 @@ function FacilityMarkers({
         setTooltipPos({ x: point.x, y: point.y });
       });
 
-      marker.addTo(layerRef.current!);
       markers[dc.id] = marker;
     });
 
+    group.addLayers(Object.values(markers));
     markersRef.current = markers;
 
     return () => {
-      if (layerRef.current) {
-        layerRef.current.clearLayers();
+      group.clearLayers();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map, passesFilter, viewMode, dataCenters]);
+
+  // Remove the cluster layer on unmount.
+  useEffect(() => {
+    return () => {
+      if (clusterRef.current) {
+        map.removeLayer(clusterRef.current);
+        clusterRef.current = null;
       }
     };
-  }, [map, passesFilter, hoveredId, selected, viewMode, dataCenters]);
+  }, [map]);
+
+  // Imperative hover restyle: pop the hovered marker without rebuilding layers.
+  const prevHoveredRef = useRef<number | null>(null);
+  useEffect(() => {
+    const prev = prevHoveredRef.current;
+    if (prev !== null && prev !== hoveredId) {
+      const m = markersRef.current[prev];
+      if (m) {
+        m.getElement()?.classList.remove("pin-hovered");
+        const dc = dataCenters.find((d) => d.id === prev);
+        m.setZIndexOffset(dc?.status === "operational" ? 100 : dc?.status === "construction" ? 50 : 0);
+      }
+    }
+    if (hoveredId !== null) {
+      const m = markersRef.current[hoveredId];
+      if (m) {
+        m.getElement()?.classList.add("pin-hovered");
+        m.setZIndexOffset(1000);
+      }
+    }
+    prevHoveredRef.current = hoveredId;
+  }, [hoveredId, dataCenters]);
+
+  // Imperative selection ring.
+  const prevSelectedRef = useRef<number | null>(null);
+  useEffect(() => {
+    const prev = prevSelectedRef.current;
+    if (prev !== null && prev !== selected?.id) {
+      markersRef.current[prev]?.getElement()?.classList.remove("pin-selected");
+    }
+    if (selected) {
+      markersRef.current[selected.id]?.getElement()?.classList.add("pin-selected");
+    }
+    prevSelectedRef.current = selected?.id ?? null;
+  }, [selected]);
 
   return null;
 }
@@ -504,18 +578,11 @@ export default function PowerMap() {
   const [filterCompanies, setFilterCompanies] = useState<string[]>(initialFilters.companies);
   const [filterRTOs, setFilterRTOs]       = useState<string[]>(initialFilters.rtos);
   const [filterCapacity, setFilterCapacity]   = useState<string>(initialFilters.capacity);
+  const [rtoFocus, setRtoFocus]           = useState<string | null>(null);
+  const [showAllUpcoming, setShowAllUpcoming] = useState(false);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
   const mapContainerRef = useRef<HTMLDivElement>(null);
-
-  function passesFilter(dc: DataCenter): boolean {
-    if (filterCompanies.length > 0 && !filterCompanies.includes(dc.company)) return false;
-    if (filterRTOs.length > 0 && !filterRTOs.includes(gridOpToRTO(dc.gridOperator))) return false;
-    if (filterCapacity === "small"  && dc.powerMW >= 100) return false;
-    if (filterCapacity === "medium" && (dc.powerMW < 100 || dc.powerMW > 500)) return false;
-    if (filterCapacity === "large"  && dc.powerMW <= 500) return false;
-    return true;
-  }
 
   function toggleCompany(c: string) {
     const next = filterCompanies.includes(c)
@@ -563,19 +630,18 @@ export default function PowerMap() {
     pushFiltersToURL(filterCompanies, filterRTOs, "all");
   }
 
+  function toggleRtoFocus(rto: string) {
+    setRtoFocus((f) => (f === rto ? null : rto));
+  }
+
   const activeFilterCount = filterCompanies.length + filterRTOs.length + (filterCapacity !== "all" ? 1 : 0);
   const anyFilterActive = activeFilterCount > 0;
 
   const filteredCount = useMemo(() => {
-    return dataCenters.filter((dc) => {
-      if (filterCompanies.length > 0 && !filterCompanies.includes(dc.company)) return false;
-      if (filterRTOs.length > 0 && !filterRTOs.includes(gridOpToRTO(dc.gridOperator))) return false;
-      if (filterCapacity === "small"  && dc.powerMW >= 100) return false;
-      if (filterCapacity === "medium" && (dc.powerMW < 100 || dc.powerMW > 500)) return false;
-      if (filterCapacity === "large"  && dc.powerMW <= 500) return false;
-      return true;
-    }).length;
-  }, [filterCompanies, filterRTOs, filterCapacity, dataCenters]);
+    return dataCenters.filter((dc) =>
+      dcPassesFilters(dc, filterCompanies, filterRTOs, filterCapacity, rtoFocus)
+    ).length;
+  }, [filterCompanies, filterRTOs, filterCapacity, rtoFocus, dataCenters]);
 
   const allCompanies = useMemo(
     () => Array.from(new Set(dataCenters.map((d) => d.company))).sort(),
@@ -614,20 +680,22 @@ export default function PowerMap() {
     return m;
   }, [dataCenters]);
 
-  const selectedRTO     = selected ? gridOpToRTO(selected.gridOperator) : null;
-  const selectedRTOCfg  = selectedRTO ? RTO_CONFIG[selectedRTO] : null;
-  const selectedRTOLoad = selectedRTO ? (rtoLoadMW[selectedRTO] ?? 0) : 0;
-
   const ALL_RTOS = ["PJM", "MISO", "ERCOT", "WECC", "SERC", "SPP", "NPCC"] as const;
 
   const capacityLabels: Record<string, string> = {
-    small: "<100 MW",
-    medium: "100-500 MW",
-    large: "500+ MW",
+    small: "400-600 MW",
+    medium: "600-1000 MW",
+    large: "1 GW+",
   };
 
   const displayDC = selected || tooltipDC;
   const showTooltip = displayDC && tooltipPos;
+
+  const legendSizes = [
+    { mw: 500, label: "500 MW" },
+    { mw: 1000, label: "1 GW" },
+    { mw: 1500, label: "1.5 GW" },
+  ];
 
   return (
     <div className="flex flex-col h-full overflow-y-auto">
@@ -651,31 +719,43 @@ export default function PowerMap() {
           color: ${INK.faint} !important;
         }
         .pin-wrapper {
-          transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+          transition: opacity 0.2s ease-out, transform 0.2s ease-out, filter 0.2s ease-out;
         }
-        .pin-wrapper:hover {
+        .pin-wrapper:hover,
+        .leaflet-pin-icon.pin-hovered .pin-wrapper {
           transform: scale(1.3);
           filter: brightness(1.3);
         }
-        @keyframes pin-pulse-glow {
-          0%, 100% { transform: scale(1); opacity: 0.3; }
-          50% { transform: scale(1.15); opacity: 0.15; }
+        .leaflet-pin-icon.pin-selected .pin-wrapper svg circle:last-of-type {
+          stroke: ${INK.primary};
+          stroke-width: 2;
         }
-        @keyframes pin-construction-rotate {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
+        @media (prefers-reduced-motion: no-preference) {
+          @keyframes pin-pulse-glow {
+            0%, 100% { transform: scale(1); opacity: 0.3; }
+            50% { transform: scale(1.15); opacity: 0.15; }
+          }
+          .pin-pulse svg circle:first-child {
+            animation: pin-pulse-glow 3s ease-in-out infinite;
+            transform-origin: center;
+          }
         }
-        .pin-pulse svg circle:first-child {
-          animation: pin-pulse-glow 3s ease-in-out infinite;
-          transform-origin: center;
+        .gt-cluster-wrap {
+          background: none !important;
+          border: none !important;
         }
-        .pin-construction svg circle:first-child {
-          stroke-dasharray: 4 3;
-          stroke: ${BRAND.secondary};
-          stroke-width: 1;
-          fill: none !important;
-          animation: pin-construction-rotate 8s linear infinite;
-          transform-origin: center;
+        .gt-cluster {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 9999px;
+          background: ${SURFACE.raised};
+          border: 1px solid ${alpha(BRAND.primary, 0.55)};
+          color: ${BRAND.primary};
+          font-family: ${FONT.mono};
+          font-size: 11px;
+          font-weight: 700;
+          box-shadow: 0 0 0 4px ${alpha(BRAND.primary, 0.12)}, 0 2px 10px rgba(0,0,0,0.5);
         }
         .power-map-tooltip {
           animation: tooltip-fade-in 150ms ease-out;
@@ -726,6 +806,15 @@ export default function PowerMap() {
         .leaflet-control-attribution a {
           color: ${INK.faint} !important;
         }
+        .upcoming-scroll {
+          scrollbar-width: none;
+          -ms-overflow-style: none;
+          mask-image: linear-gradient(to right, transparent, black 20px, black calc(100% - 28px), transparent);
+          -webkit-mask-image: linear-gradient(to right, transparent, black 20px, black calc(100% - 28px), transparent);
+        }
+        .upcoming-scroll::-webkit-scrollbar {
+          display: none;
+        }
       `}</style>
 
       <div className="flex-1 flex flex-col">
@@ -734,35 +823,28 @@ export default function PowerMap() {
           style={{ minHeight: 520 }}
           ref={mapContainerRef}
         >
-          <div
-            className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] pointer-events-auto max-w-[min(640px,calc(100%-280px))] hidden md:block"
-            data-testid="threshold-banner"
-          >
-            <div className="bg-surface-raised/95 backdrop-blur-md border border-brand/40 rounded-lg px-4 py-2.5 shadow-xl shadow-black/40">
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <Zap className="h-4 w-4 text-brand" />
-                  <span className="text-11 font-mono font-bold tracking-widest text-brand uppercase">≥ 400 MW only</span>
-                </div>
-                <span className="h-4 w-px bg-white/15" />
-                <p className="text-11 leading-tight text-white/70">
-                  We track hyperscale AI campuses. Smaller sites exist by the thousands. Sources like <span className="text-white/90 font-medium">DC Map</span> and <span className="text-white/90 font-medium">Data Center Knowledge</span> cover them better. For the compute layer (GPUs, chips, secured power) see <Link href="/compute-frontier" className="text-brand hover:text-brand-2">Compute Frontier</Link>.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="absolute top-16 left-1/2 -translate-x-1/2 z-[1000] pointer-events-auto md:hidden" data-testid="threshold-banner-mobile">
-            <div className="bg-surface-raised/95 backdrop-blur-md border border-brand/40 rounded-md px-3 py-1.5 shadow-xl">
-              <span className="text-10 font-mono font-bold tracking-wider text-brand uppercase">≥ 400 MW only</span>
-            </div>
-          </div>
-
           <div className="absolute top-3 left-3 z-[1000] pointer-events-auto" data-testid="stats-overlay">
             <div className="bg-surface-raised/90 backdrop-blur-md border border-subtle rounded-lg px-4 py-3 shadow-xl">
               <div className="flex items-center gap-2 mb-2">
                 <Zap className="h-3.5 w-3.5 text-brand" />
                 <span className="text-xs font-semibold text-white/90 tracking-tight">Power Map</span>
+                <UITooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      className="text-white/40 hover:text-brand transition-colors"
+                      aria-label="What this map tracks"
+                      data-testid="threshold-banner"
+                    >
+                      <Info className="h-3.5 w-3.5" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" align="start" className="max-w-xs z-[1200] p-3">
+                    <p className="text-11 font-mono font-bold tracking-widest text-brand uppercase mb-1.5">&ge; 400 MW only</p>
+                    <p className="text-11 leading-snug text-white/70 normal-case">
+                      We track hyperscale AI campuses. Smaller sites exist by the thousands. Sources like <span className="text-white/90 font-medium">DC Map</span> and <span className="text-white/90 font-medium">Data Center Knowledge</span> cover them better. For the compute layer (GPUs, chips, secured power) see <Link href="/compute-frontier" className="text-brand hover:text-brand-2">Compute Frontier</Link>.
+                    </p>
+                  </TooltipContent>
+                </UITooltip>
                 <span className="text-10 font-mono text-white/40">
                   {dcLoading ? "loading…" : dcError ? "load failed" : `${dataCenters.length} facilities`}
                 </span>
@@ -773,15 +855,15 @@ export default function PowerMap() {
                 <span className="text-white/50">{totalTWh} TWh/yr</span>
                 <span className="text-white/20">|</span>
                 <div className="flex items-center gap-1.5">
-                  <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-brand inline-block" /><span className="text-white/60">{opCount}</span></span>
-                  <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-brand-2 inline-block" /><span className="text-white/60">{conCount}</span></span>
-                  <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-white/50 inline-block" /><span className="text-white/60">{annCount}</span></span>
+                  <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full inline-block" style={{ backgroundColor: STATUS_COLORS.operational }} /><span className="text-white/60">{opCount}</span></span>
+                  <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full inline-block" style={{ backgroundColor: STATUS_COLORS.construction }} /><span className="text-white/60">{conCount}</span></span>
+                  <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full inline-block" style={{ backgroundColor: STATUS_COLORS.announced }} /><span className="text-white/60">{annCount}</span></span>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="absolute top-3 right-3 z-[1000] flex flex-col gap-2 pointer-events-auto">
+          <div className="absolute top-3 right-3 z-[1000] flex flex-col items-end gap-2 pointer-events-auto">
             <div className="flex rounded-md overflow-hidden border border-subtle text-xs font-mono shadow-lg">
               <button
                 className={`px-3 py-1.5 transition-all duration-500 ${viewMode === "dc" ? "bg-brand text-black font-semibold" : "bg-surface-raised/90 text-white/60 hover:text-white/90 backdrop-blur-md"}`}
@@ -818,9 +900,21 @@ export default function PowerMap() {
                   {activeFilterCount}
                 </span>
               )}
-              <span className="text-10 text-white/40 ml-1">{anyFilterActive ? `${filteredCount}/${dataCenters.length}` : `${dataCenters.length}`}</span>
+              <span className="text-10 text-white/40 ml-1">{anyFilterActive || rtoFocus ? `${filteredCount}/${dataCenters.length}` : `${dataCenters.length}`}</span>
               <ChevronDown className={`h-3 w-3 transition-transform ${filtersExpanded ? "rotate-180" : ""}`} />
             </button>
+
+            {rtoFocus && (
+              <button
+                onClick={() => setRtoFocus(null)}
+                className="flex items-center gap-1.5 bg-surface-raised/90 backdrop-blur-md border rounded-md px-2.5 py-1 text-10 font-mono shadow-lg"
+                style={{ borderColor: alpha(BRAND.primary, 0.4), color: BRAND.primary }}
+                data-testid="map-rto-focus-chip"
+              >
+                <span>{rtoFocus} facilities only</span>
+                <X className="h-3 w-3" />
+              </button>
+            )}
           </div>
 
           {filtersExpanded && (
@@ -891,7 +985,7 @@ export default function PowerMap() {
                     <div className="flex flex-wrap gap-1.5">
                       {ALL_RTOS.map((rto) => {
                         const active = filterRTOs.includes(rto);
-                        const color = RTO_CONFIG[rto]?.legendColor ?? INK.faint;
+                        const color = RTO_MUTED_COLORS[rto] ?? INK.faint;
                         return (
                           <button
                             key={rto}
@@ -917,9 +1011,9 @@ export default function PowerMap() {
                     <div className="flex flex-wrap gap-1.5">
                       {[
                         { key: "all",    label: "All" },
-                        { key: "small",  label: "<100 MW" },
-                        { key: "medium", label: "100-500" },
-                        { key: "large",  label: "500+ MW" },
+                        { key: "small",  label: "400-600 MW" },
+                        { key: "medium", label: "600-1000" },
+                        { key: "large",  label: "1 GW+" },
                       ].map(({ key, label }) => (
                         <button
                           key={key}
@@ -941,31 +1035,61 @@ export default function PowerMap() {
             </div>
           )}
 
-          {viewMode === "stress" && (
-            <div className="absolute bottom-10 left-3 z-[1000] pointer-events-none">
-              <div className="bg-surface-raised/90 backdrop-blur-md border border-subtle rounded-lg px-3 py-2.5 shadow-lg">
-                <p className="text-9 font-mono text-white/40 uppercase tracking-wider mb-1.5">Grid Stress</p>
-                <div className="space-y-1 text-10 font-mono text-white/60">
-                  <div className="flex items-center gap-1.5"><div className="h-2 w-4 rounded-sm bg-negative-deep/60" /> Critical (&lt;16%)</div>
-                  <div className="flex items-center gap-1.5"><div className="h-2 w-4 rounded-sm bg-brand/50" /> Elevated (16-18%)</div>
-                  <div className="flex items-center gap-1.5"><div className="h-2 w-4 rounded-sm bg-warning/40" /> Moderate (18-25%)</div>
-                  <div className="flex items-center gap-1.5"><div className="h-2 w-4 rounded-sm bg-positive-deep/30" /> Low (&gt;25%)</div>
+          <div className="absolute bottom-3 left-3 z-[1000] pointer-events-none" data-testid="map-legend">
+            <div className="bg-surface-raised/90 backdrop-blur-md border border-subtle rounded-lg px-3 py-2.5 shadow-lg">
+              {viewMode === "dc" ? (
+                <div className="flex items-start gap-4">
+                  <div>
+                    <p className="text-9 font-mono text-white/40 uppercase tracking-wider mb-1.5">Size = capacity</p>
+                    <div className="flex items-end gap-2.5">
+                      {legendSizes.map(({ mw, label }) => {
+                        const d = Math.round(pinRadius(mw) * 2);
+                        return (
+                          <div key={mw} className="flex flex-col items-center gap-1">
+                            <span
+                              className="rounded-full border"
+                              style={{
+                                width: d,
+                                height: d,
+                                borderColor: INK.secondary,
+                                backgroundColor: alpha(INK.secondary, 0.12),
+                              }}
+                            />
+                            <span className="text-9 font-mono text-white/50 whitespace-nowrap">{label}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-9 font-mono text-white/40 uppercase tracking-wider mb-1.5">Color = status</p>
+                    <div className="space-y-1 text-10 font-mono text-white/60">
+                      <div className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ backgroundColor: STATUS_COLORS.operational }} />Operational</div>
+                      <div className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ backgroundColor: STATUS_COLORS.construction }} />Construction</div>
+                      <div className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ backgroundColor: STATUS_COLORS.announced }} />Announced</div>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <>
+                  <p className="text-9 font-mono text-white/40 uppercase tracking-wider mb-1.5">Grid stress</p>
+                  <div className="space-y-1 text-10 font-mono text-white/60">
+                    {([
+                      ["Critical", "<16%"],
+                      ["Elevated", "16-18%"],
+                      ["Moderate", "18-25%"],
+                      ["Low", ">25%"],
+                    ] as const).map(([sig, range]) => (
+                      <div key={sig} className="flex items-center gap-1.5">
+                        <span className="h-2 w-4 rounded-sm" style={{ backgroundColor: alpha(STRESS_COLOR[sig], 0.6) }} />
+                        {sig} ({range})
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
-          )}
-
-          {viewMode === "dc" && (
-            <div className="absolute bottom-3 left-3 z-[1000] pointer-events-none">
-              <div className="bg-surface-raised/90 backdrop-blur-md border border-subtle rounded-lg px-3 py-2 shadow-lg">
-                <div className="flex items-center gap-3 text-10 font-mono text-white/50">
-                  <div className="flex items-center gap-1.5"><div className="h-2 w-2 rounded-full bg-brand" />Operational</div>
-                  <div className="flex items-center gap-1.5"><div className="h-2 w-2 rounded-full bg-brand-2" />Construction</div>
-                  <div className="flex items-center gap-1.5"><div className="h-2 w-2 rounded-full bg-white/50" />Announced</div>
-                </div>
-              </div>
-            </div>
-          )}
+          </div>
 
           <MapContainer
             center={[39.5, -98.5]}
@@ -989,6 +1113,7 @@ export default function PowerMap() {
               filterCompanies={filterCompanies}
               filterRTOs={filterRTOs}
               filterCapacity={filterCapacity}
+              rtoFocus={rtoFocus}
               hoveredId={hoveredId}
               setHoveredId={setHoveredId}
               selected={selected}
@@ -1002,6 +1127,7 @@ export default function PowerMap() {
               filterCompanies={filterCompanies}
               filterRTOs={filterRTOs}
               filterCapacity={filterCapacity}
+              rtoFocus={rtoFocus}
               dataCenters={dataCenters}
             />
             <MapClickHandler onMapClick={() => { setSelected(null); setTooltipDC(null); setTooltipPos(null); }} />
@@ -1093,18 +1219,33 @@ export default function PowerMap() {
           <Calendar className="h-4 w-4 text-muted-foreground" />
           <h2 className="text-xs font-semibold tracking-wider uppercase text-muted-foreground">Upcoming Projects</h2>
           <span className="text-10 font-mono text-muted-foreground/50">Announced facilities not yet built</span>
+          {announced.length > 0 && (
+            <button
+              onClick={() => setShowAllUpcoming((v) => !v)}
+              className="ml-auto text-10 font-mono text-brand hover:text-brand-2 transition-colors"
+              data-testid="upcoming-show-all"
+            >
+              {showAllUpcoming ? "Collapse" : `Show all ${announced.length}`}
+            </button>
+          )}
         </div>
-        <div className="flex gap-3 overflow-x-auto pb-2">
+        <div
+          className={
+            showAllUpcoming
+              ? "flex flex-wrap gap-3"
+              : "flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory upcoming-scroll"
+          }
+        >
           {announced.map((dc) => {
             const rto = gridOpToRTO(dc.gridOperator);
-            const rtoCfg = RTO_CONFIG[rto];
+            const rtoColor = RTO_MUTED_COLORS[rto];
             const cColor = companyColors[dc.company] ?? INK.faint;
             return (
               <button
                 key={dc.id}
                 onClick={() => { setSelected(dc); setTooltipPos(null); }}
                 data-testid={`upcoming-card-${dc.id}`}
-                className="flex-shrink-0 w-52 rounded-md border border-dashed border-border/70 bg-muted/10 p-3 text-left hover:bg-muted/20 hover:border-border transition-colors"
+                className="flex-shrink-0 snap-start w-52 rounded-md border border-dashed border-border/70 bg-muted/10 p-3 text-left hover:bg-muted/20 hover:border-border transition-colors"
               >
                 <div className="flex items-center gap-1.5 mb-2">
                   <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: cColor }} />
@@ -1115,9 +1256,9 @@ export default function PowerMap() {
                   <span className="text-brand-2 font-semibold">{dc.powerMW} MW</span>
                   <span>{dc.openDate}</span>
                 </div>
-                {rtoCfg && (
+                {rtoColor && (
                   <div className="flex items-center gap-1 mt-1.5">
-                    <div className="h-1.5 w-1.5 rounded-sm" style={{ backgroundColor: rtoCfg.legendColor, opacity: 0.8 }} />
+                    <div className="h-1.5 w-1.5 rounded-sm" style={{ backgroundColor: rtoColor, opacity: 0.8 }} />
                     <span className="text-9 font-mono text-muted-foreground/70">{rto}</span>
                     <span className="text-9 font-mono text-muted-foreground/50 ml-auto">{dc.city}, {dc.state}</span>
                   </div>
@@ -1133,6 +1274,23 @@ export default function PowerMap() {
           <Network className="h-4 w-4 text-muted-foreground" />
           <h2 className="text-xs font-semibold tracking-wider uppercase text-muted-foreground">Grid Operator Load Analysis</h2>
           <span className="text-10 font-mono text-muted-foreground/50">Reserve margins: NERC LTRA 2025 (2026 projections)</span>
+          {rtoFocus ? (
+            <button
+              onClick={() => setRtoFocus(null)}
+              className="ml-auto flex items-center gap-1 text-10 font-mono px-2 py-0.5 rounded border transition-colors"
+              style={{
+                borderColor: alpha(BRAND.primary, 0.4),
+                color: BRAND.primary,
+                backgroundColor: alpha(BRAND.primary, 0.1),
+              }}
+              data-testid="rto-focus-clear"
+            >
+              Map: {rtoFocus} only
+              <X className="h-2.5 w-2.5" />
+            </button>
+          ) : (
+            <span className="ml-auto text-10 font-mono text-muted-foreground/50 hidden sm:inline">Click a row to filter the map</span>
+          )}
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-xs font-mono">
@@ -1141,31 +1299,49 @@ export default function PowerMap() {
                 <th className="text-left text-muted-foreground/60 font-normal pb-2 pr-6">RTO / ISO</th>
                 <th className="text-right text-muted-foreground/60 font-normal pb-2 pr-6">Tracked AI Load</th>
                 <th className="text-right text-muted-foreground/60 font-normal pb-2 pr-6">Reserve Margin</th>
-                <th className="text-left text-muted-foreground/60 font-normal pb-2 pr-6">AI Load Signal</th>
-                <th className="text-left text-muted-foreground/60 font-normal pb-2">Stress</th>
+                <th className="text-left text-muted-foreground/60 font-normal pb-2">AI Load Signal</th>
               </tr>
             </thead>
             <tbody>
               {(["ERCOT", "MISO", "PJM", "SERC", "WECC", "SPP", "NPCC"] as const).map((rto) => {
                 const cfg = RTO_CONFIG[rto];
                 const loadMW = rtoLoadMW[rto] ?? 0;
+                const sColor = STRESS_COLOR[cfg.aiSignal];
+                const active = rtoFocus === rto;
                 return (
-                  <tr key={rto} className="border-b border-border/30 hover:bg-muted/10 transition-colors">
+                  <tr
+                    key={rto}
+                    data-testid={`rto-row-${rto.toLowerCase()}`}
+                    onClick={() => toggleRtoFocus(rto)}
+                    className={`border-b border-border/30 cursor-pointer transition-colors ${active ? "bg-brand/10" : "hover:bg-muted/10"}`}
+                  >
                     <td className="py-2 pr-6">
                       <div className="flex items-center gap-1.5">
-                        <div className="h-2 w-2 rounded-sm" style={{ backgroundColor: cfg.legendColor, opacity: 0.8 }} />
+                        <div className="h-2 w-2 rounded-sm" style={{ backgroundColor: RTO_MUTED_COLORS[rto], opacity: 0.9 }} />
                         <span className="text-foreground font-semibold">{rto}</span>
+                        {active && <span className="text-9 text-brand">on map</span>}
                       </div>
                     </td>
                     <td className="py-2 pr-6 text-right text-foreground">{loadMW.toLocaleString()} MW</td>
-                    <td className="py-2 pr-6 text-right">
-                      <span className={cfg.reserveMargin < 16 ? "text-negative" : cfg.reserveMargin < 19 ? "text-warning" : "text-positive"}>
-                        {cfg.reserveMargin}%
-                      </span>
+                    <td className="py-2 pr-6">
+                      <div className="flex items-center justify-end gap-2">
+                        <span style={{ color: sColor }}>{cfg.reserveMargin}%</span>
+                        <div className="h-1.5 w-16 rounded-full overflow-hidden flex-shrink-0" style={{ backgroundColor: "rgba(255,255,255,0.06)" }}>
+                          <div
+                            className="h-full rounded-full"
+                            style={{
+                              width: `${Math.min(100, (cfg.reserveMargin / 30) * 100)}%`,
+                              backgroundColor: sColor,
+                            }}
+                          />
+                        </div>
+                      </div>
                     </td>
-                    <td className="py-2 pr-6 text-muted-foreground">{cfg.aiSignal}</td>
                     <td className="py-2">
-                      <Badge className={cfg.stressBadgeClass + " text-10 font-mono"}>
+                      <Badge
+                        className="text-10 font-mono border-transparent"
+                        style={{ backgroundColor: alpha(sColor, 0.15), color: sColor }}
+                      >
                         {cfg.aiSignal}
                       </Badge>
                     </td>
@@ -1229,7 +1405,7 @@ export default function PowerMap() {
                 <div className="flex flex-wrap gap-2">
                   {ALL_RTOS.map((rto) => {
                     const active = filterRTOs.includes(rto);
-                    const color = RTO_CONFIG[rto]?.legendColor ?? INK.faint;
+                    const color = RTO_MUTED_COLORS[rto] ?? INK.faint;
                     return (
                       <button
                         key={rto}
@@ -1251,9 +1427,9 @@ export default function PowerMap() {
                 <div className="flex flex-wrap gap-2">
                   {[
                     { key: "all",    label: "All Sizes" },
-                    { key: "small",  label: "<100 MW" },
-                    { key: "medium", label: "100-500 MW" },
-                    { key: "large",  label: "500+ MW" },
+                    { key: "small",  label: "400-600 MW" },
+                    { key: "medium", label: "600-1000 MW" },
+                    { key: "large",  label: "1 GW+" },
                   ].map(({ key, label }) => (
                     <button
                       key={key}
