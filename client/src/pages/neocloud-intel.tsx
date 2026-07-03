@@ -1,6 +1,8 @@
-import { useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
+import PriceHistoryChart from "@/components/neocloud/PriceHistoryChart";
+import { buildSeries, sparklineDomain, type ChartSeries, type RangeKey } from "@/lib/gpu-series";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -73,13 +75,46 @@ const fmtChange = (v: number | null) => (v === null ? "—" : `${v > 0 ? "+" : "
 const changeColor = (v: number | null): string => (v === null ? INK.faint : v > 0 ? SEMANTIC.negative : v < 0 ? SEMANTIC.positive : INK.muted);
 
 type SortKey = "current" | "model" | "w1" | "m1" | "ytd" | "y1";
+type ViewKey = "overlay" | "grid";
 
-// Has the recorder accrued enough real points for any continuous series yet?
-// (Anchors are sparse and mixed-methodology, so they don't count.) Until then we
-// show the snapshot, not a fake line.
-function hasRealSeries(rows: GpuRow[]): boolean {
-  // a model with >=4 points where consecutive dates are <=45 days apart somewhere
-  return rows.some((r) => r.series.length >= 6);
+const RANGE_KEYS: RangeKey[] = ["3M", "6M", "1Y", "ALL"];
+
+// ─── URL-persisted chart state (?gpus=A,B&view=grid&range=1Y) ──────────────
+
+function readChartParams(): { gpus: string[] | null; view: ViewKey; range: RangeKey } {
+  const sp = new URLSearchParams(window.location.search);
+  const gpusRaw = sp.get("gpus");
+  const view = sp.get("view") === "grid" ? "grid" : "overlay";
+  const rangeRaw = sp.get("range");
+  const range = (RANGE_KEYS as string[]).includes(rangeRaw ?? "") ? (rangeRaw as RangeKey) : "ALL";
+  return { gpus: gpusRaw ? gpusRaw.split(",").filter(Boolean) : null, view, range };
+}
+
+function writeChartParams(gpus: string[] | null, view: ViewKey, range: RangeKey) {
+  const sp = new URLSearchParams(window.location.search);
+  if (gpus) sp.set("gpus", gpus.join(","));
+  else sp.delete("gpus");
+  if (view !== "overlay") sp.set("view", view);
+  else sp.delete("view");
+  if (range !== "ALL") sp.set("range", range);
+  else sp.delete("range");
+  const qs = sp.toString();
+  window.history.replaceState(null, "", `${window.location.pathname}${qs ? `?${qs}` : ""}`);
+}
+
+/** Container width via ResizeObserver, for the SVG chart. */
+function useMeasuredWidth<T extends HTMLElement>(): [React.RefObject<T>, number] {
+  const ref = useRef<T>(null);
+  const [w, setW] = useState(0);
+  useLayoutEffect(() => {
+    if (!ref.current) return;
+    const ro = new ResizeObserver((entries) => {
+      for (const e of entries) setW(e.contentRect.width);
+    });
+    ro.observe(ref.current);
+    return () => ro.disconnect();
+  }, []);
+  return [ref, w];
 }
 
 export default function NeocloudIntel() {
@@ -88,6 +123,56 @@ export default function NeocloudIntel() {
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
   const rows = data?.rows ?? [];
+
+  // ── Price-history chart state (persisted in URL params) ──
+  const initial = useMemo(readChartParams, []);
+  const [visibleModels, setVisibleModels] = useState<string[] | null>(initial.gpus); // null = all
+  const [view, setView] = useState<ViewKey>(initial.view);
+  const [range, setRange] = useState<RangeKey>(initial.range);
+  const [hoveredModel, setHoveredModel] = useState<string | null>(null);
+  useEffect(() => {
+    writeChartParams(visibleModels, view, range);
+  }, [visibleModels, view, range]);
+
+  const allSeries: ChartSeries[] = useMemo(
+    () => buildSeries(rows.map((r) => ({ model: r.model, vendor: r.vendor, series: r.series })), colorFor),
+    [rows],
+  );
+  const visibleSet = useMemo(
+    () => new Set(visibleModels ?? rows.map((r) => r.model)),
+    [visibleModels, rows],
+  );
+  const chartSeries = useMemo(() => allSeries.filter((s) => visibleSet.has(s.model)), [allSeries, visibleSet]);
+  const estimatedModels = useMemo(
+    () => new Set(rows.filter((r) => r.estimated.includes("currentUsdPerHr")).map((r) => r.model)),
+    [rows],
+  );
+  const rangesByModel = useMemo(
+    () => Object.fromEntries(rows.map((r) => [r.model, { low: r.low, high: r.high }])),
+    [rows],
+  );
+  // Recorder considered empty while no model has more than one day-granular point
+  const recorderEmpty = useMemo(
+    () => rows.every((r) => r.series.filter((p) => /^\d{4}-\d{2}-\d{2}$/.test(p.date)).length <= 1),
+    [rows],
+  );
+  const now = useMemo(() => Date.now(), [data?.asOf]);
+
+  const chipClick = (model: string, shiftKey: boolean) => {
+    if (shiftKey) {
+      // toggle within the current selection
+      const cur = new Set(visibleModels ?? rows.map((r) => r.model));
+      if (cur.has(model)) cur.delete(model);
+      else cur.add(model);
+      setVisibleModels(cur.size === rows.length ? null : Array.from(cur));
+    } else {
+      // solo; clicking the only-visible chip resets to all
+      const isSolo = visibleModels?.length === 1 && visibleModels[0] === model;
+      setVisibleModels(isSolo ? null : [model]);
+    }
+  };
+
+  const [chartRef, chartWidth] = useMeasuredWidth<HTMLDivElement>();
 
   // Snapshot bar chart: every model, sorted by price desc.
   const barData = useMemo(
@@ -201,6 +286,107 @@ export default function NeocloudIntel() {
           ))
         )}
 
+        {/* Price history chart (Lake 2 rebuild: honest anchors/fill, true time axis) */}
+        <Card className="border-card-border p-3" data-testid="ni-history">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+            <span className="text-11 font-mono uppercase tracking-wider text-muted-foreground">
+              Price history · $/GPU/hr
+            </span>
+            <div className="flex items-center gap-1.5 text-10 font-mono">
+              {RANGE_KEYS.map((r) => (
+                <button
+                  key={r}
+                  onClick={() => setRange(r)}
+                  className={`px-2 py-0.5 rounded border transition-colors ${
+                    range === r
+                      ? "border-brand/60 text-brand bg-brand/10"
+                      : "border-subtle text-muted-foreground hover:text-foreground"
+                  }`}
+                  data-testid={`ni-range-${r}`}
+                >
+                  {r}
+                </button>
+              ))}
+              <span className="w-px h-4 bg-border mx-1" />
+              {(["overlay", "grid"] as ViewKey[]).map((v) => (
+                <button
+                  key={v}
+                  onClick={() => setView(v)}
+                  className={`px-2 py-0.5 rounded border transition-colors ${
+                    view === v
+                      ? "border-brand/60 text-brand bg-brand/10"
+                      : "border-subtle text-muted-foreground hover:text-foreground"
+                  }`}
+                  data-testid={`ni-view-${v}`}
+                >
+                  {v}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* model chips: click = solo, shift-click = toggle, All resets */}
+          {rows.length > 0 && (
+            <div className="flex flex-wrap items-center gap-1.5 mb-3" data-testid="ni-chips">
+              <button
+                onClick={() => setVisibleModels(null)}
+                className={`px-2 py-0.5 rounded border text-10 font-mono transition-colors ${
+                  visibleModels === null
+                    ? "border-brand/60 text-brand bg-brand/10"
+                    : "border-subtle text-muted-foreground hover:text-foreground"
+                }`}
+                data-testid="ni-chip-all"
+              >
+                All
+              </button>
+              {rows.map((r) => {
+                const on = visibleSet.has(r.model);
+                return (
+                  <button
+                    key={r.model}
+                    onClick={(e) => chipClick(r.model, e.shiftKey)}
+                    onPointerEnter={() => setHoveredModel(r.model)}
+                    onPointerLeave={() => setHoveredModel(null)}
+                    title="click = solo · shift-click = toggle"
+                    className={`flex items-center gap-1 px-2 py-0.5 rounded border text-10 font-mono transition-colors ${
+                      on ? "border-strong text-foreground" : "border-subtle text-muted-foreground/50 hover:text-muted-foreground"
+                    }`}
+                    data-testid={`ni-chip-${r.model}`}
+                  >
+                    <span className="h-1.5 w-1.5 rounded-full" style={{ background: colorFor(r.model), opacity: on ? 1 : 0.35 }} />
+                    {r.model}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          <div ref={chartRef}>
+            {isLoading ? (
+              <Skeleton className="h-[380px] w-full" />
+            ) : isError ? (
+              <div className="h-[240px] flex items-center justify-center text-xs text-negative">Price index unavailable.</div>
+            ) : (
+              <PriceHistoryChart
+                series={chartSeries}
+                range={range}
+                now={now}
+                view={view}
+                width={chartWidth}
+                hovered={hoveredModel}
+                onHover={setHoveredModel}
+                ranges={rangesByModel}
+                estimatedModels={estimatedModels}
+                recorderEmpty={recorderEmpty}
+              />
+            )}
+          </div>
+          <p className="text-10 text-muted-foreground/50 mt-1 font-mono">
+            Solid dots = sourced anchors · dashed spans = linear interpolation between anchors (synthetic, not observed
+            price action) · ring = first tracked price{chartSeries.length <= 3 ? " · shaded band = current observed marketplace range" : ""}.
+          </p>
+        </Card>
+
         {/* Current-price snapshot chart (all models, sorted, colored by maker) */}
         <Card className="border-card-border p-3" data-testid="ni-chart">
           <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
@@ -237,7 +423,6 @@ export default function NeocloudIntel() {
           )}
           <p className="text-10 text-muted-foreground/50 mt-1 font-mono">
             Bar = blended on-demand estimate · color = maker · hover for the marketplace range.
-            {data && !hasRealSeries(rows) && " A price-history chart will appear here once enough daily points accrue."}
           </p>
         </Card>
 
@@ -249,7 +434,7 @@ export default function NeocloudIntel() {
           </div>
           <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-surface-base border-b border-border text-10 font-mono uppercase tracking-wider text-muted-foreground">
             <SortHeader label="Model" k="model" cur={sortKey} dir={sortDir} onClick={toggleSort} className="col-span-3" />
-            <span className="col-span-2">Memory</span>
+            <span className="col-span-2">History</span>
             <SortHeader label="Avg" k="current" cur={sortKey} dir={sortDir} onClick={toggleSort} className="col-span-1 justify-end" />
             <SortHeader label="1W" k="w1" cur={sortKey} dir={sortDir} onClick={toggleSort} className="col-span-1 justify-end" />
             <SortHeader label="1M" k="m1" cur={sortKey} dir={sortDir} onClick={toggleSort} className="col-span-1 justify-end" />
@@ -265,19 +450,28 @@ export default function NeocloudIntel() {
             sortedRows.map((r) => (
               <UITooltip key={r.model}>
                 <TooltipTrigger asChild>
-                  <div className="grid grid-cols-12 gap-2 px-4 py-2.5 border-b border-border/30 last:border-0 text-xs hover:bg-brand/5 cursor-help items-center" data-testid={`ni-row-${r.model}`}>
+                  <div
+                    className={`grid grid-cols-12 gap-2 px-4 py-2.5 border-b border-border/30 last:border-0 text-xs cursor-help items-center transition-colors ${
+                      hoveredModel === r.model ? "bg-brand/5" : "hover:bg-brand/5"
+                    }`}
+                    onPointerEnter={() => setHoveredModel(r.model)}
+                    onPointerLeave={() => setHoveredModel(null)}
+                    data-testid={`ni-row-${r.model}`}
+                  >
                     <span className="col-span-3 font-mono font-semibold flex items-center gap-1.5" style={{ color: colorFor(r.model) }}>
                       <span className="h-2 w-2 rounded-full flex-shrink-0" style={{ background: colorFor(r.model) }} />
                       {r.model}
                       <span className="text-8 font-normal px-1 rounded-sm" style={{ color: vendorColor(r.vendor), border: `1px solid ${vendorColor(r.vendor)}55` }}>{r.vendor}</span>
                     </span>
-                    <span className="col-span-2 font-mono text-muted-foreground/70 text-10">{r.vramGB ? `${r.vramGB}GB ${r.vramType ?? ""}`.trim() : "—"}</span>
+                    <span className="col-span-2">
+                      <MiniSpark series={allSeries.find((s) => s.model === r.model)} />
+                    </span>
                     <span className="col-span-1 font-mono text-foreground text-right tabular-nums">
                       {fmtUsd(r.current)}{r.estimated.includes("currentUsdPerHr") && <span className="ml-0.5 text-8 text-estimate">e</span>}
                     </span>
                     <span className="col-span-1 font-mono text-right tabular-nums" style={{ color: changeColor(r.changes.w1) }}>{fmtChange(r.changes.w1)}</span>
                     <span className="col-span-1 font-mono text-right tabular-nums" style={{ color: changeColor(r.changes.m1) }}>{fmtChange(r.changes.m1)}</span>
-                    <span className="col-span-2 font-mono text-right tabular-nums" style={{ color: changeColor(r.changes.ytd) }}>{fmtChange(r.changes.ytd)}</span>
+                    <span className="col-span-1 font-mono text-right tabular-nums" style={{ color: changeColor(r.changes.ytd) }}>{fmtChange(r.changes.ytd)}</span>
                     <span className="col-span-1 font-mono text-right tabular-nums" style={{ color: changeColor(r.changes.y1) }}>{fmtChange(r.changes.y1)}</span>
                     <span className="col-span-2 font-mono text-muted-foreground text-right tabular-nums text-11">${r.low}–${r.high}</span>
                   </div>
@@ -306,6 +500,55 @@ export default function NeocloudIntel() {
         </p>
       </div>
     </div>
+  );
+}
+
+/**
+ * Table sparkline with the same honesty treatment as the main chart:
+ * per-series [min, max] domain with 10% padding, dashed interpolated spans,
+ * solid anchor dots. A single point renders as a dot, not a fake line.
+ */
+function MiniSpark({ series }: { series: ChartSeries | undefined }) {
+  const W = 104;
+  const H = 22;
+  if (!series || series.points.length === 0) {
+    return <span className="text-10 font-mono text-muted-foreground/40">no data</span>;
+  }
+  const pts = series.points;
+  const geom = sparklineDomain(pts.map((p) => p.price));
+  if (!geom) return <span className="text-10 font-mono text-muted-foreground/40">no data</span>;
+  const [d0, d1] = geom.domain;
+  const t0 = pts[0].t;
+  const t1 = pts[pts.length - 1].t;
+  const x = (t: number) => (t1 === t0 ? W / 2 : 2 + ((t - t0) / (t1 - t0)) * (W - 4));
+  const y = (v: number) => H - 3 - ((v - d0) / (d1 - d0)) * (H - 6);
+
+  return (
+    <svg width={W} height={H} className="block" role="img" aria-label={`${series.model} price history sparkline`}>
+      {series.spans.map((span, i) => (
+        <polyline
+          key={i}
+          points={span.points.map((p) => `${x(p.t)},${y(p.price)}`).join(" ")}
+          fill="none"
+          stroke={series.color}
+          strokeWidth={1.4}
+          strokeOpacity={span.quality === "observed" ? 1 : 0.55}
+          strokeDasharray={span.quality === "observed" ? undefined : "3 3"}
+          strokeLinecap="round"
+        />
+      ))}
+      {pts.map((p) => (
+        <circle
+          key={p.t}
+          cx={x(p.t)}
+          cy={y(p.price)}
+          r={p.kind === "anchor" ? 2 : 1.3}
+          fill={p.kind === "anchor" ? series.color : "transparent"}
+          stroke={series.color}
+          strokeWidth={p.kind === "anchor" ? 0 : 1}
+        />
+      ))}
+    </svg>
   );
 }
 
