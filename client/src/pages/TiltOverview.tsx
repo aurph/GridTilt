@@ -20,7 +20,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Zap, TrendingUp, Activity, AlertTriangle, Info, ArrowUp, ArrowDown, Calendar, ChevronRight, ExternalLink, Cpu, BarChart3, Calculator, Layers, Map, Link2, CalendarDays } from "lucide-react";
+import { Zap, TrendingUp, Activity, AlertTriangle, Info, ArrowUp, ArrowDown, Calendar, ChevronRight, ExternalLink, Cpu, Calculator, Layers, Map, Link2, CalendarDays, LineChart } from "lucide-react";
 import { EmailCapture, ScrollTriggeredBanner } from "@/components/EmailCapture";
 import { AsOf, ErrorState, SrChartTable } from "@/components/Freshness";
 import {
@@ -976,8 +976,8 @@ const FEATURE_SLIDES = [
   },
   {
     icon: Map,
-    title: "Power Map",
-    description: "US data center locations, power capacity, and utility interconnection points. See where the load is landing.",
+    title: "Power",
+    description: "US data center map, corporate power deals, and the interconnection queue. See where the load is landing.",
     href: "/power-map",
     accent: SERIES[9], // series slot 10 (copper accent)
     preview: powerMapPreview,
@@ -999,20 +999,20 @@ const FEATURE_SLIDES = [
     preview: catalystPreview,
   },
   {
-    icon: BarChart3,
-    title: "Portfolio Overlay",
-    description: "Score any portfolio for AI power exposure. See how your holdings map to the infrastructure buildout.",
-    href: "/portfolio",
-    accent: BRAND.primary,
-    preview: portfolioPreview,
+    icon: LineChart,
+    title: "GPU Prices",
+    description: "GPU rental price index across the neoclouds, plus cost-of-compute and training-run economics.",
+    href: "/neocloud-intel",
+    accent: BRAND.secondary,
+    preview: calculatorPreview,
   },
   {
     icon: Calculator,
-    title: "Scenario Calculator",
-    description: "Model scenarios across demand growth, nuclear capacity, and grid stress variables.",
-    href: "/trade",
-    accent: BRAND.secondary,
-    preview: calculatorPreview,
+    title: "Analyze",
+    description: "Score any portfolio for AI power exposure, and model buildout scenarios across demand, nuclear, and grid variables.",
+    href: "/analyze",
+    accent: BRAND.primary,
+    preview: portfolioPreview,
   },
 ];
 

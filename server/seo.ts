@@ -34,16 +34,6 @@ const STATIC_PAGES: Record<string, { title: string; description: string; slug: s
     description: "48 AI data center facilities mapped by operator, grid region, and capacity. Filter by Google, Amazon, Meta, Microsoft.",
     slug: "power-map",
   },
-  "/trade": {
-    title: "AI Power Demand Scenario Calculator \u2014 GridTilt",
-    description: "Model AI electricity demand through 2030. Three preset scenarios with adjustable assumptions. Free scenario analysis tool.",
-    slug: "trade",
-  },
-  "/portfolio": {
-    title: "AI Power Thesis Score \u2014 Rate Any Stock \u2014 GridTilt",
-    description: "Score any ticker against the AI power infrastructure thesis. See how stocks align with nuclear, grid stress, and demand pressure indices.",
-    slug: "portfolio",
-  },
   "/catalysts": {
     title: "AI Power Earnings Calendar and Catalyst Events \u2014 GridTilt",
     description: "Upcoming earnings dates, regulatory decisions, and policy events for AI infrastructure stocks. Auto-updated catalyst calendar.",
@@ -53,11 +43,6 @@ const STATIC_PAGES: Record<string, { title: string; description: string; slug: s
     title: "AI Power Infrastructure Analysis \u2014 GridTilt",
     description: "Research and analysis on the AI power infrastructure thesis. Data center power demand, nuclear energy, grid constraints, and investment implications.",
     slug: "blog",
-  },
-  "/queue": {
-    title: "Interconnection Backlog \u00b7 Named US Power Projects Waiting on the Grid \u00b7 GridTilt",
-    description: "Every named US power project we can verify, plus the ISO queue totals that contain them. ~2,290 GW pending across ~10,300 projects (LBNL). 55-month median wait. ERCOT's large-load queue alone is 230 GW.",
-    slug: "queue",
   },
   "/supply-chain": {
     title: "AI Power Supply Chain \u2014 Bottlenecks from Silicon to Substation \u2014 GridTilt",
@@ -79,25 +64,15 @@ const STATIC_PAGES: Record<string, { title: string; description: string; slug: s
     description: "Put two or three named AI superclusters side by side: GPUs, chips, rated and planned power, grid region, energy source, and linked nuclear deals.",
     slug: "compute-frontier/compare",
   },
+  "/analyze": {
+    title: "Analyze - Portfolio Exposure and Buildout Scenarios | GridTilt",
+    description: "Score any portfolio for AI power exposure, and model buildout scenarios across demand growth, generation mix, and grid variables.",
+    slug: "analyze",
+  },
   "/neocloud-intel": {
     title: "Neocloud Intel \u00b7 GPU Rental Price Index \u00b7 GridTilt",
     description: "On-demand GPU rental prices ($/GPU/hr) for H100, H200, GB200, B200, B300, MI300X and more, blended across the major neoclouds and marketplaces. Sourced blended estimates with marketplace ranges and 1W/1M/YTD/1Y changes.",
     slug: "neocloud-intel",
-  },
-  "/gpu-economics": {
-    title: "GPU Economics \u00b7 Cost of Compute and Training \u00b7 GridTilt",
-    description: "What renting AI GPUs actually costs: hourly rates rolled out to a year, normalized by compute ($/PFLOP-hour) so you can see the cheapest GPU per unit of work, plus a transparent training-cost calculator with adjustable assumptions.",
-    slug: "gpu-economics",
-  },
-  "/power-deals": {
-    title: "AI Power Deals \u00b7 Corporate Power Procurement for AI \u00b7 GridTilt",
-    description: "Every named deal where a hyperscaler or AI company contracted generation to feed its compute: PPAs, reactor restarts, and SMR options by buyer, energy type, capacity, and online date. Microsoft, Meta, Google, Amazon and more.",
-    slug: "power-deals",
-  },
-  "/brief": {
-    title: "The Buildout Brief \u00b7 State of the AI Power Buildout \u00b7 GridTilt",
-    description: "One synthesized read on the AI power buildout, generated live from every GridTilt module: compute clusters, GPU rental prices, the interconnection queue, and corporate power deals.",
-    slug: "brief",
   },
   "/subscribe": {
     title: "Get the Tilt \u2014 Weekly AI Power Market Intel \u2014 GridTilt",
@@ -278,10 +253,10 @@ export function getPageMeta(pathname: string): PageMeta {
         { name: "Compute Frontier", url: `${BASE_URL}/compute-frontier` },
         { name: "Compare", url: `${BASE_URL}/compute-frontier/compare` },
       ]));
-    } else if (pathname === "/trade") {
+    } else if (pathname === "/analyze") {
       jsonLd.push(faqJsonLd(TRADE_FAQS), breadcrumbJsonLd([
         { name: "GridTilt", url: BASE_URL },
-        { name: "Scenario Calculator", url: `${BASE_URL}/trade` },
+        { name: "Analyze", url: `${BASE_URL}/analyze` },
       ]));
     } else if (pathname === "/stack") {
       jsonLd.push(breadcrumbJsonLd([
@@ -292,11 +267,6 @@ export function getPageMeta(pathname: string): PageMeta {
       jsonLd.push(breadcrumbJsonLd([
         { name: "GridTilt", url: BASE_URL },
         { name: "Catalyst Tracker", url: `${BASE_URL}/catalysts` },
-      ]));
-    } else if (pathname === "/portfolio") {
-      jsonLd.push(breadcrumbJsonLd([
-        { name: "GridTilt", url: BASE_URL },
-        { name: "Portfolio Overlay", url: `${BASE_URL}/portfolio` },
       ]));
     } else if (pathname === "/blog") {
       jsonLd.push(breadcrumbJsonLd([

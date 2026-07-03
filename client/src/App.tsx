@@ -13,10 +13,7 @@ import ComputeFrontierMethodology from "@/pages/ComputeFrontierMethodology";
 import ComputeFrontierCompare from "@/pages/ComputeFrontierCompare";
 import ComputeFrontierDetail from "@/pages/ComputeFrontierDetail";
 import NeocloudIntel from "@/pages/neocloud-intel";
-import PowerDeals from "@/pages/power-deals";
-import BriefPage from "@/pages/brief";
-import TheTrade from "@/pages/TheTrade";
-import PortfolioOverlay from "@/pages/PortfolioOverlay";
+import Analyze from "@/pages/Analyze";
 import CatalystTracker from "@/pages/CatalystTracker";
 import StockPage from "@/pages/StockPage";
 import SectorPage from "@/pages/SectorPage";
@@ -26,7 +23,6 @@ import BlogIndex from "@/pages/BlogIndex";
 import BlogPost from "@/pages/BlogPost";
 import SupplyChain from "@/pages/SupplyChain";
 import Subscribe from "@/pages/Subscribe";
-import Queue from "@/pages/Queue";
 import AdminDatacenters from "@/pages/AdminDatacenters";
 import AdminSocial from "@/pages/AdminSocial";
 import { NewsTicker } from "@/components/NewsTicker";
@@ -48,16 +44,12 @@ const PAGE_TITLES: Record<string, string> = {
   "/": "GridTilt",
   "/overview": "Tilt Overview",
   "/stack": "The Stack",
-  "/power-map": "Power Map",
+  "/power-map": "Power",
   "/compute-frontier": "Compute Frontier",
   "/neocloud-intel": "GPU Prices",
-  "/power-deals": "AI Power Deals",
-  "/brief": "The Buildout Brief",
   "/supply-chain": "Supply Chain",
-  "/trade": "Scenario Calculator",
-  "/portfolio": "Portfolio Overlay",
+  "/analyze": "Analyze",
   "/catalysts": "Catalyst Tracker",
-  "/queue": "Interconnection Backlog",
   "/blog": "Analysis",
   "/subscribe": "Subscribe",
 };
@@ -65,18 +57,13 @@ const PAGE_TITLES: Record<string, string> = {
 const SHORTCUTS = [
   { keys: ["G", "1"], description: "Go to Tilt Overview", path: "/overview" },
   { keys: ["G", "2"], description: "Go to The Stack", path: "/stack" },
-  { keys: ["G", "3"], description: "Go to Power Map", path: "/power-map" },
-  { keys: ["G", "4"], description: "Go to Supply Chain", path: "/supply-chain" },
-  { keys: ["G", "5"], description: "Go to Portfolio Overlay", path: "/portfolio" },
-  { keys: ["G", "6"], description: "Go to Scenario Calculator", path: "/trade" },
-  { keys: ["G", "7"], description: "Go to Catalyst Tracker", path: "/catalysts" },
+  { keys: ["G", "3"], description: "Go to Power", path: "/power-map" },
+  { keys: ["G", "4"], description: "Go to Compute Frontier", path: "/compute-frontier" },
+  { keys: ["G", "5"], description: "Go to GPU Prices", path: "/neocloud-intel" },
+  { keys: ["G", "6"], description: "Go to Catalyst Tracker", path: "/catalysts" },
+  { keys: ["G", "7"], description: "Go to Analyze", path: "/analyze" },
   { keys: ["G", "8"], description: "Go to Analysis", path: "/blog" },
-  { keys: ["G", "9"], description: "Go to Interconnection Backlog", path: "/queue" },
-  { keys: ["G", "0"], description: "Go to Compute Frontier", path: "/compute-frontier" },
-  { keys: ["G", "N"], description: "Go to Neocloud Intel", path: "/neocloud-intel" },
-  { keys: ["G", "D"], description: "Go to AI Power Deals", path: "/power-deals" },
-  { keys: ["G", "B"], description: "Go to The Buildout Brief", path: "/brief" },
-  { keys: ["G", "E"], description: "Go to GPU Economics", path: "/gpu-economics" },
+  { keys: ["G", "S"], description: "Go to Supply Chain", path: "/supply-chain" },
   { keys: ["?"], description: "Show this keyboard shortcuts panel", path: null },
 ];
 
@@ -169,13 +156,15 @@ function Router() {
       <Route path="/neocloud-intel" component={NeocloudIntel} />
       {/* Consolidation: GPU Economics is now the economics tab of GPU Prices */}
       <Route path="/gpu-economics">{() => <Redirect to="/neocloud-intel?tab=economics" replace />}</Route>
-      <Route path="/power-deals" component={PowerDeals} />
-      <Route path="/brief" component={BriefPage} />
+      {/* Consolidation: Deals and Queue are tabs of Power; Brief lives in Analysis */}
+      <Route path="/power-deals">{() => <Redirect to="/power-map?tab=deals" replace />}</Route>
+      <Route path="/brief">{() => <Redirect to="/blog" replace />}</Route>
       <Route path="/supply-chain" component={SupplyChain} />
-      <Route path="/trade" component={TheTrade} />
-      <Route path="/portfolio" component={PortfolioOverlay} />
+      <Route path="/analyze" component={Analyze} />
+      <Route path="/trade">{() => <Redirect to="/analyze?tab=scenario" replace />}</Route>
+      <Route path="/portfolio">{() => <Redirect to="/analyze?tab=portfolio" replace />}</Route>
       <Route path="/catalysts" component={CatalystTracker} />
-      <Route path="/queue" component={Queue} />
+      <Route path="/queue">{() => <Redirect to="/power-map?tab=queue" replace />}</Route>
       <Route path="/stock/:ticker" component={StockPage} />
       <Route path="/sector/:slug" component={SectorPage} />
       <Route path="/region/:slug" component={RegionPage} />
@@ -248,9 +237,8 @@ function App() {
       if (gPressed) {
         const routes: Record<string, string> = {
           "1": "/overview", "2": "/stack", "3": "/power-map",
-          "4": "/supply-chain", "5": "/portfolio", "6": "/trade",
-          "7": "/catalysts", "8": "/blog", "9": "/queue",
-          "0": "/compute-frontier", "n": "/neocloud-intel", "d": "/power-deals", "b": "/brief", "e": "/gpu-economics",
+          "4": "/compute-frontier", "5": "/neocloud-intel", "6": "/catalysts",
+          "7": "/analyze", "8": "/blog", "s": "/supply-chain",
         };
         if (routes[e.key]) {
           navigate(routes[e.key]);

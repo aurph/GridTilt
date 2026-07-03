@@ -15,14 +15,10 @@ import {
   Map,
   Cpu,
   Link2,
-  BarChart3,
   CalendarDays,
   FileText,
   Calculator,
-  Cable,
   LineChart,
-  Handshake,
-  Newspaper,
 } from "lucide-react";
 import logoPath from "@assets/Image_[Vectorized]_(2)_1773890483514.png";
 import { BORDER, BRAND, FONT, INK } from "@/lib/tokens";
@@ -41,10 +37,10 @@ const navItems = [
     description: "Sector breakdown",
   },
   {
-    title: "Power Map",
+    title: "Power",
     url: "/power-map",
     icon: Map,
-    description: "US data center locations",
+    description: "Facilities map, deals, grid queue",
   },
   {
     title: "Compute Frontier",
@@ -59,46 +55,22 @@ const navItems = [
     description: "Rental price index + cost of compute",
   },
   {
-    title: "AI Power Deals",
-    url: "/power-deals",
-    icon: Handshake,
-    description: "Corporate power procurement for AI",
-  },
-  {
-    title: "The Buildout Brief",
-    url: "/brief",
-    icon: Newspaper,
-    description: "One read across every module",
-  },
-  {
     title: "Supply Chain",
     url: "/supply-chain",
     icon: Link2,
     description: "Power flow bottlenecks",
   },
   {
-    title: "Portfolio Overlay",
-    url: "/portfolio",
-    icon: BarChart3,
-    description: "AI Power Exposure score",
-  },
-  {
-    title: "Scenario Calculator",
-    url: "/trade",
+    title: "Analyze",
+    url: "/analyze",
     icon: Calculator,
-    description: "Scenario modeling",
+    description: "Portfolio exposure + scenarios",
   },
   {
     title: "Catalyst Tracker",
     url: "/catalysts",
     icon: CalendarDays,
     description: "Upcoming market events",
-  },
-  {
-    title: "Backlog",
-    url: "/queue",
-    icon: Cable,
-    description: "Interconnection projects in flight",
   },
   {
     title: "Analysis",

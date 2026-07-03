@@ -3106,6 +3106,13 @@ Preferred-Languages: en
   app.get("/score", (_req, res) => res.redirect(301, "/portfolio"));
   app.get("/catalyst-tracker", (_req, res) => res.redirect(301, "/catalysts"));
   app.get("/the-stack", (_req, res) => res.redirect(301, "/stack"));
+  // Consolidation (Plan B): folded tools 301 into their host tool's tab
+  app.get("/gpu-economics", (_req, res) => res.redirect(301, "/neocloud-intel?tab=economics"));
+  app.get("/power-deals", (_req, res) => res.redirect(301, "/power-map?tab=deals"));
+  app.get("/queue", (_req, res) => res.redirect(301, "/power-map?tab=queue"));
+  app.get("/brief", (_req, res) => res.redirect(301, "/blog"));
+  app.get("/portfolio", (_req, res) => res.redirect(301, "/analyze?tab=portfolio"));
+  app.get("/trade", (_req, res) => res.redirect(301, "/analyze?tab=scenario"));
   app.get("/thesis-calculator", (_req, res) => res.redirect(301, "/trade"));
   app.get("/portfolio-overlay", (_req, res) => res.redirect(301, "/portfolio"));
 
