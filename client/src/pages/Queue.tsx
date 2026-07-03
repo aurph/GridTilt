@@ -54,6 +54,12 @@ interface BacklogResponse {
     stargateAbileneGW: number;
   };
   projects: BacklogProject[];
+  /**
+   * Headline fields whose values came from hardcoded fallback literals (the
+   * old-shape API has no source for them), not sourced data. Rendered with
+   * an "est." flag so they are distinguishable from sourced numbers.
+   */
+  estimatedHeadline?: string[];
 }
 
 // Energy types from CATEGORY_COLORS; hybrid/load have no token category, so
@@ -121,6 +127,15 @@ function normalizeBacklog(raw: any): BacklogResponse | undefined {
       notes: p.notes,
     }));
     const nonAgg = projects.filter((p) => p.category !== "aggregate");
+    // The old shape has no source for these headline fields; the literals
+    // below are estimates, so flag them for the "est." marker in the UI.
+    const estimatedHeadline = [
+      "dominionContractedGW",
+      "duke5yrGenAddGW",
+      "metaHyperionGW",
+      "stargateAbileneGW",
+      ...(a.historicalWithdrawalPct == null ? ["historicalWithdrawalPct"] : []),
+    ];
     return {
       lastRefreshed: raw.source?.asOf ?? "unknown",
       headline: {
@@ -145,9 +160,16 @@ function normalizeBacklog(raw: any): BacklogResponse | undefined {
         stargateAbileneGW: 1.2,
       },
       projects: projects as any,
+      estimatedHeadline,
     };
   }
   return undefined;
+}
+
+/** Small "est." tag for headline numbers the old-shape fallback filled with hardcoded estimates. */
+function Est({ on }: { on: boolean }) {
+  if (!on) return null;
+  return <span className="ml-1 text-8 font-mono uppercase tracking-wide text-estimate align-top">est.</span>;
 }
 
 export default function Queue() {
@@ -194,6 +216,7 @@ export default function Queue() {
   const isos = data?.projects ? Array.from(new Set(data.projects.map((p) => p.iso))).sort() : [];
   const types = data?.projects ? Array.from(new Set(data.projects.map((p) => p.type))) : [];
   const h = data?.headline;
+  const isEst = (field: string) => !!data?.estimatedHeadline?.includes(field);
 
   return (
     <div className="flex flex-col h-full overflow-y-auto">
@@ -212,7 +235,7 @@ export default function Queue() {
                 <span className="text-foreground font-mono">{h.medianWaitMonths} months</span>. ERCOT's large-load queue alone is{" "}
                 <span className="text-foreground font-mono">{h.ercotLargeLoadGW} GW</span>, of which{" "}
                 <span className="text-foreground font-mono">{h.ercotLargeLoadDataCenterPct}%</span> is datacenters.
-                Dominion has <span className="text-foreground font-mono">{h.dominionContractedGW} GW</span> already under hyperscaler contract in Virginia alone.
+                Dominion has <span className="text-foreground font-mono">{h.dominionContractedGW} GW</span><Est on={isEst("dominionContractedGW")} /> already under hyperscaler contract in Virginia alone.
               </p>
             ) : (
               <p className="text-muted-foreground text-sm">Loading the backlog.</p>
@@ -249,11 +272,11 @@ export default function Queue() {
             <span className="text-muted-foreground/30">·</span>
             <span><span className="text-foreground">{h.pjmReopenedGW}</span> GW in PJM's reopened queue</span>
             <span className="text-muted-foreground/30">·</span>
-            <span><span className="text-foreground">{h.historicalWithdrawalPct}%</span> historical withdrawal rate</span>
+            <span><span className="text-foreground">{h.historicalWithdrawalPct}%</span><Est on={isEst("historicalWithdrawalPct")} /> historical withdrawal rate</span>
             <span className="text-muted-foreground/30">·</span>
-            <span>Meta Hyperion: <span className="text-foreground">{h.metaHyperionGW} GW</span></span>
+            <span>Meta Hyperion: <span className="text-foreground">{h.metaHyperionGW} GW</span><Est on={isEst("metaHyperionGW")} /></span>
             <span className="text-muted-foreground/30">·</span>
-            <span>Stargate Abilene: <span className="text-foreground">{h.stargateAbileneGW} GW</span></span>
+            <span>Stargate Abilene: <span className="text-foreground">{h.stargateAbileneGW} GW</span><Est on={isEst("stargateAbileneGW")} /></span>
           </div>
         )}
 
@@ -302,11 +325,11 @@ export default function Queue() {
               const Icon = TYPE_ICONS[p.type] ?? Zap;
               const statusColor = p.status === "active" ? SEMANTIC.warning : p.status === "operational" ? SEMANTIC.positiveDeep : INK.faint;
               const isAggregate = p.category === "aggregate";
-              return (
-                <UITooltip key={p.id}>
-                  <TooltipTrigger asChild>
+              const hasTooltip = !!p.notes || !!(p.sources && p.sources.length > 0);
+              const row = (
                     <div
-                      className={`grid grid-cols-12 gap-2 px-4 py-2.5 border-b border-border/30 last:border-0 text-xs hover:bg-brand/5 cursor-help ${isAggregate ? "bg-surface-sunken" : ""}`}
+                      key={p.id}
+                      className={`grid grid-cols-12 gap-2 px-4 py-2.5 border-b border-border/30 last:border-0 text-xs hover:bg-brand/5 ${hasTooltip ? "cursor-help" : ""} ${isAggregate ? "bg-surface-sunken" : ""}`}
                       data-testid={`backlog-row-${p.id}`}
                     >
                       <div className="col-span-4 min-w-0">
@@ -339,7 +362,11 @@ export default function Queue() {
                         {p.dcRelevant ? <span className="text-brand">★</span> : <span className="text-muted-foreground/30">—</span>}
                       </span>
                     </div>
-                  </TooltipTrigger>
+              );
+              if (!hasTooltip) return row;
+              return (
+                <UITooltip key={p.id}>
+                  <TooltipTrigger asChild>{row}</TooltipTrigger>
                   <TooltipContent side="top" className="max-w-md p-3">
                     {p.notes && <p className="text-xs leading-relaxed mb-1.5">{p.notes}</p>}
                     {p.sources && p.sources.length > 0 && (
