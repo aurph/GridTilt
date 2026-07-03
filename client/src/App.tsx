@@ -21,7 +21,6 @@ import RegionPage from "@/pages/RegionPage";
 import OperatorPage from "@/pages/OperatorPage";
 import BlogIndex from "@/pages/BlogIndex";
 import BlogPost from "@/pages/BlogPost";
-import SupplyChain from "@/pages/SupplyChain";
 import Subscribe from "@/pages/Subscribe";
 import AdminDatacenters from "@/pages/AdminDatacenters";
 import AdminSocial from "@/pages/AdminSocial";
@@ -47,7 +46,6 @@ const PAGE_TITLES: Record<string, string> = {
   "/power-map": "Power",
   "/compute-frontier": "Compute Frontier",
   "/neocloud-intel": "GPU Prices",
-  "/supply-chain": "Supply Chain",
   "/analyze": "Analyze",
   "/catalysts": "Catalyst Tracker",
   "/blog": "Analysis",
@@ -63,7 +61,6 @@ const SHORTCUTS = [
   { keys: ["G", "6"], description: "Go to Catalyst Tracker", path: "/catalysts" },
   { keys: ["G", "7"], description: "Go to Analyze", path: "/analyze" },
   { keys: ["G", "8"], description: "Go to Analysis", path: "/blog" },
-  { keys: ["G", "S"], description: "Go to Supply Chain", path: "/supply-chain" },
   { keys: ["?"], description: "Show this keyboard shortcuts panel", path: null },
 ];
 
@@ -159,7 +156,7 @@ function Router() {
       {/* Consolidation: Deals and Queue are tabs of Power; Brief lives in Analysis */}
       <Route path="/power-deals">{() => <Redirect to="/power-map?tab=deals" replace />}</Route>
       <Route path="/brief">{() => <Redirect to="/blog" replace />}</Route>
-      <Route path="/supply-chain" component={SupplyChain} />
+      <Route path="/supply-chain">{() => <Redirect to="/stack?view=flow" replace />}</Route>
       <Route path="/analyze" component={Analyze} />
       <Route path="/trade">{() => <Redirect to="/analyze?tab=scenario" replace />}</Route>
       <Route path="/portfolio">{() => <Redirect to="/analyze?tab=portfolio" replace />}</Route>
@@ -238,7 +235,7 @@ function App() {
         const routes: Record<string, string> = {
           "1": "/overview", "2": "/stack", "3": "/power-map",
           "4": "/compute-frontier", "5": "/neocloud-intel", "6": "/catalysts",
-          "7": "/analyze", "8": "/blog", "s": "/supply-chain",
+          "7": "/analyze", "8": "/blog",
         };
         if (routes[e.key]) {
           navigate(routes[e.key]);

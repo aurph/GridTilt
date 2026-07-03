@@ -296,6 +296,20 @@ function NetworkGraph({
       data-testid="sc-network-graph"
     >
       <g ref={gRef}>
+        {/* Stage column guides: the sim pins each node's x to its stage
+            (forceX strength 0.85), so horizontal position IS the supply
+            chain stage. These faint verticals make that encoding explicit. */}
+        {[0.1, 0.3, 0.5, 0.7, 0.9].map((fx, i) => (
+          <line
+            key={`guide-${i}`}
+            x1={fx * GRAPH_W}
+            x2={fx * GRAPH_W}
+            y1={56}
+            y2={GRAPH_H - 16}
+            stroke={CHART_CHROME.grid}
+            strokeDasharray="2 6"
+          />
+        ))}
         {STAGE_LABELS.map((s) => {
           const stageX = [0.1, 0.3, 0.5, 0.7, 0.9];
           const x = stageX[s.index] * GRAPH_W;
@@ -833,7 +847,7 @@ function DetailPanel({
   );
 }
 
-export default function SupplyChain() {
+export default function SupplyChain({ embedded = false }: { embedded?: boolean; params?: unknown }) {
   const [, navigate] = useLocation();
   const [activeNode, setActiveNode] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"network" | "flow">(() => {
@@ -891,7 +905,8 @@ export default function SupplyChain() {
   const activeNodeData = activeNode ? supplyNodes.find((n) => n.id === activeNode) : null;
 
   return (
-    <div className="sc-page" data-testid="supply-chain-page" onClick={() => setActiveNode(null)}>
+    // Embedded (The Stack flow view): the host owns page scroll/padding.
+    <div className={embedded ? "sc-page sc-page-embedded" : "sc-page"} data-testid="supply-chain-page" onClick={() => setActiveNode(null)}>
       <div className="sc-topbar" data-testid="sc-summary-bar">
         <div className="sc-topbar-left">
           <span className="sc-mono text-13 font-bold" style={{ color: BRAND.primary }}>SUPPLY CHAIN</span>
@@ -960,7 +975,7 @@ export default function SupplyChain() {
             {s.name}
           </span>
         ))}
-        <span className="sc-legend-hint">click a node to explore. scroll to zoom. double-click to reset.</span>
+        <span className="sc-legend-hint">x = supply chain stage · node size = connection count · click a node to explore. scroll to zoom. double-click to reset.</span>
       </div>
 
       {activeNodeData && (

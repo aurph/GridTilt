@@ -44,11 +44,6 @@ const STATIC_PAGES: Record<string, { title: string; description: string; slug: s
     description: "Research and analysis on the AI power infrastructure thesis. Data center power demand, nuclear energy, grid constraints, and investment implications.",
     slug: "blog",
   },
-  "/supply-chain": {
-    title: "AI Power Supply Chain \u2014 Bottlenecks from Silicon to Substation \u2014 GridTilt",
-    description: "Five-system breakdown of the AI power supply chain. 20 sub-systems mapped from chips through compute, cooling, transmission, and generation. Live equity exposure per node.",
-    slug: "supply-chain",
-  },
   "/compute-frontier": {
     title: "Compute Frontier \u00b7 AI Supercluster Tracker \u00b7 GridTilt",
     description: "Named US AI training and inference superclusters by GPUs, chip type, rated and planned power, grid region, and energy source, tied to the nuclear-for-AI deals that feed them. Sourced figures vs labeled estimates.",

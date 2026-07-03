@@ -1,6 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
-import { Profiler, useEffect, useMemo, useState, type ReactNode } from "react";
+import { Profiler, Suspense, lazy, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useMeasuredWidth } from "@/lib/use-measured-width";
+
+// Supply-chain flow view (consolidation): lazy so the d3 sim only loads
+// when the flow tab is opened.
+const SupplyChainFlow = lazy(() => import("@/pages/SupplyChain"));
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -408,13 +412,18 @@ function sortStocks(stocks: StockData[], sortBy: SortBy): StockData[] {
   return arr;
 }
 
-type ViewMode = "cards" | "table" | "heatmap";
+type ViewMode = "cards" | "table" | "heatmap" | "flow";
 const VIEW_LS_KEY = "gridtilt.stack.view";
+const VIEW_MODES: ViewMode[] = ["cards", "table", "heatmap", "flow"];
 
 function readStoredView(): ViewMode {
+  // URL param wins (the /supply-chain redirect lands on /stack?view=flow),
+  // then the persisted preference.
   try {
+    const q = new URLSearchParams(window.location.search).get("view");
+    if (q && (VIEW_MODES as string[]).includes(q)) return q as ViewMode;
     const v = window.localStorage.getItem(VIEW_LS_KEY);
-    return v === "table" || v === "heatmap" ? v : "cards";
+    return v && (VIEW_MODES as string[]).includes(v) ? (v as ViewMode) : "cards";
   } catch {
     return "cards";
   }
@@ -595,7 +604,7 @@ export default function TheStack() {
         <div className="flex flex-wrap items-center gap-4 mt-4">
           {/* View toggle (persisted per user) */}
           <div className="flex items-center gap-1 bg-muted/30 rounded-md p-0.5 border border-card-border">
-            {(["cards", "table", "heatmap"] as ViewMode[]).map((v) => (
+            {VIEW_MODES.map((v) => (
               <button
                 key={v}
                 onClick={() => setView(v)}
@@ -609,25 +618,28 @@ export default function TheStack() {
             ))}
           </div>
 
-          <div className="w-px h-5 bg-border" />
-
-          {/* Timeframe toggle */}
-          <div className="flex items-center gap-1 bg-muted/30 rounded-md p-0.5 border border-card-border">
-            {(["1D", "5D", "1M"] as Timeframe[]).map((tf) => (
-              <button
-                key={tf}
-                onClick={() => setTimeframe(tf)}
-                data-testid={`timeframe-${tf.toLowerCase()}`}
-                className={`px-3 py-1 text-xs font-mono font-semibold rounded transition-all ${
-                  timeframe === tf
-                    ? "bg-brand text-white"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {tf}
-              </button>
-            ))}
-          </div>
+          {/* Timeframe applies to price views, not the supply-chain flow */}
+          {view !== "flow" && (
+            <>
+              <div className="w-px h-5 bg-border" />
+              <div className="flex items-center gap-1 bg-muted/30 rounded-md p-0.5 border border-card-border">
+                {(["1D", "5D", "1M"] as Timeframe[]).map((tf) => (
+                  <button
+                    key={tf}
+                    onClick={() => setTimeframe(tf)}
+                    data-testid={`timeframe-${tf.toLowerCase()}`}
+                    className={`px-3 py-1 text-xs font-mono font-semibold rounded transition-all ${
+                      timeframe === tf
+                        ? "bg-brand text-white"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {tf}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
 
           {/* Sort toggle - cards view only; table sorts by column, heatmap by size */}
           {view === "cards" && (
@@ -726,8 +738,14 @@ export default function TheStack() {
           <StackHeatmap layers={layerConfig} data={data} timeframe={timeframe} isLoading={isLoading} isError={isError} onRetry={() => refetch()} />
         )}
 
-        {/* Uranium vs CCJ Correlation scatter */}
-        <div>
+        {view === "flow" && (
+          <Suspense fallback={<Skeleton className="h-[560px] w-full" />}>
+            <SupplyChainFlow embedded />
+          </Suspense>
+        )}
+
+        {/* Uranium vs CCJ Correlation scatter (price views only) */}
+        <div className={view === "flow" ? "hidden" : undefined}>
           <Card className="p-6 border-card-border">
             <div className="flex items-start justify-between gap-4 mb-4 flex-wrap">
               <div>

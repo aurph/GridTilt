@@ -968,9 +968,9 @@ const FEATURE_SLIDES = [
   },
   {
     icon: Link2,
-    title: "Supply Chain Tracker",
-    description: "Interactive D3 force network mapping 21 nodes and 44 real supply relationships from raw materials to end-use compute.",
-    href: "/supply-chain",
+    title: "Supply Chain Flow",
+    description: "Interactive network of 21 nodes and 44 real supply relationships, staged from raw materials to end-use compute. Lives inside The Stack.",
+    href: "/stack?view=flow",
     accent: BRAND.secondary,
     preview: supplyChainPreview,
   },

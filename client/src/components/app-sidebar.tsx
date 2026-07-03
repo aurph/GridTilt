@@ -14,7 +14,6 @@ import {
   Layers,
   Map,
   Cpu,
-  Link2,
   CalendarDays,
   FileText,
   Calculator,
@@ -53,12 +52,6 @@ const navItems = [
     url: "/neocloud-intel",
     icon: LineChart,
     description: "Rental price index + cost of compute",
-  },
-  {
-    title: "Supply Chain",
-    url: "/supply-chain",
-    icon: Link2,
-    description: "Power flow bottlenecks",
   },
   {
     title: "Analyze",

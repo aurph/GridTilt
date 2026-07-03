@@ -3113,6 +3113,7 @@ Preferred-Languages: en
   app.get("/brief", (_req, res) => res.redirect(301, "/blog"));
   app.get("/portfolio", (_req, res) => res.redirect(301, "/analyze?tab=portfolio"));
   app.get("/trade", (_req, res) => res.redirect(301, "/analyze?tab=scenario"));
+  app.get("/supply-chain", (_req, res) => res.redirect(301, "/stack?view=flow"));
   app.get("/thesis-calculator", (_req, res) => res.redirect(301, "/trade"));
   app.get("/portfolio-overlay", (_req, res) => res.redirect(301, "/portfolio"));
 
