@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useMutation } from "@tanstack/react-query";
+import { Link } from "wouter";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -22,7 +23,7 @@ import {
 import { apiRequest } from "@/lib/queryClient";
 import { Info, BarChart3, Search, Loader2, AlertCircle, Plus, Share2, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { BORDER, BRAND, CATEGORY_COLORS, CHART_CHROME, INK, SEMANTIC, SERIES } from "@/lib/tokens";
+import { BORDER, BRAND, CATEGORY_COLORS, CHART_CHROME, FONT, INK, SEMANTIC, SERIES } from "@/lib/tokens";
 
 interface PortfolioResult {
   ticker: string;
@@ -44,6 +45,10 @@ interface RadarDataPoint {
   value: number;
   fullMark: number;
 }
+
+// One per segment; all tracked in The Stack (/stack), so every suggestion
+// resolves to a real /stock/:ticker page.
+const STACK_EXAMPLE_TICKERS = ["NVDA", "CEG", "VRT", "CCJ", "EQIX", "PWR"];
 
 const EXAMPLE_PORTFOLIOS = [
   { label: "AI Bull", tickers: "NVDA, CEG, EQIX, AMD, CCJ" },
@@ -160,6 +165,12 @@ export default function PortfolioOverlay() {
     }
   };
 
+  // Sort a copy: sorting `results` in place would mutate React state during render.
+  const sortedResults = useMemo(
+    () => (results ? [...results].sort((a, b) => b.score - a.score) : null),
+    [results],
+  );
+
   const radarData: RadarDataPoint[] = results
     ? ["Compute", "Infrastructure", "Power", "Cooling", "Grid"].map((axis) => ({
         axis,
@@ -172,6 +183,14 @@ export default function PortfolioOverlay() {
     ? Math.round(results.reduce((s, r) => s + r.score, 0) / results.length)
     : null;
 
+  const addTicker = (t: string) => {
+    setInputValue((v) => {
+      const existing = v.split(/[,\s]+/).map((x) => x.trim().toUpperCase()).filter(Boolean);
+      if (existing.includes(t)) return v;
+      return [...existing, t].join(", ");
+    });
+  };
+
   return (
     <div className="flex flex-col h-full overflow-y-auto">
       <div className="grid-bg border-b border-border px-6 py-6">
@@ -179,7 +198,7 @@ export default function PortfolioOverlay() {
           <div>
             <h1 className="text-2xl font-bold text-foreground tracking-tight">Portfolio Overlay</h1>
             <p className="text-muted-foreground text-sm mt-1">
-              Measure portfolio concentration across five AI power supply chain segments: compute, nuclear, uranium, utilities, and infrastructure.
+              Measure portfolio concentration across five AI power supply chain segments: compute, infrastructure, power, cooling, and grid.
             </p>
           </div>
           <UITooltip>
@@ -270,13 +289,13 @@ export default function PortfolioOverlay() {
           </div>
         )}
 
-        {results && !isPending && (
+        {sortedResults && !isPending && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Stock list */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                  {results.length} Holdings Scored
+                  {sortedResults.length} Holdings Scored
                 </h2>
                 {avgScore !== null && (
                   <div className="text-right">
@@ -286,15 +305,19 @@ export default function PortfolioOverlay() {
                 )}
               </div>
 
-              {results
-                .sort((a, b) => b.score - a.score)
-                .map((r) => (
+              {sortedResults.map((r) => (
                   <Card key={r.ticker} className="p-4 border-card-border" data-testid={`portfolio-card-${r.ticker}`}>
                     <div className="flex items-center gap-3">
                       <ScoreRing score={r.score} />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap mb-1">
-                          <span className="font-bold text-sm text-foreground font-mono">{r.ticker}</span>
+                          <Link
+                            href={`/stock/${r.ticker}`}
+                            className="font-bold text-sm text-foreground font-mono hover:text-brand"
+                            data-testid={`link-stock-${r.ticker}`}
+                          >
+                            {r.ticker}
+                          </Link>
                           <Badge
                             className="text-xs px-1.5 py-0"
                             style={{
@@ -346,11 +369,11 @@ export default function PortfolioOverlay() {
                 <ResponsiveContainer width="100%" height={300}>
                   <RadarChart data={radarData} margin={{ top: 20, right: 30, bottom: 20, left: 30 }}>
                     <PolarGrid stroke={CHART_CHROME.grid} />
-                    <PolarAngleAxis dataKey="axis" tick={{ fill: CHART_CHROME.tick, fontSize: 12 }} />
+                    <PolarAngleAxis dataKey="axis" tick={{ fill: CHART_CHROME.tick, fontSize: 12, fontFamily: FONT.mono }} />
                     <PolarRadiusAxis
                       angle={90}
                       domain={[0, 100]}
-                      tick={{ fill: CHART_CHROME.axis, fontSize: 10 }}
+                      tick={{ fill: CHART_CHROME.axis, fontSize: 10, fontFamily: FONT.mono }}
                       tickCount={4}
                     />
                     <Tooltip content={<CustomRadarTooltip />} />
@@ -395,6 +418,19 @@ export default function PortfolioOverlay() {
             <BarChart3 className="h-12 w-12 text-muted-foreground/30 mb-4" />
             <p className="text-sm font-medium text-muted-foreground">Enter your tickers above to score your portfolio</p>
             <p className="text-xs text-muted-foreground mt-1">Supports US-listed equities and ETFs</p>
+            <div className="flex flex-wrap items-center justify-center gap-1.5 mt-4">
+              <span className="text-xs text-muted-foreground/60">Try tickers from The Stack:</span>
+              {STACK_EXAMPLE_TICKERS.map((t) => (
+                <button
+                  key={t}
+                  onClick={() => addTicker(t)}
+                  className="text-xs font-mono px-1.5 py-0.5 rounded border border-subtle text-brand hover:border-brand/40"
+                  data-testid={`suggest-ticker-${t}`}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
           </div>
         )}
       </div>
