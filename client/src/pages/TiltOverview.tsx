@@ -28,6 +28,7 @@ import {
 } from "@/lib/tokens";
 import { axisProps, gridProps, timeTicks, tooltipContentStyle, tooltipItemStyle, tooltipLabelStyle } from "@/lib/chart-theme";
 import { RTO_CONFIG, RTO_SOURCE_NOTE } from "@/data/rto-config";
+import { STAGE_COLORS } from "@/data/catalyst-config";
 import {
   buildBuildoutHistory, computeTrackedPower, filterTrackedFacilities, fmtGW, tightestRTO,
   type BuildoutHistory, type FacilityLite, type TrackedPower,
@@ -571,7 +572,8 @@ function CatalystCalendarSection() {
     .slice(0, 5);
 
   function getItemColor(item: MergedCatalystItem): string {
-    if (item.type === 'earnings') return item.stageColor || BRAND.secondary;
+    // Server stageColor is a legacy all-orange hex - client tokens win.
+    if (item.type === 'earnings') return (item.stage && STAGE_COLORS[item.stage]) || BRAND.secondary;
     return CATEGORY_COLORS[item.category || ''] ?? INK.muted;
   }
 
