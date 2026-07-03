@@ -38,6 +38,26 @@ function numBig(n: number): string {
 export default function GpuEconomics() {
   const { data, isLoading, isError } = useQuery<EconData>({ queryKey: ["/api/gpu-economics"] });
   const rows = data?.rows ?? [];
+  // Presentation-layer sort: cheapest compute first ($/PFLOP-hr ascending, nulls last),
+  // so the table matches the header claim regardless of server order.
+  const sortedRows = useMemo(
+    () =>
+      [...rows].sort((a, b) => {
+        if (a.usdPerPflopHr == null) return b.usdPerPflopHr == null ? 0 : 1;
+        if (b.usdPerPflopHr == null) return -1;
+        return a.usdPerPflopHr - b.usdPerPflopHr;
+      }),
+    [rows],
+  );
+  // Actual min $/PFLOP-hr (nulls excluded); the badge pins to this row, not to row order.
+  const cheapestModel = useMemo(() => {
+    let best: EconRow | null = null;
+    for (const r of rows) {
+      if (r.usdPerPflopHr == null) continue;
+      if (!best || r.usdPerPflopHr < best.usdPerPflopHr!) best = r;
+    }
+    return best?.model ?? null;
+  }, [rows]);
   const calcGpus = useMemo(() => rows.filter((r) => r.tflopsBf16 && r.usdPerPflopHr != null), [rows]);
   const presets = data?.trainingPresets ?? [];
 
@@ -106,12 +126,12 @@ export default function GpuEconomics() {
           ) : isError ? (
             <div className="p-6 text-center text-xs text-negative">Economics unavailable.</div>
           ) : (
-            rows.map((r, idx) => (
+            sortedRows.map((r) => (
               <div key={r.model} className="grid grid-cols-12 gap-2 px-4 py-2.5 border-b border-border/30 last:border-0 text-xs items-center hover:bg-brand/5" data-testid={`econ-row-${r.model}`}>
                 <span className="col-span-3 font-mono font-semibold flex items-center gap-1.5" style={{ color: vc(r.vendor) }}>
                   <span className="h-2 w-2 rounded-full flex-shrink-0" style={{ background: vc(r.vendor) }} />
                   {r.model}
-                  {idx === 0 && r.usdPerPflopHr != null && <span className="text-8 font-normal text-positive border border-positive/40 rounded-sm px-1">cheapest compute</span>}
+                  {cheapestModel != null && r.model === cheapestModel && <span className="text-8 font-normal text-positive border border-positive/40 rounded-sm px-1">cheapest compute</span>}
                 </span>
                 <span className="col-span-2 font-mono text-foreground text-right tabular-nums">{usd(r.pricePerHr)}</span>
                 <span className="col-span-2 font-mono text-muted-foreground text-right tabular-nums">{usdBig(r.perYear)}</span>
