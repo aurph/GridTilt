@@ -1,0 +1,23 @@
+exports[`state primitive snapshots > AsOf fresh 1`] = `
+"<span class=\\"text-9 font-mono text-muted-foreground/60 cursor-default \\" title=\\"as of 8:44:40 AM\\" data-testid=\\"asof\\">as of 2m ago</span>"
+`;
+
+exports[`state primitive snapshots > AsOf hidden when no timestamp 1`] = `
+""
+`;
+
+exports[`state primitive snapshots > AsOf stale 1`] = `
+"<span class=\\"inline-flex items-center gap-1 rounded-sm border border-warning/40 bg-warning/10 px-1.5 text-9 font-mono uppercase tracking-wide text-warning \\" title=\\"Source missed its refresh schedule - last update 8:01:40 AM (45m ago)\\" data-testid=\\"asof-stale\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\" width=\\"24\\" height=\\"24\\" viewBox=\\"0 0 24 24\\" fill=\\"none\\" stroke=\\"currentColor\\" stroke-width=\\"2\\" stroke-linecap=\\"round\\" stroke-linejoin=\\"round\\" class=\\"lucide lucide-clock h-2.5 w-2.5\\"><circle cx=\\"12\\" cy=\\"12\\" r=\\"10\\"></circle><polyline points=\\"12 6 12 12 16 14\\"></polyline></svg>stale · 45m ago</span>"
+`;
+
+exports[`state primitive snapshots > ErrorState with retry 1`] = `
+"<div class=\\"flex flex-col items-center justify-center gap-2 py-8 px-4 text-center \\" role=\\"alert\\" data-testid=\\"error-state\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\" width=\\"24\\" height=\\"24\\" viewBox=\\"0 0 24 24\\" fill=\\"none\\" stroke=\\"currentColor\\" stroke-width=\\"2\\" stroke-linecap=\\"round\\" stroke-linejoin=\\"round\\" class=\\"lucide lucide-triangle-alert h-4 w-4 text-negative\\"><path d=\\"m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3\\"></path><path d=\\"M12 9v4\\"></path><path d=\\"M12 17h.01\\"></path></svg><p class=\\"text-xs text-muted-foreground\\">Price index unavailable.</p><button class=\\"inline-flex items-center gap-1.5 rounded border border-subtle px-2.5 py-1 text-11 font-mono text-foreground hover:border-strong transition-colors\\" data-testid=\\"error-retry\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\" width=\\"24\\" height=\\"24\\" viewBox=\\"0 0 24 24\\" fill=\\"none\\" stroke=\\"currentColor\\" stroke-width=\\"2\\" stroke-linecap=\\"round\\" stroke-linejoin=\\"round\\" class=\\"lucide lucide-rotate-cw h-3 w-3\\"><path d=\\"M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8\\"></path><path d=\\"M21 3v5h-5\\"></path></svg>retry</button></div>"
+`;
+
+exports[`state primitive snapshots > ErrorState without retry 1`] = `
+"<div class=\\"flex flex-col items-center justify-center gap-2 py-8 px-4 text-center \\" role=\\"alert\\" data-testid=\\"error-state\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\" width=\\"24\\" height=\\"24\\" viewBox=\\"0 0 24 24\\" fill=\\"none\\" stroke=\\"currentColor\\" stroke-width=\\"2\\" stroke-linecap=\\"round\\" stroke-linejoin=\\"round\\" class=\\"lucide lucide-triangle-alert h-4 w-4 text-negative\\"><path d=\\"m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3\\"></path><path d=\\"M12 9v4\\"></path><path d=\\"M12 17h.01\\"></path></svg><p class=\\"text-xs text-muted-foreground\\">Catalysts unavailable.</p></div>"
+`;
+
+exports[`state primitive snapshots > SrChartTable 1`] = `
+"<div class=\\"sr-only\\"><table><caption>NPI gauge history</caption><thead><tr><th scope=\\"col\\">Date</th><th scope=\\"col\\">NPI</th></tr></thead><tbody><tr><td>Jan 2 &#x27;24</td><td>100</td></tr><tr><td>Jul 2 &#x27;26</td><td>251.9</td></tr></tbody></table></div>"
+`;
