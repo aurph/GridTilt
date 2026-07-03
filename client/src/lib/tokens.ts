@@ -27,8 +27,8 @@ export const BRAND = {
 export const INK = {
   primary: "#F2F1ED",
   secondary: "#B0AEA6",
-  muted: "#7A7871",
-  faint: "#55534E",
+  muted: "#8E8B84",
+  faint: "#716E67",
 } as const;
 
 /** State colors. Never use these for series identity. */
@@ -113,7 +113,7 @@ export const STATUS_COLORS = {
 
 export const CHART_CHROME = {
   axis: "#55534E",
-  tick: "#7A7871",
+  tick: "#8E8B84",
   grid: "rgba(255, 255, 255, 0.05)",
   crosshair: "rgba(255, 255, 255, 0.25)",
   refLine: "rgba(255, 255, 255, 0.18)",

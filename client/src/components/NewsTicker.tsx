@@ -1,4 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { Pause, Play } from "lucide-react";
 
 interface NewsItem {
   headline: string;
@@ -13,6 +15,11 @@ export function NewsTicker() {
     staleTime: 30 * 60 * 1000,
     queryFn: () => fetch("/api/news").then((r) => r.json()),
   });
+  // Pause is real state so touch and keyboard users can stop the marquee,
+  // not just mouse hover (Lake 7D/E).
+  const [pinnedPause, setPinnedPause] = useState(false);
+  const [hoverPause, setHoverPause] = useState(false);
+  const paused = pinnedPause || hoverPause;
 
   if (!items || items.length === 0) return null;
 
@@ -38,13 +45,24 @@ export function NewsTicker() {
         <span className="text-10 font-bold uppercase tracking-widest text-brand">
           News
         </span>
+        <button
+          onClick={() => setPinnedPause((p) => !p)}
+          aria-label={pinnedPause ? "Resume news ticker" : "Pause news ticker"}
+          aria-pressed={pinnedPause}
+          className="ml-1 text-brand/60 hover:text-brand transition-colors"
+          data-testid="ticker-pause"
+        >
+          {pinnedPause ? <Play className="h-2.5 w-2.5" /> : <Pause className="h-2.5 w-2.5" />}
+        </button>
       </div>
       <div className="flex-1 overflow-hidden relative">
         <div
           className="ticker-scroll whitespace-nowrap text-11 text-muted-foreground font-mono"
-          style={{ animationPlayState: "running" }}
-          onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.animationPlayState = "paused"; }}
-          onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.animationPlayState = "running"; }}
+          style={{ animationPlayState: paused ? "paused" : "running" }}
+          onMouseEnter={() => setHoverPause(true)}
+          onMouseLeave={() => setHoverPause(false)}
+          onFocusCapture={() => setHoverPause(true)}
+          onBlurCapture={() => setHoverPause(false)}
         >
           {[...segments, ...segments].map((seg, i) => (
             <span key={i}>
@@ -55,6 +73,7 @@ export function NewsTicker() {
                 rel="noopener noreferrer"
                 className={seg.url !== "#" ? "hover:text-brand-2 transition-colors cursor-pointer" : undefined}
                 onClick={(e) => { if (seg.url === "#") e.preventDefault(); }}
+                tabIndex={i < segments.length ? 0 : -1}
               >
                 {seg.text}
               </a>

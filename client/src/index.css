@@ -119,8 +119,8 @@
   /* Ink scale (text on dark surfaces) */
   --ink: #F2F1ED;
   --ink-secondary: #B0AEA6;
-  --ink-muted: #7A7871;
-  --ink-faint: #55534E;
+  --ink-muted: #8E8B84;
+  --ink-faint: #716E67;
 
   /* Semantic - state, never series identity */
   --positive: #4ade80;
@@ -152,7 +152,7 @@
 
   /* Chart chrome */
   --chart-axis: #55534E;
-  --chart-tick: #7A7871;
+  --chart-tick: #8E8B84;
   --chart-grid: rgba(255, 255, 255, 0.05);
   --chart-crosshair: rgba(255, 255, 255, 0.25);
   --chart-ref-line: rgba(255, 255, 255, 0.18);
@@ -185,6 +185,33 @@ html {
   td,
   th {
     font-variant-numeric: tabular-nums;
+  }
+
+  /* Visible keyboard focus on every interactive element (Lake 7E).
+     :focus-visible only - mouse clicks do not ring. */
+  :focus-visible {
+    outline: var(--focus-ring-width) solid var(--focus-ring-color);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+}
+
+/* Reduced motion (Lake 7E): kill decorative animation and long transitions
+   for users who asked for less motion. Data still updates instantly. */
+@media (prefers-reduced-motion: reduce) {
+  .ticker-scroll,
+  .count-up,
+  .live-pulse::before,
+  .logo-entrance,
+  .carousel-card-enter,
+  .animate-ping,
+  .animate-pulse {
+    animation: none !important;
+  }
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
   }
 }
 
