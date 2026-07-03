@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useLocation, Link } from "wouter";
 import {
   CalendarDays, ChevronLeft, ChevronRight, Clock,
-  TrendingUp, ArrowRight, Eye, EyeOff,
+  TrendingUp, ArrowRight, Eye, EyeOff, AlertTriangle,
 } from "lucide-react";
 import {
   catalystCategoryColors,
@@ -282,7 +282,7 @@ function UpcomingTimeline({ items }: { items: MergedItem[] }) {
       <div className="flex items-center gap-2 mb-4">
         <Clock style={{ width: 14, height: 14, color: BRAND.primary }} />
         <span className="text-13 font-semibold text-white uppercase tracking-wider">
-          Upcoming Earnings
+          Upcoming Catalysts
         </span>
       </div>
 
@@ -306,8 +306,8 @@ function UpcomingTimeline({ items }: { items: MergedItem[] }) {
             return (
               <div key={item.id} className="relative flex items-start gap-3 pb-4" data-testid={`timeline-${e.ticker}`}>
                 <div
-                  className="absolute left-[-18px] top-[6px] w-[10px] h-[10px] rounded-full border-2"
-                  style={{ background: dotColor, borderColor: SURFACE.base }}
+                  className="absolute left-[-18px] top-[6px] w-[10px] h-[10px] rounded-full"
+                  style={{ background: dotColor }}
                 />
                 <div className="flex-1 flex items-center gap-3 flex-wrap">
                   <span
@@ -346,8 +346,8 @@ function UpcomingTimeline({ items }: { items: MergedItem[] }) {
           return (
             <div key={item.id} className="relative flex items-start gap-3 pb-4" data-testid={`timeline-${c.id}`}>
               <div
-                className="absolute left-[-18px] top-[6px] w-[10px] h-[10px] rounded-full border-2"
-                style={{ background: catColor, borderColor: SURFACE.base }}
+                className="absolute left-[-18px] top-[6px] w-[10px] h-[10px] rounded-full"
+                style={{ background: catColor }}
               />
               <div className="flex-1 flex items-center gap-3 flex-wrap">
                 <span className="text-11 font-bold uppercase min-w-[60px]" style={{ color: timeLabelColor }}>
@@ -474,7 +474,7 @@ export default function CatalystTracker() {
   const [currentMonth, setCurrentMonth] = useState(() => new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
-  const { data, isLoading } = useQuery<AllCatalystsResponse>({
+  const { data, isLoading, isError } = useQuery<AllCatalystsResponse>({
     queryKey: ["/api/catalysts/all"],
     refetchInterval: 15 * 60 * 1000,
   });
@@ -492,14 +492,18 @@ export default function CatalystTracker() {
       >
         <CalendarDays style={{ width: 16, height: 16, color: BRAND.primary }} />
         <span className="text-base font-bold text-white">Catalyst Tracker</span>
-        <span className="text-13" style={{ color: INK.faint }}>·</span>
-        <span className="text-13" style={{ color: INK.muted }}>
-          {earnings.length} earnings
-        </span>
-        <span className="text-13" style={{ color: INK.faint }}>·</span>
-        <span className="text-13" style={{ color: INK.muted }}>
-          {catalysts.length} thesis catalysts
-        </span>
+        {data && (
+          <>
+            <span className="text-13" style={{ color: INK.faint }}>·</span>
+            <span className="text-13" style={{ color: INK.muted }}>
+              {earnings.length} earnings
+            </span>
+            <span className="text-13" style={{ color: INK.faint }}>·</span>
+            <span className="text-13" style={{ color: INK.muted }}>
+              {catalysts.length} thesis catalysts
+            </span>
+          </>
+        )}
       </div>
 
       <div className="px-4 md:px-8 py-6 max-w-[1200px] mx-auto space-y-10">
@@ -508,6 +512,20 @@ export default function CatalystTracker() {
             {[...Array(3)].map((_, i) => (
               <div key={i} className="h-32 rounded-lg animate-pulse" style={{ background: SURFACE.raised }} />
             ))}
+          </div>
+        ) : isError ? (
+          <div
+            className="rounded-lg flex flex-col items-center justify-center text-center px-6 py-16"
+            style={{ background: SURFACE.raised, border: `1px solid ${BORDER.subtle}` }}
+            data-testid="catalysts-error"
+          >
+            <AlertTriangle style={{ width: 20, height: 20, color: INK.muted }} />
+            <div className="text-sm font-semibold mt-3" style={{ color: INK.primary }}>
+              Catalysts unavailable
+            </div>
+            <p className="text-xs mt-1" style={{ color: INK.muted }}>
+              The catalyst feed failed to load. It retries automatically.
+            </p>
           </div>
         ) : (
           <>
