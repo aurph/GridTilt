@@ -14,12 +14,24 @@
 import { readFileSync, writeFileSync, existsSync } from "fs";
 import { join } from "path";
 import type { GpuHistoryAnchor } from "./gpu-index";
+import type { LiveModelPrice } from "./gpu-live";
 
 const FILE = join(process.cwd(), "server", "data", "gpu-price-history.json");
 
-interface Snapshot {
+export interface SnapshotMeta {
+  low: number;
+  high: number;
+  sources: string[];
+  n: number;
+}
+
+export interface Snapshot {
   date: string; // YYYY-MM-DD, US-Eastern
   prices: Record<string, number>;
+  /** per-model provenance for live-recorded days (absent on legacy rows) */
+  meta?: Record<string, SnapshotMeta>;
+  /** "live" = observed from provider APIs; "curated" = copied static price */
+  source?: "live" | "curated";
 }
 
 function easternDateStr(d: Date = new Date()): string {
@@ -35,19 +47,56 @@ export function readGpuHistory(): Snapshot[] {
   return [];
 }
 
-/** Append today's prices once per Eastern day. Best-effort. */
-export function recordDailyGpuPrices(models: Array<{ model: string; currentUsdPerHr: number }>): void {
+/** Has today (US-Eastern) already been recorded? */
+export function hasTodaySnapshot(): boolean {
+  const today = easternDateStr();
+  return readGpuHistory().some((s) => s.date === today);
+}
+
+/**
+ * Append today's LIVE observations once per Eastern day. Only models with a
+ * real observation are written; a model with no live source that day records
+ * nothing (the curated anchors + est. flags carry it honestly). Writes
+ * nothing at all if the sweep came back empty.
+ */
+export function recordDailyLivePrices(live: Record<string, LiveModelPrice>): void {
   try {
+    const models = Object.keys(live);
+    if (models.length === 0) return;
     const hist = readGpuHistory();
     const today = easternDateStr();
     if (hist.some((s) => s.date === today)) return;
     const prices: Record<string, number> = {};
-    for (const m of models) prices[m.model] = m.currentUsdPerHr;
-    hist.push({ date: today, prices });
+    const meta: Record<string, SnapshotMeta> = {};
+    for (const m of models) {
+      prices[m] = live[m].price;
+      meta[m] = { low: live[m].low, high: live[m].high, sources: live[m].sources, n: live[m].n };
+    }
+    hist.push({ date: today, prices, meta, source: "live" });
     writeFileSync(FILE, JSON.stringify(hist, null, 2) + "\n", "utf-8");
   } catch (e) {
     console.error("gpu history record error:", e);
   }
+}
+
+/**
+ * Latest live-recorded price per model with its age in days (Eastern-date
+ * granularity), for promoting fresh observations to the served current price.
+ */
+export function latestLiveByModel(): Record<string, { price: number; date: string; ageDays: number; sources: string[] }> {
+  const out: Record<string, { price: number; date: string; ageDays: number; sources: string[] }> = {};
+  const today = easternDateStr();
+  const toUtc = (d: string) => Date.parse(`${d}T00:00:00Z`);
+  for (const s of readGpuHistory()) {
+    if (s.source !== "live") continue;
+    const ageDays = Math.round((toUtc(today) - toUtc(s.date)) / 86_400_000);
+    for (const [model, price] of Object.entries(s.prices)) {
+      if (!out[model] || out[model].date < s.date) {
+        out[model] = { price, date: s.date, ageDays, sources: s.meta?.[model]?.sources ?? [] };
+      }
+    }
+  }
+  return out;
 }
 
 /** Recorded daily points reshaped per-model for computeGpuIndex. */

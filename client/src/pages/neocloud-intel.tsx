@@ -48,6 +48,8 @@ interface GpuRow {
   estimated: string[];
   changes: GpuChanges;
   series: SeriesPoint[];
+  liveSources?: string[] | null;
+  liveDate?: string | null;
 }
 interface GpuMetrics {
   asOf: string;
@@ -495,6 +497,11 @@ export default function NeocloudIntel() {
                   <div className="text-xs font-semibold mb-1" style={{ color: colorFor(r.model) }}>
                     {r.model} · {r.vendor} {r.architecture ? `· ${r.architecture}` : ""} {r.vramGB ? `· ${r.vramGB}GB ${r.vramType ?? ""}` : ""} {r.launchYear ? `· ${r.launchYear}` : ""}
                   </div>
+                  {r.liveSources && r.liveSources.length > 0 && (
+                    <p className="text-10 font-mono text-positive mb-1">
+                      live price · {r.liveSources.join(" + ")} · {r.liveDate}
+                    </p>
+                  )}
                   {r.oneYearTrend && <p className="text-11 text-muted-foreground mb-1.5">{r.oneYearTrend}</p>}
                   {r.sources.length > 0 && (
                     <div className="text-10 font-mono text-muted-foreground/70 break-all space-y-0.5">
@@ -511,7 +518,9 @@ export default function NeocloudIntel() {
 
         <p className="text-11 text-muted-foreground/60 leading-relaxed px-1" data-testid="ni-methodology">
           {data?.methodology ?? "Blended on-demand rental prices from public neocloud and marketplace listings and the getdeploying.com / Silicon Data trackers."}
-          {" "}Sources are listed per model (hover a table row) and in <span className="font-mono">server/data/gpu-rental-prices.json</span>. Prices move constantly and vary widely by provider, term, and availability; treat these as indicative, not quotes.
+          {" "}Models covered by live provider APIs (RunPod, Vast.ai marketplace) serve an observed daily price - those
+          drop the est. flag and show their sources on row hover. The rest carry curated, source-verified estimates.
+          Prices move constantly and vary widely by provider, term, and availability; treat these as indicative, not quotes.
         </p>
         </>
         )}

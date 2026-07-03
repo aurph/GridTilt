@@ -30,7 +30,8 @@ import { recordDailyIndexValues, readIndexHistory } from "./index-history";
 import { getElectricityOutputMonthly, getHourlyDemandUS48 } from "./physical";
 import { computeClusterMetrics, type ClusterLite } from "./clusters";
 import { computeGpuIndex } from "./gpu-index";
-import { recordDailyGpuPrices, recordedByModel } from "./gpu-history";
+import { hasTodaySnapshot, latestLiveByModel, recordDailyLivePrices, recordedByModel } from "./gpu-history";
+import { fetchLivePrices } from "./gpu-live";
 import { computeDealMetrics, type DealProject } from "./deals";
 import { composeBrief, renderBriefText, type BriefInput } from "./brief";
 import { computeGpuEconomics, TRAINING_PRESETS } from "./gpu-economics";
@@ -3811,13 +3812,53 @@ ${rssItems}
     }
   });
 
+  // Live sweep guard: at most one in flight, retried on the next request
+  // after a failure. Request-driven (not a timer) so it works on autoscale.
+  let gpuLiveSweepInFlight = false;
   app.get("/api/gpu-prices/metrics", (_req, res) => {
     try {
       const root = readGpuRoot();
       const models = root.models ?? [];
-      recordDailyGpuPrices(models); // append today's snapshot (deduped per day)
-      const metrics = computeGpuIndex(models, easternDay(), recordedByModel());
-      res.json({ ...metrics, unit: root.unit ?? null, methodology: root.methodology ?? null, lastRefreshed: root.lastRefreshed ?? null });
+
+      // First request of the Eastern day kicks off the live sweep in the
+      // background; the response never waits on provider APIs.
+      if (!hasTodaySnapshot() && !gpuLiveSweepInFlight) {
+        gpuLiveSweepInFlight = true;
+        fetchLivePrices(models.map((m: any) => ({ model: m.model, currentUsdPerHr: m.currentUsdPerHr })))
+          .then((live) => {
+            recordDailyLivePrices(live);
+            const n = Object.keys(live).length;
+            if (n > 0) console.log(`gpu-live: recorded ${n} live model prices`);
+          })
+          .catch((e) => console.error("gpu-live sweep failed:", e))
+          .finally(() => {
+            gpuLiveSweepInFlight = false;
+          });
+      }
+
+      // Fresh live observations (<=2 Eastern days old) are the served price;
+      // the est. flag drops because the number is observed, not estimated.
+      const live = latestLiveByModel();
+      const served = models.map((m: any) => {
+        const l = live[m.model];
+        if (l && l.ageDays <= 2) {
+          return {
+            ...m,
+            currentUsdPerHr: l.price,
+            estimated: (m.estimated ?? []).filter((f: string) => f !== "currentUsdPerHr"),
+            liveSources: l.sources,
+            liveDate: l.date,
+          };
+        }
+        return m;
+      });
+
+      const metrics = computeGpuIndex(served, easternDay(), recordedByModel());
+      const rows = metrics.rows.map((r) => {
+        const src = served.find((m: any) => m.model === r.model);
+        return { ...r, liveSources: src?.liveSources ?? null, liveDate: src?.liveDate ?? null };
+      });
+      res.json({ ...metrics, rows, unit: root.unit ?? null, methodology: root.methodology ?? null, lastRefreshed: root.lastRefreshed ?? null });
     } catch (err) {
       console.error("GPU metrics error:", err);
       res.status(500).json({ error: "Failed to compute GPU index" });
