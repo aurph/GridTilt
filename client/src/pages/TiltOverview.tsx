@@ -766,11 +766,10 @@ function CatalystCalendarSection() {
           const isSelected = selectedDay === dateKey;
           const hasItems = dayItems.length > 0;
 
-          return (
+          const dayButton = (
             <button
-              key={day}
               onClick={() => setSelectedDay(isSelected ? null : dateKey)}
-              className={`relative flex flex-col items-center justify-center h-8 rounded text-xs transition-colors ${
+              className={`relative flex flex-col items-center justify-center h-8 rounded text-xs transition-colors w-full ${
                 isSelected ? "bg-brand/20 text-brand-2" :
                 isToday ? "bg-muted/40 text-foreground font-semibold" :
                 "text-muted-foreground hover:bg-muted/20 hover:text-foreground"
@@ -790,6 +789,35 @@ function CatalystCalendarSection() {
                 </div>
               )}
             </button>
+          );
+
+          // Dot days get a hover popover with that day's events, so the dots
+          // are functional, not decorative (Lake 4B, option picked at review).
+          if (!hasItems) return <span key={day}>{dayButton}</span>;
+          return (
+            <UITooltip key={day}>
+              <TooltipTrigger asChild>{dayButton}</TooltipTrigger>
+              <TooltipContent side="top" className="max-w-[260px] p-2.5">
+                <p className="text-10 font-mono text-muted-foreground mb-1.5">
+                  {new Date(viewYear, viewMonth, day).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
+                  {dayItems.length > 1 ? ` · ${dayItems.length} events` : ""}
+                </p>
+                <div className="space-y-1">
+                  {dayItems.slice(0, 6).map((item) => (
+                    <div key={item.id} className="flex items-start gap-1.5">
+                      <span className="h-1.5 w-1.5 rounded-full mt-1 flex-shrink-0" style={{ backgroundColor: getItemColor(item) }} />
+                      <span className="text-11 text-foreground leading-tight">
+                        {getItemLabel(item)}
+                        <span className="text-muted-foreground/60 ml-1">{getItemCategory(item)}</span>
+                      </span>
+                    </div>
+                  ))}
+                  {dayItems.length > 6 && (
+                    <p className="text-10 text-muted-foreground/60">+{dayItems.length - 6} more - click the day</p>
+                  )}
+                </div>
+              </TooltipContent>
+            </UITooltip>
           );
         })}
       </div>
@@ -883,89 +911,6 @@ interface MergedCatalystItem {
 
 interface AllCatalystsResponse {
   items: MergedCatalystItem[];
-}
-
-const MERGED_CATEGORY_COLORS: Record<string, string> = {
-  Earnings:       BRAND.secondary,
-  Regulatory:     BRAND.secondary,
-  Policy:         DATA_QUALITY.estimateFlag,
-  Infrastructure: TOKEN_CATEGORY_COLORS.construction,
-  Market:         BRAND.primary,
-  Industry:       BRAND.primary,
-};
-
-function NextCatalystsWidget() {
-  const { data } = useQuery<AllCatalystsResponse>({
-    queryKey: ["/api/catalysts/all"],
-    refetchInterval: 900000,
-  });
-
-  const upcoming = (data?.items || [])
-    .filter((c) => daysUntil(c.sortDate) >= 0)
-    .slice(0, 5);
-
-  if (upcoming.length === 0) return null;
-
-  return (
-    <Card className="p-5 border-card-border" data-testid="next-catalysts-widget">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <Calendar className="h-3.5 w-3.5 text-brand-2" />
-          <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-            Next 5 Catalysts
-          </h2>
-        </div>
-        <Link
-          href="/catalysts"
-          className="flex items-center gap-1 text-xs text-brand hover:text-brand-2 transition-colors font-medium"
-          data-testid="link-view-all-catalysts"
-        >
-          View All <ChevronRight className="h-3 w-3" />
-        </Link>
-      </div>
-      <div className="space-y-3">
-        {upcoming.map((item) => {
-          const days = daysUntil(item.sortDate);
-          const isEarnings = item.type === "earnings";
-          const label = isEarnings ? `${item.ticker} Earnings` : (item.title || "");
-          const catLabel = isEarnings ? item.stage || "Earnings" : item.category || "Event";
-          const catColor = isEarnings
-            ? (item.stageColor || BRAND.secondary)
-            : (MERGED_CATEGORY_COLORS[item.category || ""] ?? INK.muted);
-
-          return (
-            <div key={item.id} className="flex items-start gap-3" data-testid={`catalyst-preview-${item.id}`}>
-              <div className="text-center flex-shrink-0 w-12">
-                <p className="text-lg font-bold font-mono text-foreground leading-none">{days === 0 ? "0" : days}</p>
-                <p className="text-10 text-muted-foreground">{days === 0 ? "TODAY" : "days"}</p>
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                  <p className="text-xs font-medium text-foreground truncate">{label}</p>
-                  {isEarnings && item.time && (
-                    <span className="text-10 text-muted-foreground/50 font-mono">{item.time}</span>
-                  )}
-                </div>
-                <div className="flex items-center gap-2">
-                  <span
-                    className="text-10 font-medium px-1.5 py-0.5 rounded border"
-                    style={{
-                      color: catColor,
-                      backgroundColor: `${catColor}15`,
-                      borderColor: `${catColor}30`,
-                    }}
-                  >
-                    {catLabel}
-                  </span>
-                  <span className="text-10 text-muted-foreground/60">{formatDateShort(item.sortDate)}</span>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </Card>
-  );
 }
 
 function relativeTime(updatedAt: number | undefined): string {
@@ -1146,7 +1091,6 @@ export default function TiltOverview() {
           </div>
           <div className="lg:col-span-2 space-y-4">
             <CatalystCalendarSection />
-            <NextCatalystsWidget />
             <XFollowCard />
           </div>
         </div>
