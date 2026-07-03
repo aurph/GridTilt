@@ -74,7 +74,9 @@ const gw = (mw: number) => (mw / 1000).toFixed(mw >= 10_000 ? 0 : 1);
 
 type SortKey = "capacityMW" | "name" | "offtaker" | "type" | "online";
 
-export default function PowerDeals() {
+// `params` keeps this assignable to wouter's <Route component={...}> while the
+// standalone /power-deals route lives on; `embedded` is the Power-tool tab mode.
+export default function PowerDeals({ embedded = false }: { embedded?: boolean; params?: unknown }) {
   const { data, isLoading, isError, refetch, dataUpdatedAt } = useQuery<DealMetrics>({ queryKey: ["/api/deals/metrics"] });
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
   const [sortKey, setSortKey] = useState<SortKey>("capacityMW");
@@ -104,35 +106,54 @@ export default function PowerDeals() {
     else { setSortKey(k); setSortDir(k === "capacityMW" ? "desc" : "asc"); }
   };
 
-  return (
-    <div className="flex flex-col h-full overflow-y-auto">
-      {/* Header */}
-      <div className="grid-bg border-b border-border px-4 sm:px-6 py-6 sm:py-8" data-testid="deals-header">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="max-w-3xl">
-            <div className="flex items-center gap-2 mb-2">
-              <Handshake className="h-5 w-5 text-brand" />
-              <h1 className="text-2xl sm:text-3xl font-semibold text-foreground tracking-tight" style={{ fontFamily: FONT.mono }}>
-                AI Power Deals
-              </h1>
-            </div>
-            <p className="text-muted-foreground text-sm leading-relaxed">
-              Corporate power procurement for AI: every named deal where a hyperscaler or AI company has
-              contracted generation (a PPA, a reactor restart, an SMR option) to feed its compute. The data-center
-              sites themselves live in <Link href="/compute-frontier" className="text-brand hover:text-brand-2">Compute Frontier</Link>;
-              this is the power behind them. Capacity is the contracted figure; open a row for terms and sources.
-            </p>
-          </div>
-          <div className="text-11 text-muted-foreground/70 font-mono tracking-wide text-right space-y-0.5" data-testid="deals-sync">
-            <div><AsOf updatedAt={dataUpdatedAt} intervalMs={900_000} /></div>
-            {data?.lastRefreshed && <div className="text-muted-foreground/60">data as of {data.lastRefreshed}</div>}
-            {data && <div>{data.dealCount} deals · {gw(data.totalContractedMW)} GW contracted</div>}
-            {data?.topBuyer && <div>top buyer: <span className="text-brand">{data.topBuyer}</span></div>}
-          </div>
-        </div>
-      </div>
+  // Shared by both intros: the freshness / headline chip column.
+  const asOfChip = (
+    <div className="text-11 text-muted-foreground/70 font-mono tracking-wide text-right space-y-0.5" data-testid="deals-sync">
+      <div><AsOf updatedAt={dataUpdatedAt} intervalMs={900_000} /></div>
+      {data?.lastRefreshed && <div className="text-muted-foreground/60">data as of {data.lastRefreshed}</div>}
+      {data && <div>{data.dealCount} deals · {gw(data.totalContractedMW)} GW contracted</div>}
+      {data?.topBuyer && <div>top buyer: <span className="text-brand">{data.topBuyer}</span></div>}
+    </div>
+  );
 
-      <div className="flex-1 p-4 sm:p-6 space-y-5">
+  // Embedded mode (Power tool, Deals tab): the host page owns the hero, so
+  // render a slim intro row instead of the full-page header.
+  const intro = embedded ? (
+    <div className="flex flex-wrap items-start justify-between gap-3 px-1">
+      <p className="text-muted-foreground text-xs leading-relaxed max-w-3xl">
+        Corporate power procurement for AI: every named deal where a hyperscaler or AI company has contracted
+        generation (a PPA, a reactor restart, an SMR option) to feed its compute. Capacity is the contracted
+        figure; open a row for terms and sources.
+      </p>
+      {asOfChip}
+    </div>
+  ) : (
+    <div className="grid-bg border-b border-border px-4 sm:px-6 py-6 sm:py-8" data-testid="deals-header">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="max-w-3xl">
+          <div className="flex items-center gap-2 mb-2">
+            <Handshake className="h-5 w-5 text-brand" />
+            <h1 className="text-2xl sm:text-3xl font-semibold text-foreground tracking-tight" style={{ fontFamily: FONT.mono }}>
+              AI Power Deals
+            </h1>
+          </div>
+          <p className="text-muted-foreground text-sm leading-relaxed">
+            Corporate power procurement for AI: every named deal where a hyperscaler or AI company has
+            contracted generation (a PPA, a reactor restart, an SMR option) to feed its compute. The data-center
+            sites themselves live in <Link href="/compute-frontier" className="text-brand hover:text-brand-2">Compute Frontier</Link>;
+            this is the power behind them. Capacity is the contracted figure; open a row for terms and sources.
+          </p>
+        </div>
+        {asOfChip}
+      </div>
+    </div>
+  );
+
+  return (
+    <div className={embedded ? "flex flex-col" : "flex flex-col h-full overflow-y-auto"}>
+      {intro}
+
+      <div className={embedded ? "flex-1 space-y-5 mt-3" : "flex-1 p-4 sm:p-6 space-y-5"}>
         {/* Headline tiles */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <StatTile label="Tracked deals" value={data ? String(data.dealCount) : "—"} loading={isLoading} />

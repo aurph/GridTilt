@@ -173,7 +173,9 @@ function Est({ on }: { on: boolean }) {
   return <span className="ml-1 text-8 font-mono uppercase tracking-wide text-estimate align-top">est.</span>;
 }
 
-export default function Queue() {
+// `params` keeps this assignable to wouter's <Route component={...}> while the
+// standalone /queue route lives on; `embedded` is the Power-tool tab mode.
+export default function Queue({ embedded = false }: { embedded?: boolean; params?: unknown }) {
   const { data: rawData, isLoading, isError, refetch, dataUpdatedAt } = useQuery<any>({
     queryKey: ["/api/queue"],
     refetchInterval: 24 * 60 * 60 * 1000,
@@ -219,10 +221,26 @@ export default function Queue() {
   const h = data?.headline;
   const isEst = (field: string) => !!data?.estimatedHeadline?.includes(field);
 
-  return (
-    <div className="flex flex-col h-full overflow-y-auto">
-      {/* Hero — narrative not boxes */}
-      <div className="grid-bg border-b border-border px-4 sm:px-6 py-6 sm:py-8" data-testid="backlog-hero">
+  // Embedded mode (Power tool, Queue tab): the host page owns the hero, so
+  // render a slim intro row instead of the narrative header.
+  const intro = embedded ? (
+    <div className="flex flex-wrap items-start justify-between gap-3 px-1">
+      <p className="text-muted-foreground text-xs leading-relaxed max-w-3xl">
+        The named US power projects and hyperscaler campuses waiting on the grid, plus the ISO totals that contain them.
+        {h && (
+          <>
+            {" "}The overall US queue holds ~{h.queueOverallGW.toLocaleString()} GW across ~{h.queueOverallProjects.toLocaleString()} projects,
+            with a median wait of {h.medianWaitMonths} months.
+          </>
+        )}
+      </p>
+      <div className="text-11 text-muted-foreground/70 font-mono tracking-wide text-right space-y-0.5" data-testid="backlog-sources">
+        <div><AsOf updatedAt={dataUpdatedAt} intervalMs={24 * 60 * 60 * 1000} /></div>
+        {data && <FreshnessChip lastRefreshed={data.lastRefreshed} />}
+      </div>
+    </div>
+  ) : (
+    <div className="grid-bg border-b border-border px-4 sm:px-6 py-6 sm:py-8" data-testid="backlog-hero">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="max-w-3xl">
             <h1 className="text-2xl sm:text-3xl font-semibold text-foreground tracking-tight mb-2">
@@ -267,9 +285,14 @@ export default function Queue() {
             </div>
           )}
         </div>
-      </div>
+    </div>
+  );
 
-      <div className="flex-1 p-4 sm:p-6 space-y-3">
+  return (
+    <div className={embedded ? "flex flex-col" : "flex flex-col h-full overflow-y-auto"}>
+      {intro}
+
+      <div className={embedded ? "flex-1 space-y-3 mt-3" : "flex-1 p-4 sm:p-6 space-y-3"}>
 
         {/* One compact summary strip (replaces 4 stat boxes) */}
         {isLoading && <Skeleton className="h-5 w-full max-w-3xl" aria-hidden="true" />}

@@ -21,6 +21,9 @@ import {
 import {
   BRAND, BORDER, FONT, INK, SEMANTIC, SERIES, STATUS_COLORS, SURFACE,
 } from "@/lib/tokens";
+import { ToolTabs, useToolTabs } from "@/components/ToolTabs";
+import PowerDeals from "@/pages/power-deals";
+import Queue from "@/pages/Queue";
 
 /** Token hex + alpha -> rgba() string, so composed tints stay on token values. */
 function alpha(hex: string, a: number): string {
@@ -143,6 +146,21 @@ function pushFiltersToURL(companies: string[], rtos: string[], capacity: string)
 }
 
 type ViewMode = "dc" | "stress";
+
+// Power tool tabs (consolidation): one subject, three views — where the AI
+// load sits (map), who contracted the power (deals), what's still waiting
+// on the grid (queue). ?tab= round-trips so each view stays shareable.
+const POWER_TABS = [
+  { id: "map", label: "Map" },
+  { id: "deals", label: "Deals" },
+  { id: "queue", label: "Queue" },
+];
+
+const POWER_SUBTITLES: Record<string, string> = {
+  map: "US Datacenter Map",
+  deals: "AI Power Deals",
+  queue: "Interconnection Backlog",
+};
 
 /**
  * True below Tailwind's `sm` breakpoint (640px). The Leaflet map is
@@ -606,6 +624,7 @@ export default function PowerMap() {
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
   const mapContainerRef = useRef<HTMLDivElement>(null);
+  const [tab, setTab] = useToolTabs(POWER_TABS, "map");
 
   function toggleCompany(c: string) {
     const next = filterCompanies.includes(c)
@@ -840,6 +859,31 @@ export default function PowerMap() {
         }
       `}</style>
 
+      {/* Power tool header: title + view tabs. Sits above the map's own
+          control cluster (DC Locations / Grid Stress) so tabs stay put when
+          the map view is swapped out for Deals or Queue. */}
+      <div
+        className="border-b border-border px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3"
+        data-testid="power-header"
+      >
+        <h1 className="text-base sm:text-lg font-semibold text-foreground tracking-tight" style={{ fontFamily: FONT.mono }}>
+          Power <span className="text-muted-foreground/50 font-normal">/ {POWER_SUBTITLES[tab]}</span>
+        </h1>
+        <ToolTabs tabs={POWER_TABS} active={tab} onChange={setTab} />
+      </div>
+
+      {tab === "deals" && (
+        <div className="flex-1 p-4 sm:p-6">
+          <PowerDeals embedded />
+        </div>
+      )}
+      {tab === "queue" && (
+        <div className="flex-1 p-4 sm:p-6">
+          <Queue embedded />
+        </div>
+      )}
+
+      {tab === "map" && (<>
       {belowSm ? (
         /* The Leaflet map is desktop-only. On phones this honest card takes
            its place; the headline numbers, upcoming projects, and operator
@@ -1537,6 +1581,7 @@ export default function PowerMap() {
           </div>
         </div>
       )}
+      </>)}
     </div>
   );
 }
