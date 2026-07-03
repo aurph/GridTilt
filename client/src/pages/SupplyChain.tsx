@@ -7,8 +7,9 @@ import {
   Atom, Wrench, Hammer, Gem, Flame, Radiation, Gauge, Sun, FlaskConical,
   Plug, HardHat, Snowflake, ToggleRight, Building, Battery,
   Cloud, Warehouse, Cpu, Pickaxe, Workflow, GitBranch, Clock,
-  MemoryStick, Network, Users,
+  MemoryStick, Network, Users, RotateCw,
 } from "lucide-react";
+import { AsOf } from "@/components/Freshness";
 import { SiBitcoin } from "react-icons/si";
 import { BRAND, INK, SURFACE, SEMANTIC, DATA_QUALITY, CHART_CHROME } from "@/lib/tokens";
 import {
@@ -847,7 +848,7 @@ export default function SupplyChain() {
   };
   const [entrancePhase, setEntrancePhase] = useState(0);
 
-  const { data: apiData } = useQuery<{ stages: StageApiData[] }>({
+  const { data: apiData, isError, refetch, dataUpdatedAt } = useQuery<{ stages: StageApiData[] }>({
     queryKey: ["/api/supply-chain"],
     refetchInterval: 5 * 60 * 1000,
   });
@@ -906,6 +907,20 @@ export default function SupplyChain() {
           <span className="sc-topbar-sep">|</span>
           <span className="sc-mono text-10" style={{ color: INK.faint }}>SECURITIES</span>
           <span className="sc-mono text-11 text-ink">{totalCompanies}</span>
+          <span className="sc-topbar-sep">|</span>
+          {isError ? (
+            <button
+              onClick={(e) => { e.stopPropagation(); refetch(); }}
+              className="inline-flex items-center gap-1.5 rounded-sm border border-negative/40 bg-negative/10 px-1.5 py-0.5 text-9 font-mono uppercase tracking-wide text-negative hover:border-negative/70 transition-colors"
+              title="Live quotes and bottleneck statuses failed to load - the chain diagram itself is unaffected. Click to retry."
+              data-testid="sc-quotes-retry"
+            >
+              <RotateCw className="h-2.5 w-2.5" />
+              quotes offline · retry
+            </button>
+          ) : (
+            <AsOf updatedAt={dataUpdatedAt} intervalMs={5 * 60 * 1000} />
+          )}
           <span className="sc-topbar-sep">|</span>
           <div className="sc-view-toggle" data-testid="sc-view-toggle" onClick={(e) => e.stopPropagation()}>
             <button

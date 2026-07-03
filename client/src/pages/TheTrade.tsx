@@ -31,6 +31,7 @@ import {
   ChevronDown,
   AlertTriangle,
 } from "lucide-react";
+import { SrChartTable } from "@/components/Freshness";
 import { BORDER, CATEGORY_COLORS, SERIES } from "@/lib/tokens";
 import {
   axisProps,
@@ -577,6 +578,11 @@ export default function TheTrade() {
                         <Bar dataKey="grid"       name="Grid"        stackId="a" fill={CATEGORY_COLORS.grid}       radius={[2,2,0,0]} />
                       </BarChart>
                     </ResponsiveContainer>
+                    <SrChartTable
+                      caption="Annual buildout timeline: GW of new AI datacenter capacity added per year, by power source"
+                      columns={["Year", "Gas", "Nuclear", "Renewables", "Grid"]}
+                      rows={buildoutChart.map((r) => [r.year, r.gas, r.nuclear, r.renewables, r.grid])}
+                    />
                     <div className="flex flex-wrap gap-4 text-xs mt-1">
                       {[
                         { color: CATEGORY_COLORS.gas,        label: "Natural Gas" },

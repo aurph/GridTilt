@@ -19,6 +19,7 @@ import {
   Tooltip,
 } from "recharts";
 import { Cpu, Server, Zap, TrendingUp, TrendingDown, Info, Clock, ChevronDown, ChevronRight, ArrowUpDown } from "lucide-react";
+import { AsOf, ErrorState } from "@/components/Freshness";
 import { BRAND, CATEGORY_COLORS, CHART_CHROME, INK, SEMANTIC } from "@/lib/tokens";
 import { axisProps, gridProps } from "@/lib/chart-theme";
 import { sparklineDomain } from "@/lib/gpu-series";
@@ -431,7 +432,7 @@ export default function TheStack() {
     } catch {}
   }, [view]);
 
-  const { data, isLoading, isError } = useQuery<StackData>({
+  const { data, isLoading, isError, refetch, dataUpdatedAt } = useQuery<StackData>({
     queryKey: ["/api/stack", timeframe],
     queryFn: fetchStack(timeframe),
     refetchInterval: 900000,
@@ -587,6 +588,7 @@ export default function TheStack() {
             <Badge className="bg-brand-2/15 text-brand-2 border-brand-2/30 font-mono text-xs">
               Yahoo Finance{majorityState === "REGULAR" ? " · Live" : ""}
             </Badge>
+            <AsOf updatedAt={dataUpdatedAt} intervalMs={900_000} />
           </div>
         </div>
 
@@ -692,10 +694,7 @@ export default function TheStack() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                   {isError ? (
-                    <div className="col-span-full flex items-center gap-2 py-8 justify-center">
-                      <Info className="h-4 w-4 text-muted-foreground/50" />
-                      <p className="text-xs text-muted-foreground">Unable to load equities data</p>
-                    </div>
+                    <ErrorState label="Unable to load equities data" onRetry={() => refetch()} className="col-span-full" />
                   ) : isLoading
                     ? Array(4).fill(null).map((_, i) => <StockCardSkeleton key={i} />)
                     : (stocks ?? []).length === 0 ? (
@@ -719,11 +718,12 @@ export default function TheStack() {
             isLoading={isLoading}
             isError={isError}
             majorityState={majorityState}
+            onRetry={() => refetch()}
           />
         )}
 
         {view === "heatmap" && (
-          <StackHeatmap layers={layerConfig} data={data} timeframe={timeframe} isLoading={isLoading} isError={isError} />
+          <StackHeatmap layers={layerConfig} data={data} timeframe={timeframe} isLoading={isLoading} isError={isError} onRetry={() => refetch()} />
         )}
 
         {/* Uranium vs CCJ Correlation scatter */}
@@ -764,8 +764,10 @@ export default function TheStack() {
               </div>
             </div>
 
-            {isLoading ? (
-              <Skeleton className="h-48 w-full" />
+            {isError ? (
+              <ErrorState label="Unable to load correlation data" onRetry={() => refetch()} />
+            ) : isLoading ? (
+              <Skeleton className="h-[260px] w-full" />
             ) : (
               <>
                 <ResponsiveContainer width="100%" height={260}>
@@ -907,6 +909,7 @@ function StackTable({
   isLoading,
   isError,
   majorityState,
+  onRetry,
 }: {
   layers: LayerDef[];
   data: StackData | undefined;
@@ -915,6 +918,7 @@ function StackTable({
   isLoading: boolean;
   isError: boolean;
   majorityState: string | null;
+  onRetry?: () => void;
 }) {
   const [sortKey, setSortKey] = useState<TableSortKey>("mktcap");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
@@ -933,8 +937,8 @@ function StackTable({
 
   if (isError) {
     return (
-      <Card className="border-card-border p-8 text-center text-xs text-muted-foreground" data-testid="stack-table-error">
-        Unable to load equities data
+      <Card className="border-card-border" data-testid="stack-table-error">
+        <ErrorState label="Unable to load equities data" onRetry={onRetry} />
       </Card>
     );
   }
@@ -1051,12 +1055,14 @@ function StackHeatmap({
   timeframe,
   isLoading,
   isError,
+  onRetry,
 }: {
   layers: LayerDef[];
   data: StackData | undefined;
   timeframe: Timeframe;
   isLoading: boolean;
   isError: boolean;
+  onRetry?: () => void;
 }) {
   const [ref, width] = useMeasuredWidth<HTMLDivElement>();
 
@@ -1082,8 +1088,8 @@ function StackHeatmap({
 
   if (isError) {
     return (
-      <Card className="border-card-border p-8 text-center text-xs text-muted-foreground" data-testid="stack-heatmap-error">
-        Unable to load equities data
+      <Card className="border-card-border" data-testid="stack-heatmap-error">
+        <ErrorState label="Unable to load equities data" onRetry={onRetry} />
       </Card>
     );
   }

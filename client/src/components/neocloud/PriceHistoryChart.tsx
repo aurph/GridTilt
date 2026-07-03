@@ -19,6 +19,7 @@ import { scaleUtc, scaleLog } from "@visx/scale";
 import { LinePath } from "@visx/shape";
 import { Group } from "@visx/group";
 import { localPoint } from "@visx/event";
+import { SrChartTable } from "@/components/Freshness";
 import { BORDER, INK, SURFACE } from "@/lib/tokens";
 import { chartTheme, timeTicks } from "@/lib/chart-theme";
 import {
@@ -73,6 +74,23 @@ export default function PriceHistoryChart(props: PriceHistoryChartProps) {
     [series, start, now],
   );
 
+  // Screen-reader mirror of exactly what the chart draws: the visible
+  // series' real points in the current window (synthetic edge points excluded).
+  const srRows = useMemo(
+    () =>
+      clipped.flatMap((s) =>
+        s.clipped
+          .filter((p) => !p.edge)
+          .map((p) => [
+            s.model,
+            fmtDate(p.t, p.kind === "recorded"),
+            `$${p.price.toFixed(2)}`,
+            p.kind === "anchor" ? "sourced anchor" : "recorded",
+          ]),
+      ),
+    [clipped],
+  );
+
   if (width <= 0) return null;
 
   if (clipped.length === 0) {
@@ -88,7 +106,16 @@ export default function PriceHistoryChart(props: PriceHistoryChartProps) {
     );
   }
 
-  return view === "overlay" ? <Overlay {...props} clipped={clipped} start={start} /> : <SmallMultiples {...props} clipped={clipped} start={start} />;
+  return (
+    <>
+      {view === "overlay" ? <Overlay {...props} clipped={clipped} start={start} /> : <SmallMultiples {...props} clipped={clipped} start={start} />}
+      <SrChartTable
+        caption={`GPU rental price history ($/GPU/hr), ${range} range, ${clipped.length} series`}
+        columns={["Model", "Date", "Price", "Kind"]}
+        rows={srRows}
+      />
+    </>
+  );
 }
 
 type ClippedSeries = ChartSeries & { clipped: ClippedPoint[] };
@@ -116,8 +143,12 @@ function Overlay({
   recorderEmpty,
 }: PriceHistoryChartProps & { clipped: ClippedSeries[]; start: number | null }) {
   const height = OVERLAY_HEIGHT;
-  const innerW = Math.max(40, width - MARGIN.left - MARGIN.right);
-  const innerH = height - MARGIN.top - MARGIN.bottom;
+  // Narrow screens: collapse the right label gutter and drop label prices so
+  // the plot keeps usable width (model-only labels still identify each line).
+  const compact = width < 640;
+  const margin = compact ? { ...MARGIN, right: 72 } : MARGIN;
+  const innerW = Math.max(40, width - margin.left - margin.right);
+  const innerH = height - margin.top - margin.bottom;
   const svgRef = useRef<SVGSVGElement | null>(null);
   const [tip, setTip] = useState<TooltipState | null>(null);
 
@@ -156,7 +187,7 @@ function Overlay({
       if (!svgRef.current) return;
       const pt = localPoint(svgRef.current, e);
       if (!pt) return;
-      const gx = pt.x - MARGIN.left;
+      const gx = pt.x - margin.left;
       if (gx < 0 || gx > innerW) {
         setTip(null);
         return;
@@ -164,7 +195,7 @@ function Overlay({
       const t = xScale.invert(gx).getTime();
       setTip({ t, x: gx, yPx: pt.y, dayPrecision });
     },
-    [xScale, innerW, dayPrecision],
+    [xScale, innerW, dayPrecision, margin.left],
   );
 
   // Unified tooltip rows at crosshair time, sorted desc by price
@@ -203,7 +234,7 @@ function Overlay({
         role="img"
         aria-label={`GPU rental price history, log scale, ${clipped.length} series`}
       >
-        <Group left={MARGIN.left} top={MARGIN.top}>
+        <Group left={margin.left} top={margin.top}>
           {/* y grid + ticks */}
           {yTicks.map((v) => (
             <g key={v}>
@@ -328,9 +359,11 @@ function Overlay({
                 <line x1={innerW} x2={innerW + 6} y1={yScale(last.price)} y2={ly} stroke={s.color} strokeWidth={1} opacity={0.6} />
                 <text x={innerW + 9} y={ly} dy="0.32em" fill={s.color} fontSize={11} fontFamily={chartTheme.label.fontFamily} fontWeight={600}>
                   {s.model}
-                  <tspan fill={INK.secondary} fontWeight={400}>
-                    {" "}${last.price >= 10 ? last.price.toFixed(2) : last.price.toFixed(2)}
-                  </tspan>
+                  {!compact && (
+                    <tspan fill={INK.secondary} fontWeight={400}>
+                      {" "}${last.price >= 10 ? last.price.toFixed(2) : last.price.toFixed(2)}
+                    </tspan>
+                  )}
                 </text>
               </g>
             );
@@ -353,7 +386,7 @@ function Overlay({
         <div
           className="absolute z-10 pointer-events-none rounded border px-2.5 py-2"
           style={{
-            left: Math.min(Math.max(tip.x + MARGIN.left + 12, 0), width - 190),
+            left: Math.min(Math.max(tip.x + margin.left + 12, 0), Math.max(0, width - 190)),
             top: 8,
             background: SURFACE.overlay,
             borderColor: BORDER.strong,

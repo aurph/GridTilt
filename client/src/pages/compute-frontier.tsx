@@ -6,6 +6,7 @@ import "leaflet/dist/leaflet.css";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { AsOf, ErrorState, SrChartTable } from "@/components/Freshness";
 import {
   Tooltip as UITooltip,
   TooltipContent,
@@ -128,8 +129,8 @@ type SortDir = "asc" | "desc";
 // ─── Page ──────────────────────────────────────────────────────────────────
 
 export default function ComputeFrontier() {
-  const { data: clusters, isLoading, isError } = useQuery<Cluster[]>({ queryKey: ["/api/clusters"] });
-  const { data: metrics } = useQuery<ClusterMetrics>({ queryKey: ["/api/clusters/metrics"] });
+  const { data: clusters, isLoading, isError, refetch, dataUpdatedAt } = useQuery<Cluster[]>({ queryKey: ["/api/clusters"] });
+  const { data: metrics, isError: metricsError, refetch: refetchMetrics } = useQuery<ClusterMetrics>({ queryKey: ["/api/clusters/metrics"] });
 
   const [operatorFilter, setOperatorFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -223,6 +224,7 @@ export default function ComputeFrontier() {
             </p>
           </div>
           <div className="text-11 text-muted-foreground/70 font-mono tracking-wide text-right space-y-0.5" data-testid="cf-sources">
+            <div><AsOf updatedAt={dataUpdatedAt} intervalMs={900_000} /></div>
             {metrics?.lastRefreshed && <div className="text-muted-foreground/60">refreshed {metrics.lastRefreshed}</div>}
             <Link href="/power-map" className="text-brand hover:text-brand-2 inline-flex items-center gap-0.5">
               Power Map <MapPin className="h-3 w-3" />
@@ -250,7 +252,9 @@ export default function ComputeFrontier() {
         {/* Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3" data-testid="cf-charts">
           <ChartCard title={`Planned MW by operator${metrics && metrics.concentration.operatorCount > OP_TOP_N ? ` (top ${OP_TOP_N})` : ""}`}>
-            {metrics ? (
+            {metricsError ? (
+              <ErrorState label="Cluster metrics failed to load." onRetry={() => refetchMetrics()} className="h-[280px]" />
+            ) : metrics ? (
               <ResponsiveContainer width="100%" height={280}>
                 <BarChart data={topOperators} layout="vertical" margin={{ left: 8, right: 16, top: 4, bottom: 4 }}>
                   <CartesianGrid {...gridProps} vertical={true} horizontal={false} />
@@ -261,11 +265,20 @@ export default function ComputeFrontier() {
                 </BarChart>
               </ResponsiveContainer>
             ) : <ChartSkeleton />}
+            {topOperators.length > 0 && (
+              <SrChartTable
+                caption="Planned MW by operator"
+                columns={["Operator", "Planned MW"]}
+                rows={topOperators.map((o) => [o.operator, o.plannedMW.toLocaleString()])}
+              />
+            )}
             <p className="text-10 text-muted-foreground/50 mt-1 font-mono">x axis in GW{metrics && metrics.concentration.operatorCount > OP_TOP_N ? ` · ${metrics.concentration.operatorCount} operators total` : ""}</p>
           </ChartCard>
 
           <ChartCard title="Planned MW by grid region (ISO)">
-            {metrics ? (
+            {metricsError ? (
+              <ErrorState label="Cluster metrics failed to load." onRetry={() => refetchMetrics()} className="h-[260px]" />
+            ) : metrics ? (
               <ResponsiveContainer width="100%" height={260}>
                 <BarChart data={metrics.byIso} margin={{ left: 0, right: 8, top: 4, bottom: 4 }}>
                   <CartesianGrid {...gridProps} />
@@ -276,11 +289,20 @@ export default function ComputeFrontier() {
                 </BarChart>
               </ResponsiveContainer>
             ) : <ChartSkeleton />}
+            {metrics && (
+              <SrChartTable
+                caption="Planned MW by grid region (ISO)"
+                columns={["Grid region", "Planned MW"]}
+                rows={metrics.byIso.map((b) => [b.iso, b.plannedMW.toLocaleString()])}
+              />
+            )}
             <p className="text-10 text-muted-foreground/50 mt-1 font-mono">y axis in GW</p>
           </ChartCard>
 
           <ChartCard title="Planned MW by status">
-            {metrics ? (
+            {metricsError ? (
+              <ErrorState label="Cluster metrics failed to load." onRetry={() => refetchMetrics()} className="h-[220px]" />
+            ) : metrics ? (
               <ResponsiveContainer width="100%" height={220}>
                 <BarChart data={metrics.byStatus} margin={{ left: 0, right: 8, top: 4, bottom: 4 }}>
                   <CartesianGrid {...gridProps} />
@@ -293,11 +315,20 @@ export default function ComputeFrontier() {
                 </BarChart>
               </ResponsiveContainer>
             ) : <ChartSkeleton />}
+            {metrics && (
+              <SrChartTable
+                caption="Planned MW by build status"
+                columns={["Status", "Planned MW"]}
+                rows={metrics.byStatus.map((s) => [s.status, s.plannedMW.toLocaleString()])}
+              />
+            )}
             <p className="text-10 text-muted-foreground/50 mt-1 font-mono">y axis in GW</p>
           </ChartCard>
 
           <ChartCard title="Build timeline (planned GW online by year)">
-            {clusters ? (
+            {isError ? (
+              <ErrorState label="Cluster dataset failed to load." onRetry={() => refetch()} className="h-[220px]" />
+            ) : clusters ? (
               <ResponsiveContainer width="100%" height={220}>
                 <BarChart data={timeline} margin={{ left: 0, right: 8, top: 4, bottom: 4 }}>
                   <CartesianGrid {...gridProps} />
@@ -310,11 +341,20 @@ export default function ComputeFrontier() {
                 </BarChart>
               </ResponsiveContainer>
             ) : <ChartSkeleton />}
+            {timeline.length > 0 && (
+              <SrChartTable
+                caption="Build timeline: planned GW online by year"
+                columns={["Year", "Planned GW"]}
+                rows={timeline.map((t) => [t.year, t.gw])}
+              />
+            )}
             <p className="text-10 text-muted-foreground/50 mt-1 font-mono">bucketed by first announced year{timeline.some((t) => t.year === "n/a") ? " · n/a = no announced online date" : ""}</p>
           </ChartCard>
 
           <ChartCard title="Planned MW by energy source">
-            {metrics ? (
+            {metricsError ? (
+              <ErrorState label="Cluster metrics failed to load." onRetry={() => refetchMetrics()} className="h-[220px]" />
+            ) : metrics ? (
               <ResponsiveContainer width="100%" height={220}>
                 <BarChart data={metrics.byEnergySource} layout="vertical" margin={{ left: 8, right: 16, top: 4, bottom: 4 }}>
                   <CartesianGrid {...gridProps} vertical={true} horizontal={false} />
@@ -327,6 +367,13 @@ export default function ComputeFrontier() {
                 </BarChart>
               </ResponsiveContainer>
             ) : <ChartSkeleton />}
+            {metrics && (
+              <SrChartTable
+                caption="Planned MW by energy source"
+                columns={["Energy source", "Planned MW"]}
+                rows={metrics.byEnergySource.map((e) => [e.source, e.plannedMW.toLocaleString()])}
+              />
+            )}
             <p className="text-10 text-muted-foreground/50 mt-1 font-mono">x axis in GW · grid vs behind-the-meter gas, nuclear, renewables</p>
           </ChartCard>
         </div>
@@ -371,8 +418,12 @@ export default function ComputeFrontier() {
                 ))}
                 <ZoomControl position="bottomright" />
               </MapContainer>
+            ) : isLoading ? (
+              <Skeleton className="h-full w-full rounded-none" aria-hidden="true" />
+            ) : isError ? (
+              <ErrorState label="Cluster dataset failed to load." onRetry={() => refetch()} className="h-full" />
             ) : (
-              <div className="flex items-center justify-center h-full text-xs text-muted-foreground">{isLoading ? "Loading map." : "No clusters to map."}</div>
+              <div className="flex items-center justify-center h-full text-xs text-muted-foreground">No clusters to map.</div>
             )}
           </div>
         </Card>
@@ -391,6 +442,13 @@ export default function ComputeFrontier() {
 
         {/* Table */}
         <Card className="border-card-border overflow-hidden" data-testid="cf-table">
+          {isError ? (
+            <div data-testid="cf-error">
+              <ErrorState label="Cluster dataset failed to load." onRetry={() => refetch()} />
+            </div>
+          ) : (
+          <div className="overflow-x-auto">
+          <div className="min-w-[820px]">
           <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-surface-base border-b border-border text-10 font-mono uppercase tracking-wider text-muted-foreground">
             <SortHeader label="Cluster" k="name" cur={sortKey} dir={sortDir} onClick={toggleSort} className="col-span-3" />
             <span className="col-span-1">Status</span>
@@ -404,8 +462,6 @@ export default function ComputeFrontier() {
           </div>
           {isLoading ? (
             <div className="p-4 space-y-2">{Array(10).fill(null).map((_, i) => <Skeleton key={i} className="h-7" />)}</div>
-          ) : isError ? (
-            <div className="p-6 text-center text-xs text-negative" data-testid="cf-error">Cluster dataset unavailable.</div>
           ) : filtered.length === 0 ? (
             <div className="p-6 text-center text-xs text-muted-foreground" data-testid="cf-empty">No clusters match the current filters.</div>
           ) : (
@@ -443,6 +499,9 @@ export default function ComputeFrontier() {
                 </TooltipContent>
               </UITooltip>
             ))
+          )}
+          </div>
+          </div>
           )}
         </Card>
 

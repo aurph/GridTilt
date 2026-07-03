@@ -3,8 +3,10 @@ import { useQuery } from "@tanstack/react-query";
 import { useLocation, Link } from "wouter";
 import {
   CalendarDays, ChevronLeft, ChevronRight, Clock,
-  TrendingUp, ArrowRight, Eye, EyeOff, AlertTriangle,
+  TrendingUp, ArrowRight, Eye, EyeOff, AlertTriangle, RotateCw,
 } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { AsOf } from "@/components/Freshness";
 import {
   catalystCategoryColors,
   STAGE_COLORS,
@@ -474,7 +476,7 @@ export default function CatalystTracker() {
   const [currentMonth, setCurrentMonth] = useState(() => new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
-  const { data, isLoading, isError } = useQuery<AllCatalystsResponse>({
+  const { data, isLoading, isError, refetch, dataUpdatedAt } = useQuery<AllCatalystsResponse>({
     queryKey: ["/api/catalysts/all"],
     refetchInterval: 15 * 60 * 1000,
   });
@@ -502,16 +504,24 @@ export default function CatalystTracker() {
             <span className="text-13" style={{ color: INK.muted }}>
               {catalysts.length} thesis catalysts
             </span>
+            <AsOf updatedAt={dataUpdatedAt} intervalMs={15 * 60 * 1000} className="ml-auto" />
           </>
         )}
       </div>
 
       <div className="px-4 md:px-8 py-6 max-w-[1200px] mx-auto space-y-10">
         {isLoading ? (
-          <div className="space-y-4">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="h-32 rounded-lg animate-pulse" style={{ background: SURFACE.raised }} />
-            ))}
+          <div className="flex flex-col lg:flex-row gap-6" aria-hidden="true">
+            <div className="w-full lg:w-[420px] flex-shrink-0 space-y-3">
+              <Skeleton className="h-8 w-full" />
+              <Skeleton className="h-[340px] w-full" />
+            </div>
+            <div className="flex-1 min-w-0 space-y-4 lg:pl-6">
+              <Skeleton className="h-5 w-44" />
+              {[...Array(8)].map((_, i) => (
+                <Skeleton key={i} className="h-6 w-full" />
+              ))}
+            </div>
           </div>
         ) : isError ? (
           <div
@@ -526,6 +536,14 @@ export default function CatalystTracker() {
             <p className="text-xs mt-1" style={{ color: INK.muted }}>
               The catalyst feed failed to load. It retries automatically.
             </p>
+            <button
+              onClick={() => refetch()}
+              className="mt-3 inline-flex items-center gap-1.5 rounded border border-subtle px-2.5 py-1 text-11 font-mono text-foreground hover:border-strong transition-colors"
+              data-testid="error-retry"
+            >
+              <RotateCw className="h-3 w-3" />
+              retry now
+            </button>
           </div>
         ) : (
           <>

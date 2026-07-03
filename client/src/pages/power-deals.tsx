@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { AsOf, ErrorState, SrChartTable } from "@/components/Freshness";
 import {
   Tooltip as UITooltip,
   TooltipContent,
@@ -74,7 +75,7 @@ const gw = (mw: number) => (mw / 1000).toFixed(mw >= 10_000 ? 0 : 1);
 type SortKey = "capacityMW" | "name" | "offtaker" | "type" | "online";
 
 export default function PowerDeals() {
-  const { data, isLoading, isError } = useQuery<DealMetrics>({ queryKey: ["/api/deals/metrics"] });
+  const { data, isLoading, isError, refetch, dataUpdatedAt } = useQuery<DealMetrics>({ queryKey: ["/api/deals/metrics"] });
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
   const [sortKey, setSortKey] = useState<SortKey>("capacityMW");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
@@ -123,6 +124,7 @@ export default function PowerDeals() {
             </p>
           </div>
           <div className="text-11 text-muted-foreground/70 font-mono tracking-wide text-right space-y-0.5" data-testid="deals-sync">
+            <div><AsOf updatedAt={dataUpdatedAt} intervalMs={900_000} /></div>
             {data?.lastRefreshed && <div className="text-muted-foreground/60">data as of {data.lastRefreshed}</div>}
             {data && <div>{data.dealCount} deals · {gw(data.totalContractedMW)} GW contracted</div>}
             {data?.topBuyer && <div>top buyer: <span className="text-brand">{data.topBuyer}</span></div>}
@@ -144,8 +146,10 @@ export default function PowerDeals() {
           <span className="text-11 font-mono uppercase tracking-wider text-muted-foreground">Contracted power by buyer · GW</span>
           {isLoading ? (
             <Skeleton className="h-[300px] w-full mt-2" />
-          ) : isError || byBuyer.length === 0 ? (
-            <div className="h-[300px] flex items-center justify-center text-xs text-muted-foreground">{isError ? "Deals unavailable." : "No deals."}</div>
+          ) : isError ? (
+            <ErrorState label="The deals dataset failed to load." onRetry={() => refetch()} className="h-[300px]" />
+          ) : byBuyer.length === 0 ? (
+            <div className="h-[300px] flex items-center justify-center text-xs text-muted-foreground">No deals.</div>
           ) : (
             <ResponsiveContainer width="100%" height={Math.max(220, byBuyer.length * 32)}>
               <BarChart data={byBuyer} layout="vertical" margin={{ left: 8, right: 56, top: 8, bottom: 4 }}>
@@ -161,6 +165,13 @@ export default function PowerDeals() {
                   label={{ position: "right", formatter: (v: number) => `${v}`, fill: INK.muted, fontSize: 10, fontFamily: FONT.mono }} />
               </BarChart>
             </ResponsiveContainer>
+          )}
+          {byBuyer.length > 0 && (
+            <SrChartTable
+              caption="Contracted power by buyer, in gigawatts"
+              columns={["Buyer", "GW"]}
+              rows={byBuyer.map((b) => [b.buyer, b.gw])}
+            />
           )}
         </Card>
 
@@ -199,6 +210,11 @@ export default function PowerDeals() {
             <span className="text-11 font-mono uppercase tracking-wider text-muted-foreground">Deals</span>
             <span className="text-10 font-mono text-muted-foreground/40 ml-2">{visibleRows.length} shown · hover for terms + sources</span>
           </div>
+          {isError ? (
+            <ErrorState label="The deals dataset failed to load." onRetry={() => refetch()} />
+          ) : (
+          <div className="overflow-x-auto">
+          <div className="min-w-[680px]">
           <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-surface-base border-b border-border text-10 font-mono uppercase tracking-wider text-muted-foreground">
             <SortHeader label="Buyer" k="offtaker" cur={sortKey} dir={sortDir} onClick={toggleSort} className="col-span-2" />
             <span className="col-span-4">Generator / project</span>
@@ -208,8 +224,6 @@ export default function PowerDeals() {
           </div>
           {isLoading ? (
             <div className="p-4 space-y-2">{Array(10).fill(null).map((_, i) => <Skeleton key={i} className="h-7" />)}</div>
-          ) : isError ? (
-            <div className="p-6 text-center text-xs text-negative">Deals unavailable.</div>
           ) : (
             visibleRows.map((r) => (
               <UITooltip key={r.id}>
@@ -242,6 +256,9 @@ export default function PowerDeals() {
                 </TooltipContent>
               </UITooltip>
             ))
+          )}
+          </div>
+          </div>
           )}
         </Card>
 

@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { AsOf, ErrorState } from "@/components/Freshness";
 import { Calculator } from "lucide-react";
 import { BRAND, FONT, INK, SERIES } from "@/lib/tokens";
 
@@ -36,7 +37,7 @@ function numBig(n: number): string {
 }
 
 export default function GpuEconomics() {
-  const { data, isLoading, isError } = useQuery<EconData>({ queryKey: ["/api/gpu-economics"] });
+  const { data, isLoading, isError, refetch, dataUpdatedAt } = useQuery<EconData>({ queryKey: ["/api/gpu-economics"] });
   const rows = data?.rows ?? [];
   // Presentation-layer sort: cheapest compute first ($/PFLOP-hr ascending, nulls last),
   // so the table matches the header claim regardless of server order.
@@ -101,9 +102,10 @@ export default function GpuEconomics() {
               are vendor peak BF16 (dense); training figures are public estimates. Every assumption is shown and adjustable.
             </p>
           </div>
-          {data?.lastRefreshed && (
-            <div className="text-11 text-muted-foreground/70 font-mono text-right">prices as of {data.lastRefreshed}</div>
-          )}
+          <div className="text-11 text-muted-foreground/70 font-mono text-right space-y-0.5">
+            {data?.lastRefreshed && <div>prices as of {data.lastRefreshed}</div>}
+            <div><AsOf updatedAt={dataUpdatedAt} intervalMs={900_000} /></div>
+          </div>
         </div>
       </div>
 
@@ -114,31 +116,37 @@ export default function GpuEconomics() {
             <span className="text-11 font-mono uppercase tracking-wider text-muted-foreground">Cost of compute</span>
             <span className="text-10 font-mono text-muted-foreground/40 ml-2">sorted by cheapest compute (lower $/PFLOP-hr is better)</span>
           </div>
-          <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-surface-base border-b border-border text-10 font-mono uppercase tracking-wider text-muted-foreground">
-            <span className="col-span-3">Model</span>
-            <span className="col-span-2 text-right">$/hr</span>
-            <span className="col-span-2 text-right">$/year</span>
-            <span className="col-span-2 text-right">Peak BF16</span>
-            <span className="col-span-3 text-right">$/PFLOP-hr</span>
-          </div>
-          {isLoading ? (
-            <div className="p-4 space-y-2">{Array(10).fill(null).map((_, i) => <Skeleton key={i} className="h-7" />)}</div>
-          ) : isError ? (
-            <div className="p-6 text-center text-xs text-negative">Economics unavailable.</div>
+          {isError ? (
+            <ErrorState label="GPU economics failed to load." onRetry={() => refetch()} />
           ) : (
-            sortedRows.map((r) => (
-              <div key={r.model} className="grid grid-cols-12 gap-2 px-4 py-2.5 border-b border-border/30 last:border-0 text-xs items-center hover:bg-brand/5" data-testid={`econ-row-${r.model}`}>
-                <span className="col-span-3 font-mono font-semibold flex items-center gap-1.5" style={{ color: vc(r.vendor) }}>
-                  <span className="h-2 w-2 rounded-full flex-shrink-0" style={{ background: vc(r.vendor) }} />
-                  {r.model}
-                  {cheapestModel != null && r.model === cheapestModel && <span className="text-8 font-normal text-positive border border-positive/40 rounded-sm px-1">cheapest compute</span>}
-                </span>
-                <span className="col-span-2 font-mono text-foreground text-right tabular-nums">{usd(r.pricePerHr)}</span>
-                <span className="col-span-2 font-mono text-muted-foreground text-right tabular-nums">{usdBig(r.perYear)}</span>
-                <span className="col-span-2 font-mono text-muted-foreground/70 text-right tabular-nums text-11">{r.tflopsBf16 != null ? `${(r.tflopsBf16 / 1000).toFixed(2)} PF` : "—"}</span>
-                <span className="col-span-3 font-mono text-right tabular-nums" style={{ color: r.usdPerPflopHr != null ? BRAND.secondary : INK.faint }}>{r.usdPerPflopHr != null ? `$${r.usdPerPflopHr.toFixed(2)}` : "—"}</span>
+            <div className="overflow-x-auto">
+              <div className="min-w-[560px]">
+                <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-surface-base border-b border-border text-10 font-mono uppercase tracking-wider text-muted-foreground">
+                  <span className="col-span-3">Model</span>
+                  <span className="col-span-2 text-right">$/hr</span>
+                  <span className="col-span-2 text-right">$/year</span>
+                  <span className="col-span-2 text-right">Peak BF16</span>
+                  <span className="col-span-3 text-right">$/PFLOP-hr</span>
+                </div>
+                {isLoading ? (
+                  <div className="p-4 space-y-2">{Array(10).fill(null).map((_, i) => <Skeleton key={i} className="h-7" />)}</div>
+                ) : (
+                sortedRows.map((r) => (
+                  <div key={r.model} className="grid grid-cols-12 gap-2 px-4 py-2.5 border-b border-border/30 last:border-0 text-xs items-center hover:bg-brand/5" data-testid={`econ-row-${r.model}`}>
+                    <span className="col-span-3 font-mono font-semibold flex items-center gap-1.5" style={{ color: vc(r.vendor) }}>
+                      <span className="h-2 w-2 rounded-full flex-shrink-0" style={{ background: vc(r.vendor) }} />
+                      {r.model}
+                      {cheapestModel != null && r.model === cheapestModel && <span className="text-8 font-normal text-positive border border-positive/40 rounded-sm px-1">cheapest compute</span>}
+                    </span>
+                    <span className="col-span-2 font-mono text-foreground text-right tabular-nums">{usd(r.pricePerHr)}</span>
+                    <span className="col-span-2 font-mono text-muted-foreground text-right tabular-nums">{usdBig(r.perYear)}</span>
+                    <span className="col-span-2 font-mono text-muted-foreground/70 text-right tabular-nums text-11">{r.tflopsBf16 != null ? `${(r.tflopsBf16 / 1000).toFixed(2)} PF` : "—"}</span>
+                    <span className="col-span-3 font-mono text-right tabular-nums" style={{ color: r.usdPerPflopHr != null ? BRAND.secondary : INK.faint }}>{r.usdPerPflopHr != null ? `$${r.usdPerPflopHr.toFixed(2)}` : "—"}</span>
+                  </div>
+                ))
+                )}
               </div>
-            ))
+            </div>
           )}
           <div className="px-4 py-2 text-10 text-muted-foreground/50 font-mono border-t border-border">
             $/year = on-demand rate held for 8,760 hours. Peak BF16 = vendor dense tensor throughput (PF = petaflops). $/PFLOP-hr = rate ÷ petaflops.
@@ -151,8 +159,15 @@ export default function GpuEconomics() {
             <Calculator className="h-4 w-4 text-brand" />
             <span className="text-sm font-semibold text-foreground">Training cost calculator</span>
           </div>
-          {calcGpus.length === 0 ? (
-            <div className="text-xs text-muted-foreground py-6 text-center">Compute specs loading.</div>
+          {isLoading ? (
+            <div className="grid sm:grid-cols-2 gap-x-8 gap-y-4">
+              <div className="space-y-3">{Array(4).fill(null).map((_, i) => <Skeleton key={i} className="h-12" />)}</div>
+              <Skeleton className="h-52" />
+            </div>
+          ) : isError ? (
+            <ErrorState label="The calculator needs the price feed, which failed to load." onRetry={() => refetch()} />
+          ) : calcGpus.length === 0 ? (
+            <div className="text-xs text-muted-foreground py-6 text-center">No GPUs with published compute specs.</div>
           ) : (
             <div className="grid sm:grid-cols-2 gap-x-8 gap-y-4">
               {/* Inputs */}

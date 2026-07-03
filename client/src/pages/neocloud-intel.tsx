@@ -22,6 +22,7 @@ import {
   Tooltip as RTooltip,
 } from "recharts";
 import { Cpu, ArrowUpDown } from "lucide-react";
+import { AsOf, ErrorState } from "@/components/Freshness";
 import { BORDER, BRAND, FONT, INK, SEMANTIC, SERIES } from "@/lib/tokens";
 import { axisProps, gridProps, tooltipContentStyle } from "@/lib/chart-theme";
 
@@ -106,7 +107,7 @@ function writeChartParams(gpus: string[] | null, view: ViewKey, range: RangeKey)
 
 
 export default function NeocloudIntel() {
-  const { data, isLoading, isError } = useQuery<GpuMetrics>({ queryKey: ["/api/gpu-prices/metrics"] });
+  const { data, isLoading, isError, refetch, dataUpdatedAt } = useQuery<GpuMetrics>({ queryKey: ["/api/gpu-prices/metrics"] });
   const [sortKey, setSortKey] = useState<SortKey>("current");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
@@ -216,7 +217,11 @@ export default function NeocloudIntel() {
             </p>
           </div>
           <div className="text-11 text-muted-foreground/70 font-mono tracking-wide text-right space-y-0.5" data-testid="ni-sync">
-            {data?.lastRefreshed && <div className="text-muted-foreground/60">data as of {data.lastRefreshed}</div>}
+            <div className="flex items-center justify-end gap-2">
+              {data?.lastRefreshed && <span className="text-muted-foreground/60">source data {data.lastRefreshed}</span>}
+              {/* fetch age; this query has no refetch schedule, so it never flags "stale" */}
+              <AsOf updatedAt={dataUpdatedAt} staleAfterMs={Infinity} />
+            </div>
             {data && <div>{data.modelCount} models · fleet avg {fmtUsd(data.fleetAvg)}/hr</div>}
             {data?.fleetAvg1yChange !== null && data?.fleetAvg1yChange !== undefined && (
               <div style={{ color: changeColor(data.fleetAvg1yChange) }}>fleet {fmtChange(data.fleetAvg1yChange)} 1Y</div>
@@ -232,6 +237,10 @@ export default function NeocloudIntel() {
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
             {Array(10).fill(null).map((_, i) => <Skeleton key={i} className="h-28" />)}
           </div>
+        ) : isError ? (
+          <Card className="border-card-border">
+            <ErrorState label="GPU price index unavailable" onRetry={() => refetch()} />
+          </Card>
         ) : (
           byVendor.map(([vendor, vrows]) => (
             <div key={vendor} className="space-y-2" data-testid={`ni-group-${vendor}`}>
@@ -353,7 +362,9 @@ export default function NeocloudIntel() {
             {isLoading ? (
               <Skeleton className="h-[380px] w-full" />
             ) : isError ? (
-              <div className="h-[240px] flex items-center justify-center text-xs text-negative">Price index unavailable.</div>
+              <div className="h-[240px] flex items-center justify-center">
+                <ErrorState label="Price index unavailable" onRetry={() => refetch()} />
+              </div>
             ) : (
               <PriceHistoryChart
                 series={chartSeries}
@@ -389,7 +400,7 @@ export default function NeocloudIntel() {
             <Skeleton className="h-[400px] w-full" />
           ) : isError || rows.length === 0 ? (
             <div className="h-[400px] flex items-center justify-center text-xs text-muted-foreground" data-testid="ni-chart-empty">
-              {isError ? "Price index unavailable." : "No price data."}
+              {isError ? <ErrorState label="Price index unavailable" onRetry={() => refetch()} /> : "No price data."}
             </div>
           ) : (
             <ResponsiveContainer width="100%" height={Math.max(260, barData.length * 38)}>
@@ -433,7 +444,7 @@ export default function NeocloudIntel() {
           {isLoading ? (
             <div className="p-4 space-y-2">{Array(10).fill(null).map((_, i) => <Skeleton key={i} className="h-7" />)}</div>
           ) : isError ? (
-            <div className="p-6 text-center text-xs text-negative">Price index unavailable.</div>
+            <ErrorState label="Price index unavailable" onRetry={() => refetch()} />
           ) : (
             sortedRows.map((r) => (
               <UITooltip key={r.model}>

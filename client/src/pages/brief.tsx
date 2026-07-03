@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { AsOf, ErrorState } from "@/components/Freshness";
 import { Newspaper, Copy, Check } from "lucide-react";
 import { FONT } from "@/lib/tokens";
 
@@ -24,7 +25,7 @@ const SECTION_LINK: Record<string, string> = {
 };
 
 export default function BriefPage() {
-  const { data, isLoading, isError } = useQuery<Brief>({ queryKey: ["/api/brief"] });
+  const { data, isLoading, isError, refetch, dataUpdatedAt } = useQuery<Brief>({ queryKey: ["/api/brief"] });
   const [copied, setCopied] = useState(false);
 
   const copy = async () => {
@@ -76,11 +77,12 @@ export default function BriefPage() {
               {Array(4).fill(null).map((_, i) => <Skeleton key={i} className="h-20 w-full" />)}
             </div>
           ) : isError || !data ? (
-            <div className="py-12 text-center text-sm text-muted-foreground">Brief unavailable right now.</div>
+            <ErrorState label="The brief failed to load." onRetry={() => refetch()} className="py-12" />
           ) : (
             <article className="space-y-5">
-              <header className="border-b border-border pb-4">
+              <header className="border-b border-border pb-4 flex flex-wrap items-baseline justify-between gap-2">
                 <h2 className="text-xl font-semibold text-foreground" style={{ fontFamily: FONT.mono }}>{data.title}</h2>
+                <AsOf updatedAt={dataUpdatedAt} intervalMs={900_000} />
               </header>
 
               <p className="text-15 leading-relaxed text-foreground/90">{data.summary}</p>

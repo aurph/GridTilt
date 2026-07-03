@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Zap, TrendingUp, Activity, AlertTriangle, Info, ArrowUp, ArrowDown, Calendar, ChevronRight, ExternalLink, Cpu, BarChart3, Calculator, Layers, Map, Link2, CalendarDays } from "lucide-react";
 import { EmailCapture, ScrollTriggeredBanner } from "@/components/EmailCapture";
+import { AsOf, ErrorState, SrChartTable } from "@/components/Freshness";
 import {
   BRAND, CATEGORY_COLORS as TOKEN_CATEGORY_COLORS, CHART_CHROME, DATA_QUALITY, INK, SEMANTIC, SERIES,
 } from "@/lib/tokens";
@@ -376,7 +377,7 @@ function ErrorCard({ label }: { label: string }) {
   );
 }
 
-function TopMoversSection({ topMovers, pulse, isLoading, isError }: { topMovers: TopMover[]; pulse: SectorPulseItem[]; isLoading: boolean; isError?: boolean }) {
+function TopMoversSection({ topMovers, pulse, isLoading, isError, updatedAt, onRetry }: { topMovers: TopMover[]; pulse: SectorPulseItem[]; isLoading: boolean; isError?: boolean; updatedAt?: number; onRetry?: () => void }) {
   return (
     <Card className="p-5 border-card-border">
       <div className="flex items-center gap-2 mb-4">
@@ -390,9 +391,10 @@ function TopMoversSection({ topMovers, pulse, isLoading, isError }: { topMovers:
             <p className="text-xs">Top 5 stocks by absolute % change across all 8 stack layers. Refreshes every 10 min.</p>
           </TooltipContent>
         </UITooltip>
+        <AsOf updatedAt={updatedAt} intervalMs={900_000} className="ml-auto" />
       </div>
       <div className="space-y-2">
-        {isError ? <ErrorCard label="Unable to load movers" /> : isLoading
+        {isError ? <ErrorState label="Unable to load movers" onRetry={onRetry} /> : isLoading
           ? Array(5).fill(null).map((_, i) => (
               <div key={i} className="flex items-center gap-3 py-1.5">
                 <Skeleton className="h-4 w-12" />
@@ -484,7 +486,7 @@ function gaugeRangeStart(range: GaugeRange, now: number): number | null {
 }
 
 function GaugeHistoryCard({ live }: { live: { npi: number; ai: number; gs: number } | null }) {
-  const { data, isLoading } = useQuery<{ days: IndexHistoryDay[] }>({
+  const { data, isLoading, isError, refetch, dataUpdatedAt } = useQuery<{ days: IndexHistoryDay[] }>({
     queryKey: ["/api/index-history"],
     refetchInterval: 30 * 60_000,
   });
@@ -547,21 +549,32 @@ function GaugeHistoryCard({ live }: { live: { npi: number; ai: number; gs: numbe
           )}
         </div>
       </div>
-      <p className="text-10 font-mono text-muted-foreground/60 mb-3">
-        line: NPI equity legs · Jan 1 2024 = 100 · headline: full live NPI
-      </p>
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+        <p className="text-10 font-mono text-muted-foreground/60">
+          line: NPI equity legs · Jan 1 2024 = 100 · headline: full live NPI
+        </p>
+        <AsOf updatedAt={dataUpdatedAt} intervalMs={30 * 60_000} />
+      </div>
 
-      {isLoading || windowed.length === 0 ? (
-        isLoading ? (
+      {isError ? (
+        <div className="flex-1 min-h-[180px] flex flex-col justify-center">
+          <ErrorState label="Unable to load gauge history" onRetry={() => refetch()} />
+        </div>
+      ) : isLoading ? (
+        <>
           <div className="flex-1 flex flex-col justify-center gap-2 min-h-[180px]">
             <Skeleton className="h-3 w-1/3" />
             <Skeleton className="h-32 w-full" />
           </div>
-        ) : (
-          <div className="flex-1 min-h-[180px] flex items-center justify-center text-xs text-muted-foreground">
-            No recorded days in this window.
+          <div className="grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-border">
+            <Skeleton className="h-16 w-full" />
+            <Skeleton className="h-16 w-full" />
           </div>
-        )
+        </>
+      ) : windowed.length === 0 ? (
+        <div className="flex-1 min-h-[180px] flex items-center justify-center text-xs text-muted-foreground">
+          No recorded days in this window.
+        </div>
       ) : (
         <>
           <div className="flex-1 min-h-[180px]" data-testid="gauge-history-chart">
@@ -611,6 +624,13 @@ function GaugeHistoryCard({ live }: { live: { npi: number; ai: number; gs: numbe
               </ComposedChart>
             </ResponsiveContainer>
           </div>
+          <SrChartTable
+            caption={`NPI gauge history (equity legs, Jan 1 2024 = 100), ${range} window`}
+            columns={["Date", "NPI"]}
+            rows={windowed
+              .filter((d) => d.npi != null)
+              .map((d) => [fmtDate(d.t, true), (d.npi as number).toFixed(1)])}
+          />
 
           <div className="grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-border">
             {(
@@ -670,7 +690,7 @@ function CatalystCalendarSection() {
   const [viewYear, setViewYear] = useState(today.getFullYear());
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
 
-  const { data } = useQuery<AllCatalystsResponse>({
+  const { data, isLoading, isError, refetch, dataUpdatedAt } = useQuery<AllCatalystsResponse>({
     queryKey: ["/api/catalysts/all"],
     refetchInterval: 900000,
   });
@@ -716,6 +736,7 @@ function CatalystCalendarSection() {
         <div className="flex items-center gap-2">
           <Calendar className="h-3.5 w-3.5 text-brand-2" />
           <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Catalyst Tracker</h2>
+          <AsOf updatedAt={dataUpdatedAt} intervalMs={900_000} />
         </div>
         <Link
           href="/catalysts"
@@ -726,6 +747,10 @@ function CatalystCalendarSection() {
         </Link>
       </div>
 
+      {isError ? (
+        <ErrorState label="Unable to load catalysts" onRetry={() => refetch()} />
+      ) : (
+      <>
       <div className="flex items-center justify-between mb-3">
         <button
           onClick={() => {
@@ -842,21 +867,30 @@ function CatalystCalendarSection() {
       <div className="mt-4 pt-3 border-t border-border">
         <p className="text-10 uppercase tracking-wider text-muted-foreground/60 mb-2">Next 5 Upcoming</p>
         <div className="space-y-2">
-          {upcoming.map((item) => {
-            const days = daysUntil(item.sortDate);
-            const cc = getItemColor(item);
-            return (
-              <div key={item.id} className="flex items-center gap-2" data-testid={`upcoming-catalyst-${item.id}`}>
-                <span className="text-10 font-mono text-muted-foreground w-8 flex-shrink-0">
-                  {days === 0 ? "TODAY" : `${days}d`}
-                </span>
-                <div className="h-1 w-1 rounded-full flex-shrink-0" style={{ backgroundColor: cc }} />
-                <span className="text-xs text-foreground truncate flex-1 min-w-0">{getItemLabel(item)}</span>
-              </div>
-            );
-          })}
+          {isLoading
+            ? Array(5).fill(null).map((_, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <Skeleton className="h-3 w-8 flex-shrink-0" />
+                  <Skeleton className="h-3 flex-1" />
+                </div>
+              ))
+            : upcoming.map((item) => {
+                const days = daysUntil(item.sortDate);
+                const cc = getItemColor(item);
+                return (
+                  <div key={item.id} className="flex items-center gap-2" data-testid={`upcoming-catalyst-${item.id}`}>
+                    <span className="text-10 font-mono text-muted-foreground w-8 flex-shrink-0">
+                      {days === 0 ? "TODAY" : `${days}d`}
+                    </span>
+                    <div className="h-1 w-1 rounded-full flex-shrink-0" style={{ backgroundColor: cc }} />
+                    <span className="text-xs text-foreground truncate flex-1 min-w-0">{getItemLabel(item)}</span>
+                  </div>
+                );
+              })}
         </div>
       </div>
+      </>
+      )}
     </Card>
   );
 }
@@ -1013,12 +1047,12 @@ function ModuleGrid() {
 }
 
 export default function TiltOverview() {
-  const { data: kpiData, isLoading, isError: kpiError, dataUpdatedAt: kpiUpdatedAt } = useQuery<KpiData>({
+  const { data: kpiData, isLoading, isError: kpiError, dataUpdatedAt: kpiUpdatedAt, refetch: refetchKpis } = useQuery<KpiData>({
     queryKey: ["/api/kpis"],
     refetchInterval: 900000,
   });
 
-  const { data: topMovers, isLoading: topMoversLoading, isError: topMoversError } = useQuery<TopMover[]>({
+  const { data: topMovers, isLoading: topMoversLoading, isError: topMoversError, dataUpdatedAt: topMoversUpdatedAt, refetch: refetchTopMovers } = useQuery<TopMover[]>({
     queryKey: ["/api/top-movers"],
     refetchInterval: 900000,
   });
@@ -1084,6 +1118,8 @@ export default function TiltOverview() {
               pulse={sectorPulse ?? []}
               isLoading={topMoversLoading}
               isError={topMoversError}
+              updatedAt={topMoversUpdatedAt}
+              onRetry={() => refetchTopMovers()}
             />
             <GaugeHistoryCard
               live={kpiData ? { npi: kpiData.npiValue, ai: kpiData.aiPowerIndex, gs: kpiData.gridStress } : null}
@@ -1245,6 +1281,16 @@ export default function TiltOverview() {
               />
             </ComposedChart>
           </ResponsiveContainer>
+          <SrChartTable
+            caption="US electricity demand by year (TWh): EIA actuals through 2025, GridTilt projections 2026-2030"
+            columns={["Year", "Total TWh", "DC TWh", "Projected"]}
+            rows={electricityData.map((d) => [
+              d.year,
+              d.demand ?? "—",
+              d.dcDemand ?? d.dcProjected ?? "—",
+              d.projected ?? "—",
+            ])}
+          />
 
           {/* Annotation key */}
           <div className="flex flex-wrap gap-4 mt-3 pt-3 border-t border-border text-xs text-muted-foreground">
@@ -1330,11 +1376,12 @@ export default function TiltOverview() {
           )}
 
           {kpiError && (
-            <Card className="mt-3 p-4 border-negative-deep/20 bg-negative-deep/5">
-              <div className="flex items-center gap-2 text-xs text-negative">
-                <AlertTriangle className="h-3.5 w-3.5" />
-                <span>Live index data unavailable. Showing last known values.</span>
-              </div>
+            <Card className="mt-3 border-negative-deep/20 bg-negative-deep/5">
+              <ErrorState
+                label="Live index data unavailable. Showing last known values."
+                onRetry={() => refetchKpis()}
+                className="py-4"
+              />
             </Card>
           )}
         </div>

@@ -8,13 +8,15 @@ import "leaflet.markercluster";
 import "leaflet.markercluster/dist/MarkerCluster.css";
 import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { AsOf, ErrorState } from "@/components/Freshness";
 import {
   Tooltip as UITooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
-  X, Zap, Calendar, Network, SlidersHorizontal, ChevronDown, Info,
+  X, Zap, Calendar, Network, SlidersHorizontal, ChevronDown, Info, MonitorSmartphone,
 } from "lucide-react";
 import {
   BRAND, BORDER, FONT, INK, SEMANTIC, SERIES, STATUS_COLORS, SURFACE,
@@ -141,6 +143,24 @@ function pushFiltersToURL(companies: string[], rtos: string[], capacity: string)
 }
 
 type ViewMode = "dc" | "stress";
+
+/**
+ * True below Tailwind's `sm` breakpoint (640px). The Leaflet map is
+ * desktop-only; below this the page renders an honest placeholder card
+ * instead of a broken squeeze, and the map never mounts.
+ */
+function useBelowSm(): boolean {
+  const [below, setBelow] = useState<boolean>(
+    () => typeof window !== "undefined" && window.matchMedia("(max-width: 639px)").matches,
+  );
+  useEffect(() => {
+    const mql = window.matchMedia("(max-width: 639px)");
+    const onChange = () => setBelow(mql.matches);
+    mql.addEventListener("change", onChange);
+    return () => mql.removeEventListener("change", onChange);
+  }, []);
+  return below;
+}
 
 /**
  * Continuous sqrt scale: marker AREA ~ facility MW. Dataset floor (400 MW)
@@ -562,9 +582,12 @@ export default function PowerMap() {
     data: fetchedDataCenters,
     isLoading: dcLoading,
     isError: dcError,
+    refetch: refetchDataCenters,
+    dataUpdatedAt,
   } = useQuery<DataCenter[]>({
     queryKey: ["/api/datacenters"],
   });
+  const belowSm = useBelowSm();
   const dataCenters = useMemo(
     () => filterTracked(fetchedDataCenters ?? DATA_CENTERS_FALLBACK),
     [fetchedDataCenters],
@@ -817,6 +840,46 @@ export default function PowerMap() {
         }
       `}</style>
 
+      {belowSm ? (
+        /* The Leaflet map is desktop-only. On phones this honest card takes
+           its place; the headline numbers, upcoming projects, and operator
+           table below stay fully usable. */
+        <div className="border-b border-border px-4 py-5" data-testid="map-mobile-card">
+          <div className="rounded-lg border border-subtle bg-surface-raised p-4">
+            <div className="flex items-center gap-2 mb-1.5">
+              <Zap className="h-4 w-4 text-brand" />
+              <span className="text-sm font-semibold text-foreground">Power Map</span>
+              <AsOf updatedAt={dataUpdatedAt} intervalMs={900_000} className="ml-auto" />
+            </div>
+            <div className="flex items-start gap-2 mb-3">
+              <MonitorSmartphone className="h-3.5 w-3.5 text-muted-foreground/60 mt-0.5 flex-shrink-0" />
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                The map needs a desktop screen. Everything else on this page works here:
+                the numbers below, upcoming projects, and the grid operator table.
+              </p>
+            </div>
+            {dcError ? (
+              <ErrorState label="Facility data failed to load." onRetry={() => refetchDataCenters()} className="py-4" />
+            ) : dcLoading ? (
+              <Skeleton className="h-5 w-56" aria-hidden="true" />
+            ) : (
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-11 font-mono">
+                <span className="text-muted-foreground">{dataCenters.length} facilities</span>
+                <span className="text-muted-foreground/30">|</span>
+                <span className="text-brand-2 font-bold">{(totalMW / 1000).toFixed(1)} GW</span>
+                <span className="text-muted-foreground/30">|</span>
+                <span className="text-muted-foreground">{totalTWh} TWh/yr</span>
+                <span className="text-muted-foreground/30">|</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full inline-block" style={{ backgroundColor: STATUS_COLORS.operational }} /><span className="text-muted-foreground">{opCount}</span></span>
+                  <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full inline-block" style={{ backgroundColor: STATUS_COLORS.construction }} /><span className="text-muted-foreground">{conCount}</span></span>
+                  <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full inline-block" style={{ backgroundColor: STATUS_COLORS.announced }} /><span className="text-muted-foreground">{annCount}</span></span>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
       <div className="flex-1 flex flex-col">
         <div
           className="flex-1 relative"
@@ -848,6 +911,7 @@ export default function PowerMap() {
                 <span className="text-10 font-mono text-white/40">
                   {dcLoading ? "loading…" : dcError ? "load failed" : `${dataCenters.length} facilities`}
                 </span>
+                <AsOf updatedAt={dataUpdatedAt} intervalMs={900_000} />
               </div>
               <div className="flex items-center gap-3 text-11 font-mono">
                 <span className="text-brand-2 font-bold">{(totalMW / 1000).toFixed(1)} GW</span>
@@ -1134,6 +1198,14 @@ export default function PowerMap() {
             <ZoomControl position="bottomright" />
           </MapContainer>
 
+          {dcError && (
+            <div className="absolute inset-0 z-[1010] flex items-center justify-center pointer-events-none">
+              <div className="pointer-events-auto bg-surface-raised/95 backdrop-blur-md border border-subtle rounded-lg shadow-2xl px-8">
+                <ErrorState label="Facility data failed to load - the map has no sites to show." onRetry={() => refetchDataCenters()} />
+              </div>
+            </div>
+          )}
+
           {showTooltip && (
             <div
               className="absolute z-[1001] pointer-events-none power-map-tooltip"
@@ -1213,8 +1285,9 @@ export default function PowerMap() {
           )}
         </div>
       </div>
+      )}
 
-      <div className="border-t border-border px-6 py-4" data-testid="upcoming-projects-section">
+      <div className="border-t border-border px-4 sm:px-6 py-4" data-testid="upcoming-projects-section">
         <div className="flex items-center gap-2 mb-3">
           <Calendar className="h-4 w-4 text-muted-foreground" />
           <h2 className="text-xs font-semibold tracking-wider uppercase text-muted-foreground">Upcoming Projects</h2>
@@ -1229,6 +1302,14 @@ export default function PowerMap() {
             </button>
           )}
         </div>
+        {dcLoading && (
+          <div className="flex gap-3 overflow-hidden" aria-hidden="true">
+            {Array(4).fill(null).map((_, i) => <Skeleton key={i} className="h-[104px] w-52 flex-shrink-0 rounded-md" />)}
+          </div>
+        )}
+        {dcError && (
+          <p className="text-xs text-muted-foreground py-2">Unavailable - facility data failed to load. Retry from the card above.</p>
+        )}
         <div
           className={
             showAllUpcoming
@@ -1269,7 +1350,7 @@ export default function PowerMap() {
         </div>
       </div>
 
-      <div className="border-t border-border px-6 py-4" data-testid="grid-stress-table">
+      <div className="border-t border-border px-4 sm:px-6 py-4" data-testid="grid-stress-table">
         <div className="flex items-center gap-2 mb-3">
           <Network className="h-4 w-4 text-muted-foreground" />
           <h2 className="text-xs font-semibold tracking-wider uppercase text-muted-foreground">Grid Operator Load Analysis</h2>
@@ -1322,7 +1403,9 @@ export default function PowerMap() {
                         {active && <span className="text-9 text-brand">on map</span>}
                       </div>
                     </td>
-                    <td className="py-2 pr-6 text-right text-foreground">{loadMW.toLocaleString()} MW</td>
+                    <td className="py-2 pr-6 text-right text-foreground">
+                      {dcLoading ? <Skeleton className="h-3 w-16 ml-auto inline-block" aria-hidden="true" /> : dcError ? "—" : `${loadMW.toLocaleString()} MW`}
+                    </td>
                     <td className="py-2 pr-6">
                       <div className="flex items-center justify-end gap-2">
                         <span style={{ color: sColor }}>{cfg.reserveMargin}%</span>

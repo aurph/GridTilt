@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { AsOf, ErrorState } from "@/components/Freshness";
 import {
   Tooltip as UITooltip,
   TooltipContent,
@@ -173,7 +174,7 @@ function Est({ on }: { on: boolean }) {
 }
 
 export default function Queue() {
-  const { data: rawData, isLoading, isError } = useQuery<any>({
+  const { data: rawData, isLoading, isError, refetch, dataUpdatedAt } = useQuery<any>({
     queryKey: ["/api/queue"],
     refetchInterval: 24 * 60 * 60 * 1000,
   });
@@ -237,12 +238,19 @@ export default function Queue() {
                 <span className="text-foreground font-mono">{h.ercotLargeLoadDataCenterPct}%</span> is datacenters.
                 Dominion has <span className="text-foreground font-mono">{h.dominionContractedGW} GW</span><Est on={isEst("dominionContractedGW")} /> already under hyperscaler contract in Virginia alone.
               </p>
+            ) : isError ? (
+              <p className="text-muted-foreground text-sm">The backlog dataset failed to load.</p>
             ) : (
-              <p className="text-muted-foreground text-sm">Loading the backlog.</p>
+              <div className="space-y-2 max-w-3xl" aria-hidden="true">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-2/3" />
+              </div>
             )}
           </div>
           {data && (
             <div className="text-11 text-muted-foreground/70 font-mono tracking-wide text-right space-y-0.5" data-testid="backlog-sources">
+              <div><AsOf updatedAt={dataUpdatedAt} intervalMs={24 * 60 * 60 * 1000} /></div>
               <FreshnessChip lastRefreshed={data.lastRefreshed} />
               <div className="text-muted-foreground/50">queue totals · {h?.queueOverallAsOf}</div>
               <div className="text-muted-foreground/50">PJM cycle · {h?.pjmReopenedAsOf}</div>
@@ -264,6 +272,7 @@ export default function Queue() {
       <div className="flex-1 p-4 sm:p-6 space-y-3">
 
         {/* One compact summary strip (replaces 4 stat boxes) */}
+        {isLoading && <Skeleton className="h-5 w-full max-w-3xl" aria-hidden="true" />}
         {h && (
           <div className="flex flex-wrap items-center gap-x-6 gap-y-1.5 px-1 text-11 font-mono text-muted-foreground" data-testid="summary-strip">
             <span><span className="text-foreground">{h.trackedProjects}</span> named projects tracked</span>
@@ -302,6 +311,13 @@ export default function Queue() {
 
         {/* Projects table — the page is THIS now */}
         <Card className="border-card-border overflow-hidden" data-testid="backlog-table">
+          {isError ? (
+            <div data-testid="backlog-error">
+              <ErrorState label="The backlog dataset failed to load." onRetry={() => refetch()} />
+            </div>
+          ) : (
+          <div className="overflow-x-auto">
+          <div className="min-w-[760px]">
           <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-surface-base border-b border-border text-10 font-mono uppercase tracking-wider text-muted-foreground">
             <SortHeader label="Project" sortKey="projectName" current={sortKey} dir={sortDir} onClick={toggleSort} className="col-span-4" />
             <SortHeader label="Type" sortKey="type" current={sortKey} dir={sortDir} onClick={toggleSort} className="col-span-1" />
@@ -316,8 +332,6 @@ export default function Queue() {
             <div className="p-4 space-y-2">
               {Array(12).fill(null).map((_, i) => <Skeleton key={i} className="h-7" />)}
             </div>
-          ) : isError ? (
-            <div className="p-6 text-center text-xs text-negative" data-testid="backlog-error">Backlog dataset unavailable.</div>
           ) : filtered.length === 0 ? (
             <div className="p-6 text-center text-xs text-muted-foreground" data-testid="backlog-empty">No projects match the current filters.</div>
           ) : (
@@ -378,6 +392,9 @@ export default function Queue() {
                 </UITooltip>
               );
             })
+          )}
+          </div>
+          </div>
           )}
         </Card>
 
