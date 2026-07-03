@@ -55,21 +55,7 @@ function filterTracked(list: DataCenter[]): DataCenter[] {
   return list.filter((d) => d.powerMW >= MIN_TRACKED_MW);
 }
 
-interface RTOConfig {
-  label: string;
-  reserveMargin: number;
-  aiSignal: "Critical" | "Elevated" | "Moderate" | "Low";
-}
-
-const RTO_CONFIG: Record<string, RTOConfig> = {
-  PJM:   { label: "PJM",   reserveMargin: 17.5, aiSignal: "Elevated" },
-  MISO:  { label: "MISO",  reserveMargin: 13.4, aiSignal: "Critical" },
-  ERCOT: { label: "ERCOT", reserveMargin: 15.8, aiSignal: "Critical" },
-  WECC:  { label: "WECC",  reserveMargin: 24.6, aiSignal: "Moderate" },
-  SERC:  { label: "SERC",  reserveMargin: 23.1, aiSignal: "Moderate" },
-  SPP:   { label: "SPP",   reserveMargin: 27.8, aiSignal: "Low" },
-  NPCC:  { label: "NPCC",  reserveMargin: 26.4, aiSignal: "Low" },
-};
+import { RTO_CONFIG, type RTOConfig } from "@/data/rto-config";
 
 /**
  * ONE stress ramp for the whole page: region fills (stress view), the map
@@ -707,7 +693,11 @@ export default function PowerMap() {
 
   const announced = dataCenters.filter((d) => d.status === "announced");
 
-  const totalMW  = dataCenters.reduce((s, d) => s + d.powerMW, 0);
+  // Headline matches the overview's Tracked AI Power gauge: operational +
+  // construction only. Announced projects are press releases, not steel -
+  // they render on the map but stay out of the GW headline.
+  const totalMW  = dataCenters.reduce((s, d) => s + (d.status === "announced" ? 0 : d.powerMW), 0);
+  const announcedMW = dataCenters.reduce((s, d) => s + (d.status === "announced" ? d.powerMW : 0), 0);
   const totalTWh = (dataCenters.reduce((s, d) => s + d.annualMWh, 0) / 1_000_000).toFixed(1);
   const opCount  = dataCenters.filter((d) => d.status === "operational").length;
   const conCount = dataCenters.filter((d) => d.status === "construction").length;
@@ -910,7 +900,7 @@ export default function PowerMap() {
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-11 font-mono">
                 <span className="text-muted-foreground">{dataCenters.length} facilities</span>
                 <span className="text-muted-foreground/30">|</span>
-                <span className="text-brand-2 font-bold">{(totalMW / 1000).toFixed(1)} GW</span>
+                <span className="text-brand-2 font-bold" title={`operational + construction; announced (+${(announcedMW / 1000).toFixed(1)} GW) excluded`}>{(totalMW / 1000).toFixed(1)} GW</span>
                 <span className="text-muted-foreground/30">|</span>
                 <span className="text-muted-foreground">{totalTWh} TWh/yr</span>
                 <span className="text-muted-foreground/30">|</span>
@@ -958,7 +948,7 @@ export default function PowerMap() {
                 <AsOf updatedAt={dataUpdatedAt} intervalMs={900_000} />
               </div>
               <div className="flex items-center gap-3 text-11 font-mono">
-                <span className="text-brand-2 font-bold">{(totalMW / 1000).toFixed(1)} GW</span>
+                <span className="text-brand-2 font-bold" title={`operational + construction; announced (+${(announcedMW / 1000).toFixed(1)} GW) excluded`}>{(totalMW / 1000).toFixed(1)} GW</span>
                 <span className="text-white/20">|</span>
                 <span className="text-white/50">{totalTWh} TWh/yr</span>
                 <span className="text-white/20">|</span>

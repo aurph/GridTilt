@@ -27,6 +27,11 @@ import {
   BRAND, CATEGORY_COLORS as TOKEN_CATEGORY_COLORS, CHART_CHROME, DATA_QUALITY, INK, SEMANTIC, SERIES,
 } from "@/lib/tokens";
 import { axisProps, gridProps, timeTicks, tooltipContentStyle, tooltipItemStyle, tooltipLabelStyle } from "@/lib/chart-theme";
+import { RTO_CONFIG, RTO_SOURCE_NOTE } from "@/data/rto-config";
+import {
+  buildBuildoutHistory, computeTrackedPower, filterTrackedFacilities, fmtGW, tightestRTO,
+  type BuildoutHistory, type FacilityLite, type TrackedPower,
+} from "@/lib/real-gauges";
 import { fmtDate } from "@/lib/gpu-series";
 import { heatColor, heatTextColor } from "@/lib/stack-transforms";
 
@@ -75,22 +80,14 @@ const annotations = [
   { year: "2024", label: "TMI restart + SMR deal", color: alpha(BRAND.secondary, 0.5) },
 ];
 
-interface KpiData {
-  aiPowerIndex: number;
-  npiValue: number;
-  gridStress: number;
-  smrPolicyScore: number;
-  npiBaseDate: string;
-  constituents: {
-    // AI Power Index constituents (intraday % change signals)
-    nvdaChange: number; tsmChange: number; eqixChange: number; muChange: number;
-    // NPI constituents (price performance since Jan 1, 2024 base)
-    cegPerf: number; vstPerf: number; ccjPerf: number; nlrPerf: number;
-    uPerf: number; policyPerf: number; npiPolicyMultiplier: number; npiMomentum: number;
-    // Grid Stress signals
-    vstChange: number; cegChange: number;
-  };
+/** The slice of /api/gpu-prices/metrics the gauges read. */
+interface GpuFleetLite {
+  fleetAvg: number;
+  fleetAvg1yChange: number | null;
+  modelCount: number;
+  rows: Array<{ model: string; current: number }>;
 }
+
 
 interface TopMover {
   ticker: string;
@@ -160,187 +157,6 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
-function ConstituentRow({ label, value }: { label: string; value: number }) {
-  const isUp = value >= 0;
-  return (
-    <div className="flex items-center justify-between text-xs py-0.5">
-      <span className="text-muted-foreground">{label}</span>
-      <span className={`font-mono font-semibold ${isUp ? "text-positive" : "text-negative"}`}>
-        {isUp ? "+" : ""}{value.toFixed(2)}%
-      </span>
-    </div>
-  );
-}
-
-function PerfRow({ label, perf, base }: { label: string; perf: number; base?: string }) {
-  const pct = ((perf - 1) * 100).toFixed(1);
-  const isUp = perf >= 1;
-  return (
-    <div className="flex items-center justify-between text-xs py-0.5">
-      <span className="text-muted-foreground">{label}</span>
-      <div className="flex items-center gap-2">
-        {base && <span className="text-muted-foreground/50 font-mono">{base}</span>}
-        <span className={`font-mono font-semibold ${isUp ? "text-positive" : "text-negative"}`}>
-          {isUp ? "+" : ""}{pct}%
-        </span>
-      </div>
-    </div>
-  );
-}
-
-function KpiCard({
-  icon: Icon,
-  title,
-  value,
-  unit,
-  subtitle,
-  color,
-  methodology,
-  constituents,
-  isLoading,
-}: {
-  icon: any;
-  title: string;
-  value: number | null;
-  unit: string;
-  subtitle?: string;
-  color: "neutral" | "amber" | "red";
-  methodology: string;
-  constituents?: React.ReactNode;
-  isLoading: boolean;
-}) {
-  const colorMap = {
-    neutral: {
-      icon: "text-muted-foreground",
-      bg: "bg-muted/25",
-      border: "border-card-border",
-      value: "text-foreground",
-    },
-    amber: {
-      icon: "text-brand-2",
-      bg: "bg-brand-2/10",
-      border: "border-brand-2/25",
-      value: "text-brand-2",
-    },
-    red: {
-      icon: "text-negative",
-      bg: "bg-negative-deep/10",
-      border: "border-negative-deep/25",
-      value: "text-negative",
-    },
-  };
-  const c = colorMap[color];
-
-  return (
-    <Card className={`p-5 border ${c.border} relative`}>
-      <div className="flex items-start justify-between mb-3">
-        <div className={`flex h-10 w-10 items-center justify-center rounded-md ${c.bg} border ${c.border}`}>
-          <Icon className={`h-5 w-5 ${c.icon}`} />
-        </div>
-        <UITooltip>
-          <TooltipTrigger asChild>
-            <button className="text-muted-foreground hover:text-foreground transition-colors" data-testid={`tooltip-${title.toLowerCase().replace(/\s+/g, "-")}`}>
-              <Info className="h-4 w-4" />
-            </button>
-          </TooltipTrigger>
-          <TooltipContent side="left" className="max-w-72 p-3">
-            <p className="text-xs leading-relaxed mb-2">{methodology}</p>
-            {constituents && <div className="border-t border-border pt-2 mt-2">{constituents}</div>}
-          </TooltipContent>
-        </UITooltip>
-      </div>
-
-      <div className="space-y-1">
-        <p className="text-xs text-muted-foreground font-medium uppercase tracking-widest">{title}</p>
-        {isLoading ? (
-          <>
-            <Skeleton className="h-9 w-20 mt-1" />
-            <Skeleton className="h-6 w-full mt-2" />
-            <Skeleton className="h-3 w-32 mt-1" />
-          </>
-        ) : (
-          <>
-            <div className="flex items-end gap-2">
-              <span className={`text-4xl font-bold tabular-nums ${c.value}`}>
-                {value !== null ? value.toFixed(1) : "--"}
-              </span>
-              <span className="text-sm text-muted-foreground mb-1.5">{unit}</span>
-            </div>
-            <p className="text-xs text-muted-foreground leading-snug">
-              {subtitle ?? "Live market signals. Tap info for methodology."}
-            </p>
-          </>
-        )}
-      </div>
-    </Card>
-  );
-}
-
-function TiltStatusBar({ aiPower, gridStress, npi }: { aiPower: number | null; gridStress: number | null; npi: number | null }) {
-  if (aiPower === null || gridStress === null || npi === null) return null;
-
-  const isElevated = aiPower > 78 && gridStress > 70 && npi > 130;
-  const isEasing = aiPower < 68 && gridStress < 55;
-  const status = isElevated ? "elevated" : isEasing ? "easing" : "tracking baseline";
-  const statusColor = isElevated ? BRAND.primary : isEasing ? INK.muted : BRAND.secondary;
-  const statusBg = isElevated ? "bg-brand/10 border-brand/25" : isEasing ? "bg-muted/20 border-card-border" : "bg-brand-2/10 border-brand-2/20";
-  const description = isElevated
-    ? `All three gauges elevated. The market is pricing the AI-power complex aggressively today; grid-equity momentum at ${gridStress.toFixed(0)}/100. These read market positioning, not physical grid conditions.`
-    : isEasing
-    ? `Gauges have pulled back from peaks. Could be sector rotation or cooling sentiment. Watch hyperscaler capex guidance.`
-    : `Tracking baseline. Market gauges near their fixed baselines. NPI at ${npi.toFixed(0)} reflects nuclear-complex performance since the Jan 2024 base.`;
-
-  const numbers = [
-    { label: "AI Demand", val: aiPower },
-    { label: "NPI", val: npi },
-    { label: "Grid Stress", val: gridStress },
-  ] as const;
-
-  return (
-    <Card className={`p-4 border ${statusBg}`} data-testid="tilt-status-bar">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-4">
-        {/* Status + numbers row on mobile, status only on desktop */}
-        <div className="flex items-start justify-between sm:block flex-shrink-0">
-          <div>
-            <p className="text-10 font-bold uppercase tracking-widest text-muted-foreground mb-1">Tilt Status</p>
-            <div className="flex items-center gap-2">
-              <div className="h-2 w-2 rounded-full animate-pulse flex-shrink-0" style={{ backgroundColor: statusColor }} />
-              <span className="text-sm font-bold font-mono tracking-wide" style={{ color: statusColor }}>{status}</span>
-            </div>
-          </div>
-          {/* Mini numbers shown beside status on mobile */}
-          <div className="flex gap-3 sm:hidden text-right">
-            {numbers.map(({ label, val }) => (
-              <div key={label}>
-                <p className="text-10 text-muted-foreground uppercase tracking-wide whitespace-nowrap">{label}</p>
-                <p className="text-sm font-bold font-mono text-foreground">{val.toFixed(0)}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Vertical divider - desktop only */}
-        <div className="hidden sm:block h-8 w-px bg-border flex-shrink-0" />
-
-        {/* Description */}
-        <p className="text-xs text-muted-foreground leading-relaxed flex-1">{description}</p>
-
-        {/* Mini numbers - desktop only (shown inline on mobile) */}
-        <div className="hidden sm:flex gap-4 flex-shrink-0 text-center">
-          {numbers.map(({ label, val }) => (
-            <div key={label}>
-              <p className="text-10 text-muted-foreground uppercase tracking-wide">{label}</p>
-              <p className="text-sm font-bold font-mono text-foreground">{val.toFixed(0)}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </Card>
-  );
-}
-
-// Mover/sector tags draw from the stable category palette so each sector
-// keeps one color across the whole app.
 const SECTOR_COLORS: Record<string, string> = {
   compute: TOKEN_CATEGORY_COLORS.compute,
   nuclear: TOKEN_CATEGORY_COLORS.nuclear,
@@ -453,135 +269,156 @@ function TopMoversSection({ topMovers, pulse, isLoading, isError, updatedAt, onR
   );
 }
 
-interface IndexHistoryDay {
-  date: string;
-  aiDemand: number | null;
-  gridStress: number | null;
-  npiEquityLegs?: number | null;
-  npi?: number | null;
-}
-
-const MONTH_ABBR = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-function gaugeTickLabel(date: string): string {
-  const [y, m] = date.split("-");
-  return `${MONTH_ABBR[Number(m) - 1]} '${y.slice(2)}`;
-}
-
-// Replaces the old Sector Pulse card (its sector averages now live as chips
-// inside Top Movers). Plots the daily gauge history that the validation
-// study reconstructed and the server now records: one consistent series,
-// our own data, time depth instead of a second "what moved today" list.
-// Gauge baselines mirror server/indices.ts (AI_INDEX.BASELINE, GRID_STRESS.BASELINE).
-const GAUGE_BASELINES = { ai: 72, gs: 68 } as const;
-
-type GaugeRange = "3M" | "6M" | "1Y" | "ALL";
-const GAUGE_RANGES: GaugeRange[] = ["3M", "6M", "1Y", "ALL"];
-
-function gaugeRangeStart(range: GaugeRange, now: number): number | null {
-  const d = new Date(now);
-  if (range === "3M") return Date.UTC(d.getUTCFullYear(), d.getUTCMonth() - 3, d.getUTCDate());
-  if (range === "6M") return Date.UTC(d.getUTCFullYear(), d.getUTCMonth() - 6, d.getUTCDate());
-  if (range === "1Y") return Date.UTC(d.getUTCFullYear() - 1, d.getUTCMonth(), d.getUTCDate());
-  return null;
-}
-
-function GaugeHistoryCard({ live }: { live: { npi: number; ai: number; gs: number } | null }) {
-  const { data, isLoading, isError, refetch, dataUpdatedAt } = useQuery<{ days: IndexHistoryDay[] }>({
-    queryKey: ["/api/index-history"],
-    refetchInterval: 30 * 60_000,
-  });
-  const [range, setRange] = useState<GaugeRange>("ALL");
-
-  // True time axis: date strings -> UTC ms so gaps in the recorder render as
-  // gaps in time, not as one category step.
-  const series = useMemo(
-    () =>
-      (data?.days ?? [])
-        .filter((d) => d.npiEquityLegs != null || d.aiDemand != null)
-        .map((d) => ({ t: Date.parse(`${d.date}T00:00:00Z`), npi: d.npiEquityLegs ?? null, ai: d.aiDemand, gs: d.gridStress }))
-        .filter((d) => Number.isFinite(d.t)),
-    [data],
+/** One real gauge: a measured number, its provenance, and where it links. */
+function RealGaugeCard({
+  icon: Icon,
+  title,
+  value,
+  delta,
+  deltaColor,
+  subtitle,
+  methodology,
+  rows,
+  isLoading,
+  href,
+  updatedAt,
+}: {
+  icon: typeof Zap;
+  title: string;
+  value: string | null;
+  delta: string | null;
+  deltaColor?: string;
+  subtitle: string;
+  methodology: string;
+  rows: Array<{ label: string; value: string }>;
+  isLoading: boolean;
+  href: string;
+  updatedAt?: number;
+}) {
+  return (
+    <Card className="p-5 border border-card-border relative" data-testid={`gauge-${title.toLowerCase().replace(/\s+/g, "-")}`}>
+      <div className="flex items-start justify-between mb-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-md bg-brand-2/10 border border-brand-2/25">
+          <Icon className="h-5 w-5 text-brand-2" />
+        </div>
+        <UITooltip>
+          <TooltipTrigger asChild>
+            <button className="text-muted-foreground hover:text-foreground transition-colors" data-testid={`tooltip-${title.toLowerCase().replace(/\s+/g, "-")}`}>
+              <Info className="h-4 w-4" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="left" className="max-w-sm p-3">
+            <p className="text-xs leading-relaxed">{methodology}</p>
+          </TooltipContent>
+        </UITooltip>
+      </div>
+      <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-1.5">{title}</p>
+      {isLoading || value === null ? (
+        <Skeleton className="h-9 w-32 mb-1" />
+      ) : (
+        <div className="flex items-baseline gap-2">
+          <span className="text-3xl font-bold tabular-nums text-brand-2 font-mono">{value}</span>
+          {delta && (
+            <span className="text-11 font-mono tabular-nums" style={{ color: deltaColor ?? INK.muted }}>{delta}</span>
+          )}
+        </div>
+      )}
+      <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>
+      {rows.length > 0 && (
+        <div className="mt-3 pt-3 border-t border-border space-y-1">
+          {rows.map((r) => (
+            <div key={r.label} className="flex items-center justify-between text-11 font-mono">
+              <span className="text-muted-foreground">{r.label}</span>
+              <span className="text-foreground tabular-nums">{r.value}</span>
+            </div>
+          ))}
+        </div>
+      )}
+      <div className="mt-3 flex items-center justify-between">
+        <Link href={href} className="text-11 text-brand hover:text-brand-2 font-medium">
+          Full data <ChevronRight className="h-3 w-3 inline" />
+        </Link>
+        {updatedAt !== undefined && <AsOf updatedAt={updatedAt} intervalMs={900000} />}
+      </div>
+    </Card>
   );
-  const now = series.length ? series[series.length - 1].t : Date.now();
-  const start = gaugeRangeStart(range, now);
-  const windowed = useMemo(() => (start === null ? series : series.filter((d) => d.t >= start)), [series, start]);
+}
+
+/**
+ * Real buildout history: cumulative tracked capacity from facility open
+ * dates. Solid = operational (observed history), dashed = construction
+ * pipeline by planned open date (committed, not yet online).
+ */
+function BuildoutHistoryCard({
+  buildout,
+  tracked,
+  isLoading,
+}: {
+  buildout: BuildoutHistory | null;
+  tracked: TrackedPower | null;
+  isLoading: boolean;
+}) {
+  const series = useMemo(() => {
+    if (!buildout) return [];
+    const pts: Array<{ t: number; online: number | null; pipeline: number | null; addedMW: number; name?: string }> = [];
+    for (const p of buildout.online) pts.push({ t: p.t, online: p.cumMW, pipeline: null, addedMW: p.addedMW, name: p.name });
+    // bridge point so the dashed pipeline continues from the last online step
+    const last = buildout.online[buildout.online.length - 1];
+    if (last && buildout.pipeline.length) pts.push({ t: last.t, online: null, pipeline: last.cumMW, addedMW: 0 });
+    for (const p of buildout.pipeline) pts.push({ t: p.t, online: null, pipeline: p.cumMW, addedMW: p.addedMW, name: p.name });
+    return pts.sort((a, b) => a.t - b.t);
+  }, [buildout]);
   const ticks = useMemo(() => {
-    if (windowed.length < 2) return [];
-    return timeTicks(windowed[0].t, windowed[windowed.length - 1].t, 560).map((d) => +d);
-  }, [windowed]);
+    if (series.length < 2) return [];
+    return timeTicks(series[0].t, series[series.length - 1].t, 560).map((d) => +d);
+  }, [series]);
 
   return (
-    // flex-1: fills the left column so it ends flush with the right column.
-    <Card className="p-5 border-card-border flex-1 flex flex-col" data-testid="gauge-history">
+    <Card className="p-5 border-card-border flex-1 flex flex-col" data-testid="buildout-history">
       <div className="flex items-center gap-2 mb-1">
         <Activity className="h-3.5 w-3.5 text-brand-2" />
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">NPI Gauge History</h2>
+        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Tracked Buildout Over Time</h2>
         <UITooltip>
           <TooltipTrigger>
             <Info className="h-3.5 w-3.5 text-muted-foreground" />
           </TooltipTrigger>
           <TooltipContent className="max-w-xs">
             <p className="text-xs">
-              Daily series reconstructed from public prices with the shipped formulas, then recorded live going
-              forward (one methodology end to end; reproduce with npm run backtest:indices). The NPI line is the
-              equity legs with uranium and policy at par; the headline number is the full live NPI including both.
-              Sparklines show the two sentiment gauges against their fixed formula baselines (dashed).
+              Cumulative rated power of the verified facility dataset by each facility's open date. Solid = operational
+              today (observed history). Dashed = under-construction capacity at its planned open date (committed
+              pipeline, not yet online). Announced projects are excluded entirely.
             </p>
           </TooltipContent>
         </UITooltip>
-        <div className="ml-auto flex items-center gap-1.5">
-          {GAUGE_RANGES.map((r) => (
-            <button
-              key={r}
-              onClick={() => setRange(r)}
-              className={`px-2 py-0.5 rounded border text-10 font-mono transition-colors ${
-                range === r ? "border-brand/60 text-brand bg-brand/10" : "border-subtle text-muted-foreground hover:text-foreground"
-              }`}
-              data-testid={`gauge-range-${r}`}
-            >
-              {r}
-            </button>
-          ))}
-          {live && (
-            <span className="font-mono text-sm font-bold text-brand-2 ml-2" data-testid="gauge-history-npi-live">
-              NPI {live.npi.toFixed(1)}
-            </span>
-          )}
-        </div>
+        {tracked && (
+          <span className="ml-auto font-mono text-sm font-bold text-brand-2" data-testid="buildout-headline">
+            {fmtGW(tracked.trackedMW)} tracked
+          </span>
+        )}
       </div>
-      <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-        <p className="text-10 font-mono text-muted-foreground/60">
-          line: NPI equity legs · Jan 1 2024 = 100 · headline: full live NPI
-        </p>
-        <AsOf updatedAt={dataUpdatedAt} intervalMs={30 * 60_000} />
-      </div>
+      <p className="text-10 font-mono text-muted-foreground/60 mb-3">
+        solid: operational · dashed: construction pipeline · announced excluded
+        {buildout && buildout.undatedCount > 0 ? ` · ${buildout.undatedCount} undated sites excluded` : ""}
+      </p>
 
-      {isError ? (
-        <div className="flex-1 min-h-[180px] flex flex-col justify-center">
-          <ErrorState label="Unable to load gauge history" onRetry={() => refetch()} />
-        </div>
-      ) : isLoading ? (
-        <>
+      {isLoading || series.length === 0 ? (
+        isLoading ? (
           <div className="flex-1 flex flex-col justify-center gap-2 min-h-[180px]">
             <Skeleton className="h-3 w-1/3" />
             <Skeleton className="h-32 w-full" />
           </div>
-          <div className="grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-border">
-            <Skeleton className="h-16 w-full" />
-            <Skeleton className="h-16 w-full" />
+        ) : (
+          <div className="flex-1 min-h-[180px] flex items-center justify-center text-xs text-muted-foreground">
+            Facility data unavailable.
           </div>
-        </>
-      ) : windowed.length === 0 ? (
-        <div className="flex-1 min-h-[180px] flex items-center justify-center text-xs text-muted-foreground">
-          No recorded days in this window.
-        </div>
+        )
       ) : (
         <>
-          <div className="flex-1 min-h-[180px]" data-testid="gauge-history-chart">
+          <div className="flex-1 min-h-[200px]" data-testid="buildout-chart">
             <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={windowed} margin={{ top: 6, right: 8, bottom: 0, left: 0 }}>
+              <ComposedChart data={series} margin={{ top: 6, right: 8, bottom: 0, left: 0 }}>
                 <defs>
-                  <linearGradient id="npiHistGrad" x1="0" y1="0" x2="0" y2="1">
+                  <linearGradient id="buildoutGrad" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor={BRAND.primary} stopOpacity={0.28} />
                     <stop offset="100%" stopColor={BRAND.primary} stopOpacity={0.02} />
                   </linearGradient>
@@ -598,86 +435,55 @@ function GaugeHistoryCard({ live }: { live: { npi: number; ai: number; gs: numbe
                 <YAxis
                   {...axisProps}
                   axisLine={false}
-                  domain={["dataMin - 8", "dataMax + 8"]}
-                  width={36}
+                  width={44}
+                  tickFormatter={(mw: number) => `${(mw / 1000).toFixed(0)} GW`}
                 />
                 <Tooltip
                   contentStyle={tooltipContentStyle}
                   labelStyle={tooltipLabelStyle}
                   itemStyle={tooltipItemStyle}
-                  labelFormatter={(t: number) => fmtDate(t, true)}
-                  formatter={(value, name) =>
-                    value == null ? ["n/a", name] : [Number(value).toFixed(1), name]
-                  }
+                  labelFormatter={(t: number) => fmtDate(t, false)}
+                  formatter={(value: number, name: string, entry: any) => {
+                    const added = entry?.payload?.addedMW;
+                    const nm = entry?.payload?.name;
+                    const detail = added ? ` (+${fmtGW(added)}${nm ? ` · ${nm}` : ""})` : "";
+                    return [`${fmtGW(value)}${detail}`, name === "online" ? "Operational" : "Pipeline"];
+                  }}
                 />
-                <ReferenceLine y={100} stroke={CHART_CHROME.refLine} strokeDasharray="4 3" />
                 <Area
-                  type="linear"
-                  dataKey="npi"
-                  name="NPI (equity legs)"
+                  type="stepAfter"
+                  dataKey="online"
+                  name="online"
                   stroke={BRAND.primary}
                   strokeWidth={1.8}
-                  fill="url(#npiHistGrad)"
+                  fill="url(#buildoutGrad)"
                   dot={false}
                   connectNulls
+                />
+                <Line
+                  type="stepAfter"
+                  dataKey="pipeline"
+                  name="pipeline"
+                  stroke={BRAND.secondary}
+                  strokeWidth={1.6}
+                  strokeDasharray="5 4"
+                  strokeOpacity={0.7}
+                  dot={false}
+                  connectNulls
+                  isAnimationActive={false}
                 />
               </ComposedChart>
             </ResponsiveContainer>
           </div>
           <SrChartTable
-            caption={`NPI gauge history (equity legs, Jan 1 2024 = 100), ${range} window`}
-            columns={["Date", "NPI"]}
-            rows={windowed
-              .filter((d) => d.npi != null)
-              .map((d) => [fmtDate(d.t, true), (d.npi as number).toFixed(1)])}
+            caption="Tracked AI data center buildout over time"
+            columns={["Date", "Cumulative GW", "Series"]}
+            rows={series.map((p) => [
+              fmtDate(p.t, false),
+              ((p.online ?? p.pipeline ?? 0) / 1000).toFixed(2),
+              p.online !== null ? "operational" : "pipeline",
+            ])}
           />
-
-          <div className="grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-border">
-            {(
-              [
-                { key: "ai", label: "AI Demand", color: BRAND.secondary, value: live?.ai ?? null },
-                { key: "gs", label: "Grid Stress", color: SEMANTIC.negativeDeep, value: live?.gs ?? null },
-              ] as const
-            ).map((g) => {
-              // Honest domain: the window's own values UNION the formula
-              // baseline, padded - so distance from baseline is real, and a
-              // one-point wiggle can't fill the full height.
-              const vals = windowed.map((d) => d[g.key]).filter((v): v is number => v != null);
-              const base = GAUGE_BASELINES[g.key];
-              const lo = Math.min(...vals, base);
-              const hi = Math.max(...vals, base);
-              const pad = Math.max((hi - lo) * 0.15, 1);
-              return (
-                <div key={g.key} data-testid={`gauge-spark-${g.key}`}>
-                  <div className="flex items-baseline justify-between mb-1">
-                    <span className="text-10 uppercase tracking-wider text-muted-foreground">{g.label}</span>
-                    <span className="font-mono text-xs font-semibold text-foreground">
-                      {g.value != null ? g.value.toFixed(1) : "–"}
-                    </span>
-                  </div>
-                  <div className="h-9">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <ComposedChart data={windowed} margin={{ top: 2, right: 0, bottom: 2, left: 0 }}>
-                        <XAxis dataKey="t" type="number" scale="time" domain={["dataMin", "dataMax"]} hide />
-                        <YAxis domain={[lo - pad, hi + pad]} hide />
-                        <ReferenceLine y={base} stroke={CHART_CHROME.refLine} strokeDasharray="3 3" />
-                        <Line
-                          type="linear"
-                          dataKey={g.key}
-                          stroke={g.color}
-                          strokeWidth={1}
-                          dot={false}
-                          connectNulls
-                          isAnimationActive={false}
-                        />
-                      </ComposedChart>
-                    </ResponsiveContainer>
-                  </div>
-                  <p className="text-8 font-mono text-muted-foreground/50 mt-0.5">baseline {base}</p>
-                </div>
-              );
-            })}
-          </div>
         </>
       )}
     </Card>
@@ -1047,10 +853,34 @@ function ModuleGrid() {
 }
 
 export default function TiltOverview() {
-  const { data: kpiData, isLoading, isError: kpiError, dataUpdatedAt: kpiUpdatedAt, refetch: refetchKpis } = useQuery<KpiData>({
-    queryKey: ["/api/kpis"],
+  // Real gauge sources: the facility dataset (shared with the Power map) and
+  // the GPU price index (shared with GPU Prices) - react-query dedupes both.
+  const { data: facilities, isLoading: dcLoading, dataUpdatedAt: dcUpdatedAt } = useQuery<FacilityLite[]>({
+    queryKey: ["/api/datacenters"],
     refetchInterval: 900000,
   });
+  const { data: gpuData, isLoading: gpuLoading, dataUpdatedAt: gpuUpdatedAt } = useQuery<GpuFleetLite>({
+    queryKey: ["/api/gpu-prices/metrics"],
+    refetchInterval: 900000,
+  });
+  // Same >=400 MW floor as the Power map, so headline and drill-down agree.
+  const trackedFacilities = useMemo(() => (facilities ? filterTrackedFacilities(facilities) : null), [facilities]);
+  const tracked = useMemo(() => (trackedFacilities ? computeTrackedPower(trackedFacilities) : null), [trackedFacilities]);
+  const buildout = useMemo(() => (trackedFacilities ? buildBuildoutHistory(trackedFacilities) : null), [trackedFacilities]);
+  const headroom = useMemo(() => tightestRTO(RTO_CONFIG), []);
+  const headroomRows = useMemo(() => {
+    return Object.values(RTO_CONFIG)
+      .sort((a, b) => a.reserveMargin - b.reserveMargin)
+      .slice(0, 3)
+      .map((r) => ({ label: r.label, value: `${r.reserveMargin.toFixed(1)}% · ${r.aiSignal}` }));
+  }, []);
+  const gpuTopRows = useMemo(() => {
+    const rows = [...(gpuData?.rows ?? [])].sort((a, b) => b.current - a.current);
+    return [
+      ...(rows.length ? [{ label: rows[0].model, value: `$${rows[0].current.toFixed(2)}/hr · priciest` }] : []),
+      ...(rows.length > 1 ? [{ label: rows[rows.length - 1].model, value: `$${rows[rows.length - 1].current.toFixed(2)}/hr · cheapest` }] : []),
+    ];
+  }, [gpuData]);
 
   const { data: topMovers, isLoading: topMoversLoading, isError: topMoversError, dataUpdatedAt: topMoversUpdatedAt, refetch: refetchTopMovers } = useQuery<TopMover[]>({
     queryKey: ["/api/top-movers"],
@@ -1062,26 +892,6 @@ export default function TiltOverview() {
     refetchInterval: 900000,
   });
 
-  // Shares the cache with GaugeHistoryCard (same key) - powers the header's
-  // NPI change, labeled by its TRUE span: the recorder has gaps, and calling
-  // a 22-day move "1D" would lie.
-  const { data: historyData } = useQuery<{ days: IndexHistoryDay[] }>({
-    queryKey: ["/api/index-history"],
-    refetchInterval: 30 * 60_000,
-  });
-  const npiDelta = useMemo(() => {
-    const days = (historyData?.days ?? []).filter((d) => d.npi != null);
-    if (days.length < 2 || !kpiData) return null;
-    const prev = days[days.length - 2];
-    const latest = days[days.length - 1];
-    const prevT = Date.parse(`${prev.date}T00:00:00Z`);
-    const latestT = Date.parse(`${latest.date}T00:00:00Z`);
-    const gapDays = Math.round((latestT - prevT) / 86_400_000);
-    const pct = ((latest.npi! - prev.npi!) / prev.npi!) * 100;
-    return { pct, label: gapDays <= 4 ? "1D" : `vs ${fmtDate(prevT, true)}` };
-  }, [historyData, kpiData]);
-
-  const c = kpiData?.constituents;
 
   return (
     <div className="flex flex-col h-full overflow-y-auto">
@@ -1090,20 +900,18 @@ export default function TiltOverview() {
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
           <h1 className="text-sm font-semibold text-foreground tracking-tight">Tilt Overview</h1>
           <span className="hidden sm:block h-4 w-px bg-border" />
-          {kpiData && (
-            <span className="flex items-baseline gap-2 font-mono" data-testid="header-npi">
-              <span className="text-10 uppercase tracking-wider text-muted-foreground">NPI</span>
-              <span className="text-sm font-bold text-brand-2 tabular-nums">{kpiData.npiValue.toFixed(1)}</span>
-              {npiDelta && (
-                <span className={`text-11 tabular-nums ${npiDelta.pct >= 0 ? "text-positive" : "text-negative"}`}>
-                  {npiDelta.pct >= 0 ? "+" : ""}{npiDelta.pct.toFixed(1)}% {npiDelta.label}
-                </span>
-              )}
+          {tracked && (
+            <span className="flex items-baseline gap-2 font-mono" data-testid="header-tracked">
+              <span className="text-10 uppercase tracking-wider text-muted-foreground">Tracked AI Power</span>
+              <span className="text-sm font-bold text-brand-2 tabular-nums">{fmtGW(tracked.trackedMW)}</span>
+              <span className="text-11 tabular-nums text-muted-foreground">
+                +{fmtGW(tracked.constructionMW)} building
+              </span>
             </span>
           )}
           <div className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
             <div className="h-1.5 w-1.5 rounded-full bg-brand-2" />
-            <span className="font-mono text-11 tracking-wide" data-testid="last-updated">Updated {relativeTime(kpiUpdatedAt)}</span>
+            <span className="font-mono text-11 tracking-wide" data-testid="last-updated">Updated {relativeTime(dcUpdatedAt)}</span>
           </div>
         </div>
       </div>
@@ -1121,9 +929,7 @@ export default function TiltOverview() {
               updatedAt={topMoversUpdatedAt}
               onRetry={() => refetchTopMovers()}
             />
-            <GaugeHistoryCard
-              live={kpiData ? { npi: kpiData.npiValue, ai: kpiData.aiPowerIndex, gs: kpiData.gridStress } : null}
-            />
+            <BuildoutHistoryCard buildout={buildout} tracked={tracked} isLoading={dcLoading} />
           </div>
           <div className="lg:col-span-2 space-y-4">
             <CatalystCalendarSection />
@@ -1300,90 +1106,56 @@ export default function TiltOverview() {
           </div>
         </Card>
 
-        {/* Market gauges — research depth, intentionally demoted from headline.
-            Labels follow the published backtest (docs/INDEX_VALIDATION.md):
-            the momentum gauges showed no correlation with physical output,
-            so they are presented as market sentiment, not measurements. */}
+        {/* Real gauges (owner-directed): direct measurements over sourced
+            data. The synthetic sentiment indices this replaces are archived
+            in docs/INDEX_VALIDATION.md. */}
         <div className="pt-2">
           <div className="text-10 font-mono uppercase tracking-widest text-muted-foreground/70 mb-3">
-            market gauges · methodology and validation in each card
+            the buildout, measured · source on every card
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3" data-testid="kpi-triad">
-            <KpiCard
-              icon={Cpu}
-              title="AI Power Demand"
-              value={kpiData?.aiPowerIndex ?? null}
-              unit="/100"
-              subtitle="Market sentiment gauge"
-              color="amber"
-              methodology="Market sentiment gauge, 52-94 around a fixed 72 baseline. Reads today's weighted moves in NVDA (40%), TSM (25%), EQIX (20%), MU (15%). Backtested against physical electricity output (FRED, 2019-2026): no correlation at any lead, so this tracks how the market is pricing the AI buildout today, not data center load. Formulas and the full study are public in the repo (docs/INDEX_VALIDATION.md)."
-              constituents={c ? (
-                <>
-                  <ConstituentRow label="NVDA" value={c.nvdaChange} />
-                  <ConstituentRow label="TSM" value={c.tsmChange} />
-                  <ConstituentRow label="EQIX" value={c.eqixChange} />
-                  <ConstituentRow label="MU" value={c.muChange} />
-                </>
-              ) : undefined}
-              isLoading={isLoading}
-            />
-            <KpiCard
+            <RealGaugeCard
               icon={Zap}
-              title="Nuclear Power Index"
-              value={kpiData?.npiValue ?? null}
-              unit=""
-              subtitle="Basket index, Jan 1, 2024 = 100"
-              color="amber"
-              methodology="Weighted basket of CEG (25%), VST (20%), CCJ (15%), NLR ETF (20%), uranium spot (10%), and an SMR policy score (10%) derived from active nuclear PPAs in the tracked interconnection dataset. Rebased to 100 on Jan 1, 2024 and never rebalanced, so winners compound their influence: as of the June 2026 study VST's effective weight had grown to ~43% and drives ~91% of daily variance. Full numbers in docs/INDEX_VALIDATION.md."
-              constituents={c ? (
-                <>
-                  <PerfRow label="CEG" perf={c.cegPerf} />
-                  <PerfRow label="VST" perf={c.vstPerf} />
-                  <PerfRow label="CCJ" perf={c.ccjPerf} />
-                  <PerfRow label="NLR" perf={c.nlrPerf} />
-                  <PerfRow label="U₃O₈" perf={c.uPerf} />
-                </>
-              ) : undefined}
-              isLoading={isLoading}
+              title="Tracked AI DC Power"
+              value={tracked ? fmtGW(tracked.trackedMW) : null}
+              delta={tracked ? `${tracked.operationalCount + tracked.constructionCount} facilities` : null}
+              subtitle="Operational + under construction, verified facilities"
+              methodology={`Sum of rated power across the verified US AI data center dataset (facilities >=400 MW). Operational plus under-construction only - announced projects (${tracked ? fmtGW(tracked.announcedMW) : "-"}) are press releases, not steel, and are excluded from the headline. Same dataset as the Power map.`}
+              isLoading={dcLoading}
+              rows={tracked ? [
+                { label: "Operational", value: `${fmtGW(tracked.operationalMW)} · ${tracked.operationalCount} sites` },
+                { label: "Construction", value: `${fmtGW(tracked.constructionMW)} · ${tracked.constructionCount} sites` },
+                { label: "Announced (excl.)", value: `${fmtGW(tracked.announcedMW)} · ${tracked.announcedCount} sites` },
+              ] : []}
+              href="/power-map"
+              updatedAt={dcUpdatedAt}
             />
-            <KpiCard
+            <RealGaugeCard
+              icon={Cpu}
+              title="Cost of AI Compute"
+              value={gpuData ? `$${gpuData.fleetAvg.toFixed(2)}/hr` : null}
+              delta={gpuData?.fleetAvg1yChange != null ? `${gpuData.fleetAvg1yChange > 0 ? "+" : ""}${gpuData.fleetAvg1yChange.toFixed(1)}% 1Y` : null}
+              deltaColor={gpuData?.fleetAvg1yChange != null ? (gpuData.fleetAvg1yChange > 0 ? SEMANTIC.negative : SEMANTIC.positive) : undefined}
+              subtitle={`Fleet-average GPU rental, ${gpuData?.modelCount ?? "-"} models`}
+              methodology="Mean on-demand rental price across the tracked GPU fleet, blended from public neocloud and marketplace listings (sourced estimates, flagged per model on the GPU Prices page). Falling prices mean compute supply is catching demand."
+              isLoading={gpuLoading}
+              rows={gpuData ? gpuTopRows : []}
+              href="/neocloud-intel"
+              updatedAt={gpuUpdatedAt}
+            />
+            <RealGaugeCard
               icon={AlertTriangle}
-              title="Grid Stress"
-              value={kpiData?.gridStress ?? null}
-              unit="/100"
-              subtitle="Market sentiment gauge"
-              color="red"
-              methodology="Market sentiment gauge, 52-92 around a fixed 68 baseline. Reads today's weighted moves in VST (40%), CEG (35%), EQIX (25%). Backtested against physical electricity output: no correlation found, and the basket does not beat VST alone, so this reads power-equity momentum, not reserve margins or LMPs. It also co-moves with NPI at r 0.96 (CEG+VST sit in both baskets), so treat the two cards as one signal, not two. Formulas and the full study are public in the repo (docs/INDEX_VALIDATION.md)."
-              constituents={c ? (
-                <>
-                  <ConstituentRow label="VST" value={c.vstChange} />
-                  <ConstituentRow label="CEG" value={c.cegChange} />
-                  <ConstituentRow label="EQIX" value={c.eqixChange} />
-                </>
-              ) : undefined}
-              isLoading={isLoading}
+              title="Grid Headroom"
+              value={headroom ? `${headroom.reserveMarginPct.toFixed(1)}%` : null}
+              delta={headroom ? `${headroom.label} · tightest RTO` : null}
+              deltaColor={headroom ? SEMANTIC.negative : undefined}
+              subtitle="Lowest reserve margin among AI-load RTOs"
+              methodology={`Projected reserve margins from ${RTO_SOURCE_NOTE}. The headline is the tightest region - the binding constraint on new AI load. NERC's reference margin level is ~15%; below it, new interconnection gets hard.`}
+              isLoading={false}
+              rows={headroomRows}
+              href="/power-map"
             />
           </div>
-
-          {!isLoading && kpiData && (
-            <div className="mt-3">
-              <TiltStatusBar
-                aiPower={kpiData.aiPowerIndex}
-                gridStress={kpiData.gridStress}
-                npi={kpiData.npiValue}
-              />
-            </div>
-          )}
-
-          {kpiError && (
-            <Card className="mt-3 border-negative-deep/20 bg-negative-deep/5">
-              <ErrorState
-                label="Live index data unavailable. Showing last known values."
-                onRetry={() => refetchKpis()}
-                className="py-4"
-              />
-            </Card>
-          )}
         </div>
 
         {/* 4-column stat strip */}
