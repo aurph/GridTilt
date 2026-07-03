@@ -16,6 +16,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   supplyNodes,
   supplyLinks,
@@ -209,9 +210,15 @@ function NetworkGraph({
   }, []);
 
   // Drag handlers attached to each node group via React refs. Mutates the
-  // node position directly and re-renders. Works with both mouse and touch
-  // because pointer events normalize both.
+  // node position directly, then schedules a re-render via requestAnimationFrame
+  // so pointer-move bursts collapse to at most one re-render per frame.
+  // Works with both mouse and touch because pointer events normalize both.
   const dragState = useRef<{ id: string | null; dx: number; dy: number }>({ id: null, dx: 0, dy: 0 });
+  const dragRaf = useRef<number | null>(null);
+
+  useEffect(() => () => {
+    if (dragRaf.current !== null) cancelAnimationFrame(dragRaf.current);
+  }, []);
 
   const onNodePointerDown = (id: string, e: React.PointerEvent<SVGGElement>) => {
     e.stopPropagation();
@@ -234,7 +241,12 @@ function NetworkGraph({
     if (!node) return;
     node.x = pt.x - dx;
     node.y = pt.y - dy;
-    forceRender((v) => v + 1);
+    if (dragRaf.current === null) {
+      dragRaf.current = requestAnimationFrame(() => {
+        dragRaf.current = null;
+        forceRender((v) => v + 1);
+      });
+    }
   };
 
   const onNodePointerUp = (e: React.PointerEvent<SVGGElement>) => {
@@ -265,7 +277,11 @@ function NetworkGraph({
     return () => { d3.select(svg).on('.zoom', null); };
   }, []);
 
-  if (!positionsReady.current) return null;
+  if (!positionsReady.current) {
+    // Layout simulation hasn't converged yet: hold the graph box open with a
+    // shimmer so the container doesn't flash from empty to full.
+    return <Skeleton className="sc-graph-svg" style={{ cursor: "default" }} data-testid="sc-graph-skeleton" />;
+  }
 
   const nodes = nodesRef.current;
   const links = linksRef.current;
@@ -404,13 +420,23 @@ function NetworkGraph({
             <g
               key={node.id}
               transform={`translate(${node.x},${node.y})`}
+              role="button"
+              tabIndex={0}
+              aria-label={node.name}
               style={{ opacity: nodeOpacity, cursor: dragState.current.id === node.id ? 'grabbing' : 'grab', transition: 'opacity 0.3s', touchAction: 'none' }}
               onClick={(e) => { e.stopPropagation(); if (!dragState.current.id) onSelectNode(isActive ? null : node.id); }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (!dragState.current.id) onSelectNode(isActive ? null : node.id);
+                }
+              }}
               onPointerDown={(e) => onNodePointerDown(node.id, e)}
               onPointerMove={onNodePointerMove}
               onPointerUp={onNodePointerUp}
               onPointerCancel={onNodePointerUp}
-              className={entrancePhase >= 1 ? "sc-node-enter" : "sc-node-hidden"}
+              className={`sc-node-focusable ${entrancePhase >= 1 ? "sc-node-enter" : "sc-node-hidden"}`}
               data-testid={`node-${node.id}`}
             >
               <circle
@@ -616,8 +642,19 @@ function FlowView({
           <g
             key={node.id}
             opacity={opacity}
+            role="button"
+            tabIndex={0}
+            aria-label={node.name}
+            className="sc-node-focusable"
             style={{ cursor: 'pointer', transition: 'opacity 0.25s' }}
             onClick={(e) => { e.stopPropagation(); onSelectNode(isActive ? null : node.id); }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                e.stopPropagation();
+                onSelectNode(isActive ? null : node.id);
+              }
+            }}
             data-testid={`flow-node-${node.id}`}
           >
             <rect

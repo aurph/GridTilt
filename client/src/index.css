@@ -507,8 +507,23 @@ html {
   opacity: 0;
 }
 
-.sc-node-enter {
-  animation: scNodeFadeIn 0.4s ease-out forwards;
+.sc-link-hidden {
+  opacity: 0;
+}
+
+/* Entrance animations only run when the user has not requested reduced
+   motion; otherwise the -enter classes are inert and elements appear
+   immediately at full opacity. */
+@media (prefers-reduced-motion: no-preference) {
+  .sc-node-enter {
+    animation: scNodeFadeIn 0.4s ease-out forwards;
+  }
+
+  .sc-link-enter {
+    stroke-dasharray: 1200;
+    stroke-dashoffset: 1200;
+    animation: scDrawLine 0.8s ease-out forwards;
+  }
 }
 
 @keyframes scNodeFadeIn {
@@ -516,18 +531,18 @@ html {
   to { opacity: 1; }
 }
 
-.sc-link-hidden {
-  opacity: 0;
-}
-
-.sc-link-enter {
-  stroke-dasharray: 1200;
-  stroke-dashoffset: 1200;
-  animation: scDrawLine 0.8s ease-out forwards;
-}
-
 @keyframes scDrawLine {
   to { stroke-dashoffset: 0; }
+}
+
+/* Keyboard focus for SVG node groups. Outline on the <g> is SVG-safe in
+   modern browsers; :focus-visible keeps it keyboard-only. */
+.sc-node-focusable:focus {
+  outline: none;
+}
+.sc-node-focusable:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 3px;
 }
 
 .sc-detail-panel {
