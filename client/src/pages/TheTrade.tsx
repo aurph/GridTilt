@@ -31,8 +31,14 @@ import {
   ChevronDown,
   AlertTriangle,
 } from "lucide-react";
-import { CATEGORY_COLORS, SERIES } from "@/lib/tokens";
-import { axisProps, gridProps } from "@/lib/chart-theme";
+import { BORDER, CATEGORY_COLORS, SERIES } from "@/lib/tokens";
+import {
+  axisProps,
+  gridProps,
+  tooltipContentStyle,
+  tooltipItemStyle,
+  tooltipLabelStyle,
+} from "@/lib/chart-theme";
 
 const BASE_POWER_TWH = 4490;
 const BASE_YEAR = 2025;
@@ -71,11 +77,18 @@ const PRESETS: Record<Exclude<PresetName, "Custom">, ScenarioInputs> = {
   },
 };
 
+// One entry per YEARS entry (2025-2030); each ramp sums to its preset's newCapacityGW.
 const PRESET_RAMPS: Record<Exclude<PresetName, "Custom">, number[]> = {
   Conservative: [2, 5, 7, 8, 8, 5],
   Base:         [3, 7, 10, 13, 12, 5],
   Aggressive:   [5, 11, 15, 18, 16, 10],
 };
+
+// Custom scenarios have no hand-tuned ramp, so the timeline uses a fixed
+// S-curve (slow start, accelerate, plateau) scaled to the user's total.
+// Weights sum to 1.0 across the 6-year horizon; labeled "assumed build
+// ramp" in the chart footnote.
+const CUSTOM_RAMP_WEIGHTS = [0.05, 0.10, 0.15, 0.20, 0.25, 0.25];
 
 const YEARS = ["2025", "2026", "2027", "2028", "2029", "2030"];
 
@@ -132,6 +145,16 @@ function NumField({
   );
 }
 
+/** In-place warning shown instead of any output that depends on the supply mix. */
+function MixWarning({ mixSum, testId }: { mixSum: number; testId: string }) {
+  return (
+    <div className="flex items-center justify-center gap-2 text-negative" data-testid={testId}>
+      <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
+      <span className="text-xs font-mono">Mix sums to {mixSum.toFixed(0)}% - adjust to 100%</span>
+    </div>
+  );
+}
+
 export default function TheTrade() {
   const [activePreset, setActivePreset] = useState<PresetName>("Base");
   const [inputs, setInputs] = useState<ScenarioInputs>(PRESETS.Base);
@@ -150,18 +173,17 @@ export default function TheTrade() {
   const mixSum = inputs.gasPct + inputs.nuclearPct + inputs.renewablesPct + inputs.gridPurchasePct;
   const mixValid = Math.abs(mixSum - 100) < 0.5;
 
+  // GW added per year, aligned 1:1 with YEARS (index i = YEARS[i]).
   const ramp: number[] = useMemo(() => {
-    if (activePreset !== "Custom" && PRESET_RAMPS[activePreset as Exclude<PresetName, "Custom">]) {
-      return PRESET_RAMPS[activePreset as Exclude<PresetName, "Custom">];
+    if (activePreset !== "Custom") {
+      return PRESET_RAMPS[activePreset];
     }
-    const perYear = inputs.newCapacityGW / 5;
-    return YEARS.slice(1).map(() => perYear);
+    return CUSTOM_RAMP_WEIGHTS.map((w) => inputs.newCapacityGW * w);
   }, [activePreset, inputs.newCapacityGW]);
 
   const buildoutChart = useMemo(() => {
-    const fullRamp = activePreset === "Custom" ? [0, ...ramp] : [0, ...ramp];
     return YEARS.map((year, i) => {
-      const gwThisYear = i === 0 ? 0 : (ramp[i - 1] ?? 0);
+      const gwThisYear = ramp[i] ?? 0;
       return {
         year,
         gas:        parseFloat((gwThisYear * inputs.gasPct / 100).toFixed(2)),
@@ -491,8 +513,17 @@ export default function TheTrade() {
 
               <Card className="p-3.5 border-card-border" data-testid="output-nuclear-gw">
                 <p className="text-10 text-muted-foreground uppercase tracking-wider mb-1">Nuclear Build by 2030</p>
-                <p className="text-2xl font-bold font-mono text-foreground">{outputs.nuclearGW.toFixed(1)} GW</p>
-                <p className="text-10 text-muted-foreground/60 mt-0.5">{inputs.nuclearPct}% of {inputs.newCapacityGW} GW new supply</p>
+                {mixValid ? (
+                  <>
+                    <p className="text-2xl font-bold font-mono text-foreground">{outputs.nuclearGW.toFixed(1)} GW</p>
+                    <p className="text-10 text-muted-foreground/60 mt-0.5">{inputs.nuclearPct}% of {inputs.newCapacityGW} GW new supply</p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-2xl font-bold font-mono text-muted-foreground/40">—</p>
+                    <p className="text-10 text-negative/80 mt-0.5">Mix sums to {mixSum.toFixed(0)}% - adjust to 100%</p>
+                  </>
+                )}
               </Card>
 
               <Card className="p-3.5 border-card-border" data-testid="output-interconnect">
@@ -516,46 +547,60 @@ export default function TheTrade() {
                 </UITooltip>
               </div>
               <Card className="p-4 border-card-border">
-                <ResponsiveContainer width="100%" height={190}>
-                  <BarChart data={buildoutChart} margin={{ top: 5, right: 5, left: 0, bottom: 5 }} barSize={28}>
-                    <CartesianGrid {...gridProps} />
-                    <XAxis {...axisProps} dataKey="year" axisLine={false} />
-                    <YAxis {...axisProps} axisLine={false} tickFormatter={(v) => `${v}GW`} />
-                    <Tooltip
-                      content={({ active, payload, label }) => {
-                        if (!active || !payload?.length) return null;
-                        const total = payload.reduce((s: number, p: any) => s + (p.value ?? 0), 0);
-                        return (
-                          <div className="bg-card border border-card-border rounded-lg p-3 text-xs shadow-xl">
-                            <p className="font-semibold text-foreground mb-2">{label}: {total.toFixed(1)} GW added</p>
-                            {payload.map((p: any, i: number) => (
-                              <p key={i} style={{ color: p.fill }} className="font-mono">
-                                {p.name}: {p.value?.toFixed(2)} GW
-                              </p>
-                            ))}
-                          </div>
-                        );
-                      }}
-                    />
-                    <Bar dataKey="gas"        name="Natural Gas" stackId="a" fill={CATEGORY_COLORS.gas}        radius={[0,0,0,0]} />
-                    <Bar dataKey="nuclear"    name="Nuclear"     stackId="a" fill={CATEGORY_COLORS.nuclear}    radius={[0,0,0,0]} />
-                    <Bar dataKey="renewables" name="Renewables"  stackId="a" fill={CATEGORY_COLORS.renewables} radius={[0,0,0,0]} />
-                    <Bar dataKey="grid"       name="Grid"        stackId="a" fill={CATEGORY_COLORS.grid}       radius={[2,2,0,0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-                <div className="flex flex-wrap gap-4 text-xs mt-1">
-                  {[
-                    { color: CATEGORY_COLORS.gas,        label: "Natural Gas" },
-                    { color: CATEGORY_COLORS.nuclear,    label: "Nuclear" },
-                    { color: CATEGORY_COLORS.renewables, label: "Renewables" },
-                    { color: CATEGORY_COLORS.grid,       label: "Grid Purchases" },
-                  ].map((l) => (
-                    <div key={l.label} className="flex items-center gap-1.5">
-                      <div className="h-2 w-3 rounded-sm" style={{ background: l.color }} />
-                      <span className="text-muted-foreground">{l.label}</span>
+                {mixValid ? (
+                  <>
+                    <ResponsiveContainer width="100%" height={190}>
+                      <BarChart data={buildoutChart} margin={{ top: 5, right: 5, left: 0, bottom: 5 }} barSize={28}>
+                        <CartesianGrid {...gridProps} />
+                        <XAxis {...axisProps} dataKey="year" />
+                        <YAxis {...axisProps} axisLine={false} tickFormatter={(v) => `${v}GW`} />
+                        <Tooltip
+                          cursor={{ fill: BORDER.subtle }}
+                          content={({ active, payload, label }) => {
+                            if (!active || !payload?.length) return null;
+                            const total = payload.reduce((s: number, p: any) => s + (p.value ?? 0), 0);
+                            return (
+                              <div style={tooltipContentStyle}>
+                                <p style={tooltipLabelStyle}>{label}: {total.toFixed(1)} GW added</p>
+                                {payload.map((p: any, i: number) => (
+                                  <p key={i} style={{ ...tooltipItemStyle, color: p.fill }}>
+                                    {p.name}: {p.value?.toFixed(2)} GW
+                                  </p>
+                                ))}
+                              </div>
+                            );
+                          }}
+                        />
+                        <Bar dataKey="gas"        name="Natural Gas" stackId="a" fill={CATEGORY_COLORS.gas}        radius={[0,0,0,0]} />
+                        <Bar dataKey="nuclear"    name="Nuclear"     stackId="a" fill={CATEGORY_COLORS.nuclear}    radius={[0,0,0,0]} />
+                        <Bar dataKey="renewables" name="Renewables"  stackId="a" fill={CATEGORY_COLORS.renewables} radius={[0,0,0,0]} />
+                        <Bar dataKey="grid"       name="Grid"        stackId="a" fill={CATEGORY_COLORS.grid}       radius={[2,2,0,0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                    <div className="flex flex-wrap gap-4 text-xs mt-1">
+                      {[
+                        { color: CATEGORY_COLORS.gas,        label: "Natural Gas" },
+                        { color: CATEGORY_COLORS.nuclear,    label: "Nuclear" },
+                        { color: CATEGORY_COLORS.renewables, label: "Renewables" },
+                        { color: CATEGORY_COLORS.grid,       label: "Grid Purchases" },
+                      ].map((l) => (
+                        <div key={l.label} className="flex items-center gap-1.5">
+                          <div className="h-2 w-3 rounded-sm" style={{ background: l.color }} />
+                          <span className="text-muted-foreground">{l.label}</span>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
+                    {activePreset === "Custom" && (
+                      <p className="text-10 text-muted-foreground/50 font-mono mt-1.5" data-testid="custom-ramp-footnote">
+                        assumed build ramp: fixed S-curve over 2025-2030, scaled to your {inputs.newCapacityGW} GW total
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <div className="h-[190px] flex items-center justify-center" data-testid="chart-mix-invalid">
+                    <MixWarning mixSum={mixSum} testId="mix-warning-chart" />
+                  </div>
+                )}
               </Card>
             </div>
 
@@ -573,6 +618,12 @@ export default function TheTrade() {
                 </UITooltip>
               </div>
               <Card className="border-card-border overflow-hidden">
+                {!mixValid ? (
+                  <div className="py-10" data-testid="positions-mix-invalid">
+                    <MixWarning mixSum={mixSum} testId="mix-warning-positions" />
+                  </div>
+                ) : (
+                <>
                 <div className="grid grid-cols-[1.5rem_1fr_auto_auto] gap-x-3 px-3 py-2 border-b border-border bg-muted/20">
                   <span className="text-10 text-muted-foreground font-mono">#</span>
                   <span className="text-10 text-muted-foreground uppercase tracking-wider">Position</span>
@@ -623,6 +674,8 @@ export default function TheTrade() {
                     </div>
                   );
                 })}
+                </>
+                )}
               </Card>
             </div>
           </div>
