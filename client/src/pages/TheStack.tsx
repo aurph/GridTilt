@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { Profiler, useMemo, useState, type ReactNode } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -229,6 +229,28 @@ function computeRegression(points: { uranium: number; ccj: number }[]) {
 type Timeframe = "1D" | "5D" | "1M";
 type SortBy = "change" | "marketcap" | "alpha";
 
+/**
+ * ?perf=1 harness: accumulates React commit durations for this page into
+ * data-stack-render-ms on <html>, so headless Chrome can read the number
+ * via --dump-dom. Used for the Lake 3 before/after perf audit.
+ */
+function PerfProfiler({ children }: { children: ReactNode }) {
+  const enabled = typeof window !== "undefined" && window.location.search.includes("perf=1");
+  if (!enabled) return <>{children}</>;
+  return (
+    <Profiler
+      id="stack"
+      onRender={(_id, _phase, actualDuration) => {
+        const w = window as unknown as { __stackRenderMs?: number };
+        w.__stackRenderMs = (w.__stackRenderMs ?? 0) + actualDuration;
+        document.documentElement.dataset.stackRenderMs = String(Math.round(w.__stackRenderMs));
+      }}
+    >
+      {children}
+    </Profiler>
+  );
+}
+
 function sortStocks(stocks: StockData[], sortBy: SortBy): StockData[] {
   if (!stocks) return [];
   const arr = [...stocks];
@@ -373,6 +395,7 @@ export default function TheStack() {
   ];
 
   return (
+    <PerfProfiler>
     <div className="flex flex-col h-full overflow-y-auto">
       <div className="grid-bg border-b border-border px-6 py-6">
         <div className="flex items-start justify-between gap-4 flex-wrap">
@@ -613,5 +636,6 @@ export default function TheStack() {
         </div>
       </div>
     </div>
+    </PerfProfiler>
   );
 }

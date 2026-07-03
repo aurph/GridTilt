@@ -81,10 +81,11 @@ const RANGE_KEYS: RangeKey[] = ["3M", "6M", "1Y", "ALL"];
 
 // ─── URL-persisted chart state (?gpus=A,B&view=grid&range=1Y) ──────────────
 
+// Grid (small multiples) is the default view - owner call at the Lake 2 review.
 function readChartParams(): { gpus: string[] | null; view: ViewKey; range: RangeKey } {
   const sp = new URLSearchParams(window.location.search);
   const gpusRaw = sp.get("gpus");
-  const view = sp.get("view") === "grid" ? "grid" : "overlay";
+  const view = sp.get("view") === "overlay" ? "overlay" : "grid";
   const rangeRaw = sp.get("range");
   const range = (RANGE_KEYS as string[]).includes(rangeRaw ?? "") ? (rangeRaw as RangeKey) : "ALL";
   return { gpus: gpusRaw ? gpusRaw.split(",").filter(Boolean) : null, view, range };
@@ -94,7 +95,7 @@ function writeChartParams(gpus: string[] | null, view: ViewKey, range: RangeKey)
   const sp = new URLSearchParams(window.location.search);
   if (gpus) sp.set("gpus", gpus.join(","));
   else sp.delete("gpus");
-  if (view !== "overlay") sp.set("view", view);
+  if (view !== "grid") sp.set("view", view);
   else sp.delete("view");
   if (range !== "ALL") sp.set("range", range);
   else sp.delete("range");
@@ -308,7 +309,7 @@ export default function NeocloudIntel() {
                 </button>
               ))}
               <span className="w-px h-4 bg-border mx-1" />
-              {(["overlay", "grid"] as ViewKey[]).map((v) => (
+              {(["grid", "overlay"] as ViewKey[]).map((v) => (
                 <button
                   key={v}
                   onClick={() => setView(v)}
