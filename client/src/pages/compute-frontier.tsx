@@ -177,8 +177,13 @@ export default function ComputeFrontier() {
       const year = m ? m[0] : "n/a";
       byYear.set(year, (byYear.get(year) ?? 0) + c.plannedPowerMW);
     }
+    // Numeric year ascending; the "n/a" bucket (no announced online date) always last.
     return Array.from(byYear.entries())
-      .sort((a, b) => a[0].localeCompare(b[0]))
+      .sort((a, b) => {
+        if (a[0] === "n/a") return 1;
+        if (b[0] === "n/a") return -1;
+        return Number(a[0]) - Number(b[0]);
+      })
       .map(([year, mw]) => ({ year, gw: parseFloat((mw / 1000).toFixed(2)) }));
   }, [clusters]);
 
@@ -299,11 +304,13 @@ export default function ComputeFrontier() {
                   <XAxis {...axisProps} dataKey="year" />
                   <YAxis {...axisProps} />
                   <RTooltip formatter={(v: number) => [`${v} GW`, "planned online"]} cursor={{ fill: BRAND.glow }} />
-                  <Bar dataKey="gw" fill={BRAND.primary} radius={[2, 2, 0, 0]} />
+                  <Bar dataKey="gw" radius={[2, 2, 0, 0]}>
+                    {timeline.map((t) => <Cell key={t.year} fill={t.year === "n/a" ? INK.faint : BRAND.primary} />)}
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             ) : <ChartSkeleton />}
-            <p className="text-10 text-muted-foreground/50 mt-1 font-mono">bucketed by first announced year</p>
+            <p className="text-10 text-muted-foreground/50 mt-1 font-mono">bucketed by first announced year{timeline.some((t) => t.year === "n/a") ? " · n/a = no announced online date" : ""}</p>
           </ChartCard>
 
           <ChartCard title="Planned MW by energy source">
