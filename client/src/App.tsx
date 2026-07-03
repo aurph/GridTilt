@@ -1,4 +1,4 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, Redirect } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -13,7 +13,6 @@ import ComputeFrontierMethodology from "@/pages/ComputeFrontierMethodology";
 import ComputeFrontierCompare from "@/pages/ComputeFrontierCompare";
 import ComputeFrontierDetail from "@/pages/ComputeFrontierDetail";
 import NeocloudIntel from "@/pages/neocloud-intel";
-import GpuEconomics from "@/pages/gpu-economics";
 import PowerDeals from "@/pages/power-deals";
 import BriefPage from "@/pages/brief";
 import TheTrade from "@/pages/TheTrade";
@@ -51,8 +50,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/stack": "The Stack",
   "/power-map": "Power Map",
   "/compute-frontier": "Compute Frontier",
-  "/neocloud-intel": "Neocloud Intel",
-  "/gpu-economics": "GPU Economics",
+  "/neocloud-intel": "GPU Prices",
   "/power-deals": "AI Power Deals",
   "/brief": "The Buildout Brief",
   "/supply-chain": "Supply Chain",
@@ -169,7 +167,8 @@ function Router() {
       <Route path="/compute-frontier/compare" component={ComputeFrontierCompare} />
       <Route path="/compute-frontier/:id" component={ComputeFrontierDetail} />
       <Route path="/neocloud-intel" component={NeocloudIntel} />
-      <Route path="/gpu-economics" component={GpuEconomics} />
+      {/* Consolidation: GPU Economics is now the economics tab of GPU Prices */}
+      <Route path="/gpu-economics">{() => <Redirect to="/neocloud-intel?tab=economics" replace />}</Route>
       <Route path="/power-deals" component={PowerDeals} />
       <Route path="/brief" component={BriefPage} />
       <Route path="/supply-chain" component={SupplyChain} />

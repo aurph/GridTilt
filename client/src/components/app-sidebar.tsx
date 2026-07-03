@@ -53,16 +53,10 @@ const navItems = [
     description: "AI superclusters by GPU and power",
   },
   {
-    title: "Neocloud Intel",
+    title: "GPU Prices",
     url: "/neocloud-intel",
     icon: LineChart,
-    description: "GPU rental price index",
-  },
-  {
-    title: "GPU Economics",
-    url: "/gpu-economics",
-    icon: Calculator,
-    description: "Cost of compute + training calculator",
+    description: "Rental price index + cost of compute",
   },
   {
     title: "AI Power Deals",

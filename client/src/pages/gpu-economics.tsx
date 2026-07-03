@@ -36,7 +36,7 @@ function numBig(n: number): string {
   return String(Math.round(n));
 }
 
-export default function GpuEconomics() {
+export default function GpuEconomics({ embedded = false }: { embedded?: boolean }) {
   const { data, isLoading, isError, refetch, dataUpdatedAt } = useQuery<EconData>({ queryKey: ["/api/gpu-economics"] });
   const rows = data?.rows ?? [];
   // Presentation-layer sort: cheapest compute first ($/PFLOP-hr ascending, nulls last),
@@ -83,33 +83,51 @@ export default function GpuEconomics() {
     return { gpuHours, usdCost, days, gpu, preset };
   }, [calcGpus, gpuModel, presetIdx, mfu, gpuCount, presets]);
 
-  return (
-    <div className="flex flex-col h-full overflow-y-auto">
-      {/* Header */}
-      <div className="grid-bg border-b border-border px-4 sm:px-6 py-6 sm:py-8" data-testid="econ-header">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="max-w-3xl">
-            <div className="flex items-center gap-2 mb-2">
-              <Calculator className="h-5 w-5 text-brand" />
-              <h1 className="text-2xl sm:text-3xl font-semibold text-foreground tracking-tight" style={{ fontFamily: FONT.mono }}>
-                GPU Economics
-              </h1>
-            </div>
-            <p className="text-muted-foreground text-sm leading-relaxed">
-              What the <Link href="/neocloud-intel" className="text-brand hover:text-brand-2">rental prices</Link> actually
-              cost you. Hourly rates rolled out to a year, and normalized by compute so you can see which GPU is cheapest
-              per unit of work, not just per hour. The calculator below estimates what a training run costs. Compute specs
-              are vendor peak BF16 (dense); training figures are public estimates. Every assumption is shown and adjustable.
-            </p>
+  // Embedded mode (GPU Prices tool, economics tab): the host page owns the
+  // hero, so render a slim intro instead of the full header.
+  const intro = embedded ? (
+    <div className="flex flex-wrap items-start justify-between gap-3 px-1">
+      <p className="text-muted-foreground text-xs leading-relaxed max-w-3xl">
+        What the rental prices actually cost you: hourly rates rolled out to a year, normalized by compute so you can
+        see which GPU is cheapest per unit of work, not just per hour. The calculator estimates a training run.
+        Compute specs are vendor peak BF16 (dense); training figures are public estimates. Every assumption is
+        shown and adjustable.
+      </p>
+      <div className="text-11 text-muted-foreground/70 font-mono text-right space-y-0.5">
+        {data?.lastRefreshed && <div>prices as of {data.lastRefreshed}</div>}
+        <div><AsOf updatedAt={dataUpdatedAt} intervalMs={900_000} /></div>
+      </div>
+    </div>
+  ) : (
+    <div className="grid-bg border-b border-border px-4 sm:px-6 py-6 sm:py-8" data-testid="econ-header">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="max-w-3xl">
+          <div className="flex items-center gap-2 mb-2">
+            <Calculator className="h-5 w-5 text-brand" />
+            <h1 className="text-2xl sm:text-3xl font-semibold text-foreground tracking-tight" style={{ fontFamily: FONT.mono }}>
+              GPU Economics
+            </h1>
           </div>
-          <div className="text-11 text-muted-foreground/70 font-mono text-right space-y-0.5">
-            {data?.lastRefreshed && <div>prices as of {data.lastRefreshed}</div>}
-            <div><AsOf updatedAt={dataUpdatedAt} intervalMs={900_000} /></div>
-          </div>
+          <p className="text-muted-foreground text-sm leading-relaxed">
+            What the <Link href="/neocloud-intel" className="text-brand hover:text-brand-2">rental prices</Link> actually
+            cost you. Hourly rates rolled out to a year, and normalized by compute so you can see which GPU is cheapest
+            per unit of work, not just per hour. The calculator below estimates what a training run costs. Compute specs
+            are vendor peak BF16 (dense); training figures are public estimates. Every assumption is shown and adjustable.
+          </p>
+        </div>
+        <div className="text-11 text-muted-foreground/70 font-mono text-right space-y-0.5">
+          {data?.lastRefreshed && <div>prices as of {data.lastRefreshed}</div>}
+          <div><AsOf updatedAt={dataUpdatedAt} intervalMs={900_000} /></div>
         </div>
       </div>
+    </div>
+  );
 
-      <div className="flex-1 p-4 sm:p-6 space-y-5">
+  return (
+    <div className={embedded ? "flex flex-col" : "flex flex-col h-full overflow-y-auto"}>
+      {intro}
+
+      <div className={embedded ? "flex-1 space-y-5 mt-3" : "flex-1 p-4 sm:p-6 space-y-5"}>
         {/* Cost-of-compute table */}
         <Card className="border-card-border overflow-hidden" data-testid="econ-table">
           <div className="px-4 py-2 bg-surface-base border-b border-border">

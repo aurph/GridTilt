@@ -23,6 +23,8 @@ import {
 } from "recharts";
 import { Cpu, ArrowUpDown } from "lucide-react";
 import { AsOf, ErrorState } from "@/components/Freshness";
+import { ToolTabs, useToolTabs } from "@/components/ToolTabs";
+import GpuEconomics from "@/pages/gpu-economics";
 import { BORDER, BRAND, FONT, INK, SEMANTIC, SERIES } from "@/lib/tokens";
 import { axisProps, gridProps, tooltipContentStyle } from "@/lib/chart-theme";
 
@@ -81,6 +83,12 @@ type ViewKey = "overlay" | "grid";
 
 const RANGE_KEYS: RangeKey[] = ["3M", "6M", "1Y", "ALL"];
 
+// GPU Prices tool tabs (consolidation): rental prices + cost-of-compute.
+const GPU_TABS = [
+  { id: "prices", label: "Prices" },
+  { id: "economics", label: "Economics" },
+];
+
 // ─── URL-persisted chart state (?gpus=A,B&view=grid&range=1Y) ──────────────
 
 // Grid (small multiples) is the default view - owner call at the Lake 2 review.
@@ -110,6 +118,7 @@ export default function NeocloudIntel() {
   const { data, isLoading, isError, refetch, dataUpdatedAt } = useQuery<GpuMetrics>({ queryKey: ["/api/gpu-prices/metrics"] });
   const [sortKey, setSortKey] = useState<SortKey>("current");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [tab, setTab] = useToolTabs(GPU_TABS, "prices");
 
   const rows = data?.rows ?? [];
 
@@ -205,16 +214,19 @@ export default function NeocloudIntel() {
             <div className="flex items-center gap-2 mb-2">
               <Cpu className="h-5 w-5 text-brand" />
               <h1 className="text-2xl sm:text-3xl font-semibold text-foreground tracking-tight" style={{ fontFamily: FONT.mono }}>
-                Neocloud Intel <span className="text-muted-foreground/50">/ GPU Rental Price Index</span>
+                GPU Prices <span className="text-muted-foreground/50">/ {tab === "economics" ? "Cost of Compute" : "Rental Price Index"}</span>
               </h1>
             </div>
-            <p className="text-muted-foreground text-sm leading-relaxed">
-              On-demand GPU rental prices ($/GPU/hr) blended across the major neoclouds and marketplaces
-              (Lambda, RunPod, Vast.ai, CoreWeave, TensorWave, Vultr, Nebius) and the getdeploying.com / Silicon Data
-              trackers. Each price is a sourced blended estimate (flagged <span className="text-estimate">est.</span>);
-              low and high are the observed marketplace range. Open any row for its sources. Cheaper is
-              <span className="text-positive"> green</span>, pricier is <span className="text-negative">red</span>.
-            </p>
+            {tab === "prices" && (
+              <p className="text-muted-foreground text-sm leading-relaxed">
+                On-demand GPU rental prices ($/GPU/hr) blended across the major neoclouds and marketplaces
+                (Lambda, RunPod, Vast.ai, CoreWeave, TensorWave, Vultr, Nebius) and the getdeploying.com / Silicon Data
+                trackers. Each price is a sourced blended estimate (flagged <span className="text-estimate">est.</span>);
+                low and high are the observed marketplace range. Open any row for its sources. Cheaper is
+                <span className="text-positive"> green</span>, pricier is <span className="text-negative">red</span>.
+              </p>
+            )}
+            <ToolTabs className="mt-3" tabs={GPU_TABS} active={tab} onChange={setTab} />
           </div>
           <div className="text-11 text-muted-foreground/70 font-mono tracking-wide text-right space-y-0.5" data-testid="ni-sync">
             <div className="flex items-center justify-end gap-2">
@@ -232,6 +244,10 @@ export default function NeocloudIntel() {
       </div>
 
       <div className="flex-1 p-4 sm:p-6 space-y-5">
+        {tab === "economics" ? (
+          <GpuEconomics embedded />
+        ) : (
+        <>
         {/* Price cards grouped by maker */}
         {isLoading ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
@@ -497,6 +513,8 @@ export default function NeocloudIntel() {
           {data?.methodology ?? "Blended on-demand rental prices from public neocloud and marketplace listings and the getdeploying.com / Silicon Data trackers."}
           {" "}Sources are listed per model (hover a table row) and in <span className="font-mono">server/data/gpu-rental-prices.json</span>. Prices move constantly and vary widely by provider, term, and availability; treat these as indicative, not quotes.
         </p>
+        </>
+        )}
       </div>
     </div>
   );
