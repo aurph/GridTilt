@@ -156,7 +156,9 @@ function MixWarning({ mixSum, testId }: { mixSum: number; testId: string }) {
   );
 }
 
-export default function TheTrade() {
+// `params` absorbs wouter's RouteComponentProps when mounted standalone via
+// <Route component={...}>; only `embedded` is meaningful.
+export default function TheTrade({ embedded = false }: { embedded?: boolean; params?: unknown }) {
   const [activePreset, setActivePreset] = useState<PresetName>("Base");
   const [inputs, setInputs] = useState<ScenarioInputs>(PRESETS.Base);
   const [methodologyOpen, setMethodologyOpen] = useState(false);
@@ -258,59 +260,81 @@ export default function TheTrade() {
     { key: "Aggressive", label: "Aggressive" },
   ];
 
-  return (
-    <div className="flex flex-col h-full overflow-y-auto">
-      {/* Header */}
-      <div className="grid-bg border-b border-border px-6 py-5">
-        <div className="flex items-start justify-between gap-4 flex-wrap">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground tracking-tight">Scenario Calculator</h1>
-            <p className="text-muted-foreground text-sm mt-1 max-w-xl">
-              50 GW of new AI datacenter capacity is projected by 2030. Model capex, grid interconnect timelines, and power supply mix under different assumptions.
-            </p>
-          </div>
-          <UITooltip>
-            <TooltipTrigger asChild>
-              <Badge className="bg-brand-2/15 text-brand-2 border-brand-2/30 cursor-help">
-                <Info className="h-3 w-3 mr-1" />
-                Sourced + Defensible
-              </Badge>
-            </TooltipTrigger>
-            <TooltipContent className="max-w-xs">
-              <p className="text-xs leading-relaxed">All defaults trace to named sources: IEA, EIA, DOE, McKinsey, hyperscaler earnings calls. See Methodology panel for citations.</p>
-            </TooltipContent>
-          </UITooltip>
-        </div>
+  const sourcedBadge = (
+    <UITooltip>
+      <TooltipTrigger asChild>
+        <Badge className="bg-brand-2/15 text-brand-2 border-brand-2/30 cursor-help">
+          <Info className="h-3 w-3 mr-1" />
+          Sourced + Defensible
+        </Badge>
+      </TooltipTrigger>
+      <TooltipContent className="max-w-xs">
+        <p className="text-xs leading-relaxed">All defaults trace to named sources: IEA, EIA, DOE, McKinsey, hyperscaler earnings calls. See Methodology panel for citations.</p>
+      </TooltipContent>
+    </UITooltip>
+  );
 
-        {/* Preset selector */}
-        <div className="flex items-center gap-2 mt-4 flex-wrap">
-          <span className="text-10 font-mono text-muted-foreground/60 tracking-wider uppercase mr-1">Scenario:</span>
-          {presetButtons.map(({ key, label }) => (
-            <button
-              key={key}
-              data-testid={`preset-${key.toLowerCase()}`}
-              onClick={() => applyPreset(key as Exclude<PresetName, "Custom">)}
-              className={`px-4 py-1.5 rounded text-xs font-semibold border transition-all ${
-                activePreset === key
-                  ? "bg-brand-2 text-black border-brand-2"
-                  : "bg-card border-border text-muted-foreground hover:text-foreground hover:border-border/80"
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-          {activePreset === "Custom" && (
-            <span
-              className="px-4 py-1.5 rounded text-xs font-semibold border bg-brand/15 text-brand border-brand/40"
-              data-testid="preset-custom-badge"
-            >
-              Custom
-            </span>
-          )}
-        </div>
+  const presetSelector = (
+    <div className="flex items-center gap-2 mt-4 flex-wrap">
+      <span className="text-10 font-mono text-muted-foreground/60 tracking-wider uppercase mr-1">Scenario:</span>
+      {presetButtons.map(({ key, label }) => (
+        <button
+          key={key}
+          data-testid={`preset-${key.toLowerCase()}`}
+          onClick={() => applyPreset(key as Exclude<PresetName, "Custom">)}
+          className={`px-4 py-1.5 rounded text-xs font-semibold border transition-all ${
+            activePreset === key
+              ? "bg-brand-2 text-black border-brand-2"
+              : "bg-card border-border text-muted-foreground hover:text-foreground hover:border-border/80"
+          }`}
+        >
+          {label}
+        </button>
+      ))}
+      {activePreset === "Custom" && (
+        <span
+          className="px-4 py-1.5 rounded text-xs font-semibold border bg-brand/15 text-brand border-brand/40"
+          data-testid="preset-custom-badge"
+        >
+          Custom
+        </span>
+      )}
+    </div>
+  );
+
+  // Embedded mode (Analyze tool, scenario tab): the host page owns the hero,
+  // so render a slim intro (description + presets) instead of the full header.
+  const intro = embedded ? (
+    <div className="px-1">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <p className="text-muted-foreground text-xs leading-relaxed max-w-3xl">
+          50 GW of new AI datacenter capacity is projected by 2030. Model capex, grid interconnect timelines, and power supply mix under different assumptions.
+        </p>
+        {sourcedBadge}
       </div>
+      {presetSelector}
+    </div>
+  ) : (
+    <div className="grid-bg border-b border-border px-6 py-5">
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground tracking-tight">Scenario Calculator</h1>
+          <p className="text-muted-foreground text-sm mt-1 max-w-xl">
+            50 GW of new AI datacenter capacity is projected by 2030. Model capex, grid interconnect timelines, and power supply mix under different assumptions.
+          </p>
+        </div>
+        {sourcedBadge}
+      </div>
+      {presetSelector}
+    </div>
+  );
 
-      <div className="flex-1 p-6">
+  return (
+    <div className={embedded ? "flex flex-col" : "flex flex-col h-full overflow-y-auto"}>
+      {/* Header */}
+      {intro}
+
+      <div className={embedded ? "flex-1 mt-4" : "flex-1 p-6"}>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* ---- LEFT: INPUTS ---- */}
           <div className="space-y-5">

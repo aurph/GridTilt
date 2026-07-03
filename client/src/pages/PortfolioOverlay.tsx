@@ -97,7 +97,9 @@ function ScoreRing({ score }: { score: number }) {
   );
 }
 
-export default function PortfolioOverlay() {
+// `params` absorbs wouter's RouteComponentProps when mounted standalone via
+// <Route component={...}>; only `embedded` is meaningful.
+export default function PortfolioOverlay({ embedded = false }: { embedded?: boolean; params?: unknown }) {
   const [inputValue, setInputValue] = useState("");
   const [results, setResults] = useState<PortfolioResult[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -143,7 +145,10 @@ export default function PortfolioOverlay() {
     }
     setError(null);
     const encoded = encodeURIComponent(tickers.join(","));
-    window.history.replaceState(null, "", `/portfolio?tickers=${encoded}`);
+    // Embedded (Analyze tool): keep the host route in the URL bar instead of
+    // rewriting it to /portfolio out from under the tab.
+    const path = embedded ? window.location.pathname : "/portfolio";
+    window.history.replaceState(null, "", `${path}?tickers=${encoded}`);
     mutate(tickers);
   };
 
@@ -154,7 +159,8 @@ export default function PortfolioOverlay() {
       .filter(Boolean);
     if (tickers.length === 0) return;
     const encoded = encodeURIComponent(tickers.join(","));
-    const url = `${window.location.origin}/portfolio?tickers=${encoded}`;
+    const sharePath = embedded ? window.location.pathname : "/portfolio";
+    const url = `${window.location.origin}${sharePath}?tickers=${encoded}`;
     try {
       await navigator.clipboard.writeText(url);
       setCopied(true);
@@ -191,31 +197,48 @@ export default function PortfolioOverlay() {
     });
   };
 
-  return (
-    <div className="flex flex-col h-full overflow-y-auto">
-      <div className="grid-bg border-b border-border px-6 py-6">
-        <div className="flex items-start justify-between gap-4 flex-wrap">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground tracking-tight">Portfolio Overlay</h1>
-            <p className="text-muted-foreground text-sm mt-1">
-              Measure portfolio concentration across five AI power supply chain segments: compute, infrastructure, power, cooling, and grid.
-            </p>
-          </div>
-          <UITooltip>
-            <TooltipTrigger>
-              <Badge className="bg-brand-2/15 text-brand-2 border-brand-2/30 cursor-help">
-                <Info className="h-3 w-3 mr-1" />
-                Scoring Methodology
-              </Badge>
-            </TooltipTrigger>
-            <TooltipContent className="max-w-xs">
-              <p className="text-xs leading-relaxed">Weighted composite: Compute 30%, Infrastructure 25%, Power 25%, Cooling 10%, Grid 10%. Above 70 = direct revenue exposure. 40-70 = meaningful indirect exposure.</p>
-            </TooltipContent>
-          </UITooltip>
-        </div>
-      </div>
+  const methodologyBadge = (
+    <UITooltip>
+      <TooltipTrigger>
+        <Badge className="bg-brand-2/15 text-brand-2 border-brand-2/30 cursor-help">
+          <Info className="h-3 w-3 mr-1" />
+          Scoring Methodology
+        </Badge>
+      </TooltipTrigger>
+      <TooltipContent className="max-w-xs">
+        <p className="text-xs leading-relaxed">Weighted composite: Compute 30%, Infrastructure 25%, Power 25%, Cooling 10%, Grid 10%. Above 70 = direct revenue exposure. 40-70 = meaningful indirect exposure.</p>
+      </TooltipContent>
+    </UITooltip>
+  );
 
-      <div className="flex-1 p-6 space-y-6">
+  // Embedded mode (Analyze tool, portfolio tab): the host page owns the hero,
+  // so render a slim intro instead of the full header.
+  const intro = embedded ? (
+    <div className="flex flex-wrap items-start justify-between gap-3 px-1">
+      <p className="text-muted-foreground text-xs leading-relaxed max-w-3xl">
+        Measure portfolio concentration across five AI power supply chain segments: compute, infrastructure, power, cooling, and grid.
+      </p>
+      {methodologyBadge}
+    </div>
+  ) : (
+    <div className="grid-bg border-b border-border px-6 py-6">
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground tracking-tight">Portfolio Overlay</h1>
+          <p className="text-muted-foreground text-sm mt-1">
+            Measure portfolio concentration across five AI power supply chain segments: compute, infrastructure, power, cooling, and grid.
+          </p>
+        </div>
+        {methodologyBadge}
+      </div>
+    </div>
+  );
+
+  return (
+    <div className={embedded ? "flex flex-col" : "flex flex-col h-full overflow-y-auto"}>
+      {intro}
+
+      <div className={embedded ? "flex-1 space-y-6 mt-3" : "flex-1 p-6 space-y-6"}>
         {/* Input section */}
         <Card className="p-5 border-card-border">
           <label className="text-sm font-medium text-foreground mb-3 block">Enter Your Tickers</label>
