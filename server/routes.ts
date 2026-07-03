@@ -546,6 +546,12 @@ async function getCachedStockData(timeframe: string): Promise<Record<string, any
           powerMW: staticData?.powerMW,
           vs_sp500: staticData?.vs_sp500,
           marketCapDisplay: staticData?.marketCapDisplay,
+          // Passthroughs from the same quote call (no extra fetches): numeric
+          // cap for honest treemap sizing, market state for pre/post badges,
+          // prior close for the sparkline reference line.
+          marketCap: r.marketCap ?? null,
+          marketState: r.marketState ?? null,
+          previousClose: r.regularMarketPreviousClose ?? null,
         };
       }
     });
@@ -566,6 +572,9 @@ async function getCachedStockData(timeframe: string): Promise<Record<string, any
           changePercent: null,
           stale: true,
           sparkline: [],
+          marketCap: null,
+          marketState: null,
+          previousClose: null,
         };
       }
     }

@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { Profiler, useMemo, useState, type ReactNode } from "react";
+import { Profiler, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useMeasuredWidth } from "@/lib/use-measured-width";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -9,8 +10,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
-  LineChart,
-  Line,
   ResponsiveContainer,
   ScatterChart,
   Scatter,
@@ -18,22 +17,36 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
 } from "recharts";
-import { Cpu, Server, Zap, TrendingUp, TrendingDown, Info, Clock } from "lucide-react";
-import { BRAND, CATEGORY_COLORS, CHART_CHROME, INK, SEMANTIC, SERIES } from "@/lib/tokens";
+import { Cpu, Server, Zap, TrendingUp, TrendingDown, Info, Clock, ChevronDown, ChevronRight, ArrowUpDown } from "lucide-react";
+import { BRAND, CATEGORY_COLORS, CHART_CHROME, INK, SEMANTIC } from "@/lib/tokens";
 import { axisProps, gridProps } from "@/lib/chart-theme";
+import { sparklineDomain } from "@/lib/gpu-series";
+import {
+  buildHeatmapInput,
+  heatColor,
+  heatTextColor,
+  layoutHeatmap,
+  marketCapOf,
+  pctFromSparkline,
+  sortTableRows,
+  windowDirection,
+  type TableSortKey,
+} from "@/lib/stack-transforms";
 
 interface StockData {
   ticker: string;
   name: string;
   price: number;
-  change: number;
-  changePercent: number;
+  change: number | null;
+  changePercent: number | null;
   pe: number | null;
   revenueGrowth: number | null;
   sparkline?: number[];
   marketCapDisplay?: string;
+  marketCap?: number | null;
+  marketState?: string | null;
+  previousClose?: number | null;
   powerMW?: number;
   vs_sp500?: number;
   stale?: boolean;
@@ -43,6 +56,12 @@ interface CorrelationPoint {
   uranium: number;
   ccj: number;
 }
+
+const LAYER_KEYS = [
+  "compute", "nuclear", "uranium", "powerHardware", "utilities", "dataCenters",
+  "construction", "rawMaterialsMining", "rawMaterialsNatGas", "renewableGeneration",
+  "transmissionGrid", "cryptoAIDC", "etfsBenchmarks",
+] as const;
 
 interface StackData {
   compute: StockData[];
@@ -63,16 +82,92 @@ interface StackData {
   cegCorrelationCoeff: number;
 }
 
-function Sparkline({ data, color }: { data: number[] | undefined; color: string }) {
-  if (!data || data.length === 0) return <div className="h-10" />;
-  const chartData = data.map((v, i) => ({ i, v }));
+/**
+ * Honest sparkline (Lake 3A), raw SVG - no Recharts instance per card.
+ * - y-domain = [windowLow, windowHigh] of the sparkline's own window with
+ *   10% padding. Never zero-based, never global.
+ * - Color = net direction of the window itself, not today's quote change.
+ * - Faint reference line at prior close (1D) / window open (5D, 1M) so shape
+ *   reads as above/below the baseline. Clamped to the edge with a marker
+ *   when the whole window sits beyond it.
+ * - Defined empty state - no decorative flat lines for missing data.
+ */
+function Sparkline({ data, refValue, refLabel, height = 40 }: { data: number[] | undefined; refValue: number | null; refLabel: string; height?: number }) {
+  const W = 220; // viewBox units; SVG stretches to container width
+  const H = height;
+  if (!data || data.length === 0) {
+    return (
+      <div
+        className="flex items-center justify-center rounded-sm border border-dashed border-subtle text-9 font-mono text-muted-foreground/50 select-none"
+        style={{ height }}
+        data-testid="sparkline-empty"
+      >
+        no intraday data
+      </div>
+    );
+  }
+  const values = data.filter((v) => Number.isFinite(v));
+  const geom = sparklineDomain(values);
+  if (!geom) return <div style={{ height }} />;
+  const [d0, d1] = geom.domain;
+  const dir = windowDirection(values);
+  const color = dir === "up" ? SEMANTIC.positiveDeep : dir === "down" ? SEMANTIC.negativeDeep : INK.muted;
+  const x = (i: number) => (values.length === 1 ? W / 2 : (i / (values.length - 1)) * W);
+  const y = (v: number) => H - 2 - ((v - d0) / (d1 - d0)) * (H - 4);
+  const refInside = refValue !== null && refValue >= d0 && refValue <= d1;
+  const refY = refValue === null ? null : refInside ? y(refValue) : refValue > d1 ? 2 : H - 2;
+
   return (
-    <ResponsiveContainer width="100%" height={40}>
-      <LineChart data={chartData}>
-        <Line type="monotone" dataKey="v" stroke={color} strokeWidth={1.5} dot={false} />
-      </LineChart>
-    </ResponsiveContainer>
+    <svg
+      viewBox={`0 0 ${W} ${H}`}
+      preserveAspectRatio="none"
+      className="w-full block"
+      style={{ height }}
+      role="img"
+      aria-label={`price sparkline, window ${dir ?? "unknown"}`}
+    >
+      {refY !== null && (
+        <line
+          x1={0}
+          x2={W}
+          y1={refY}
+          y2={refY}
+          stroke={INK.muted}
+          strokeWidth={1}
+          strokeDasharray="3 4"
+          opacity={refInside ? 0.45 : 0.25}
+          vectorEffect="non-scaling-stroke"
+        >
+          <title>{refLabel}{refInside ? "" : refValue! > d1 ? " (above window)" : " (below window)"}</title>
+        </line>
+      )}
+      {values.length === 1 ? (
+        <circle cx={W / 2} cy={y(values[0])} r={2.5} fill={color} />
+      ) : (
+        <polyline
+          points={values.map((v, i) => `${x(i)},${y(v)}`).join(" ")}
+          fill="none"
+          stroke={color}
+          strokeWidth={1.5}
+          strokeLinejoin="round"
+          strokeLinecap="round"
+          vectorEffect="non-scaling-stroke"
+        />
+      )}
+    </svg>
   );
+}
+
+/** Reference value + label for the sparkline baseline by timeframe. */
+function sparkRef(stock: StockData, timeframe: Timeframe): { value: number | null; label: string } {
+  if (timeframe === "1D") {
+    const prev =
+      stock.previousClose ??
+      (typeof stock.change === "number" && Number.isFinite(stock.price) ? stock.price - stock.change : null);
+    return { value: prev, label: `prior close ${prev !== null ? `$${prev.toFixed(2)}` : ""}` };
+  }
+  const first = stock.sparkline?.find((v) => Number.isFinite(v)) ?? null;
+  return { value: first, label: `window open ${first !== null ? `$${first.toFixed(2)}` : ""}` };
 }
 
 function StaleBadge({ ticker }: { ticker: string }) {
@@ -94,14 +189,70 @@ function StaleBadge({ ticker }: { ticker: string }) {
   );
 }
 
-function StockCard({ stock, showPower, showVsSP500 }: { stock: StockData; showPower?: boolean; showVsSP500?: boolean }) {
+function marketStateLabel(state: string): string {
+  if (state.startsWith("PRE")) return "pre-market";
+  if (state.startsWith("POST")) return "after-hours";
+  if (state === "CLOSED") return "market closed";
+  return "live";
+}
+
+/**
+ * Per-ticker market-state marker, shown ONLY when a ticker's state differs
+ * from the page majority - the majority state renders once in the header
+ * instead of repeating on every row.
+ */
+function MarketStateBadge({ state, majority }: { state: string | null | undefined; majority: string | null }) {
+  if (!state || state === majority) return null;
+  const label = state.startsWith("PRE") ? "pre" : state.startsWith("POST") ? "post" : state === "REGULAR" ? "live" : "closed";
+  return (
+    <span className="text-8 font-mono uppercase px-1 rounded-sm border border-subtle text-muted-foreground/70" title={`this ticker: ${marketStateLabel(state)} (differs from the rest of the page)`}>
+      {label}
+    </span>
+  );
+}
+
+/** Most common marketState across all tickers, for the page-level chip. */
+function majorityMarketState(data: StackData | undefined, layerKeys: readonly string[]): string | null {
+  if (!data) return null;
+  const counts = new Map<string, number>();
+  for (const k of layerKeys) {
+    for (const s of ((data as any)[k] as StockData[] | undefined) ?? []) {
+      if (s.marketState) counts.set(s.marketState, (counts.get(s.marketState) ?? 0) + 1);
+    }
+  }
+  let best: string | null = null;
+  let n = 0;
+  counts.forEach((v, k) => {
+    if (v > n) { best = k; n = v; }
+  });
+  return best;
+}
+
+/** P/E cell contents with defined states: N/A and negative are explicit. */
+function peCell(pe: number | null): { text: string; className: string; title: string } {
+  if (pe === null || !Number.isFinite(pe)) return { text: "—", className: "text-muted-foreground/50", title: "No P/E: unprofitable or not reported" };
+  if (pe < 0) return { text: pe.toFixed(1), className: "text-negative", title: "Negative P/E: trailing earnings are negative" };
+  return { text: pe.toFixed(1), className: "text-foreground", title: "Trailing P/E" };
+}
+
+function revGrowthCell(rg: number | null): { text: string; className: string; title: string } {
+  if (rg === null || !Number.isFinite(rg)) return { text: "—", className: "text-muted-foreground/50", title: "Revenue growth not reported" };
+  const cls = rg > 0 ? "text-positive" : rg < 0 ? "text-negative" : "text-muted-foreground";
+  return { text: `${rg > 0 ? "+" : ""}${rg.toFixed(1)}%`, className: cls, title: "Revenue growth YoY" };
+}
+
+function StockCard({ stock, timeframe, majorityState }: { stock: StockData; timeframe: Timeframe; majorityState: string | null }) {
   if (!stock || stock.price == null) return null;
   const isStale = stock.stale || stock.changePercent == null;
-  const isUp = !isStale && stock.changePercent >= 0;
-  const isDown = !isStale && stock.changePercent < -2;
+  const isUp = !isStale && (stock.changePercent as number) >= 0;
+  const isDown = !isStale && (stock.changePercent as number) < -2;
+  const pe = peCell(stock.pe);
+  const rg = revGrowthCell(stock.revenueGrowth);
+  const ref = sparkRef(stock, timeframe);
+  const liveCapB = marketCapOf(stock);
   return (
     <Card
-      className={`p-4 border-card-border transition-all duration-200 cursor-pointer hover:-translate-y-0.5 hover:shadow-lg ${isDown ? "border-negative-deep/20 bg-negative-deep/5" : ""}`}
+      className={`p-4 border-card-border transition-all duration-200 cursor-pointer hover:-translate-y-0.5 hover:shadow-lg ${isDown ? "border-negative-deep/20 bg-negative-deep/5" : ""} ${isStale ? "opacity-80" : ""}`}
       style={{ boxShadow: isDown ? `inset 0 0 20px ${SEMANTIC.negativeDeep}0A` : undefined }}
       data-testid={`stock-card-${stock.ticker}`}
     >
@@ -113,56 +264,47 @@ function StockCard({ stock, showPower, showVsSP500 }: { stock: StockData; showPo
               <StaleBadge ticker={stock.ticker} />
             ) : (
               <Badge className={`text-xs px-1.5 py-0 font-mono ${isUp ? "bg-positive-deep/15 text-positive" : "bg-negative-deep/15 text-negative"}`}>
-                {isUp ? "+" : ""}{stock.changePercent.toFixed(2)}%
+                {isUp ? "+" : ""}{(stock.changePercent as number).toFixed(2)}%
               </Badge>
             )}
+            <MarketStateBadge state={stock.marketState} majority={majorityState} />
           </div>
           <p className="text-xs text-muted-foreground mt-0.5 truncate max-w-[150px]">{stock.name}</p>
-          {stock.marketCapDisplay && (
-            <p className="text-xs text-muted-foreground/60 mt-0.5 font-mono">{stock.marketCapDisplay} mkt cap</p>
-          )}
+          <p className="text-xs text-muted-foreground/60 mt-0.5 font-mono">
+            {liveCapB !== null ? `$${fmtCapB(liveCapB)}` : stock.marketCapDisplay ?? "—"} mkt cap
+          </p>
         </div>
         <div className="text-right flex-shrink-0">
           <p className="font-semibold text-sm text-foreground font-mono">${stock.price.toFixed(2)}</p>
           <p className={`text-xs font-mono ${isStale ? "text-muted-foreground" : isUp ? "text-positive" : "text-negative"}`}>
-            {isStale ? "--" : `${isUp ? "+" : ""}${stock.change.toFixed(2)}`}
+            {isStale || stock.change === null ? "—" : `${isUp ? "+" : ""}${stock.change.toFixed(2)}`}
           </p>
         </div>
       </div>
 
       <div className="mb-2">
-        <Sparkline data={stock.sparkline} color={isUp ? SEMANTIC.positiveDeep : SEMANTIC.negativeDeep} />
+        <Sparkline data={stock.sparkline} refValue={ref.value} refLabel={ref.label} />
       </div>
 
       <div className="grid grid-cols-2 gap-2 text-xs">
         <div className="bg-muted/40 rounded-sm p-2">
           <p className="text-muted-foreground mb-0.5">P/E Ratio</p>
-          <p className="font-semibold font-mono text-foreground">{stock.pe ? stock.pe.toFixed(1) : "N/A"}</p>
+          <p className={`font-semibold font-mono ${pe.className}`} title={pe.title}>{pe.text}</p>
         </div>
         <div className="bg-muted/40 rounded-sm p-2">
           <p className="text-muted-foreground mb-0.5">Rev Growth YoY</p>
-          <p className={`font-semibold font-mono ${stock.revenueGrowth && stock.revenueGrowth > 0 ? "text-positive" : stock.revenueGrowth ? "text-negative" : "text-muted-foreground"}`}>
-            {stock.revenueGrowth ? `${stock.revenueGrowth > 0 ? "+" : ""}${stock.revenueGrowth.toFixed(1)}%` : "N/A"}
-          </p>
+          <p className={`font-semibold font-mono ${rg.className}`} title={rg.title}>{rg.text}</p>
         </div>
-        {showPower && stock.powerMW && (
-          <div className="bg-muted/40 rounded-sm p-2 col-span-2">
-            <p className="text-muted-foreground mb-0.5">Power / Facility</p>
-            <p className="font-semibold font-mono text-brand-2">{stock.powerMW} MW avg</p>
-          </div>
-        )}
-        {showVsSP500 && stock.vs_sp500 !== undefined && (
-          <div className="bg-muted/40 rounded-sm p-2 col-span-2">
-            <p className="text-muted-foreground mb-0.5">vs S&P 500 (1Y)</p>
-            <p className={`font-semibold font-mono flex items-center gap-1 ${stock.vs_sp500 > 0 ? "text-positive" : "text-negative"}`}>
-              {stock.vs_sp500 > 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-              {stock.vs_sp500 > 0 ? "+" : ""}{stock.vs_sp500.toFixed(1)}%
-            </p>
-          </div>
-        )}
       </div>
     </Card>
   );
+}
+
+/** $B number -> "3.2T" / "850B" / "500M" style display. */
+function fmtCapB(capB: number): string {
+  if (capB >= 1000) return `${(capB / 1000).toFixed(1)}T`;
+  if (capB >= 1) return `${capB.toFixed(0)}B`;
+  return `${Math.round(capB * 1000)}M`;
 }
 
 function StockCardSkeleton() {
@@ -260,31 +402,64 @@ function sortStocks(stocks: StockData[], sortBy: SortBy): StockData[] {
     return bv - av;
   });
   if (sortBy === "alpha") return arr.sort((a, b) => a.ticker.localeCompare(b.ticker));
-  if (sortBy === "marketcap") return arr.sort((a, b) => {
-    const parseM = (s?: string) => {
-      if (!s) return 0;
-      const n = parseFloat(s);
-      if (s.includes("T")) return n * 1000;
-      return n;
-    };
-    return parseM(b.marketCapDisplay) - parseM(a.marketCapDisplay);
-  });
+  // marketCapOf fixes the old parseM bug where $50M sorted equal to $50B
+  if (sortBy === "marketcap") return arr.sort((a, b) => (marketCapOf(b) ?? -1) - (marketCapOf(a) ?? -1));
   return arr;
 }
+
+type ViewMode = "cards" | "table" | "heatmap";
+const VIEW_LS_KEY = "gridtilt.stack.view";
+
+function readStoredView(): ViewMode {
+  try {
+    const v = window.localStorage.getItem(VIEW_LS_KEY);
+    return v === "table" || v === "heatmap" ? v : "cards";
+  } catch {
+    return "cards";
+  }
+}
+
+const fetchStack = (tf: string) => () => fetch(`/api/stack?timeframe=${tf}`).then((r) => r.json());
 
 export default function TheStack() {
   const [timeframe, setTimeframe] = useState<Timeframe>("1D");
   const [sortBy, setSortBy] = useState<SortBy>("change");
+  const [view, setView] = useState<ViewMode>(readStoredView);
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(VIEW_LS_KEY, view);
+    } catch {}
+  }, [view]);
 
   const { data, isLoading, isError } = useQuery<StackData>({
     queryKey: ["/api/stack", timeframe],
-    queryFn: () => fetch(`/api/stack?timeframe=${timeframe}`).then((r) => r.json()),
+    queryFn: fetchStack(timeframe),
     refetchInterval: 900000,
+  });
+
+  // Table view shows 1D/5D/1M side by side; the extra windows fetch lazily
+  // (same endpoint the timeframe toggle already hits; server caches 10 min).
+  const { data: data5D } = useQuery<StackData>({
+    queryKey: ["/api/stack", "5D"],
+    queryFn: fetchStack("5D"),
+    refetchInterval: 900000,
+    enabled: view === "table",
+  });
+  const { data: data1M } = useQuery<StackData>({
+    queryKey: ["/api/stack", "1M"],
+    queryFn: fetchStack("1M"),
+    refetchInterval: 900000,
+    enabled: view === "table",
   });
 
   const regression = useMemo(
     () => computeRegression(data?.correlation ?? []),
     [data?.correlation]
+  );
+
+  const majorityState = useMemo(
+    () => majorityMarketState(data, LAYER_KEYS),
+    [data],
   );
 
   const layerConfig = [
@@ -403,12 +578,37 @@ export default function TheStack() {
             <h1 className="text-2xl font-bold text-foreground tracking-tight">The Stack</h1>
             <p className="text-muted-foreground text-sm mt-1">100+ equities across 13 layers of the AI power supply chain. Intraday prices via Yahoo Finance.</p>
           </div>
-          <Badge className="bg-brand-2/15 text-brand-2 border-brand-2/30 font-mono text-xs">
-            Yahoo Finance · Live
-          </Badge>
+          <div className="flex items-center gap-2">
+            {majorityState && majorityState !== "REGULAR" && (
+              <Badge className="bg-muted/40 text-muted-foreground border-border font-mono text-xs" data-testid="market-state-chip">
+                {marketStateLabel(majorityState)}
+              </Badge>
+            )}
+            <Badge className="bg-brand-2/15 text-brand-2 border-brand-2/30 font-mono text-xs">
+              Yahoo Finance{majorityState === "REGULAR" ? " · Live" : ""}
+            </Badge>
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-4 mt-4">
+          {/* View toggle (persisted per user) */}
+          <div className="flex items-center gap-1 bg-muted/30 rounded-md p-0.5 border border-card-border">
+            {(["cards", "table", "heatmap"] as ViewMode[]).map((v) => (
+              <button
+                key={v}
+                onClick={() => setView(v)}
+                data-testid={`view-${v}`}
+                className={`px-3 py-1 text-xs font-mono font-semibold rounded transition-all ${
+                  view === v ? "bg-brand text-white" : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {v}
+              </button>
+            ))}
+          </div>
+
+          <div className="w-px h-5 bg-border" />
+
           {/* Timeframe toggle */}
           <div className="flex items-center gap-1 bg-muted/30 rounded-md p-0.5 border border-card-border">
             {(["1D", "5D", "1M"] as Timeframe[]).map((tf) => (
@@ -427,85 +627,104 @@ export default function TheStack() {
             ))}
           </div>
 
-          <div className="w-px h-5 bg-border" />
-
-          {/* Sort toggle */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">Sort by</span>
-            <div className="flex items-center gap-1 bg-muted/30 rounded-md p-0.5 border border-card-border">
-              {([
-                { id: "change", label: "% Change" },
-                { id: "marketcap", label: "Mkt Cap" },
-                { id: "alpha", label: "Alphabetical" },
-              ] as { id: SortBy; label: string }[]).map((opt) => (
-                <button
-                  key={opt.id}
-                  onClick={() => setSortBy(opt.id)}
-                  data-testid={`sort-${opt.id}`}
-                  className={`px-3 py-1 text-xs font-medium rounded transition-all ${
-                    sortBy === opt.id
-                      ? "bg-muted text-foreground"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-          </div>
+          {/* Sort toggle - cards view only; table sorts by column, heatmap by size */}
+          {view === "cards" && (
+            <>
+              <div className="w-px h-5 bg-border" />
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">Sort by</span>
+                <div className="flex items-center gap-1 bg-muted/30 rounded-md p-0.5 border border-card-border">
+                  {([
+                    { id: "change", label: "% Change" },
+                    { id: "marketcap", label: "Mkt Cap" },
+                    { id: "alpha", label: "Alphabetical" },
+                  ] as { id: SortBy; label: string }[]).map((opt) => (
+                    <button
+                      key={opt.id}
+                      onClick={() => setSortBy(opt.id)}
+                      data-testid={`sort-${opt.id}`}
+                      className={`px-3 py-1 text-xs font-medium rounded transition-all ${
+                        sortBy === opt.id
+                          ? "bg-muted text-foreground"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
       <div className="flex-1 p-6 space-y-8">
-        {layerConfig.map((layer) => {
-          const stocks = (data as any)?.[layer.key] as StockData[] | undefined;
-          return (
-            <div key={layer.key}>
-              <div className="flex items-center gap-3 mb-4">
-                <div
-                  className="flex h-8 w-8 items-center justify-center rounded-md"
-                  style={{ backgroundColor: `${layer.color}18`, border: `1px solid ${layer.color}30` }}
-                >
-                  <layer.icon className="h-4 w-4" style={{ color: layer.color }} />
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h2 className="font-semibold text-foreground">{layer.title}</h2>
-                    <UITooltip>
-                      <TooltipTrigger>
-                        <Info className="h-3.5 w-3.5 text-muted-foreground" />
-                      </TooltipTrigger>
-                      <TooltipContent side="right" className="max-w-xs">
-                        <p className="text-xs leading-relaxed">{layer.tooltip}</p>
-                      </TooltipContent>
-                    </UITooltip>
+        {view === "cards" &&
+          layerConfig.map((layer) => {
+            const stocks = (data as any)?.[layer.key] as StockData[] | undefined;
+            return (
+              // content-visibility virtualizes off-screen layer sections:
+              // render/layout/paint are skipped until scrolled near.
+              <div key={layer.key} style={{ contentVisibility: "auto", containIntrinsicSize: "auto 560px" }}>
+                <div className="flex items-center gap-3 mb-4">
+                  <div
+                    className="flex h-8 w-8 items-center justify-center rounded-md"
+                    style={{ backgroundColor: `${layer.color}18`, border: `1px solid ${layer.color}30` }}
+                  >
+                    <layer.icon className="h-4 w-4" style={{ color: layer.color }} />
                   </div>
-                  <p className="text-xs text-muted-foreground">{layer.description}</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                {isError ? (
-                  <div className="col-span-full flex items-center gap-2 py-8 justify-center">
-                    <Info className="h-4 w-4 text-muted-foreground/50" />
-                    <p className="text-xs text-muted-foreground">Unable to load equities data</p>
-                  </div>
-                ) : isLoading
-                  ? Array(4).fill(null).map((_, i) => <StockCardSkeleton key={i} />)
-                  : (stocks ?? []).length === 0 ? (
-                    <div className="col-span-full py-4">
-                      <p className="text-xs text-muted-foreground text-center">No equities in this layer</p>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h2 className="font-semibold text-foreground">{layer.title}</h2>
+                      <UITooltip>
+                        <TooltipTrigger>
+                          <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                        </TooltipTrigger>
+                        <TooltipContent side="right" className="max-w-xs">
+                          <p className="text-xs leading-relaxed">{layer.tooltip}</p>
+                        </TooltipContent>
+                      </UITooltip>
                     </div>
-                  ) : sortStocks(stocks ?? [], sortBy).map((stock) => (
-                      <StockCard
-                        key={stock.ticker}
-                        stock={stock}
-                      />
-                    ))}
+                    <p className="text-xs text-muted-foreground">{layer.description}</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                  {isError ? (
+                    <div className="col-span-full flex items-center gap-2 py-8 justify-center">
+                      <Info className="h-4 w-4 text-muted-foreground/50" />
+                      <p className="text-xs text-muted-foreground">Unable to load equities data</p>
+                    </div>
+                  ) : isLoading
+                    ? Array(4).fill(null).map((_, i) => <StockCardSkeleton key={i} />)
+                    : (stocks ?? []).length === 0 ? (
+                      <div className="col-span-full py-4">
+                        <p className="text-xs text-muted-foreground text-center">No equities in this layer</p>
+                      </div>
+                    ) : sortStocks(stocks ?? [], sortBy).map((stock) => (
+                        <StockCard key={stock.ticker} stock={stock} timeframe={timeframe} majorityState={majorityState} />
+                      ))}
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+
+        {view === "table" && (
+          <StackTable
+            layers={layerConfig}
+            data={data}
+            data5D={data5D}
+            data1M={data1M}
+            isLoading={isLoading}
+            isError={isError}
+            majorityState={majorityState}
+          />
+        )}
+
+        {view === "heatmap" && (
+          <StackHeatmap layers={layerConfig} data={data} timeframe={timeframe} isLoading={isLoading} isError={isError} />
+        )}
 
         {/* Uranium vs CCJ Correlation scatter */}
         <div>
@@ -637,5 +856,306 @@ export default function TheStack() {
       </div>
     </div>
     </PerfProfiler>
+  );
+}
+
+// ─── Table view (Lake 3B) ───────────────────────────────────────────────────
+
+interface LayerDef {
+  key: string;
+  title: string;
+  icon: typeof Cpu;
+  color: string;
+  description: string;
+  tooltip: string;
+}
+
+/** ticker -> % change over a StackData's sparkline windows. */
+function pctMapOf(sd: StackData | undefined, layerKeys: string[]): Record<string, number | null> {
+  const m: Record<string, number | null> = {};
+  if (!sd) return m;
+  for (const k of layerKeys) {
+    for (const s of ((sd as any)[k] as StockData[] | undefined) ?? []) {
+      m[s.ticker] = pctFromSparkline(s.sparkline);
+    }
+  }
+  return m;
+}
+
+function pctCell(v: number | null): { text: string; className: string } {
+  if (v === null || !Number.isFinite(v)) return { text: "—", className: "text-muted-foreground/50" };
+  const cls = v > 0 ? "text-positive" : v < 0 ? "text-negative" : "text-muted-foreground";
+  return { text: `${v > 0 ? "+" : ""}${v.toFixed(2)}%`, className: cls };
+}
+
+const TABLE_COLS: Array<{ key: TableSortKey; label: string; align: "left" | "right" }> = [
+  { key: "ticker", label: "Ticker", align: "left" },
+  { key: "price", label: "Price", align: "right" },
+  { key: "d1", label: "1D %", align: "right" },
+  { key: "d5", label: "5D %", align: "right" },
+  { key: "m1", label: "1M %", align: "right" },
+  { key: "mktcap", label: "Mkt Cap", align: "right" },
+  { key: "pe", label: "P/E", align: "right" },
+  { key: "revGrowth", label: "Rev YoY", align: "right" },
+];
+
+function StackTable({
+  layers,
+  data,
+  data5D,
+  data1M,
+  isLoading,
+  isError,
+  majorityState,
+}: {
+  layers: LayerDef[];
+  data: StackData | undefined;
+  data5D: StackData | undefined;
+  data1M: StackData | undefined;
+  isLoading: boolean;
+  isError: boolean;
+  majorityState: string | null;
+}) {
+  const [sortKey, setSortKey] = useState<TableSortKey>("mktcap");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const layerKeys = layers.map((l) => l.key);
+  const pct5 = useMemo(() => pctMapOf(data5D, layerKeys), [data5D]); // eslint-disable-line react-hooks/exhaustive-deps
+  const pct1m = useMemo(() => pctMapOf(data1M, layerKeys), [data1M]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const toggleSort = (k: TableSortKey) => {
+    if (sortKey === k) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else {
+      setSortKey(k);
+      setSortDir(k === "ticker" ? "asc" : "desc");
+    }
+  };
+
+  if (isError) {
+    return (
+      <Card className="border-card-border p-8 text-center text-xs text-muted-foreground" data-testid="stack-table-error">
+        Unable to load equities data
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="border-card-border overflow-x-auto" data-testid="stack-table">
+      <table className="w-full text-xs font-mono min-w-[760px]">
+        <thead>
+          <tr className="bg-surface-base border-b border-border text-10 uppercase tracking-wider text-muted-foreground">
+            {TABLE_COLS.map((c) => (
+              <th key={c.key} className={`px-3 py-2 font-medium ${c.align === "right" ? "text-right" : "text-left"}`}>
+                <button
+                  onClick={() => toggleSort(c.key)}
+                  className={`inline-flex items-center gap-1 hover:text-foreground transition-colors ${sortKey === c.key ? "text-brand" : ""}`}
+                  data-testid={`stack-sort-${c.key}`}
+                >
+                  {c.label}
+                  <ArrowUpDown className="h-2.5 w-2.5" style={{ opacity: sortKey === c.key ? 1 : 0.3 }} />
+                  {sortKey === c.key && <span className="text-8">{sortDir === "asc" ? "▲" : "▼"}</span>}
+                </button>
+              </th>
+            ))}
+          </tr>
+        </thead>
+        {isLoading ? (
+          <tbody>
+            {Array(12).fill(null).map((_, i) => (
+              <tr key={i} className="border-b border-border/30">
+                <td colSpan={TABLE_COLS.length} className="px-3 py-1.5">
+                  <Skeleton className="h-5 w-full" />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        ) : (
+          layers.map((layer) => {
+            const stocks = ((data as any)?.[layer.key] as StockData[] | undefined) ?? [];
+            const isCollapsed = collapsed[layer.key] ?? false;
+            const rows = sortTableRows(
+              stocks.map((s) => ({
+                ticker: s.ticker,
+                price: Number.isFinite(s.price) ? s.price : null,
+                d1: s.stale ? null : s.changePercent,
+                d5: pct5[s.ticker] ?? null,
+                m1: pct1m[s.ticker] ?? null,
+                mktcap: marketCapOf(s),
+                pe: s.pe,
+                revGrowth: s.revenueGrowth,
+                stock: s,
+              })),
+              sortKey,
+              sortDir,
+            );
+            return (
+              <tbody key={layer.key} style={{ contentVisibility: "auto", containIntrinsicSize: "auto 200px" }}>
+                <tr
+                  className="bg-surface-base/80 border-y border-border cursor-pointer hover:bg-surface-overlay/40 transition-colors"
+                  onClick={() => setCollapsed((c) => ({ ...c, [layer.key]: !isCollapsed }))}
+                  data-testid={`stack-group-${layer.key}`}
+                >
+                  <td colSpan={TABLE_COLS.length} className="px-3 py-1.5">
+                    <span className="inline-flex items-center gap-2">
+                      {isCollapsed ? <ChevronRight className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                      <span className="h-2 w-2 rounded-sm" style={{ background: layer.color }} />
+                      <span className="font-semibold text-foreground font-sans">{layer.title}</span>
+                      <span className="text-muted-foreground/50">{stocks.length}</span>
+                    </span>
+                  </td>
+                </tr>
+                {!isCollapsed &&
+                  rows.map((r) => {
+                    const d1 = pctCell(r.d1);
+                    const d5 = pctCell(r.d5);
+                    const m1 = pctCell(r.m1);
+                    const pe = peCell(r.pe);
+                    const rg = revGrowthCell(r.revGrowth);
+                    return (
+                      <tr key={r.ticker} className="border-b border-border/20 last:border-0 hover:bg-brand/5 transition-colors" data-testid={`stack-row-${r.ticker}`}>
+                        <td className="px-3 py-1.5">
+                          <span className="inline-flex items-center gap-1.5">
+                            <span className="font-semibold text-foreground">{r.ticker}</span>
+                            <span className="text-muted-foreground/50 font-sans truncate max-w-[140px] hidden lg:inline">{r.stock.name}</span>
+                            {r.stock.stale && <Clock className="h-2.5 w-2.5 text-brand-2/80" aria-label="delayed quote" />}
+                            <MarketStateBadge state={r.stock.marketState} majority={majorityState} />
+                          </span>
+                        </td>
+                        <td className="px-3 py-1.5 text-right tabular-nums text-foreground">{r.price !== null ? `$${r.price.toFixed(2)}` : "—"}</td>
+                        <td className={`px-3 py-1.5 text-right tabular-nums ${d1.className}`}>{d1.text}</td>
+                        <td className={`px-3 py-1.5 text-right tabular-nums ${d5.className}`}>{d5.text}</td>
+                        <td className={`px-3 py-1.5 text-right tabular-nums ${m1.className}`}>{m1.text}</td>
+                        <td className="px-3 py-1.5 text-right tabular-nums text-muted-foreground">{r.mktcap !== null ? `$${fmtCapB(r.mktcap)}` : "—"}</td>
+                        <td className={`px-3 py-1.5 text-right tabular-nums ${pe.className}`} title={pe.title}>{pe.text}</td>
+                        <td className={`px-3 py-1.5 text-right tabular-nums ${rg.className}`} title={rg.title}>{rg.text}</td>
+                      </tr>
+                    );
+                  })}
+              </tbody>
+            );
+          })
+        )}
+      </table>
+      <p className="px-3 py-2 text-10 text-muted-foreground/50 font-mono border-t border-border">
+        5D / 1M columns compute from each window's own price series; — means the window has no data yet. Click a layer to collapse it.
+      </p>
+    </Card>
+  );
+}
+
+// ─── Heatmap view (Lake 3B) ─────────────────────────────────────────────────
+
+function StackHeatmap({
+  layers,
+  data,
+  timeframe,
+  isLoading,
+  isError,
+}: {
+  layers: LayerDef[];
+  data: StackData | undefined;
+  timeframe: Timeframe;
+  isLoading: boolean;
+  isError: boolean;
+}) {
+  const [ref, width] = useMeasuredWidth<HTMLDivElement>();
+
+  const input = useMemo(() => {
+    const byLayer: Record<string, Array<{ ticker: string; name: string; changePercent: number | null; stale?: boolean; marketCap?: number | null; marketCapDisplay?: string }>> = {};
+    for (const layer of layers) {
+      const stocks = ((data as any)?.[layer.key] as StockData[] | undefined) ?? [];
+      byLayer[layer.key] = stocks.map((s) => ({
+        ticker: s.ticker,
+        name: s.name,
+        // color = % change over the SELECTED window, from that window's own series
+        changePercent: s.stale ? null : timeframe === "1D" ? s.changePercent : pctFromSparkline(s.sparkline),
+        stale: s.stale,
+        marketCap: s.marketCap,
+        marketCapDisplay: s.marketCapDisplay,
+      }));
+    }
+    return buildHeatmapInput(layers, byLayer);
+  }, [layers, data, timeframe]);
+
+  const height = Math.max(440, Math.min(660, Math.round(width * 0.52)));
+  const { tiles, groups } = useMemo(() => layoutHeatmap(input, width, height), [input, width, height]);
+
+  if (isError) {
+    return (
+      <Card className="border-card-border p-8 text-center text-xs text-muted-foreground" data-testid="stack-heatmap-error">
+        Unable to load equities data
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="border-card-border p-3" data-testid="stack-heatmap">
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+        <span className="text-11 font-mono uppercase tracking-wider text-muted-foreground">
+          Where the money moved · tile = market cap · color = {timeframe} change
+        </span>
+        <div className="flex items-center gap-1.5 text-9 font-mono text-muted-foreground/70">
+          <span>-{4}%</span>
+          {[-4, -2, -0.75, 0, 0.75, 2, 4].map((v) => (
+            <span key={v} className="h-3 w-5 rounded-[2px]" style={{ background: heatColor(v) }} />
+          ))}
+          <span>+{4}%</span>
+        </div>
+      </div>
+      <div ref={ref} className="relative w-full bg-surface-base rounded-sm overflow-hidden" style={{ height }}>
+        {isLoading || width === 0 ? (
+          <Skeleton className="absolute inset-0" />
+        ) : tiles.length === 0 ? (
+          <div className="absolute inset-0 flex items-center justify-center text-xs text-muted-foreground">No sized equities.</div>
+        ) : (
+          <>
+            {groups.map((g) => (
+              <div
+                key={g.key}
+                className="absolute text-9 font-mono uppercase tracking-wider truncate px-1"
+                style={{ left: g.x0 + 2, top: g.y0 + 2, width: g.x1 - g.x0 - 4, color: g.color }}
+                title={`${g.title} · $${fmtCapB(g.totalB)} combined`}
+              >
+                {g.title}
+              </div>
+            ))}
+            {tiles.map((t) => {
+              const w = t.x1 - t.x0;
+              const h = t.y1 - t.y0;
+              const pct = t.changePercent;
+              const showPct = w > 52 && h > 34;
+              const showTicker = w > 34 && h > 16;
+              return (
+                <div
+                  key={t.ticker}
+                  className={`absolute overflow-hidden rounded-[2px] ${t.stale ? "border border-dashed border-strong" : ""}`}
+                  style={{ left: t.x0, top: t.y0, width: w, height: h, background: heatColor(pct) }}
+                  title={`${t.ticker} · ${t.name} · ${pct === null ? "no live change (delayed)" : `${pct > 0 ? "+" : ""}${pct.toFixed(2)}%`} · $${fmtCapB(t.sizeB)} cap`}
+                  data-testid={`heat-tile-${t.ticker}`}
+                >
+                  {showTicker && (
+                    <div className="px-1 pt-0.5 leading-tight">
+                      <div className="text-10 font-mono font-semibold" style={{ color: heatTextColor(pct) }}>
+                        {t.ticker}
+                      </div>
+                      {showPct && (
+                        <div className="text-9 font-mono" style={{ color: heatTextColor(pct), opacity: 0.85 }}>
+                          {pct === null ? "—" : `${pct > 0 ? "+" : ""}${pct.toFixed(2)}%`}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </>
+        )}
+      </div>
+      <p className="mt-2 text-10 text-muted-foreground/50 font-mono">
+        Grouped by layer. ETF benchmarks excluded (fund AUM is not corporate market cap).
+        {input.unsized.length > 0 && ` Not sized (no market cap data): ${input.unsized.join(", ")}.`}
+        {" "}Gray tiles = delayed quote, change unknown.
+      </p>
+    </Card>
   );
 }

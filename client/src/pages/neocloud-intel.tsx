@@ -1,8 +1,9 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import PriceHistoryChart from "@/components/neocloud/PriceHistoryChart";
 import { buildSeries, sparklineDomain, type ChartSeries, type RangeKey } from "@/lib/gpu-series";
+import { useMeasuredWidth } from "@/lib/use-measured-width";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -103,20 +104,6 @@ function writeChartParams(gpus: string[] | null, view: ViewKey, range: RangeKey)
   window.history.replaceState(null, "", `${window.location.pathname}${qs ? `?${qs}` : ""}`);
 }
 
-/** Container width via ResizeObserver, for the SVG chart. */
-function useMeasuredWidth<T extends HTMLElement>(): [React.RefObject<T>, number] {
-  const ref = useRef<T>(null);
-  const [w, setW] = useState(0);
-  useLayoutEffect(() => {
-    if (!ref.current) return;
-    const ro = new ResizeObserver((entries) => {
-      for (const e of entries) setW(e.contentRect.width);
-    });
-    ro.observe(ref.current);
-    return () => ro.disconnect();
-  }, []);
-  return [ref, w];
-}
 
 export default function NeocloudIntel() {
   const { data, isLoading, isError } = useQuery<GpuMetrics>({ queryKey: ["/api/gpu-prices/metrics"] });
