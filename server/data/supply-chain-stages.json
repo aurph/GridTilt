@@ -4,8 +4,8 @@
     "tagline": "Where it comes from",
     "color": "#CD7F32",
     "bottleneckStatus": "Tightening",
-    "bottleneckDetail": "Copper prices above $10,000/ton. Uranium spot at $80+/lb. Electrical steel lead times at 8-12 months. Demand from AI data centers could require 475,000 additional tons of copper annually by 2028.",
-    "keyMetric": "Copper: $10,200/ton",
+    "bottleneckDetail": "Copper supply is tight against grid and data center demand, and new mines take years to bring online. Uranium mine output remains short of reactor demand. Electrical steel lead times at 8-12 months. Demand from AI data centers could require 475,000 additional tons of copper annually by 2028.",
+    "keyMetric": "Copper: +475k tons/yr by 2028",
     "tickers": ["CCJ", "UEC", "NXE", "DNN", "UUUU", "LEU", "FCX", "SCCO", "TECK", "HBM", "NUE", "STLD", "CLF", "X", "MP", "USAR", "BHP", "RIO", "VALE", "AR", "EQT", "RRC", "SWN", "LNG", "COPX"]
   },
   "generation": {
