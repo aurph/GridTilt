@@ -133,6 +133,18 @@ function pushFiltersToURL(companies: string[], rtos: string[], capacity: string)
 
 type ViewMode = "dc" | "stress";
 
+// Escape user-controlled strings before interpolating into raw Leaflet
+// divIcon HTML. Datacenter names arrive via the admin form / ingester
+// pipeline, so an unescaped name is a stored-XSS vector (SEC-5).
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 // Power tool tabs (consolidation): one subject, three views — where the AI
 // load sits (map), who contracted the power (deals), what's still waiting
 // on the grid (queue). ?tab= round-trips so each view stays shareable.
@@ -388,7 +400,7 @@ function FacilityLabels({ viewMode, filterCompanies, filterRTOs, filterCapacity,
         const truncName = dc.name.length > 20 ? dc.name.slice(0, 18) + ".." : dc.name;
         const label = L.marker([dc.lat, dc.lng], {
           icon: L.divIcon({
-            html: `<div class="map-label">${truncName}</div>`,
+            html: `<div class="map-label">${escapeHtml(truncName)}</div>`,
             className: "leaflet-label-icon",
             iconSize: [120, 16],
             iconAnchor: [-8, 20],
