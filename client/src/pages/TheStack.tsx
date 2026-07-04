@@ -1116,7 +1116,7 @@ function StackHeatmap({
     <Card className="border-card-border p-3" data-testid="stack-heatmap">
       <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
         <span className="text-11 font-mono uppercase tracking-wider text-muted-foreground">
-          Where the money moved · tile = market cap · color = {timeframe} change
+          Market cap heatmap · tile = market cap · color = {timeframe} change
         </span>
         <div className="flex items-center gap-1.5 text-9 font-mono text-muted-foreground/70">
           <span>-{4}%</span>
