@@ -32,6 +32,7 @@ import { computeClusterMetrics, type ClusterLite } from "./clusters";
 import { computeGpuIndex } from "./gpu-index";
 import { hasTodayLiveSnapshot, latestLiveByModel, recordDailyLivePrices, recordedByModel } from "./gpu-history";
 import { fetchLivePrices } from "./gpu-live";
+import { getUraniumCorrelation } from "./uranium-correlation";
 import { computeDealMetrics, type DealProject } from "./deals";
 import { composeBrief, renderBriefText, type BriefInput } from "./brief";
 import { computeGpuEconomics, TRAINING_PRESETS } from "./gpu-economics";
@@ -278,6 +279,7 @@ const STATIC_MARKET_DATA: Record<string, {
   SMR:  { name: "NuScale Power Corp", price: 14.50, change: 0.00, changePercent: 0.00, pe: null, revenueGrowth: null, marketCapDisplay: "$480M" },
   // Power Hardware
   GEV:  { name: "GE Vernova Inc", price: 352.00, change: 0.00, changePercent: 0.00, pe: 68.4, revenueGrowth: 15.2, marketCapDisplay: "$96B" },
+  ETN:  { name: "Eaton Corporation plc", price: 398.00, change: 0.00, changePercent: 0.00, pe: 39.1, revenueGrowth: 9.0, marketCapDisplay: "$155B" },
   NVT:  { name: "nVent Electric PLC", price: 88.00, change: 0.00, changePercent: 0.00, pe: 24.8, revenueGrowth: 22.4, marketCapDisplay: "$14B" },
   CARR: { name: "Carrier Global Corp", price: 74.00, change: 0.00, changePercent: 0.00, pe: 26.2, revenueGrowth: 9.8, marketCapDisplay: "$62B" },
   ABB:  { name: "ABB Ltd", price: 56.00, change: 0.00, changePercent: 0.00, pe: 28.4, revenueGrowth: 8.2, marketCapDisplay: "$120B" },
@@ -413,59 +415,6 @@ function deriveSmrPolicyScore(): number {
   }
 }
 
-// Generate scatter data with a target Pearson r using the standard linear noise model:
-//   y = r * x_std + sqrt(1 - r^2) * noise_std  (both in z-score space, then rescale)
-function gaussianRandom(): number {
-  // Box-Muller
-  const u1 = Math.random() || 1e-10;
-  const u2 = Math.random();
-  return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
-}
-
-// CCJ (Cameco): pure uranium miner - tight beta to U3O8 spot, target r ~ 0.82
-// Uranium spot range approx $65-$110 over 52-week scatter; CCJ approx $90-$135 (Mar 2026 price ~$113)
-function generateCCJCorrelationData() {
-  const data = [];
-  const targetR = 0.82;
-  const sqrtTerm = Math.sqrt(1 - targetR * targetR);
-  for (let i = 0; i < 52; i++) {
-    const x = gaussianRandom(); // shared factor (uranium direction)
-    const e = gaussianRandom(); // idiosyncratic noise
-    const uStd = x;
-    const cStd = targetR * x + sqrtTerm * e;
-    // Rescale: uranium mean=86, sd=11; ccj mean=112, sd=11 (2025-2026 price ranges)
-    const uranium = parseFloat((86 + uStd * 11).toFixed(2));
-    const ccj = parseFloat((112 + cStd * 11).toFixed(2));
-    data.push({
-      uranium: Math.max(60, Math.min(115, uranium)),
-      ccj: Math.max(82, Math.min(148, ccj))
-    });
-  }
-  return data;
-}
-
-// CEG (Constellation Energy): nuclear utility - looser uranium beta, target r ~ 0.65
-// CEG influenced by electricity contracts, capex, and macro beyond uranium spot (Mar 2026 price ~$315)
-function generateCEGCorrelationData() {
-  const data = [];
-  const targetR = 0.65;
-  const sqrtTerm = Math.sqrt(1 - targetR * targetR);
-  for (let i = 0; i < 52; i++) {
-    const x = gaussianRandom();
-    const e = gaussianRandom();
-    const uStd = x;
-    const cStd = targetR * x + sqrtTerm * e;
-    // Rescale: uranium mean=86, sd=11; ceg mean=310, sd=60 (2025-2026 price ranges)
-    const uranium = parseFloat((86 + uStd * 11).toFixed(2));
-    const ceg = parseFloat((310 + cStd * 60).toFixed(2));
-    data.push({
-      uranium: Math.max(60, Math.min(115, uranium)),
-      ceg: Math.max(160, Math.min(470, ceg))
-    });
-  }
-  return data;
-}
-
 function calculateCorrelation(xs: number[], ys: number[]) {
   const n = xs.length;
   const meanX = xs.reduce((s, v) => s + v, 0) / n;
@@ -583,6 +532,19 @@ async function getCachedStockData(timeframe: string): Promise<Record<string, any
 
   stackCache[cacheKey] = { data: stockData, timestamp: now };
   return stockData;
+}
+
+// Weekly closes for the uranium correlation module (1y, 1wk interval).
+async function fetchWeeklyCloses(ticker: string): Promise<Array<{ t: number; close: number }>> {
+  const YahooFinanceClass = (await import("yahoo-finance2")).default;
+  const yahooFinance = new YahooFinanceClass({ suppressNotices: ["yahooSurvey"] });
+  const chart = await yahooFinance.chart(ticker, {
+    period1: new Date(Date.now() - 370 * 86_400_000),
+    interval: "1wk",
+  });
+  return (chart.quotes ?? [])
+    .filter((q: any) => typeof q.close === "number" && q.date)
+    .map((q: any) => ({ t: new Date(q.date).getTime(), close: q.close as number }));
 }
 
 // ─── News cache (1-hour TTL) ────────────────────────────────────────────────
@@ -1966,16 +1928,10 @@ export async function registerRoutes(
       const timeframe = (req.query.timeframe as string) || "1D";
       const stockData = await getCachedStockData(timeframe);
 
-      const ccjCorrelationData = generateCCJCorrelationData();
-      const cegCorrelationData = generateCEGCorrelationData();
-      const ccjR = calculateCorrelation(
-        ccjCorrelationData.map((d) => d.uranium),
-        ccjCorrelationData.map((d) => d.ccj)
-      );
-      const cegR = calculateCorrelation(
-        cegCorrelationData.map((d) => d.uranium),
-        cegCorrelationData.map((d) => d.ceg)
-      );
+      // Real weekly correlation (SRUUF physical-uranium proxy vs CCJ/CEG),
+      // 24h cache; null on failure - the client shows unavailable, never
+      // invented dots. This replaced the last fabricated dataset in the app.
+      const corr = await getUraniumCorrelation(fetchWeeklyCloses);
 
       res.json({
         compute:             STACK_TICKERS.compute.map((t) => stockData[t]).filter(Boolean),
@@ -1991,9 +1947,10 @@ export async function registerRoutes(
         transmissionGrid:    STACK_TICKERS.transmissionGrid.map((t) => stockData[t]).filter(Boolean),
         cryptoAIDC:          STACK_TICKERS.cryptoAIDC.map((t) => stockData[t]).filter(Boolean),
         etfsBenchmarks:      STACK_TICKERS.etfsBenchmarks.map((t) => stockData[t]).filter(Boolean),
-        correlation: ccjCorrelationData,
-        correlationCoeff: parseFloat(ccjR.toFixed(3)),
-        cegCorrelationCoeff: parseFloat(cegR.toFixed(3)),
+        correlation: corr?.ccjPairs ?? [],
+        correlationCoeff: corr?.ccjR !== null && corr?.ccjR !== undefined ? parseFloat(corr.ccjR.toFixed(3)) : null,
+        cegCorrelationCoeff: corr?.cegR !== null && corr?.cegR !== undefined ? parseFloat(corr.cegR.toFixed(3)) : null,
+        correlationMeta: corr ? { weeks: corr.weeks, proxyTicker: corr.proxyTicker, asOf: corr.asOf } : null,
       });
     } catch (error) {
       console.error("Stack error:", error);

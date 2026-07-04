@@ -83,8 +83,9 @@ interface StackData {
   cryptoAIDC: StockData[];
   etfsBenchmarks: StockData[];
   correlation: CorrelationPoint[];
-  correlationCoeff: number;
-  cegCorrelationCoeff: number;
+  correlationCoeff: number | null;
+  cegCorrelationCoeff: number | null;
+  correlationMeta: { weeks: number; proxyTicker: string; asOf: string } | null;
 }
 
 /**
@@ -335,7 +336,7 @@ const CustomScatterTooltip = ({ active, payload }: any) => {
   if (active && payload && payload.length) {
     return (
       <div className="bg-card border border-card-border rounded-lg p-3 text-xs shadow-xl">
-        <p className="text-muted-foreground">Uranium Spot: <span className="text-foreground font-mono font-medium">${payload[0]?.value?.toFixed(2)}/lb</span></p>
+        <p className="text-muted-foreground">SRUUF: <span className="text-foreground font-mono font-medium">${payload[0]?.value?.toFixed(2)}</span></p>
         <p className="text-muted-foreground">CCJ: <span className="text-foreground font-mono font-medium">${payload[1]?.value?.toFixed(2)}</span></p>
       </div>
     );
@@ -750,7 +751,7 @@ export default function TheStack() {
             <div className="flex items-start justify-between gap-4 mb-4 flex-wrap">
               <div>
                 <div className="flex items-center gap-2 mb-1">
-                  <h2 className="font-semibold text-foreground">Uranium Spot vs. CCJ Correlation</h2>
+                  <h2 className="font-semibold text-foreground">Uranium Proxy vs. CCJ Correlation</h2>
                   <UITooltip>
                     <TooltipTrigger>
                       <Info className="h-3.5 w-3.5 text-muted-foreground" />
@@ -760,10 +761,10 @@ export default function TheStack() {
                     </TooltipContent>
                   </UITooltip>
                 </div>
-                <p className="text-xs text-muted-foreground">52-week uranium spot price ($/lb) vs. CCJ stock price. Each dot = one week.</p>
+                <p className="text-xs text-muted-foreground">Weekly closes, trailing year: SRUUF (Sprott Physical Uranium Trust, a physical uranium fund) vs. CCJ. Each dot = one week.{data?.correlationMeta ? ` ${data.correlationMeta.weeks} weeks paired.` : ""}</p>
               </div>
               <div className="flex items-center gap-6">
-                {data?.correlationCoeff !== undefined && (
+                {data?.correlationCoeff !== undefined && data?.correlationCoeff !== null && (
                   <div className="text-right">
                     <p className="text-xs text-muted-foreground font-mono">CCJ Pearson r</p>
                     <p className="text-2xl font-bold font-mono text-brand-2">{data.correlationCoeff.toFixed(3)}</p>
@@ -772,7 +773,7 @@ export default function TheStack() {
                     </p>
                   </div>
                 )}
-                {data?.cegCorrelationCoeff !== undefined && (
+                {data?.cegCorrelationCoeff !== undefined && data?.cegCorrelationCoeff !== null && (
                   <div className="text-right">
                     <p className="text-xs text-muted-foreground font-mono">CEG Pearson r</p>
                     <p className="text-2xl font-bold font-mono text-foreground">{data.cegCorrelationCoeff.toFixed(3)}</p>
@@ -786,6 +787,10 @@ export default function TheStack() {
               <ErrorState label="Unable to load correlation data" onRetry={() => refetch()} />
             ) : isLoading ? (
               <Skeleton className="h-[260px] w-full" />
+            ) : (data?.correlation ?? []).length === 0 ? (
+              // Real data or nothing: when the weekly-close fetch fails the
+              // server sends an empty set, never invented dots.
+              <ErrorState label="Correlation data unavailable from the price source. It retries on the next refresh." onRetry={() => refetch()} className="h-[260px]" />
             ) : (
               <>
                 <ResponsiveContainer width="100%" height={260}>
@@ -797,7 +802,7 @@ export default function TheStack() {
                       type="number"
                       name="Uranium"
                       domain={["auto", "auto"]}
-                      label={{ value: "Uranium Spot ($/lb)", position: "insideBottom", offset: -10, fill: CHART_CHROME.tick, fontSize: 11 }}
+                      label={{ value: "SRUUF weekly close ($)", position: "insideBottom", offset: -10, fill: CHART_CHROME.tick, fontSize: 11 }}
                     />
                     <YAxis
                       {...axisProps}
