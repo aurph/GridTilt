@@ -143,9 +143,9 @@ server/data custody (the fragility map):
 
 Documented, not to fix casually or silently:
 
-- FAKE DATA STILL LIVE: /api/stack serves a Math.random CCJ/CEG correlation scatter, regenerated
-  each request (routes.ts ~426-466, ~1959-1985). The only fabricated data on the server;
-  contradicts the honest-data doctrine. Unmerged PR #2 removes it.
+- Fake-data debt CLOSED on feat/live-gpu-prices (2026-07-04): the CCJ/CEG scatter now computes
+  from real SRUUF/CCJ/CEG weekly closes (server/uranium-correlation.ts, tested); fetch failure
+  serves empty + null r, never invented dots. PR #2's removal approach is obsolete.
 - Unmerged security hardening: PR #1 branch fix/m0-m1-truth-security (now conflicts with main)
   holds five verified low/medium closes; cherry-pick commit da97234 rather than rebasing.
 - PR #2 (feat/real-metrics) proposes retiring the sentiment indices for a sourced scoreboard;
@@ -165,8 +165,6 @@ Documented, not to fix casually or silently:
 - Dead weight: date-fns and @tailwindcss/vite deps (imported nowhere), client/src/lib/dates.ts,
   ui/dialog.tsx, ui/toggle.tsx, EmailCapture's unused marketing branch (~200 lines), .replit's
   postgresql-16 and python-3.11 modules, package name "rest-express".
-- ETN is in the stack tickers but missing from STATIC_MARKET_DATA: it vanishes instead of going
-  stale when Yahoo fails.
 - supply-chain-stages.json bottleneck copy hardcodes stale prices (copper $10,200/ton; uranium
   $80+ vs $92 in market-constants.json).
 
