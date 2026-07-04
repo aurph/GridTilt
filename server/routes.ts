@@ -33,6 +33,7 @@ import { computeGpuIndex } from "./gpu-index";
 import { hasTodayLiveSnapshot, latestLiveByModel, recordDailyLivePrices, recordedByModel } from "./gpu-history";
 import { fetchLivePrices } from "./gpu-live";
 import { getUraniumCorrelation } from "./uranium-correlation";
+import { fractionToPercent, getCachedFundamentals, refreshFundamentalsIfStale } from "./fundamentals";
 import { computeDealMetrics, type DealProject } from "./deals";
 import { composeBrief, renderBriefText, type BriefInput } from "./brief";
 import { computeGpuEconomics, TRAINING_PRESETS } from "./gpu-economics";
@@ -464,6 +465,15 @@ async function getCachedStockData(timeframe: string): Promise<Record<string, any
     const yahooFinance = new YahooFinanceClass({ suppressNotices: ["yahooSurvey"] });
     const chartOpts = chartOptsForTimeframe(timeframe);
 
+    // Real revenue growth, refreshed daily in the background (non-blocking,
+    // single-flight). Until the first sweep lands, the field serves null -
+    // the UI's defined em-dash state - never a months-stale curated number.
+    refreshFundamentalsIfStale(ALL_STACK_TICKERS, async (ticker) => {
+      const qs = await yahooFinance.quoteSummary(ticker, { modules: ["financialData"] });
+      return fractionToPercent((qs as any)?.financialData?.revenueGrowth);
+    });
+    const fundamentals = getCachedFundamentals();
+
     const [quotes, charts] = await Promise.all([
       Promise.all(ALL_STACK_TICKERS.map((t) => yahooFinance.quote(t).catch(() => null))),
       Promise.all(ALL_STACK_TICKERS.map((t) => yahooFinance.chart(t, chartOpts).catch(() => null))),
@@ -491,7 +501,7 @@ async function getCachedStockData(timeframe: string): Promise<Record<string, any
           change: r.regularMarketChange ?? 0,
           changePercent: r.regularMarketChangePercent ?? 0,
           pe: r.trailingPE ?? staticData?.pe ?? null,
-          revenueGrowth: staticData?.revenueGrowth ?? null,
+          revenueGrowth: fundamentals[ticker]?.revenueGrowth ?? null,
           sparkline: closes,
           powerMW: staticData?.powerMW,
           vs_sp500: staticData?.vs_sp500,
@@ -1938,20 +1948,29 @@ export async function registerRoutes(
       // invented dots. This replaced the last fabricated dataset in the app.
       const corr = await getUraniumCorrelation(fetchWeeklyCloses);
 
+      // Fundamentals overlay at response time: the stock cache (10 min) can
+      // predate the daily fundamentals sweep, so revenue growth is applied
+      // fresh here instead of being baked into the cached rows.
+      const fundamentalsNow = getCachedFundamentals();
+      const rowFor = (t: string) => {
+        const st = stockData[t];
+        return st ? { ...st, revenueGrowth: fundamentalsNow[t]?.revenueGrowth ?? null } : st;
+      };
+
       res.json({
-        compute:             STACK_TICKERS.compute.map((t) => stockData[t]).filter(Boolean),
-        nuclear:             STACK_TICKERS.nuclear.map((t) => stockData[t]).filter(Boolean),
-        uranium:             STACK_TICKERS.uranium.map((t) => stockData[t]).filter(Boolean),
-        powerHardware:       STACK_TICKERS.powerHardware.map((t) => stockData[t]).filter(Boolean),
-        utilities:           STACK_TICKERS.utilities.map((t) => stockData[t]).filter(Boolean),
-        dataCenters:         STACK_TICKERS.dataCenters.map((t) => stockData[t]).filter(Boolean),
-        construction:        STACK_TICKERS.construction.map((t) => stockData[t]).filter(Boolean),
-        rawMaterialsMining:  STACK_TICKERS.rawMaterialsMining.map((t) => stockData[t]).filter(Boolean),
-        rawMaterialsNatGas:  STACK_TICKERS.rawMaterialsNatGas.map((t) => stockData[t]).filter(Boolean),
-        renewableGeneration: STACK_TICKERS.renewableGeneration.map((t) => stockData[t]).filter(Boolean),
-        transmissionGrid:    STACK_TICKERS.transmissionGrid.map((t) => stockData[t]).filter(Boolean),
-        cryptoAIDC:          STACK_TICKERS.cryptoAIDC.map((t) => stockData[t]).filter(Boolean),
-        etfsBenchmarks:      STACK_TICKERS.etfsBenchmarks.map((t) => stockData[t]).filter(Boolean),
+        compute:             STACK_TICKERS.compute.map((t) => rowFor(t)).filter(Boolean),
+        nuclear:             STACK_TICKERS.nuclear.map((t) => rowFor(t)).filter(Boolean),
+        uranium:             STACK_TICKERS.uranium.map((t) => rowFor(t)).filter(Boolean),
+        powerHardware:       STACK_TICKERS.powerHardware.map((t) => rowFor(t)).filter(Boolean),
+        utilities:           STACK_TICKERS.utilities.map((t) => rowFor(t)).filter(Boolean),
+        dataCenters:         STACK_TICKERS.dataCenters.map((t) => rowFor(t)).filter(Boolean),
+        construction:        STACK_TICKERS.construction.map((t) => rowFor(t)).filter(Boolean),
+        rawMaterialsMining:  STACK_TICKERS.rawMaterialsMining.map((t) => rowFor(t)).filter(Boolean),
+        rawMaterialsNatGas:  STACK_TICKERS.rawMaterialsNatGas.map((t) => rowFor(t)).filter(Boolean),
+        renewableGeneration: STACK_TICKERS.renewableGeneration.map((t) => rowFor(t)).filter(Boolean),
+        transmissionGrid:    STACK_TICKERS.transmissionGrid.map((t) => rowFor(t)).filter(Boolean),
+        cryptoAIDC:          STACK_TICKERS.cryptoAIDC.map((t) => rowFor(t)).filter(Boolean),
+        etfsBenchmarks:      STACK_TICKERS.etfsBenchmarks.map((t) => rowFor(t)).filter(Boolean),
         correlation: corr?.ccjPairs ?? [],
         correlationCoeff: corr?.ccjR !== null && corr?.ccjR !== undefined ? parseFloat(corr.ccjR.toFixed(3)) : null,
         cegCorrelationCoeff: corr?.cegR !== null && corr?.cegR !== undefined ? parseFloat(corr.cegR.toFixed(3)) : null,
