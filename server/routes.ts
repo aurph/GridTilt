@@ -33,6 +33,7 @@ import { computeGpuIndex } from "./gpu-index";
 import { hasTodayLiveSnapshot, latestLiveByModel, recordDailyLivePrices, recordedByModel } from "./gpu-history";
 import { fetchLivePrices } from "./gpu-live";
 import { getUraniumCorrelation } from "./uranium-correlation";
+import { renderWeeklyEmail, weeklyDateLabel } from "./weekly-digest";
 import { fractionToPercent, getCachedFundamentals, refreshFundamentalsIfStale } from "./fundamentals";
 import { computeDealMetrics, type DealProject } from "./deals";
 import { composeBrief, renderBriefText, type BriefInput } from "./brief";
@@ -2266,54 +2267,47 @@ export async function registerRoutes(
   app.get("/api/newsletter/preview", async (req, res) => {
     if (!requireAdmin(req, res)) return; // SEC-1: leaked subscriber count when public
     try {
-      const subscribers = loadSubscribers();
-      const subscriberCount = subscribers.length;
+      // The weekly digest renders from the same composed Brief the site
+      // shows, plus the measured gauges and the day's movers.
+      const brief = composeBrief(buildBriefInput());
 
       let stockData: Record<string, any> = {};
       try {
         const cached = stackCache["1D"];
         if (cached) stockData = cached.data;
       } catch {}
-
-      const topMovers = Object.values(stockData)
+      const movers = Object.values(stockData)
         .filter((s: any) => typeof s?.changePercent === "number" && s.changePercent !== 0)
         .sort((a: any, b: any) => Math.abs(b.changePercent) - Math.abs(a.changePercent))
-        .slice(0, 5);
+        .slice(0, 5)
+        .map((s: any) => ({ ticker: s.ticker, name: s.name, changePercent: s.changePercent }));
 
-      const monthYear = new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" });
+      // Tracked power from the facility dataset, same >=400 MW floor and
+      // operational+construction definition as the dashboard.
+      let trackedGW: number | null = null;
+      let constructionGW: number | null = null;
+      try {
+        const dcs = JSON.parse(readFileSync(join(process.cwd(), "server", "data", "datacenters.json"), "utf-8")) as Array<{ powerMW: number; status: string }>;
+        const tracked = dcs.filter((d) => typeof d.powerMW === "number" && d.powerMW >= 400);
+        const opMW = tracked.filter((d) => d.status === "operational").reduce((t, d) => t + d.powerMW, 0);
+        const conMW = tracked.filter((d) => d.status === "construction").reduce((t, d) => t + d.powerMW, 0);
+        trackedGW = (opMW + conMW) / 1000;
+        constructionGW = conMW / 1000;
+      } catch {}
 
-      const html = `
-<!DOCTYPE html>
-<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>The GridTilt Brief</title></head>
-<body style="margin:0;padding:0;background:#0d0d14;font-family:system-ui,-apple-system,sans-serif;">
-<table width="100%" cellpadding="0" cellspacing="0" style="background:#0d0d14;"><tr><td align="center" style="padding:40px 20px;">
-<table width="600" cellpadding="0" cellspacing="0" style="background:#151520;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,0.06);">
-<tr><td style="padding:32px;border-bottom:1px solid rgba(240,120,0,0.15);">
-<div style="font-size:22px;font-weight:800;color:#fff;">Grid<span style="color:#F07800;">Tilt</span></div>
-<div style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:4px;font-family:monospace;">The GridTilt Brief / ${monthYear}</div>
-</td></tr>
-<tr><td style="padding:32px;">
-<div style="font-size:14px;font-weight:700;color:#F0A500;margin-bottom:16px;text-transform:uppercase;letter-spacing:1px;">Top Movers</div>
-${topMovers.map((s: any) => `
-<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.04);">
-<span style="color:#fff;font-size:13px;font-weight:600;">${s.ticker}</span>
-<span style="color:#fff;font-size:12px;">${s.name}</span>
-<span style="color:${s.changePercent >= 0 ? '#22c55e' : '#ef4444'};font-size:12px;font-family:monospace;">${s.changePercent >= 0 ? '+' : ''}${s.changePercent.toFixed(2)}%</span>
-</div>
-`).join("")}
-</td></tr>
-<tr><td style="padding:32px;background:#0d0d14;border-top:1px solid rgba(255,255,255,0.04);">
-<div style="text-align:center;">
-<a href="${BASE_URL}/overview" style="display:inline-block;padding:12px 32px;background:#F07800;color:#000;text-decoration:none;font-weight:700;font-size:13px;border-radius:6px;">Explore the Dashboard</a>
-</div>
-<div style="text-align:center;margin-top:20px;font-size:11px;color:rgba(255,255,255,0.3);">
-Sent to ${subscriberCount} subscribers. You're receiving this because you subscribed at gridtilt.com.<br>
-<a href="${BASE_URL}/api/unsubscribe?token=PREVIEW" style="color:rgba(255,255,255,0.4);">Unsubscribe</a>
-</div>
-</td></tr>
-</table>
-</td></tr></table>
-</body></html>`;
+      const gi = computeGpuIndex(readGpuRoot().models ?? [], easternDay(), recordedByModel());
+
+      const html = renderWeeklyEmail({
+        brief,
+        movers,
+        trackedGW,
+        constructionGW,
+        fleetAvg: gi.fleetAvg || null,
+        fleetAvg1yChange: gi.fleetAvg1yChange,
+        tightestRTO: { label: "MISO", marginPct: 13.4 }, // NERC LTRA 2025; mirror of client data/rto-config
+        dateLabel: weeklyDateLabel(new Date()),
+        siteUrl: BASE_URL,
+      });
 
       res.type("html").send(html);
     } catch (error) {
@@ -2322,8 +2316,23 @@ Sent to ${subscriberCount} subscribers. You're receiving this because you subscr
     }
   });
 
+  let lastNewsletterSendMs = 0;
+  try {
+    const marker = JSON.parse(readFileSync(join(process.cwd(), "server", "data", "newsletter-log.json"), "utf-8"));
+    if (typeof marker?.lastSendMs === "number") lastNewsletterSendMs = marker.lastSendMs;
+  } catch {}
+
   app.post("/api/newsletter/send", async (req, res) => {
     if (!requireAdmin(req, res)) return;
+    // Weekly cadence guard: a misfired cron must not double-send. Bypass
+    // with {"force": true} for deliberate re-sends.
+    const SIX_DAYS = 6 * 24 * 60 * 60 * 1000;
+    if (Date.now() - lastNewsletterSendMs < SIX_DAYS && req.body?.force !== true) {
+      return res.status(409).json({
+        error: "Newsletter already sent within the past 6 days. Pass {\"force\": true} to override.",
+        lastSend: new Date(lastNewsletterSendMs).toISOString(),
+      });
+    }
 
     if (!process.env.RESEND_API_KEY) {
       return res.status(400).json({ error: "RESEND_API_KEY not configured" });
@@ -2362,7 +2371,7 @@ Sent to ${subscriberCount} subscribers. You're receiving this because you subscr
             body: JSON.stringify({
               from: "GridTilt <brief@gridtilt.com>",
               to: sub.email,
-              subject: `The GridTilt Brief - ${new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" })}`,
+              subject: `The GridTilt Weekly · ${weeklyDateLabel(new Date())}`,
               html: personalizedHtml,
             }),
           });
@@ -2376,6 +2385,12 @@ Sent to ${subscriberCount} subscribers. You're receiving this because you subscr
         }
       }
 
+      if (sent > 0) {
+        lastNewsletterSendMs = Date.now();
+        try {
+          writeFileSync(join(process.cwd(), "server", "data", "newsletter-log.json"), JSON.stringify({ lastSendMs: lastNewsletterSendMs, sent }, null, 2) + "\n", "utf-8");
+        } catch {}
+      }
       res.json({ message: `Newsletter sent`, sent, errors, total: subscribers.length });
     } catch (error) {
       console.error("Newsletter send error:", error);
@@ -3884,57 +3899,61 @@ ${rssItems}
   });
 
   // Weekly Buildout Brief: one synthesized read across every module.
+  function buildBriefInput(): BriefInput {
+    const cwd = process.cwd();
+    const clustersRoot = JSON.parse(readFileSync(join(cwd, "server", "data", "clusters.json"), "utf-8"));
+    const clusters = (clustersRoot.clusters ?? []) as ClusterLite[];
+    const cm = computeClusterMetrics(clusters);
+    const biggest = [...clusters].sort((a, b) => (b.plannedPowerMW ?? 0) - (a.plannedPowerMW ?? 0))[0] as any;
+
+    const gpuRoot = readGpuRoot();
+    const gi = computeGpuIndex(gpuRoot.models ?? [], easternDay());
+    const byModel = Object.fromEntries(gi.rows.map((r) => [r.model, r]));
+    const mover = gi.rows.filter((r) => r.changes.y1 != null).sort((a, b) => Math.abs(b.changes.y1 as number) - Math.abs(a.changes.y1 as number))[0];
+    const cheapest = [...gi.rows].sort((a, b) => a.current - b.current)[0];
+
+    const queueRoot = JSON.parse(readFileSync(join(cwd, "server", "data", "interconnection-queue.json"), "utf-8"));
+    const qh = queueRoot.headline;
+    const dm = computeDealMetrics((queueRoot.projects ?? []) as DealProject[]);
+
+    const input: BriefInput = {
+      asOf: easternDay(),
+      compute: {
+        clusterCount: cm.clusterCount,
+        plannedGW: Math.round(cm.totalPlannedMW / 1000),
+        operationalGW: Math.round(cm.operationalMW / 1000),
+        operatorCount: cm.concentration.operatorCount,
+        topOperator: cm.concentration.topOperator,
+        topOperatorSharePct: cm.concentration.topOperatorPlannedShare * 100,
+        biggestName: biggest ? String(biggest.name).replace(/\s*\([^)]*\)\s*$/, "").trim() : null,
+        biggestGW: biggest ? (biggest.plannedPowerMW ?? 0) / 1000 : 0,
+      },
+      gpu: {
+        fleetAvg: gi.fleetAvg,
+        fleetAvg1yChange: gi.fleetAvg1yChange,
+        h100: byModel.H100?.current ?? 0,
+        gb200: byModel.GB200?.current ?? 0,
+        moverModel: mover?.model ?? "A100",
+        moverChangePct: (mover?.changes.y1 as number) ?? 0,
+        cheapestModel: cheapest?.model ?? "A100",
+        cheapestPrice: cheapest?.current ?? 0,
+      },
+      grid: { queueGW: qh.queueOverallGW, medianWaitMonths: qh.medianWaitMonths, ercotGW: qh.ercotLargeLoadGW },
+      deals: {
+        dealCount: dm.dealCount,
+        contractedGW: +(dm.totalContractedMW / 1000).toFixed(1),
+        topBuyer: dm.topBuyer,
+        topBuyerGW: +((dm.byOfftaker[0]?.mw ?? 0) / 1000).toFixed(1),
+        topType: dm.byType[0]?.key ?? null,
+        topTypeGW: +((dm.byType[0]?.mw ?? 0) / 1000).toFixed(1),
+      },
+    };
+    return input;
+  }
+
   app.get("/api/brief", (_req, res) => {
     try {
-      const cwd = process.cwd();
-      const clustersRoot = JSON.parse(readFileSync(join(cwd, "server", "data", "clusters.json"), "utf-8"));
-      const clusters = (clustersRoot.clusters ?? []) as ClusterLite[];
-      const cm = computeClusterMetrics(clusters);
-      const biggest = [...clusters].sort((a, b) => (b.plannedPowerMW ?? 0) - (a.plannedPowerMW ?? 0))[0] as any;
-
-      const gpuRoot = readGpuRoot();
-      const gi = computeGpuIndex(gpuRoot.models ?? [], easternDay());
-      const byModel = Object.fromEntries(gi.rows.map((r) => [r.model, r]));
-      const mover = gi.rows.filter((r) => r.changes.y1 != null).sort((a, b) => Math.abs(b.changes.y1 as number) - Math.abs(a.changes.y1 as number))[0];
-      const cheapest = [...gi.rows].sort((a, b) => a.current - b.current)[0];
-
-      const queueRoot = JSON.parse(readFileSync(join(cwd, "server", "data", "interconnection-queue.json"), "utf-8"));
-      const qh = queueRoot.headline;
-      const dm = computeDealMetrics((queueRoot.projects ?? []) as DealProject[]);
-
-      const input: BriefInput = {
-        asOf: easternDay(),
-        compute: {
-          clusterCount: cm.clusterCount,
-          plannedGW: Math.round(cm.totalPlannedMW / 1000),
-          operationalGW: Math.round(cm.operationalMW / 1000),
-          operatorCount: cm.concentration.operatorCount,
-          topOperator: cm.concentration.topOperator,
-          topOperatorSharePct: cm.concentration.topOperatorPlannedShare * 100,
-          biggestName: biggest ? String(biggest.name).replace(/\s*\([^)]*\)\s*$/, "").trim() : null,
-          biggestGW: biggest ? (biggest.plannedPowerMW ?? 0) / 1000 : 0,
-        },
-        gpu: {
-          fleetAvg: gi.fleetAvg,
-          fleetAvg1yChange: gi.fleetAvg1yChange,
-          h100: byModel.H100?.current ?? 0,
-          gb200: byModel.GB200?.current ?? 0,
-          moverModel: mover?.model ?? "A100",
-          moverChangePct: (mover?.changes.y1 as number) ?? 0,
-          cheapestModel: cheapest?.model ?? "A100",
-          cheapestPrice: cheapest?.current ?? 0,
-        },
-        grid: { queueGW: qh.queueOverallGW, medianWaitMonths: qh.medianWaitMonths, ercotGW: qh.ercotLargeLoadGW },
-        deals: {
-          dealCount: dm.dealCount,
-          contractedGW: +(dm.totalContractedMW / 1000).toFixed(1),
-          topBuyer: dm.topBuyer,
-          topBuyerGW: +((dm.byOfftaker[0]?.mw ?? 0) / 1000).toFixed(1),
-          topType: dm.byType[0]?.key ?? null,
-          topTypeGW: +((dm.byType[0]?.mw ?? 0) / 1000).toFixed(1),
-        },
-      };
-      const brief = composeBrief(input);
+      const brief = composeBrief(buildBriefInput());
       res.json({ ...brief, text: renderBriefText(brief) });
     } catch (err) {
       console.error("Brief error:", err);
