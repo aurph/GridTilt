@@ -1,0 +1,1 @@
+- [Git blocked; pull via GitHub API](git-blocked-api-pull-workaround.md) — destructive git fails even as task agent; read/sync remote via github connector token, push needs user's Shell/Git pane.

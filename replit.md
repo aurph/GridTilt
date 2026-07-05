@@ -34,6 +34,11 @@ The application features a dark charcoal terminal aesthetic with orange as the p
 ### Global UX
 Includes a scrolling news ticker, keyboard shortcuts (`?` for modal, `G+1-6` for navigation), dynamic KPI cards with sparklines, and a shareable portfolio scoring feature. The `PowerMap` offers detailed filtering and a "Grid Stress" view. The `Thesis Calculator` provides scenario analysis with buildout charts and company rankings.
 
+## Testing
+- Run the full suite with `npm test` (runs `node --import tsx --test server/__tests__/*.test.ts`).
+- Tests live in `server/__tests__/` and cover regressions such as the market-data throttle behavior (stale tickers return `null` changePercent instead of a misleading "+0.00%").
+- The suite runs automatically in two places: a registered `test` validation check (CI-style gate before a task is merged) and `scripts/post-merge.sh` (after every merge, alongside `npm install`).
+
 ## External Dependencies
 - **yahoo-finance2**: For fetching real-time market data.
 - **NewsData.io**: (Optional, with API key) For live news feeds.

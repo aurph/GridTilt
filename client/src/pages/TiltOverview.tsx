@@ -846,6 +846,14 @@ const FEATURE_SLIDES = [
     preview: powerMapPreview,
   },
   {
+    icon: Cpu,
+    title: "Compute Frontier",
+    description: "Named AI superclusters by GPUs, chips, and power, tied to the nuclear-for-AI deals that feed them.",
+    href: "/compute-frontier",
+    accent: "#F07800",
+    preview: powerMapPreview,
+  },
+  {
     icon: CalendarDays,
     title: "Catalyst Tracker",
     description: "Live earnings calendar with 80+ tickers from Yahoo Finance, plus thesis catalysts. Never miss a market-moving event.",

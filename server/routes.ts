@@ -2041,8 +2041,15 @@ export async function registerRoutes(
       };
 
       const pulse = Object.entries(STACK_TICKERS).map(([key, tickers]) => {
-        const changes = tickers.map((t) => stockData[t]?.changePercent ?? 0);
-        const avg = changes.reduce((s, v) => s + v, 0) / changes.length;
+        // Exclude stale/null tickers so a Yahoo throttle on a few names doesn't
+        // silently drag the sector average toward zero. Mirrors the supply
+        // chain fix in /api/supply-chain.
+        const liveChanges = tickers
+          .map((t) => stockData[t]?.changePercent)
+          .filter((c): c is number => typeof c === "number" && Number.isFinite(c));
+        const avg = liveChanges.length > 0
+          ? liveChanges.reduce((s, v) => s + v, 0) / liveChanges.length
+          : 0;
         return { sector: key, label: SECTOR_LABELS[key] ?? key, avgChange: parseFloat(avg.toFixed(2)) };
       });
 

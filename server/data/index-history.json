@@ -3662,6 +3662,20 @@
       "npi": 247.4
     },
     {
+      "date": "2026-06-17",
+      "aiDemand": 73.4,
+      "gridStress": 68.8,
+      "npiEquityLegs": 250.7,
+      "npi": 272.8
+    },
+    {
+      "date": "2026-06-23",
+      "aiDemand": 66.4,
+      "gridStress": 67,
+      "npiEquityLegs": 252.5,
+      "npi": 274.6
+    },
+    {
       "date": "2026-07-02",
       "aiDemand": 69.4,
       "gridStress": 67.6,
