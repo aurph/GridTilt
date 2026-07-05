@@ -24,6 +24,7 @@ import {
 import { Cpu, ArrowUpDown } from "lucide-react";
 import { AsOf, ErrorState } from "@/components/Freshness";
 import { ToolTabs, useToolTabs } from "@/components/ToolTabs";
+import { PageHeader, HeaderStat } from "@/components/PageHeader";
 import GpuEconomics from "@/pages/gpu-economics";
 import { BORDER, BRAND, FONT, INK, SEMANTIC, SERIES } from "@/lib/tokens";
 import { axisProps, gridProps, tooltipContentStyle } from "@/lib/chart-theme";
@@ -209,41 +210,39 @@ export default function NeocloudIntel() {
 
   return (
     <div className="flex flex-col h-full overflow-y-auto">
-      {/* Header */}
-      <div className="grid-bg border-b border-border px-4 sm:px-6 py-6 sm:py-8" data-testid="ni-header">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="max-w-3xl">
-            <div className="flex items-center gap-2 mb-2">
-              <Cpu className="h-5 w-5 text-brand" />
-              <h1 className="text-2xl sm:text-3xl font-semibold text-foreground tracking-tight" style={{ fontFamily: FONT.mono }}>
-                GPU Prices <span className="text-muted-foreground/50">/ {tab === "economics" ? "Cost of Compute" : "Rental Price Index"}</span>
-              </h1>
-            </div>
-            {tab === "prices" && (
-              <p className="text-muted-foreground text-sm leading-relaxed">
-                On-demand GPU rental prices ($/GPU/hr) blended across the major neoclouds and marketplaces
-                (Lambda, RunPod, Vast.ai, CoreWeave, TensorWave, Vultr, Nebius) and the getdeploying.com / Silicon Data
-                trackers. Each price is a sourced blended estimate (flagged <span className="text-estimate">est.</span>);
-                low and high are the observed marketplace range. Open any row for its sources. Cheaper is
-                <span className="text-positive"> green</span>, pricier is <span className="text-negative">red</span>.
-              </p>
-            )}
-            <ToolTabs className="mt-3" tabs={GPU_TABS} active={tab} onChange={setTab} />
-          </div>
-          <div className="text-11 text-muted-foreground/70 font-mono tracking-wide text-right space-y-0.5" data-testid="ni-sync">
-            <div className="flex items-center justify-end gap-2">
-              {data?.lastRefreshed && <span className="text-muted-foreground/60">source data {data.lastRefreshed}</span>}
-              {/* fetch age; this query has no refetch schedule, so it never flags "stale" */}
-              <AsOf updatedAt={dataUpdatedAt} staleAfterMs={Infinity} />
-            </div>
-            {data && <div>{data.modelCount} models · fleet avg {fmtUsd(data.fleetAvg)}/hr</div>}
-            {data?.fleetAvg1yChange !== null && data?.fleetAvg1yChange !== undefined && (
-              <div style={{ color: changeColor(data.fleetAvg1yChange) }}>fleet {fmtChange(data.fleetAvg1yChange)} 1Y</div>
-            )}
-            <Link href="/compute-frontier" className="text-brand hover:text-brand-2">Compute Frontier →</Link>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        title="GPU Prices"
+        testId="ni-header"
+        about={
+          <>
+            On-demand GPU rental prices ($/GPU/hr) blended across the major neoclouds and marketplaces (Lambda,
+            RunPod, Vast.ai, CoreWeave, TensorWave, Vultr, Nebius) and the getdeploying.com / Silicon Data trackers.
+            Models covered by live provider APIs serve an observed daily price; the rest are sourced blended
+            estimates flagged est. Low and high are the observed marketplace range. Open any table row for sources.
+          </>
+        }
+        stats={
+          data ? (
+            <>
+              <HeaderStat label="Fleet avg" value={`${fmtUsd(data.fleetAvg)}/hr`} />
+              {data.fleetAvg1yChange !== null && (
+                <span className="font-mono text-11 tabular-nums" style={{ color: changeColor(data.fleetAvg1yChange) }}>
+                  {fmtChange(data.fleetAvg1yChange)} 1Y
+                </span>
+              )}
+              <span className="font-mono text-11 text-muted-foreground">{data.modelCount} models</span>
+            </>
+          ) : undefined
+        }
+        right={
+          <>
+            {data?.lastRefreshed && <span className="text-11 font-mono text-muted-foreground/60">source data {data.lastRefreshed}</span>}
+            <AsOf updatedAt={dataUpdatedAt} staleAfterMs={Infinity} />
+            <Link href="/compute-frontier" className="text-11 text-brand hover:text-brand-2 font-medium">Compute Frontier →</Link>
+          </>
+        }
+        controls={<ToolTabs tabs={GPU_TABS} active={tab} onChange={setTab} />}
+      />
 
       <div className="flex-1 p-4 sm:p-6 space-y-5">
         {tab === "economics" ? (

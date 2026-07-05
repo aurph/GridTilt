@@ -4,7 +4,8 @@ import { Link } from "wouter";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, GitCompare } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
+import { PageHeader } from "@/components/PageHeader";
 import { STATUS_COLORS } from "@/lib/tokens";
 
 interface Cluster {
@@ -68,16 +69,18 @@ export default function ComputeFrontierCompare() {
 
   return (
     <div className="flex flex-col h-full overflow-y-auto">
-      <div className="grid-bg border-b border-border px-4 sm:px-6 py-5">
-        <Link href="/compute-frontier" className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground mb-3" data-testid="cfc-back">
-          <ArrowLeft className="h-3.5 w-3.5" /> Compute Frontier
-        </Link>
-        <div className="flex items-center gap-2">
-          <GitCompare className="h-5 w-5 text-brand" />
-          <h1 className="text-2xl font-semibold text-foreground tracking-tight">Compare clusters</h1>
-        </div>
-        <p className="text-sm text-muted-foreground mt-2 max-w-3xl">Put two or three superclusters side by side. Values marked <span className="text-brand-2">est.</span> are GridTilt estimates or announced targets.</p>
-      </div>
+      <PageHeader
+        title="Compare clusters"
+        testId="cfc-header"
+        about={
+          <>Put two or three superclusters side by side. Values marked <span className="text-brand-2">est.</span> are GridTilt estimates or announced targets.</>
+        }
+        right={
+          <Link href="/compute-frontier" className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground" data-testid="cfc-back">
+            <ArrowLeft className="h-3.5 w-3.5" /> Compute Frontier
+          </Link>
+        }
+      />
 
       <div className="flex-1 p-4 sm:p-6 space-y-4">
         {isLoading ? (

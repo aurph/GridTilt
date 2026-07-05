@@ -24,6 +24,7 @@ import {
 } from "recharts";
 import { Cpu, Server, Zap, TrendingUp, TrendingDown, Info, Clock, ChevronDown, ChevronRight, ArrowUpDown } from "lucide-react";
 import { AsOf, ErrorState } from "@/components/Freshness";
+import { PageHeader, HeaderStat } from "@/components/PageHeader";
 import { BRAND, CATEGORY_COLORS, CHART_CHROME, INK, SEMANTIC } from "@/lib/tokens";
 import { axisProps, gridProps } from "@/lib/chart-theme";
 import { sparklineDomain } from "@/lib/gpu-series";
@@ -583,13 +584,13 @@ export default function TheStack() {
   return (
     <PerfProfiler>
     <div className="flex flex-col h-full overflow-y-auto">
-      <div className="grid-bg border-b border-border px-6 py-6">
-        <div className="flex items-start justify-between gap-4 flex-wrap">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground tracking-tight">The Stack</h1>
-            <p className="text-muted-foreground text-sm mt-1">100+ equities across 13 layers of the AI power supply chain. Intraday prices via Yahoo Finance.</p>
-          </div>
-          <div className="flex items-center gap-2">
+      <PageHeader
+        title="The Stack"
+        testId="stack-header"
+        about="100+ equities across 13 layers of the AI power supply chain, with intraday prices from Yahoo Finance. Cards, table, heatmap, and supply-chain flow views."
+        stats={<HeaderStat label="Equities" value="100" valueClass="text-foreground" />}
+        right={
+          <>
             {majorityState && majorityState !== "REGULAR" && (
               <Badge className="bg-muted/40 text-muted-foreground border-border font-mono text-xs" data-testid="market-state-chip">
                 {marketStateLabel(majorityState)}
@@ -599,10 +600,10 @@ export default function TheStack() {
               Yahoo Finance{majorityState === "REGULAR" ? " · Live" : ""}
             </Badge>
             <AsOf updatedAt={dataUpdatedAt} intervalMs={900_000} />
-          </div>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-4 mt-4">
+          </>
+        }
+        controls={
+          <div className="flex flex-wrap items-center gap-4">
           {/* View toggle (persisted per user) */}
           <div className="flex items-center gap-1 bg-muted/30 rounded-md p-0.5 border border-card-border">
             {VIEW_MODES.map((v) => (
@@ -671,8 +672,9 @@ export default function TheStack() {
               </div>
             </>
           )}
-        </div>
-      </div>
+          </div>
+        }
+      />
 
       <div className="flex-1 p-6 space-y-8">
         {view === "cards" &&

@@ -200,9 +200,7 @@ html {
    for users who asked for less motion. Data still updates instantly. */
 @media (prefers-reduced-motion: reduce) {
   .ticker-scroll,
-  .count-up,
   .live-pulse::before,
-  .logo-entrance,
   .carousel-card-enter,
   .animate-ping,
   .animate-pulse {
@@ -231,14 +229,6 @@ html {
   background: hsl(var(--muted-foreground));
 }
 
-/* Grid background pattern - very faint orange tint, not blue */
-.grid-bg {
-  background-image: 
-    linear-gradient(rgba(240, 120, 0, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(240, 120, 0, 0.03) 1px, transparent 1px);
-  background-size: 40px 40px;
-}
-
 /* Sidebar nav hover */
 .sidebar-nav-link:not(.sidebar-nav-active):hover {
   background: rgba(255, 255, 255, 0.03);
@@ -248,14 +238,6 @@ html {
 }
 .sidebar-nav-link:not(.sidebar-nav-active):hover .sidebar-nav-title {
   color: #fff;
-}
-
-/* Glow effects */
-.glow-amber {
-  box-shadow: 0 0 20px rgba(240, 165, 0, 0.2), 0 0 40px rgba(240, 165, 0, 0.1);
-}
-.glow-orange {
-  box-shadow: 0 0 20px rgba(240, 120, 0, 0.2), 0 0 40px rgba(240, 120, 0, 0.1);
 }
 
 /* Animated pulse for live indicators */
@@ -278,15 +260,6 @@ html {
   border: 1px solid hsl(var(--card-border)) !important;
   border-radius: 8px !important;
   padding: 12px !important;
-}
-
-/* Number ticker animation */
-@keyframes count-up {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-.count-up {
-  animation: count-up 0.6s ease-out forwards;
 }
 
 /* News ticker scroll animation */
@@ -710,18 +683,6 @@ html {
     font-size: 10px;
     padding: 6px 8px;
   }
-}
-
-@keyframes logo-wave {
-  0% { transform: rotate(0deg) scale(0.8); opacity: 0; }
-  40% { transform: rotate(-8deg) scale(1.05); opacity: 1; }
-  60% { transform: rotate(4deg) scale(1.02); }
-  80% { transform: rotate(-2deg) scale(1); }
-  100% { transform: rotate(0deg) scale(1); opacity: 1; }
-}
-
-.logo-entrance {
-  animation: logo-wave 0.8s ease-out forwards;
 }
 
 @keyframes carousel-slide-in {

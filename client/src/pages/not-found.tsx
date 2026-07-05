@@ -3,7 +3,7 @@ import { Zap } from "lucide-react";
 
 export default function NotFound() {
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-background grid-bg">
+    <div className="min-h-screen w-full flex items-center justify-center bg-background">
       <div className="flex flex-col items-center text-center px-6 max-w-md">
         <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-brand/10 border border-brand/25 mb-6">
           <Zap className="h-8 w-8 text-brand" />

@@ -22,7 +22,8 @@ import {
   Tooltip as RTooltip,
   Cell,
 } from "recharts";
-import { Cpu, Zap, ArrowUpDown, ExternalLink, Atom, MapPin } from "lucide-react";
+import { ArrowUpDown, Atom } from "lucide-react";
+import { PageHeader, HeaderStat } from "@/components/PageHeader";
 import { BRAND, INK, SURFACE, CATEGORY_COLORS, STATUS_COLORS } from "@/lib/tokens";
 import { axisProps, gridProps } from "@/lib/chart-theme";
 
@@ -207,36 +208,35 @@ export default function ComputeFrontier() {
 
   return (
     <div className="flex flex-col h-full overflow-y-auto">
-      {/* Hero */}
-      <div className="grid-bg border-b border-border px-4 sm:px-6 py-6 sm:py-8" data-testid="cf-hero">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="max-w-3xl">
-            <div className="flex items-center gap-2 mb-2">
-              <Cpu className="h-5 w-5 text-brand" />
-              <h1 className="text-2xl sm:text-3xl font-semibold text-foreground tracking-tight">Compute Frontier</h1>
-            </div>
-            <p className="text-muted-foreground text-sm leading-relaxed">
-              The named AI training and inference superclusters being built across the US, by GPUs, chips, and power,
-              tied to the nuclear-for-AI deals GridTilt already tracks. This registry is tracked, not exhaustive.
-              Power is in MW. Every figure that is a GridTilt estimate or an announced target carries an{" "}
-              <span className="text-brand-2">est.</span> tag; GPU counts are shown only where an operator has
-              disclosed them.
-            </p>
-          </div>
-          <div className="text-11 text-muted-foreground/70 font-mono tracking-wide text-right space-y-0.5" data-testid="cf-sources">
-            <div><AsOf updatedAt={dataUpdatedAt} intervalMs={900_000} /></div>
-            {metrics?.lastRefreshed && <div className="text-muted-foreground/60">refreshed {metrics.lastRefreshed}</div>}
-            <Link href="/power-map" className="text-brand hover:text-brand-2 inline-flex items-center gap-0.5">
-              Power Map <MapPin className="h-3 w-3" />
-            </Link>
-            <div>
-              <Link href="/queue" className="text-brand hover:text-brand-2 inline-flex items-center gap-0.5">
-                Nuclear deals <Atom className="h-3 w-3" />
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        title="Compute Frontier"
+        testId="cf-hero"
+        about={
+          <>
+            The named AI training and inference superclusters being built across the US, by GPUs, chips, and power,
+            tied to the nuclear-for-AI deals GridTilt already tracks. This registry is tracked, not exhaustive.
+            Power is in MW. Every figure that is a GridTilt estimate or an announced target carries an{" "}
+            <span className="text-brand-2">est.</span> tag; GPU counts are shown only where an operator has
+            disclosed them.
+          </>
+        }
+        stats={
+          metrics ? (
+            <>
+              <HeaderStat label="Clusters" value={String(metrics.clusterCount)} valueClass="text-foreground" />
+              <HeaderStat label="Planned" value={`${gw(metrics.totalPlannedMW)} GW`} />
+            </>
+          ) : undefined
+        }
+        right={
+          <>
+            {metrics?.lastRefreshed && <span className="text-11 font-mono text-muted-foreground/60">refreshed {metrics.lastRefreshed}</span>}
+            <AsOf updatedAt={dataUpdatedAt} intervalMs={900_000} />
+            <Link href="/power-map" className="text-11 text-brand hover:text-brand-2 font-medium">Power Map →</Link>
+            <Link href="/queue" className="text-11 text-brand hover:text-brand-2 font-medium">Nuclear deals →</Link>
+          </>
+        }
+      />
 
       <div className="flex-1 p-4 sm:p-6 space-y-4">
         {/* Metric cards */}

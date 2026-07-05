@@ -1,7 +1,8 @@
 import { type ReactNode } from "react";
 import { Link } from "wouter";
 import { Card } from "@/components/ui/card";
-import { ArrowLeft, FileText } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
+import { PageHeader } from "@/components/PageHeader";
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -15,18 +16,16 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 export default function ComputeFrontierMethodology() {
   return (
     <div className="flex flex-col h-full overflow-y-auto">
-      <div className="grid-bg border-b border-border px-4 sm:px-6 py-5">
-        <Link href="/compute-frontier" className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground mb-3" data-testid="cfm-back">
-          <ArrowLeft className="h-3.5 w-3.5" /> Compute Frontier
-        </Link>
-        <div className="flex items-center gap-2">
-          <FileText className="h-5 w-5 text-brand" />
-          <h1 className="text-2xl font-semibold text-foreground tracking-tight">Compute Frontier methodology</h1>
-        </div>
-        <p className="text-sm text-muted-foreground mt-2 max-w-3xl">
-          How the supercluster data is built, what is sourced, what is estimated, and exactly how each headline number is computed.
-        </p>
-      </div>
+      <PageHeader
+        title="Compute Frontier methodology"
+        testId="cfm-header"
+        about="How the supercluster data is built, what is sourced, what is estimated, and exactly how each headline number is computed."
+        right={
+          <Link href="/compute-frontier" className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground" data-testid="cfm-back">
+            <ArrowLeft className="h-3.5 w-3.5" /> Compute Frontier
+          </Link>
+        }
+      />
 
       <div className="flex-1 p-4 sm:p-6 space-y-4 max-w-4xl">
         <Section title="What this tracks">

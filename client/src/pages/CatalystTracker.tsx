@@ -2,11 +2,12 @@ import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, Link } from "wouter";
 import {
-  CalendarDays, ChevronLeft, ChevronRight, Clock,
+  ChevronLeft, ChevronRight, Clock,
   TrendingUp, ArrowRight, Eye, EyeOff, AlertTriangle, RotateCw,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AsOf } from "@/components/Freshness";
+import { PageHeader, HeaderStat } from "@/components/PageHeader";
 import {
   catalystCategoryColors,
   STAGE_COLORS,
@@ -494,27 +495,21 @@ export default function CatalystTracker() {
   const catalysts = items.filter((i): i is CatalystItem => i.type === "catalyst");
 
   return (
-    <div className="h-full overflow-y-auto" data-testid="catalyst-tracker-page">
-      <div
-        className="flex items-center gap-2 px-4 md:px-8 flex-wrap sticky top-0 z-10"
-        style={{ height: 48, background: SURFACE.raised, borderBottom: `1px solid ${BORDER.subtle}` }}
-      >
-        <CalendarDays style={{ width: 16, height: 16, color: BRAND.primary }} />
-        <span className="text-base font-bold text-white">Catalyst Tracker</span>
-        {data && (
-          <>
-            <span className="text-13" style={{ color: INK.faint }}>·</span>
-            <span className="text-13" style={{ color: INK.muted }}>
-              {earnings.length} earnings
-            </span>
-            <span className="text-13" style={{ color: INK.faint }}>·</span>
-            <span className="text-13" style={{ color: INK.muted }}>
-              {catalysts.length} thesis catalysts
-            </span>
-            <AsOf updatedAt={dataUpdatedAt} intervalMs={15 * 60 * 1000} className="ml-auto" />
-          </>
-        )}
-      </div>
+    <div className="flex flex-col h-full overflow-y-auto" data-testid="catalyst-tracker-page">
+      <PageHeader
+        title="Catalyst Tracker"
+        testId="catalyst-header"
+        about="Earnings dates for tracked equities plus dated thesis catalysts (regulatory, policy, infrastructure, market, industry) on one calendar and timeline."
+        stats={
+          data ? (
+            <>
+              <HeaderStat label="Earnings" value={String(earnings.length)} valueClass="text-foreground" />
+              <HeaderStat label="Catalysts" value={String(catalysts.length)} valueClass="text-foreground" />
+            </>
+          ) : undefined
+        }
+        right={<AsOf updatedAt={dataUpdatedAt} intervalMs={15 * 60 * 1000} />}
+      />
 
       <div className="px-4 md:px-8 py-6 max-w-[1200px] mx-auto space-y-10">
         {isLoading ? (
