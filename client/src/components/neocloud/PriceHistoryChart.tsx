@@ -285,7 +285,7 @@ function Overlay({
                 {clippedSpans.map((span, i) => {
                   const st = spanDash(span.quality);
                   return (
-                    <LinePath<ClippedPoint>
+                    <LinePath
                       key={i}
                       data={span.points}
                       x={(p) => xScale(p.t)}
@@ -334,7 +334,7 @@ function Overlay({
                   </circle>
                 )}
                 {/* invisible fat hit path per series for hover */}
-                <LinePath<ClippedPoint>
+                <LinePath
                   data={s.clipped}
                   x={(p) => xScale(p.t)}
                   y={(p) => yScale(p.price)}
@@ -578,7 +578,7 @@ function Panel({
           {spans.map((span, i) => {
             const st = spanDash(span.quality);
             return (
-              <LinePath<ClippedPoint>
+              <LinePath
                 key={i}
                 data={span.points}
                 x={(p) => xScale(p.t)}
