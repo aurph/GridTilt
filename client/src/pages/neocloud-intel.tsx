@@ -237,7 +237,7 @@ export default function NeocloudIntel() {
         right={
           <>
             {data?.lastRefreshed && <span className="text-11 font-mono text-muted-foreground/60">source data {data.lastRefreshed}</span>}
-            <AsOf updatedAt={dataUpdatedAt} staleAfterMs={Infinity} />
+            <AsOf updatedAt={dataUpdatedAt} />
             <Link href="/compute-frontier" className="text-11 text-brand hover:text-brand-2 font-medium">Compute Frontier →</Link>
           </>
         }

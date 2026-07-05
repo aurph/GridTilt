@@ -5,7 +5,7 @@
  * "market closed" (handled per-page where it applies).
  */
 import { useEffect, useState } from "react";
-import { AlertTriangle, Clock, RotateCw } from "lucide-react";
+import { AlertTriangle, RotateCw } from "lucide-react";
 
 function fmtClock(ts: number): string {
   return new Date(ts).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", second: "2-digit" });
@@ -21,23 +21,23 @@ function fmtAge(ageMs: number): string {
 }
 
 /**
- * "as of" chip for widget headers. Hover shows the exact timestamp.
- * When the data is older than `staleAfterMs` (default: 2x the refresh
- * interval), it flips to an amber stale badge - the source missed its
- * schedule, which is different from being broken.
+ * Quiet "as of" text for widget headers; hover shows the exact timestamp.
+ * Deliberately never escalates to a warning: data age is context for the
+ * reader, not an alarm - a calendar being an hour old is normal, quotes
+ * being a night old while markets are closed is normal. Genuinely broken
+ * sources surface through ErrorState and per-item delayed badges instead.
  */
 export function AsOf({
   updatedAt,
-  intervalMs = 900_000,
-  staleAfterMs,
+  intervalMs: _intervalMs = 900_000,
   className = "",
 }: {
   updatedAt: number | undefined;
+  /** kept for call-site compatibility; age display does not depend on it */
   intervalMs?: number;
-  staleAfterMs?: number;
   className?: string;
 }) {
-  // re-render each 30s so the age and staleness stay live
+  // re-render each 30s so the age stays live
   const [, tick] = useState(0);
   useEffect(() => {
     const id = setInterval(() => tick((n) => n + 1), 30_000);
@@ -46,21 +46,6 @@ export function AsOf({
 
   if (!updatedAt) return null;
   const age = Date.now() - updatedAt;
-  const staleAt = staleAfterMs ?? intervalMs * 2;
-  const stale = age > staleAt;
-
-  if (stale) {
-    return (
-      <span
-        className={`inline-flex items-center gap-1 rounded-sm border border-warning/40 bg-warning/10 px-1.5 text-9 font-mono uppercase tracking-wide text-warning ${className}`}
-        title={`Source missed its refresh schedule - last update ${fmtClock(updatedAt)} (${fmtAge(age)})`}
-        data-testid="asof-stale"
-      >
-        <Clock className="h-2.5 w-2.5" />
-        stale · {fmtAge(age)}
-      </span>
-    );
-  }
   return (
     <span
       className={`text-9 font-mono text-muted-foreground/60 cursor-default ${className}`}
