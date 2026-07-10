@@ -11,23 +11,12 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import {
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  Cell,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip as RTooltip,
-} from "recharts";
-import { Cpu, ArrowUpDown } from "lucide-react";
-import { AsOf, ErrorState } from "@/components/Freshness";
+import { ArrowUpDown } from "lucide-react";
+import { AsOf, ErrorState, SrChartTable } from "@/components/Freshness";
 import { ToolTabs, useToolTabs } from "@/components/ToolTabs";
 import { PageHeader, HeaderStat } from "@/components/PageHeader";
 import GpuEconomics from "@/pages/gpu-economics";
-import { BORDER, BRAND, FONT, INK, SEMANTIC, SERIES } from "@/lib/tokens";
-import { axisProps, gridProps, tooltipContentStyle } from "@/lib/chart-theme";
+import { BORDER, BRAND, DATA_QUALITY, FONT, INK, SEMANTIC, SERIES } from "@/lib/tokens";
 
 // ─── Types (mirror /api/gpu-prices/metrics) ────────────────────────────────
 
@@ -78,8 +67,9 @@ const CONF_COLOR: Record<string, string> = { high: SEMANTIC.positive, medium: SE
 
 const fmtUsd = (n: number) => `$${n.toFixed(2)}`;
 const fmtChange = (v: number | null) => (v === null ? "—" : `${v > 0 ? "+" : ""}${v.toFixed(1)}%`);
-// Renter-side convention: pricier = red, cheaper = green.
-const changeColor = (v: number | null): string => (v === null ? INK.faint : v > 0 ? SEMANTIC.negative : v < 0 ? SEMANTIC.positive : INK.muted);
+// Standard market direction coloring (up green, down red), same as every other
+// module. Direction needs no legend; the renter's cost framing lives in copy.
+const changeColor = (v: number | null): string => (v === null ? INK.faint : v > 0 ? SEMANTIC.positive : v < 0 ? SEMANTIC.negative : INK.muted);
 
 type SortKey = "current" | "model" | "w1" | "m1" | "ytd" | "y1";
 type ViewKey = "overlay" | "grid";
@@ -174,15 +164,22 @@ export default function NeocloudIntel() {
   };
 
   const [chartRef, chartWidth] = useMeasuredWidth<HTMLDivElement>();
+  const [dispRef, dispWidth] = useMeasuredWidth<HTMLDivElement>();
 
-  // Snapshot bar chart: every model, sorted by price desc.
-  const barData = useMemo(
+  // Dispersion chart: every model, sorted by blended price desc.
+  const dispersionRows = useMemo(
     () => [...rows]
       .sort((a, b) => b.current - a.current)
-      .map((r) => ({ model: r.model, current: r.current, low: r.low, high: r.high, vendor: r.vendor })),
+      .map((r) => ({
+        model: r.model,
+        vendor: r.vendor,
+        current: r.current,
+        low: r.low,
+        high: r.high,
+        est: r.estimated.includes("currentUsdPerHr"),
+      })),
     [rows],
   );
-  const barMax = barData.length ? Math.max(...barData.map((d) => d.current)) * 1.18 : 1;
 
   const sortedRows = useMemo(() => {
     const arr = [...rows];
@@ -398,54 +395,38 @@ export default function NeocloudIntel() {
             )}
           </div>
           <p className="text-10 text-muted-foreground/50 mt-1 font-mono">
-            Solid dots = sourced anchors · dashed spans = linear interpolation between anchors (synthetic, not observed
-            price action) · ring = first tracked price{chartSeries.length <= 3 ? " · shaded band = current observed marketplace range" : ""}.
+            Dashed spans interpolate between sourced anchors and are not observed price action. Rings mark each
+            model's first tracked price{chartSeries.length <= 3 ? "; shaded bands show the current marketplace range" : ""}.
           </p>
         </Card>
 
-        {/* Current-price snapshot chart (all models, sorted, colored by maker) */}
+        {/* Marketplace dispersion: observed low-high per model on one scale, dot = blended price */}
         <Card className="border-card-border p-3" data-testid="ni-chart">
-          <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-            <span className="text-11 font-mono uppercase tracking-wider text-muted-foreground">Current on-demand price · $/GPU/hr</span>
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+            <span className="text-11 font-mono uppercase tracking-wider text-muted-foreground">Marketplace dispersion · $/GPU/hr</span>
             <div className="flex items-center gap-3 text-10 font-mono">
               <span className="flex items-center gap-1 text-muted-foreground/60"><span className="h-2 w-2 rounded-sm" style={{ background: VENDOR_COLOR.NVIDIA }} />NVIDIA</span>
               <span className="flex items-center gap-1 text-muted-foreground/60"><span className="h-2 w-2 rounded-sm" style={{ background: VENDOR_COLOR.AMD }} />AMD</span>
             </div>
           </div>
 
-          {isLoading ? (
-            <Skeleton className="h-[400px] w-full" />
-          ) : isError || rows.length === 0 ? (
-            <div className="h-[400px] flex items-center justify-center text-xs text-muted-foreground" data-testid="ni-chart-empty">
-              {isError ? <ErrorState label="Price index unavailable" onRetry={() => refetch()} /> : "No price data."}
-            </div>
-          ) : (
-            <ResponsiveContainer width="100%" height={Math.max(260, barData.length * 38)}>
-              <BarChart data={barData} layout="vertical" margin={{ left: 8, right: 60, top: 4, bottom: 4 }}>
-                <CartesianGrid {...gridProps} vertical={true} horizontal={false} />
-                <XAxis {...axisProps} type="number" domain={[0, barMax]} tickFormatter={(v) => `$${v}`} />
-                <YAxis {...axisProps} type="category" dataKey="model" width={58} />
-                <RTooltip
-                  cursor={{ fill: BORDER.subtle }}
-                  contentStyle={tooltipContentStyle}
-                  formatter={(v: number, _n, p: any) => [`$${v.toFixed(2)}/hr  (range $${p.payload.low}–$${p.payload.high})`, p.payload.model]}
-                />
-                <Bar dataKey="current" radius={[0, 3, 3, 0]} isAnimationActive={false}
-                  label={{ position: "right", formatter: (v: number) => `$${v.toFixed(2)}`, fill: INK.muted, fontSize: 10, fontFamily: FONT.mono }}>
-                  {barData.map((d) => <Cell key={d.model} fill={vendorColor(d.vendor)} />)}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          )}
-          <p className="text-10 text-muted-foreground/50 mt-1 font-mono">
-            Bar = blended on-demand estimate · color = maker · hover for the marketplace range.
-          </p>
+          <div ref={dispRef}>
+            {isLoading ? (
+              <Skeleton className="h-[320px] w-full" />
+            ) : isError || dispersionRows.length === 0 ? (
+              <div className="h-[240px] flex items-center justify-center text-xs text-muted-foreground" data-testid="ni-chart-empty">
+                {isError ? <ErrorState label="Price index unavailable" onRetry={() => refetch()} /> : "No price data."}
+              </div>
+            ) : (
+              <DispersionChart rows={dispersionRows} width={dispWidth} hovered={hoveredModel} onHover={setHoveredModel} />
+            )}
+          </div>
         </Card>
 
-        {/* Weighted price index table */}
+        {/* Price index table (fleet avg is a plain mean; "weighted" would be a lie) */}
         <Card className="border-card-border overflow-hidden" data-testid="ni-table">
           <div className="px-4 py-2 bg-surface-base border-b border-border">
-            <span className="text-11 font-mono uppercase tracking-wider text-muted-foreground">Weighted Price Index</span>
+            <span className="text-11 font-mono uppercase tracking-wider text-muted-foreground">On-Demand Price Index</span>
             <span className="text-10 font-mono text-muted-foreground/40 ml-2">hover a row for sources</span>
           </div>
           <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-surface-base border-b border-border text-10 font-mono uppercase tracking-wider text-muted-foreground">
@@ -525,6 +506,94 @@ export default function NeocloudIntel() {
         )}
       </div>
     </div>
+  );
+}
+
+interface DispersionRow {
+  model: string;
+  vendor: string;
+  current: number;
+  low: number;
+  high: number;
+  est: boolean;
+}
+
+/**
+ * Same-scale dispersion strips: the observed low-high marketplace range per
+ * model with a dot at the blended price. The spread multiple on the right is
+ * the point of the chart: on-demand GPU rent is not one price.
+ */
+function DispersionChart({
+  rows,
+  width,
+  hovered,
+  onHover,
+}: {
+  rows: DispersionRow[];
+  width: number;
+  hovered: string | null;
+  onHover: (m: string | null) => void;
+}) {
+  const M = { top: 18, right: 108, left: 56 };
+  const ROW_H = 30;
+  const height = M.top + rows.length * ROW_H + 6;
+  if (width <= 0) return null;
+
+  const innerW = Math.max(40, width - M.left - M.right);
+  const max = Math.max(...rows.map((r) => r.high), 1) * 1.05;
+  const x = (v: number) => M.left + (v / max) * innerW;
+  const tickStep = max > 8 ? 2 : 1;
+  const ticks: number[] = [];
+  // stop ticks short of the right rail so labels never collide with its captions
+  for (let t = tickStep; t < max; t += tickStep) if (x(t) < width - M.right - 16) ticks.push(t);
+
+  return (
+    <>
+      <svg width={width} height={height} className="block" role="img" aria-label="On-demand price dispersion by GPU model">
+        {ticks.map((t) => (
+          <g key={t}>
+            <line x1={x(t)} y1={M.top - 4} x2={x(t)} y2={height - 4} stroke={BORDER.subtle} />
+            <text x={x(t)} y={M.top - 8} textAnchor="middle" fontSize={9} fontFamily={FONT.mono} fill={INK.faint}>${t}</text>
+          </g>
+        ))}
+        <text x={width - M.right + 44} y={M.top - 8} textAnchor="end" fontSize={9} fontFamily={FONT.mono} fill={INK.faint}>blended</text>
+        <text x={width - 8} y={M.top - 8} textAnchor="end" fontSize={9} fontFamily={FONT.mono} fill={INK.faint}>spread</text>
+        {rows.map((r, i) => {
+          const cy = M.top + i * ROW_H + ROW_H / 2;
+          const dim = hovered !== null && hovered !== r.model;
+          const spread = r.low > 0 ? r.high / r.low : null;
+          return (
+            <g
+              key={r.model}
+              opacity={dim ? 0.35 : 1}
+              onPointerEnter={() => onHover(r.model)}
+              onPointerLeave={() => onHover(null)}
+              data-testid={`ni-disp-${r.model}`}
+            >
+              <title>
+                {`${r.model} · $${r.current.toFixed(2)}/hr blended${r.est ? " (est.)" : ""} · observed $${r.low}-$${r.high}${spread ? ` · ${spread.toFixed(1)}x spread` : ""}`}
+              </title>
+              <rect x={0} y={cy - ROW_H / 2} width={width} height={ROW_H} fill="transparent" />
+              <text x={M.left - 8} y={cy + 3.5} textAnchor="end" fontSize={11} fontWeight={600} fontFamily={FONT.mono} fill={colorFor(r.model)}>{r.model}</text>
+              <rect x={x(r.low)} y={cy - 2} width={Math.max(2, x(r.high) - x(r.low))} height={4} rx={2} fill={vendorColor(r.vendor)} opacity={0.3} />
+              <circle cx={x(r.current)} cy={cy} r={hovered === r.model ? 5 : 4} fill={vendorColor(r.vendor)} />
+              <text x={width - M.right + 44} y={cy + 3.5} textAnchor="end" fontSize={11} fontFamily={FONT.mono} fill={INK.secondary}>
+                {fmtUsd(r.current)}
+                {r.est && <tspan fontSize={8} fill={DATA_QUALITY.estimateFlag} dy={-3}> e</tspan>}
+              </text>
+              <text x={width - 8} y={cy + 3.5} textAnchor="end" fontSize={10} fontFamily={FONT.mono} fill={INK.faint}>
+                {spread ? `${spread.toFixed(1)}×` : "—"}
+              </text>
+            </g>
+          );
+        })}
+      </svg>
+      <SrChartTable
+        caption="On-demand GPU price dispersion ($/GPU/hr): observed low, blended price, observed high"
+        columns={["Model", "Low", "Blended", "High"]}
+        rows={rows.map((r) => [r.model, `$${r.low}`, `$${r.current.toFixed(2)}${r.est ? " est." : ""}`, `$${r.high}`])}
+      />
+    </>
   );
 }
 
