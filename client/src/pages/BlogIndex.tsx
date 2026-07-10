@@ -53,7 +53,7 @@ export default function BlogIndex() {
                       <div className="flex items-center gap-3 flex-wrap">
                         <div className="flex items-center gap-1 text-xs text-muted-foreground/70">
                           <Calendar className="h-3 w-3" />
-                          {new Date(article.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                          {new Date(`${article.date}T12:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                         </div>
                         {article.keywords.slice(0, 2).map((kw) => (
                           <Badge key={kw} className="text-10 bg-muted/40 text-muted-foreground">{kw}</Badge>
