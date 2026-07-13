@@ -7,6 +7,7 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import {
   MAX_OBSERVED_GAP_DAYS,
+  buildDispersionRuns,
   buildPoints,
   buildSeries,
   buildSpans,
@@ -163,6 +164,43 @@ describe("buildSpans", () => {
     // adjacent spans share an endpoint
     assert.equal(spans[0].points[spans[0].points.length - 1], spans[1].points[0]);
     assert.equal(spans[1].points[spans[1].points.length - 1], spans[2].points[0]);
+  });
+  it("never classifies a synthetic clipped boundary as observed", () => {
+    const points = clipSeries([p(0, 1), p(2 * DAY, 2)], DAY, 2 * DAY);
+    assert.equal(points[0].edge, true);
+    assert.equal(buildSpans(points)[0].quality, "interpolated");
+  });
+});
+
+describe("buildDispersionRuns", () => {
+  const observed = (day: number, low: number, high: number): ChartPoint => ({
+    ...p(day * DAY, (low + high) / 2),
+    low,
+    high,
+  });
+
+  it("groups consecutive recorded spreads and breaks at anchors or missing metadata", () => {
+    const first = observed(0, 1, 2);
+    const second = observed(1, 1.1, 2.1);
+    const anchor = p(2 * DAY, 2, "anchor");
+    const fourth = observed(3, 1.2, 2.2);
+    const fifth = observed(4, 1.3, 2.3);
+    const runs = buildDispersionRuns([first, second, anchor, fourth, fifth]);
+    assert.deepEqual(runs, [[first, second], [fourth, fifth]]);
+  });
+
+  it("does not bridge recorded gaps or render a one-point band", () => {
+    const first = observed(0, 1, 2);
+    const distant = observed(MAX_OBSERVED_GAP_DAYS + 1, 1, 2);
+    assert.deepEqual(buildDispersionRuns([first, distant]), []);
+  });
+
+  it("excludes synthetic edge points even if they inherit recorded metadata", () => {
+    const first = observed(0, 1, 2);
+    const second = observed(2, 1.2, 2.2);
+    const clipped = clipSeries([first, second], DAY, 2 * DAY);
+    assert.equal(clipped[0].edge, true);
+    assert.deepEqual(buildDispersionRuns(clipped), []);
   });
 });
 

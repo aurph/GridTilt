@@ -119,7 +119,11 @@ export function buildSpans(points: ChartPoint[]): ChartSpan[] {
   for (let i = 1; i < points.length; i++) {
     const a = points[i - 1];
     const b = points[i];
+    const aIsEdge = "edge" in a && a.edge === true;
+    const bIsEdge = "edge" in b && b.edge === true;
     const observed =
+      !aIsEdge &&
+      !bIsEdge &&
       a.kind === "recorded" &&
       b.kind === "recorded" &&
       b.t - a.t <= MAX_OBSERVED_GAP_DAYS * DAY_MS;
@@ -223,6 +227,30 @@ export function clipSeries(points: ChartPoint[], start: number | null, now: numb
     return [{ t: lo, price, kind: a.kind, date: a.date, edge: true }, ...inWin];
   }
   return inWin;
+}
+
+/**
+ * Consecutive recorded points with real low/high metadata. A run must contain
+ * at least two points because dispersion is rendered around observed segments,
+ * never as a fabricated band for an isolated snapshot.
+ */
+export function buildDispersionRuns(points: ClippedPoint[]): ChartPoint[][] {
+  const runs: ChartPoint[][] = [];
+  let current: ChartPoint[] = [];
+  for (const point of points) {
+    const valid =
+      !point.edge &&
+      point.kind === "recorded" &&
+      typeof point.low === "number" &&
+      typeof point.high === "number";
+    const previous = current.at(-1);
+    if (!valid || (previous && point.t - previous.t > MAX_OBSERVED_GAP_DAYS * DAY_MS)) {
+      if (current.length >= 2) runs.push(current);
+      current = valid ? [point] : [];
+    } else current.push(point);
+  }
+  if (current.length >= 2) runs.push(current);
+  return runs;
 }
 
 export const SPARSE_POINT_THRESHOLD = 6;
