@@ -23,6 +23,10 @@ export type SpanQuality = "observed" | "interpolated";
 export interface SeriesPointIn {
   date: string;
   price: number;
+  low?: number;
+  high?: number;
+  sources?: string[];
+  n?: number;
 }
 
 export interface ChartPoint {
@@ -31,6 +35,11 @@ export interface ChartPoint {
   kind: PointKind;
   /** original date string, for tooltips */
   date: string;
+  /** Observed marketplace spread and provenance. Recorded daily points only. */
+  low?: number;
+  high?: number;
+  sources?: string[];
+  n?: number;
 }
 
 export interface ChartSpan {
@@ -49,7 +58,8 @@ export interface ChartSeries {
   latest: ChartPoint | null;
 }
 
-export type RangeKey = "3M" | "6M" | "1Y" | "ALL";
+export const RANGE_KEYS = ["1M", "3M", "6M", "1Y", "ALL"] as const;
+export type RangeKey = (typeof RANGE_KEYS)[number];
 
 /** Consecutive recorded points at most this far apart count as observed. */
 export const MAX_OBSERVED_GAP_DAYS = 2;
@@ -81,7 +91,22 @@ export function buildPoints(series: SeriesPointIn[]): ChartPoint[] {
     if (typeof p?.price !== "number" || !Number.isFinite(p.price) || p.price <= 0) continue;
     const parsed = parsePointDate(p.date);
     if (!parsed) continue;
-    byT.set(parsed.t, { t: parsed.t, price: p.price, kind: parsed.kind, date: p.date });
+    const point: ChartPoint = { t: parsed.t, price: p.price, kind: parsed.kind, date: p.date };
+    if (parsed.kind === "recorded") {
+      const validSpread =
+        typeof p.low === "number" && Number.isFinite(p.low) && p.low > 0 &&
+        typeof p.high === "number" && Number.isFinite(p.high) && p.high >= p.low &&
+        p.low <= p.price && p.price <= p.high;
+      if (validSpread) {
+        point.low = p.low;
+        point.high = p.high;
+      }
+      if (Array.isArray(p.sources) && p.sources.length > 0 && p.sources.every((source) => typeof source === "string" && source.length > 0)) {
+        point.sources = [...p.sources];
+      }
+      if (typeof p.n === "number" && Number.isInteger(p.n) && p.n > 0) point.n = p.n;
+    }
+    byT.set(parsed.t, point);
   }
   return Array.from(byT.values()).sort((a, b) => a.t - b.t);
 }
@@ -127,18 +152,51 @@ export function buildSeries(
   });
 }
 
-export function rangeStart(range: RangeKey, now: number): number | null {
+function subtractUtcMonths(now: number, months: number): number {
   const d = new Date(now);
+  const absoluteMonth = d.getUTCFullYear() * 12 + d.getUTCMonth() - months;
+  const year = Math.floor(absoluteMonth / 12);
+  const month = ((absoluteMonth % 12) + 12) % 12;
+  const lastDay = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+  return Date.UTC(year, month, Math.min(d.getUTCDate(), lastDay));
+}
+
+export function rangeStart(range: RangeKey, now: number): number | null {
   switch (range) {
+    case "1M":
+      return subtractUtcMonths(now, 1);
     case "3M":
-      return Date.UTC(d.getUTCFullYear(), d.getUTCMonth() - 3, d.getUTCDate());
+      return subtractUtcMonths(now, 3);
     case "6M":
-      return Date.UTC(d.getUTCFullYear(), d.getUTCMonth() - 6, d.getUTCDate());
+      return subtractUtcMonths(now, 6);
     case "1Y":
-      return Date.UTC(d.getUTCFullYear() - 1, d.getUTCMonth(), d.getUTCDate());
+      return subtractUtcMonths(now, 12);
     case "ALL":
       return null;
   }
+}
+
+export interface RangeCoverage {
+  pointCount: number;
+  enabled: boolean;
+}
+
+/** Count only real input points. Synthetic clipped boundaries never enter ChartSeries.points. */
+export function rangeCoverage(series: ChartSeries[], start: number | null, now: number): number {
+  return series.reduce(
+    (count, item) => count + item.points.filter((point) => point.t <= now && (start === null || point.t >= start)).length,
+    0,
+  );
+}
+
+/** ALL remains a safe fallback even when fewer than two points exist. */
+export function rangeAvailability(series: ChartSeries[], now: number): Record<RangeKey, RangeCoverage> {
+  const result = {} as Record<RangeKey, RangeCoverage>;
+  for (const range of RANGE_KEYS) {
+    const pointCount = rangeCoverage(series, rangeStart(range, now), now);
+    result[range] = { pointCount, enabled: range === "ALL" || pointCount >= 2 };
+  }
+  return result;
 }
 
 /**
@@ -165,6 +223,35 @@ export function clipSeries(points: ChartPoint[], start: number | null, now: numb
     return [{ t: lo, price, kind: a.kind, date: a.date, edge: true }, ...inWin];
   }
   return inWin;
+}
+
+export const SPARSE_POINT_THRESHOLD = 6;
+
+type MaybeClippedPoint = ChartPoint & { edge?: boolean };
+
+function actualPoints(points: MaybeClippedPoint[]): ChartPoint[] {
+  return points.filter((point) => !point.edge);
+}
+
+export function isSparseSeries(points: MaybeClippedPoint[]): boolean {
+  return actualPoints(points).length < SPARSE_POINT_THRESHOLD;
+}
+
+function countedLabel(count: number, singular: string, plural = `${singular}s`): string {
+  return `${count} ${count === 1 ? singular : plural}`;
+}
+
+/** Honest sparse-state copy that never calls an estimated anchor an observation. */
+export function coverageCaption(points: MaybeClippedPoint[]): string {
+  const real = actualPoints(points).sort((a, b) => a.t - b.t);
+  if (real.length === 0) return "No points in this window. Daily history accrues automatically.";
+  const recorded = real.filter((point) => point.kind === "recorded").length;
+  const anchors = real.length - recorded;
+  const since = real[0].date.slice(0, 7);
+  const suffix = "Daily history accrues automatically.";
+  if (recorded === 0) return `${countedLabel(anchors, "estimated anchor")} since ${since}. ${suffix}`;
+  if (anchors === 0) return `${countedLabel(recorded, "recorded day")} since ${since}. ${suffix}`;
+  return `${real.length} points since ${since}: ${countedLabel(recorded, "recorded day")}, ${countedLabel(anchors, "estimated anchor")}. ${suffix}`;
 }
 
 /** Log-scale ticks on the 1-2-5 progression covering [min, max]. */

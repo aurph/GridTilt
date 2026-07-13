@@ -16,7 +16,11 @@ import {
   logTicks125,
   nearestPoint,
   parsePointDate,
+  rangeAvailability,
+  rangeCoverage,
   rangeStart,
+  coverageCaption,
+  isSparseSeries,
   solveLabelCollisions,
   sparklineDomain,
   valueAt,
@@ -92,6 +96,37 @@ describe("buildPoints", () => {
     assert.deepEqual(buildPoints([]), []);
     assert.deepEqual(buildPoints(undefined as never), []);
   });
+  it("preserves valid dispersion only on recorded daily points", () => {
+    const pts = buildPoints([
+      { date: "2026-07", price: 3, low: 2, high: 4, sources: ["curated"], n: 1 },
+      { date: "2026-07-02", price: 2.7, low: 2.1, high: 2.9, sources: ["runpod-secure", "vast"], n: 2 },
+    ]);
+    assert.deepEqual(pts[0], {
+      t: Date.UTC(2026, 6, 1),
+      price: 3,
+      kind: "anchor",
+      date: "2026-07",
+    });
+    assert.deepEqual(pts[1], {
+      t: Date.UTC(2026, 6, 2),
+      price: 2.7,
+      kind: "recorded",
+      date: "2026-07-02",
+      low: 2.1,
+      high: 2.9,
+      sources: ["runpod-secure", "vast"],
+      n: 2,
+    });
+  });
+  it("drops malformed recorded dispersion rather than inventing a band", () => {
+    const [point] = buildPoints([
+      { date: "2026-07-02", price: 2.7, low: 3, high: 2, sources: [], n: 0 },
+    ]);
+    assert.equal(point.low, undefined);
+    assert.equal(point.high, undefined);
+    assert.equal(point.sources, undefined);
+    assert.equal(point.n, undefined);
+  });
 });
 
 describe("buildSpans", () => {
@@ -153,11 +188,99 @@ describe("buildSeries", () => {
 
 describe("rangeStart", () => {
   const now = Date.UTC(2026, 6, 2);
-  it("computes 3M/6M/1Y starts and null for ALL", () => {
+  it("computes 1M/3M/6M/1Y starts and null for ALL", () => {
+    assert.equal(rangeStart("1M", now), Date.UTC(2026, 5, 2));
     assert.equal(rangeStart("3M", now), Date.UTC(2026, 3, 2));
     assert.equal(rangeStart("6M", now), Date.UTC(2026, 0, 2));
     assert.equal(rangeStart("1Y", now), Date.UTC(2025, 6, 2));
     assert.equal(rangeStart("ALL", now), null);
+  });
+  it("clamps month-end and leap-day windows instead of overflowing forward", () => {
+    assert.equal(rangeStart("1M", Date.UTC(2026, 2, 31)), Date.UTC(2026, 1, 28));
+    assert.equal(rangeStart("1Y", Date.UTC(2024, 1, 29)), Date.UTC(2023, 1, 28));
+  });
+});
+
+describe("range coverage", () => {
+  const now = Date.UTC(2026, 6, 13);
+  const rows = [
+    {
+      model: "H100",
+      vendor: "NVIDIA",
+      series: [
+        { date: "2025-06", price: 4 },
+        { date: "2026-05", price: 3.2 },
+        { date: "2026-07-03", price: 2.7 },
+        { date: "2026-07-13", price: 2.6 },
+      ],
+    },
+    {
+      model: "A100",
+      vendor: "NVIDIA",
+      series: [{ date: "2025-10", price: 1.8 }],
+    },
+  ];
+  const series = buildSeries(rows, () => "#fff");
+
+  it("counts real points in the selected window across visible models", () => {
+    assert.equal(rangeCoverage(series, rangeStart("1M", now), now), 2);
+    assert.equal(rangeCoverage(series, rangeStart("6M", now), now), 3);
+    assert.equal(rangeCoverage(series.slice(1), rangeStart("6M", now), now), 0);
+  });
+
+  it("enables finite windows only at two real points and always enables ALL", () => {
+    const availability = rangeAvailability(series, now);
+    assert.deepEqual(availability["1M"], { pointCount: 2, enabled: true });
+    assert.deepEqual(availability["3M"], { pointCount: 3, enabled: true });
+    assert.deepEqual(availability["6M"], { pointCount: 3, enabled: true });
+    assert.deepEqual(availability["1Y"], { pointCount: 4, enabled: true });
+    assert.deepEqual(availability.ALL, { pointCount: 5, enabled: true });
+
+    const sparseVisibility = rangeAvailability(series.slice(1), now);
+    assert.deepEqual(sparseVisibility["1Y"], { pointCount: 1, enabled: false });
+    assert.deepEqual(sparseVisibility.ALL, { pointCount: 1, enabled: true });
+  });
+
+  it("does not count a synthetic clipped boundary as a real point", () => {
+    const clipped = clipSeries(series[0].points, Date.UTC(2026, 5, 1), now);
+    assert.equal(clipped[0].edge, true);
+    assert.equal(rangeCoverage(series, Date.UTC(2026, 5, 1), now), 2);
+  });
+});
+
+describe("sparse coverage copy", () => {
+  it("describes anchors-only reset state without calling estimates observations", () => {
+    const points = buildPoints([
+      { date: "2025-06", price: 4 },
+      { date: "2026-01", price: 3.5 },
+    ]);
+    assert.equal(isSparseSeries(points), true);
+    assert.equal(
+      coverageCaption(points),
+      "2 estimated anchors since 2025-06. Daily history accrues automatically.",
+    );
+  });
+
+  it("distinguishes recorded days from estimated anchors in mixed sparse data", () => {
+    const points = buildPoints([
+      { date: "2025-06", price: 4 },
+      { date: "2026-01", price: 3.5 },
+      { date: "2026-07-03", price: 2.7 },
+      { date: "2026-07-04", price: 2.6 },
+    ]);
+    assert.equal(
+      coverageCaption(points),
+      "4 points since 2025-06: 2 recorded days, 2 estimated anchors. Daily history accrues automatically.",
+    );
+  });
+
+  it("marks six-point dense fixtures as non-sparse and handles empty windows", () => {
+    const dense = buildPoints(Array.from({ length: 6 }, (_, i) => ({
+      date: `2026-07-${String(i + 1).padStart(2, "0")}`,
+      price: 2 + i / 10,
+    })));
+    assert.equal(isSparseSeries(dense), false);
+    assert.equal(coverageCaption([]), "No points in this window. Daily history accrues automatically.");
   });
 });
 
