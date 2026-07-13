@@ -49,6 +49,7 @@ async function startTestServer(): Promise<{ url: string; close: () => Promise<vo
 // before any body handling, so empty bodies are fine for the no-key case.
 const PROTECTED_ROUTES: Array<[string, string]> = [
   ["GET", "/api/admin/subscribers"],
+  ["GET", "/api/admin/gpu-history"],
   ["GET", "/api/newsletter/preview"], // SEC-1: was public, leaked subscriber count
   ["POST", "/api/social/generate"], // SEC-2: was public, burned Yahoo quota
   ["DELETE", "/api/admin/subscribers/x@y.com"],

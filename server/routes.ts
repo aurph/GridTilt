@@ -30,8 +30,15 @@ import { recordDailyIndexValues, readIndexHistory } from "./index-history";
 import { getElectricityOutputMonthly, getHourlyDemandUS48 } from "./physical";
 import { computeClusterMetrics, type ClusterLite } from "./clusters";
 import { computeGpuIndex } from "./gpu-index";
-import { hasTodayLiveSnapshot, latestLiveByModel, recordDailyLivePrices, recordedByModel } from "./gpu-history";
-import { fetchLivePrices } from "./gpu-live";
+import {
+  hasTodayLiveSnapshot,
+  latestLiveByModel,
+  readGpuHistory,
+  recordDailyLivePrices,
+  recordedByModel,
+  summarizeGpuHistory,
+} from "./gpu-history";
+import { fetchLivePrices, type GpuSweepSummary } from "./gpu-live";
 import { getUraniumCorrelation } from "./uranium-correlation";
 import { renderWeeklyEmail, weeklyDateLabel } from "./weekly-digest";
 import { fractionToPercent, getCachedFundamentals, refreshFundamentalsIfStale } from "./fundamentals";
@@ -2161,6 +2168,11 @@ export async function registerRoutes(
     return true;
   }
 
+  app.get("/api/admin/gpu-history", (req: Request, res) => {
+    if (!requireAdmin(req, res)) return;
+    res.json(readGpuHistory());
+  });
+
   app.post("/api/subscribe", subscribeLimiter, async (req: Request, res) => {
     try {
       const { email, intent, context } = req.body;
@@ -3814,6 +3826,7 @@ ${rssItems}
   // Live sweep guard: at most one in flight, retried on the next request
   // after a failure. Request-driven (not a timer) so it works on autoscale.
   let gpuLiveSweepInFlight = false;
+  let lastGpuSweep: GpuSweepSummary | null = null;
   app.get("/api/gpu-prices/metrics", (_req, res) => {
     try {
       const root = readGpuRoot();
@@ -3824,7 +3837,8 @@ ${rssItems}
       if (!hasTodayLiveSnapshot() && !gpuLiveSweepInFlight) {
         gpuLiveSweepInFlight = true;
         fetchLivePrices(models.map((m: any) => ({ model: m.model, currentUsdPerHr: m.currentUsdPerHr })))
-          .then(({ prices }) => {
+          .then(({ prices, summary }) => {
+            lastGpuSweep = summary;
             recordDailyLivePrices(prices);
             const n = Object.keys(prices).length;
             if (n > 0) console.log(`gpu-live: recorded ${n} live model prices`);
@@ -3857,7 +3871,19 @@ ${rssItems}
         const src = served.find((m: any) => m.model === r.model);
         return { ...r, liveSources: src?.liveSources ?? null, liveDate: src?.liveDate ?? null };
       });
-      res.json({ ...metrics, rows, unit: root.unit ?? null, methodology: root.methodology ?? null, lastRefreshed: root.lastRefreshed ?? null });
+      const historyHealth = summarizeGpuHistory(readGpuHistory());
+      res.json({
+        ...metrics,
+        rows,
+        unit: root.unit ?? null,
+        methodology: root.methodology ?? null,
+        lastRefreshed: root.lastRefreshed ?? null,
+        health: {
+          ...historyHealth,
+          lastSweep: lastGpuSweep,
+          curatedLastRefreshed: root.lastRefreshed ?? null,
+        },
+      });
     } catch (err) {
       console.error("GPU metrics error:", err);
       res.status(500).json({ error: "Failed to compute GPU index" });
