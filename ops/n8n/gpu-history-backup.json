@@ -1,0 +1,201 @@
+{
+  "name": "GridTilt GPU History Backup",
+  "nodes": [
+    {
+      "id": "history-notes",
+      "name": "Setup notes",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-420, -160],
+      "parameters": {
+        "width": 500,
+        "height": 420,
+        "content": "## GridTilt GPU History Backup\n\nCopies the raw live snapshot array from production into server/data/gpu-price-history.json on main every Sunday at 04:30 America/New_York.\n\n### One-time setup\n1. Create HTTP Header Auth credential `GridTilt Admin Key`:\n   - Name: `x-admin-key`\n   - Value: the production `ADMIN_API_KEY`\n2. Map the existing `GitHub PAT` credential on both GitHub nodes.\n3. Set the ntfy topic if needed.\n4. Run `Manual trigger` once, inspect the commit, then activate.\n\nThe validation node aborts before GitHub if the response is not a well-formed snapshot array. Importing this workflow does not activate it and does not repair the separate daily recorder ping."
+      }
+    },
+    {
+      "id": "history-weekly",
+      "name": "Weekly trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [160, -40],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "weeksBetweenTriggers": 1,
+              "triggerAtDay": [0],
+              "triggerAtHour": 4,
+              "triggerAtMinute": 30
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "history-manual",
+      "name": "Manual trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [160, 120],
+      "parameters": {}
+    },
+    {
+      "id": "history-fetch",
+      "name": "Fetch raw GPU history",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [400, 20],
+      "parameters": {
+        "method": "GET",
+        "url": "https://gridtilt.com/api/admin/gpu-history",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_GRIDTILT_ADMIN",
+          "name": "GridTilt Admin Key (x-admin-key)"
+        }
+      }
+    },
+    {
+      "id": "history-validate",
+      "name": "Validate + serialize",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [640, 20],
+      "parameters": {
+        "jsCode": "const rawItems = $input.all().map((item) => item.json);\nconst history = rawItems.length === 1 && Array.isArray(rawItems[0]) ? rawItems[0] : rawItems;\nif (!Array.isArray(history) || history.length === 0) {\n  throw new Error(\"GPU history response must be a non-empty array\");\n}\nconst seenDates = new Set();\nfor (const row of history) {\n  if (!row || typeof row !== \"object\") throw new Error(\"Snapshot must be an object\");\n  if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(row.date)) throw new Error(\"Invalid snapshot date: \" + row.date);\n  if (seenDates.has(row.date)) throw new Error(\"Duplicate snapshot date: \" + row.date);\n  seenDates.add(row.date);\n  if (!row.prices || typeof row.prices !== \"object\" || Array.isArray(row.prices)) {\n    throw new Error(\"Invalid prices map on \" + row.date);\n  }\n  const prices = Object.entries(row.prices);\n  if (prices.length === 0) throw new Error(\"Empty prices map on \" + row.date);\n  for (const [model, price] of prices) {\n    if (typeof price !== \"number\" || !Number.isFinite(price) || price <= 0) {\n      throw new Error(\"Invalid price for \" + model + \" on \" + row.date);\n    }\n  }\n  if (row.source !== undefined && row.source !== \"live\" && row.source !== \"curated\") {\n    throw new Error(\"Invalid source on \" + row.date);\n  }\n  if (row.meta !== undefined) {\n    if (!row.meta || typeof row.meta !== \"object\" || Array.isArray(row.meta)) {\n      throw new Error(\"Invalid metadata map on \" + row.date);\n    }\n    for (const [model, meta] of Object.entries(row.meta)) {\n      if (!(model in row.prices)) throw new Error(\"Metadata without price for \" + model + \" on \" + row.date);\n      if (!meta || typeof meta !== \"object\") throw new Error(\"Invalid metadata for \" + model);\n      if (typeof meta.low !== \"number\" || typeof meta.high !== \"number\" || meta.low <= 0 || meta.high < meta.low) {\n        throw new Error(\"Invalid spread for \" + model + \" on \" + row.date);\n      }\n      if (!Array.isArray(meta.sources) || meta.sources.length === 0 || !meta.sources.every((source) => typeof source === \"string\" && source.length > 0)) {\n        throw new Error(\"Invalid sources for \" + model + \" on \" + row.date);\n      }\n      if (!Number.isInteger(meta.n) || meta.n < 1) throw new Error(\"Invalid sample count for \" + model + \" on \" + row.date);\n    }\n  }\n}\nconst fileContent = JSON.stringify(history, null, 2) + \"\\n\";\nreturn [{ json: { fileContent, snapshotCount: history.length, lastDate: history.map((row) => row.date).sort().at(-1) } }];"
+      }
+    },
+    {
+      "id": "history-gh-get",
+      "name": "GitHub get history file",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [880, 20],
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.github.com/repos/aurph/GridTilt/contents/server/data/gpu-price-history.json?ref=main",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Accept", "value": "application/vnd.github+json" },
+            { "name": "X-GitHub-Api-Version", "value": "2022-11-28" },
+            { "name": "User-Agent", "value": "gridtilt-n8n" }
+          ]
+        },
+        "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_GITHUB",
+          "name": "GitHub PAT (Authorization Bearer)"
+        }
+      }
+    },
+    {
+      "id": "history-build-commit",
+      "name": "Build history commit",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 20],
+      "parameters": {
+        "jsCode": "const validated = $(\"Validate + serialize\").first().json;\nconst today = new Date().toISOString().slice(0, 10);\nconst commitBody = {\n  message: \"GPU Prices: back up live history (\" + today + \")\",\n  content: Buffer.from(validated.fileContent, \"utf-8\").toString(\"base64\"),\n  sha: $json.sha,\n  branch: \"main\"\n};\nreturn [{ json: { commitBody, snapshotCount: validated.snapshotCount, lastDate: validated.lastDate } }];"
+      }
+    },
+    {
+      "id": "history-gh-put",
+      "name": "Commit history to main",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1360, 20],
+      "parameters": {
+        "method": "PUT",
+        "url": "https://api.github.com/repos/aurph/GridTilt/contents/server/data/gpu-price-history.json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Accept", "value": "application/vnd.github+json" },
+            { "name": "X-GitHub-Api-Version", "value": "2022-11-28" },
+            { "name": "User-Agent", "value": "gridtilt-n8n" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.commitBody) }}",
+        "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_GITHUB",
+          "name": "GitHub PAT (Authorization Bearer)"
+        }
+      }
+    },
+    {
+      "id": "history-notify",
+      "name": "Notify history backup",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1600, 20],
+      "parameters": {
+        "method": "POST",
+        "url": "https://ntfy.sh/gridtilt-gpu-refresh",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Title", "value": "GridTilt GPU history backed up" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "text/plain",
+        "body": "={{ $('Build history commit').first().json.snapshotCount + ' snapshots through ' + $('Build history commit').first().json.lastDate + ' committed to main.' }}",
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Weekly trigger": {
+      "main": [[{ "node": "Fetch raw GPU history", "type": "main", "index": 0 }]]
+    },
+    "Manual trigger": {
+      "main": [[{ "node": "Fetch raw GPU history", "type": "main", "index": 0 }]]
+    },
+    "Fetch raw GPU history": {
+      "main": [[{ "node": "Validate + serialize", "type": "main", "index": 0 }]]
+    },
+    "Validate + serialize": {
+      "main": [[{ "node": "GitHub get history file", "type": "main", "index": 0 }]]
+    },
+    "GitHub get history file": {
+      "main": [[{ "node": "Build history commit", "type": "main", "index": 0 }]]
+    },
+    "Build history commit": {
+      "main": [[{ "node": "Commit history to main", "type": "main", "index": 0 }]]
+    },
+    "Commit history to main": {
+      "main": [[{ "node": "Notify history backup", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/New_York"
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "gridtilt-gpu-history"
+  },
+  "tags": []
+}
