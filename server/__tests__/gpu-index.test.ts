@@ -38,6 +38,46 @@ test("recorded daily points feed the short windows and the chart series", () => 
   assert.ok(m.rows[0].series.some((p) => p.date === "2026-06-08"));
 });
 
+test("recorded same-date points win deduplication and retain observed dispersion", () => {
+  const models: GpuPriceLite[] = [
+    {
+      model: "H100",
+      vendor: "NVIDIA",
+      currentUsdPerHr: 2.7,
+      low: 1,
+      high: 5,
+      historyAnchors: [
+        { date: "2026-06", price: 3.1 },
+        { date: "2026-07-13", price: 99 },
+      ],
+      estimated: [],
+    },
+  ];
+  const recorded = {
+    H100: [{
+      date: "2026-07-13",
+      price: 2.7,
+      low: 2.1,
+      high: 2.9,
+      sources: ["runpod-secure", "vast"],
+      n: 2,
+    }],
+  };
+
+  const row = computeGpuIndex(models, "2026-07-13", recorded).rows[0];
+  assert.deepEqual(row.series, [
+    { date: "2026-06", price: 3.1 },
+    {
+      date: "2026-07-13",
+      price: 2.7,
+      low: 2.1,
+      high: 2.9,
+      sources: ["runpod-secure", "vast"],
+      n: 2,
+    },
+  ]);
+});
+
 test("rows sort by current price desc and fleetAvg is the mean current", () => {
   const models: GpuPriceLite[] = [
     { model: "A", vendor: "NVIDIA", currentUsdPerHr: 1.0, low: 1, high: 1, historyAnchors: [], estimated: [] },

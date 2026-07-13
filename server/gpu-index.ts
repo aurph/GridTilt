@@ -14,6 +14,11 @@
 export interface GpuHistoryAnchor {
   date: string; // "YYYY-MM" (treated as mid-month) or "YYYY-MM-DD"
   price: number;
+  /** Observed marketplace spread and provenance. Present on live days only. */
+  low?: number;
+  high?: number;
+  sources?: string[];
+  n?: number;
 }
 
 export interface GpuPriceLite {
@@ -106,11 +111,10 @@ export function computeGpuIndex(
 
   const rows: GpuRow[] = models.map((g) => {
     // Merge anchors + recorded points, dedupe by date (recorded wins), sort old->new.
-    const byDate = new Map<string, number>();
-    for (const a of g.historyAnchors ?? []) byDate.set(a.date, a.price);
-    for (const r of recorded?.[g.model] ?? []) byDate.set(r.date, r.price);
-    const series = Array.from(byDate.entries())
-      .map(([date, price]) => ({ date, price }))
+    const byDate = new Map<string, GpuHistoryAnchor>();
+    for (const a of g.historyAnchors ?? []) byDate.set(a.date, { ...a });
+    for (const r of recorded?.[g.model] ?? []) byDate.set(r.date, { ...r });
+    const series = Array.from(byDate.values())
       .sort((a, b) => toMs(a.date) - toMs(b.date));
     const pts = series.map((p) => ({ ms: toMs(p.date), price: p.price }));
 
