@@ -107,13 +107,13 @@ describe("fetchLivePrices (full sweep against fixtures)", () => {
     "H100 SXM": { offers: [{ dph_total: 1.74 }, { dph_total: 1.93 }, { dph_total: 2.0 }] },
   };
   const fakeFetch: FetchLike = async (url) => {
-    if (url.includes("runpod")) return { ok: true, json: async () => runpodBody };
+    if (url.includes("runpod")) return { ok: true, status: 200, json: async () => runpodBody };
     const q = JSON.parse(decodeURIComponent(url.split("?q=")[1]));
-    return { ok: true, json: async () => vastByName[q.gpu_name.eq] ?? { offers: [] } };
+    return { ok: true, status: 200, json: async () => vastByName[q.gpu_name.eq] ?? { offers: [] } };
   };
 
   it("blends per model across providers; models with no source record nothing", async () => {
-    const live = await fetchLivePrices(
+    const result = await fetchLivePrices(
       [
         { model: "H100", currentUsdPerHr: 2.79 },
         { model: "B200", currentUsdPerHr: 6.11 },
@@ -121,35 +121,118 @@ describe("fetchLivePrices (full sweep against fixtures)", () => {
       ],
       fakeFetch,
     );
+    const live = result.prices;
     assert.deepEqual(Object.keys(live).sort(), ["B200", "H100"]);
     assert.equal(live.H100.price, 2.69); // median of 3.29, 2.69, 1.93
     assert.equal(live.H100.n, 3);
     assert.equal(live.B200.n, 2);
     assert.equal("MI355X" in live, false);
+    assert.match(result.summary.date, /^\d{4}-\d{2}-\d{2}$/);
+    assert.equal(result.summary.ok, true);
+    assert.equal(result.summary.usableModels, 2);
+    assert.deepEqual(result.summary.perProvider.runpod, {
+      requests: 1,
+      succeeded: 1,
+      failed: 0,
+      observations: 4,
+    });
+    assert.deepEqual(result.summary.perProvider.vast, {
+      requests: 2,
+      succeeded: 2,
+      failed: 0,
+      observations: 1,
+    });
   });
 
-  it("provider failure degrades to the surviving sources, never throws", async () => {
+  it("provider failure is counted and degrades to the surviving sources", async () => {
     const failingFetch: FetchLike = async (url) => {
       if (url.includes("runpod")) throw new Error("network down");
       const q = JSON.parse(decodeURIComponent(url.split("?q=")[1]));
-      return { ok: true, json: async () => vastByName[q.gpu_name.eq] ?? { offers: [] } };
+      return { ok: true, status: 200, json: async () => vastByName[q.gpu_name.eq] ?? { offers: [] } };
     };
-    const live = await fetchLivePrices([{ model: "H100", currentUsdPerHr: 2.79 }], failingFetch);
-    assert.equal(live.H100.price, 1.93); // vast only
-    assert.deepEqual(live.H100.sources, ["vast"]);
+    const errors: unknown[][] = [];
+    const originalError = console.error;
+    console.error = (...args: unknown[]) => errors.push(args);
+    try {
+      const result = await fetchLivePrices([{ model: "H100", currentUsdPerHr: 2.79 }], failingFetch);
+      assert.equal(result.prices.H100.price, 1.93); // vast only
+      assert.deepEqual(result.prices.H100.sources, ["vast"]);
+      assert.equal(result.summary.ok, false);
+      assert.deepEqual(result.summary.perProvider.runpod, {
+        requests: 1,
+        succeeded: 0,
+        failed: 1,
+        observations: 0,
+      });
+      assert.deepEqual(result.summary.perProvider.vast, {
+        requests: 1,
+        succeeded: 1,
+        failed: 0,
+        observations: 1,
+      });
+      assert.match(String(errors[0]?.[0]), /gpu-live: runpod request failed: network down/);
+    } finally {
+      console.error = originalError;
+    }
   });
 
   it("total failure yields an empty result (nothing recorded, nothing invented)", async () => {
     const deadFetch: FetchLike = async () => {
       throw new Error("offline");
     };
-    const live = await fetchLivePrices([{ model: "H100", currentUsdPerHr: 2.79 }], deadFetch);
-    assert.deepEqual(live, {});
+    const errors: unknown[][] = [];
+    const originalError = console.error;
+    console.error = (...args: unknown[]) => errors.push(args);
+    try {
+      const result = await fetchLivePrices([{ model: "H100", currentUsdPerHr: 2.79 }], deadFetch);
+      assert.deepEqual(result.prices, {});
+      assert.equal(result.summary.ok, false);
+      assert.equal(result.summary.usableModels, 0);
+      assert.equal(result.summary.perProvider.runpod.failed, 1);
+      assert.equal(result.summary.perProvider.vast.failed, 1);
+      assert.equal(errors.length, 2);
+    } finally {
+      console.error = originalError;
+    }
   });
 
-  it("non-ok responses are treated as empty, not parsed", async () => {
-    const badFetch: FetchLike = async () => ({ ok: false, json: async () => ({ oops: true }) });
-    const live = await fetchLivePrices([{ model: "H100", currentUsdPerHr: 2.79 }], badFetch);
-    assert.deepEqual(live, {});
+  it("non-ok responses log provider and upstream status without parsing", async () => {
+    let parsed = 0;
+    const badFetch: FetchLike = async () => ({
+      ok: false,
+      status: 503,
+      json: async () => {
+        parsed++;
+        return { oops: true };
+      },
+    });
+    const errors: unknown[][] = [];
+    const originalError = console.error;
+    console.error = (...args: unknown[]) => errors.push(args);
+    try {
+      const result = await fetchLivePrices([{ model: "H100", currentUsdPerHr: 2.79 }], badFetch);
+      assert.deepEqual(result.prices, {});
+      assert.equal(result.summary.ok, false);
+      assert.equal(parsed, 0);
+      assert.equal(errors.length, 2);
+      assert.match(String(errors[0]?.[0]), /gpu-live: runpod request failed: status 503/);
+      assert.match(String(errors[1]?.[0]), /gpu-live: vast request failed.*status 503/);
+    } finally {
+      console.error = originalError;
+    }
+  });
+
+  it("successful empty responses are healthy but record no prices", async () => {
+    const emptyFetch: FetchLike = async (url) => ({
+      ok: true,
+      status: 200,
+      json: async () => (url.includes("runpod") ? { data: { gpuTypes: [] } } : { offers: [] }),
+    });
+    const result = await fetchLivePrices([{ model: "H100", currentUsdPerHr: 2.79 }], emptyFetch);
+    assert.deepEqual(result.prices, {});
+    assert.equal(result.summary.ok, true);
+    assert.equal(result.summary.usableModels, 0);
+    assert.equal(result.summary.perProvider.runpod.succeeded, 1);
+    assert.equal(result.summary.perProvider.vast.succeeded, 1);
   });
 });

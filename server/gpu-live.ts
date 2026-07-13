@@ -146,7 +146,36 @@ export function blendLivePrice(
 
 // ─── I/O (thin, injected for tests) ─────────────────────────────────────────
 
-export type FetchLike = (url: string, init?: { method?: string; headers?: Record<string, string>; body?: string; signal?: AbortSignal }) => Promise<{ ok: boolean; json(): Promise<unknown> }>;
+export type FetchLike = (url: string, init?: { method?: string; headers?: Record<string, string>; body?: string; signal?: AbortSignal }) => Promise<{ ok: boolean; status?: number; json(): Promise<unknown> }>;
+
+export interface ProviderRequestResult<T> {
+  ok: boolean;
+  items: T[];
+  status: number | null;
+  error: string | null;
+}
+
+export interface ProviderCounts {
+  requests: number;
+  succeeded: number;
+  failed: number;
+  observations: number;
+}
+
+export interface GpuSweepSummary {
+  date: string;
+  ok: boolean;
+  perProvider: {
+    runpod: ProviderCounts;
+    vast: ProviderCounts;
+  };
+  usableModels: number;
+}
+
+export interface LiveSweepResult {
+  prices: Record<string, LiveModelPrice>;
+  summary: GpuSweepSummary;
+}
 
 const TIMEOUT_MS = 8_000;
 
@@ -156,7 +185,15 @@ function withTimeout(): { signal: AbortSignal; done: () => void } {
   return { signal: c.signal, done: () => clearTimeout(t) };
 }
 
-export async function fetchRunpodTypes(fetchFn: FetchLike = fetch): Promise<RunpodGpuType[]> {
+function errorText(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
+function easternDateStr(d: Date = new Date()): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(d);
+}
+
+export async function fetchRunpodTypes(fetchFn: FetchLike = fetch): Promise<ProviderRequestResult<RunpodGpuType>> {
   const t = withTimeout();
   try {
     const res = await fetchFn("https://api.runpod.io/graphql", {
@@ -165,17 +202,23 @@ export async function fetchRunpodTypes(fetchFn: FetchLike = fetch): Promise<Runp
       body: JSON.stringify({ query: "query { gpuTypes { id securePrice communityPrice } }" }),
       signal: t.signal,
     });
-    if (!res.ok) return [];
+    if (!res.ok) {
+      const status = res.status ?? null;
+      console.error(`gpu-live: runpod request failed: status ${status ?? "unknown"}`);
+      return { ok: false, items: [], status, error: `status ${status ?? "unknown"}` };
+    }
     const body = (await res.json()) as { data?: { gpuTypes?: RunpodGpuType[] } };
-    return body?.data?.gpuTypes ?? [];
-  } catch {
-    return [];
+    return { ok: true, items: body?.data?.gpuTypes ?? [], status: res.status ?? null, error: null };
+  } catch (error) {
+    const message = errorText(error);
+    console.error(`gpu-live: runpod request failed: ${message}`);
+    return { ok: false, items: [], status: null, error: message };
   } finally {
     t.done();
   }
 }
 
-export async function fetchVastOffers(gpuName: string, fetchFn: FetchLike = fetch): Promise<VastOffer[]> {
+export async function fetchVastOffers(gpuName: string, fetchFn: FetchLike = fetch): Promise<ProviderRequestResult<VastOffer>> {
   const q = {
     gpu_name: { eq: gpuName },
     num_gpus: { eq: 1 },
@@ -191,11 +234,17 @@ export async function fetchVastOffers(gpuName: string, fetchFn: FetchLike = fetc
       `https://console.vast.ai/api/v0/bundles/?q=${encodeURIComponent(JSON.stringify(q))}`,
       { signal: t.signal },
     );
-    if (!res.ok) return [];
+    if (!res.ok) {
+      const status = res.status ?? null;
+      console.error(`gpu-live: vast request failed for ${gpuName}: status ${status ?? "unknown"}`);
+      return { ok: false, items: [], status, error: `status ${status ?? "unknown"}` };
+    }
     const body = (await res.json()) as { offers?: VastOffer[] };
-    return body?.offers ?? [];
-  } catch {
-    return [];
+    return { ok: true, items: body?.offers ?? [], status: res.status ?? null, error: null };
+  } catch (error) {
+    const message = errorText(error);
+    console.error(`gpu-live: vast request failed for ${gpuName}: ${message}`);
+    return { ok: false, items: [], status: null, error: message };
   } finally {
     t.done();
   }
@@ -208,29 +257,57 @@ export async function fetchVastOffers(gpuName: string, fetchFn: FetchLike = fetc
 export async function fetchLivePrices(
   curated: Array<{ model: string; currentUsdPerHr: number }>,
   fetchFn: FetchLike = fetch,
-): Promise<Record<string, LiveModelPrice>> {
+): Promise<LiveSweepResult> {
   const curatedByModel = new Map(curated.map((c) => [c.model, c.currentUsdPerHr]));
   const models = curated.map((c) => c.model);
 
-  const runpodTypes = await fetchRunpodTypes(fetchFn);
+  const runpodResult = await fetchRunpodTypes(fetchFn);
   const vastResults = await Promise.all(
     models.map(async (m) => {
       const name = VAST_GPU_NAMES[m];
-      if (!name) return [m, [] as VastOffer[]] as const;
+      if (!name) return null;
       return [m, await fetchVastOffers(name, fetchFn)] as const;
     }),
   );
-  const vastByModel = new Map(vastResults);
+  const attemptedVast = vastResults.filter((result): result is NonNullable<typeof result> => result !== null);
+
+  const runpodObservations = new Map(
+    models.map((model) => [model, parseRunpod(runpodResult.items, RUNPOD_MODEL_IDS[model] ?? [])]),
+  );
+  const vastObservations = new Map(
+    attemptedVast.map(([model, result]) => [model, parseVast(result.items)]),
+  );
 
   const out: Record<string, LiveModelPrice> = {};
   for (const m of models) {
     const obs: LiveObservation[] = [
-      ...parseRunpod(runpodTypes, RUNPOD_MODEL_IDS[m] ?? []),
-      ...parseVast(vastByModel.get(m) ?? []),
+      ...(runpodObservations.get(m) ?? []),
+      ...(vastObservations.get(m) ?? []),
     ];
     const { blended, dropped } = blendLivePrice(obs, curatedByModel.get(m) ?? null);
     if (dropped > 0) console.warn(`gpu-live: dropped ${dropped} outlier observation(s) for ${m}`);
     if (blended) out[m] = blended;
   }
-  return out;
+
+  const runpodCounts: ProviderCounts = {
+    requests: 1,
+    succeeded: runpodResult.ok ? 1 : 0,
+    failed: runpodResult.ok ? 0 : 1,
+    observations: Array.from(runpodObservations.values()).reduce((sum, obs) => sum + obs.length, 0),
+  };
+  const vastCounts: ProviderCounts = {
+    requests: attemptedVast.length,
+    succeeded: attemptedVast.filter(([, result]) => result.ok).length,
+    failed: attemptedVast.filter(([, result]) => !result.ok).length,
+    observations: Array.from(vastObservations.values()).reduce((sum, obs) => sum + obs.length, 0),
+  };
+  return {
+    prices: out,
+    summary: {
+      date: easternDateStr(),
+      ok: runpodCounts.failed + vastCounts.failed === 0,
+      perProvider: { runpod: runpodCounts, vast: vastCounts },
+      usableModels: Object.keys(out).length,
+    },
+  };
 }

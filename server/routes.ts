@@ -3824,9 +3824,9 @@ ${rssItems}
       if (!hasTodayLiveSnapshot() && !gpuLiveSweepInFlight) {
         gpuLiveSweepInFlight = true;
         fetchLivePrices(models.map((m: any) => ({ model: m.model, currentUsdPerHr: m.currentUsdPerHr })))
-          .then((live) => {
-            recordDailyLivePrices(live);
-            const n = Object.keys(live).length;
+          .then(({ prices }) => {
+            recordDailyLivePrices(prices);
+            const n = Object.keys(prices).length;
             if (n > 0) console.log(`gpu-live: recorded ${n} live model prices`);
           })
           .catch((e) => console.error("gpu-live sweep failed:", e))
