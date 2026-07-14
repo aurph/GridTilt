@@ -315,7 +315,7 @@ export default function TheTrade({ embedded = false }: { embedded?: boolean; par
       {presetSelector}
     </div>
   ) : (
-    <div className="grid-bg border-b border-border px-6 py-5">
+    <div className="border-b border-border px-6 py-5">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-2xl font-bold text-foreground tracking-tight">Scenario Calculator</h1>

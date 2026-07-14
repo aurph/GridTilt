@@ -83,7 +83,7 @@ export function AppSidebar() {
           <img
             src={logoPath}
             alt="GridTilt logo"
-            className="h-16 w-16 rounded-md object-contain logo-entrance"
+            className="h-16 w-16 rounded-md object-contain"
           />
           <div>
             <div className="font-bold text-base tracking-tight text-foreground" style={{ fontFamily: FONT.mono }}>

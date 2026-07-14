@@ -185,7 +185,8 @@ export default function BlogPost() {
             <div className="flex items-center gap-3 flex-wrap mb-4">
               <div className="flex items-center gap-1 text-xs text-muted-foreground">
                 <Calendar className="h-3 w-3" />
-                {new Date(article.date).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+                {/* noon anchor: bare YYYY-MM-DD parses as UTC midnight and shifts a day back in US time zones */}
+                {new Date(`${article.date}T12:00:00`).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
               </div>
               {article.keywords.map((kw) => (
                 <Badge key={kw} className="text-10 bg-muted/40 text-muted-foreground">{kw}</Badge>

@@ -55,5 +55,24 @@
     "sourceName": "DCD",
     "discoveredAt": "2026-07-03T16:21:00.274Z",
     "approxCoords": true
+  },
+  {
+    "id": 62,
+    "name": "Google Cheyenne (Google is customer behind 27GW data cen)",
+    "company": "Google",
+    "city": "Cheyenne",
+    "state": "WY",
+    "lat": 41.14,
+    "lng": -104.82,
+    "powerMW": 2700,
+    "status": "announced",
+    "annualMWh": 20104200,
+    "gridOperator": "Unknown",
+    "openDate": "TBD",
+    "sourceUrl": "https://www.datacenterdynamics.com/en/news/google-is-customer-behind-27gw-data-center-campus-near-cheyenne-wyoming/",
+    "sourceTitle": "Google is customer behind 2.7GW data center campus near Cheyenne, Wyoming",
+    "sourceName": "DCD",
+    "discoveredAt": "2026-07-14T16:03:45.586Z",
+    "approxCoords": false
   }
 ]

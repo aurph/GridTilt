@@ -2,11 +2,12 @@ import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, Link } from "wouter";
 import {
-  CalendarDays, ChevronLeft, ChevronRight, Clock,
+  ChevronLeft, ChevronRight, Clock,
   TrendingUp, ArrowRight, Eye, EyeOff, AlertTriangle, RotateCw,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AsOf } from "@/components/Freshness";
+import { PageHeader, HeaderStat } from "@/components/PageHeader";
 import {
   catalystCategoryColors,
   STAGE_COLORS,
@@ -69,8 +70,15 @@ function formatDateFull(dateStr: string): string {
   });
 }
 
-function getStageColor(ticker: string): string {
-  const stage = SUPPLY_CHAIN_STAGE_MAP[ticker];
+/**
+ * Stage color from the CLIENT token palette, by stage name first, ticker map
+ * second. The server payload still carries a legacy stageColor hex (the old
+ * all-orange family) - it is deliberately ignored so the token palette is
+ * the single source of truth.
+ */
+function stageColorOf(e: { stage?: string; ticker: string }): string {
+  if (e.stage && STAGE_COLORS[e.stage]) return STAGE_COLORS[e.stage];
+  const stage = SUPPLY_CHAIN_STAGE_MAP[e.ticker];
   return stage ? (STAGE_COLORS[stage] || INK.muted) : INK.muted;
 }
 
@@ -165,7 +173,7 @@ function CalendarGrid({
                 {dayItems.map((item, j) => {
                   let color: string = INK.muted;
                   if (item.type === "earnings") {
-                    color = (item as EarningsItem).stageColor || getStageColor((item as EarningsItem).ticker);
+                    color = stageColorOf(item as EarningsItem);
                   } else {
                     color = catalystCategoryColors[(item as CatalystItem).category] || INK.muted;
                   }
@@ -213,7 +221,7 @@ function DayDetailCard({ item }: { item: MergedItem }) {
     return (
       <div
         className="rounded-lg p-4"
-        style={{ background: SURFACE.raised, border: `1px solid ${e.stageColor}25` }}
+        style={{ background: SURFACE.raised, border: `1px solid ${stageColorOf(e)}25` }}
         data-testid={`detail-${e.ticker}`}
       >
         <div className="flex items-center justify-between mb-1">
@@ -231,7 +239,7 @@ function DayDetailCard({ item }: { item: MergedItem }) {
         <div className="flex items-center gap-2 text-xs" style={{ color: INK.muted }}>
           <span
             className="px-1.5 py-0.5 rounded text-10 font-medium"
-            style={{ background: `${e.stageColor}18`, color: e.stageColor }}
+            style={{ background: `${stageColorOf(e)}18`, color: stageColorOf(e) }}
           >
             {e.stage}
           </span>
@@ -239,7 +247,7 @@ function DayDetailCard({ item }: { item: MergedItem }) {
         </div>
         <button
           className="flex items-center gap-1 mt-2 text-xs transition-colors"
-          style={{ color: e.stageColor }}
+          style={{ color: stageColorOf(e) }}
           onClick={() => navigate(`/stock/${e.ticker}`)}
           data-testid={`view-${e.ticker}`}
         >
@@ -304,7 +312,7 @@ function UpcomingTimeline({ items }: { items: MergedItem[] }) {
 
           if (item.type === "earnings") {
             const e = item as EarningsItem;
-            const dotColor = e.stageColor || getStageColor(e.ticker);
+            const dotColor = stageColorOf(e);
             return (
               <div key={item.id} className="relative flex items-start gap-3 pb-4" data-testid={`timeline-${e.ticker}`}>
                 <div
@@ -448,9 +456,9 @@ function ThesisCatalysts({ catalysts }: { catalysts: CatalystItem[] }) {
                     key={t}
                     className="text-11 font-bold font-mono px-2 py-0.5 rounded cursor-pointer transition-colors hover:opacity-80"
                     style={{
-                      color: getStageColor(t),
-                      background: `${getStageColor(t)}14`,
-                      border: `1px solid ${getStageColor(t)}30`,
+                      color: stageColorOf({ ticker: t }),
+                      background: `${stageColorOf({ ticker: t })}14`,
+                      border: `1px solid ${stageColorOf({ ticker: t })}30`,
                     }}
                     onClick={() => navigate(`/stock/${t}`)}
                     data-testid={`catalyst-ticker-${t}`}
@@ -487,27 +495,21 @@ export default function CatalystTracker() {
   const catalysts = items.filter((i): i is CatalystItem => i.type === "catalyst");
 
   return (
-    <div className="h-full overflow-y-auto" data-testid="catalyst-tracker-page">
-      <div
-        className="flex items-center gap-2 px-4 md:px-8 flex-wrap sticky top-0 z-10"
-        style={{ height: 48, background: SURFACE.raised, borderBottom: `1px solid ${BORDER.subtle}` }}
-      >
-        <CalendarDays style={{ width: 16, height: 16, color: BRAND.primary }} />
-        <span className="text-base font-bold text-white">Catalyst Tracker</span>
-        {data && (
-          <>
-            <span className="text-13" style={{ color: INK.faint }}>·</span>
-            <span className="text-13" style={{ color: INK.muted }}>
-              {earnings.length} earnings
-            </span>
-            <span className="text-13" style={{ color: INK.faint }}>·</span>
-            <span className="text-13" style={{ color: INK.muted }}>
-              {catalysts.length} thesis catalysts
-            </span>
-            <AsOf updatedAt={dataUpdatedAt} intervalMs={15 * 60 * 1000} className="ml-auto" />
-          </>
-        )}
-      </div>
+    <div className="flex flex-col h-full overflow-y-auto" data-testid="catalyst-tracker-page">
+      <PageHeader
+        title="Catalyst Tracker"
+        testId="catalyst-header"
+        about="Earnings dates for tracked equities plus dated thesis catalysts (regulatory, policy, infrastructure, market, industry) on one calendar and timeline."
+        stats={
+          data ? (
+            <>
+              <HeaderStat label="Earnings" value={String(earnings.length)} valueClass="text-foreground" />
+              <HeaderStat label="Catalysts" value={String(catalysts.length)} valueClass="text-foreground" />
+            </>
+          ) : undefined
+        }
+        right={<AsOf updatedAt={dataUpdatedAt} intervalMs={15 * 60 * 1000} />}
+      />
 
       <div className="px-4 md:px-8 py-6 max-w-[1200px] mx-auto space-y-10">
         {isLoading ? (

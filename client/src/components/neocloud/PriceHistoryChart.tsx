@@ -99,7 +99,7 @@ export default function PriceHistoryChart(props: PriceHistoryChartProps) {
         <span>No price points in this window.</span>
         <span className="text-10 text-muted-foreground/60">
           {series.length === 0
-            ? "No GPUs selected - hit All to reset."
+            ? "No GPUs selected. Select All to reset."
             : "Sourced anchors are sparse; the daily recorder widens coverage from here forward. Try 1Y or ALL."}
         </span>
       </div>

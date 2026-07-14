@@ -4,7 +4,8 @@ import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Cpu, Atom, ExternalLink } from "lucide-react";
+import { ArrowLeft, Atom, ExternalLink } from "lucide-react";
+import { PageHeader } from "@/components/PageHeader";
 import { STATUS_COLORS } from "@/lib/tokens";
 
 interface Cluster {
@@ -53,32 +54,26 @@ export default function ComputeFrontierDetail() {
 
   return (
     <div className="flex flex-col h-full overflow-y-auto">
-      <div className="grid-bg border-b border-border px-4 sm:px-6 py-5">
-        <Link href="/compute-frontier" className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground mb-3" data-testid="cfd-back">
-          <ArrowLeft className="h-3.5 w-3.5" /> Compute Frontier
-        </Link>
-        {isLoading ? (
-          <Skeleton className="h-8 w-80" />
-        ) : isError || !cluster ? (
-          <h1 className="text-xl font-semibold text-foreground">Cluster not found</h1>
-        ) : (
-          <div className="flex items-start gap-3">
-            <Cpu className="h-6 w-6 text-brand mt-0.5 flex-shrink-0" />
-            <div>
-              <h1 className="text-2xl font-semibold text-foreground tracking-tight">{cluster.name}</h1>
-              <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
-                <span>{cluster.operator}</span>
-                <span className="text-muted-foreground/30">·</span>
-                <Badge variant="outline" className="text-10 font-mono px-1.5 py-0" style={{ color: STATUS_COLOR[cluster.status], borderColor: `${STATUS_COLOR[cluster.status]}55` }}>
-                  {cluster.status}
-                </Badge>
-                <span className="text-muted-foreground/30">·</span>
-                <span>{cluster.location.city}, {cluster.location.state}</span>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
+      <PageHeader
+        title={cluster ? cluster.name : isLoading ? "Loading" : "Cluster not found"}
+        testId="cfd-header"
+        stats={
+          cluster ? (
+            <>
+              <Badge variant="outline" className="text-10 font-mono px-1.5 py-0" style={{ color: STATUS_COLOR[cluster.status], borderColor: `${STATUS_COLOR[cluster.status]}55` }}>
+                {cluster.status}
+              </Badge>
+              <span className="text-xs text-muted-foreground">{cluster.operator}</span>
+              <span className="text-xs text-muted-foreground">{cluster.location.city}, {cluster.location.state}</span>
+            </>
+          ) : undefined
+        }
+        right={
+          <Link href="/compute-frontier" className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground" data-testid="cfd-back">
+            <ArrowLeft className="h-3.5 w-3.5" /> Compute Frontier
+          </Link>
+        }
+      />
 
       <div className="flex-1 p-4 sm:p-6 space-y-4 max-w-4xl">
         {isError || (!isLoading && !cluster) ? (

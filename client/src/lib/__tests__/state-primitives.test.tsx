@@ -26,9 +26,10 @@ describe("state primitive snapshots", () => {
     t.mock.timers.enable({ apis: ["Date"], now: 1_000_000_000 });
     snap(t, renderToStaticMarkup(<AsOf updatedAt={1_000_000_000 - 120_000} intervalMs={900_000} />));
   });
-  it("AsOf stale", (t) => {
+  it("AsOf stays quiet on old data (age is context, not an alarm)", (t) => {
     t.mock.timers.enable({ apis: ["Date"], now: 1_000_000_000 });
-    snap(t, renderToStaticMarkup(<AsOf updatedAt={1_000_000_000 - 3 * 900_000} intervalMs={900_000} />));
+    const html = renderToStaticMarkup(<AsOf updatedAt={1_000_000_000 - 3 * 900_000} intervalMs={900_000} />);
+    snap(t, html);
   });
   it("AsOf hidden when no timestamp", (t) => {
     snap(t, renderToStaticMarkup(<AsOf updatedAt={undefined} />));

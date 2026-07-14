@@ -40,13 +40,13 @@ The G-chord list is maintained twice in App.tsx (display ~67-83, handler ~250-25
 - React 18.3.1, TypeScript 5.6.3 (exact pin), Vite ^7.3.0, wouter ^3.3.5. NOT Next.js.
 - Express ^5.0.1, one process: Vite middleware in dev, static from dist/public in prod. Port 5000.
 - @tanstack/react-query ^5.60.5 is the only client data layer. No redux/zustand/app context.
-- Tailwind ^3.4.17 via PostCSS + shadcn/ui (new-york). The 15 files in client/src/components/ui
+- Tailwind ^3.4.17 via PostCSS + shadcn/ui (new-york). The 12 files in client/src/components/ui
   are a house-modified fork (Replit elevate classes, custom tokens); do not regenerate from upstream.
 - Charts: recharts ^2.15.2 (9 pages), react-leaflet ^4.2.1 (Power Map, Compute Frontier),
   d3 ^7.9.0 (Supply Chain force graph only).
 - Server libs: yahoo-finance2 ^3.13.1, rss-parser, satori + @resvg/resvg-js (OG cards), zod,
   helmet, express-rate-limit.
-- Tests: Node's built-in runner. `npm test` = 10 suites in server/__tests__. Zero client tests.
+- Tests: Node's built-in runner. `npm test` = server/__tests__ + client/src/lib/__tests__ (217 tests). No component/DOM tests.
 - Scripts: `dev` (tsx), `build` (script/build.ts: vite client + esbuild server to dist/index.cjs),
   `start`, `check` (tsc), `test`, `backtest:indices`.
 - Persistence: JSON in server/data/ plus content/blog/articles.json. There is NO database,
@@ -143,11 +143,12 @@ server/data custody (the fragility map):
 
 Documented, not to fix casually or silently:
 
-- FAKE DATA STILL LIVE: /api/stack serves a Math.random CCJ/CEG correlation scatter, regenerated
-  each request (routes.ts ~426-466, ~1959-1985). The only fabricated data on the server;
-  contradicts the honest-data doctrine. Unmerged PR #2 removes it.
-- Unmerged security hardening: PR #1 branch fix/m0-m1-truth-security (now conflicts with main)
-  holds five verified low/medium closes; cherry-pick commit da97234 rather than rebasing.
+- Fake-data debt CLOSED on feat/live-gpu-prices (2026-07-04): the CCJ/CEG scatter now computes
+  from real SRUUF/CCJ/CEG weekly closes (server/uranium-correlation.ts, tested); fetch failure
+  serves empty + null r, never invented dots. PR #2's removal approach is obsolete.
+- Security closes from PR #1 (da97234) APPLIED on feat/live-gpu-prices (2026-07-04): SEC-1..5 +
+  auth-boundary tests. PR #1 itself is obsolete once that branch merges. Note: cron-job.org needs
+  a second job POSTing /api/admin/scan-news-now (x-admin-key) to restore automated news scans.
 - PR #2 (feat/real-metrics) proposes retiring the sentiment indices for a sourced scoreboard;
   main kept the indices (served at /api/kpis, out of the social rotation). Owner decision pending.
 - No CI (no .github/ at all). Tests and tsc run only when someone remembers.
@@ -158,17 +159,12 @@ Documented, not to fix casually or silently:
   darwin; the off-darwin conditional is stranded in unmerged PR #1.
 - routes.ts is a 3,913-line monolith (70 routes + OAuth client + OG renderer + 3 scanners +
   static data tables).
-- README drift: phantom Drizzle/Postgres/shared/storage.ts block, stale counts (says 60+ tickers
-  / 8 layers; truth 100 / 13; supply chain is 24 nodes / 52 links), missing the four 2026-06-29
-  modules. replit.md is a deep fossil from March and Replit's agent reads it. HANDOFF.md and
-  HOMEPAGE_HANDOFF.md are historical records, not current state.
-- Dead weight: date-fns and @tailwindcss/vite deps (imported nowhere), client/src/lib/dates.ts,
-  ui/dialog.tsx, ui/toggle.tsx, EmailCapture's unused marketing branch (~200 lines), .replit's
-  postgresql-16 and python-3.11 modules, package name "rest-express".
-- ETN is in the stack tickers but missing from STATIC_MARKET_DATA: it vanishes instead of going
-  stale when Yahoo fails.
-- supply-chain-stages.json bottleneck copy hardcodes stale prices (copper $10,200/ton; uranium
-  $80+ vs $92 in market-constants.json).
+- README + replit.md rewritten from code truth (2026-07-04, feat/live-gpu-prices). HANDOFF.md and
+  HOMEPAGE_HANDOFF.md remain historical records, not current state.
+- Dead weight (mostly cleared 2026-07-04): date-fns, @tailwindcss/vite, @radix-ui/react-toggle,
+  dates.ts, ui/dialog.tsx, ui/toggle.tsx removed; package renamed "gridtilt". Still open:
+  EmailCapture's unused marketing branch (~200 lines), .replit's postgresql-16 and python-3.11
+  modules.
 
 ## 7. Deploy (the gotcha that keeps biting)
 

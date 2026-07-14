@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Calendar, ArrowRight } from "lucide-react";
+import { PageHeader } from "@/components/PageHeader";
 import BriefPage from "@/pages/brief";
 
 interface BlogArticle {
@@ -20,21 +21,14 @@ export default function BlogIndex() {
   });
 
   return (
-    <div className="h-full overflow-y-auto">
-      <div className="max-w-3xl mx-auto p-6 space-y-6">
-        <nav className="flex items-center gap-2 text-xs text-muted-foreground" data-testid="breadcrumb">
-          <Link href="/" className="hover:text-foreground">GridTilt</Link>
-          <span>/</span>
-          <span className="text-foreground font-medium">Analysis</span>
-        </nav>
+    <div className="flex flex-col h-full overflow-y-auto">
+      <PageHeader
+        title="Analysis"
+        testId="blog-header"
+        about="Research and analysis on the AI power infrastructure thesis. Data-driven, no hype."
+      />
 
-        <div>
-          <h1 className="text-2xl font-bold mb-2" data-testid="blog-heading">Analysis</h1>
-          <p className="text-sm text-muted-foreground">
-            Research and analysis on the AI power infrastructure thesis. Data-driven, no hype.
-          </p>
-        </div>
-
+      <div className="max-w-3xl mx-auto w-full p-6 space-y-6">
         {/* Today's read: the daily brief, self-contained (own loading/error state),
             so it can never blank the post list below. */}
         <BriefPage embedded />
@@ -59,7 +53,7 @@ export default function BlogIndex() {
                       <div className="flex items-center gap-3 flex-wrap">
                         <div className="flex items-center gap-1 text-xs text-muted-foreground/70">
                           <Calendar className="h-3 w-3" />
-                          {new Date(article.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                          {new Date(`${article.date}T12:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                         </div>
                         {article.keywords.slice(0, 2).map((kw) => (
                           <Badge key={kw} className="text-10 bg-muted/40 text-muted-foreground">{kw}</Badge>

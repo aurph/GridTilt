@@ -128,7 +128,7 @@ export default function PowerDeals({ embedded = false }: { embedded?: boolean; p
       {asOfChip}
     </div>
   ) : (
-    <div className="grid-bg border-b border-border px-4 sm:px-6 py-6 sm:py-8" data-testid="deals-header">
+    <div className="border-b border-border px-4 sm:px-6 py-6 sm:py-8" data-testid="deals-header">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="max-w-3xl">
           <div className="flex items-center gap-2 mb-2">

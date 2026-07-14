@@ -25,6 +25,7 @@ import Subscribe from "@/pages/Subscribe";
 import AdminDatacenters from "@/pages/AdminDatacenters";
 import AdminSocial from "@/pages/AdminSocial";
 import { NewsTicker } from "@/components/NewsTicker";
+import { initAnalytics, trackPageview } from "@/lib/analytics";
 import { useLocation } from "wouter";
 import { useState, useEffect, lazy, Suspense } from "react";
 import { X, Keyboard } from "lucide-react";
@@ -210,6 +211,15 @@ function App() {
   const [gPressed, setGPressed] = useState(false);
 
   const isMarketing = MARKETING_ROUTES.includes(location);
+
+  // Privacy-respecting pageviews (GoatCounter); inert unless
+  // VITE_GOATCOUNTER_CODE is set at build time.
+  useEffect(() => {
+    initAnalytics();
+  }, []);
+  useEffect(() => {
+    trackPageview(location);
+  }, [location]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {

@@ -28,6 +28,7 @@ import {
 } from "@/lib/tokens";
 import { axisProps, gridProps, timeTicks, tooltipContentStyle, tooltipItemStyle, tooltipLabelStyle } from "@/lib/chart-theme";
 import { RTO_CONFIG, RTO_SOURCE_NOTE } from "@/data/rto-config";
+import { STAGE_COLORS } from "@/data/catalyst-config";
 import {
   buildBuildoutHistory, computeTrackedPower, filterTrackedFacilities, fmtGW, tightestRTO,
   type BuildoutHistory, type FacilityLite, type TrackedPower,
@@ -571,7 +572,8 @@ function CatalystCalendarSection() {
     .slice(0, 5);
 
   function getItemColor(item: MergedCatalystItem): string {
-    if (item.type === 'earnings') return item.stageColor || BRAND.secondary;
+    // Server stageColor is a legacy all-orange hex - client tokens win.
+    if (item.type === 'earnings') return (item.stage && STAGE_COLORS[item.stage]) || BRAND.secondary;
     return CATEGORY_COLORS[item.category || ''] ?? INK.muted;
   }
 
@@ -843,14 +845,6 @@ const FEATURE_SLIDES = [
     description: "Named AI superclusters by GPUs, chips, and power, tied to the nuclear-for-AI deals that feed them.",
     href: "/compute-frontier",
     accent: BRAND.primary,
-    preview: powerMapPreview,
-  },
-  {
-    icon: Cpu,
-    title: "Compute Frontier",
-    description: "Named AI superclusters by GPUs, chips, and power, tied to the nuclear-for-AI deals that feed them.",
-    href: "/compute-frontier",
-    accent: "#F07800",
     preview: powerMapPreview,
   },
   {
@@ -1168,7 +1162,7 @@ export default function TiltOverview() {
             in docs/INDEX_VALIDATION.md. */}
         <div className="pt-2">
           <div className="text-10 font-mono uppercase tracking-widest text-muted-foreground/70 mb-3">
-            the buildout, measured · source on every card
+            Key metrics
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3" data-testid="kpi-triad">
             <RealGaugeCard
@@ -1177,7 +1171,7 @@ export default function TiltOverview() {
               value={tracked ? fmtGW(tracked.trackedMW) : null}
               delta={tracked ? `${tracked.operationalCount + tracked.constructionCount} facilities` : null}
               subtitle="Operational + under construction, verified facilities"
-              methodology={`Sum of rated power across the verified US AI data center dataset (facilities >=400 MW). Operational plus under-construction only - announced projects (${tracked ? fmtGW(tracked.announcedMW) : "-"}) are press releases, not steel, and are excluded from the headline. Same dataset as the Power map.`}
+              methodology={`Sum of rated power across the verified US AI data center dataset (facilities >=400 MW). Operational plus under-construction only. Announced projects (${tracked ? fmtGW(tracked.announcedMW) : "-"}) are excluded from the headline until construction is confirmed. Same dataset as the Power map.`}
               isLoading={dcLoading}
               rows={tracked ? [
                 { label: "Operational", value: `${fmtGW(tracked.operationalMW)} · ${tracked.operationalCount} sites` },
@@ -1207,7 +1201,7 @@ export default function TiltOverview() {
               delta={headroom ? `${headroom.label} · tightest RTO` : null}
               deltaColor={headroom ? SEMANTIC.negative : undefined}
               subtitle="Lowest reserve margin among AI-load RTOs"
-              methodology={`Projected reserve margins from ${RTO_SOURCE_NOTE}. The headline is the tightest region - the binding constraint on new AI load. NERC's reference margin level is ~15%; below it, new interconnection gets hard.`}
+              methodology={`Projected reserve margins from ${RTO_SOURCE_NOTE}. The headline shows the tightest region. NERC's reference margin level is roughly 15%; regions below it face constrained interconnection for large new loads.`}
               isLoading={false}
               rows={headroomRows}
               href="/power-map"

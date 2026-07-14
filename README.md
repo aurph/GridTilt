@@ -2,7 +2,7 @@
 
 > Equities, infrastructure, and power data for the AI power economy.
 
-GridTilt is a research dashboard for tracking the financial and physical buildout of AI infrastructure — compute, data centers, generation, transmission, and the public companies positioned around them. It combines live equity quotes, hand-curated infrastructure datasets, and grid-relevant news so you can see where capital and electrons are actually flowing.
+GridTilt is a research dashboard tracking the financial and physical buildout of AI infrastructure: compute, data centers, generation, transmission, and the public companies positioned around them. It combines live equity quotes, live GPU rental prices, hand-curated infrastructure datasets, and grid-relevant news.
 
 Live: **[gridtilt.com](https://gridtilt.com)**
 
@@ -10,111 +10,114 @@ Live: **[gridtilt.com](https://gridtilt.com)**
 
 ---
 
-## What it does
+## Tools
 
-| Module | What's inside |
-|---|---|
-| **Tilt Overview** | Top movers, sector pulse, catalyst calendar, US electricity demand chart (2010 → 2030 projection), thesis-health KPIs. |
-| **The Stack** | 60+ tickers across 8 supply-chain layers (compute, nuclear, uranium, power hardware, utilities, construction, hyperscalers, REITs). |
-| **Power Map** | US data center locations with power capacity and the utility / RTO they sit on. |
-| **Compute Frontier** | 235 named AI superclusters across 77 operators, tracked by GPUs, chip type, rated and planned power, grid region, and energy source, tied to the nuclear-for-AI deals that feed them. Sourced figures are separated from labeled estimates. |
-| **Supply Chain** | D3 force graph of 21 nodes and 44 real supply relationships from raw materials to end-use compute. |
-| **Catalyst Tracker** | Earnings + thesis catalyst calendar across 80+ tickers. |
-| **Portfolio Overlay** | Score any portfolio 0–100 on AI-power exposure across 5 dimensions. |
-| **Thesis Calculator** | Sliders for demand growth, nuclear capacity, and grid stress to model scenarios. |
-| **News Ticker** | 7-day rolling feed from 8 industry RSS sources (Utility Dive, DCD, World Nuclear News, POWER Magazine, Power Engineering, Latitude Media, DOE, EIA). |
+Eight tools in the sidebar. Retired routes (`/supply-chain`, `/power-deals`, `/queue`, `/gpu-economics`, `/trade`, `/portfolio`, `/brief`) redirect into tabs of these.
 
----
+| Tool | Route | What's inside |
+|---|---|---|
+| **Tilt Overview** | `/overview` | Measured headline gauges (tracked AI data center power in GW, fleet-average GPU rental cost, tightest reserve margin among AI-load RTOs), tracked buildout over time, top movers, sector pulse, next catalysts, and a US electricity demand chart (static annual series from EIA Electric Power Monthly with labeled projections). |
+| **The Stack** | `/stack` | 100 tickers across 13 supply-chain layers with live quotes and sparklines. Card, table, heatmap, and flow views; the flow view is a d3 force graph of 24 supply-chain nodes and 52 real supply relationships. Also carries the uranium correlation card (see below). |
+| **Power** | `/power-map` | US data center facility map (Leaflet), plus tabs for AI power deals and the grid interconnection queue. |
+| **Compute Frontier** | `/compute-frontier` | 235 named AI superclusters across 77 operators: GPUs, chip type, rated and planned power, grid region, energy source. Each cluster carries its own source links, and every estimated value sits in a per-cluster `estimated[]` list. GPU counts appear only where an operator disclosed one. |
+| **GPU Prices** | `/neocloud-intel` | GPU rental price index built from live marketplace observations, with per-model price history. The economics tab models the cost of AI compute. |
+| **Analyze** | `/analyze` | Portfolio tab scores any portfolio 0-100 on AI-power exposure; scenario tab models demand growth, nuclear capacity, and grid stress. |
+| **Catalyst Tracker** | `/catalysts` | Earnings dates (live from Yahoo, seeded fallback) plus curated thesis catalysts on a monthly calendar. |
+| **Analysis** | `/blog` | Research articles plus the daily Buildout Brief. |
+
+A news ticker runs across every dashboard page: a 7-day rolling feed from 8 industry RSS sources (Utility Dive, DCD, World Nuclear News, Power Engineering, POWER Magazine, Latitude Media, DOE, EIA), with NewsData.io as an optional additional tier.
+
+## Data honesty
+
+The rule across the app: serve real observations, flag estimates, and degrade with an explicit error instead of fabricating a number.
+
+- **GPU prices** are recorded from public, keyless marketplace APIs: RunPod (secure and community on-demand pricing) and Vast.ai (median of the cheapest verified on-demand offers). A model with no live source that day records nothing; curated anchor prices are flagged `est.` and charts interpolate across gaps instead of inventing points.
+- **Uranium correlation** is computed from 52 weeks of real weekly closes: SRUUF (Sprott Physical Uranium Trust, the closest freely quotable spot proxy) against CCJ and CEG. On fetch failure the card shows an unavailable state, not invented dots.
+- **Equity quotes** fall back per ticker to labeled static data when Yahoo throttles; the change column renders "--" rather than a stale number pretending to be live.
+- **Keyed sources** respond `{configured: false}` with setup instructions when the key is absent; upstream failures return 502. Nothing is faked on failure.
 
 ## Data sources
 
-| Data | Source | Freshness |
+| Data | Source | Behavior |
 |---|---|---|
-| Equity quotes, P/E, fundamentals | Yahoo Finance via `yahoo-finance2` (unofficial, indicative) | Live, with labeled static fallback when throttled |
-| US electricity demand chart | Static annual snapshot (2010–2025) hand-transcribed from [EIA Electric Power Monthly](https://www.eia.gov/electricity/monthly/); 2026–2030 lines are GridTilt projections, not forecasts | Static, embedded in the client |
-| Physical electricity output | FRED [`IPG2211A2N`](https://fred.stlouisfed.org/series/IPG2211A2N) served live at `/api/physical/electricity-output`; EIA US48 hourly demand at `/api/physical/load-hourly` once `EIA_API_KEY` is set | Live (FRED daily cache; EIA 30-min cache) |
-| Data center locations | Public announcements (Microsoft, Google, Amazon, Meta, Apple, xAI, OpenAI, Oracle), curated through a reviewed RSS ingestion pipeline | Curated, refreshed as announcements land |
-| AI superclusters (Compute Frontier) | Public announcements (company press releases, Reuters, Tom's Hardware, Data Center Dynamics, SemiAnalysis, utility filings), cross-referenced to the Power Map registry. Each cluster carries its own source links. A per-cluster `estimated[]` list flags every value that is a GridTilt estimate or an announced target not yet realized; GPU counts appear only where an operator has disclosed one, else they read as not disclosed. Curated in `server/data/clusters.json` | Curated, refreshed as announcements land |
-| Industry news | Live RSS from 8 publications | Live, refreshed hourly |
-| AI Demand, Grid Stress, NPI | Composite indices computed from constituent **equity moves** (NPI also uses uranium spot and a hand-derived policy score). They are market-based gauges, **not** physical grid measurements. See [Index methodology](#index-methodology). | Live, with labeled static fallback |
+| Equity quotes, sparklines, fundamentals (~100 tickers) | Yahoo Finance via `yahoo-finance2` (unofficial, indicative) | Live; per-ticker labeled static fallback |
+| GPU rental prices | RunPod GraphQL API + Vast.ai marketplace API (public, keyless) | Live observations recorded daily; no observation means no record |
+| Uranium correlation | SRUUF vs CCJ and CEG weekly closes via Yahoo | Live; null (unavailable) on failure |
+| US monthly electric output | FRED [`IPG2211A2N`](https://fred.stlouisfed.org/series/IPG2211A2N) at `/api/physical/electricity-output` | Live, daily cache; 502 on failure |
+| US48 hourly demand | EIA v2 at `/api/physical/load-hourly` (needs `EIA_API_KEY`) | Live, 30-min cache; `{configured: false}` without a key |
+| Industry news | 8 RSS feeds; NewsData.io with an optional key | Live, refreshed hourly |
+| Facilities, superclusters, deals, interconnection queue, catalysts | Curated JSON in `server/data/` with per-item sources; some files are machine-written by recorders and a reviewed RSS ingester | Curated, refreshed as announcements land |
 
-No proprietary data feeds and no scraped paywalled sources. All projections are clearly labeled as such.
+No proprietary data feeds and no scraped paywalled sources. Projections are labeled as projections.
 
----
+## Legacy indices
 
-## Index methodology
-
-The three headline indices are deterministic functions of their published constituents. Exact formulas, so you can check the math:
-
-- **AI Demand** = clamp(52–94, `72 + 1.2 × (NVDA% × 0.40 + TSM% × 0.25 + EQIX% × 0.20 + MU% × 0.15)`) using today's intraday percent changes. It reads how the market is pricing the AI-buildout complex **today**; it does not measure data-center load.
-- **Grid Stress** = clamp(52–92, `68 + (VST% × 0.40 + CEG% × 0.35 + EQIX% × 0.25)`). Same construction; EQIX appears in both baskets. It reads power-equity momentum, not reserve margins or LMPs.
-- **NPI (Nuclear Power Index)** = `100 × (0.25·CEG + 0.20·VST + 0.15·CCJ + 0.20·NLR + 0.10·uranium spot + 0.10·policy)` as price relatives to Jan 1, 2024 bases, times a 0.9–1.1 policy multiplier from a hand-derived SMR policy score. Weights are judgment calls and labeled as such.
-
-Baselines (72, 68) and clamps are presentation choices that keep the gauges readable; they are disclosed here so nobody mistakes them for measurements. Constituent values are exposed at `/api/kpis`.
-
-**Validation:** the gauges are backtested against physical electricity output (FRED `IPG2211A2N`, 2019–2026, leads 0–3 months) in [docs/INDEX_VALIDATION.md](./docs/INDEX_VALIDATION.md). Result: neither AI Demand nor Grid Stress shows a physical signal, so both are labeled **market sentiment gauges** in the UI, not measurements. Reproduce it yourself: `npm run backtest:indices`. The reconstructed daily series lives in `server/data/index-history.json`.
-
----
+The former headline gauges (AI Demand, Grid Stress, NPI) were sentiment formulas over equity moves. They no longer appear on the dashboard; the overview shows measured numbers instead. `/api/kpis` and `/api/index-history` still serve and record them so the published series stays continuous. Methodology and backtest: [docs/INDEX_VALIDATION.md](./docs/INDEX_VALIDATION.md), `npm run backtest:indices`.
 
 ## Stack
 
-- **Frontend** — React 18, TypeScript, Vite, Tailwind, shadcn/ui, Recharts, D3, React Leaflet
-- **Backend** — Node 20, Express 5, Drizzle ORM, optional Postgres (in-memory fallback)
-- **Data** — `yahoo-finance2`, `rss-parser`, curated JSON datasets in `server/data/`
-- **Hosting** — Replit Deployments (autoscale)
-
----
+- **Client**: React 18, TypeScript, Vite, wouter, TanStack Query v5, Tailwind CSS, shadcn/ui (house-modified fork in `client/src/components/ui`; do not regenerate from upstream), Recharts, visx, d3, react-leaflet.
+- **Server**: Express 5, single process. Vite middleware in dev, static files from `dist/public` in prod. Port 5000.
+- **Persistence**: JSON files in `server/data/` and `content/blog/`. There is no database.
+- **Tests**: Node's built-in test runner; 217 tests across server and client lib suites.
 
 ## Run locally
 
 ```bash
 npm install
 cp .env.example .env   # set UNSUB_TOKEN_SECRET and ADMIN_API_KEY; the rest is optional
-npm run dev
+npm run dev            # Express + Vite middleware on port 5000
 ```
-
-Both the Express API and the Vite dev server bind to **port 5000** (override with `PORT`).
 
 ```bash
-npm run build    # production bundle
-npm start        # serve the built bundle
 npm run check    # typecheck
+npm test         # node:test suites
+npm run build    # vite client + esbuild server -> dist/
+npm start        # serve the built bundle
 ```
-
----
 
 ## Configuration
 
 | Var | Required | Notes |
 |---|---|---|
 | `UNSUB_TOKEN_SECRET` | yes | HMAC key for unsubscribe tokens. `openssl rand -hex 32`. |
-| `ADMIN_API_KEY` | yes | Guards `/api/admin/*` and newsletter send. `openssl rand -hex 32`. |
-| `RESEND_API_KEY` | no | Syncs subscribers to Resend and enables newsletter sends. Without it, signups only persist to local JSON (ephemeral on autoscale hosts). |
-| `EIA_API_KEY` | no | Free key from [eia.gov/opendata](https://www.eia.gov/opendata/register.php). Enables live US48 hourly demand at `/api/physical/load-hourly`. |
+| `ADMIN_API_KEY` | yes | Guards `/api/admin/*`, newsletter send, and daily export. `openssl rand -hex 32`. |
+| `RESEND_API_KEY` | no | Syncs subscribers to Resend and enables newsletter sends. Without it, signups only persist to local JSON. |
+| `EIA_API_KEY` | no | Free key from [eia.gov/opendata](https://www.eia.gov/opendata/register.php). Enables live US48 hourly demand. |
 | `NEWSDATA_API_KEY` | no | Optional [newsdata.io](https://newsdata.io) key. The 8 RSS feeds work without it. |
-| `DATABASE_URL` | no | Postgres connection string. Without it, the app uses in-memory storage. |
-| `X_API_*` | no | Four X credentials for the daily auto-poster; dry-run logs locally without them. |
-
----
+| `X_API_*` | no | Four X credentials for the weekday auto-poster; it dry-runs and logs locally without them. |
+| `X_POSTING_ENABLED` | no | Kill switch for the auto-poster; defaults off (dry-run). |
+| `DISABLE_DATACENTER_INGESTER` | no | Set to `1` to disable the 6-hour RSS datacenter ingester. |
 
 ## Project layout
 
 ```
-client/         React + Vite frontend
-  src/
-    pages/      Route-level components (TiltOverview, Stack, PowerMap, ...)
-    components/ Shared UI and shadcn primitives
-    data/       Static config (supply chain graph, ticker metadata)
-server/         Express API
-  routes.ts     All HTTP endpoints + RSS / Yahoo fetchers
-  storage.ts    IStorage interface (in-memory + Postgres impls)
-shared/         Types and Drizzle schemas shared between client and server
+client/src/
+  pages/        route-level components, one file per tool
+  components/   shared UI; components/ui is the modified shadcn fork
+  data/         static client config (supply chain graph, catalysts, RTOs)
+  lib/          query client, design tokens, pure helpers (tested)
+server/
+  routes.ts     all HTTP endpoints
+  *.ts          pure modules the routes call (indices, clusters, deals,
+                gpu-index, gpu-live, gpu-economics, brief, physical, ...)
+  data/         JSON persistence: hand-curated and machine-written files
+  __tests__/    node:test suites
+content/blog/   articles.json
+script/build.ts production build (vite client + esbuild server)
+scripts/        backtest and maintenance scripts
 ```
 
----
+There is no `shared/` directory, no ORM, and no external datastore. API payload shapes are declared where they are consumed.
+
+## Deploy
+
+Replit autoscale. A push to GitHub does not deploy, and autoscale does not auto-pull: merge, then redeploy manually in Replit (Deployments, then Redeploy). After a redeploy, sanity-check `/api/stack`, `/api/kpis`, and `/api/clusters/metrics`.
+
+Machine-written JSON (subscribers, price history, ingested facilities) lives on the instance disk, which is ephemeral across redeploys.
 
 ## License
 
-MIT — see [LICENSE](./LICENSE).
+MIT, see [LICENSE](./LICENSE).
 
 Built by [Jack Schwartz](https://github.com/aurph).

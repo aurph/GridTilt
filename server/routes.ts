@@ -32,6 +32,9 @@ import { computeClusterMetrics, type ClusterLite } from "./clusters";
 import { computeGpuIndex } from "./gpu-index";
 import { hasTodayLiveSnapshot, latestLiveByModel, recordDailyLivePrices, recordedByModel } from "./gpu-history";
 import { fetchLivePrices } from "./gpu-live";
+import { getUraniumCorrelation } from "./uranium-correlation";
+import { renderWeeklyEmail, weeklyDateLabel } from "./weekly-digest";
+import { fractionToPercent, getCachedFundamentals, refreshFundamentalsIfStale } from "./fundamentals";
 import { computeDealMetrics, type DealProject } from "./deals";
 import { composeBrief, renderBriefText, type BriefInput } from "./brief";
 import { computeGpuEconomics, TRAINING_PRESETS } from "./gpu-economics";
@@ -278,6 +281,7 @@ const STATIC_MARKET_DATA: Record<string, {
   SMR:  { name: "NuScale Power Corp", price: 14.50, change: 0.00, changePercent: 0.00, pe: null, revenueGrowth: null, marketCapDisplay: "$480M" },
   // Power Hardware
   GEV:  { name: "GE Vernova Inc", price: 352.00, change: 0.00, changePercent: 0.00, pe: 68.4, revenueGrowth: 15.2, marketCapDisplay: "$96B" },
+  ETN:  { name: "Eaton Corporation plc", price: 398.00, change: 0.00, changePercent: 0.00, pe: 39.1, revenueGrowth: 9.0, marketCapDisplay: "$155B" },
   NVT:  { name: "nVent Electric PLC", price: 88.00, change: 0.00, changePercent: 0.00, pe: 24.8, revenueGrowth: 22.4, marketCapDisplay: "$14B" },
   CARR: { name: "Carrier Global Corp", price: 74.00, change: 0.00, changePercent: 0.00, pe: 26.2, revenueGrowth: 9.8, marketCapDisplay: "$62B" },
   ABB:  { name: "ABB Ltd", price: 56.00, change: 0.00, changePercent: 0.00, pe: 28.4, revenueGrowth: 8.2, marketCapDisplay: "$120B" },
@@ -413,59 +417,6 @@ function deriveSmrPolicyScore(): number {
   }
 }
 
-// Generate scatter data with a target Pearson r using the standard linear noise model:
-//   y = r * x_std + sqrt(1 - r^2) * noise_std  (both in z-score space, then rescale)
-function gaussianRandom(): number {
-  // Box-Muller
-  const u1 = Math.random() || 1e-10;
-  const u2 = Math.random();
-  return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
-}
-
-// CCJ (Cameco): pure uranium miner - tight beta to U3O8 spot, target r ~ 0.82
-// Uranium spot range approx $65-$110 over 52-week scatter; CCJ approx $90-$135 (Mar 2026 price ~$113)
-function generateCCJCorrelationData() {
-  const data = [];
-  const targetR = 0.82;
-  const sqrtTerm = Math.sqrt(1 - targetR * targetR);
-  for (let i = 0; i < 52; i++) {
-    const x = gaussianRandom(); // shared factor (uranium direction)
-    const e = gaussianRandom(); // idiosyncratic noise
-    const uStd = x;
-    const cStd = targetR * x + sqrtTerm * e;
-    // Rescale: uranium mean=86, sd=11; ccj mean=112, sd=11 (2025-2026 price ranges)
-    const uranium = parseFloat((86 + uStd * 11).toFixed(2));
-    const ccj = parseFloat((112 + cStd * 11).toFixed(2));
-    data.push({
-      uranium: Math.max(60, Math.min(115, uranium)),
-      ccj: Math.max(82, Math.min(148, ccj))
-    });
-  }
-  return data;
-}
-
-// CEG (Constellation Energy): nuclear utility - looser uranium beta, target r ~ 0.65
-// CEG influenced by electricity contracts, capex, and macro beyond uranium spot (Mar 2026 price ~$315)
-function generateCEGCorrelationData() {
-  const data = [];
-  const targetR = 0.65;
-  const sqrtTerm = Math.sqrt(1 - targetR * targetR);
-  for (let i = 0; i < 52; i++) {
-    const x = gaussianRandom();
-    const e = gaussianRandom();
-    const uStd = x;
-    const cStd = targetR * x + sqrtTerm * e;
-    // Rescale: uranium mean=86, sd=11; ceg mean=310, sd=60 (2025-2026 price ranges)
-    const uranium = parseFloat((86 + uStd * 11).toFixed(2));
-    const ceg = parseFloat((310 + cStd * 60).toFixed(2));
-    data.push({
-      uranium: Math.max(60, Math.min(115, uranium)),
-      ceg: Math.max(160, Math.min(470, ceg))
-    });
-  }
-  return data;
-}
-
 function calculateCorrelation(xs: number[], ys: number[]) {
   const n = xs.length;
   const meanX = xs.reduce((s, v) => s + v, 0) / n;
@@ -515,6 +466,15 @@ async function getCachedStockData(timeframe: string): Promise<Record<string, any
     const yahooFinance = new YahooFinanceClass({ suppressNotices: ["yahooSurvey"] });
     const chartOpts = chartOptsForTimeframe(timeframe);
 
+    // Real revenue growth, refreshed daily in the background (non-blocking,
+    // single-flight). Until the first sweep lands, the field serves null -
+    // the UI's defined em-dash state - never a months-stale curated number.
+    refreshFundamentalsIfStale(ALL_STACK_TICKERS, async (ticker) => {
+      const qs = await yahooFinance.quoteSummary(ticker, { modules: ["financialData"] });
+      return fractionToPercent((qs as any)?.financialData?.revenueGrowth);
+    });
+    const fundamentals = getCachedFundamentals();
+
     const [quotes, charts] = await Promise.all([
       Promise.all(ALL_STACK_TICKERS.map((t) => yahooFinance.quote(t).catch(() => null))),
       Promise.all(ALL_STACK_TICKERS.map((t) => yahooFinance.chart(t, chartOpts).catch(() => null))),
@@ -542,7 +502,7 @@ async function getCachedStockData(timeframe: string): Promise<Record<string, any
           change: r.regularMarketChange ?? 0,
           changePercent: r.regularMarketChangePercent ?? 0,
           pe: r.trailingPE ?? staticData?.pe ?? null,
-          revenueGrowth: staticData?.revenueGrowth ?? null,
+          revenueGrowth: fundamentals[ticker]?.revenueGrowth ?? null,
           sparkline: closes,
           powerMW: staticData?.powerMW,
           vs_sp500: staticData?.vs_sp500,
@@ -583,6 +543,19 @@ async function getCachedStockData(timeframe: string): Promise<Record<string, any
 
   stackCache[cacheKey] = { data: stockData, timestamp: now };
   return stockData;
+}
+
+// Weekly closes for the uranium correlation module (1y, 1wk interval).
+async function fetchWeeklyCloses(ticker: string): Promise<Array<{ t: number; close: number }>> {
+  const YahooFinanceClass = (await import("yahoo-finance2")).default;
+  const yahooFinance = new YahooFinanceClass({ suppressNotices: ["yahooSurvey"] });
+  const chart = await yahooFinance.chart(ticker, {
+    period1: new Date(Date.now() - 370 * 86_400_000),
+    interval: "1wk",
+  });
+  return (chart.quotes ?? [])
+    .filter((q: any) => typeof q.close === "number" && q.date)
+    .map((q: any) => ({ t: new Date(q.date).getTime(), close: q.close as number }));
 }
 
 // ─── News cache (1-hour TTL) ────────────────────────────────────────────────
@@ -1963,37 +1936,46 @@ export async function registerRoutes(
   // Stack endpoint - 8 layers, 10-min cache
   app.get("/api/stack", async (req, res) => {
     try {
-      const timeframe = (req.query.timeframe as string) || "1D";
+      // Allowlist the timeframe and cache on the normalized value: an
+      // arbitrary query string would be a permanent cache miss fanning out
+      // ~200 Yahoo calls per request (SEC-3).
+      const ALLOWED_TIMEFRAMES = ["1D", "5D", "1M"];
+      const requested = (req.query.timeframe as string) || "1D";
+      const timeframe = ALLOWED_TIMEFRAMES.includes(requested) ? requested : "1D";
       const stockData = await getCachedStockData(timeframe);
 
-      const ccjCorrelationData = generateCCJCorrelationData();
-      const cegCorrelationData = generateCEGCorrelationData();
-      const ccjR = calculateCorrelation(
-        ccjCorrelationData.map((d) => d.uranium),
-        ccjCorrelationData.map((d) => d.ccj)
-      );
-      const cegR = calculateCorrelation(
-        cegCorrelationData.map((d) => d.uranium),
-        cegCorrelationData.map((d) => d.ceg)
-      );
+      // Real weekly correlation (SRUUF physical-uranium proxy vs CCJ/CEG),
+      // 24h cache; null on failure - the client shows unavailable, never
+      // invented dots. This replaced the last fabricated dataset in the app.
+      const corr = await getUraniumCorrelation(fetchWeeklyCloses);
+
+      // Fundamentals overlay at response time: the stock cache (10 min) can
+      // predate the daily fundamentals sweep, so revenue growth is applied
+      // fresh here instead of being baked into the cached rows.
+      const fundamentalsNow = getCachedFundamentals();
+      const rowFor = (t: string) => {
+        const st = stockData[t];
+        return st ? { ...st, revenueGrowth: fundamentalsNow[t]?.revenueGrowth ?? null } : st;
+      };
 
       res.json({
-        compute:             STACK_TICKERS.compute.map((t) => stockData[t]).filter(Boolean),
-        nuclear:             STACK_TICKERS.nuclear.map((t) => stockData[t]).filter(Boolean),
-        uranium:             STACK_TICKERS.uranium.map((t) => stockData[t]).filter(Boolean),
-        powerHardware:       STACK_TICKERS.powerHardware.map((t) => stockData[t]).filter(Boolean),
-        utilities:           STACK_TICKERS.utilities.map((t) => stockData[t]).filter(Boolean),
-        dataCenters:         STACK_TICKERS.dataCenters.map((t) => stockData[t]).filter(Boolean),
-        construction:        STACK_TICKERS.construction.map((t) => stockData[t]).filter(Boolean),
-        rawMaterialsMining:  STACK_TICKERS.rawMaterialsMining.map((t) => stockData[t]).filter(Boolean),
-        rawMaterialsNatGas:  STACK_TICKERS.rawMaterialsNatGas.map((t) => stockData[t]).filter(Boolean),
-        renewableGeneration: STACK_TICKERS.renewableGeneration.map((t) => stockData[t]).filter(Boolean),
-        transmissionGrid:    STACK_TICKERS.transmissionGrid.map((t) => stockData[t]).filter(Boolean),
-        cryptoAIDC:          STACK_TICKERS.cryptoAIDC.map((t) => stockData[t]).filter(Boolean),
-        etfsBenchmarks:      STACK_TICKERS.etfsBenchmarks.map((t) => stockData[t]).filter(Boolean),
-        correlation: ccjCorrelationData,
-        correlationCoeff: parseFloat(ccjR.toFixed(3)),
-        cegCorrelationCoeff: parseFloat(cegR.toFixed(3)),
+        compute:             STACK_TICKERS.compute.map((t) => rowFor(t)).filter(Boolean),
+        nuclear:             STACK_TICKERS.nuclear.map((t) => rowFor(t)).filter(Boolean),
+        uranium:             STACK_TICKERS.uranium.map((t) => rowFor(t)).filter(Boolean),
+        powerHardware:       STACK_TICKERS.powerHardware.map((t) => rowFor(t)).filter(Boolean),
+        utilities:           STACK_TICKERS.utilities.map((t) => rowFor(t)).filter(Boolean),
+        dataCenters:         STACK_TICKERS.dataCenters.map((t) => rowFor(t)).filter(Boolean),
+        construction:        STACK_TICKERS.construction.map((t) => rowFor(t)).filter(Boolean),
+        rawMaterialsMining:  STACK_TICKERS.rawMaterialsMining.map((t) => rowFor(t)).filter(Boolean),
+        rawMaterialsNatGas:  STACK_TICKERS.rawMaterialsNatGas.map((t) => rowFor(t)).filter(Boolean),
+        renewableGeneration: STACK_TICKERS.renewableGeneration.map((t) => rowFor(t)).filter(Boolean),
+        transmissionGrid:    STACK_TICKERS.transmissionGrid.map((t) => rowFor(t)).filter(Boolean),
+        cryptoAIDC:          STACK_TICKERS.cryptoAIDC.map((t) => rowFor(t)).filter(Boolean),
+        etfsBenchmarks:      STACK_TICKERS.etfsBenchmarks.map((t) => rowFor(t)).filter(Boolean),
+        correlation: corr?.ccjPairs ?? [],
+        correlationCoeff: corr?.ccjR !== null && corr?.ccjR !== undefined ? parseFloat(corr.ccjR.toFixed(3)) : null,
+        cegCorrelationCoeff: corr?.cegR !== null && corr?.cegR !== undefined ? parseFloat(corr.cegR.toFixed(3)) : null,
+        correlationMeta: corr ? { weeks: corr.weeks, proxyTicker: corr.proxyTicker, asOf: corr.asOf } : null,
       });
     } catch (error) {
       console.error("Stack error:", error);
@@ -2041,15 +2023,10 @@ export async function registerRoutes(
       };
 
       const pulse = Object.entries(STACK_TICKERS).map(([key, tickers]) => {
-        // Exclude stale/null tickers so a Yahoo throttle on a few names doesn't
-        // silently drag the sector average toward zero. Mirrors the supply
-        // chain fix in /api/supply-chain.
-        const liveChanges = tickers
+        const changes = tickers
           .map((t) => stockData[t]?.changePercent)
-          .filter((c): c is number => typeof c === "number" && Number.isFinite(c));
-        const avg = liveChanges.length > 0
-          ? liveChanges.reduce((s, v) => s + v, 0) / liveChanges.length
-          : 0;
+          .filter((v): v is number => typeof v === "number" && Number.isFinite(v));
+        const avg = changes.length > 0 ? changes.reduce((s, v) => s + v, 0) / changes.length : 0;
         return { sector: key, label: SECTOR_LABELS[key] ?? key, avgChange: parseFloat(avg.toFixed(2)) };
       });
 
@@ -2290,55 +2267,49 @@ export async function registerRoutes(
   });
 
   app.get("/api/newsletter/preview", async (req, res) => {
+    if (!requireAdmin(req, res)) return; // SEC-1: leaked subscriber count when public
     try {
-      const subscribers = loadSubscribers();
-      const subscriberCount = subscribers.length;
+      // The weekly digest renders from the same composed Brief the site
+      // shows, plus the measured gauges and the day's movers.
+      const brief = composeBrief(buildBriefInput());
 
       let stockData: Record<string, any> = {};
       try {
         const cached = stackCache["1D"];
         if (cached) stockData = cached.data;
       } catch {}
-
-      const topMovers = Object.values(stockData)
+      const movers = Object.values(stockData)
         .filter((s: any) => typeof s?.changePercent === "number" && s.changePercent !== 0)
         .sort((a: any, b: any) => Math.abs(b.changePercent) - Math.abs(a.changePercent))
-        .slice(0, 5);
+        .slice(0, 5)
+        .map((s: any) => ({ ticker: s.ticker, name: s.name, changePercent: s.changePercent }));
 
-      const monthYear = new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" });
+      // Tracked power from the facility dataset, same >=400 MW floor and
+      // operational+construction definition as the dashboard.
+      let trackedGW: number | null = null;
+      let constructionGW: number | null = null;
+      try {
+        const dcs = JSON.parse(readFileSync(join(process.cwd(), "server", "data", "datacenters.json"), "utf-8")) as Array<{ powerMW: number; status: string }>;
+        const tracked = dcs.filter((d) => typeof d.powerMW === "number" && d.powerMW >= 400);
+        const opMW = tracked.filter((d) => d.status === "operational").reduce((t, d) => t + d.powerMW, 0);
+        const conMW = tracked.filter((d) => d.status === "construction").reduce((t, d) => t + d.powerMW, 0);
+        trackedGW = (opMW + conMW) / 1000;
+        constructionGW = conMW / 1000;
+      } catch {}
 
-      const html = `
-<!DOCTYPE html>
-<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>The GridTilt Brief</title></head>
-<body style="margin:0;padding:0;background:#0d0d14;font-family:system-ui,-apple-system,sans-serif;">
-<table width="100%" cellpadding="0" cellspacing="0" style="background:#0d0d14;"><tr><td align="center" style="padding:40px 20px;">
-<table width="600" cellpadding="0" cellspacing="0" style="background:#151520;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,0.06);">
-<tr><td style="padding:32px;border-bottom:1px solid rgba(240,120,0,0.15);">
-<div style="font-size:22px;font-weight:800;color:#fff;">Grid<span style="color:#F07800;">Tilt</span></div>
-<div style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:4px;font-family:monospace;">The GridTilt Brief / ${monthYear}</div>
-</td></tr>
-<tr><td style="padding:32px;">
-<div style="font-size:14px;font-weight:700;color:#F0A500;margin-bottom:16px;text-transform:uppercase;letter-spacing:1px;">Top Movers</div>
-${topMovers.map((s: any) => `
-<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.04);">
-<span style="color:#fff;font-size:13px;font-weight:600;">${s.ticker}</span>
-<span style="color:#fff;font-size:12px;">${s.name}</span>
-<span style="color:${s.changePercent >= 0 ? '#22c55e' : '#ef4444'};font-size:12px;font-family:monospace;">${s.changePercent >= 0 ? '+' : ''}${s.changePercent.toFixed(2)}%</span>
-</div>
-`).join("")}
-</td></tr>
-<tr><td style="padding:32px;background:#0d0d14;border-top:1px solid rgba(255,255,255,0.04);">
-<div style="text-align:center;">
-<a href="${BASE_URL}/overview" style="display:inline-block;padding:12px 32px;background:#F07800;color:#000;text-decoration:none;font-weight:700;font-size:13px;border-radius:6px;">Explore the Dashboard</a>
-</div>
-<div style="text-align:center;margin-top:20px;font-size:11px;color:rgba(255,255,255,0.3);">
-Sent to ${subscriberCount} subscribers. You're receiving this because you subscribed at gridtilt.com.<br>
-<a href="${BASE_URL}/api/unsubscribe?token=PREVIEW" style="color:rgba(255,255,255,0.4);">Unsubscribe</a>
-</div>
-</td></tr>
-</table>
-</td></tr></table>
-</body></html>`;
+      const gi = computeGpuIndex(readGpuRoot().models ?? [], easternDay(), recordedByModel());
+
+      const html = renderWeeklyEmail({
+        brief,
+        movers,
+        trackedGW,
+        constructionGW,
+        fleetAvg: gi.fleetAvg || null,
+        fleetAvg1yChange: gi.fleetAvg1yChange,
+        tightestRTO: { label: "MISO", marginPct: 13.4 }, // NERC LTRA 2025; mirror of client data/rto-config
+        dateLabel: weeklyDateLabel(new Date()),
+        siteUrl: BASE_URL,
+      });
 
       res.type("html").send(html);
     } catch (error) {
@@ -2347,8 +2318,23 @@ Sent to ${subscriberCount} subscribers. You're receiving this because you subscr
     }
   });
 
+  let lastNewsletterSendMs = 0;
+  try {
+    const marker = JSON.parse(readFileSync(join(process.cwd(), "server", "data", "newsletter-log.json"), "utf-8"));
+    if (typeof marker?.lastSendMs === "number") lastNewsletterSendMs = marker.lastSendMs;
+  } catch {}
+
   app.post("/api/newsletter/send", async (req, res) => {
     if (!requireAdmin(req, res)) return;
+    // Weekly cadence guard: a misfired cron must not double-send. Bypass
+    // with {"force": true} for deliberate re-sends.
+    const SIX_DAYS = 6 * 24 * 60 * 60 * 1000;
+    if (Date.now() - lastNewsletterSendMs < SIX_DAYS && req.body?.force !== true) {
+      return res.status(409).json({
+        error: "Newsletter already sent within the past 6 days. Pass {\"force\": true} to override.",
+        lastSend: new Date(lastNewsletterSendMs).toISOString(),
+      });
+    }
 
     if (!process.env.RESEND_API_KEY) {
       return res.status(400).json({ error: "RESEND_API_KEY not configured" });
@@ -2361,7 +2347,11 @@ Sent to ${subscriberCount} subscribers. You're receiving this because you subscr
       }
 
       const previewUrl = `http://localhost:${process.env.PORT || 5000}/api/newsletter/preview`;
-      const previewRes = await fetch(previewUrl);
+      // Preview is admin-gated (SEC-1); forward the server's own key on the
+      // internal call so the send path keeps working.
+      const previewRes = await fetch(previewUrl, {
+        headers: { "x-admin-key": process.env.ADMIN_API_KEY || "" },
+      });
       const htmlTemplate = await previewRes.text();
 
       let sent = 0;
@@ -2383,7 +2373,7 @@ Sent to ${subscriberCount} subscribers. You're receiving this because you subscr
             body: JSON.stringify({
               from: "GridTilt <brief@gridtilt.com>",
               to: sub.email,
-              subject: `The GridTilt Brief - ${new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" })}`,
+              subject: `The GridTilt Weekly · ${weeklyDateLabel(new Date())}`,
               html: personalizedHtml,
             }),
           });
@@ -2397,6 +2387,12 @@ Sent to ${subscriberCount} subscribers. You're receiving this because you subscr
         }
       }
 
+      if (sent > 0) {
+        lastNewsletterSendMs = Date.now();
+        try {
+          writeFileSync(join(process.cwd(), "server", "data", "newsletter-log.json"), JSON.stringify({ lastSendMs: lastNewsletterSendMs, sent }, null, 2) + "\n", "utf-8");
+        } catch {}
+      }
       res.json({ message: `Newsletter sent`, sent, errors, total: subscribers.length });
     } catch (error) {
       console.error("Newsletter send error:", error);
@@ -2583,10 +2579,9 @@ Sent to ${subscriberCount} subscribers. You're receiving this because you subscr
               }));
             if (items.length > 0) {
               newsCache = { items, timestamp: now };
-              // Auto-scan for backlog headline updates + market constants
-              scanNewsForBacklogUpdates(items).catch((e) => console.error("backlog scan error:", e));
-              scanNewsForMarketConstants(items).catch((e) => console.error("market constants scan error:", e));
-              maybeCheckLbnlEdition();
+              // News-driven dataset writes (backlog + market-constant scanners,
+              // LBNL check) run only from authenticated /api/admin/scan-news-now.
+              // A public GET must never persist state (SEC-4).
               return res.json(items);
             }
           }
@@ -2600,9 +2595,7 @@ Sent to ${subscriberCount} subscribers. You're receiving this because you subscr
         const rssItems = await fetchRSSNews();
         if (rssItems.length >= 3) {
           newsCache = { items: rssItems, timestamp: now };
-          scanNewsForBacklogUpdates(rssItems).catch((e) => console.error("backlog scan error:", e));
-          scanNewsForMarketConstants(rssItems).catch((e) => console.error("market constants scan error:", e));
-          maybeCheckLbnlEdition();
+          // Scanners run only via authenticated /api/admin/scan-news-now (SEC-4).
           return res.json(rssItems);
         }
       } catch (_e) {
@@ -3162,6 +3155,7 @@ Preferred-Languages: en
   // Compose a tweet from a named template without posting. Use this to preview
   // copy before scheduling. Returns the text + the template that was picked.
   app.post("/api/social/generate", async (req, res) => {
+    if (!requireAdmin(req, res)) return; // SEC-2: was public
     const { template } = req.body || {};
     const dayIdx = new Date().getDay();
     const onDemand = template && ON_DEMAND_TEMPLATES[template]
@@ -3907,57 +3901,61 @@ ${rssItems}
   });
 
   // Weekly Buildout Brief: one synthesized read across every module.
+  function buildBriefInput(): BriefInput {
+    const cwd = process.cwd();
+    const clustersRoot = JSON.parse(readFileSync(join(cwd, "server", "data", "clusters.json"), "utf-8"));
+    const clusters = (clustersRoot.clusters ?? []) as ClusterLite[];
+    const cm = computeClusterMetrics(clusters);
+    const biggest = [...clusters].sort((a, b) => (b.plannedPowerMW ?? 0) - (a.plannedPowerMW ?? 0))[0] as any;
+
+    const gpuRoot = readGpuRoot();
+    const gi = computeGpuIndex(gpuRoot.models ?? [], easternDay());
+    const byModel = Object.fromEntries(gi.rows.map((r) => [r.model, r]));
+    const mover = gi.rows.filter((r) => r.changes.y1 != null).sort((a, b) => Math.abs(b.changes.y1 as number) - Math.abs(a.changes.y1 as number))[0];
+    const cheapest = [...gi.rows].sort((a, b) => a.current - b.current)[0];
+
+    const queueRoot = JSON.parse(readFileSync(join(cwd, "server", "data", "interconnection-queue.json"), "utf-8"));
+    const qh = queueRoot.headline;
+    const dm = computeDealMetrics((queueRoot.projects ?? []) as DealProject[]);
+
+    const input: BriefInput = {
+      asOf: easternDay(),
+      compute: {
+        clusterCount: cm.clusterCount,
+        plannedGW: Math.round(cm.totalPlannedMW / 1000),
+        operationalGW: Math.round(cm.operationalMW / 1000),
+        operatorCount: cm.concentration.operatorCount,
+        topOperator: cm.concentration.topOperator,
+        topOperatorSharePct: cm.concentration.topOperatorPlannedShare * 100,
+        biggestName: biggest ? String(biggest.name).replace(/\s*\([^)]*\)\s*$/, "").trim() : null,
+        biggestGW: biggest ? (biggest.plannedPowerMW ?? 0) / 1000 : 0,
+      },
+      gpu: {
+        fleetAvg: gi.fleetAvg,
+        fleetAvg1yChange: gi.fleetAvg1yChange,
+        h100: byModel.H100?.current ?? 0,
+        gb200: byModel.GB200?.current ?? 0,
+        moverModel: mover?.model ?? "A100",
+        moverChangePct: (mover?.changes.y1 as number) ?? 0,
+        cheapestModel: cheapest?.model ?? "A100",
+        cheapestPrice: cheapest?.current ?? 0,
+      },
+      grid: { queueGW: qh.queueOverallGW, medianWaitMonths: qh.medianWaitMonths, ercotGW: qh.ercotLargeLoadGW },
+      deals: {
+        dealCount: dm.dealCount,
+        contractedGW: +(dm.totalContractedMW / 1000).toFixed(1),
+        topBuyer: dm.topBuyer,
+        topBuyerGW: +((dm.byOfftaker[0]?.mw ?? 0) / 1000).toFixed(1),
+        topType: dm.byType[0]?.key ?? null,
+        topTypeGW: +((dm.byType[0]?.mw ?? 0) / 1000).toFixed(1),
+      },
+    };
+    return input;
+  }
+
   app.get("/api/brief", (_req, res) => {
     try {
-      const cwd = process.cwd();
-      const clustersRoot = JSON.parse(readFileSync(join(cwd, "server", "data", "clusters.json"), "utf-8"));
-      const clusters = (clustersRoot.clusters ?? []) as ClusterLite[];
-      const cm = computeClusterMetrics(clusters);
-      const biggest = [...clusters].sort((a, b) => (b.plannedPowerMW ?? 0) - (a.plannedPowerMW ?? 0))[0] as any;
-
-      const gpuRoot = readGpuRoot();
-      const gi = computeGpuIndex(gpuRoot.models ?? [], easternDay());
-      const byModel = Object.fromEntries(gi.rows.map((r) => [r.model, r]));
-      const mover = gi.rows.filter((r) => r.changes.y1 != null).sort((a, b) => Math.abs(b.changes.y1 as number) - Math.abs(a.changes.y1 as number))[0];
-      const cheapest = [...gi.rows].sort((a, b) => a.current - b.current)[0];
-
-      const queueRoot = JSON.parse(readFileSync(join(cwd, "server", "data", "interconnection-queue.json"), "utf-8"));
-      const qh = queueRoot.headline;
-      const dm = computeDealMetrics((queueRoot.projects ?? []) as DealProject[]);
-
-      const input: BriefInput = {
-        asOf: easternDay(),
-        compute: {
-          clusterCount: cm.clusterCount,
-          plannedGW: Math.round(cm.totalPlannedMW / 1000),
-          operationalGW: Math.round(cm.operationalMW / 1000),
-          operatorCount: cm.concentration.operatorCount,
-          topOperator: cm.concentration.topOperator,
-          topOperatorSharePct: cm.concentration.topOperatorPlannedShare * 100,
-          biggestName: biggest ? String(biggest.name).replace(/\s*\([^)]*\)\s*$/, "").trim() : null,
-          biggestGW: biggest ? (biggest.plannedPowerMW ?? 0) / 1000 : 0,
-        },
-        gpu: {
-          fleetAvg: gi.fleetAvg,
-          fleetAvg1yChange: gi.fleetAvg1yChange,
-          h100: byModel.H100?.current ?? 0,
-          gb200: byModel.GB200?.current ?? 0,
-          moverModel: mover?.model ?? "A100",
-          moverChangePct: (mover?.changes.y1 as number) ?? 0,
-          cheapestModel: cheapest?.model ?? "A100",
-          cheapestPrice: cheapest?.current ?? 0,
-        },
-        grid: { queueGW: qh.queueOverallGW, medianWaitMonths: qh.medianWaitMonths, ercotGW: qh.ercotLargeLoadGW },
-        deals: {
-          dealCount: dm.dealCount,
-          contractedGW: +(dm.totalContractedMW / 1000).toFixed(1),
-          topBuyer: dm.topBuyer,
-          topBuyerGW: +((dm.byOfftaker[0]?.mw ?? 0) / 1000).toFixed(1),
-          topType: dm.byType[0]?.key ?? null,
-          topTypeGW: +((dm.byType[0]?.mw ?? 0) / 1000).toFixed(1),
-        },
-      };
-      const brief = composeBrief(input);
+      const brief = composeBrief(buildBriefInput());
       res.json({ ...brief, text: renderBriefText(brief) });
     } catch (err) {
       console.error("Brief error:", err);

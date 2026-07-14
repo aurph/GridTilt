@@ -6,8 +6,8 @@ exports[`state primitive snapshots > AsOf hidden when no timestamp 1`] = `
 ""
 `;
 
-exports[`state primitive snapshots > AsOf stale 1`] = `
-"<span class=\\"inline-flex items-center gap-1 rounded-sm border border-warning/40 bg-warning/10 px-1.5 text-9 font-mono uppercase tracking-wide text-warning \\" title=\\"Source missed its refresh schedule - last update 8:01:40 AM (45m ago)\\" data-testid=\\"asof-stale\\"><svg xmlns=\\"http://www.w3.org/2000/svg\\" width=\\"24\\" height=\\"24\\" viewBox=\\"0 0 24 24\\" fill=\\"none\\" stroke=\\"currentColor\\" stroke-width=\\"2\\" stroke-linecap=\\"round\\" stroke-linejoin=\\"round\\" class=\\"lucide lucide-clock h-2.5 w-2.5\\"><circle cx=\\"12\\" cy=\\"12\\" r=\\"10\\"></circle><polyline points=\\"12 6 12 12 16 14\\"></polyline></svg>stale · 45m ago</span>"
+exports[`state primitive snapshots > AsOf stays quiet on old data (age is context, not an alarm) 1`] = `
+"<span class=\\"text-9 font-mono text-muted-foreground/60 cursor-default \\" title=\\"as of 8:01:40 AM\\" data-testid=\\"asof\\">as of 45m ago</span>"
 `;
 
 exports[`state primitive snapshots > ErrorState with retry 1`] = `
