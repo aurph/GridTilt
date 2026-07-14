@@ -1,8 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
-import PriceHistoryChart from "@/components/neocloud/PriceHistoryChart";
-import { buildSeries, sparklineDomain, type ChartSeries, type RangeKey } from "@/lib/gpu-series";
+import PriceHistoryChart, { type ScaleMode } from "@/components/neocloud/PriceHistoryChart";
+import {
+  RANGE_KEYS,
+  buildSeries,
+  rangeAvailability,
+  sparklineDomain,
+  type ChartSeries,
+  type RangeKey,
+} from "@/lib/gpu-series";
 import { useMeasuredWidth } from "@/lib/use-measured-width";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -16,12 +23,33 @@ import { AsOf, ErrorState, SrChartTable } from "@/components/Freshness";
 import { ToolTabs, useToolTabs } from "@/components/ToolTabs";
 import { PageHeader, HeaderStat } from "@/components/PageHeader";
 import GpuEconomics from "@/pages/gpu-economics";
+import FrontierModels from "@/pages/frontier-models";
 import { BORDER, BRAND, DATA_QUALITY, FONT, INK, SEMANTIC, SERIES } from "@/lib/tokens";
 
 // ─── Types (mirror /api/gpu-prices/metrics) ────────────────────────────────
 
 interface GpuChanges { w1: number | null; m1: number | null; ytd: number | null; y1: number | null; }
-interface SeriesPoint { date: string; price: number; }
+interface SeriesPoint {
+  date: string;
+  price: number;
+  low?: number;
+  high?: number;
+  sources?: string[];
+  n?: number;
+}
+interface ProviderCounts { requests: number; succeeded: number; failed: number; observations: number; }
+interface GpuSweepSummary {
+  date: string;
+  ok: boolean;
+  perProvider: { runpod: ProviderCounts; vast: ProviderCounts };
+  usableModels: number;
+}
+interface GpuPipelineHealth {
+  recordedDays: number;
+  lastRecordedDate: string | null;
+  lastSweep: GpuSweepSummary | null;
+  curatedLastRefreshed: string | null;
+}
 interface GpuRow {
   model: string;
   vendor: string;
@@ -50,6 +78,7 @@ interface GpuMetrics {
   unit: string | null;
   methodology: string | null;
   lastRefreshed: string | null;
+  health: GpuPipelineHealth;
 }
 
 // Maker colors — the primary "who made this" signal (orange vs cyan, colorblind-safe).
@@ -73,28 +102,29 @@ const changeColor = (v: number | null): string => (v === null ? INK.faint : v > 
 
 type SortKey = "current" | "model" | "w1" | "m1" | "ytd" | "y1";
 type ViewKey = "overlay" | "grid";
-
-const RANGE_KEYS: RangeKey[] = ["3M", "6M", "1Y", "ALL"];
+const DEFAULT_VISIBLE_MODELS = ["H100", "H200", "B200", "A100"];
 
 // GPU Prices tool tabs (consolidation): rental prices + cost-of-compute.
 const GPU_TABS = [
   { id: "prices", label: "Prices" },
   { id: "economics", label: "Economics" },
+  { id: "frontier", label: "Frontier" },
 ];
 
 // ─── URL-persisted chart state (?gpus=A,B&view=grid&range=1Y) ──────────────
 
 // Grid (small multiples) is the default view - owner call at the Lake 2 review.
-function readChartParams(): { gpus: string[] | null; view: ViewKey; range: RangeKey } {
+function readChartParams(): { gpus: string[] | null; view: ViewKey; range: RangeKey; scale: ScaleMode } {
   const sp = new URLSearchParams(window.location.search);
   const gpusRaw = sp.get("gpus");
   const view = sp.get("view") === "overlay" ? "overlay" : "grid";
   const rangeRaw = sp.get("range");
-  const range = (RANGE_KEYS as string[]).includes(rangeRaw ?? "") ? (rangeRaw as RangeKey) : "ALL";
-  return { gpus: gpusRaw ? gpusRaw.split(",").filter(Boolean) : null, view, range };
+  const range = (RANGE_KEYS as readonly string[]).includes(rangeRaw ?? "") ? (rangeRaw as RangeKey) : "ALL";
+  const scale = sp.get("scale") === "linear" ? "linear" : "log";
+  return { gpus: gpusRaw ? gpusRaw.split(",").filter(Boolean) : null, view, range, scale };
 }
 
-function writeChartParams(gpus: string[] | null, view: ViewKey, range: RangeKey) {
+function writeChartParams(gpus: string[] | null, view: ViewKey, range: RangeKey, scale: ScaleMode) {
   const sp = new URLSearchParams(window.location.search);
   if (gpus) sp.set("gpus", gpus.join(","));
   else sp.delete("gpus");
@@ -102,6 +132,8 @@ function writeChartParams(gpus: string[] | null, view: ViewKey, range: RangeKey)
   else sp.delete("view");
   if (range !== "ALL") sp.set("range", range);
   else sp.delete("range");
+  if (scale !== "log") sp.set("scale", scale);
+  else sp.delete("scale");
   const qs = sp.toString();
   window.history.replaceState(null, "", `${window.location.pathname}${qs ? `?${qs}` : ""}`);
 }
@@ -114,53 +146,52 @@ export default function NeocloudIntel() {
   const [tab, setTab] = useToolTabs(GPU_TABS, "prices");
 
   const rows = data?.rows ?? [];
+  const now = useMemo(() => Date.now(), [data?.asOf]);
 
   // ── Price-history chart state (persisted in URL params) ──
   const initial = useMemo(readChartParams, []);
-  const [visibleModels, setVisibleModels] = useState<string[] | null>(initial.gpus); // null = all
+  const [visibleModels, setVisibleModels] = useState<string[] | null>(initial.gpus); // null = preferred four
   const [view, setView] = useState<ViewKey>(initial.view);
   const [range, setRange] = useState<RangeKey>(initial.range);
+  const [scaleMode, setScaleMode] = useState<ScaleMode>(initial.scale);
   const [hoveredModel, setHoveredModel] = useState<string | null>(null);
   useEffect(() => {
-    writeChartParams(visibleModels, view, range);
-  }, [visibleModels, view, range]);
+    writeChartParams(visibleModels, view, range, scaleMode);
+  }, [visibleModels, view, range, scaleMode]);
 
   const allSeries: ChartSeries[] = useMemo(
     () => buildSeries(rows.map((r) => ({ model: r.model, vendor: r.vendor, series: r.series })), colorFor),
     [rows],
   );
+  const defaultVisibleModels = useMemo(() => {
+    const available = new Set(rows.map((row) => row.model));
+    const preferred = DEFAULT_VISIBLE_MODELS.filter((model) => available.has(model));
+    return preferred.length > 0 ? preferred : rows.slice(0, 4).map((row) => row.model);
+  }, [rows]);
+  const effectiveVisibleModels = useMemo(() => {
+    const available = new Set(rows.map((row) => row.model));
+    const requested = (visibleModels ?? defaultVisibleModels).filter((model) => available.has(model));
+    return requested.length > 0 ? requested : defaultVisibleModels;
+  }, [defaultVisibleModels, rows, visibleModels]);
   const visibleSet = useMemo(
-    () => new Set(visibleModels ?? rows.map((r) => r.model)),
-    [visibleModels, rows],
+    () => new Set(effectiveVisibleModels),
+    [effectiveVisibleModels],
   );
   const chartSeries = useMemo(() => allSeries.filter((s) => visibleSet.has(s.model)), [allSeries, visibleSet]);
-  const estimatedModels = useMemo(
-    () => new Set(rows.filter((r) => r.estimated.includes("currentUsdPerHr")).map((r) => r.model)),
-    [rows],
-  );
-  const rangesByModel = useMemo(
-    () => Object.fromEntries(rows.map((r) => [r.model, { low: r.low, high: r.high }])),
-    [rows],
-  );
-  // Recorder considered empty while no model has more than one day-granular point
-  const recorderEmpty = useMemo(
-    () => rows.every((r) => r.series.filter((p) => /^\d{4}-\d{2}-\d{2}$/.test(p.date)).length <= 1),
-    [rows],
-  );
-  const now = useMemo(() => Date.now(), [data?.asOf]);
+  const availableRanges = useMemo(() => rangeAvailability(chartSeries, now), [chartSeries, now]);
+  useEffect(() => {
+    if (!availableRanges[range].enabled) setRange("ALL");
+  }, [availableRanges, range]);
 
-  const chipClick = (model: string, shiftKey: boolean) => {
-    if (shiftKey) {
-      // toggle within the current selection
-      const cur = new Set(visibleModels ?? rows.map((r) => r.model));
-      if (cur.has(model)) cur.delete(model);
-      else cur.add(model);
-      setVisibleModels(cur.size === rows.length ? null : Array.from(cur));
-    } else {
-      // solo; clicking the only-visible chip resets to all
-      const isSolo = visibleModels?.length === 1 && visibleModels[0] === model;
-      setVisibleModels(isSolo ? null : [model]);
-    }
+  const chipClick = (model: string) => {
+    const selected = new Set(effectiveVisibleModels);
+    if (selected.has(model)) {
+      if (selected.size === 1) return;
+      selected.delete(model);
+    } else selected.add(model);
+    const next = rows.map((row) => row.model).filter((candidate) => selected.has(candidate));
+    const isDefault = next.length === defaultVisibleModels.length && next.every((candidate) => defaultVisibleModels.includes(candidate));
+    setVisibleModels(isDefault ? null : next);
   };
 
   const [chartRef, chartWidth] = useMeasuredWidth<HTMLDivElement>();
@@ -242,7 +273,9 @@ export default function NeocloudIntel() {
       />
 
       <div className="flex-1 p-4 sm:p-6 space-y-5">
-        {tab === "economics" ? (
+        {tab === "frontier" ? (
+          <FrontierModels embedded />
+        ) : tab === "economics" ? (
           <GpuEconomics embedded />
         ) : (
         <>
@@ -297,21 +330,31 @@ export default function NeocloudIntel() {
           ))
         )}
 
-        {/* Price history chart (Lake 2 rebuild: honest anchors/fill, true time axis) */}
+        {/* Price history: recorded days and estimated anchors remain separate evidence classes. */}
         <Card className="border-card-border p-3" data-testid="ni-history">
-          <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-            <span className="text-11 font-mono uppercase tracking-wider text-muted-foreground">
-              Price history · $/GPU/hr
-            </span>
-            <div className="flex items-center gap-1.5 text-10 font-mono">
+          <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <span className="text-11 font-mono uppercase tracking-wider text-muted-foreground">
+                Price history · $/GPU/hr
+              </span>
+              {data?.health && <PipelineHealthLine health={data.health} />}
+            </div>
+            <div className="flex flex-wrap items-center justify-end gap-1.5 text-10 font-mono">
               {RANGE_KEYS.map((r) => (
                 <button
                   key={r}
-                  onClick={() => setRange(r)}
-                  className={`px-2 py-0.5 rounded border transition-colors ${
+                  onClick={() => {
+                    if (availableRanges[r].enabled) setRange(r);
+                  }}
+                  aria-disabled={!availableRanges[r].enabled}
+                  aria-pressed={range === r}
+                  title={availableRanges[r].enabled ? `${availableRanges[r].pointCount} points in this window` : "no data in this window"}
+                  className={`px-2 py-0.5 rounded border ${
                     range === r
                       ? "border-brand/60 text-brand bg-brand/10"
-                      : "border-subtle text-muted-foreground hover:text-foreground"
+                      : availableRanges[r].enabled
+                        ? "border-subtle text-muted-foreground hover:text-foreground"
+                        : "border-subtle text-muted-foreground/30 cursor-not-allowed"
                   }`}
                   data-testid={`ni-range-${r}`}
                 >
@@ -319,11 +362,28 @@ export default function NeocloudIntel() {
                 </button>
               ))}
               <span className="w-px h-4 bg-border mx-1" />
+              {(["log", "linear"] as ScaleMode[]).map((mode) => (
+                <button
+                  key={mode}
+                  onClick={() => setScaleMode(mode)}
+                  aria-pressed={scaleMode === mode}
+                  className={`px-2 py-0.5 rounded border ${
+                    scaleMode === mode
+                      ? "border-brand/60 text-brand bg-brand/10"
+                      : "border-subtle text-muted-foreground hover:text-foreground"
+                  }`}
+                  data-testid={`ni-scale-${mode}`}
+                >
+                  {mode}
+                </button>
+              ))}
+              <span className="w-px h-4 bg-border mx-1" />
               {(["grid", "overlay"] as ViewKey[]).map((v) => (
                 <button
                   key={v}
                   onClick={() => setView(v)}
-                  className={`px-2 py-0.5 rounded border transition-colors ${
+                  aria-pressed={view === v}
+                  className={`px-2 py-0.5 rounded border ${
                     view === v
                       ? "border-brand/60 text-brand bg-brand/10"
                       : "border-subtle text-muted-foreground hover:text-foreground"
@@ -336,13 +396,14 @@ export default function NeocloudIntel() {
             </div>
           </div>
 
-          {/* model chips: click = solo, shift-click = toggle, All resets */}
+          {/* Model chips toggle visibility. The default set is the four densest series. */}
           {rows.length > 0 && (
             <div className="flex flex-wrap items-center gap-1.5 mb-3" data-testid="ni-chips">
               <button
-                onClick={() => setVisibleModels(null)}
-                className={`px-2 py-0.5 rounded border text-10 font-mono transition-colors ${
-                  visibleModels === null
+                onClick={() => setVisibleModels(visibleSet.size === rows.length ? null : rows.map((row) => row.model))}
+                aria-pressed={visibleSet.size === rows.length}
+                className={`px-2 py-0.5 rounded border text-10 font-mono ${
+                  visibleSet.size === rows.length
                     ? "border-brand/60 text-brand bg-brand/10"
                     : "border-subtle text-muted-foreground hover:text-foreground"
                 }`}
@@ -355,11 +416,12 @@ export default function NeocloudIntel() {
                 return (
                   <button
                     key={r.model}
-                    onClick={(e) => chipClick(r.model, e.shiftKey)}
+                    onClick={() => chipClick(r.model)}
                     onPointerEnter={() => setHoveredModel(r.model)}
                     onPointerLeave={() => setHoveredModel(null)}
-                    title="click = solo · shift-click = toggle"
-                    className={`flex items-center gap-1 px-2 py-0.5 rounded border text-10 font-mono transition-colors ${
+                    aria-pressed={on}
+                    title={on && visibleSet.size === 1 ? "At least one model must remain visible" : `Toggle ${r.model}`}
+                    className={`flex items-center gap-1 px-2 py-0.5 rounded border text-10 font-mono ${
                       on ? "border-strong text-foreground" : "border-subtle text-muted-foreground/50 hover:text-muted-foreground"
                     }`}
                     data-testid={`ni-chip-${r.model}`}
@@ -385,18 +447,15 @@ export default function NeocloudIntel() {
                 range={range}
                 now={now}
                 view={view}
+                scaleMode={scaleMode}
                 width={chartWidth}
                 hovered={hoveredModel}
                 onHover={setHoveredModel}
-                ranges={rangesByModel}
-                estimatedModels={estimatedModels}
-                recorderEmpty={recorderEmpty}
               />
             )}
           </div>
           <p className="text-10 text-muted-foreground/50 mt-1 font-mono">
-            Dashed spans interpolate between sourced anchors and are not observed price action. Rings mark each
-            model's first tracked price{chartSeries.length <= 3 ? "; shaded bands show the current marketplace range" : ""}.
+            Only plotted points are data. Dashed spans connect unobserved time and are never treated as recorded price action.
           </p>
         </Card>
 
@@ -509,6 +568,23 @@ export default function NeocloudIntel() {
   );
 }
 
+function PipelineHealthLine({ health }: { health: GpuPipelineHealth }) {
+  const sweep = health.lastSweep;
+  const failed = sweep ? sweep.perProvider.runpod.failed + sweep.perProvider.vast.failed : 0;
+  return (
+    <p className="mt-1 max-w-3xl text-10 font-mono leading-relaxed text-muted-foreground" data-testid="ni-pipeline-health">
+      Live observations: {health.recordedDays} days, last {health.lastRecordedDate ?? "none"}. Curated reprice: {health.curatedLastRefreshed ?? "unknown"}.
+      {sweep ? (
+        <span className={failed > 0 ? "text-warning" : "text-muted-foreground/70"}>
+          {` Last sweep ${sweep.date}: ${failed > 0 ? `${failed} provider request${failed === 1 ? "" : "s"} failed` : `${sweep.usableModels} models recorded`} (RunPod ${sweep.perProvider.runpod.succeeded}/${sweep.perProvider.runpod.requests}, Vast ${sweep.perProvider.vast.succeeded}/${sweep.perProvider.vast.requests}).`}
+        </span>
+      ) : (
+        <span className="text-muted-foreground/60"> No provider sweep has completed in this process.</span>
+      )}
+    </p>
+  );
+}
+
 interface DispersionRow {
   model: string;
   vendor: string;
@@ -600,7 +676,8 @@ function DispersionChart({
 /**
  * Table sparkline with the same honesty treatment as the main chart:
  * per-series [min, max] domain with 10% padding, dashed interpolated spans,
- * solid anchor dots. A single point renders as a dot, not a fake line.
+ * hollow anchor dots and solid recorded dots. A single point renders as a
+ * dot, not a fake line.
  */
 function MiniSpark({ series }: { series: ChartSeries | undefined }) {
   const W = 104;
@@ -637,9 +714,9 @@ function MiniSpark({ series }: { series: ChartSeries | undefined }) {
           cx={x(p.t)}
           cy={y(p.price)}
           r={p.kind === "anchor" ? 2 : 1.3}
-          fill={p.kind === "anchor" ? series.color : "transparent"}
+          fill={p.kind === "anchor" ? "hsl(var(--card))" : series.color}
           stroke={series.color}
-          strokeWidth={p.kind === "anchor" ? 0 : 1}
+          strokeWidth={p.kind === "anchor" ? 1 : 0}
         />
       ))}
     </svg>

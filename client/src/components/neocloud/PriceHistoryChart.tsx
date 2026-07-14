@@ -1,134 +1,195 @@
 /**
- * Neocloud GPU price history chart (Lake 2 rebuild).
+ * GPU rental price history with two explicit evidence classes:
+ * recorded marketplace days and estimated monthly anchors.
  *
- * - True UTC time x-scale: pixels proportional to elapsed time.
- * - Log y-scale with 1-2-5 ticks, labeled "log scale" in the corner.
- * - Data honesty: sourced anchors = solid dots; recorded days = small dots;
- *   spans between points render dashed + reduced opacity when interpolated,
- *   solid when observed. Linear interpolation only - no splines.
- * - Direct right-edge labels with collision avoidance; hovering a line or
- *   label isolates that series (others drop to 25%).
- * - Unified crosshair tooltip: all visible series at the crosshair time,
- *   sorted descending, interp/est flagged.
- * - Launch marker (ring) on each series' first point.
- * - Current low-high marketplace range bands when <= 3 series visible.
- * - Overlay and Grid (small multiples) modes; 3M/6M/1Y/ALL ranges.
+ * Straight segments only. A solid segment requires consecutive recorded
+ * days. Every anchor-involved or gapped span is dashed because the time
+ * between those points was not observed. Dispersion bands use recorded
+ * snapshot low/high metadata only.
  */
 import { useCallback, useMemo, useRef, useState } from "react";
-import { scaleUtc, scaleLog } from "@visx/scale";
-import { LinePath } from "@visx/shape";
-import { Group } from "@visx/group";
 import { localPoint } from "@visx/event";
+import { Group } from "@visx/group";
+import { scaleLinear, scaleLog, scaleUtc } from "@visx/scale";
+import { Area, LinePath } from "@visx/shape";
 import { SrChartTable } from "@/components/Freshness";
-import { BORDER, INK, SURFACE } from "@/lib/tokens";
-import { chartTheme, timeTicks } from "@/lib/chart-theme";
+import { FONT, INK, SURFACE } from "@/lib/tokens";
+import { timeTicks } from "@/lib/chart-theme";
 import {
-  ChartSeries,
-  ClippedPoint,
-  RangeKey,
+  type ChartPoint,
+  type ChartSeries,
+  type ClippedPoint,
+  type RangeKey,
+  buildDispersionRuns,
+  buildSpans,
   clipSeries,
+  coverageCaption,
   fmtDate,
+  isSparseSeries,
   logDomain,
   logTicks125,
+  nearestPoint,
   rangeStart,
   solveLabelCollisions,
-  valueAt,
+  sparklineDomain,
 } from "@/lib/gpu-series";
 
+export type ScaleMode = "log" | "linear";
+
 export interface PriceHistoryChartProps {
-  series: ChartSeries[]; // already filtered to visible models
+  series: ChartSeries[];
   range: RangeKey;
   now: number;
   view: "overlay" | "grid";
+  scaleMode: ScaleMode;
   width: number;
   hovered: string | null;
   onHover: (model: string | null) => void;
-  /** current marketplace range per model, for the <= 3 series bands */
-  ranges: Record<string, { low: number; high: number }>;
-  estimatedModels: Set<string>;
-  recorderEmpty: boolean;
 }
 
-const MARGIN = { top: 14, right: 118, bottom: 26, left: 44 };
-const GRID_MARGIN = { top: 22, right: 12, bottom: 20, left: 38 };
-const OVERLAY_HEIGHT = 380;
-const PANEL_HEIGHT = 168;
-const LABEL_GAP = 15;
+type ClippedSeries = ChartSeries & { clipped: ClippedPoint[] };
+
+const GRID_STROKE = "rgba(255,255,255,0.05)";
+const AXIS_FILL = "#9ca3af";
+const DATA_FONT = FONT.mono;
+const MARGIN = { top: 18, right: 114, bottom: 30, left: 48 };
+const GRID_MARGIN = { top: 24, right: 14, bottom: 24, left: 42 };
+const OVERLAY_HEIGHT = 390;
+const PANEL_PLOT_HEIGHT = 184;
+const LABEL_GAP = 16;
 
 interface TooltipState {
   t: number;
   x: number;
-  yPx: number;
-  dayPrecision: boolean;
+}
+
+interface PanelTooltipState {
+  point: ChartPoint;
+  x: number;
+}
+
+interface ScaleBundle {
+  project: (value: number) => number;
+  ticks: number[];
+}
+
+function yScaleBundle(values: number[], height: number, mode: ScaleMode): ScaleBundle {
+  if (mode === "log") {
+    const domain = logDomain(values);
+    const scale = scaleLog({ domain, range: [height, 0] });
+    return {
+      project: (value) => scale(value),
+      ticks: logTicks125(domain[0], domain[1]),
+    };
+  }
+  const domain = sparklineDomain(values, 0.1)?.domain ?? [0, 1];
+  const scale = scaleLinear({ domain, range: [height, 0] });
+  return {
+    project: (value) => scale(value),
+    ticks: scale.ticks(5),
+  };
+}
+
+function realPoints(points: ClippedPoint[]): ChartPoint[] {
+  return points.filter((point) => !point.edge);
+}
+
+function seriesOpacity(model: string, hovered: string | null): number {
+  if (!hovered) return 1;
+  return model === hovered ? 1 : 0.2;
+}
+
+function valuesWithDispersion(series: ClippedSeries[]): number[] {
+  const values: number[] = [];
+  for (const item of series) {
+    for (const point of item.clipped) {
+      values.push(point.price);
+      if (!point.edge && point.kind === "recorded" && point.low != null && point.high != null) {
+        values.push(point.low, point.high);
+      }
+    }
+  }
+  return values;
+}
+
+function provenance(point: ChartPoint): string {
+  return point.kind === "recorded" ? "recorded daily" : "monthly anchor (estimated)";
 }
 
 export default function PriceHistoryChart(props: PriceHistoryChartProps) {
   const { series, range, now, view, width } = props;
-
   const start = rangeStart(range, now);
   const clipped = useMemo(
-    () =>
-      series
-        .map((s) => ({ ...s, clipped: clipSeries(s.points, start, now) }))
-        .filter((s) => s.clipped.length > 0),
+    () => series
+      .map((item) => ({ ...item, clipped: clipSeries(item.points, start, now) }))
+      .filter((item) => realPoints(item.clipped).length > 0),
     [series, start, now],
   );
-
-  // Screen-reader mirror of exactly what the chart draws: the visible
-  // series' real points in the current window (synthetic edge points excluded).
   const srRows = useMemo(
-    () =>
-      clipped.flatMap((s) =>
-        s.clipped
-          .filter((p) => !p.edge)
-          .map((p) => [
-            s.model,
-            fmtDate(p.t, p.kind === "recorded"),
-            `$${p.price.toFixed(2)}`,
-            p.kind === "anchor" ? "sourced anchor" : "recorded",
-          ]),
-      ),
+    () => clipped.flatMap((item) => realPoints(item.clipped).map((point) => [
+      item.model,
+      fmtDate(point.t, point.kind === "recorded"),
+      `$${point.price.toFixed(2)}`,
+      provenance(point),
+      point.low != null && point.high != null ? `$${point.low.toFixed(2)}-$${point.high.toFixed(2)}` : "none",
+    ])),
     [clipped],
   );
 
   if (width <= 0) return null;
-
   if (clipped.length === 0) {
     return (
-      <div className="h-[240px] flex flex-col items-center justify-center gap-1 text-xs text-muted-foreground" data-testid="ni-history-empty">
-        <span>No price points in this window.</span>
-        <span className="text-10 text-muted-foreground/60">
+      <div className="min-h-[260px] flex flex-col items-center justify-center gap-2 text-center" data-testid="ni-history-empty">
+        <span className="text-sm text-foreground">No price points in this window.</span>
+        <span className="max-w-md text-11 font-mono text-muted-foreground">
           {series.length === 0
-            ? "No GPUs selected. Select All to reset."
-            : "Sourced anchors are sparse; the daily recorder widens coverage from here forward. Try 1Y or ALL."}
+            ? "No GPU models are selected. Use All to restore the chart."
+            : "This range has no plotted evidence. Choose All to see the available recorded days and estimated anchors."}
         </span>
       </div>
     );
   }
 
   return (
-    <>
-      {view === "overlay" ? <Overlay {...props} clipped={clipped} start={start} /> : <SmallMultiples {...props} clipped={clipped} start={start} />}
+    <div className="space-y-3">
+      <EvidenceLegend />
+      {view === "overlay" ? (
+        <Overlay {...props} clipped={clipped} start={start} />
+      ) : (
+        <SmallMultiples {...props} clipped={clipped} start={start} />
+      )}
       <SrChartTable
         caption={`GPU rental price history ($/GPU/hr), ${range} range, ${clipped.length} series`}
-        columns={["Model", "Date", "Price", "Kind"]}
+        columns={["Model", "Date", "Price", "Evidence", "Observed spread"]}
         rows={srRows}
       />
-    </>
+    </div>
   );
 }
 
-type ClippedSeries = ChartSeries & { clipped: ClippedPoint[] };
-
-const xTicks = timeTicks;
-
-function spanDash(quality: "observed" | "interpolated"): { dash?: string; opacity: number } {
-  return quality === "observed" ? { opacity: 1 } : { dash: "5 4", opacity: 0.55 };
-}
-
-function seriesOpacity(model: string, hovered: string | null): number {
-  if (!hovered) return 1;
-  return model === hovered ? 1 : 0.22;
+function EvidenceLegend() {
+  return (
+    <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-10 font-mono text-muted-foreground" data-testid="ni-history-legend">
+      <span className="flex items-center gap-2">
+        <span className="relative block h-2 w-7" aria-hidden="true">
+          <span className="absolute left-0 right-0 top-1 h-px bg-foreground/70" />
+          <span className="absolute left-3 top-0.5 h-1.5 w-1.5 rounded-full bg-foreground" />
+        </span>
+        recorded daily
+      </span>
+      <span className="flex items-center gap-2">
+        <span className="relative block h-2 w-7" aria-hidden="true">
+          <span className="absolute left-0 right-0 top-1 border-t border-dashed border-muted-foreground/50" />
+          <span className="absolute left-3 top-0 h-2 w-2 rounded-full border border-muted-foreground bg-card" />
+        </span>
+        monthly anchor (estimated)
+      </span>
+      <span className="flex items-center gap-2">
+        <span className="block h-2 w-7 rounded-sm bg-brand/15 border-y border-brand/25" aria-hidden="true" />
+        recorded low-high spread
+      </span>
+    </div>
+  );
 }
 
 function Overlay({
@@ -138,294 +199,203 @@ function Overlay({
   width,
   hovered,
   onHover,
-  ranges,
-  estimatedModels,
-  recorderEmpty,
+  scaleMode,
 }: PriceHistoryChartProps & { clipped: ClippedSeries[]; start: number | null }) {
-  const height = OVERLAY_HEIGHT;
-  // Narrow screens: collapse the right label gutter and drop label prices so
-  // the plot keeps usable width (model-only labels still identify each line).
   const compact = width < 640;
   const margin = compact ? { ...MARGIN, right: 72 } : MARGIN;
-  const innerW = Math.max(40, width - margin.left - margin.right);
-  const innerH = height - margin.top - margin.bottom;
+  const innerW = Math.max(48, width - margin.left - margin.right);
+  const innerH = OVERLAY_HEIGHT - margin.top - margin.bottom;
   const svgRef = useRef<SVGSVGElement | null>(null);
   const [tip, setTip] = useState<TooltipState | null>(null);
-
-  const x0 = start ?? Math.min(...clipped.map((s) => s.clipped[0].t));
+  const x0 = start ?? Math.min(...clipped.map((item) => item.clipped[0].t));
   const x1 = now;
-
   const xScale = useMemo(() => scaleUtc({ domain: [x0, x1], range: [0, innerW] }), [x0, x1, innerW]);
-  const allPrices = useMemo(() => {
-    const vals = clipped.flatMap((s) => s.clipped.map((p) => p.price));
-    if (clipped.length <= 3) {
-      for (const s of clipped) {
-        const r = ranges[s.model];
-        if (r) vals.push(r.low, r.high);
-      }
-    }
-    return vals;
-  }, [clipped, ranges]);
-  const yDomain = useMemo(() => logDomain(allPrices), [allPrices]);
-  const yScale = useMemo(() => scaleLog({ domain: yDomain, range: [innerH, 0] }), [yDomain, innerH]);
-  const yTicks = logTicks125(yDomain[0], yDomain[1]);
-  const ticks = xTicks(x0, x1, innerW);
-
-  // Right-edge direct labels with collision avoidance
-  const labels = useMemo(() => {
-    const raw = clipped
-      .filter((s) => s.latest)
-      .map((s) => ({ id: s.model, y: yScale(s.clipped[s.clipped.length - 1].price) }));
-    return solveLabelCollisions(raw, 4, innerH - 4, LABEL_GAP);
-  }, [clipped, yScale, innerH]);
-  const labelById = new Map(labels.map((l) => [l.id, l.labelY]));
-
-  const dayPrecision = clipped.some((s) => s.clipped.some((p) => p.kind === "recorded" && !p.edge));
-
-  const handleMove = useCallback(
-    (e: React.PointerEvent<SVGSVGElement>) => {
-      if (!svgRef.current) return;
-      const pt = localPoint(svgRef.current, e);
-      if (!pt) return;
-      const gx = pt.x - margin.left;
-      if (gx < 0 || gx > innerW) {
-        setTip(null);
-        return;
-      }
-      const t = xScale.invert(gx).getTime();
-      setTip({ t, x: gx, yPx: pt.y, dayPrecision });
-    },
-    [xScale, innerW, dayPrecision, margin.left],
+  const yBundle = useMemo(
+    () => yScaleBundle(valuesWithDispersion(clipped), innerH, scaleMode),
+    [clipped, innerH, scaleMode],
   );
+  const xAxisTicks = timeTicks(x0, x1, innerW);
+  const snapPoints = useMemo(
+    () => clipped.flatMap((item) => realPoints(item.clipped).map((point) => ({ model: item.model, point }))),
+    [clipped],
+  );
+  const labels = useMemo(
+    () => solveLabelCollisions(
+      clipped.map((item) => ({
+        id: item.model,
+        y: yBundle.project(item.clipped[item.clipped.length - 1].price),
+      })),
+      4,
+      innerH - 4,
+      LABEL_GAP,
+    ),
+    [clipped, innerH, yBundle],
+  );
+  const labelById = new Map(labels.map((label) => [label.id, label.labelY]));
 
-  // Unified tooltip rows at crosshair time, sorted desc by price
+  const handleMove = useCallback((event: React.PointerEvent<SVGSVGElement>) => {
+    if (!svgRef.current || snapPoints.length === 0) return;
+    const point = localPoint(svgRef.current, event);
+    if (!point) return;
+    const graphX = point.x - margin.left;
+    if (graphX < 0 || graphX > innerW) {
+      setTip(null);
+      return;
+    }
+    const target = xScale.invert(graphX).getTime();
+    let nearest = snapPoints[0].point;
+    for (const candidate of snapPoints) {
+      if (Math.abs(candidate.point.t - target) < Math.abs(nearest.t - target)) nearest = candidate.point;
+    }
+    setTip({ t: nearest.t, x: xScale(nearest.t) });
+  }, [innerW, margin.left, snapPoints, xScale]);
+
   const tipRows = useMemo(() => {
     if (!tip) return [];
     return clipped
-      .map((s) => {
-        const v = valueAt(s.points, tip.t);
-        if (!v) return null;
-        return {
-          model: s.model,
-          color: s.color,
-          price: v.price,
-          interpolated: v.interpolated,
-          est: estimatedModels.has(s.model),
-          exactDate: v.exact ? fmtDate(v.exact.t, v.exact.kind === "recorded") : null,
-        };
+      .map((item) => {
+        const point = realPoints(item.clipped).find((candidate) => candidate.t === tip.t);
+        return point ? { model: item.model, color: item.color, point } : null;
       })
-      .filter((r): r is NonNullable<typeof r> => r !== null)
-      .sort((a, b) => b.price - a.price);
-  }, [tip, clipped, estimatedModels]);
+      .filter((row): row is NonNullable<typeof row> => row !== null)
+      .sort((a, b) => b.point.price - a.point.price);
+  }, [clipped, tip]);
 
-  const showBands = clipped.length <= 3;
+  const sparse = clipped.filter((item) => isSparseSeries(item.clipped));
 
   return (
-    <div className="relative" data-testid="ni-history-overlay">
-      <svg
-        ref={svgRef}
-        width={width}
-        height={height}
-        onPointerMove={handleMove}
-        onPointerLeave={() => {
-          setTip(null);
-          onHover(null);
-        }}
-        role="img"
-        aria-label={`GPU rental price history, log scale, ${clipped.length} series`}
-      >
-        <Group left={margin.left} top={margin.top}>
-          {/* y grid + ticks */}
-          {yTicks.map((v) => (
-            <g key={v}>
-              <line x1={0} x2={innerW} y1={yScale(v)} y2={yScale(v)} stroke={chartTheme.grid.stroke} strokeDasharray={chartTheme.grid.strokeDasharray} />
-              <text x={-8} y={yScale(v)} dy="0.32em" textAnchor="end" fill={chartTheme.axis.tickFill} fontSize={chartTheme.axis.fontSize} fontFamily={chartTheme.axis.fontFamily}>
-                ${v >= 10 ? v.toFixed(0) : v}
-              </text>
-            </g>
-          ))}
-          {/* x ticks on month/quarter boundaries */}
-          {ticks.map((d) => (
-            <g key={+d}>
-              <line x1={xScale(d)} x2={xScale(d)} y1={innerH} y2={innerH + 4} stroke={chartTheme.axis.stroke} />
-              <text x={xScale(d)} y={innerH + 15} textAnchor="middle" fill={chartTheme.axis.tickFill} fontSize={chartTheme.axis.fontSize} fontFamily={chartTheme.axis.fontFamily}>
-                {fmtDate(+d, false)}
-              </text>
-            </g>
-          ))}
-          <line x1={0} x2={innerW} y1={innerH} y2={innerH} stroke={chartTheme.axis.stroke} />
+    <div data-testid="ni-history-overlay">
+      <div className="relative">
+        <svg
+          ref={svgRef}
+          width={width}
+          height={OVERLAY_HEIGHT}
+          onPointerMove={handleMove}
+          onPointerLeave={() => {
+            setTip(null);
+            onHover(null);
+          }}
+          role="img"
+          aria-label={`GPU rental price history, ${scaleMode} scale, ${clipped.length} series`}
+        >
+          <Group left={margin.left} top={margin.top}>
+            {yBundle.ticks.map((value) => (
+              <g key={value}>
+                <line x1={0} x2={innerW} y1={yBundle.project(value)} y2={yBundle.project(value)} stroke={GRID_STROKE} />
+                <text x={-8} y={yBundle.project(value)} dy="0.32em" textAnchor="end" fill={AXIS_FILL} fontSize={10} fontFamily={DATA_FONT}>
+                  ${value >= 10 ? value.toFixed(0) : value.toFixed(2).replace(/0+$/, "").replace(/\.$/, "")}
+                </text>
+              </g>
+            ))}
+            {xAxisTicks.map((date) => (
+              <g key={+date}>
+                <line x1={xScale(date)} x2={xScale(date)} y1={innerH} y2={innerH + 4} stroke={AXIS_FILL} opacity={0.35} />
+                <text x={xScale(date)} y={innerH + 17} textAnchor="middle" fill={AXIS_FILL} fontSize={10} fontFamily={DATA_FONT}>
+                  {fmtDate(+date, false)}
+                </text>
+              </g>
+            ))}
+            <line x1={0} x2={innerW} y1={innerH} y2={innerH} stroke={AXIS_FILL} opacity={0.35} />
 
-          {/* current marketplace range bands (<= 3 series) */}
-          {showBands &&
-            clipped.map((s) => {
-              const r = ranges[s.model];
-              if (!r || !(r.low > 0) || !(r.high > 0)) return null;
-              const yHi = yScale(r.high);
-              const yLo = yScale(r.low);
+            {clipped.map((item) => (
+              <Group key={`bands-${item.model}`} opacity={seriesOpacity(item.model, hovered)}>
+                {buildDispersionRuns(item.clipped).map((run, index) => (
+                  <Area
+                    key={index}
+                    data={run}
+                    x={(point) => xScale(point.t)}
+                    y0={(point) => yBundle.project(point.high!)}
+                    y1={(point) => yBundle.project(point.low!)}
+                    fill={item.color}
+                    fillOpacity={0.12}
+                    stroke="none"
+                    pointerEvents="none"
+                  />
+                ))}
+              </Group>
+            ))}
+
+            {clipped.map((item) => {
+              const opacity = seriesOpacity(item.model, hovered);
               return (
-                <rect
-                  key={`band-${s.model}`}
-                  x={0}
-                  width={innerW}
-                  y={Math.min(yHi, yLo)}
-                  height={Math.abs(yLo - yHi)}
-                  fill={s.color}
-                  opacity={0.06 * seriesOpacity(s.model, hovered)}
-                  pointerEvents="none"
-                />
+                <Group key={item.model} opacity={opacity}>
+                  {buildSpans(item.clipped).map((span, index) => (
+                    <LinePath
+                      key={index}
+                      data={span.points}
+                      x={(point) => xScale(point.t)}
+                      y={(point) => yBundle.project(point.price)}
+                      stroke={item.color}
+                      strokeWidth={span.quality === "observed" ? 2.2 : 1.4}
+                      strokeOpacity={span.quality === "observed" ? 0.95 : 0.35}
+                      strokeDasharray={span.quality === "observed" ? undefined : "4 5"}
+                      strokeLinecap="round"
+                    />
+                  ))}
+                  {realPoints(item.clipped).map((point) => (
+                    <circle
+                      key={`${point.date}-${point.price}`}
+                      cx={xScale(point.t)}
+                      cy={yBundle.project(point.price)}
+                      r={point.kind === "anchor" ? 4 : 2.4}
+                      fill={point.kind === "anchor" ? SURFACE.raised : item.color}
+                      stroke={item.color}
+                      strokeWidth={point.kind === "anchor" ? 1.6 : 0}
+                    />
+                  ))}
+                  <LinePath
+                    data={item.clipped}
+                    x={(point) => xScale(point.t)}
+                    y={(point) => yBundle.project(point.price)}
+                    stroke="transparent"
+                    strokeWidth={14}
+                    onPointerEnter={() => onHover(item.model)}
+                    style={{ cursor: "crosshair" }}
+                  />
+                </Group>
               );
             })}
 
-          {/* series */}
-          {clipped.map((s) => {
-            const op = seriesOpacity(s.model, hovered);
-            const clippedSpans = spansFromClipped(s.clipped);
-            return (
-              <Group key={s.model} opacity={op} style={{ transition: "opacity 120ms" }}>
-                {clippedSpans.map((span, i) => {
-                  const st = spanDash(span.quality);
-                  return (
-                    <LinePath
-                      key={i}
-                      data={span.points}
-                      x={(p) => xScale(p.t)}
-                      y={(p) => yScale(p.price)}
-                      stroke={s.color}
-                      strokeWidth={2}
-                      strokeOpacity={st.opacity}
-                      strokeDasharray={st.dash}
-                      strokeLinecap="round"
-                    />
-                  );
-                })}
-                {/* single lonely point still draws a dot */}
-                {s.clipped.filter((p) => !p.edge).map((p) => (
-                  <circle
-                    key={p.t}
-                    cx={xScale(p.t)}
-                    cy={yScale(p.price)}
-                    r={p.kind === "anchor" ? 3.2 : 2}
-                    fill={p.kind === "anchor" ? s.color : SURFACE.raised}
-                    stroke={s.color}
-                    strokeWidth={p.kind === "anchor" ? 0 : 1.4}
-                  />
-                ))}
-                {/* sparse-series value labels (only when the view is uncrowded) */}
-                {clipped.length <= 3 &&
-                  s.clipped.filter((p) => !p.edge).length <= 4 &&
-                  s.clipped.filter((p) => !p.edge).map((p, i) => (
-                    <text
-                      key={`vlbl-${p.t}`}
-                      x={Math.min(Math.max(xScale(p.t), 16), innerW - 16)}
-                      y={yScale(p.price) + (i % 2 === 0 ? -9 : 16)}
-                      textAnchor="middle"
-                      fill={s.color}
-                      fontSize={9}
-                      fontFamily={chartTheme.axis.fontFamily}
-                      pointerEvents="none"
-                    >
-                      ${p.price >= 10 ? p.price.toFixed(0) : p.price.toFixed(2)}
-                    </text>
-                  ))}
-                {/* launch marker: ring on the series' true first point when in window */}
-                {s.launch && s.clipped.some((p) => !p.edge && p.t === s.launch!.t) && (
-                  <circle cx={xScale(s.launch.t)} cy={yScale(s.launch.price)} r={6} fill="none" stroke={s.color} strokeWidth={1} opacity={0.7}>
-                    <title>{`${s.model} first tracked price (${fmtDate(s.launch.t, s.launch.kind === "recorded")})`}</title>
-                  </circle>
-                )}
-                {/* invisible fat hit path per series for hover */}
-                <LinePath
-                  data={s.clipped}
-                  x={(p) => xScale(p.t)}
-                  y={(p) => yScale(p.price)}
-                  stroke="transparent"
-                  strokeWidth={12}
-                  onPointerEnter={() => onHover(s.model)}
-                  style={{ cursor: "pointer" }}
-                />
-              </Group>
-            );
-          })}
+            {tip && (
+              <line x1={tip.x} x2={tip.x} y1={0} y2={innerH} stroke={AXIS_FILL} strokeWidth={1} strokeDasharray="2 3" opacity={0.55} pointerEvents="none" />
+            )}
 
-          {/* crosshair */}
-          {tip && (
-            <line
-              x1={tip.x}
-              x2={tip.x}
-              y1={0}
-              y2={innerH}
-              stroke={chartTheme.crosshair.stroke}
-              strokeWidth={chartTheme.crosshair.strokeWidth}
-              strokeDasharray={chartTheme.crosshair.strokeDasharray}
-              pointerEvents="none"
-            />
-          )}
+            {clipped.map((item) => {
+              const labelY = labelById.get(item.model);
+              if (labelY == null) return null;
+              const last = item.clipped[item.clipped.length - 1];
+              return (
+                <g key={`label-${item.model}`} opacity={seriesOpacity(item.model, hovered)} onPointerEnter={() => onHover(item.model)}>
+                  <line x1={innerW} x2={innerW + 7} y1={yBundle.project(last.price)} y2={labelY} stroke={item.color} opacity={0.5} />
+                  <text x={innerW + 10} y={labelY} dy="0.32em" fill={item.color} fontSize={11} fontFamily={DATA_FONT} fontWeight={600}>
+                    {item.model}
+                    {!compact && <tspan fill={INK.secondary} fontWeight={400}>{` $${last.price.toFixed(2)}`}</tspan>}
+                  </text>
+                </g>
+              );
+            })}
+          </Group>
+        </svg>
 
-          {/* right-edge direct labels */}
-          {clipped.map((s) => {
-            const ly = labelById.get(s.model);
-            if (ly === undefined) return null;
-            const last = s.clipped[s.clipped.length - 1];
-            return (
-              <g
-                key={`lbl-${s.model}`}
-                opacity={seriesOpacity(s.model, hovered)}
-                onPointerEnter={() => onHover(s.model)}
-                style={{ cursor: "pointer", transition: "opacity 120ms" }}
-              >
-                <line x1={innerW} x2={innerW + 6} y1={yScale(last.price)} y2={ly} stroke={s.color} strokeWidth={1} opacity={0.6} />
-                <text x={innerW + 9} y={ly} dy="0.32em" fill={s.color} fontSize={11} fontFamily={chartTheme.label.fontFamily} fontWeight={600}>
-                  {s.model}
-                  {!compact && (
-                    <tspan fill={INK.secondary} fontWeight={400}>
-                      {" "}${last.price >= 10 ? last.price.toFixed(2) : last.price.toFixed(2)}
-                    </tspan>
-                  )}
-                </text>
-              </g>
-            );
-          })}
-        </Group>
-      </svg>
-
-      {/* corner scale label */}
-      <div className="absolute top-0 left-11 text-8 font-mono uppercase tracking-wider text-muted-foreground/60 select-none" data-testid="ni-log-label">
-        log scale
-      </div>
-      {recorderEmpty && (
-        <div className="absolute top-0 right-2 text-8 font-mono text-muted-foreground/50 select-none">
-          daily recorder starts {fmtDate(now, true)} - history before is sourced anchors
+        <div className="absolute top-0 left-12 text-9 font-mono uppercase tracking-wider text-muted-foreground select-none" data-testid="ni-scale-label">
+          {scaleMode} scale
         </div>
-      )}
+        {tip && tipRows.length > 0 && (
+          <EvidenceTooltip
+            rows={tipRows}
+            left={Math.min(Math.max(tip.x + margin.left + 12, 0), Math.max(0, width - 228))}
+            top={8}
+          />
+        )}
+      </div>
 
-      {/* unified tooltip */}
-      {tip && tipRows.length > 0 && (
-        <div
-          className="absolute z-10 pointer-events-none rounded border px-2.5 py-2"
-          style={{
-            left: Math.min(Math.max(tip.x + margin.left + 12, 0), Math.max(0, width - 190)),
-            top: 8,
-            background: SURFACE.overlay,
-            borderColor: BORDER.strong,
-            minWidth: 178,
-          }}
-          data-testid="ni-history-tooltip"
-        >
-          <div className="text-10 font-mono text-muted-foreground mb-1">{fmtDate(tip.t, tip.dayPrecision)}</div>
-          {tipRows.map((r) => (
-            <div key={r.model} className="flex items-center justify-between gap-3 text-11 font-mono leading-5">
-              <span className="flex items-center gap-1.5 min-w-0">
-                <span className="h-2 w-2 rounded-full flex-shrink-0" style={{ background: r.color }} />
-                <span style={{ color: r.color }}>{r.model}</span>
-              </span>
-              <span className="tabular-nums text-ink">
-                ${r.price.toFixed(2)}
-                <span className="text-8 text-muted-foreground/70 ml-1">
-                  {r.interpolated ? "interp." : r.exactDate ?? ""}
-                  {r.est ? " est." : ""}
-                </span>
-              </span>
-            </div>
+      {sparse.length > 0 && (
+        <div className="grid gap-x-5 gap-y-1 border-t border-border/60 pt-2 sm:grid-cols-2" data-testid="ni-sparse-coverage">
+          {sparse.map((item) => (
+            <p key={item.model} className="flex gap-2 text-10 font-mono leading-relaxed text-muted-foreground">
+              <span className="mt-1 h-1.5 w-1.5 flex-none rounded-full" style={{ background: item.color }} />
+              <span><strong className="font-semibold" style={{ color: item.color }}>{item.model}</strong> {coverageCaption(item.clipped)}</span>
+            </p>
           ))}
         </div>
       )}
@@ -433,24 +403,40 @@ function Overlay({
   );
 }
 
-/** Re-derive quality spans on the clipped run (edge points inherit span quality). */
-function spansFromClipped(points: ClippedPoint[]): Array<{ quality: "observed" | "interpolated"; points: ClippedPoint[] }> {
-  if (points.length < 2) return [];
-  const spans: Array<{ quality: "observed" | "interpolated"; points: ClippedPoint[] }> = [];
-  let cur: (typeof spans)[number] | null = null;
-  for (let i = 1; i < points.length; i++) {
-    const a = points[i - 1];
-    const b = points[i];
-    const observed =
-      !a.edge && !b.edge && a.kind === "recorded" && b.kind === "recorded" && b.t - a.t <= 2 * 86_400_000;
-    const quality = observed ? ("observed" as const) : ("interpolated" as const);
-    if (cur && cur.quality === quality) cur.points.push(b);
-    else {
-      cur = { quality, points: [a, b] };
-      spans.push(cur);
-    }
-  }
-  return spans;
+function EvidenceTooltip({
+  rows,
+  left,
+  top,
+}: {
+  rows: Array<{ model: string; color: string; point: ChartPoint }>;
+  left: number;
+  top: number;
+}) {
+  const datePoint = rows[0].point;
+  const dayPrecision = rows.some((row) => row.point.kind === "recorded");
+  return (
+    <div
+      className="absolute z-20 min-w-[216px] rounded border px-3 py-2 pointer-events-none shadow-xl"
+      style={{ left, top, background: "hsl(var(--card))", borderColor: "hsl(var(--border))", fontFamily: DATA_FONT }}
+      data-testid="ni-history-tooltip"
+    >
+      <div className="mb-1.5 text-10 text-muted-foreground">{fmtDate(datePoint.t, dayPrecision)}</div>
+      {rows.map(({ model, color, point }) => (
+        <div key={model} className="border-t border-border/50 py-1.5 first:border-0 first:pt-0">
+          <div className="flex items-center justify-between gap-4 text-11">
+            <span className="font-semibold" style={{ color }}>{model}</span>
+            <span className="tabular-nums text-foreground">${point.price.toFixed(2)}/hr</span>
+          </div>
+          <div className="mt-0.5 flex items-center justify-between gap-4 text-9 text-muted-foreground">
+            <span>{provenance(point)}</span>
+            {point.low != null && point.high != null && (
+              <span className="tabular-nums">${point.low.toFixed(2)}-${point.high.toFixed(2)}</span>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 function SmallMultiples({
@@ -460,28 +446,23 @@ function SmallMultiples({
   width,
   hovered,
   onHover,
-  estimatedModels,
-  ranges,
+  scaleMode,
 }: PriceHistoryChartProps & { clipped: ClippedSeries[]; start: number | null }) {
-  const cols = width >= 1100 ? 5 : width >= 760 ? 4 : width >= 560 ? 3 : 2;
-  const panelW = Math.floor(width / cols);
-  const x0 = start ?? Math.min(...clipped.map((s) => s.clipped[0].t));
-  const x1 = now;
-
+  const columns = width >= 1120 ? 4 : width >= 760 ? 3 : width >= 520 ? 2 : 1;
+  const panelWidth = Math.floor((width - (columns - 1) * 12) / columns);
+  const x0 = start ?? Math.min(...clipped.map((item) => item.clipped[0].t));
   return (
-    <div className="flex flex-wrap" data-testid="ni-history-grid">
-      {clipped.map((s) => (
+    <div className="grid gap-x-3 gap-y-4" style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }} data-testid="ni-history-grid">
+      {clipped.map((item) => (
         <Panel
-          key={s.model}
-          series={s}
+          key={item.model}
+          series={item}
           x0={x0}
-          x1={x1}
-          width={panelW}
-          height={PANEL_HEIGHT}
-          dim={hovered !== null && hovered !== s.model}
+          x1={now}
+          width={panelWidth}
+          dim={hovered !== null && hovered !== item.model}
           onHover={onHover}
-          est={estimatedModels.has(s.model)}
-          range={ranges[s.model] ?? null}
+          scaleMode={scaleMode}
         />
       ))}
     </div>
@@ -489,136 +470,152 @@ function SmallMultiples({
 }
 
 function Panel({
-  series: s,
+  series,
   x0,
   x1,
   width,
-  height,
   dim,
   onHover,
-  est,
-  range,
+  scaleMode,
 }: {
   series: ClippedSeries;
   x0: number;
   x1: number;
   width: number;
-  height: number;
   dim: boolean;
-  onHover: (m: string | null) => void;
-  est: boolean;
-  range: { low: number; high: number } | null;
+  onHover: (model: string | null) => void;
+  scaleMode: ScaleMode;
 }) {
-  const innerW = Math.max(20, width - GRID_MARGIN.left - GRID_MARGIN.right);
-  const innerH = height - GRID_MARGIN.top - GRID_MARGIN.bottom;
+  const innerW = Math.max(40, width - GRID_MARGIN.left - GRID_MARGIN.right);
+  const innerH = PANEL_PLOT_HEIGHT - GRID_MARGIN.top - GRID_MARGIN.bottom;
   const xScale = scaleUtc({ domain: [x0, x1], range: [0, innerW] });
-  // Domain includes the observed marketplace range so the band gives every
-  // panel real spread context even when the line itself is sparse.
-  const domainVals = [
-    ...s.clipped.map((p) => p.price),
-    ...(range && range.low > 0 && range.high > 0 ? [range.low, range.high] : []),
-  ];
-  const yDomain = logDomain(domainVals);
-  const yScale = scaleLog({ domain: yDomain, range: [innerH, 0] });
-  const yTicks = logTicks125(yDomain[0], yDomain[1]).filter((_, i, a) => a.length <= 3 || i % 2 === 0);
-  const ticks = xTicks(x0, x1, innerW).filter((_, i, a) => a.length <= 3 || i % Math.ceil(a.length / 3) === 0);
-  const spans = spansFromClipped(s.clipped);
-  const last = s.clipped[s.clipped.length - 1];
-  const realPoints = s.clipped.filter((p) => !p.edge);
-  // Sparse series annotate every point - the panel reads as data, not gaps.
-  const labelPoints = realPoints.length <= 5 ? realPoints : [];
-  const isLive = !est && last.kind === "recorded";
+  const yBundle = yScaleBundle(valuesWithDispersion([series]), innerH, scaleMode);
+  const yTicks = yBundle.ticks.filter((_, index, ticks) => ticks.length <= 3 || index % Math.ceil(ticks.length / 3) === 0);
+  const xAxisTicks = timeTicks(x0, x1, innerW).filter((_, index, ticks) => ticks.length <= 3 || index % Math.ceil(ticks.length / 3) === 0);
+  const points = realPoints(series.clipped);
+  const last = points.at(-1)!;
+  const sparse = isSparseSeries(points);
+  const labelPoints = points.length <= 4 ? points : [];
+  const svgRef = useRef<SVGSVGElement | null>(null);
+  const [tip, setTip] = useState<PanelTooltipState | null>(null);
+
+  const handleMove = useCallback((event: React.PointerEvent<SVGSVGElement>) => {
+    if (!svgRef.current || points.length === 0) return;
+    const local = localPoint(svgRef.current, event);
+    if (!local) return;
+    const graphX = Math.min(Math.max(local.x - GRID_MARGIN.left, 0), innerW);
+    const point = nearestPoint(points, xScale.invert(graphX).getTime());
+    if (point) setTip({ point, x: xScale(point.t) + GRID_MARGIN.left });
+  }, [innerW, points, xScale]);
 
   return (
     <div
-      className="relative"
-      style={{ width, height, opacity: dim ? 0.35 : 1, transition: "opacity 120ms" }}
-      onPointerEnter={() => onHover(s.model)}
-      onPointerLeave={() => onHover(null)}
-      data-testid={`ni-panel-${s.model}`}
+      className="relative min-w-0 border-t border-border/70 pt-1"
+      style={{ opacity: dim ? 0.28 : 1 }}
+      onPointerEnter={() => onHover(series.model)}
+      onPointerLeave={() => {
+        setTip(null);
+        onHover(null);
+      }}
+      data-testid={`ni-panel-${series.model}`}
     >
-      <div className="absolute top-1 left-9 flex items-baseline gap-1.5 text-10 font-mono">
-        <span className="font-semibold" style={{ color: s.color }}>{s.model}</span>
-        <span className="text-ink-secondary tabular-nums">${last.price.toFixed(2)}</span>
-        {est && <span className="text-8 text-estimate">est.</span>}
-        {isLive && <span className="text-8 text-positive" title="latest point observed live from provider APIs">live</span>}
+      <div className="absolute left-10 top-2 z-10 flex items-baseline gap-1.5 font-mono text-10">
+        <span className="font-semibold" style={{ color: series.color }}>{series.model}</span>
+        <span className="tabular-nums text-foreground">${last.price.toFixed(2)}</span>
+        <span className={last.kind === "recorded" ? "text-positive" : "text-estimate"}>
+          {last.kind === "recorded" ? "recorded" : "est. anchor"}
+        </span>
       </div>
-      <svg width={width} height={height} role="img" aria-label={`${s.model} price history`}>
+      <svg
+        ref={svgRef}
+        width={width}
+        height={PANEL_PLOT_HEIGHT}
+        onPointerMove={handleMove}
+        role="img"
+        aria-label={`${series.model} price history, ${scaleMode} scale`}
+      >
         <Group left={GRID_MARGIN.left} top={GRID_MARGIN.top}>
-          {yTicks.map((v) => (
-            <g key={v}>
-              <line x1={0} x2={innerW} y1={yScale(v)} y2={yScale(v)} stroke={chartTheme.grid.stroke} strokeDasharray="2 3" />
-              <text x={-4} y={yScale(v)} dy="0.32em" textAnchor="end" fill={chartTheme.axis.tickFill} fontSize={8} fontFamily={chartTheme.axis.fontFamily}>
-                ${v >= 10 ? v.toFixed(0) : v}
+          {yTicks.map((value) => (
+            <g key={value}>
+              <line x1={0} x2={innerW} y1={yBundle.project(value)} y2={yBundle.project(value)} stroke={GRID_STROKE} />
+              <text x={-5} y={yBundle.project(value)} dy="0.32em" textAnchor="end" fill={AXIS_FILL} fontSize={9} fontFamily={DATA_FONT}>
+                ${value >= 10 ? value.toFixed(0) : value.toFixed(2).replace(/0+$/, "").replace(/\.$/, "")}
               </text>
             </g>
           ))}
-          {ticks.map((d) => (
-            <text key={+d} x={xScale(d)} y={innerH + 12} textAnchor="middle" fill={chartTheme.axis.tickFill} fontSize={8} fontFamily={chartTheme.axis.fontFamily}>
-              {fmtDate(+d, false)}
+          {xAxisTicks.map((date) => (
+            <text key={+date} x={xScale(date)} y={innerH + 15} textAnchor="middle" fill={AXIS_FILL} fontSize={9} fontFamily={DATA_FONT}>
+              {fmtDate(+date, false)}
             </text>
           ))}
-          <line x1={0} x2={innerW} y1={innerH} y2={innerH} stroke={chartTheme.axis.stroke} />
-          {/* observed marketplace range: real spread context behind the line */}
-          {range && range.low > 0 && range.high > 0 && (
-            <g pointerEvents="none">
-              <rect
-                x={0}
-                width={innerW}
-                y={yScale(range.high)}
-                height={Math.max(0, yScale(range.low) - yScale(range.high))}
-                fill={s.color}
-                opacity={0.07}
-              />
-              <text x={innerW - 2} y={yScale(range.high) + 7} textAnchor="end" fill={s.color} opacity={0.55} fontSize={7} fontFamily={chartTheme.axis.fontFamily}>
-                mkt ${range.low}–${range.high}
-              </text>
-            </g>
-          )}
-          {spans.map((span, i) => {
-            const st = spanDash(span.quality);
-            return (
-              <LinePath
-                key={i}
-                data={span.points}
-                x={(p) => xScale(p.t)}
-                y={(p) => yScale(p.price)}
-                stroke={s.color}
-                strokeWidth={1.6}
-                strokeOpacity={st.opacity}
-                strokeDasharray={st.dash}
-                strokeLinecap="round"
-              />
-            );
-          })}
-          {realPoints.map((p) => (
-            <circle
-              key={p.t}
-              cx={xScale(p.t)}
-              cy={yScale(p.price)}
-              r={p.kind === "anchor" ? 2.4 : 1.5}
-              fill={p.kind === "anchor" ? s.color : SURFACE.raised}
-              stroke={s.color}
-              strokeWidth={p.kind === "anchor" ? 0 : 1.2}
+          <line x1={0} x2={innerW} y1={innerH} y2={innerH} stroke={AXIS_FILL} opacity={0.35} />
+
+          {buildDispersionRuns(series.clipped).map((run, index) => (
+            <Area
+              key={index}
+              data={run}
+              x={(point) => xScale(point.t)}
+              y0={(point) => yBundle.project(point.high!)}
+              y1={(point) => yBundle.project(point.low!)}
+              fill={series.color}
+              fillOpacity={0.14}
+              stroke="none"
             />
           ))}
-          {/* sparse-series value labels: every real point annotated */}
-          {labelPoints.map((p, i) => (
+          {buildSpans(series.clipped).map((span, index) => (
+            <LinePath
+              key={index}
+              data={span.points}
+              x={(point) => xScale(point.t)}
+              y={(point) => yBundle.project(point.price)}
+              stroke={series.color}
+              strokeWidth={span.quality === "observed" ? 1.9 : 1.2}
+              strokeOpacity={span.quality === "observed" ? 0.95 : 0.35}
+              strokeDasharray={span.quality === "observed" ? undefined : "4 5"}
+              strokeLinecap="round"
+            />
+          ))}
+          {points.map((point) => (
+            <circle
+              key={`${point.date}-${point.price}`}
+              cx={xScale(point.t)}
+              cy={yBundle.project(point.price)}
+              r={point.kind === "anchor" ? 3.5 : 2.1}
+              fill={point.kind === "anchor" ? SURFACE.raised : series.color}
+              stroke={series.color}
+              strokeWidth={point.kind === "anchor" ? 1.4 : 0}
+            />
+          ))}
+          {labelPoints.map((point, index) => (
             <text
-              key={`lbl-${p.t}`}
-              x={Math.min(Math.max(xScale(p.t), 12), innerW - 12)}
-              y={yScale(p.price) + (i % 2 === 0 ? -6 : 12)}
+              key={`value-${point.date}`}
+              x={Math.min(Math.max(xScale(point.t), 16), innerW - 16)}
+              y={yBundle.project(point.price) + (index % 2 === 0 ? -8 : 14)}
               textAnchor="middle"
               fill={INK.secondary}
-              fontSize={8}
-              fontFamily={chartTheme.axis.fontFamily}
+              fontSize={9}
+              fontFamily={DATA_FONT}
               pointerEvents="none"
             >
-              ${p.price >= 10 ? p.price.toFixed(0) : p.price.toFixed(2)}
+              ${point.price >= 10 ? point.price.toFixed(0) : point.price.toFixed(2)}
             </text>
           ))}
+          {tip && (
+            <line x1={xScale(tip.point.t)} x2={xScale(tip.point.t)} y1={0} y2={innerH} stroke={AXIS_FILL} strokeDasharray="2 3" opacity={0.5} />
+          )}
         </Group>
       </svg>
+
+      {tip && (
+        <EvidenceTooltip
+          rows={[{ model: series.model, color: series.color, point: tip.point }]}
+          left={Math.min(Math.max(tip.x + 8, 0), Math.max(0, width - 224))}
+          top={26}
+        />
+      )}
+      <p className={`min-h-8 px-2 pb-1 text-9 font-mono leading-relaxed ${sparse ? "text-muted-foreground" : "text-muted-foreground/50"}`}>
+        {sparse ? coverageCaption(points) : `${points.length} plotted points in range.`}
+      </p>
     </div>
   );
 }

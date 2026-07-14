@@ -33,6 +33,9 @@ Thumbs.db
 .vite/
 vite.config.ts.*
 
+# Local feature worktrees
+.worktrees/
+
 # Replit
 .local/
 .replit_*

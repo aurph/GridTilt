@@ -47,6 +47,25 @@ export function readGpuHistory(): Snapshot[] {
   return [];
 }
 
+export interface GpuHistorySummary {
+  recordedDays: number;
+  lastRecordedDate: string | null;
+}
+
+/** Pure health summary. Curated and legacy static rows are context, not live observations. */
+export function summarizeGpuHistory(snapshots: Snapshot[]): GpuHistorySummary {
+  const liveDates = new Set(
+    snapshots
+      .filter((snapshot) => snapshot.source === "live")
+      .map((snapshot) => snapshot.date),
+  );
+  const dates = Array.from(liveDates).sort();
+  return {
+    recordedDays: dates.length,
+    lastRecordedDate: dates.at(-1) ?? null,
+  };
+}
+
 /** Has today (US-Eastern) already been recorded from LIVE sources? A legacy
  * static row does not count - the sweep should upgrade it. */
 export function hasTodayLiveSnapshot(): boolean {
@@ -104,11 +123,20 @@ export function latestLiveByModel(): Record<string, { price: number; date: strin
 }
 
 /** Recorded daily points reshaped per-model for computeGpuIndex. */
-export function recordedByModel(): Record<string, GpuHistoryAnchor[]> {
+export function recordedByModel(snapshots: Snapshot[] = readGpuHistory()): Record<string, GpuHistoryAnchor[]> {
   const out: Record<string, GpuHistoryAnchor[]> = {};
-  for (const s of readGpuHistory()) {
+  for (const s of snapshots) {
+    if (s.source !== "live") continue;
     for (const [model, price] of Object.entries(s.prices)) {
-      (out[model] = out[model] ?? []).push({ date: s.date, price });
+      const point: GpuHistoryAnchor = { date: s.date, price };
+      const meta = s.meta?.[model];
+      if (meta) {
+        point.low = meta.low;
+        point.high = meta.high;
+        point.sources = [...meta.sources];
+        point.n = meta.n;
+      }
+      (out[model] = out[model] ?? []).push(point);
     }
   }
   return out;

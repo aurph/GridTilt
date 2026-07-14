@@ -36,8 +36,44 @@ real daily series even on days with no organic traffic.
 
 Repo/branch (`aurph/GridTilt`, `main`) are hard-coded in the GitHub node URLs.
 
+## gpu-history-backup.json
+
+Weekly durability backup for the live recorder:
+
+`Weekly trigger` (Sun 04:30 ET) -> authenticated GET
+`https://gridtilt.com/api/admin/gpu-history` -> validate every snapshot, price,
+spread, source list, and sample count -> fetch the current file SHA from GitHub
+-> replace `server/data/gpu-price-history.json` on `main` -> ntfy notification.
+
+This endpoint is intentionally raw. The merged metrics series omits snapshot-level
+source and metadata, so it cannot reconstruct the history file without losing
+provenance. The workflow aborts before GitHub if the response is empty, malformed,
+contains duplicate dates, or contains invalid price or metadata values.
+
+### One-time setup for history backup
+
+1. Deploy the code containing `GET /api/admin/gpu-history` to Replit manually.
+   A Git push does not deploy GridTilt.
+2. Import `gpu-history-backup.json` into the Jetson n8n instance.
+3. Create an HTTP Header Auth credential named `GridTilt Admin Key`: Name
+   `x-admin-key`, Value the same production `ADMIN_API_KEY` configured on Replit.
+   Map it on *Fetch raw GPU history*.
+4. Map the existing `GitHub PAT` credential on *GitHub get history file* and
+   *Commit history to main*. The token needs Contents read/write access to
+   `aurph/GridTilt`.
+5. Run *Manual trigger* once. Confirm that the resulting commit contains only
+   `server/data/gpu-price-history.json`, then activate the workflow. Importing the
+   JSON does not activate it.
+
+The backup limits redeploy loss to at most the days since the last successful
+weekly run. It does not create observations and it does not repair the separate
+05:00 daily recorder ping. Restarting or repairing the Jetson n8n instance remains
+an owner action required for both schedules to run.
+
 ## Notes
 - Push != shipped. After a commit, redeploy on Replit to put it live.
+- A history-backup commit is durable storage, not a deploy. It becomes the recorder
+  baseline the next time Replit is manually redeployed.
 - For a full-fidelity refresh (20-agent research + adversarial verify), use the
   on-demand Claude Code path instead; n8n is the steady weekly heartbeat.
 - Source of truth for this file is the builder at the bottom of the Neocloud Intel

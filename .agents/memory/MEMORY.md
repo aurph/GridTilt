@@ -1,1 +1,3 @@
-- [Git blocked; pull via GitHub API](git-blocked-api-pull-workaround.md) — destructive git fails even as task agent; read/sync remote via github connector token, push needs user's Shell/Git pane.
+- [Dev metadata plugin vs generic JSX](replit-dev-metadata-plugin-generic-jsx.md) — any `<Comp<T>` generic JSX breaks dev babel; strip type args after pulls.
+- [GitHub pull recurring patches](github-pull-recurring-patches.md) — after every pull re-apply the generic-JSX strip and the sector-pulse stale-ticker fix; skip .replit/post-merge.sh/runtime JSONs.
+- [Node 22 + ET snapshots](node22-and-tz-snapshots.md) — runtime is Node 22; TZ=America/New_York env var required for committed test snapshots.

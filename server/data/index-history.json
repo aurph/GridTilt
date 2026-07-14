@@ -3691,10 +3691,10 @@
     },
     {
       "date": "2026-07-14",
-      "aiDemand": 73.7,
-      "gridStress": 68.1,
-      "npiEquityLegs": 238.1,
-      "npi": 259.2
+      "aiDemand": 74.6,
+      "gridStress": 67.6,
+      "npiEquityLegs": 236.6,
+      "npi": 257.6
     }
   ]
 }
