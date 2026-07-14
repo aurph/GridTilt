@@ -23,6 +23,7 @@ import { AsOf, ErrorState, SrChartTable } from "@/components/Freshness";
 import { ToolTabs, useToolTabs } from "@/components/ToolTabs";
 import { PageHeader, HeaderStat } from "@/components/PageHeader";
 import GpuEconomics from "@/pages/gpu-economics";
+import FrontierModels from "@/pages/frontier-models";
 import { BORDER, BRAND, DATA_QUALITY, FONT, INK, SEMANTIC, SERIES } from "@/lib/tokens";
 
 // ─── Types (mirror /api/gpu-prices/metrics) ────────────────────────────────
@@ -107,6 +108,7 @@ const DEFAULT_VISIBLE_MODELS = ["H100", "H200", "B200", "A100"];
 const GPU_TABS = [
   { id: "prices", label: "Prices" },
   { id: "economics", label: "Economics" },
+  { id: "frontier", label: "Frontier" },
 ];
 
 // ─── URL-persisted chart state (?gpus=A,B&view=grid&range=1Y) ──────────────
@@ -271,7 +273,9 @@ export default function NeocloudIntel() {
       />
 
       <div className="flex-1 p-4 sm:p-6 space-y-5">
-        {tab === "economics" ? (
+        {tab === "frontier" ? (
+          <FrontierModels embedded />
+        ) : tab === "economics" ? (
           <GpuEconomics embedded />
         ) : (
         <>

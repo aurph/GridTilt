@@ -45,6 +45,7 @@ import { fractionToPercent, getCachedFundamentals, refreshFundamentalsIfStale } 
 import { computeDealMetrics, type DealProject } from "./deals";
 import { composeBrief, renderBriefText, type BriefInput } from "./brief";
 import { computeGpuEconomics, TRAINING_PRESETS } from "./gpu-economics";
+import { readFrontierRegistry, summarizeFrontierRegistry } from "./frontier-models";
 import {
   buildBuildoutTweet,
   buildGpuRentalTweet,
@@ -3921,6 +3922,17 @@ ${rssItems}
     } catch (err) {
       console.error("GPU economics error:", err);
       res.status(500).json({ error: "Failed to compute GPU economics" });
+    }
+  });
+
+  // Frontier model relay: curated release evidence plus explicitly comparable eval rows.
+  app.get("/api/frontier-models", (_req, res) => {
+    try {
+      const registry = readFrontierRegistry();
+      res.json({ ...registry, summary: summarizeFrontierRegistry(registry) });
+    } catch (err) {
+      console.error("Frontier model registry error:", err);
+      res.status(500).json({ error: "Failed to load frontier model registry" });
     }
   });
 
