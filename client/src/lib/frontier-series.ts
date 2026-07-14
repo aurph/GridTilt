@@ -27,6 +27,8 @@ export interface BenchmarkPoint { model: FrontierModel; lab: FrontierLab; result
 export interface YearGroup { year: number; models: FrontierModel[]; }
 export interface BenchmarkOption { benchmark: BenchmarkDefinition; comparabilityKey: string; setting: string; modelCount: number; labCount: number; }
 export interface LabelCandidate { id: string; x: number; width: number; priority: number; }
+export interface TimeDomain { start: number; end: number; }
+export interface ScoreDomain { min: number; max: number; ticks: number[]; }
 
 const ISO_DAY = /^20\d\d-\d\d-\d\d$/;
 
@@ -152,4 +154,39 @@ export function solveFrontierLabels(candidates: LabelCandidate[], minX: number, 
     if (!overlaps) accepted.push(candidate);
   }
   return accepted.sort((a, b) => a.x - b.x || a.id.localeCompare(b.id));
+}
+
+export function frontierTimeDomain(_models: FrontierModel[], asOf: string): TimeDomain {
+  const start = Date.UTC(2019, 1, 14);
+  const parsedEnd = parseFrontierDate(asOf);
+  return { start, end: parsedEnd !== null && parsedEnd > start ? parsedEnd : start };
+}
+
+function rounded(value: number): number {
+  return Math.round(value * 100) / 100;
+}
+
+export function scoreDomain(points: BenchmarkPoint[], unit: BenchmarkUnit, _higherIsBetter: boolean): ScoreDomain {
+  const scores = points.map((point) => point.result.score).filter(Number.isFinite);
+  if (scores.length === 0) return unit === "percent" ? { min: 0, max: 100, ticks: [0, 25, 50, 75, 100] } : { min: 0, max: 1, ticks: [0, 0.25, 0.5, 0.75, 1] };
+  const observedMin = Math.min(...scores);
+  const observedMax = Math.max(...scores);
+  let min: number;
+  let max: number;
+  if (unit === "percent") {
+    min = Math.max(0, Math.floor(observedMin - 5));
+    max = Math.min(100, Math.ceil(observedMax + 5));
+  } else {
+    const span = Math.max(1, observedMax - observedMin);
+    min = observedMin - span * 0.08;
+    max = observedMax + span * 0.08;
+  }
+  if (max <= min) max = min + 1;
+  const tickCount = 4;
+  const ticks = Array.from({ length: tickCount }, (_, index) => rounded(min + ((max - min) * index) / (tickCount - 1)));
+  return { min: rounded(min), max: rounded(max), ticks };
+}
+
+export function modelAriaLabel(model: FrontierModel, lab: FrontierLab): string {
+  return `${lab.name} ${model.name}, released ${model.releaseDate}, ${model.releaseStatus}`;
 }

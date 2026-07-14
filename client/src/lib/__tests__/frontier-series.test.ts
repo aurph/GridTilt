@@ -4,10 +4,13 @@ import {
   benchmarkCoverage,
   benchmarkSeries,
   groupModelsByYear,
+  frontierTimeDomain,
+  modelAriaLabel,
   orderLabs,
   parseFrontierDate,
   parseFrontierParams,
   releaseRows,
+  scoreDomain,
   solveFrontierLabels,
   type FrontierRegistry,
 } from "../frontier-series";
@@ -75,4 +78,31 @@ it("keeps high-priority labels and non-overlapping optional labels", () => {
     { id: "c", x: 240, width: 60, priority: 1 },
   ], 0, 400);
   assert.deepEqual(labels.map((label) => label.id), ["b", "c"]);
+});
+
+describe("chart geometry", () => {
+  it("uses the GPT-2 start and registry cutoff for the time domain", () => {
+    assert.deepEqual(frontierTimeDomain(registry.models, registry.asOf), {
+      start: Date.UTC(2019, 1, 14),
+      end: Date.UTC(2026, 6, 14),
+    });
+  });
+
+  it("pads percentage scores inside zero to one hundred", () => {
+    const points = benchmarkSeries(registry, "bench", "bench:v1:tools-off", new Set(registry.labs.map((lab) => lab.id)));
+    assert.deepEqual(scoreDomain(points, "percent", true), { min: 65, max: 80, ticks: [65, 70, 75, 80] });
+  });
+
+  it("does not clamp non-percentage score domains", () => {
+    const points = benchmarkSeries(registry, "bench", "bench:v1:tools-off", new Set(registry.labs.map((lab) => lab.id)))
+      .map((point, index) => ({ ...point, result: { ...point.result, score: 1000 + index * 100, unit: "elo" as const } }));
+    const domain = scoreDomain(points, "elo", true);
+    assert.ok(domain.min < 1000);
+    assert.ok(domain.max > 1100);
+    assert.ok(domain.ticks.length >= 4 && domain.ticks.length <= 6);
+  });
+
+  it("describes every interactive model stamp", () => {
+    assert.equal(modelAriaLabel(registry.models[0], registry.labs[1]), "OpenAI A, released 2019-02-14, preview");
+  });
 });
