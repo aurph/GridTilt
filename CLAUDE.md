@@ -25,7 +25,7 @@ the citizen-investor researching the AI power economy, not fund analysts or day 
 | Analysis (blog) | /blog | G+8 |
 | Backlog | /queue | G+9 |
 | Compute Frontier | /compute-frontier (+ /:id, /compare, /methodology) | G+0 |
-| Neocloud Intel | /neocloud-intel | G+N |
+| GPU Prices (Prices, Economics, Frontier tabs) | /neocloud-intel | G+N |
 | AI Power Deals | /power-deals | G+D |
 | The Buildout Brief | /brief | G+B |
 | GPU Economics | /gpu-economics | G+E |
@@ -76,6 +76,9 @@ Derived from the code; starred rules confirmed by Jack 2026-07-02.
   gpu-history.ts, brief.ts, physical.ts, social-format.ts). New module = pure module + thin
   route + test. server/physical.ts is the house template: constant URL, in-memory TTL cache,
   typed honest degradation ({configured:false} when keyless, 502 on failure), never fabricate.
+- Frontier model data is public at `/api/frontier-models`. Benchmark records require a cited
+  source, native unit, evaluation setting, and exact comparability key. Never connect or rank
+  results that only share a benchmark name.
 - Env: process.env direct. Required: UNSUB_TOKEN_SECRET (boot throws), ADMIN_API_KEY (admin 503s
   without). Optional: RESEND_API_KEY, EIA_API_KEY, NEWSDATA_API_KEY, X_API_KEY, X_API_SECRET,
   X_ACCESS_TOKEN, X_ACCESS_TOKEN_SECRET, X_POSTING_ENABLED, DISABLE_DATACENTER_INGESTER
@@ -110,6 +113,7 @@ Schedulers (no node-cron anywhere):
 
 server/data custody (the fragility map):
 - Hand-curated, code never writes: catalysts.json, clusters.json, supply-chain-stages.json,
+  frontier-models.json,
   hyperscaler-capex.json, content/blog/articles.json (admin blog CRUD can also write it; see debt).
 - Machine-written, never hand-edit: datacenters.json, datacenters-pending.json, index-history.json,
   gpu-price-history.json, market-constants.json, social-log.json, subscribers.json,

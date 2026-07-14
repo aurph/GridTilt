@@ -83,7 +83,11 @@ export default function FrontierModels({ embedded = false }: { embedded?: boolea
   const selected = query.data?.models.find((model) => model.id === view?.modelId) ?? null;
   const selectedLab = query.data?.labs.find((lab) => lab.id === selected?.labId) ?? null;
   const sourceMap = useMemo(() => new Map((query.data?.sources ?? []).map((source) => [source.id, source])), [query.data?.sources]);
-  const mobileGroups = useMemo(() => query.data && view ? groupModelsByYear(query.data.models.filter((model) => visibleLabs.has(model.labId))) : [], [query.data, view, visibleLabs]);
+  const mobileGroups = useMemo(() => {
+    if (!query.data || !view) return [];
+    const models = view.lens === "benchmark" ? points.map((point) => point.model) : query.data.models.filter((model) => visibleLabs.has(model.labId));
+    return groupModelsByYear(models);
+  }, [points, query.data, view, visibleLabs]);
 
   function chooseFamily(family: BenchmarkFamily) {
     if (!query.data || !view) return;
@@ -177,13 +181,15 @@ export default function FrontierModels({ embedded = false }: { embedded?: boolea
           <div className="mt-4 space-y-2">{points.map((point) => <button key={point.model.id} onClick={() => setView({ ...view, modelId: point.model.id })} className="flex w-full items-center justify-between rounded border border-subtle px-3 py-2 text-left"><span className="text-xs text-foreground">{point.lab.name} · {point.model.name}</span><span className="font-mono text-sm text-brand">{scoreText(point.result.score, point.result.unit)}</span></button>)}</div>
         </Card>
       ) : (
-        <Card className="hidden overflow-x-auto border-card-border p-2 md:block" ref={chartRef}>
-          {chartWidth > 0 && <FrontierRelayChart width={chartWidth - 16} height={chartHeight} registry={registry} lens={view.lens} releaseRows={rows} benchmarkPoints={points} benchmark={benchmark} selectedModelId={view.modelId} onSelectModel={(modelId) => setView({ ...view, modelId })} />}
+        <Card className="hidden overflow-x-auto border-card-border p-2 md:block">
+          <div ref={chartRef} className="min-h-[430px] w-full">
+            <FrontierRelayChart width={Math.max(chartWidth, 860)} height={chartHeight} registry={registry} lens={view.lens} releaseRows={rows} benchmarkPoints={points} benchmark={benchmark} selectedModelId={view.modelId} onSelectModel={(modelId) => setView({ ...view, modelId })} />
+          </div>
         </Card>
       )}
 
       <div className="space-y-5 md:hidden" data-testid="frontier-mobile-ledger">
-        {mobileGroups.map((group) => <div key={group.year}><div className="sticky top-0 z-10 mb-2 border-b border-border bg-background/95 py-1 font-mono text-xs text-brand backdrop-blur">{group.year}</div><div className="space-y-1">{group.models.map((model) => { const lab = registry.labs.find((item) => item.id === model.labId)!; return <button key={model.id} onClick={() => setView({ ...view, modelId: model.id })} className={`grid w-full grid-cols-[70px_1fr_auto] items-center gap-2 rounded border px-2.5 py-2 text-left ${model.id === view.modelId ? "border-brand/60 bg-brand/5" : "border-subtle"}`}><span className="font-mono text-9 text-muted-foreground">{model.releaseDate.slice(5)}</span><span><span className="block text-xs text-foreground">{model.name}</span><span className="text-9 font-mono" style={{ color: lab.color }}>{lab.name}</span></span><span className="text-8 font-mono uppercase text-muted-foreground/60">{model.releaseStatus}</span></button>; })}</div></div>)}
+        {mobileGroups.map((group) => <div key={group.year}><div className="sticky top-0 z-10 mb-2 border-b border-border bg-background/95 py-1 font-mono text-xs text-brand backdrop-blur">{group.year}</div><div className="space-y-1">{group.models.map((model) => { const lab = registry.labs.find((item) => item.id === model.labId)!; const point = points.find((item) => item.model.id === model.id); return <button key={model.id} onClick={() => setView({ ...view, modelId: model.id })} className={`grid w-full grid-cols-[70px_1fr_auto] items-center gap-2 rounded border px-2.5 py-2 text-left ${model.id === view.modelId ? "border-brand/60 bg-brand/5" : "border-subtle"}`}><span className="font-mono text-9 text-muted-foreground">{model.releaseDate.slice(5)}</span><span><span className="block text-xs text-foreground">{model.name}</span><span className="text-9 font-mono" style={{ color: lab.color }}>{lab.name}</span></span><span className={`font-mono ${point ? "text-sm text-brand" : "text-8 uppercase text-muted-foreground/60"}`}>{point ? scoreText(point.result.score, point.result.unit) : model.releaseStatus}</span></button>; })}</div></div>)}
       </div>
 
       {selected && selectedLab && (

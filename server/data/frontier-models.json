@@ -16,16 +16,16 @@
   ],
   "benchmarks": [
     { "id": "mmlu", "name": "MMLU", "family": "general", "unit": "percent", "higherIsBetter": true, "introducedAt": "2020-09-07" },
-    { "id": "aa-index-4-1", "name": "Artificial Analysis Intelligence Index v4.1", "family": "general", "unit": "index", "higherIsBetter": true, "introducedAt": "2026-01-01" },
+    { "id": "aa-index-4-1", "name": "Artificial Analysis Intelligence Index v4.1", "family": "general", "unit": "index", "higherIsBetter": true },
     { "id": "gpqa-diamond", "name": "GPQA Diamond", "family": "reasoning", "unit": "percent", "higherIsBetter": true, "introducedAt": "2023-11-20" },
-    { "id": "aime-2025", "name": "AIME 2025", "family": "reasoning", "unit": "percent", "higherIsBetter": true, "introducedAt": "2025-02-01" },
+    { "id": "aime-2025", "name": "AIME 2025", "family": "reasoning", "unit": "percent", "higherIsBetter": true },
     { "id": "arc-agi-2", "name": "ARC-AGI-2", "family": "reasoning", "unit": "percent", "higherIsBetter": true, "introducedAt": "2025-03-24" },
     { "id": "swe-bench-verified", "name": "SWE-bench Verified", "family": "coding", "unit": "percent", "higherIsBetter": true, "introducedAt": "2024-08-13" },
-    { "id": "swe-bench-pro", "name": "SWE-Bench Pro", "family": "coding", "unit": "percent", "higherIsBetter": true, "introducedAt": "2025-09-01" },
-    { "id": "deep-swe-1-0", "name": "DeepSWE 1.0", "family": "coding", "unit": "percent", "higherIsBetter": true, "introducedAt": "2026-01-01" },
-    { "id": "terminal-bench-2-0", "name": "Terminal-Bench 2.0", "family": "agents", "unit": "percent", "higherIsBetter": true, "introducedAt": "2025-09-15" },
-    { "id": "terminal-bench-2-1", "name": "Terminal-Bench 2.1", "family": "agents", "unit": "percent", "higherIsBetter": true, "introducedAt": "2026-04-01" },
-    { "id": "tau2-bench", "name": "Tau2-Bench", "family": "agents", "unit": "percent", "higherIsBetter": true, "introducedAt": "2025-02-01" },
+    { "id": "swe-bench-pro", "name": "SWE-Bench Pro", "family": "coding", "unit": "percent", "higherIsBetter": true },
+    { "id": "deep-swe-1-0", "name": "DeepSWE 1.0", "family": "coding", "unit": "percent", "higherIsBetter": true },
+    { "id": "terminal-bench-2-0", "name": "Terminal-Bench 2.0", "family": "agents", "unit": "percent", "higherIsBetter": true },
+    { "id": "terminal-bench-2-1", "name": "Terminal-Bench 2.1", "family": "agents", "unit": "percent", "higherIsBetter": true },
+    { "id": "tau2-bench", "name": "Tau2-Bench", "family": "agents", "unit": "percent", "higherIsBetter": true },
     { "id": "mmmu", "name": "MMMU", "family": "multimodal", "unit": "percent", "higherIsBetter": true, "introducedAt": "2023-11-27" }
   ],
   "sources": [
