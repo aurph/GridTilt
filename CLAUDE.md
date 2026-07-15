@@ -143,11 +143,11 @@ server/data custody (the fragility map):
 
 Documented, not to fix casually or silently:
 
-- FAKE DATA STILL LIVE: /api/stack serves a Math.random CCJ/CEG correlation scatter, regenerated
-  each request (routes.ts ~426-466, ~1959-1985). The only fabricated data on the server;
-  contradicts the honest-data doctrine. Unmerged PR #2 removes it.
-- Unmerged security hardening: PR #1 branch fix/m0-m1-truth-security (now conflicts with main)
-  holds five verified low/medium closes; cherry-pick commit da97234 rather than rebasing.
+- ~~FAKE DATA~~ RESOLVED on fix/security-closes: the Math.random CCJ/CEG scatter was replaced
+  with real weekly closes (SRUUF physical-uranium proxy vs CCJ/CEG, server/correlation.ts,
+  6h cache; empty state instead of fallback data when Yahoo fails).
+- ~~Unmerged security hardening~~ RESOLVED on fix/security-closes: da97234 (SEC-1..5 +
+  auth-boundary tests) cherry-picked cleanly. PR #1 can be closed once this merges.
 - PR #2 (feat/real-metrics) proposes retiring the sentiment indices for a sourced scoreboard;
   main kept the indices (served at /api/kpis, out of the social rotation). Owner decision pending.
 - No CI (no .github/ at all). Tests and tsc run only when someone remembers.

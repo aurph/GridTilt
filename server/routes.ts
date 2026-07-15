@@ -32,6 +32,7 @@ import { computeClusterMetrics, type ClusterLite } from "./clusters";
 import { computeGpuIndex } from "./gpu-index";
 import { recordDailyGpuPrices, recordedByModel } from "./gpu-history";
 import { computeDealMetrics, type DealProject } from "./deals";
+import { buildScatter, type WeeklyClose, type ScatterPoint } from "./correlation";
 import { composeBrief, renderBriefText, type BriefInput } from "./brief";
 import { computeGpuEconomics, TRAINING_PRESETS } from "./gpu-economics";
 import {
@@ -412,67 +413,61 @@ function deriveSmrPolicyScore(): number {
   }
 }
 
-// Generate scatter data with a target Pearson r using the standard linear noise model:
-//   y = r * x_std + sqrt(1 - r^2) * noise_std  (both in z-score space, then rescale)
-function gaussianRandom(): number {
-  // Box-Muller
-  const u1 = Math.random() || 1e-10;
-  const u2 = Math.random();
-  return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+// ─── Uranium correlation (real weekly closes, see server/correlation.ts) ───
+// x-axis proxy is the Sprott Physical Uranium Trust (SRUUF, USD OTC listing):
+// it holds physical U3O8, so its share price tracks spot without the
+// circularity of URA (which holds CCJ itself). Math lives in correlation.ts.
+const URANIUM_PROXY_TICKER = "SRUUF";
+const CORRELATION_CACHE_TTL = 6 * 60 * 60 * 1000; // weekly bars; 6h is plenty
+
+interface CorrelationPayload {
+  points: ScatterPoint[];
+  ccjR: number | null;
+  cegR: number | null;
+  weeks: number;
+  proxy: string;
+}
+const EMPTY_CORRELATION: CorrelationPayload = { points: [], ccjR: null, cegR: null, weeks: 0, proxy: URANIUM_PROXY_TICKER };
+let correlationCache: { data: CorrelationPayload; timestamp: number } | null = null;
+
+function toWeeklyCloses(chart: any): WeeklyClose[] {
+  const quotes: any[] = chart?.quotes ?? [];
+  return quotes
+    .filter((q) => q?.date && typeof q.close === "number" && Number.isFinite(q.close))
+    .map((q) => ({ date: new Date(q.date).toISOString().slice(0, 10), close: q.close }));
 }
 
-// CCJ (Cameco): pure uranium miner - tight beta to U3O8 spot, target r ~ 0.82
-// Uranium spot range approx $65-$110 over 52-week scatter; CCJ approx $90-$135 (Mar 2026 price ~$113)
-function generateCCJCorrelationData() {
-  const data = [];
-  const targetR = 0.82;
-  const sqrtTerm = Math.sqrt(1 - targetR * targetR);
-  for (let i = 0; i < 52; i++) {
-    const x = gaussianRandom(); // shared factor (uranium direction)
-    const e = gaussianRandom(); // idiosyncratic noise
-    const uStd = x;
-    const cStd = targetR * x + sqrtTerm * e;
-    // Rescale: uranium mean=86, sd=11; ccj mean=112, sd=11 (2025-2026 price ranges)
-    const uranium = parseFloat((86 + uStd * 11).toFixed(2));
-    const ccj = parseFloat((112 + cStd * 11).toFixed(2));
-    data.push({
-      uranium: Math.max(60, Math.min(115, uranium)),
-      ccj: Math.max(82, Math.min(148, ccj))
-    });
+async function getUraniumCorrelation(): Promise<CorrelationPayload> {
+  if (correlationCache && Date.now() - correlationCache.timestamp < CORRELATION_CACHE_TTL) {
+    return correlationCache.data;
   }
-  return data;
-}
-
-// CEG (Constellation Energy): nuclear utility - looser uranium beta, target r ~ 0.65
-// CEG influenced by electricity contracts, capex, and macro beyond uranium spot (Mar 2026 price ~$315)
-function generateCEGCorrelationData() {
-  const data = [];
-  const targetR = 0.65;
-  const sqrtTerm = Math.sqrt(1 - targetR * targetR);
-  for (let i = 0; i < 52; i++) {
-    const x = gaussianRandom();
-    const e = gaussianRandom();
-    const uStd = x;
-    const cStd = targetR * x + sqrtTerm * e;
-    // Rescale: uranium mean=86, sd=11; ceg mean=310, sd=60 (2025-2026 price ranges)
-    const uranium = parseFloat((86 + uStd * 11).toFixed(2));
-    const ceg = parseFloat((310 + cStd * 60).toFixed(2));
-    data.push({
-      uranium: Math.max(60, Math.min(115, uranium)),
-      ceg: Math.max(160, Math.min(470, ceg))
-    });
+  try {
+    const YahooFinanceClass = (await import("yahoo-finance2")).default;
+    const yahooFinance = new YahooFinanceClass({ suppressNotices: ["yahooSurvey"] });
+    const period2 = new Date();
+    const period1 = new Date(period2.getTime() - 372 * 24 * 60 * 60 * 1000); // ~53 weeks
+    const opts = { period1, period2, interval: "1wk" as const };
+    const [proxy, ccj, ceg] = await Promise.all([
+      yahooFinance.chart(URANIUM_PROXY_TICKER, opts).catch(() => null),
+      yahooFinance.chart("CCJ", opts).catch(() => null),
+      yahooFinance.chart("CEG", opts).catch(() => null),
+    ]);
+    const proxyCloses = toWeeklyCloses(proxy);
+    const ccjScatter = buildScatter(proxyCloses, toWeeklyCloses(ccj));
+    const cegScatter = buildScatter(proxyCloses, toWeeklyCloses(ceg));
+    const data: CorrelationPayload = {
+      points: ccjScatter.points,
+      ccjR: ccjScatter.r,
+      cegR: cegScatter.r,
+      weeks: ccjScatter.weeks,
+      proxy: URANIUM_PROXY_TICKER,
+    };
+    // Only cache a real result; an empty one should retry on the next request.
+    if (data.points.length > 0) correlationCache = { data, timestamp: Date.now() };
+    return data.points.length > 0 ? data : correlationCache?.data ?? EMPTY_CORRELATION;
+  } catch {
+    return correlationCache?.data ?? EMPTY_CORRELATION;
   }
-  return data;
-}
-
-function calculateCorrelation(xs: number[], ys: number[]) {
-  const n = xs.length;
-  const meanX = xs.reduce((s, v) => s + v, 0) / n;
-  const meanY = ys.reduce((s, v) => s + v, 0) / n;
-  const num = xs.reduce((s, v, i) => s + (v - meanX) * (ys[i] - meanY), 0);
-  const denX = Math.sqrt(xs.reduce((s, v) => s + Math.pow(v - meanX, 2), 0));
-  const denY = Math.sqrt(ys.reduce((s, v) => s + Math.pow(v - meanY, 2), 0));
-  return num / (denX * denY);
 }
 
 // ─── Stack + Top-Movers cache (10-min TTL per timeframe) ───────────────────
@@ -1959,18 +1954,10 @@ export async function registerRoutes(
       const ALLOWED_TIMEFRAMES = ["1D", "5D", "1M"];
       const requested = (req.query.timeframe as string) || "1D";
       const timeframe = ALLOWED_TIMEFRAMES.includes(requested) ? requested : "1D";
-      const stockData = await getCachedStockData(timeframe);
-
-      const ccjCorrelationData = generateCCJCorrelationData();
-      const cegCorrelationData = generateCEGCorrelationData();
-      const ccjR = calculateCorrelation(
-        ccjCorrelationData.map((d) => d.uranium),
-        ccjCorrelationData.map((d) => d.ccj)
-      );
-      const cegR = calculateCorrelation(
-        cegCorrelationData.map((d) => d.uranium),
-        cegCorrelationData.map((d) => d.ceg)
-      );
+      const [stockData, uraniumCorrelation] = await Promise.all([
+        getCachedStockData(timeframe),
+        getUraniumCorrelation(),
+      ]);
 
       res.json({
         compute:             STACK_TICKERS.compute.map((t) => stockData[t]).filter(Boolean),
@@ -1986,9 +1973,11 @@ export async function registerRoutes(
         transmissionGrid:    STACK_TICKERS.transmissionGrid.map((t) => stockData[t]).filter(Boolean),
         cryptoAIDC:          STACK_TICKERS.cryptoAIDC.map((t) => stockData[t]).filter(Boolean),
         etfsBenchmarks:      STACK_TICKERS.etfsBenchmarks.map((t) => stockData[t]).filter(Boolean),
-        correlation: ccjCorrelationData,
-        correlationCoeff: parseFloat(ccjR.toFixed(3)),
-        cegCorrelationCoeff: parseFloat(cegR.toFixed(3)),
+        correlation: uraniumCorrelation.points,
+        correlationCoeff: uraniumCorrelation.ccjR,
+        cegCorrelationCoeff: uraniumCorrelation.cegR,
+        correlationWeeks: uraniumCorrelation.weeks,
+        correlationProxy: uraniumCorrelation.proxy,
       });
     } catch (error) {
       console.error("Stack error:", error);

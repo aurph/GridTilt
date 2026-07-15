@@ -38,7 +38,8 @@ interface StockData {
 }
 
 interface CorrelationPoint {
-  uranium: number;
+  date: string;
+  uranium: number; // Sprott Physical Uranium Trust (SRUUF) weekly close, $/share
   ccj: number;
 }
 
@@ -57,8 +58,10 @@ interface StackData {
   cryptoAIDC: StockData[];
   etfsBenchmarks: StockData[];
   correlation: CorrelationPoint[];
-  correlationCoeff: number;
-  cegCorrelationCoeff: number;
+  correlationCoeff: number | null;
+  cegCorrelationCoeff: number | null;
+  correlationWeeks?: number;
+  correlationProxy?: string;
 }
 
 function Sparkline({ data, color }: { data: number[] | undefined; color: string }) {
@@ -184,9 +187,11 @@ function StockCardSkeleton() {
 
 const CustomScatterTooltip = ({ active, payload }: any) => {
   if (active && payload && payload.length) {
+    const date = payload[0]?.payload?.date;
     return (
       <div className="bg-card border border-card-border rounded-lg p-3 text-xs shadow-xl">
-        <p className="text-muted-foreground">Uranium Spot: <span className="text-foreground font-mono font-medium">${payload[0]?.value?.toFixed(2)}/lb</span></p>
+        {date && <p className="text-muted-foreground font-mono mb-1">week of {date}</p>}
+        <p className="text-muted-foreground">SRUUF: <span className="text-foreground font-mono font-medium">${payload[0]?.value?.toFixed(2)}</span></p>
         <p className="text-muted-foreground">CCJ: <span className="text-foreground font-mono font-medium">${payload[1]?.value?.toFixed(2)}</span></p>
       </div>
     );
@@ -488,40 +493,48 @@ export default function TheStack() {
             <div className="flex items-start justify-between gap-4 mb-4 flex-wrap">
               <div>
                 <div className="flex items-center gap-2 mb-1">
-                  <h2 className="font-semibold text-foreground">Uranium Spot vs. CCJ Correlation</h2>
+                  <h2 className="font-semibold text-foreground">Physical Uranium vs. CCJ Correlation</h2>
                   <UITooltip>
                     <TooltipTrigger>
                       <Info className="h-3.5 w-3.5 text-muted-foreground" />
                     </TooltipTrigger>
                     <TooltipContent className="max-w-xs">
-                      <p className="text-xs leading-relaxed">CCJ is the largest public uranium miner with the highest direct spot price beta. CEG (utility) is influenced by electricity contracts and regulated returns. CCJ = commodity bet, CEG = infrastructure bet.</p>
+                      <p className="text-xs leading-relaxed">The x-axis is the Sprott Physical Uranium Trust (SRUUF), a fund that holds physical U3O8 — the cleanest public proxy for spot without the circularity of a miners ETF. CCJ is the largest public uranium miner; CEG (utility) is influenced by electricity contracts and regulated returns. CCJ = commodity bet, CEG = infrastructure bet. Computed from observed weekly closes (Yahoo Finance), not modeled.</p>
                     </TooltipContent>
                   </UITooltip>
                 </div>
-                <p className="text-xs text-muted-foreground">52-week uranium spot price ($/lb) vs. CCJ stock price. Each dot = one week.</p>
+                <p className="text-xs text-muted-foreground">
+                  Weekly closes, trailing year: Sprott Physical Uranium Trust (SRUUF) vs. CCJ. Each dot = one week{typeof data?.correlationWeeks === "number" && data.correlationWeeks > 0 ? ` (${data.correlationWeeks} observed)` : ""}.
+                </p>
               </div>
               <div className="flex items-center gap-6">
-                {data?.correlationCoeff !== undefined && (
-                  <div className="text-right">
-                    <p className="text-xs text-muted-foreground font-mono">CCJ Pearson r</p>
-                    <p className="text-2xl font-bold font-mono text-[#F0A500]">{data.correlationCoeff.toFixed(3)}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {data.correlationCoeff > 0.7 ? "Strong" : data.correlationCoeff > 0.4 ? "Moderate" : "Weak"} correlation
-                    </p>
-                  </div>
-                )}
-                {data?.cegCorrelationCoeff !== undefined && (
-                  <div className="text-right">
-                    <p className="text-xs text-muted-foreground font-mono">CEG Pearson r</p>
-                    <p className="text-2xl font-bold font-mono text-foreground">{data.cegCorrelationCoeff.toFixed(3)}</p>
-                    <p className="text-xs text-muted-foreground">Utility beta</p>
-                  </div>
-                )}
+                <div className="text-right">
+                  <p className="text-xs text-muted-foreground font-mono">CCJ Pearson r</p>
+                  <p className="text-2xl font-bold font-mono text-[#F0A500]">
+                    {typeof data?.correlationCoeff === "number" ? data.correlationCoeff.toFixed(3) : "—"}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {typeof data?.correlationCoeff !== "number"
+                      ? "no data"
+                      : Math.abs(data.correlationCoeff) > 0.7 ? "Strong correlation" : Math.abs(data.correlationCoeff) > 0.4 ? "Moderate correlation" : "Weak correlation"}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-muted-foreground font-mono">CEG Pearson r</p>
+                  <p className="text-2xl font-bold font-mono text-foreground">
+                    {typeof data?.cegCorrelationCoeff === "number" ? data.cegCorrelationCoeff.toFixed(3) : "—"}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Utility beta</p>
+                </div>
               </div>
             </div>
 
             {isLoading ? (
               <Skeleton className="h-48 w-full" />
+            ) : !data?.correlation?.length ? (
+              <div className="h-48 flex items-center justify-center text-xs text-muted-foreground">
+                Live weekly price data unavailable right now — nothing is shown rather than modeled data. Retries automatically.
+              </div>
             ) : (
               <>
                 <ResponsiveContainer width="100%" height={260}>
@@ -535,7 +548,7 @@ export default function TheStack() {
                       tick={{ fill: "#6b7280", fontSize: 11 }}
                       tickLine={false}
                       axisLine={{ stroke: "rgba(255,255,255,0.08)" }}
-                      label={{ value: "Uranium Spot ($/lb)", position: "insideBottom", offset: -10, fill: "#6b7280", fontSize: 11 }}
+                      label={{ value: "Sprott Physical U Trust (SRUUF, $)", position: "insideBottom", offset: -10, fill: "#6b7280", fontSize: 11 }}
                     />
                     <YAxis
                       dataKey="ccj"
