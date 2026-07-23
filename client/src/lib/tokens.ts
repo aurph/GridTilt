@@ -1,45 +1,55 @@
 /**
- * GridTilt data tokens (Lake 1) - TS mirror of the :root vars in index.css.
+ * GridTilt data tokens - TS mirror of the :root vars in index.css.
  * Chart code (Recharts/d3/SVG props) needs literal values, so this file is
  * the source of truth for anything rendered outside the CSS cascade.
- * Keep in sync with index.css; Lake 8 adds a test asserting the sync.
+ * Keep in sync with index.css; tokens-sync.test.ts asserts the sync.
+ *
+ * Editorial system (2026-07): warm paper ground, warm ink, brand orange as
+ * the single graphic accent. Surface semantics on paper: base = page
+ * ground, raised = plate (lighter), sunken = well (darker), overlay =
+ * popover stock.
  */
 
 export const SURFACE = {
-  sunken: "#0A0A08",
-  base: "#0E0E0C",
-  raised: "#1A1917",
-  overlay: "#26241F",
+  sunken: "#EFE9DD",
+  base: "#F6F2EA",
+  raised: "#F9F6F0",
+  overlay: "#FDFBF7",
 } as const;
 
 export const BORDER = {
-  subtle: "rgba(255, 255, 255, 0.06)",
-  strong: "rgba(255, 255, 255, 0.14)",
+  subtle: "rgba(28, 23, 18, 0.10)",
+  strong: "rgba(28, 23, 18, 0.22)",
 } as const;
 
+/**
+ * primary (#F07800) is GRAPHIC-ONLY on paper (~2.8:1 against the ground):
+ * logo mark, active bars, the highlighted series, rules. Orange rendered as
+ * TEXT uses secondary (#9E5000), which passes AA on the paper ground.
+ */
 export const BRAND = {
   primary: "#F07800",
-  secondary: "#F0A500",
-  glow: "rgba(240, 120, 0, 0.12)",
-  wash: "rgba(240, 120, 0, 0.05)",
+  secondary: "#9E5000",
+  glow: "rgba(240, 120, 0, 0.14)",
+  wash: "rgba(240, 120, 0, 0.07)",
 } as const;
 
 export const INK = {
-  primary: "#F2F1ED",
-  secondary: "#B0AEA6",
-  muted: "#8E8B84",
-  faint: "#716E67",
+  primary: "#1C1712",
+  secondary: "#5C544A",
+  muted: "#8A8172",
+  faint: "#A79D8C",
 } as const;
 
 /** State colors. Never use these for series identity. */
 export const SEMANTIC = {
-  positive: "#4ade80",
-  positiveDeep: "#22c55e",
-  negative: "#f87171",
-  negativeDeep: "#ef4444",
-  warning: "#eab308",
-  critical: "#dc2626",
-  info: "#4dabf7",
+  positive: "#1E7A46",
+  positiveDeep: "#146036",
+  negative: "#B3382C",
+  negativeDeep: "#8F2A20",
+  warning: "#8F6400",
+  critical: "#7A1F15",
+  info: "#2B5D8A",
 } as const;
 
 /**
@@ -48,17 +58,16 @@ export const SEMANTIC = {
  * spans (interpolation between anchors) render dashed at low opacity.
  */
 export const DATA_QUALITY = {
-  estimateFlag: "#d4a843",
+  estimateFlag: "#8F6400",
   estimatedOpacity: 0.55,
   syntheticOpacity: 0.35,
   syntheticDash: "4 3",
 } as const;
 
 /**
- * Categorical palette - fixed order, CVD-validated on both dark surfaces
- * (min adjacent deltaE 13.9 under protanopia/deuteranopia, all slots >= 3:1
- * contrast). Assign slots in order, never cycle. The ORDER is the
- * colorblind-safety mechanism: do not reorder or insert.
+ * Categorical palette - fixed order. Values are recalibrated for the paper
+ * ground in the chart-theme task; assign slots in order, never cycle. The
+ * ORDER is the colorblind-safety mechanism: do not reorder or insert.
  * At >4 visible series, direct labels are mandatory (color alone is not
  * enough in scatter/treemap contexts where any two slots can be adjacent).
  */
@@ -112,14 +121,15 @@ export const STATUS_COLORS = {
 } as const;
 
 export const CHART_CHROME = {
-  axis: "#55534E",
-  tick: "#8E8B84",
-  grid: "rgba(255, 255, 255, 0.05)",
-  crosshair: "rgba(255, 255, 255, 0.25)",
-  refLine: "rgba(255, 255, 255, 0.18)",
+  axis: "#8A8172",
+  tick: "#5C544A",
+  grid: "rgba(28, 23, 18, 0.08)",
+  crosshair: "rgba(28, 23, 18, 0.30)",
+  refLine: "rgba(28, 23, 18, 0.18)",
 } as const;
 
 export const FONT = {
-  mono: '"JetBrains Mono", monospace',
-  sans: "Inter, sans-serif",
+  mono: 'ui-monospace, "SF Mono", monospace',
+  sans: '"Public Sans", -apple-system, "Segoe UI", sans-serif',
+  serif: '"Newsreader", Georgia, serif',
 } as const;
