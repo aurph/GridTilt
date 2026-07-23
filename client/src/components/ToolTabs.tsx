@@ -40,21 +40,27 @@ export function ToolTabs({
   className?: string;
 }) {
   return (
-    <div className={`flex items-center gap-1.5 ${className}`} role="tablist">
+    <div
+      className={`flex items-center gap-5 border-b border-rule ${className}`}
+      role="tablist"
+    >
       {tabs.map((t) => (
         <button
           key={t.id}
           role="tab"
           aria-selected={active === t.id}
           onClick={() => onChange(t.id)}
-          className={`px-3 py-1 rounded border text-xs font-mono font-semibold transition-colors ${
+          className={`relative pb-2 text-[13.5px] leading-none transition-colors duration-fast ${
             active === t.id
-              ? "border-brand/60 text-brand bg-brand/10"
-              : "border-subtle text-muted-foreground hover:text-foreground"
+              ? "font-semibold text-brand-ink"
+              : "text-ink-secondary hover:text-ink"
           }`}
           data-testid={`tool-tab-${t.id}`}
         >
           {t.label}
+          {active === t.id && (
+            <span aria-hidden className="absolute inset-x-0 -bottom-px h-[2px] bg-brand" />
+          )}
         </button>
       ))}
     </div>
