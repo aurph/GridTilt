@@ -1,12 +1,8 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft } from "lucide-react";
-import { PageHeader } from "@/components/PageHeader";
-import { STATUS_COLORS } from "@/lib/tokens";
+import { EstFlag, PageShell, PageTitle, Provenance } from "@/components/editorial";
 
 interface Cluster {
   id: string;
@@ -27,10 +23,16 @@ interface Cluster {
   sources: string[];
 }
 
-const STATUS_COLOR: Record<string, string> = STATUS_COLORS;
+/** Status is typographic, not a pill: weight and ink step carry the state. */
+const STATUS_CLASS: Record<string, string> = {
+  operational: "font-semibold text-ink",
+  construction: "text-ink-secondary",
+  announced: "text-ink-muted",
+};
 
-function est(c: Cluster, field: string): string {
-  return c.estimated.includes(field) ? " est." : "";
+/** Ochre dagger on any value whose field is in the cluster's estimated[]. */
+function est(c: Cluster, field: string): ReactNode {
+  return c.estimated.includes(field) ? <EstFlag /> : null;
 }
 
 export default function ComputeFrontierCompare() {
@@ -52,98 +54,98 @@ export default function ComputeFrontierCompare() {
 
   const chosen = sel.map((id) => sorted.find((c) => c.id === id)).filter((c): c is Cluster => !!c);
 
-  const rows: Array<{ label: string; render: (c: Cluster) => ReactNode }> = [
+  const rows: Array<{ label: string; num?: boolean; render: (c: Cluster) => ReactNode }> = [
     { label: "Operator", render: (c) => c.operator },
-    { label: "Status", render: (c) => <Badge variant="outline" className="text-9 font-mono px-1.5 py-0" style={{ color: STATUS_COLOR[c.status], borderColor: `${STATUS_COLOR[c.status]}55` }}>{c.status}</Badge> },
+    { label: "Status", render: (c) => <span className={STATUS_CLASS[c.status] ?? "text-ink-muted"}>{c.status}</span> },
     { label: "Location", render: (c) => `${c.location.city}, ${c.location.state}` },
     { label: "Grid region", render: (c) => c.gridRegion },
     { label: "Chip", render: (c) => c.chipType },
-    { label: "GPUs", render: (c) => (c.gpuCount == null ? "not disclosed" : `${c.gpuCount.toLocaleString()}${est(c, "gpuCount")}`) },
-    { label: "Rated MW", render: (c) => (c.ratedPowerMW === 0 ? "—" : `${c.ratedPowerMW.toLocaleString()}${est(c, "ratedPowerMW")}`) },
-    { label: "Planned MW", render: (c) => `${c.plannedPowerMW.toLocaleString()}${est(c, "plannedPowerMW")}` },
+    { label: "GPUs", num: true, render: (c) => (c.gpuCount == null ? "not disclosed" : <>{c.gpuCount.toLocaleString()}{est(c, "gpuCount")}</>) },
+    { label: "Rated MW", num: true, render: (c) => (c.ratedPowerMW === 0 ? "—" : <>{c.ratedPowerMW.toLocaleString()}{est(c, "ratedPowerMW")}</>) },
+    { label: "Planned MW", num: true, render: (c) => <>{c.plannedPowerMW.toLocaleString()}{est(c, "plannedPowerMW")}</> },
     { label: "Energy", render: (c) => c.energySource },
     { label: "Workload", render: (c) => c.workload },
-    { label: "Online", render: (c) => `${c.onlineDate}${est(c, "onlineDate")}` },
-    { label: "Nuclear deal", render: (c) => (c.linkedDeal ? <Link href="/queue" className="text-brand hover:text-brand-2">{c.linkedDeal}</Link> : "none") },
+    { label: "Online", render: (c) => <>{c.onlineDate}{est(c, "onlineDate")}</> },
+    { label: "Nuclear deal", render: (c) => (c.linkedDeal ? <Link href="/queue" className="text-brand-ink no-underline hover:text-ink">{c.linkedDeal}</Link> : "none") },
   ];
 
   return (
-    <div className="flex flex-col h-full overflow-y-auto">
-      <PageHeader
+    <PageShell>
+      <PageTitle
         title="Compare clusters"
-        testId="cfc-header"
-        about={
-          <>Put two or three superclusters side by side. Values marked <span className="text-brand-2">est.</span> are GridTilt estimates or announced targets.</>
-        }
+        dek="Two or three superclusters side by side, figure for figure."
         right={
-          <Link href="/compute-frontier" className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground" data-testid="cfc-back">
-            <ArrowLeft className="h-3.5 w-3.5" /> Compute Frontier
+          <Link href="/compute-frontier" className="text-[12.5px] font-semibold text-brand-ink no-underline hover:text-ink" data-testid="cfc-back">
+            ← Compute Frontier
           </Link>
         }
+        testId="cfc-header"
       />
 
-      <div className="flex-1 p-4 sm:p-6 space-y-4">
-        {isLoading ? (
-          <Skeleton className="h-64 w-full" />
-        ) : isError || sorted.length === 0 ? (
-          <p className="text-sm text-muted-foreground" data-testid="cfc-error">Cluster dataset unavailable.</p>
-        ) : (
-          <>
-            {/* Column pickers */}
-            <div className="flex flex-wrap gap-3" data-testid="cfc-pickers">
-              {[0, 1, 2].map((i) => (
-                <label key={i} className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <span className="text-muted-foreground/60">{String.fromCharCode(65 + i)}</span>
-                  <select
-                    value={sel[i]}
-                    onChange={(e) => setSel((s) => s.map((v, j) => (j === i ? e.target.value : v)))}
-                    className="bg-surface-base border border-subtle rounded px-1.5 py-1 text-xs text-foreground focus:outline-none focus:border-brand/40 max-w-[220px]"
-                    data-testid={`cfc-select-${i}`}
-                  >
-                    <option value="">none</option>
-                    {sorted.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
-                </label>
-              ))}
-            </div>
+      {isLoading ? (
+        <Skeleton className="h-64 w-full" />
+      ) : isError || sorted.length === 0 ? (
+        <p className="text-[14px] text-ink-secondary" data-testid="cfc-error">Cluster dataset unavailable.</p>
+      ) : (
+        <>
+          {/* Column pickers */}
+          <div className="flex flex-wrap gap-x-5 gap-y-2 mb-5" data-testid="cfc-pickers">
+            {[0, 1, 2].map((i) => (
+              <label key={i} className="flex items-center gap-1.5 text-[13px] text-ink-secondary">
+                <span className="text-ink-muted">{String.fromCharCode(65 + i)}</span>
+                <select
+                  value={sel[i]}
+                  onChange={(e) => setSel((s) => s.map((v, j) => (j === i ? e.target.value : v)))}
+                  className="bg-paper border border-rule rounded-sm px-1.5 py-1 text-[13px] text-ink hover:border-rule-strong max-w-[220px]"
+                  data-testid={`cfc-select-${i}`}
+                >
+                  <option value="">none</option>
+                  {sorted.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+              </label>
+            ))}
+          </div>
 
-            {/* Comparison table */}
-            {chosen.length === 0 ? (
-              <p className="text-sm text-muted-foreground" data-testid="cfc-empty">Pick at least one cluster to compare.</p>
-            ) : (
-              <Card className="border-card-border overflow-x-auto" data-testid="cfc-table">
-                <table className="w-full text-xs">
-                  <thead>
-                    <tr className="bg-surface-base border-b border-border">
-                      <th className="text-left px-4 py-2 text-10 font-mono uppercase tracking-wider text-muted-foreground font-medium w-32">Field</th>
+          {/* Comparison table: ruled columns, one field per row */}
+          {chosen.length === 0 ? (
+            <p className="text-[14px] text-ink-secondary" data-testid="cfc-empty">Pick at least one cluster to compare.</p>
+          ) : (
+            <div className="overflow-x-auto" data-testid="cfc-table">
+              <table className="print-table">
+                <thead>
+                  <tr>
+                    <th className="w-32">Field</th>
+                    {chosen.map((c) => (
+                      <th key={c.id} className="min-w-[180px]">
+                        <Link href={`/compute-frontier/${c.id}`} className="font-serif text-[15px] font-medium normal-case tracking-normal text-ink no-underline hover:text-brand-ink" style={{ fontVariantCaps: "normal" }}>
+                          {c.name}
+                        </Link>
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((row) => (
+                    <tr key={row.label}>
+                      <td className="text-ink-muted whitespace-nowrap">{row.label}</td>
                       {chosen.map((c) => (
-                        <th key={c.id} className="text-left px-4 py-2 min-w-[180px]">
-                          <Link href={`/compute-frontier/${c.id}`} className="text-foreground hover:text-brand font-semibold no-underline">{c.name}</Link>
-                        </th>
+                        <td key={c.id} className={row.num ? "tnum" : undefined}>{row.render(c)}</td>
                       ))}
                     </tr>
-                  </thead>
-                  <tbody>
-                    {rows.map((row) => (
-                      <tr key={row.label} className="border-b border-border/30 last:border-0">
-                        <td className="px-4 py-2 text-10 font-mono uppercase tracking-wider text-muted-foreground/70 align-top">{row.label}</td>
-                        {chosen.map((c) => (
-                          <td key={c.id} className="px-4 py-2 text-foreground align-top">{row.render(c)}</td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </Card>
-            )}
-          </>
-        )}
+                  ))}
+                </tbody>
+              </table>
+              <p className="mt-3 text-[12.5px] text-ink-muted">† estimated value</p>
+              <Provenance source="GridTilt cluster registry" extra="tracked, not exhaustive" />
+            </div>
+          )}
+        </>
+      )}
 
-        <p className="text-11 text-muted-foreground/60">
-          Back to the <Link href="/compute-frontier" className="text-brand hover:text-brand-2">Compute Frontier</Link> or read the{" "}
-          <Link href="/compute-frontier/methodology" className="text-brand hover:text-brand-2">methodology</Link>.
-        </p>
-      </div>
-    </div>
+      <p className="mt-8 text-[12.5px] text-ink-muted leading-relaxed">
+        Back to the <Link href="/compute-frontier" className="text-brand-ink no-underline hover:text-ink">Compute Frontier</Link> or read the{" "}
+        <Link href="/compute-frontier/methodology" className="text-brand-ink no-underline hover:text-ink">methodology</Link>.
+      </p>
+    </PageShell>
   );
 }
