@@ -1,33 +1,23 @@
 import { Link } from "wouter";
-import { Zap } from "lucide-react";
 
 export default function NotFound() {
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-background">
+    <div className="flex items-center justify-center py-28">
       <div className="flex flex-col items-center text-center px-6 max-w-md">
-        <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-brand/10 border border-brand/25 mb-6">
-          <Zap className="h-8 w-8 text-brand" />
-        </div>
-        <p className="text-10 font-bold uppercase tracking-widest text-muted-foreground mb-3 font-mono">
-          Grid Signal Lost
-        </p>
-        <h1 className="text-7xl font-bold tabular-nums text-brand mb-2">404</h1>
-        <p className="text-xl font-semibold text-foreground mb-3">
-          Page not found
-        </p>
-        <p className="text-sm text-muted-foreground leading-relaxed mb-8">
-          The grid coordinates you requested are offline. The AI power economy continues without this route.
+        <p className="font-serif font-medium text-[64px] leading-none text-brand mb-4 tnum">404</p>
+        <h1 className="font-serif font-medium text-[24px] text-ink mb-2">
+          This page is not on the grid.
+        </h1>
+        <p className="text-[14px] text-ink-secondary leading-relaxed mb-8">
+          The buildout moves fast, but this route never existed. Try a section instead.
         </p>
         <Link
-          href="/overview"
-          className="px-5 py-2.5 bg-brand/15 hover:bg-brand/25 border border-brand/30 rounded-md text-sm font-medium text-brand transition-colors"
+          href="/"
+          className="border border-ink px-5 py-2.5 text-[13.5px] font-semibold text-ink no-underline transition-colors hover:border-brand-ink hover:text-brand-ink"
           data-testid="link-home"
         >
-          Return to Tilt Overview
+          Front page
         </Link>
-        <p className="text-xs text-muted-foreground/50 mt-8 font-mono">
-          GridTilt -- gridtilt.com
-        </p>
       </div>
     </div>
   );

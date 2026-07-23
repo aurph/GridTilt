@@ -1,12 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AsOf, ErrorState } from "@/components/Freshness";
-import { Newspaper, Copy, Check, ChevronDown, ChevronUp } from "lucide-react";
-import { FONT } from "@/lib/tokens";
+import { PageShell, PageTitle } from "@/components/editorial";
+import { Copy, Check, ChevronDown, ChevronUp } from "lucide-react";
 
 interface BriefSection { heading: string; points: string[]; }
 interface Brief {
@@ -26,7 +24,7 @@ const SECTION_LINK: Record<string, string> = {
 };
 
 // `params` keeps the signature compatible with wouter's RouteComponentProps:
-// the /brief route still mounts this page directly (until the routing lake),
+// the /brief route still mounts this page directly (it 301s to /blog),
 // while the Analysis page renders <BriefPage embedded />.
 export default function BriefPage({ embedded = false }: { embedded?: boolean; params?: unknown }) {
   const { data, isLoading, isError, refetch, dataUpdatedAt } = useQuery<Brief>({ queryKey: ["/api/brief"] });
@@ -55,32 +53,34 @@ export default function BriefPage({ embedded = false }: { embedded?: boolean; pa
   const copyButton = data && (
     <button
       onClick={copy}
-      className="flex items-center gap-1.5 px-3 py-1.5 rounded border border-subtle text-xs font-mono text-muted-foreground hover:text-foreground hover:border-brand/40 transition-colors"
+      className="flex items-center gap-1.5 px-3 py-1.5 rounded-sm border border-rule text-[12.5px] text-ink-secondary hover:text-ink hover:border-rule-strong transition-colors"
       data-testid="brief-copy"
     >
       {copied ? <Check className="h-3.5 w-3.5 text-positive" /> : <Copy className="h-3.5 w-3.5" />}
-      {copied ? "copied" : "copy as text"}
+      {copied ? "Copied" : "Copy as text"}
     </button>
   );
 
   // Body shared by both modes: summary, sections, takeaway.
   const body = data && (
     <div className="space-y-5">
-      <p className="text-15 leading-relaxed text-foreground/90">{data.summary}</p>
+      <p className="font-serif text-[16.5px] leading-relaxed text-ink">{data.summary}</p>
 
       <div className="space-y-4">
         {data.sections.map((s) => (
           <section key={s.heading} data-testid={`brief-section-${s.heading}`}>
-            <div className="flex items-center justify-between mb-1.5">
-              <h3 className="text-xs font-mono uppercase tracking-wider text-brand">{s.heading}</h3>
+            <div className="flex items-baseline justify-between border-b border-rule pb-1 mb-2">
+              <h3 className="text-[14px] font-semibold text-ink">{s.heading}</h3>
               {SECTION_LINK[s.heading] && (
-                <Link href={SECTION_LINK[s.heading]} className="text-10 font-mono text-muted-foreground/50 hover:text-brand">open →</Link>
+                <Link href={SECTION_LINK[s.heading]} className="text-[12.5px] text-brand-ink no-underline hover:text-ink">
+                  Open →
+                </Link>
               )}
             </div>
             <ul className="space-y-1">
               {s.points.map((p, i) => (
-                <li key={i} className="text-sm text-foreground/80 leading-relaxed flex gap-2">
-                  <span className="text-brand/50 flex-shrink-0">·</span>
+                <li key={i} className="text-[14px] text-ink-secondary leading-relaxed flex gap-2">
+                  <span className="text-brand flex-shrink-0" aria-hidden>·</span>
                   <span>{p}</span>
                 </li>
               ))}
@@ -89,25 +89,22 @@ export default function BriefPage({ embedded = false }: { embedded?: boolean; pa
         ))}
       </div>
 
-      <div className="border-l-2 border-brand pl-4 py-1 bg-brand/5 rounded-r" data-testid="brief-takeaway">
-        <p className="text-sm text-foreground/90 leading-relaxed">{data.takeaway}</p>
+      <div className="border-l-2 border-brand pl-4 py-1" data-testid="brief-takeaway">
+        <p className="font-serif italic text-[15.5px] text-ink leading-relaxed">{data.takeaway}</p>
       </div>
     </div>
   );
 
   // Embedded mode (Analysis page): the host page owns the hero, so render a
-  // single self-contained card — today's read above the long-form archive.
+  // single self-contained block above the long-form archive.
   if (embedded) {
     return (
-      <Card className="border-brand/30 p-5 sm:p-6" data-testid="brief-embedded">
-        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 mb-4">
-          <div className="flex items-center gap-2">
-            <Newspaper className="h-4 w-4 text-brand" />
-            <h2 className="text-base font-semibold text-foreground tracking-tight" style={{ fontFamily: FONT.mono }}>
-              The Buildout Brief
-            </h2>
-            <Badge className="text-10 font-mono bg-brand/15 text-brand border-transparent">daily</Badge>
-          </div>
+      <section className="border-y-2 border-rule-strong py-5" data-testid="brief-embedded">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2 mb-4">
+          <h2 className="text-[17px] font-semibold text-ink">
+            The Buildout Brief
+            <span className="ml-2 text-[12.5px] font-normal text-ink-muted">today's read</span>
+          </h2>
           <div className="flex items-center gap-3">
             <AsOf updatedAt={dataUpdatedAt} intervalMs={900_000} />
             {copyButton}
@@ -125,19 +122,19 @@ export default function BriefPage({ embedded = false }: { embedded?: boolean; pa
           <ErrorState label="The brief failed to load." onRetry={() => refetch()} className="py-8" />
         ) : (
           <>
-            <div ref={contentRef} className={expanded ? undefined : "relative max-h-36 overflow-hidden"}>
+            <div ref={contentRef} className={expanded ? undefined : "relative max-h-40 overflow-hidden"}>
               <article className="space-y-4">
-                <h3 className="text-15 font-semibold text-foreground" style={{ fontFamily: FONT.mono }}>{data.title}</h3>
+                <h3 className="font-serif font-medium text-[20px] text-ink">{data.title}</h3>
                 {body}
               </article>
               {!expanded && clipped && (
-                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-card to-transparent" />
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-paper to-transparent" />
               )}
             </div>
             {(clipped || expanded) && (
               <button
                 onClick={() => setExpanded((v) => !v)}
-                className="mt-3 flex items-center gap-1 text-xs font-mono text-brand hover:text-brand-2 transition-colors"
+                className="mt-3 flex items-center gap-1 text-[13px] font-semibold text-brand-ink hover:text-ink transition-colors"
                 data-testid="brief-expand"
               >
                 {expanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
@@ -146,34 +143,20 @@ export default function BriefPage({ embedded = false }: { embedded?: boolean; pa
             )}
           </>
         )}
-      </Card>
+      </section>
     );
   }
 
   return (
-    <div className="flex flex-col h-full overflow-y-auto">
-      {/* Header */}
-      <div className="border-b border-border px-4 sm:px-6 py-6 sm:py-8" data-testid="brief-header">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="max-w-3xl">
-            <div className="flex items-center gap-2 mb-2">
-              <Newspaper className="h-5 w-5 text-brand" />
-              <h1 className="text-2xl sm:text-3xl font-semibold text-foreground tracking-tight" style={{ fontFamily: FONT.mono }}>
-                The Buildout Brief
-              </h1>
-            </div>
-            <p className="text-muted-foreground text-sm leading-relaxed">
-              One synthesized read on the state of the AI power buildout, generated from every GridTilt module:
-              compute clusters, GPU rental prices, the grid queue, and corporate power deals. Every figure is live and
-              sourced in its module. Copy it for a newsletter or a thread.
-            </p>
-          </div>
-          {copyButton}
-        </div>
-      </div>
-
-      <div className="flex-1 p-4 sm:p-6">
-        <Card className="border-card-border p-5 sm:p-7 max-w-3xl mx-auto" data-testid="brief-body">
+    <PageShell>
+      <div className="max-w-3xl mx-auto">
+        <PageTitle
+          title="The Buildout Brief"
+          dek="One synthesized read on the state of the AI power buildout, generated from every GridTilt dataset. Every figure is live and sourced in its section."
+          right={copyButton}
+          testId="brief-header"
+        />
+        <div data-testid="brief-body">
           {isLoading ? (
             <div className="space-y-4">
               <Skeleton className="h-7 w-2/3" />
@@ -184,20 +167,20 @@ export default function BriefPage({ embedded = false }: { embedded?: boolean; pa
             <ErrorState label="The brief failed to load." onRetry={() => refetch()} className="py-12" />
           ) : (
             <article className="space-y-5">
-              <header className="border-b border-border pb-4 flex flex-wrap items-baseline justify-between gap-2">
-                <h2 className="text-xl font-semibold text-foreground" style={{ fontFamily: FONT.mono }}>{data.title}</h2>
+              <header className="flex flex-wrap items-baseline justify-between gap-2">
+                <h2 className="font-serif font-medium text-[24px] text-ink">{data.title}</h2>
                 <AsOf updatedAt={dataUpdatedAt} intervalMs={900_000} />
               </header>
 
               {body}
 
-              <p className="text-11 text-muted-foreground/50 pt-2 border-t border-border">
+              <p className="text-[12.5px] text-ink-muted pt-2 border-t border-rule">
                 Auto-generated from live data. The weekly cadence is what the daily social posts roll up into.
               </p>
             </article>
           )}
-        </Card>
+        </div>
       </div>
-    </div>
+    </PageShell>
   );
 }
