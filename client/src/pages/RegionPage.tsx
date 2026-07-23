@@ -1,7 +1,6 @@
 import { useParams, Link } from "wouter";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, MapPin } from "lucide-react";
+import { PageShell, Provenance, PullStat, RuleSection } from "@/components/editorial";
+import { RTO_CONFIG, RTO_SOURCE_NOTE } from "@/data/rto-config";
 
 const REGION_META: Record<string, { name: string; fullName: string; states: string; description: string }> = {
   "pjm": {
@@ -46,75 +45,117 @@ const ALL_REGIONS = Object.keys(REGION_META);
 export default function RegionPage() {
   const { slug } = useParams<{ slug: string }>();
   const region = slug ? REGION_META[slug] : null;
+  const rto = slug ? RTO_CONFIG[slug.toUpperCase()] : undefined;
 
   if (!region) {
     return (
-      <div className="max-w-5xl mx-auto p-6">
-        <Card className="p-8 border-card-border text-center">
-          <AlertTriangle className="h-8 w-8 text-negative mx-auto mb-3" />
-          <h1 className="text-lg font-semibold mb-2">Region Not Found</h1>
-          <p className="text-sm text-muted-foreground">
-            <Link href="/power-map" className="text-brand">View the Power Map</Link> to see all grid regions.
+      <PageShell>
+        <div className="pt-7 sm:pt-9">
+          <h1 className="font-serif font-medium text-[30px] sm:text-[34px] leading-[1.05] tracking-tight text-ink">
+            Region not found
+          </h1>
+          <p className="mt-3 max-w-[68ch] text-[15px] leading-relaxed text-ink-secondary">
+            View the{" "}
+            <Link href="/power-map" className="text-brand-ink no-underline hover:text-ink">Power Map</Link>{" "}
+            to see all grid regions.
           </p>
-        </Card>
-      </div>
+        </div>
+      </PageShell>
     );
   }
 
   return (
-    <div className="max-w-5xl mx-auto p-6 space-y-6">
-      <nav className="flex items-center gap-2 text-xs text-muted-foreground" data-testid="breadcrumb">
-        <Link href="/" className="hover:text-foreground">GridTilt</Link>
-        <span>/</span>
-        <Link href="/power-map" className="hover:text-foreground">Power Map</Link>
-        <span>/</span>
-        <span className="text-foreground font-medium">{region.name}</span>
+    <PageShell>
+      <nav className="flex flex-wrap items-center gap-x-2 gap-y-1 pt-7 sm:pt-9 text-[12.5px] text-ink-muted" data-testid="breadcrumb">
+        <Link href="/" className="text-[12.5px] text-brand-ink no-underline hover:text-ink">GridTilt</Link>
+        <span>·</span>
+        <Link href="/power-map" className="text-[12.5px] text-brand-ink no-underline hover:text-ink">Power Map</Link>
+        <span>·</span>
+        <span className="text-ink font-medium">{region.name}</span>
       </nav>
 
-      <div>
-        <div className="flex items-center gap-3 mb-2">
-          <MapPin className="h-5 w-5 text-brand" />
-          <h1 className="text-2xl font-bold" data-testid="region-heading">{region.fullName} ({region.name})</h1>
-        </div>
-        <p className="text-xs text-muted-foreground mb-4">Coverage: {region.states}</p>
-        <p className="text-sm text-muted-foreground max-w-3xl">{region.description}</p>
+      {/* Reference-entry lead: serif name over a plain classification line */}
+      <div className="mt-4 pb-4 border-b border-rule">
+        <h1 className="font-serif font-medium text-[30px] sm:text-[34px] leading-[1.05] tracking-tight text-ink" data-testid="region-heading">
+          {region.fullName}
+        </h1>
+        <p className="mt-1.5 text-[13.5px] text-ink-muted">
+          {region.name} · North American grid region
+        </p>
+        <p className="mt-1 text-[12.5px] text-ink-muted">Coverage: {region.states}</p>
+        <p className="mt-3 max-w-[68ch] text-[15px] leading-relaxed text-ink-secondary">{region.description}</p>
       </div>
 
-      <Card className="p-5 border-card-border" data-testid="region-map-link">
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">Interactive Map</h2>
-        <p className="text-sm text-muted-foreground mb-3">
-          View all data center facilities in the {region.name} region on the interactive Power Map.
+      {/* Key figures */}
+      {rto && (
+        <div className="mt-5 pb-5 border-b border-rule">
+          <div className="flex flex-wrap gap-x-10 gap-y-5">
+            <PullStat
+              label="Projected reserve margin"
+              value={`${rto.reserveMargin.toFixed(1)}%`}
+              note="2026 projection"
+            />
+            <PullStat
+              label="AI-load signal"
+              value={rto.aiSignal}
+              note="GridTilt read on new large-load headroom"
+            />
+          </div>
+          <Provenance source={RTO_SOURCE_NOTE} />
+        </div>
+      )}
+
+      <RuleSection head="On the Power Map" testId="region-map-link">
+        <p className="max-w-[68ch] text-[14px] leading-relaxed text-ink-secondary">
+          Every tracked data center facility in the {region.name} region is plotted on the interactive Power Map.
         </p>
-        <Link
-          href={`/power-map?region=${slug}`}
-          className="inline-flex items-center gap-1.5 text-sm text-brand hover:text-brand-2 font-medium"
-          data-testid="link-filtered-map"
-        >
-          Open Power Map filtered to {region.name}
-        </Link>
-      </Card>
+        <p className="mt-2">
+          <Link
+            href={`/power-map?region=${slug}`}
+            className="text-[13.5px] font-semibold text-brand-ink no-underline hover:text-ink"
+            data-testid="link-filtered-map"
+          >
+            Open the Power Map filtered to {region.name} →
+          </Link>
+        </p>
+      </RuleSection>
 
-      <Card className="p-5 border-card-border" data-testid="related-regions">
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">Other Grid Regions</h2>
-        <div className="flex flex-wrap gap-2">
-          {ALL_REGIONS.filter((r) => r !== slug).map((r) => (
-            <Link key={r} href={`/region/${r}`}>
-              <Badge className="bg-muted/50 text-muted-foreground hover:bg-muted/70 cursor-pointer" data-testid={`link-region-${r}`}>
+      <RuleSection head="Other grid regions" testId="related-regions">
+        <p className="text-[13.5px] leading-relaxed">
+          {ALL_REGIONS.filter((r) => r !== slug).map((r, i, arr) => (
+            <span key={r}>
+              <Link
+                href={`/region/${r}`}
+                className="text-brand-ink no-underline hover:text-ink"
+                data-testid={`link-region-${r}`}
+              >
                 {REGION_META[r].name}
-              </Badge>
-            </Link>
+              </Link>
+              {i < arr.length - 1 && <span className="text-ink-muted"> · </span>}
+            </span>
           ))}
-        </div>
-      </Card>
+        </p>
+      </RuleSection>
 
-      <Card className="p-5 border-card-border">
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">Related Tools</h2>
-        <div className="space-y-2 text-sm">
-          <Link href="/power-map" className="block text-brand hover:text-brand-2">Power Map</Link>
-          <Link href="/trade" className="block text-brand hover:text-brand-2">Scenario Calculator</Link>
-          <Link href="/stack" className="block text-brand hover:text-brand-2">The Stack</Link>
-        </div>
-      </Card>
-    </div>
+      <RuleSection head="Related tools">
+        <ul>
+          <li className="border-b border-rule">
+            <Link href="/power-map" className="block py-2 text-[13.5px] text-brand-ink no-underline hover:text-ink">
+              Power Map
+            </Link>
+          </li>
+          <li className="border-b border-rule">
+            <Link href="/trade" className="block py-2 text-[13.5px] text-brand-ink no-underline hover:text-ink">
+              Scenario Calculator
+            </Link>
+          </li>
+          <li>
+            <Link href="/stack" className="block py-2 text-[13.5px] text-brand-ink no-underline hover:text-ink">
+              The Stack
+            </Link>
+          </li>
+        </ul>
+      </RuleSection>
+    </PageShell>
   );
 }

@@ -1,7 +1,9 @@
+import { useMemo } from "react";
 import { useParams, Link } from "wouter";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, Building2 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { Skeleton } from "@/components/ui/skeleton";
+import { PageShell, Provenance, PullStat, RuleSection } from "@/components/editorial";
+import { fmtGW } from "@/lib/real-gauges";
 
 const OPERATOR_META: Record<string, { name: string; description: string; strategy: string }> = {
   "google": {
@@ -48,82 +50,222 @@ const OPERATOR_META: Record<string, { name: string; description: string; strateg
 
 const ALL_OPERATORS = Object.keys(OPERATOR_META);
 
+/** The slice of /api/datacenters this page reads. */
+interface OperatorFacility {
+  id: number;
+  name: string;
+  company: string;
+  city: string;
+  state: string;
+  powerMW: number | null;
+  status: string;
+  gridOperator: string;
+  openDate: string;
+}
+
+const STATUS_LABELS: Record<string, string> = {
+  operational: "Operational",
+  construction: "Under construction",
+  announced: "Announced",
+};
+
+function fmtPowerMW(mw: number): string {
+  return mw >= 1000 ? fmtGW(mw) : `${Math.round(mw).toLocaleString()} MW`;
+}
+
 export default function OperatorPage() {
   const { slug } = useParams<{ slug: string }>();
   const operator = slug ? OPERATOR_META[slug] : null;
 
+  // Same facility dataset as the Power map and Today page; react-query
+  // dedupes the fetch across pages.
+  const { data: facilities, isLoading } = useQuery<OperatorFacility[]>({
+    queryKey: ["/api/datacenters"],
+    refetchInterval: 900000,
+    enabled: !!operator,
+  });
+
+  const own = useMemo(() => {
+    if (!operator || !facilities) return [];
+    return facilities
+      .filter((f) => f.company === operator.name)
+      .sort((a, b) => (b.powerMW ?? 0) - (a.powerMW ?? 0));
+  }, [facilities, operator]);
+
+  const totals = useMemo(() => {
+    let mw = 0;
+    let operational = 0;
+    let construction = 0;
+    let announced = 0;
+    for (const f of own) {
+      if (typeof f.powerMW === "number" && Number.isFinite(f.powerMW)) mw += f.powerMW;
+      if (f.status === "operational") operational++;
+      else if (f.status === "construction") construction++;
+      else if (f.status === "announced") announced++;
+    }
+    return { mw, operational, construction, announced };
+  }, [own]);
+
   if (!operator) {
     return (
-      <div className="max-w-5xl mx-auto p-6">
-        <Card className="p-8 border-card-border text-center">
-          <AlertTriangle className="h-8 w-8 text-negative mx-auto mb-3" />
-          <h1 className="text-lg font-semibold mb-2">Operator Not Found</h1>
-          <p className="text-sm text-muted-foreground">
-            <Link href="/power-map" className="text-brand">View the Power Map</Link> to see all operators.
+      <PageShell>
+        <div className="pt-7 sm:pt-9">
+          <h1 className="font-serif font-medium text-[30px] sm:text-[34px] leading-[1.05] tracking-tight text-ink">
+            Operator not found
+          </h1>
+          <p className="mt-3 max-w-[68ch] text-[15px] leading-relaxed text-ink-secondary">
+            View the{" "}
+            <Link href="/power-map" className="text-brand-ink no-underline hover:text-ink">Power Map</Link>{" "}
+            to see all operators.
           </p>
-        </Card>
-      </div>
+        </div>
+      </PageShell>
     );
   }
 
   return (
-    <div className="max-w-5xl mx-auto p-6 space-y-6">
-      <nav className="flex items-center gap-2 text-xs text-muted-foreground" data-testid="breadcrumb">
-        <Link href="/" className="hover:text-foreground">GridTilt</Link>
-        <span>/</span>
-        <Link href="/power-map" className="hover:text-foreground">Power Map</Link>
-        <span>/</span>
-        <span className="text-foreground font-medium">{operator.name}</span>
+    <PageShell>
+      <nav className="flex flex-wrap items-center gap-x-2 gap-y-1 pt-7 sm:pt-9 text-[12.5px] text-ink-muted" data-testid="breadcrumb">
+        <Link href="/" className="text-[12.5px] text-brand-ink no-underline hover:text-ink">GridTilt</Link>
+        <span>·</span>
+        <Link href="/power-map" className="text-[12.5px] text-brand-ink no-underline hover:text-ink">Power Map</Link>
+        <span>·</span>
+        <span className="text-ink font-medium">{operator.name}</span>
       </nav>
 
-      <div>
-        <div className="flex items-center gap-3 mb-2">
-          <Building2 className="h-5 w-5 text-brand" />
-          <h1 className="text-2xl font-bold" data-testid="operator-heading">{operator.name} AI Data Centers</h1>
-        </div>
-        <p className="text-sm text-muted-foreground max-w-3xl mb-4">{operator.description}</p>
+      {/* Reference-entry lead: serif name over a plain classification line */}
+      <div className="mt-4 pb-4 border-b border-rule">
+        <h1 className="font-serif font-medium text-[30px] sm:text-[34px] leading-[1.05] tracking-tight text-ink" data-testid="operator-heading">
+          {operator.name}
+        </h1>
+        <p className="mt-1.5 text-[13.5px] text-ink-muted">
+          AI data center operator{own.length > 0 ? ` · ${own.length} tracked US facilities` : ""}
+        </p>
+        <p className="mt-3 max-w-[68ch] text-[15px] leading-relaxed text-ink-secondary">{operator.description}</p>
       </div>
 
-      <Card className="p-5 border-card-border" data-testid="operator-strategy">
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">Geographic Strategy</h2>
-        <p className="text-sm text-muted-foreground">{operator.strategy}</p>
-      </Card>
+      {/* Key figures from the facility registry */}
+      {isLoading ? (
+        <div className="mt-5 flex flex-wrap gap-x-10 gap-y-5 pb-5 border-b border-rule">
+          <Skeleton className="h-14 w-32" />
+          <Skeleton className="h-14 w-32" />
+          <Skeleton className="h-14 w-32" />
+        </div>
+      ) : own.length > 0 ? (
+        <div className="mt-5 pb-5 border-b border-rule" data-testid="operator-key-figures">
+          <div className="flex flex-wrap gap-x-10 gap-y-5">
+            <PullStat label="Tracked facilities" value={String(own.length)} note="US sites in the registry" />
+            <PullStat label="Rated power" value={fmtPowerMW(totals.mw)} note="sum across tracked sites" />
+            <PullStat
+              label="Operational"
+              value={String(totals.operational)}
+              note={`${totals.construction} building · ${totals.announced} announced`}
+            />
+          </div>
+        </div>
+      ) : null}
 
-      <Card className="p-5 border-card-border" data-testid="operator-map-link">
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">Facilities on the Map</h2>
-        <p className="text-sm text-muted-foreground mb-3">
-          View all {operator.name} data center facilities on the interactive Power Map.
+      <RuleSection head="Geographic strategy" testId="operator-strategy">
+        <p className="max-w-[68ch] text-[15px] leading-relaxed text-ink-secondary">{operator.strategy}</p>
+      </RuleSection>
+
+      <RuleSection head="Tracked facilities" testId="operator-facilities">
+        {isLoading ? (
+          <div className="space-y-2 py-2">
+            {Array(4).fill(null).map((_, i) => (
+              <div key={i} className="flex items-center gap-3 py-1.5">
+                <Skeleton className="h-4 w-40" />
+                <Skeleton className="h-3 w-24 flex-1" />
+                <Skeleton className="h-4 w-16" />
+              </div>
+            ))}
+          </div>
+        ) : own.length === 0 ? (
+          <p className="py-6 text-[13px] text-ink-muted text-center">
+            No {operator.name} facilities are in the registry yet.
+          </p>
+        ) : (
+          <table className="print-table">
+            <thead>
+              <tr>
+                <th>Facility</th>
+                <th>Location</th>
+                <th className="hidden sm:table-cell">Grid</th>
+                <th className="num">Power</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {own.map((f) => (
+                <tr key={f.id} data-testid={`operator-facility-${f.id}`}>
+                  <td className="font-medium text-ink">{f.name}</td>
+                  <td className="text-ink-secondary">{f.city}, {f.state}</td>
+                  <td className="hidden sm:table-cell text-ink-muted">{f.gridOperator}</td>
+                  <td className="num">
+                    {typeof f.powerMW === "number" && Number.isFinite(f.powerMW)
+                      ? `${f.powerMW.toLocaleString()} MW`
+                      : "--"}
+                  </td>
+                  <td className="text-ink-secondary">{STATUS_LABELS[f.status] ?? f.status}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+        <Provenance source="GridTilt facility registry" />
+      </RuleSection>
+
+      <RuleSection head="On the Power Map" testId="operator-map-link">
+        <p className="max-w-[68ch] text-[14px] leading-relaxed text-ink-secondary">
+          Every tracked {operator.name} data center facility is plotted on the interactive Power Map.
         </p>
-        <Link
-          href={`/power-map?company=${slug}`}
-          className="inline-flex items-center gap-1.5 text-sm text-brand hover:text-brand-2 font-medium"
-          data-testid="link-filtered-map"
-        >
-          Open Power Map filtered to {operator.name}
-        </Link>
-      </Card>
+        <p className="mt-2">
+          <Link
+            href={`/power-map?company=${slug}`}
+            className="text-[13.5px] font-semibold text-brand-ink no-underline hover:text-ink"
+            data-testid="link-filtered-map"
+          >
+            Open the Power Map filtered to {operator.name} →
+          </Link>
+        </p>
+      </RuleSection>
 
-      <Card className="p-5 border-card-border" data-testid="other-operators">
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">Other Operators</h2>
-        <div className="flex flex-wrap gap-2">
-          {ALL_OPERATORS.filter((o) => o !== slug).map((o) => (
-            <Link key={o} href={`/operator/${o}`}>
-              <Badge className="bg-muted/50 text-muted-foreground hover:bg-muted/70 cursor-pointer" data-testid={`link-operator-${o}`}>
+      <RuleSection head="Other operators" testId="other-operators">
+        <p className="text-[13.5px] leading-relaxed">
+          {ALL_OPERATORS.filter((o) => o !== slug).map((o, i, arr) => (
+            <span key={o}>
+              <Link
+                href={`/operator/${o}`}
+                className="text-brand-ink no-underline hover:text-ink"
+                data-testid={`link-operator-${o}`}
+              >
                 {OPERATOR_META[o].name}
-              </Badge>
-            </Link>
+              </Link>
+              {i < arr.length - 1 && <span className="text-ink-muted"> · </span>}
+            </span>
           ))}
-        </div>
-      </Card>
+        </p>
+      </RuleSection>
 
-      <Card className="p-5 border-card-border">
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">Related Tools</h2>
-        <div className="space-y-2 text-sm">
-          <Link href="/power-map" className="block text-brand hover:text-brand-2">Power Map</Link>
-          <Link href="/trade" className="block text-brand hover:text-brand-2">Scenario Calculator</Link>
-          <Link href="/catalysts" className="block text-brand hover:text-brand-2">Catalyst Tracker</Link>
-        </div>
-      </Card>
-    </div>
+      <RuleSection head="Related tools">
+        <ul>
+          <li className="border-b border-rule">
+            <Link href="/power-map" className="block py-2 text-[13.5px] text-brand-ink no-underline hover:text-ink">
+              Power Map
+            </Link>
+          </li>
+          <li className="border-b border-rule">
+            <Link href="/trade" className="block py-2 text-[13.5px] text-brand-ink no-underline hover:text-ink">
+              Scenario Calculator
+            </Link>
+          </li>
+          <li>
+            <Link href="/catalysts" className="block py-2 text-[13.5px] text-brand-ink no-underline hover:text-ink">
+              Catalyst Tracker
+            </Link>
+          </li>
+        </ul>
+      </RuleSection>
+    </PageShell>
   );
 }
