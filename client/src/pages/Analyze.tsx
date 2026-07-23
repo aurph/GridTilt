@@ -5,7 +5,7 @@
  * can redirect into a tab). Same pattern as GPU Prices (ToolTabs).
  */
 import { ToolTabs, useToolTabs, type ToolTab } from "@/components/ToolTabs";
-import { PageHeader } from "@/components/PageHeader";
+import { PageShell, PageTitle } from "@/components/editorial";
 import PortfolioOverlay from "@/pages/PortfolioOverlay";
 import TheTrade from "@/pages/TheTrade";
 
@@ -18,17 +18,16 @@ export default function Analyze() {
   const [tab, setTab] = useToolTabs(ANALYZE_TABS, "portfolio");
 
   return (
-    <div className="flex flex-col h-full overflow-y-auto">
-      <PageHeader
+    <PageShell>
+      <PageTitle
         title="Analyze"
+        dek="Worksheets for the AI power thesis: score a portfolio's exposure to the buildout, or model the buildout under your own assumptions."
         testId="analyze-header"
-        about="Your inputs, scored against the AI power buildout: portfolio exposure scoring and buildout scenario modeling."
-        controls={<ToolTabs tabs={ANALYZE_TABS} active={tab} onChange={setTab} />}
       />
-
-      <div className="flex-1 p-4 sm:p-6">
+      <ToolTabs tabs={ANALYZE_TABS} active={tab} onChange={setTab} />
+      <div className="mt-6">
         {tab === "scenario" ? <TheTrade embedded /> : <PortfolioOverlay embedded />}
       </div>
-    </div>
+    </PageShell>
   );
 }

@@ -1,20 +1,17 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useLocation, Link } from "wouter";
-import {
-  ChevronLeft, ChevronRight, Clock,
-  TrendingUp, ArrowRight, Eye, EyeOff, AlertTriangle, RotateCw,
-} from "lucide-react";
+import { useLocation } from "wouter";
+import { ChevronLeft, ChevronRight, ArrowRight, Eye, EyeOff } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AsOf } from "@/components/Freshness";
-import { PageHeader, HeaderStat } from "@/components/PageHeader";
+import { AsOf, ErrorState } from "@/components/Freshness";
+import { PageShell, PageTitle, Provenance, RuleSection } from "@/components/editorial";
 import {
   catalystCategoryColors,
   STAGE_COLORS,
   SUPPLY_CHAIN_STAGE_MAP,
   type CatalystCategory,
 } from "@/data/catalyst-config";
-import { BRAND, INK, SURFACE, BORDER } from "@/lib/tokens";
+import { BRAND, INK } from "@/lib/tokens";
 
 interface EarningsItem {
   id: string;
@@ -126,25 +123,37 @@ function CalendarGrid({
 
   return (
     <div data-testid="catalyst-calendar">
-      <div className="flex items-center justify-between mb-4">
-        <button onClick={prevMonth} className="p-2 hover:text-white text-ink-muted transition-colors" data-testid="calendar-prev">
-          <ChevronLeft style={{ width: 18, height: 18 }} />
+      <div className="flex items-center justify-between mb-2">
+        <button
+          onClick={prevMonth}
+          className="p-1.5 text-ink-muted hover:text-ink transition-colors"
+          data-testid="calendar-prev"
+          aria-label="Previous month"
+        >
+          <ChevronLeft className="h-[18px] w-[18px]" />
         </button>
-        <span className="text-15 font-bold text-white">{monthName}</span>
-        <button onClick={nextMonth} className="p-2 hover:text-white text-ink-muted transition-colors" data-testid="calendar-next">
-          <ChevronRight style={{ width: 18, height: 18 }} />
+        <span className="text-[14px] font-semibold text-ink">{monthName}</span>
+        <button
+          onClick={nextMonth}
+          className="p-1.5 text-ink-muted hover:text-ink transition-colors"
+          data-testid="calendar-next"
+          aria-label="Next month"
+        >
+          <ChevronRight className="h-[18px] w-[18px]" />
         </button>
       </div>
 
-      <div className="grid grid-cols-7 gap-px" style={{ background: BORDER.subtle }}>
+      <div className="grid grid-cols-7">
         {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
-          <div key={d} className="text-center text-11 font-medium py-2" style={{ color: INK.faint, background: SURFACE.raised }}>
+          <div key={d} className="text-center text-[11px] text-ink-muted py-1.5">
             {d}
           </div>
         ))}
+      </div>
+      <div className="grid grid-cols-7 border-t border-l border-rule">
         {cells.map((day, i) => {
           if (day === null) {
-            return <div key={`empty-${i}`} style={{ background: SURFACE.raised, minHeight: 56 }} />;
+            return <div key={`empty-${i}`} className="border-r border-b border-rule bg-paper-shade/40 min-h-[56px]" />;
           }
           const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
           const dayItems = itemsByDate[dateStr] || [];
@@ -155,21 +164,20 @@ function CalendarGrid({
           return (
             <div
               key={dateStr}
-              className="cursor-pointer transition-all"
+              className={`cursor-pointer border-r border-b border-rule min-h-[56px] px-1.5 py-1 transition-colors ${
+                isSelected ? "bg-paper-shade" : "hover:bg-paper-shade"
+              }`}
               style={{
-                background: SURFACE.raised,
-                minHeight: 56,
-                padding: "4px 6px",
-                borderLeft: isToday ? `2px solid ${BRAND.primary}` : isSelected ? `2px solid ${BORDER.strong}` : "2px solid transparent",
+                borderLeft: isToday ? `2px solid ${BRAND.primary}` : undefined,
                 opacity: isWeekend && dayItems.length === 0 ? 0.6 : 1,
               }}
               onClick={() => onDateSelect(isSelected ? null : dateStr)}
               data-testid={`calendar-day-${dateStr}`}
             >
-              <div className="text-13 font-medium mb-1" style={{ color: isToday ? BRAND.primary : INK.secondary }}>
+              <div className={`text-[12.5px] tnum ${isToday ? "font-semibold text-brand-ink" : isSelected ? "font-semibold text-ink" : "text-ink-secondary"}`}>
                 {day}
               </div>
-              <div className="flex flex-wrap gap-1">
+              <div className="flex flex-wrap gap-1 mt-0.5">
                 {dayItems.map((item, j) => {
                   let color: string = INK.muted;
                   if (item.type === "earnings") {
@@ -178,17 +186,17 @@ function CalendarGrid({
                     color = catalystCategoryColors[(item as CatalystItem).category] || INK.muted;
                   }
                   return (
-                    <div
+                    <span
                       key={j}
-                      className="rounded-full"
-                      style={{ width: 8, height: 8, background: color }}
+                      className="h-1.5 w-1.5 rounded-full"
+                      style={{ background: color }}
                       title={item.type === "earnings" ? (item as EarningsItem).ticker : (item as CatalystItem).title}
                     />
                   );
                 })}
               </div>
               {dayItems.length > 0 && (
-                <div className="text-9 mt-1 truncate" style={{ color: INK.faint }}>
+                <div className="text-[11px] text-ink-muted mt-0.5 truncate">
                   {dayItems.length === 1
                     ? (dayItems[0].type === "earnings" ? (dayItems[0] as EarningsItem).ticker : "Event")
                     : `${dayItems.length} events`}
@@ -200,12 +208,10 @@ function CalendarGrid({
       </div>
 
       {selectedItems.length > 0 && (
-        <div className="mt-3 space-y-2" data-testid="calendar-day-detail">
-          <div className="text-sm font-semibold text-white mb-2">
-            {formatDateFull(selectedDate!)}
-          </div>
+        <div className="mt-4 border-t border-rule pt-3 space-y-3" data-testid="calendar-day-detail">
+          <p className="text-[13px] font-semibold text-ink">{formatDateFull(selectedDate!)}</p>
           {selectedItems.map((item) => (
-            <DayDetailCard key={item.id} item={item} />
+            <DayDetail key={item.id} item={item} />
           ))}
         </div>
       )}
@@ -213,46 +219,30 @@ function CalendarGrid({
   );
 }
 
-function DayDetailCard({ item }: { item: MergedItem }) {
+function DayDetail({ item }: { item: MergedItem }) {
   const [, navigate] = useLocation();
 
   if (item.type === "earnings") {
     const e = item as EarningsItem;
     return (
-      <div
-        className="rounded-lg p-4"
-        style={{ background: SURFACE.raised, border: `1px solid ${stageColorOf(e)}25` }}
-        data-testid={`detail-${e.ticker}`}
-      >
-        <div className="flex items-center justify-between mb-1">
-          <div className="flex items-center gap-2">
-            <span className="text-15 font-bold text-white">{e.ticker}</span>
-            <span className="text-13" style={{ color: INK.muted }}>{e.company}</span>
-          </div>
-          <span
-            className="text-11 font-medium px-2 py-0.5 rounded"
-            style={{ background: SURFACE.overlay, color: INK.muted }}
+      <div className="flex items-start gap-2" data-testid={`detail-${e.ticker}`}>
+        <span className="h-1.5 w-1.5 rounded-full mt-1.5 flex-shrink-0" style={{ background: stageColorOf(e) }} />
+        <div className="min-w-0">
+          <p className="text-[13.5px] leading-snug">
+            <span className="font-semibold text-ink">{e.ticker}</span>{" "}
+            <span className="text-ink-secondary">{e.company}</span>
+          </p>
+          <p className="text-[12px] text-ink-muted mt-0.5">
+            {[e.stage, e.quarter, e.time].filter(Boolean).join(" · ")}
+          </p>
+          <button
+            className="mt-1 inline-flex items-center gap-1 text-[12.5px] font-semibold text-brand-ink hover:text-ink transition-colors"
+            onClick={() => navigate(`/stock/${e.ticker}`)}
+            data-testid={`view-${e.ticker}`}
           >
-            {e.time}
-          </span>
+            View {e.ticker} <ArrowRight className="h-3 w-3" />
+          </button>
         </div>
-        <div className="flex items-center gap-2 text-xs" style={{ color: INK.muted }}>
-          <span
-            className="px-1.5 py-0.5 rounded text-10 font-medium"
-            style={{ background: `${stageColorOf(e)}18`, color: stageColorOf(e) }}
-          >
-            {e.stage}
-          </span>
-          {e.quarter && <span>{e.quarter}</span>}
-        </div>
-        <button
-          className="flex items-center gap-1 mt-2 text-xs transition-colors"
-          style={{ color: stageColorOf(e) }}
-          onClick={() => navigate(`/stock/${e.ticker}`)}
-          data-testid={`view-${e.ticker}`}
-        >
-          View {e.ticker} <ArrowRight style={{ width: 12, height: 12 }} />
-        </button>
       </div>
     );
   }
@@ -260,27 +250,22 @@ function DayDetailCard({ item }: { item: MergedItem }) {
   const c = item as CatalystItem;
   const catColor = catalystCategoryColors[c.category] || INK.muted;
   return (
-    <div
-      className="rounded-lg p-4"
-      style={{ background: SURFACE.raised, borderLeft: `3px solid ${catColor}` }}
-      data-testid={`detail-${c.id}`}
-    >
-      <div className="flex items-center gap-2 mb-1">
-        <span
-          className="text-10 font-semibold px-2 py-0.5 rounded"
-          style={{ background: `${catColor}18`, color: catColor }}
-        >
-          {c.category}
-        </span>
-        <span className="text-xs" style={{ color: INK.muted }}>{c.dateLabel}</span>
+    <div className="flex items-start gap-2" data-testid={`detail-${c.id}`}>
+      <span className="h-1.5 w-1.5 rounded-full mt-1.5 flex-shrink-0" style={{ background: catColor }} />
+      <div className="min-w-0">
+        <p className="text-[13.5px] font-medium text-info leading-snug">{c.title}</p>
+        <p className="text-[12px] text-ink-muted mt-0.5">{c.category} · {c.dateLabel}</p>
+        <p className="text-[12.5px] text-ink-secondary leading-relaxed mt-1">{c.description}</p>
       </div>
-      <div className="text-sm font-semibold text-white mb-1">{c.title}</div>
-      <p className="text-xs leading-relaxed" style={{ color: INK.muted }}>{c.description}</p>
     </div>
   );
 }
 
-function UpcomingTimeline({ items }: { items: MergedItem[] }) {
+/**
+ * Print agenda: date column, 6px category dot, event line. Earnings read in
+ * plain ink; policy/regulatory catalyst events carry the info-ink treatment.
+ */
+function UpcomingAgenda({ items }: { items: MergedItem[] }) {
   const [showPast, setShowPast] = useState(false);
   const [, navigate] = useLocation();
 
@@ -288,126 +273,85 @@ function UpcomingTimeline({ items }: { items: MergedItem[] }) {
   const past = items.filter((i) => daysUntil(i.sortDate) < 0).slice(-10).reverse();
 
   return (
-    <div data-testid="upcoming-timeline">
-      <div className="flex items-center gap-2 mb-4">
-        <Clock style={{ width: 14, height: 14, color: BRAND.primary }} />
-        <span className="text-13 font-semibold text-white uppercase tracking-wider">
-          Upcoming Catalysts
-        </span>
-      </div>
+    <RuleSection head="Upcoming catalysts" className="mt-0" testId="upcoming-timeline">
+      {upcoming.length === 0 ? (
+        <p className="py-6 text-[13px] text-ink-muted text-center">No upcoming catalysts.</p>
+      ) : (
+        <div>
+          {upcoming.map((item) => {
+            const days = daysUntil(item.sortDate);
+            const timeLabel = days === 0 ? "Today" : days === 1 ? "Tomorrow" : formatDateShort(item.sortDate);
+            const dateClass = days <= 1 ? "font-semibold text-ink" : "text-ink-muted";
 
-      <div className="relative pl-6">
-        <div
-          className="absolute left-[9px] top-0 bottom-0 w-[2px]"
-          style={{ background: SURFACE.overlay }}
-        />
-
-        {upcoming.map((item) => {
-          const days = daysUntil(item.sortDate);
-          let timeLabel = `${formatDateShort(item.sortDate)}`;
-          let timeLabelColor: string = INK.muted;
-          if (days === 0) { timeLabel = "TODAY"; timeLabelColor = BRAND.primary; }
-          else if (days === 1) { timeLabel = "TOMORROW"; timeLabelColor = BRAND.secondary; }
-          else if (days <= 7) { timeLabel = `In ${days}d`; timeLabelColor = INK.muted; }
-
-          if (item.type === "earnings") {
-            const e = item as EarningsItem;
-            const dotColor = stageColorOf(e);
-            return (
-              <div key={item.id} className="relative flex items-start gap-3 pb-4" data-testid={`timeline-${e.ticker}`}>
-                <div
-                  className="absolute left-[-18px] top-[6px] w-[10px] h-[10px] rounded-full"
-                  style={{ background: dotColor }}
-                />
-                <div className="flex-1 flex items-center gap-3 flex-wrap">
-                  <span
-                    className="text-11 font-bold uppercase min-w-[60px]"
-                    style={{ color: timeLabelColor }}
-                  >
-                    {timeLabel}
-                  </span>
-                  <span
-                    className="text-13 font-bold cursor-pointer hover:underline"
-                    style={{ color: INK.primary }}
-                    onClick={() => navigate(`/stock/${e.ticker}`)}
-                  >
-                    {e.ticker}
-                  </span>
-                  <span className="text-xs" style={{ color: INK.muted }}>{e.company}</span>
-                  <span
-                    className="text-10 px-1.5 py-0.5 rounded font-medium"
-                    style={{ background: `${dotColor}18`, color: dotColor }}
-                  >
-                    {e.stage}
-                  </span>
-                  <span
-                    className="text-10 px-1.5 py-0.5 rounded"
-                    style={{ background: SURFACE.overlay, color: INK.muted }}
-                  >
-                    {e.time}
-                  </span>
+            if (item.type === "earnings") {
+              const e = item as EarningsItem;
+              const dotColor = stageColorOf(e);
+              return (
+                <div key={item.id} className="flex items-start gap-3 py-2 border-b border-rule" data-testid={`timeline-${e.ticker}`}>
+                  <span className={`w-[76px] flex-shrink-0 text-[13px] tnum leading-snug ${dateClass}`}>{timeLabel}</span>
+                  <span className="h-1.5 w-1.5 rounded-full mt-1.5 flex-shrink-0" style={{ background: dotColor }} />
+                  <p className="min-w-0 flex-1 text-[13.5px] leading-snug">
+                    <button
+                      className="font-semibold text-ink hover:text-brand-ink transition-colors"
+                      onClick={() => navigate(`/stock/${e.ticker}`)}
+                    >
+                      {e.ticker}
+                    </button>{" "}
+                    <span className="text-ink-secondary">{e.company}</span>
+                    <span className="text-[12px] text-ink-muted">
+                      {" "}· {[e.stage, e.time].filter(Boolean).join(" · ")}
+                    </span>
+                  </p>
                 </div>
-              </div>
-            );
-          }
+              );
+            }
 
-          const c = item as CatalystItem;
-          const catColor = catalystCategoryColors[c.category] || INK.muted;
-          return (
-            <div key={item.id} className="relative flex items-start gap-3 pb-4" data-testid={`timeline-${c.id}`}>
-              <div
-                className="absolute left-[-18px] top-[6px] w-[10px] h-[10px] rounded-full"
-                style={{ background: catColor }}
-              />
-              <div className="flex-1 flex items-center gap-3 flex-wrap">
-                <span className="text-11 font-bold uppercase min-w-[60px]" style={{ color: timeLabelColor }}>
-                  {timeLabel}
-                </span>
-                <span className="text-13 font-semibold text-white">{c.title}</span>
-                <span
-                  className="text-10 px-1.5 py-0.5 rounded font-medium"
-                  style={{ background: `${catColor}18`, color: catColor }}
-                >
-                  {c.category}
-                </span>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {past.length > 0 && (
-        <button
-          className="flex items-center gap-1.5 text-xs mt-2 transition-colors"
-          style={{ color: INK.faint }}
-          onClick={() => setShowPast(!showPast)}
-          data-testid="toggle-past"
-        >
-          {showPast ? <EyeOff style={{ width: 12, height: 12 }} /> : <Eye style={{ width: 12, height: 12 }} />}
-          {showPast ? "Hide" : "Show"} past earnings
-        </button>
-      )}
-
-      {showPast && past.length > 0 && (
-        <div className="relative pl-6 mt-4 opacity-50">
-          <div className="absolute left-[9px] top-0 bottom-0 w-[2px]" style={{ background: SURFACE.raised }} />
-          {past.map((item) => {
-            if (item.type !== "earnings") return null;
-            const e = item as EarningsItem;
+            const c = item as CatalystItem;
+            const catColor = catalystCategoryColors[c.category] || INK.muted;
             return (
-              <div key={item.id} className="relative flex items-start gap-3 pb-3">
-                <div className="absolute left-[-18px] top-[6px] w-[8px] h-[8px] rounded-full" style={{ background: INK.faint }} />
-                <div className="flex items-center gap-3 flex-wrap">
-                  <span className="text-11 min-w-[60px]" style={{ color: INK.faint }}>{formatDateShort(e.date)}</span>
-                  <span className="text-xs font-bold" style={{ color: INK.faint }}>{e.ticker}</span>
-                  <span className="text-11" style={{ color: INK.faint }}>{e.company}</span>
-                </div>
+              <div key={item.id} className="flex items-start gap-3 py-2 border-b border-rule" data-testid={`timeline-${c.id}`}>
+                <span className={`w-[76px] flex-shrink-0 text-[13px] tnum leading-snug ${dateClass}`}>{timeLabel}</span>
+                <span className="h-1.5 w-1.5 rounded-full mt-1.5 flex-shrink-0" style={{ background: catColor }} />
+                <p className="min-w-0 flex-1 text-[13.5px] leading-snug">
+                  <span className="font-medium text-info">{c.title}</span>
+                  <span className="text-[12px] text-ink-muted"> · {c.category}</span>
+                </p>
               </div>
             );
           })}
         </div>
       )}
-    </div>
+
+      {past.length > 0 && (
+        <button
+          className="mt-3 inline-flex items-center gap-1.5 text-[12.5px] text-ink-muted hover:text-ink transition-colors"
+          onClick={() => setShowPast(!showPast)}
+          data-testid="toggle-past"
+        >
+          {showPast ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+          {showPast ? "Hide" : "Show"} past earnings
+        </button>
+      )}
+
+      {showPast && past.length > 0 && (
+        <div className="mt-2">
+          {past.map((item) => {
+            if (item.type !== "earnings") return null;
+            const e = item as EarningsItem;
+            return (
+              <div key={item.id} className="flex items-start gap-3 py-1.5 border-b border-rule">
+                <span className="w-[76px] flex-shrink-0 text-[13px] tnum text-ink-faint leading-snug">{formatDateShort(e.date)}</span>
+                <p className="min-w-0 flex-1 text-[13px] text-ink-faint leading-snug">
+                  <span className="font-semibold">{e.ticker}</span> {e.company}
+                </p>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <Provenance source="Yahoo Finance earnings + GridTilt curated events" />
+    </RuleSection>
   );
 }
 
@@ -415,68 +359,48 @@ function ThesisCatalysts({ catalysts }: { catalysts: CatalystItem[] }) {
   const [, navigate] = useLocation();
 
   return (
-    <div data-testid="thesis-catalysts">
-      <div className="flex items-center gap-2 mb-4">
-        <TrendingUp style={{ width: 14, height: 14, color: BRAND.secondary }} />
-        <span className="text-13 font-semibold text-white uppercase tracking-wider">
-          Thesis Catalysts
-        </span>
-      </div>
-
-      <div className="space-y-3">
-        {catalysts.map((c) => {
-          const catColor = catalystCategoryColors[c.category] || INK.muted;
-          return (
-            <div
-              key={c.id}
-              className="rounded-lg p-5"
-              style={{
-                background: SURFACE.raised,
-                borderLeft: `3px solid ${catColor}`,
-              }}
-              data-testid={`catalyst-${c.id}`}
-            >
-              <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
-                <span
-                  className="text-11 font-semibold px-2.5 py-1 rounded"
-                  style={{ background: `${catColor}15`, color: catColor }}
-                >
-                  {c.category}
-                </span>
-                <span className="text-xs" style={{ color: INK.muted }}>{c.dateLabel}</span>
+    <RuleSection head="Thesis catalysts" testId="thesis-catalysts">
+      {catalysts.length === 0 ? (
+        <p className="py-6 text-[13px] text-ink-muted text-center">No dated thesis catalysts.</p>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10">
+          {catalysts.map((c) => {
+            const catColor = catalystCategoryColors[c.category] || INK.muted;
+            return (
+              <div key={c.id} className="py-3 border-b border-rule" data-testid={`catalyst-${c.id}`}>
+                <p className="flex items-center gap-1.5 text-[12px] text-ink-muted">
+                  <span className="h-1.5 w-1.5 rounded-full flex-shrink-0" style={{ background: catColor }} />
+                  {c.category} · {c.dateLabel}
+                </p>
+                <h3 className="text-[15px] font-semibold text-ink leading-snug mt-1">{c.title}</h3>
+                <p className="text-[13px] text-ink-secondary leading-relaxed mt-1 max-w-[68ch]">
+                  {c.description}
+                </p>
+                <p className="mt-1.5 text-[12.5px] leading-relaxed">
+                  <span className="text-ink-muted">Affects: </span>
+                  {c.affectedTickers.map((t, i) => (
+                    <span key={t}>
+                      {i > 0 && <span className="text-ink-muted">, </span>}
+                      <button
+                        className="font-semibold text-ink hover:text-brand-ink transition-colors"
+                        onClick={() => navigate(`/stock/${t}`)}
+                        data-testid={`catalyst-ticker-${t}`}
+                      >
+                        {t}
+                      </button>
+                    </span>
+                  ))}
+                  {c.affectedSectors.length > 0 && (
+                    <span className="text-ink-muted"> · {c.affectedSectors.join(", ")}</span>
+                  )}
+                </p>
               </div>
-              <h3 className="text-15 font-semibold text-white mb-2">{c.title}</h3>
-              <p className="text-13 leading-relaxed mb-3" style={{ color: INK.muted }}>
-                {c.description}
-              </p>
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-11" style={{ color: INK.faint }}>Affects:</span>
-                {c.affectedTickers.map((t) => (
-                  <span
-                    key={t}
-                    className="text-11 font-bold font-mono px-2 py-0.5 rounded cursor-pointer transition-colors hover:opacity-80"
-                    style={{
-                      color: stageColorOf({ ticker: t }),
-                      background: `${stageColorOf({ ticker: t })}14`,
-                      border: `1px solid ${stageColorOf({ ticker: t })}30`,
-                    }}
-                    onClick={() => navigate(`/stock/${t}`)}
-                    data-testid={`catalyst-ticker-${t}`}
-                  >
-                    {t}
-                  </span>
-                ))}
-                {c.affectedSectors.length > 0 && (
-                  <span className="text-10 ml-1" style={{ color: INK.faint }}>
-                    {c.affectedSectors.join(", ")}
-                  </span>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
+            );
+          })}
+        </div>
+      )}
+      <Provenance source="GridTilt curated events" />
+    </RuleSection>
   );
 }
 
@@ -495,30 +419,32 @@ export default function CatalystTracker() {
   const catalysts = items.filter((i): i is CatalystItem => i.type === "catalyst");
 
   return (
-    <div className="flex flex-col h-full overflow-y-auto" data-testid="catalyst-tracker-page">
-      <PageHeader
-        title="Catalyst Tracker"
-        testId="catalyst-header"
-        about="Earnings dates for tracked equities plus dated thesis catalysts (regulatory, policy, infrastructure, market, industry) on one calendar and timeline."
-        stats={
-          data ? (
+    <div data-testid="catalyst-tracker-page">
+      <PageShell>
+        <PageTitle
+          title="Catalysts"
+          dek="Earnings dates for tracked equities plus dated policy, regulatory, and industry events, on one calendar and agenda."
+          right={
             <>
-              <HeaderStat label="Earnings" value={String(earnings.length)} valueClass="text-foreground" />
-              <HeaderStat label="Catalysts" value={String(catalysts.length)} valueClass="text-foreground" />
+              {data && (
+                <span className="text-[12.5px] text-ink-secondary">
+                  <span className="font-semibold text-ink tnum">{earnings.length}</span> earnings ·{" "}
+                  <span className="font-semibold text-ink tnum">{catalysts.length}</span> events
+                </span>
+              )}
+              <AsOf updatedAt={dataUpdatedAt} intervalMs={15 * 60 * 1000} />
             </>
-          ) : undefined
-        }
-        right={<AsOf updatedAt={dataUpdatedAt} intervalMs={15 * 60 * 1000} />}
-      />
+          }
+          testId="catalyst-header"
+        />
 
-      <div className="px-4 md:px-8 py-6 max-w-[1200px] mx-auto space-y-10">
         {isLoading ? (
-          <div className="flex flex-col lg:flex-row gap-6" aria-hidden="true">
-            <div className="w-full lg:w-[420px] flex-shrink-0 space-y-3">
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-x-10 gap-y-8" aria-hidden="true">
+            <div className="lg:col-span-2 space-y-3">
               <Skeleton className="h-8 w-full" />
               <Skeleton className="h-[340px] w-full" />
             </div>
-            <div className="flex-1 min-w-0 space-y-4 lg:pl-6">
+            <div className="lg:col-span-3 space-y-4">
               <Skeleton className="h-5 w-44" />
               {[...Array(8)].map((_, i) => (
                 <Skeleton key={i} className="h-6 w-full" />
@@ -526,50 +452,35 @@ export default function CatalystTracker() {
             </div>
           </div>
         ) : isError ? (
-          <div
-            className="rounded-lg flex flex-col items-center justify-center text-center px-6 py-16"
-            style={{ background: SURFACE.raised, border: `1px solid ${BORDER.subtle}` }}
-            data-testid="catalysts-error"
-          >
-            <AlertTriangle style={{ width: 20, height: 20, color: INK.muted }} />
-            <div className="text-sm font-semibold mt-3" style={{ color: INK.primary }}>
-              Catalysts unavailable
-            </div>
-            <p className="text-xs mt-1" style={{ color: INK.muted }}>
-              The catalyst feed failed to load. It retries automatically.
-            </p>
-            <button
-              onClick={() => refetch()}
-              className="mt-3 inline-flex items-center gap-1.5 rounded border border-subtle px-2.5 py-1 text-11 font-mono text-foreground hover:border-strong transition-colors"
-              data-testid="error-retry"
-            >
-              <RotateCw className="h-3 w-3" />
-              retry now
-            </button>
+          <div data-testid="catalysts-error">
+            <ErrorState
+              label="The catalyst feed failed to load. It retries automatically."
+              onRetry={() => refetch()}
+            />
           </div>
         ) : (
           <>
-            <div className="flex flex-col lg:flex-row gap-6" style={{ alignItems: "flex-start" }}>
-              <div className="w-full lg:w-auto" style={{ flex: "0 0 auto", maxWidth: 420 }}>
-                <CalendarGrid
-                  items={items}
-                  currentMonth={currentMonth}
-                  onMonthChange={setCurrentMonth}
-                  selectedDate={selectedDate}
-                  onDateSelect={setSelectedDate}
-                />
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-x-10 gap-y-8">
+              <div className="lg:col-span-2">
+                <RuleSection head="Calendar" className="mt-0">
+                  <CalendarGrid
+                    items={items}
+                    currentMonth={currentMonth}
+                    onMonthChange={setCurrentMonth}
+                    selectedDate={selectedDate}
+                    onDateSelect={setSelectedDate}
+                  />
+                </RuleSection>
               </div>
-              <div className="flex-1 min-w-0 border-t lg:border-t-0 lg:border-l pt-6 lg:pt-0 lg:pl-6" style={{ borderColor: BORDER.subtle }}>
-                <UpcomingTimeline items={items} />
+              <div className="lg:col-span-3">
+                <UpcomingAgenda items={items} />
               </div>
             </div>
 
-            <div style={{ borderTop: `1px solid ${BORDER.subtle}`, paddingTop: 32 }}>
-              <ThesisCatalysts catalysts={catalysts} />
-            </div>
+            <ThesisCatalysts catalysts={catalysts} />
           </>
         )}
-      </div>
+      </PageShell>
     </div>
   );
 }
