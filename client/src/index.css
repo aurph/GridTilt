@@ -144,19 +144,20 @@
   --dq-estimated-opacity: 0.55;
   --dq-synthetic-opacity: 0.35;
 
-  /* Categorical series - fixed order. Values recalibrated for the paper
-     ground in the chart-theme task; assign in order, never cycle; >4 series
-     need direct labels. Do not reorder: order IS the CVD-safety mechanism. */
-  --series-1: #3987e5;
-  --series-2: #c98500;
-  --series-3: #199e70;
-  --series-4: #9085e9;
-  --series-5: #d55181;
-  --series-6: #1f9fb5;
-  --series-7: #d95926;
-  --series-8: #3d9e3d;
-  --series-9: #bd6bce;
-  --series-10: #b07d3f;
+  /* Categorical series - fixed order, validated for the paper ground
+     (dataviz six-checks: worst adjacent CVD dE 8.5 protan, all >= 3:1 vs
+     #F6F2EA). Assign in order, never cycle; >4 series need direct labels.
+     Do not reorder: order IS the CVD-safety mechanism. */
+  --series-1: #2D5F9E;
+  --series-2: #A67300;
+  --series-3: #00714B;
+  --series-4: #6B5CC4;
+  --series-5: #B03A66;
+  --series-6: #0A76A3;
+  --series-7: #9E3E0E;
+  --series-8: #4E9954;
+  --series-9: #8E4A9E;
+  --series-10: #96601F;
 
   /* Chart chrome */
   --chart-axis: #8A8172;

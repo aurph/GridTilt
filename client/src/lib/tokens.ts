@@ -72,16 +72,16 @@ export const DATA_QUALITY = {
  * enough in scatter/treemap contexts where any two slots can be adjacent).
  */
 export const SERIES = [
-  "#3987e5", // 1 blue
-  "#c98500", // 2 amber
-  "#199e70", // 3 teal
-  "#9085e9", // 4 violet
-  "#d55181", // 5 magenta
-  "#1f9fb5", // 6 cyan
-  "#d95926", // 7 rust
-  "#3d9e3d", // 8 green
-  "#bd6bce", // 9 pink
-  "#b07d3f", // 10 brown
+  "#2D5F9E", // 1 blue
+  "#A67300", // 2 amber
+  "#00714B", // 3 teal
+  "#6B5CC4", // 4 violet
+  "#B03A66", // 5 magenta
+  "#0A76A3", // 6 cyan
+  "#9E3E0E", // 7 rust
+  "#4E9954", // 8 green
+  "#8E4A9E", // 9 pink
+  "#96601F", // 10 brown
 ] as const;
 
 /**
