@@ -5,22 +5,16 @@ import { MapContainer, TileLayer, ZoomControl, useMap, useMapEvents } from "reac
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet.markercluster";
+// MarkerCluster.Default.css is intentionally NOT imported: it only supplies
+// the library's blue cluster blobs, which clash with the paper ground. Our
+// iconCreateFunction renders .gt-cluster icons styled in the <style> block
+// below, so the default sheet has no consumer here.
 import "leaflet.markercluster/dist/MarkerCluster.css";
-import "leaflet.markercluster/dist/MarkerCluster.Default.css";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AsOf, ErrorState } from "@/components/Freshness";
-import {
-  Tooltip as UITooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import {
-  X, Zap, Calendar, Network, SlidersHorizontal, ChevronDown, Info, MonitorSmartphone,
-} from "lucide-react";
-import {
-  BRAND, BORDER, FONT, INK, SEMANTIC, SERIES, STATUS_COLORS, SURFACE,
-} from "@/lib/tokens";
+import { X, SlidersHorizontal, ChevronDown } from "lucide-react";
+import { BORDER, BRAND, FONT, INK, SEMANTIC, SERIES, SURFACE } from "@/lib/tokens";
+import { PageShell, PageTitle, Provenance, RuleSection } from "@/components/editorial";
 import { ToolTabs, useToolTabs } from "@/components/ToolTabs";
 import PowerDeals from "@/pages/power-deals";
 import Queue from "@/pages/Queue";
@@ -49,8 +43,9 @@ const MIN_TRACKED_MW = 400;
 
 const DATA_CENTERS_FALLBACK: DataCenter[] = [];
 
-// Honor the threshold advertised in the banner: only track hyperscale-class
-// sites. Smaller historical facilities are filtered out everywhere.
+// Honor the threshold advertised in the plate caption: only track
+// hyperscale-class sites. Smaller historical facilities are filtered out
+// everywhere.
 function filterTracked(list: DataCenter[]): DataCenter[] {
   return list.filter((d) => d.powerMW >= MIN_TRACKED_MW);
 }
@@ -59,8 +54,8 @@ import { RTO_CONFIG, type RTOConfig } from "@/data/rto-config";
 
 /**
  * ONE stress ramp for the whole page: region fills (stress view), the map
- * legend, marker colors in stress view, and the table badges all read from
- * this SEMANTIC mapping. Nothing else may color a stress level.
+ * legend, marker colors in stress view, and the table's signal text all read
+ * from this SEMANTIC mapping. Nothing else may color a stress level.
  */
 const STRESS_COLOR: Record<RTOConfig["aiSignal"], string> = {
   Critical: SEMANTIC.negativeDeep,
@@ -98,14 +93,23 @@ const companyColors: Record<string, string> = {
   Nebius:    "#00b4d8",
 };
 
-function getStatusBadge(status: DataCenter["status"]) {
-  const map = {
-    operational:  { label: "Operational",        class: "bg-positive-deep/15 text-positive" },
-    construction: { label: "Under Construction",  class: "bg-warning/15 text-warning" },
-    announced:    { label: "Announced",           class: "bg-ink-muted/15 text-ink-muted" },
-  };
-  return map[status];
-}
+/**
+ * Marker palette for the paper basemap (map-only; table status reads
+ * typographically instead): operational = brand orange fill, construction =
+ * warm-ink ring, announced = ochre fill.
+ */
+const MARKER_COLORS: Record<DataCenter["status"], string> = {
+  operational:  BRAND.primary,   // #F07800
+  construction: INK.secondary,   // #5C544A, drawn as a ring
+  announced:    SEMANTIC.warning, // #8F6400
+};
+
+/** Status as typography, not a pill: weight and ink step carry the state. */
+const STATUS_TEXT: Record<DataCenter["status"], { label: string; className: string }> = {
+  operational:  { label: "Operational",        className: "font-semibold text-ink" },
+  construction: { label: "Under construction", className: "text-ink-secondary" },
+  announced:    { label: "Announced",          className: "text-ink-muted" },
+};
 
 function parseFiltersFromURL(): { companies: string[]; rtos: string[]; capacity: string } {
   try {
@@ -145,7 +149,7 @@ function escapeHtml(str: string): string {
     .replace(/'/g, "&#39;");
 }
 
-// Power tool tabs (consolidation): one subject, three views — where the AI
+// Power tool tabs (consolidation): one subject, three views - where the AI
 // load sits (map), who contracted the power (deals), what's still waiting
 // on the grid (queue). ?tab= round-trips so each view stays shareable.
 const POWER_TABS = [
@@ -153,12 +157,6 @@ const POWER_TABS = [
   { id: "deals", label: "Deals" },
   { id: "queue", label: "Queue" },
 ];
-
-const POWER_SUBTITLES: Record<string, string> = {
-  map: "US Datacenter Map",
-  deals: "AI Power Deals",
-  queue: "Interconnection Backlog",
-};
 
 /**
  * True below Tailwind's `sm` breakpoint (640px). The Leaflet map is
@@ -184,11 +182,6 @@ function useBelowSm(): boolean {
  */
 function pinRadius(powerMW: number): number {
   return Math.min(13, Math.max(5, 6 * Math.sqrt(powerMW / MIN_TRACKED_MW)));
-}
-
-/** Facility status is state -> STATUS_COLORS. Same mapping as legend + badges. */
-function pinColor(status: DataCenter["status"]): string {
-  return STATUS_COLORS[status];
 }
 
 function stressColorForRTO(dc: DataCenter): string {
@@ -223,23 +216,27 @@ function dcPassesFilters(
   return true;
 }
 
-function createGlowIcon(dc: DataCenter, viewMode: ViewMode): L.DivIcon {
+/**
+ * Paper markers: flat circles, no glow, no pulse. Operational fills orange,
+ * announced fills ochre, construction draws as a warm-ink ring; stress view
+ * fills with the stress ramp. A thin paper stroke separates fills from the
+ * basemap.
+ */
+function createPinIcon(dc: DataCenter, viewMode: ViewMode): L.DivIcon {
   const r = pinRadius(dc.powerMW);
-  const color = viewMode === "stress" ? stressColorForRTO(dc) : pinColor(dc.status);
-  const size = Math.ceil((r + 12) * 2);
+  const color = viewMode === "stress" ? stressColorForRTO(dc) : MARKER_COLORS[dc.status];
+  const ring = viewMode === "dc" && dc.status === "construction";
+  const size = Math.ceil((r + 4) * 2);
   const center = size / 2;
 
-  const baseOpacity = dc.status === "announced" && viewMode === "dc" ? 0.75 : 1;
-  const glowOpacity = viewMode === "stress" ? 0.45 : 0.3;
-  const animClass = viewMode === "dc" && dc.status === "operational" ? "pin-pulse" : "";
+  const circle = ring
+    ? `<circle cx="${center}" cy="${center}" r="${r}" fill="${SURFACE.base}" fill-opacity="0.55" stroke="${color}" stroke-width="2" />`
+    : `<circle cx="${center}" cy="${center}" r="${r}" fill="${color}" stroke="${SURFACE.overlay}" stroke-width="1" />`;
 
-  const svg = `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="${center}" cy="${center}" r="${r + 8}" fill="${color}" opacity="${glowOpacity}" class="${animClass}-glow" />
-    <circle cx="${center}" cy="${center}" r="${r}" fill="${color}" opacity="${baseOpacity}" />
-  </svg>`;
+  const svg = `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">${circle}</svg>`;
 
   return L.divIcon({
-    html: `<div class="pin-wrapper ${animClass}">${svg}</div>`,
+    html: `<div class="pin-wrapper">${svg}</div>`,
     className: "leaflet-pin-icon",
     iconSize: [size, size],
     iconAnchor: [center, center],
@@ -497,7 +494,7 @@ function FacilityMarkers({
       if (!passesFilter(dc)) return;
 
       const marker = L.marker([dc.lat, dc.lng], {
-        icon: createGlowIcon(dc, viewMode),
+        icon: createPinIcon(dc, viewMode),
         zIndexOffset: dc.status === "operational" ? 100 : dc.status === "construction" ? 50 : 0,
       });
 
@@ -589,6 +586,24 @@ function MapClickHandler({ onMapClick }: { onMapClick: () => void }) {
     },
   });
   return null;
+}
+
+/** Legend/overlay status swatch: dot for fills, ring for construction. */
+function StatusSwatch({ status }: { status: DataCenter["status"] }) {
+  if (status === "construction") {
+    return (
+      <span
+        className="inline-block h-2 w-2 rounded-full flex-shrink-0"
+        style={{ border: `1.5px solid ${MARKER_COLORS.construction}` }}
+      />
+    );
+  }
+  return (
+    <span
+      className="inline-block h-2 w-2 rounded-full flex-shrink-0"
+      style={{ backgroundColor: MARKER_COLORS[status] }}
+    />
+  );
 }
 
 export default function PowerMap() {
@@ -741,8 +756,12 @@ export default function PowerMap() {
     { mw: 1500, label: "1.5 GW" },
   ];
 
+  const chipBase = "inline-flex items-center gap-1.5 rounded-sm border px-2 py-1 text-[12px] transition-colors";
+  const chipOn = "border-rule-strong bg-brand/10 font-medium text-brand-ink";
+  const chipOff = "border-rule text-ink-secondary hover:bg-paper-shade hover:text-ink";
+
   return (
-    <div className="flex flex-col h-full overflow-y-auto">
+    <PageShell wide>
       <style>{`
         .leaflet-pin-icon {
           background: none !important;
@@ -752,38 +771,54 @@ export default function PowerMap() {
           background: ${SURFACE.base} !important;
           font-family: inherit;
         }
+        .leaflet-control-zoom {
+          border: none !important;
+          box-shadow: 0 1px 4px rgba(28, 23, 18, 0.18) !important;
+          margin-bottom: 16px !important;
+          margin-right: 16px !important;
+        }
+        .leaflet-control-zoom a {
+          background: ${SURFACE.overlay} !important;
+          color: ${INK.secondary} !important;
+          border: 1px solid ${BORDER.subtle} !important;
+          width: 28px !important;
+          height: 28px !important;
+          line-height: 28px !important;
+          font-size: 14px !important;
+        }
         .leaflet-control-zoom-in {
-          border-radius: 6px 6px 0 0 !important;
+          border-radius: 2px 2px 0 0 !important;
           border-bottom: none !important;
         }
         .leaflet-control-zoom-out {
-          border-radius: 0 0 6px 6px !important;
+          border-radius: 0 0 2px 2px !important;
+        }
+        .leaflet-control-zoom a:hover {
+          background: ${SURFACE.raised} !important;
+          color: ${INK.primary} !important;
+        }
+        .leaflet-control-attribution {
+          background: rgba(246, 242, 234, 0.8) !important;
+          color: ${INK.muted} !important;
+          font-size: 10px !important;
         }
         .leaflet-control-attribution a {
-          color: ${INK.faint} !important;
+          color: ${INK.muted} !important;
         }
         .pin-wrapper {
-          transition: opacity 0.2s ease-out, transform 0.2s ease-out, filter 0.2s ease-out;
+          transition: transform 0.15s ease-out;
         }
         .pin-wrapper:hover,
         .leaflet-pin-icon.pin-hovered .pin-wrapper {
-          transform: scale(1.3);
-          filter: brightness(1.3);
+          transform: scale(1.25);
         }
-        .leaflet-pin-icon.pin-selected .pin-wrapper svg circle:last-of-type {
+        .leaflet-pin-icon.pin-selected .pin-wrapper svg circle {
           stroke: ${INK.primary};
           stroke-width: 2;
         }
-        @media (prefers-reduced-motion: no-preference) {
-          @keyframes pin-pulse-glow {
-            0%, 100% { transform: scale(1); opacity: 0.3; }
-            50% { transform: scale(1.15); opacity: 0.15; }
-          }
-          .pin-pulse svg circle:first-child {
-            animation: pin-pulse-glow 3s ease-in-out infinite;
-            transform-origin: center;
-          }
-        }
+        /* Cluster badge on paper. MarkerCluster.Default.css (the library's
+           blue blobs) is not imported; iconCreateFunction emits .gt-cluster,
+           so this block is the entire cluster style. */
         .gt-cluster-wrap {
           background: none !important;
           border: none !important;
@@ -794,12 +829,13 @@ export default function PowerMap() {
           justify-content: center;
           border-radius: 9999px;
           background: ${SURFACE.raised};
-          border: 1px solid ${alpha(BRAND.primary, 0.55)};
-          color: ${BRAND.primary};
-          font-family: ${FONT.mono};
-          font-size: 11px;
-          font-weight: 700;
-          box-shadow: 0 0 0 4px ${alpha(BRAND.primary, 0.12)}, 0 2px 10px rgba(0,0,0,0.5);
+          border: 1.5px solid ${BRAND.primary};
+          color: ${INK.primary};
+          font-family: ${FONT.sans};
+          font-size: 12px;
+          font-weight: 600;
+          font-variant-numeric: tabular-nums;
+          box-shadow: 0 0 0 3px ${alpha(BRAND.primary, 0.15)}, 0 1px 4px rgba(28, 23, 18, 0.18);
         }
         .power-map-tooltip {
           animation: tooltip-fade-in 150ms ease-out;
@@ -814,41 +850,15 @@ export default function PowerMap() {
         }
         .map-label {
           font-family: ${FONT.sans};
-          font-size: 10px;
+          font-size: 11px;
           color: ${INK.primary};
-          background: rgba(0,0,0,0.7);
-          padding: 2px 5px;
-          border-radius: 3px;
+          background: rgba(246, 242, 234, 0.85);
+          border: 1px solid ${BORDER.subtle};
+          padding: 1px 5px;
+          border-radius: 2px;
           white-space: nowrap;
           pointer-events: none;
           line-height: 1.3;
-        }
-        .leaflet-control-zoom {
-          border: none !important;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.5) !important;
-          margin-bottom: 16px !important;
-          margin-right: 16px !important;
-        }
-        .leaflet-control-zoom a {
-          background: ${SURFACE.raised} !important;
-          color: ${INK.secondary} !important;
-          border: 1px solid ${BORDER.subtle} !important;
-          width: 28px !important;
-          height: 28px !important;
-          line-height: 28px !important;
-          font-size: 14px !important;
-        }
-        .leaflet-control-zoom a:hover {
-          background: ${SURFACE.overlay} !important;
-          color: ${BRAND.primary} !important;
-        }
-        .leaflet-control-attribution {
-          background: rgba(0,0,0,0.4) !important;
-          color: ${INK.faint} !important;
-          font-size: 9px !important;
-        }
-        .leaflet-control-attribution a {
-          color: ${INK.faint} !important;
         }
         .upcoming-scroll {
           scrollbar-width: none;
@@ -861,133 +871,116 @@ export default function PowerMap() {
         }
       `}</style>
 
-      {/* Power tool header: title + view tabs. Sits above the map's own
-          control cluster (DC Locations / Grid Stress) so tabs stay put when
-          the map view is swapped out for Deals or Queue. */}
-      <div
-        className="border-b border-border px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3"
-        data-testid="power-header"
-      >
-        <h1 className="text-base sm:text-lg font-semibold text-foreground tracking-tight" style={{ fontFamily: FONT.mono }}>
-          Power <span className="text-muted-foreground/50 font-normal">/ {POWER_SUBTITLES[tab]}</span>
-        </h1>
-        <ToolTabs tabs={POWER_TABS} active={tab} onChange={setTab} />
-      </div>
+      <PageTitle
+        title="Power"
+        dek="The physical layer of the AI buildout: where the data centers sit, who contracted the power for them, and what is still waiting on the grid."
+        testId="power-header"
+      />
+
+      <ToolTabs tabs={POWER_TABS} active={tab} onChange={setTab} />
 
       {tab === "deals" && (
-        <div className="flex-1 p-4 sm:p-6">
+        <div className="mt-6">
           <PowerDeals embedded />
         </div>
       )}
       {tab === "queue" && (
-        <div className="flex-1 p-4 sm:p-6">
+        <div className="mt-6">
           <Queue embedded />
         </div>
       )}
 
       {tab === "map" && (<>
       {belowSm ? (
-        /* The Leaflet map is desktop-only. On phones this honest card takes
-           its place; the headline numbers, upcoming projects, and operator
-           table below stay fully usable. */
-        <div className="border-b border-border px-4 py-5" data-testid="map-mobile-card">
-          <div className="rounded-lg border border-subtle bg-surface-raised p-4">
-            <div className="flex items-center gap-2 mb-1.5">
-              <Zap className="h-4 w-4 text-brand" />
-              <span className="text-sm font-semibold text-foreground">Power Map</span>
+        /* The Leaflet map is desktop-only. On phones this honest plate takes
+           its place; the headline numbers, upcoming projects, and grid
+           operator table below stay fully usable. */
+        <div className="mt-6" data-testid="map-mobile-card">
+          <div className="rounded-sm border border-rule bg-surface-raised p-4">
+            <div className="mb-1.5 flex items-baseline gap-2">
+              <span className="text-[15px] font-semibold text-ink">Power map</span>
               <AsOf updatedAt={dataUpdatedAt} intervalMs={900_000} className="ml-auto" />
             </div>
-            <div className="flex items-start gap-2 mb-3">
-              <MonitorSmartphone className="h-3.5 w-3.5 text-muted-foreground/60 mt-0.5 flex-shrink-0" />
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                The map needs a desktop screen. Everything else on this page works here:
-                the numbers below, upcoming projects, and the grid operator table.
-              </p>
-            </div>
+            <p className="mb-3 text-[12.5px] leading-relaxed text-ink-secondary">
+              The map needs a desktop screen. Everything else on this page works here:
+              the numbers below, upcoming projects, and the grid operator table.
+            </p>
             {dcError ? (
               <ErrorState label="Facility data failed to load." onRetry={() => refetchDataCenters()} className="py-4" />
             ) : dcLoading ? (
               <Skeleton className="h-5 w-56" aria-hidden="true" />
             ) : (
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-11 font-mono">
-                <span className="text-muted-foreground">{dataCenters.length} facilities</span>
-                <span className="text-muted-foreground/30">|</span>
-                <span className="text-brand-2 font-bold" title={`operational + construction; announced (+${(announcedMW / 1000).toFixed(1)} GW) excluded`}>{(totalMW / 1000).toFixed(1)} GW</span>
-                <span className="text-muted-foreground/30">|</span>
-                <span className="text-muted-foreground">{totalTWh} TWh/yr</span>
-                <span className="text-muted-foreground/30">|</span>
-                <div className="flex items-center gap-1.5">
-                  <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full inline-block" style={{ backgroundColor: STATUS_COLORS.operational }} /><span className="text-muted-foreground">{opCount}</span></span>
-                  <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full inline-block" style={{ backgroundColor: STATUS_COLORS.construction }} /><span className="text-muted-foreground">{conCount}</span></span>
-                  <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full inline-block" style={{ backgroundColor: STATUS_COLORS.announced }} /><span className="text-muted-foreground">{annCount}</span></span>
-                </div>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[12.5px] text-ink-secondary">
+                <span
+                  className="font-semibold text-ink tnum"
+                  title={`operational + construction; announced (+${(announcedMW / 1000).toFixed(1)} GW) excluded`}
+                >
+                  {(totalMW / 1000).toFixed(1)} GW
+                </span>
+                <span className="tnum">{dataCenters.length} facilities</span>
+                <span className="tnum">{totalTWh} TWh/yr</span>
+                <span className="flex items-center gap-2.5">
+                  <span className="flex items-center gap-1"><StatusSwatch status="operational" /><span className="tnum">{opCount}</span></span>
+                  <span className="flex items-center gap-1"><StatusSwatch status="construction" /><span className="tnum">{conCount}</span></span>
+                  <span className="flex items-center gap-1"><StatusSwatch status="announced" /><span className="tnum">{annCount}</span></span>
+                </span>
               </div>
             )}
           </div>
+          <Provenance
+            source="GridTilt facility registry"
+            extra={dataUpdatedAt ? <AsOf updatedAt={dataUpdatedAt} intervalMs={900_000} /> : undefined}
+          />
         </div>
       ) : (
-      <div className="flex-1 flex flex-col">
-        <div
-          className="flex-1 relative"
-          style={{ minHeight: 520 }}
-          ref={mapContainerRef}
-        >
+      <>
+        {/* The map as a captioned plate: hairline border, caption row,
+            provenance line. `isolate` keeps Leaflet's internal z-indexes
+            from painting over the sticky masthead. */}
+        <figure className="isolate mt-6 border border-rule">
+          <div
+            className="relative h-[62vh] max-h-[680px] min-h-[520px]"
+            ref={mapContainerRef}
+          >
           <div className="absolute top-3 left-3 z-[1000] pointer-events-auto" data-testid="stats-overlay">
-            <div className="bg-surface-raised/90 backdrop-blur-md border border-subtle rounded-lg px-4 py-3 shadow-xl">
-              <div className="flex items-center gap-2 mb-2">
-                <Zap className="h-3.5 w-3.5 text-brand" />
-                <span className="text-xs font-semibold text-white/90 tracking-tight">Power Map</span>
-                <UITooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      className="text-white/40 hover:text-brand transition-colors"
-                      aria-label="What this map tracks"
-                      data-testid="threshold-banner"
-                    >
-                      <Info className="h-3.5 w-3.5" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom" align="start" className="max-w-xs z-[1200] p-3">
-                    <p className="text-11 font-mono font-bold tracking-widest text-brand uppercase mb-1.5">&ge; 400 MW only</p>
-                    <p className="text-11 leading-snug text-white/70 normal-case">
-                      We track hyperscale AI campuses. Smaller sites exist by the thousands. Sources like <span className="text-white/90 font-medium">DC Map</span> and <span className="text-white/90 font-medium">Data Center Knowledge</span> cover them better. For the compute layer (GPUs, chips, secured power) see <Link href="/compute-frontier" className="text-brand hover:text-brand-2">Compute Frontier</Link>.
-                    </p>
-                  </TooltipContent>
-                </UITooltip>
-                <span className="text-10 font-mono text-white/40">
-                  {dcLoading ? "loading…" : dcError ? "load failed" : `${dataCenters.length} facilities`}
+            <div className="rounded-sm border border-rule bg-surface-overlay/95 px-4 py-2.5 shadow-md">
+              <div className="flex items-baseline gap-2.5">
+                <span
+                  className="text-[17px] font-semibold text-ink tnum"
+                  title={`operational + construction; announced (+${(announcedMW / 1000).toFixed(1)} GW) excluded`}
+                >
+                  {dcLoading ? "…" : dcError ? "—" : `${(totalMW / 1000).toFixed(1)} GW`}
                 </span>
-                <AsOf updatedAt={dataUpdatedAt} intervalMs={900_000} />
+                <span className="text-[12px] text-ink-muted tnum">
+                  {dcLoading ? "loading" : dcError ? "load failed" : `${dataCenters.length} facilities · ${totalTWh} TWh/yr`}
+                </span>
               </div>
-              <div className="flex items-center gap-3 text-11 font-mono">
-                <span className="text-brand-2 font-bold" title={`operational + construction; announced (+${(announcedMW / 1000).toFixed(1)} GW) excluded`}>{(totalMW / 1000).toFixed(1)} GW</span>
-                <span className="text-white/20">|</span>
-                <span className="text-white/50">{totalTWh} TWh/yr</span>
-                <span className="text-white/20">|</span>
-                <div className="flex items-center gap-1.5">
-                  <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full inline-block" style={{ backgroundColor: STATUS_COLORS.operational }} /><span className="text-white/60">{opCount}</span></span>
-                  <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full inline-block" style={{ backgroundColor: STATUS_COLORS.construction }} /><span className="text-white/60">{conCount}</span></span>
-                  <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full inline-block" style={{ backgroundColor: STATUS_COLORS.announced }} /><span className="text-white/60">{annCount}</span></span>
-                </div>
+              <div className="mt-1.5 flex items-center gap-3 text-[12px] text-ink-secondary">
+                <span className="flex items-center gap-1.5"><StatusSwatch status="operational" /><span className="tnum">{opCount}</span> operational</span>
+                <span className="flex items-center gap-1.5"><StatusSwatch status="construction" /><span className="tnum">{conCount}</span> building</span>
+                <span className="flex items-center gap-1.5"><StatusSwatch status="announced" /><span className="tnum">{annCount}</span> announced</span>
+              </div>
+              <div className="mt-1">
+                <AsOf updatedAt={dataUpdatedAt} intervalMs={900_000} />
               </div>
             </div>
           </div>
 
           <div className="absolute top-3 right-3 z-[1000] flex flex-col items-end gap-2 pointer-events-auto">
-            <div className="flex rounded-md overflow-hidden border border-subtle text-xs font-mono shadow-lg">
+            <div className="flex overflow-hidden rounded-sm border border-rule text-[12.5px] shadow-sm">
               <button
-                className={`px-3 py-1.5 transition-all duration-500 ${viewMode === "dc" ? "bg-brand text-black font-semibold" : "bg-surface-raised/90 text-white/60 hover:text-white/90 backdrop-blur-md"}`}
+                className={`px-3 py-1.5 transition-colors ${viewMode === "dc" ? "bg-paper-deep font-semibold text-ink" : "bg-surface-overlay/95 text-ink-secondary hover:text-ink"}`}
                 onClick={() => setViewMode("dc")}
                 data-testid="toggle-dc-locations"
               >
-                DC Locations
+                Facilities
               </button>
               <button
-                className={`px-3 py-1.5 transition-all duration-500 ${viewMode === "stress" ? "bg-brand text-black font-semibold" : "bg-surface-raised/90 text-white/60 hover:text-white/90 backdrop-blur-md"}`}
+                className={`border-l border-rule px-3 py-1.5 transition-colors ${viewMode === "stress" ? "bg-paper-deep font-semibold text-ink" : "bg-surface-overlay/95 text-ink-secondary hover:text-ink"}`}
                 onClick={() => setViewMode("stress")}
                 data-testid="toggle-grid-stress"
               >
-                Grid Stress
+                Grid stress
               </button>
             </div>
 
@@ -1000,25 +993,26 @@ export default function PowerMap() {
                   setFiltersExpanded(!filtersExpanded);
                 }
               }}
-              className="flex items-center gap-2 bg-surface-raised/90 backdrop-blur-md border border-subtle rounded-md px-3 py-1.5 text-xs font-mono text-white/60 hover:text-white/90 transition-colors shadow-lg"
+              className="flex items-center gap-2 rounded-sm border border-rule bg-surface-overlay/95 px-3 py-1.5 text-[12.5px] text-ink-secondary shadow-sm transition-colors hover:text-ink"
               data-testid="filter-bar-toggle"
             >
               <SlidersHorizontal className="h-3 w-3" />
               <span>Filters</span>
               {anyFilterActive && (
-                <span className="bg-brand text-black text-10 font-bold rounded-full px-1.5 py-0.5 leading-none">
+                <span className="rounded-full bg-brand px-1.5 text-[12px] font-semibold leading-[17px] text-ink tnum">
                   {activeFilterCount}
                 </span>
               )}
-              <span className="text-10 text-white/40 ml-1">{anyFilterActive || rtoFocus ? `${filteredCount}/${dataCenters.length}` : `${dataCenters.length}`}</span>
+              <span className="text-[12px] text-ink-muted tnum">
+                {anyFilterActive || rtoFocus ? `${filteredCount}/${dataCenters.length}` : `${dataCenters.length}`}
+              </span>
               <ChevronDown className={`h-3 w-3 transition-transform ${filtersExpanded ? "rotate-180" : ""}`} />
             </button>
 
             {rtoFocus && (
               <button
                 onClick={() => setRtoFocus(null)}
-                className="flex items-center gap-1.5 bg-surface-raised/90 backdrop-blur-md border rounded-md px-2.5 py-1 text-10 font-mono shadow-lg"
-                style={{ borderColor: alpha(BRAND.primary, 0.4), color: BRAND.primary }}
+                className="flex items-center gap-1.5 rounded-sm border border-rule-strong bg-brand/10 px-2.5 py-1 text-[12px] font-medium text-brand-ink shadow-sm"
                 data-testid="map-rto-focus-chip"
               >
                 <span>{rtoFocus} facilities only</span>
@@ -1028,44 +1022,48 @@ export default function PowerMap() {
           </div>
 
           {filtersExpanded && (
-            <div className="absolute top-[88px] right-3 z-[1000] pointer-events-auto" data-testid="filter-panel">
-              <div className="bg-surface-raised/95 backdrop-blur-md border border-subtle rounded-lg p-4 shadow-2xl w-[320px] max-h-[60vh] overflow-y-auto">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-xs font-semibold text-white/80">Filter Facilities</span>
+            <div className="absolute top-[92px] right-3 z-[1000] pointer-events-auto" data-testid="filter-panel">
+              <div className="max-h-[60vh] w-[320px] overflow-y-auto rounded-sm border border-rule bg-surface-overlay/95 p-4 shadow-lg">
+                <div className="mb-3 flex items-center justify-between">
+                  <span className="text-[13px] font-semibold text-ink">Filter facilities</span>
                   {anyFilterActive && (
-                    <button onClick={clearAllFilters} className="text-10 text-white/40 hover:text-white/70 underline underline-offset-2" data-testid="filter-clear-all">
+                    <button
+                      onClick={clearAllFilters}
+                      className="text-[12px] text-ink-muted underline underline-offset-2 hover:text-ink"
+                      data-testid="filter-clear-all"
+                    >
                       Clear all
                     </button>
                   )}
                 </div>
 
                 {anyFilterActive && (
-                  <div className="flex flex-wrap gap-1.5 mb-3 pb-3 border-b border-subtle">
+                  <div className="mb-3 flex flex-wrap gap-1.5 border-b border-rule pb-3">
                     {filterCompanies.map((c) => (
-                      <Badge key={c} className="bg-brand/15 text-brand border-brand/30 text-10 font-mono gap-1 cursor-pointer hover:bg-brand/25" onClick={() => removeCompanyFilter(c)}>
-                        <div className="h-1.5 w-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: companyColors[c] ?? INK.faint }} />
+                      <button key={c} className={`${chipBase} ${chipOn}`} onClick={() => removeCompanyFilter(c)}>
+                        <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full" style={{ backgroundColor: companyColors[c] ?? INK.faint }} />
                         {c}
                         <X className="h-2.5 w-2.5" />
-                      </Badge>
+                      </button>
                     ))}
                     {filterRTOs.map((rto) => (
-                      <Badge key={rto} className="bg-brand/15 text-brand border-brand/30 text-10 font-mono gap-1 cursor-pointer hover:bg-brand/25" onClick={() => removeRTOFilter(rto)}>
+                      <button key={rto} className={`${chipBase} ${chipOn}`} onClick={() => removeRTOFilter(rto)}>
                         {rto}
                         <X className="h-2.5 w-2.5" />
-                      </Badge>
+                      </button>
                     ))}
                     {filterCapacity !== "all" && (
-                      <Badge className="bg-brand/15 text-brand border-brand/30 text-10 font-mono gap-1 cursor-pointer hover:bg-brand/25" onClick={removeCapacityFilter}>
+                      <button className={`${chipBase} ${chipOn}`} onClick={removeCapacityFilter}>
                         {capacityLabels[filterCapacity]}
                         <X className="h-2.5 w-2.5" />
-                      </Badge>
+                      </button>
                     )}
                   </div>
                 )}
 
                 <div className="space-y-3">
                   <div>
-                    <p className="text-10 font-mono text-white/40 uppercase tracking-wider mb-2">Operator</p>
+                    <p className="mb-2 text-[12px] font-medium text-ink-muted">Operator</p>
                     <div className="flex flex-wrap gap-1.5">
                       {allCompanies.map((c) => {
                         const active = filterCompanies.includes(c);
@@ -1075,15 +1073,11 @@ export default function PowerMap() {
                             key={c}
                             data-testid={`filter-company-${c.toLowerCase().replace(/\s+/g, "-")}`}
                             onClick={() => toggleCompany(c)}
-                            className={`flex items-center gap-1.5 px-2 py-1 rounded text-10 font-medium transition-all ${
-                              active
-                                ? "bg-brand/20 text-brand border border-brand/40"
-                                : "bg-white/[0.04] text-white/50 border border-subtle hover:text-white/80 hover:bg-white/[0.08]"
-                            }`}
+                            className={`${chipBase} ${active ? chipOn : chipOff}`}
                           >
-                            <div className="h-1.5 w-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
+                            <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full" style={{ backgroundColor: color }} />
                             {c}
-                            <span className="text-9 opacity-50">({companyCounts[c] ?? 0})</span>
+                            <span className="text-ink-muted tnum">({companyCounts[c] ?? 0})</span>
                           </button>
                         );
                       })}
@@ -1091,7 +1085,7 @@ export default function PowerMap() {
                   </div>
 
                   <div>
-                    <p className="text-10 font-mono text-white/40 uppercase tracking-wider mb-2">Grid Region</p>
+                    <p className="mb-2 text-[12px] font-medium text-ink-muted">Grid region</p>
                     <div className="flex flex-wrap gap-1.5">
                       {ALL_RTOS.map((rto) => {
                         const active = filterRTOs.includes(rto);
@@ -1101,15 +1095,11 @@ export default function PowerMap() {
                             key={rto}
                             data-testid={`filter-rto-${rto.toLowerCase()}`}
                             onClick={() => toggleRTO(rto)}
-                            className={`flex items-center gap-1.5 px-2 py-1 rounded text-10 font-medium transition-all ${
-                              active
-                                ? "bg-brand/20 text-brand border border-brand/40"
-                                : "bg-white/[0.04] text-white/50 border border-subtle hover:text-white/80 hover:bg-white/[0.08]"
-                            }`}
+                            className={`${chipBase} ${active ? chipOn : chipOff}`}
                           >
-                            <div className="h-1.5 w-1.5 rounded-sm flex-shrink-0" style={{ backgroundColor: color, opacity: 0.85 }} />
+                            <span className="h-1.5 w-1.5 flex-shrink-0 rounded-sm" style={{ backgroundColor: color, opacity: 0.85 }} />
                             {rto}
-                            <span className="text-9 opacity-50">({rtoCounts[rto] ?? 0})</span>
+                            <span className="text-ink-muted tnum">({rtoCounts[rto] ?? 0})</span>
                           </button>
                         );
                       })}
@@ -1117,7 +1107,7 @@ export default function PowerMap() {
                   </div>
 
                   <div>
-                    <p className="text-10 font-mono text-white/40 uppercase tracking-wider mb-2">Capacity</p>
+                    <p className="mb-2 text-[12px] font-medium text-ink-muted">Capacity</p>
                     <div className="flex flex-wrap gap-1.5">
                       {[
                         { key: "all",    label: "All" },
@@ -1129,11 +1119,7 @@ export default function PowerMap() {
                           key={key}
                           data-testid={`filter-capacity-${key}`}
                           onClick={() => setCapacity(key)}
-                          className={`px-2 py-1 rounded text-10 font-medium transition-all ${
-                            filterCapacity === key
-                              ? "bg-brand/20 text-brand border border-brand/40"
-                              : "bg-white/[0.04] text-white/50 border border-subtle hover:text-white/80 hover:bg-white/[0.08]"
-                          }`}
+                          className={`${chipBase} ${filterCapacity === key ? chipOn : chipOff}`}
                         >
                           {label}
                         </button>
@@ -1146,11 +1132,11 @@ export default function PowerMap() {
           )}
 
           <div className="absolute bottom-3 left-3 z-[1000] pointer-events-none" data-testid="map-legend">
-            <div className="bg-surface-raised/90 backdrop-blur-md border border-subtle rounded-lg px-3 py-2.5 shadow-lg">
+            <div className="rounded-sm border border-rule bg-surface-overlay/95 px-3 py-2.5 shadow-sm">
               {viewMode === "dc" ? (
-                <div className="flex items-start gap-4">
+                <div className="flex items-start gap-5">
                   <div>
-                    <p className="text-9 font-mono text-white/40 uppercase tracking-wider mb-1.5">Size = capacity</p>
+                    <p className="mb-1.5 text-[11.5px] text-ink-muted">Size = capacity</p>
                     <div className="flex items-end gap-2.5">
                       {legendSizes.map(({ mw, label }) => {
                         const d = Math.round(pinRadius(mw) * 2);
@@ -1165,25 +1151,25 @@ export default function PowerMap() {
                                 backgroundColor: alpha(INK.secondary, 0.12),
                               }}
                             />
-                            <span className="text-9 font-mono text-white/50 whitespace-nowrap">{label}</span>
+                            <span className="whitespace-nowrap text-[11.5px] text-ink-secondary">{label}</span>
                           </div>
                         );
                       })}
                     </div>
                   </div>
                   <div>
-                    <p className="text-9 font-mono text-white/40 uppercase tracking-wider mb-1.5">Color = status</p>
-                    <div className="space-y-1 text-10 font-mono text-white/60">
-                      <div className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ backgroundColor: STATUS_COLORS.operational }} />Operational</div>
-                      <div className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ backgroundColor: STATUS_COLORS.construction }} />Construction</div>
-                      <div className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ backgroundColor: STATUS_COLORS.announced }} />Announced</div>
+                    <p className="mb-1.5 text-[11.5px] text-ink-muted">Color = status</p>
+                    <div className="space-y-1 text-[12px] text-ink-secondary">
+                      <div className="flex items-center gap-1.5"><StatusSwatch status="operational" />Operational</div>
+                      <div className="flex items-center gap-1.5"><StatusSwatch status="construction" />Construction</div>
+                      <div className="flex items-center gap-1.5"><StatusSwatch status="announced" />Announced</div>
                     </div>
                   </div>
                 </div>
               ) : (
                 <>
-                  <p className="text-9 font-mono text-white/40 uppercase tracking-wider mb-1.5">Grid stress</p>
-                  <div className="space-y-1 text-10 font-mono text-white/60">
+                  <p className="mb-1.5 text-[11.5px] text-ink-muted">Grid stress</p>
+                  <div className="space-y-1 text-[12px] text-ink-secondary">
                     {([
                       ["Critical", "<16%"],
                       ["Elevated", "16-18%"],
@@ -1208,12 +1194,12 @@ export default function PowerMap() {
             maxZoom={12}
             zoomControl={false}
             attributionControl={true}
-            style={{ width: "100%", height: "100%", minHeight: 520, background: SURFACE.base }}
+            style={{ width: "100%", height: "100%", background: SURFACE.base }}
             className="rounded-none"
           >
             <TileLayer
-              url="https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png"
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
+              url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
               subdomains="abcd"
               maxZoom={19}
             />
@@ -1246,7 +1232,7 @@ export default function PowerMap() {
 
           {dcError && (
             <div className="absolute inset-0 z-[1010] flex items-center justify-center pointer-events-none">
-              <div className="pointer-events-auto bg-surface-raised/95 backdrop-blur-md border border-subtle rounded-lg shadow-2xl px-8">
+              <div className="pointer-events-auto rounded-sm border border-rule bg-surface-overlay/95 px-8 shadow-lg">
                 <ErrorState label="Facility data failed to load - the map has no sites to show." onRetry={() => refetchDataCenters()} />
               </div>
             </div>
@@ -1261,65 +1247,53 @@ export default function PowerMap() {
               }}
             >
               <div
-                className="border rounded-lg shadow-2xl text-xs font-mono min-w-[260px] max-w-[280px] overflow-hidden"
-                style={{
-                  background: SURFACE.raised,
-                  borderColor: alpha(BRAND.primary, 0.3),
-                  boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
-                  backdropFilter: "blur(8px)",
-                }}
+                className="min-w-[260px] max-w-[280px] overflow-hidden rounded-sm border border-rule bg-surface-overlay shadow-lg"
                 data-testid="pin-detail-tooltip"
               >
-                <div className="px-4 pt-3 pb-2 border-b" style={{ borderColor: BORDER.subtle }}>
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="font-bold text-white text-sm leading-tight">{displayDC.name}</p>
-                    <span
-                      className="text-10 px-2 py-0.5 rounded-full font-medium whitespace-nowrap"
-                      style={{
-                        backgroundColor: alpha(STATUS_COLORS[displayDC.status], 0.15),
-                        color: displayDC.status === "operational" ? SEMANTIC.positive : STATUS_COLORS[displayDC.status],
-                      }}
-                    >
-                      {getStatusBadge(displayDC.status).label}
+                <div className="border-b border-rule px-4 pt-3 pb-2">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <p className="text-[13.5px] font-semibold leading-tight text-ink">{displayDC.name}</p>
+                    <span className={`whitespace-nowrap text-[12px] ${STATUS_TEXT[displayDC.status].className}`}>
+                      {STATUS_TEXT[displayDC.status].label}
                     </span>
                   </div>
                 </div>
-                <div className="px-4 py-3 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-white/40 text-xs">Operator</span>
-                    <div className="flex items-center gap-1.5">
-                      <div className="h-2 w-2 rounded-full" style={{ backgroundColor: companyColors[displayDC.company] ?? INK.faint }} />
-                      <span className="text-white text-xs">{displayDC.company}</span>
-                    </div>
+                <div className="space-y-1.5 px-4 py-3 text-[12.5px]">
+                  <div className="flex items-baseline justify-between">
+                    <span className="text-ink-muted">Operator</span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="h-2 w-2 rounded-full" style={{ backgroundColor: companyColors[displayDC.company] ?? INK.faint }} />
+                      <span className="text-ink">{displayDC.company}</span>
+                    </span>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-white/40 text-xs">Location</span>
-                    <span className="text-white text-xs">{displayDC.city}, {displayDC.state}</span>
+                  <div className="flex items-baseline justify-between">
+                    <span className="text-ink-muted">Location</span>
+                    <span className="text-ink">{displayDC.city}, {displayDC.state}</span>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-white/40 text-xs">Capacity</span>
-                    <span className="text-brand-2 font-bold text-13">{displayDC.powerMW} MW</span>
+                  <div className="flex items-baseline justify-between">
+                    <span className="text-ink-muted">Capacity</span>
+                    <span className="font-semibold text-ink tnum">{displayDC.powerMW} MW</span>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-white/40 text-xs">Grid Region</span>
-                    <span className="text-white text-xs">{gridOpToRTO(displayDC.gridOperator)}</span>
+                  <div className="flex items-baseline justify-between">
+                    <span className="text-ink-muted">Grid region</span>
+                    <span className="text-ink">{gridOpToRTO(displayDC.gridOperator)}</span>
                   </div>
                   {selected && (
                     <>
-                      <div className="flex items-center justify-between">
-                        <span className="text-white/40 text-xs">Annual Power</span>
-                        <span className="text-white text-xs">{(displayDC.annualMWh / 1_000_000).toFixed(2)} TWh</span>
+                      <div className="flex items-baseline justify-between">
+                        <span className="text-ink-muted">Annual power</span>
+                        <span className="text-ink tnum">{(displayDC.annualMWh / 1_000_000).toFixed(2)} TWh</span>
                       </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-white/40 text-xs">Online</span>
-                        <span className="text-white text-xs">{displayDC.openDate}</span>
+                      <div className="flex items-baseline justify-between">
+                        <span className="text-ink-muted">Online</span>
+                        <span className="text-ink tnum">{displayDC.openDate}</span>
                       </div>
                     </>
                   )}
-                  <div className="pt-1.5 mt-1" style={{ borderTop: `1px solid ${BORDER.subtle}` }}>
+                  <div className="mt-1 border-t border-rule pt-2">
                     <a
                       href="/stack"
-                      className="text-11 text-brand hover:text-brand-2 transition-colors pointer-events-auto"
+                      className="pointer-events-auto text-[12.5px] font-semibold text-brand-ink transition-colors hover:text-ink"
                       data-testid="link-view-in-stack"
                     >
                       View in The Stack &rarr;
@@ -1329,32 +1303,53 @@ export default function PowerMap() {
               </div>
             </div>
           )}
-        </div>
-      </div>
+          </div>
+
+          <figcaption className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 border-t border-rule bg-surface-raised px-4 py-2.5">
+            <span className="max-w-[76ch] text-[12.5px] leading-snug text-ink-secondary" data-testid="threshold-banner">
+              Hyperscale AI campuses of 400 MW and up; thousands of smaller sites are out of scope.
+              Marker size tracks capacity. For the compute layer see{" "}
+              <Link href="/compute-frontier" className="text-brand-ink underline decoration-rule-strong underline-offset-2 hover:text-ink">
+                Compute Frontier
+              </Link>.
+            </span>
+            <span className="text-[12.5px] text-ink-muted tnum">
+              {dcLoading ? "loading" : dcError ? "load failed" : `${dataCenters.length} facilities`}
+            </span>
+          </figcaption>
+        </figure>
+        <Provenance
+          source="GridTilt facility registry"
+          extra={dataUpdatedAt ? <AsOf updatedAt={dataUpdatedAt} intervalMs={900_000} /> : undefined}
+        />
+      </>
       )}
 
-      <div className="border-t border-border px-4 sm:px-6 py-4" data-testid="upcoming-projects-section">
-        <div className="flex items-center gap-2 mb-3">
-          <Calendar className="h-4 w-4 text-muted-foreground" />
-          <h2 className="text-xs font-semibold tracking-wider uppercase text-muted-foreground">Upcoming Projects</h2>
-          <span className="text-10 font-mono text-muted-foreground/50">Announced facilities not yet built</span>
-          {announced.length > 0 && (
-            <button
-              onClick={() => setShowAllUpcoming((v) => !v)}
-              className="ml-auto text-10 font-mono text-brand hover:text-brand-2 transition-colors"
-              data-testid="upcoming-show-all"
-            >
-              {showAllUpcoming ? "Collapse" : `Show all ${announced.length}`}
-            </button>
-          )}
-        </div>
+      <RuleSection
+        head="Upcoming projects"
+        aside={
+          <>
+            <span>Announced facilities not yet built</span>
+            {announced.length > 0 && (
+              <button
+                onClick={() => setShowAllUpcoming((v) => !v)}
+                className="text-[12.5px] font-semibold text-brand-ink transition-colors hover:text-ink"
+                data-testid="upcoming-show-all"
+              >
+                {showAllUpcoming ? "Collapse" : `Show all ${announced.length}`}
+              </button>
+            )}
+          </>
+        }
+        testId="upcoming-projects-section"
+      >
         {dcLoading && (
           <div className="flex gap-3 overflow-hidden" aria-hidden="true">
-            {Array(4).fill(null).map((_, i) => <Skeleton key={i} className="h-[104px] w-52 flex-shrink-0 rounded-md" />)}
+            {Array(4).fill(null).map((_, i) => <Skeleton key={i} className="h-[104px] w-56 flex-shrink-0 rounded-sm" />)}
           </div>
         )}
         {dcError && (
-          <p className="text-xs text-muted-foreground py-2">Unavailable - facility data failed to load. Retry from the card above.</p>
+          <p className="py-2 text-[13px] text-ink-muted">Unavailable - facility data failed to load. Retry from the map above.</p>
         )}
         <div
           className={
@@ -1372,61 +1367,56 @@ export default function PowerMap() {
                 key={dc.id}
                 onClick={() => { setSelected(dc); setTooltipPos(null); }}
                 data-testid={`upcoming-card-${dc.id}`}
-                className="flex-shrink-0 snap-start w-52 rounded-md border border-dashed border-border/70 bg-muted/10 p-3 text-left hover:bg-muted/20 hover:border-border transition-colors"
+                className="w-56 flex-shrink-0 snap-start rounded-sm border border-dashed border-rule p-3 text-left transition-colors hover:border-rule-strong hover:bg-paper-shade"
               >
-                <div className="flex items-center gap-1.5 mb-2">
-                  <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: cColor }} />
-                  <span className="text-10 font-mono font-semibold" style={{ color: cColor }}>{dc.company}</span>
+                <div className="mb-1.5 flex items-center gap-1.5">
+                  <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: cColor }} />
+                  <span className="text-[12px] font-medium text-ink-secondary">{dc.company}</span>
                 </div>
-                <p className="text-xs font-semibold text-foreground leading-tight mb-2">{dc.name}</p>
-                <div className="flex items-center justify-between text-10 font-mono text-muted-foreground">
-                  <span className="text-brand-2 font-semibold">{dc.powerMW} MW</span>
-                  <span>{dc.openDate}</span>
+                <p className="mb-1.5 text-[13px] font-semibold leading-tight text-ink">{dc.name}</p>
+                <div className="flex items-baseline justify-between text-[12px]">
+                  <span className="font-semibold text-ink tnum">{dc.powerMW} MW</span>
+                  <span className="text-ink-muted tnum">{dc.openDate}</span>
                 </div>
                 {rtoColor && (
-                  <div className="flex items-center gap-1 mt-1.5">
-                    <div className="h-1.5 w-1.5 rounded-sm" style={{ backgroundColor: rtoColor, opacity: 0.8 }} />
-                    <span className="text-9 font-mono text-muted-foreground/70">{rto}</span>
-                    <span className="text-9 font-mono text-muted-foreground/50 ml-auto">{dc.city}, {dc.state}</span>
+                  <div className="mt-1.5 flex items-center gap-1 text-[12px] text-ink-muted">
+                    <span className="h-1.5 w-1.5 rounded-sm" style={{ backgroundColor: rtoColor, opacity: 0.85 }} />
+                    <span>{rto}</span>
+                    <span className="ml-auto">{dc.city}, {dc.state}</span>
                   </div>
                 )}
               </button>
             );
           })}
         </div>
-      </div>
+      </RuleSection>
 
-      <div className="border-t border-border px-4 sm:px-6 py-4" data-testid="grid-stress-table">
-        <div className="flex items-center gap-2 mb-3">
-          <Network className="h-4 w-4 text-muted-foreground" />
-          <h2 className="text-xs font-semibold tracking-wider uppercase text-muted-foreground">Grid Operator Load Analysis</h2>
-          <span className="text-10 font-mono text-muted-foreground/50">Reserve margins: NERC LTRA 2025 (2026 projections)</span>
-          {rtoFocus ? (
+      <RuleSection
+        head="Grid operator load"
+        aside={
+          rtoFocus ? (
             <button
               onClick={() => setRtoFocus(null)}
-              className="ml-auto flex items-center gap-1 text-10 font-mono px-2 py-0.5 rounded border transition-colors"
-              style={{
-                borderColor: alpha(BRAND.primary, 0.4),
-                color: BRAND.primary,
-                backgroundColor: alpha(BRAND.primary, 0.1),
-              }}
+              className="flex items-center gap-1 text-[12.5px] font-semibold text-brand-ink transition-colors hover:text-ink"
               data-testid="rto-focus-clear"
             >
               Map: {rtoFocus} only
               <X className="h-2.5 w-2.5" />
             </button>
           ) : (
-            <span className="ml-auto text-10 font-mono text-muted-foreground/50 hidden sm:inline">Click a row to filter the map</span>
-          )}
-        </div>
+            <span className="hidden sm:inline">Click a row to filter the map</span>
+          )
+        }
+        testId="grid-stress-table"
+      >
         <div className="overflow-x-auto">
-          <table className="w-full text-xs font-mono">
+          <table className="print-table min-w-[560px]">
             <thead>
-              <tr className="border-b border-border/60">
-                <th className="text-left text-muted-foreground/60 font-normal pb-2 pr-6">RTO / ISO</th>
-                <th className="text-right text-muted-foreground/60 font-normal pb-2 pr-6">Tracked AI Load</th>
-                <th className="text-right text-muted-foreground/60 font-normal pb-2 pr-6">Reserve Margin</th>
-                <th className="text-left text-muted-foreground/60 font-normal pb-2">AI Load Signal</th>
+              <tr>
+                <th>Region</th>
+                <th className="num">Tracked AI load</th>
+                <th className="num">Reserve margin</th>
+                <th>AI load signal</th>
               </tr>
             </thead>
             <tbody>
@@ -1440,75 +1430,74 @@ export default function PowerMap() {
                     key={rto}
                     data-testid={`rto-row-${rto.toLowerCase()}`}
                     onClick={() => toggleRtoFocus(rto)}
-                    className={`border-b border-border/30 cursor-pointer transition-colors ${active ? "bg-brand/10" : "hover:bg-muted/10"}`}
+                    className={`row-link ${active ? "bg-brand/5" : ""}`}
                   >
-                    <td className="py-2 pr-6">
-                      <div className="flex items-center gap-1.5">
-                        <div className="h-2 w-2 rounded-sm" style={{ backgroundColor: RTO_MUTED_COLORS[rto], opacity: 0.9 }} />
-                        <span className="text-foreground font-semibold">{rto}</span>
-                        {active && <span className="text-9 text-brand">on map</span>}
-                      </div>
+                    <td className="shrink">
+                      <span className="flex items-center gap-1.5">
+                        <span className="h-2 w-2 rounded-sm" style={{ backgroundColor: RTO_MUTED_COLORS[rto], opacity: 0.9 }} />
+                        <span className="font-semibold text-ink">{rto}</span>
+                        {active && <span className="text-[12px] font-normal text-brand-ink">on map</span>}
+                      </span>
                     </td>
-                    <td className="py-2 pr-6 text-right text-foreground">
-                      {dcLoading ? <Skeleton className="h-3 w-16 ml-auto inline-block" aria-hidden="true" /> : dcError ? "—" : `${loadMW.toLocaleString()} MW`}
+                    <td className="num text-ink">
+                      {dcLoading ? <Skeleton className="ml-auto inline-block h-3 w-16" aria-hidden="true" /> : dcError ? "—" : `${loadMW.toLocaleString()} MW`}
                     </td>
-                    <td className="py-2 pr-6">
-                      <div className="flex items-center justify-end gap-2">
-                        <span style={{ color: sColor }}>{cfg.reserveMargin}%</span>
-                        <div className="h-1.5 w-16 rounded-full overflow-hidden flex-shrink-0" style={{ backgroundColor: "rgba(255,255,255,0.06)" }}>
-                          <div
-                            className="h-full rounded-full"
+                    <td className="num">
+                      <span className="inline-flex items-center gap-2">
+                        <span className="font-semibold tnum" style={{ color: sColor }}>{cfg.reserveMargin}%</span>
+                        <span className="inline-block h-1.5 w-16 flex-shrink-0 overflow-hidden rounded-full bg-paper-deep">
+                          <span
+                            className="block h-full rounded-full"
                             style={{
                               width: `${Math.min(100, (cfg.reserveMargin / 30) * 100)}%`,
                               backgroundColor: sColor,
                             }}
                           />
-                        </div>
-                      </div>
+                        </span>
+                      </span>
                     </td>
-                    <td className="py-2">
-                      <Badge
-                        className="text-10 font-mono border-transparent"
-                        style={{ backgroundColor: alpha(sColor, 0.15), color: sColor }}
-                      >
-                        {cfg.aiSignal}
-                      </Badge>
-                    </td>
+                    <td className="font-medium" style={{ color: sColor }}>{cfg.aiSignal}</td>
                   </tr>
                 );
               })}
             </tbody>
           </table>
         </div>
-      </div>
+        <Provenance
+          source="NERC Long-Term Reliability Assessment 2025"
+          extra="reserve margins are 2026 projections; tracked AI load sums the GridTilt facility registry per region"
+        />
+      </RuleSection>
 
       {mobileFiltersOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
-          <div className="absolute inset-0 bg-black/60" onClick={() => setMobileFiltersOpen(false)} />
-          <div className="absolute bottom-0 left-0 right-0 bg-surface-raised border-t border-subtle rounded-t-xl p-5 max-h-[80vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <SlidersHorizontal className="h-4 w-4 text-white/60" />
-                <span className="font-semibold text-sm text-white">Filters</span>
+          <div className="absolute inset-0 bg-ink/25" onClick={() => setMobileFiltersOpen(false)} />
+          <div className="absolute bottom-0 left-0 right-0 max-h-[80vh] overflow-y-auto rounded-t-md border-t border-rule bg-surface-overlay p-5">
+            <div className="mb-4 flex items-center justify-between">
+              <div className="flex items-baseline gap-2">
+                <span className="text-[15px] font-semibold text-ink">Filters</span>
                 {anyFilterActive && (
-                  <span className="text-10 font-mono text-brand">{filteredCount} of {dataCenters.length}</span>
+                  <span className="text-[12px] text-brand-ink tnum">{filteredCount} of {dataCenters.length}</span>
                 )}
               </div>
               <div className="flex items-center gap-2">
                 {anyFilterActive && (
-                  <button onClick={clearAllFilters} className="text-xs text-white/40 border border-strong rounded px-2 py-1">
+                  <button
+                    onClick={clearAllFilters}
+                    className="rounded-sm border border-rule px-2 py-1 text-[12px] text-ink-secondary hover:text-ink"
+                  >
                     Clear all
                   </button>
                 )}
-                <button onClick={() => setMobileFiltersOpen(false)} className="p-1.5 rounded hover:bg-white/10">
-                  <X className="h-4 w-4 text-white/60" />
+                <button onClick={() => setMobileFiltersOpen(false)} className="rounded-sm p-1.5 hover:bg-paper-shade" aria-label="Close filters">
+                  <X className="h-4 w-4 text-ink-secondary" />
                 </button>
               </div>
             </div>
 
             <div className="space-y-5">
               <div>
-                <p className="text-10 font-mono text-white/40 uppercase tracking-wider mb-2">Operator</p>
+                <p className="mb-2 text-[12px] font-medium text-ink-muted">Operator</p>
                 <div className="flex flex-wrap gap-2">
                   {allCompanies.map((c) => {
                     const active = filterCompanies.includes(c);
@@ -1517,11 +1506,9 @@ export default function PowerMap() {
                       <button
                         key={c}
                         onClick={() => toggleCompany(c)}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium transition-all ${
-                          active ? "bg-brand/20 text-brand border border-brand/40" : "bg-white/[0.04] text-white/50 border border-subtle"
-                        }`}
+                        className={`inline-flex items-center gap-1.5 rounded-sm border px-3 py-1.5 text-[12.5px] transition-colors ${active ? chipOn : chipOff}`}
                       >
-                        <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: color }} />
+                        <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: color }} />
                         {c} ({companyCounts[c] ?? 0})
                       </button>
                     );
@@ -1530,7 +1517,7 @@ export default function PowerMap() {
               </div>
 
               <div>
-                <p className="text-10 font-mono text-white/40 uppercase tracking-wider mb-2">Grid Region</p>
+                <p className="mb-2 text-[12px] font-medium text-ink-muted">Grid region</p>
                 <div className="flex flex-wrap gap-2">
                   {ALL_RTOS.map((rto) => {
                     const active = filterRTOs.includes(rto);
@@ -1539,11 +1526,9 @@ export default function PowerMap() {
                       <button
                         key={rto}
                         onClick={() => toggleRTO(rto)}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium transition-all ${
-                          active ? "bg-brand/20 text-brand border border-brand/40" : "bg-white/[0.04] text-white/50 border border-subtle"
-                        }`}
+                        className={`inline-flex items-center gap-1.5 rounded-sm border px-3 py-1.5 text-[12.5px] transition-colors ${active ? chipOn : chipOff}`}
                       >
-                        <div className="h-1.5 w-1.5 rounded-sm" style={{ backgroundColor: color, opacity: 0.85 }} />
+                        <span className="h-1.5 w-1.5 rounded-sm" style={{ backgroundColor: color, opacity: 0.85 }} />
                         {rto} ({rtoCounts[rto] ?? 0})
                       </button>
                     );
@@ -1552,10 +1537,10 @@ export default function PowerMap() {
               </div>
 
               <div>
-                <p className="text-10 font-mono text-white/40 uppercase tracking-wider mb-2">Capacity</p>
+                <p className="mb-2 text-[12px] font-medium text-ink-muted">Capacity</p>
                 <div className="flex flex-wrap gap-2">
                   {[
-                    { key: "all",    label: "All Sizes" },
+                    { key: "all",    label: "All sizes" },
                     { key: "small",  label: "400-600 MW" },
                     { key: "medium", label: "600-1000 MW" },
                     { key: "large",  label: "1 GW+" },
@@ -1563,9 +1548,7 @@ export default function PowerMap() {
                     <button
                       key={key}
                       onClick={() => setCapacity(key)}
-                      className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
-                        filterCapacity === key ? "bg-brand/20 text-brand border border-brand/40" : "bg-white/[0.04] text-white/50 border border-subtle"
-                      }`}
+                      className={`rounded-sm border px-3 py-1.5 text-[12.5px] transition-colors ${filterCapacity === key ? chipOn : chipOff}`}
                     >
                       {label}
                     </button>
@@ -1576,14 +1559,14 @@ export default function PowerMap() {
 
             <button
               onClick={() => setMobileFiltersOpen(false)}
-              className="w-full mt-5 py-2.5 rounded-md bg-brand text-black text-sm font-semibold"
+              className="mt-5 w-full rounded-sm bg-brand py-2.5 text-[13.5px] font-semibold text-ink"
             >
-              Apply Filters
+              Apply filters
             </button>
           </div>
         </div>
       )}
       </>)}
-    </div>
+    </PageShell>
   );
 }
