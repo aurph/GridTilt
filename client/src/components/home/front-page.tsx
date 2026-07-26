@@ -161,7 +161,7 @@ export function FrontPage() {
           {brief ? (
             <>
               <h1 className="font-serif font-medium text-[30px] sm:text-[38px] leading-[1.08] tracking-tight text-ink max-w-[24ch]">
-                {brief.title.replace(/ — week of.*$/, "")}
+                {brief.title.replace(/,? (— )?week of.*$/, "")}
               </h1>
               <p className="mt-3 max-w-[62ch] font-serif text-[17px] leading-relaxed text-ink-secondary">
                 {brief.summary}
