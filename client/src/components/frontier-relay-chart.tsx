@@ -166,7 +166,7 @@ export default function FrontierRelayChart({
         return (
           <g key={era.date}>
             <rect x={startX} y={TOP} width={Math.max(0, endX - startX)} height={effectiveHeight - TOP - BOTTOM} fill={index % 2 === 0 ? "rgba(255,255,255,0.012)" : "rgba(240,120,0,0.018)"} />
-            {endX - startX > 72 && <text x={startX + 7} y={effectiveHeight - 10} fill={INK.faint} fontFamily={FONT.mono} fontSize={8} letterSpacing="0.08em">{era.label.toUpperCase()}</text>}
+            {endX - startX > 72 && <text x={startX + 7} y={effectiveHeight - 10} fill={INK.faint} fontFamily={FONT.sans} fontSize={9.5} letterSpacing="0.08em">{era.label}</text>}
           </g>
         );
       })}
@@ -177,7 +177,7 @@ export default function FrontierRelayChart({
         return (
           <g key={year}>
             <line x1={tickX} y1={TOP - 5} x2={tickX} y2={effectiveHeight - BOTTOM} stroke={CHART_CHROME.grid} />
-            <text x={tickX} y={20} textAnchor="middle" fill={CHART_CHROME.tick} fontFamily={FONT.mono} fontSize={9}>{year}</text>
+            <text x={tickX} y={20} textAnchor="middle" fill={CHART_CHROME.tick} fontFamily={FONT.sans} fontSize={10}>{year}</text>
           </g>
         );
       })}
@@ -188,7 +188,7 @@ export default function FrontierRelayChart({
         const laneY = TOP + rowIndex * LANE + LANE / 2;
         return (
           <g key={row.lab.id}>
-            <text x={LABEL_RAIL - 12} y={laneY + 3} textAnchor="end" fill={INK.secondary} fontFamily={FONT.mono} fontSize={9}>{row.lab.name}</text>
+            <text x={LABEL_RAIL - 12} y={laneY + 3} textAnchor="end" fill={INK.secondary} fontFamily={FONT.sans} fontSize={10}>{row.lab.name}</text>
             <line x1={LABEL_RAIL} y1={laneY} x2={width - RIGHT} y2={laneY} stroke={CHART_CHROME.grid} />
             {row.models.map((model) => {
               const modelX = x(utc(model.releaseDate));
@@ -198,7 +198,7 @@ export default function FrontierRelayChart({
                   {showLabel && (
                     <g pointerEvents="none">
                       <rect x={modelX - Math.max(38, model.name.length * 6.1) / 2 - 4} y={laneY - 20} width={Math.max(38, model.name.length * 6.1) + 8} height={13} rx={3} fill={SURFACE.overlay} stroke={model.id === selectedModelId ? BRAND.primary : "rgba(255,255,255,0.1)"} />
-                      <text x={modelX} y={laneY - 11} textAnchor="middle" fill={model.id === selectedModelId ? BRAND.secondary : INK.secondary} fontFamily={FONT.mono} fontSize={8}>{model.name}</text>
+                      <text x={modelX} y={laneY - 11} textAnchor="middle" fill={model.id === selectedModelId ? BRAND.secondary : INK.secondary} fontFamily={FONT.sans} fontSize={9.5}>{model.name}</text>
                     </g>
                   )}
                   <Stamp model={model} lab={row.lab} x={modelX} y={laneY} selected={model.id === selectedModelId} onSelect={onSelectModel} onHover={setHoveredModelId} />
@@ -214,14 +214,14 @@ export default function FrontierRelayChart({
             return (
               <g key={tick}>
                 <line x1={LABEL_RAIL} y1={tickY} x2={width - RIGHT} y2={tickY} stroke={CHART_CHROME.grid} />
-                <text x={LABEL_RAIL - 12} y={tickY + 3} textAnchor="end" fill={CHART_CHROME.tick} fontFamily={FONT.mono} fontSize={9}>{formatScore(tick, benchmark)}</text>
+                <text x={LABEL_RAIL - 12} y={tickY + 3} textAnchor="end" fill={CHART_CHROME.tick} fontFamily={FONT.sans} fontSize={10}>{formatScore(tick, benchmark)}</text>
               </g>
             );
           })}
           {benchmark.introducedAt && utc(benchmark.introducedAt) >= domain.start && utc(benchmark.introducedAt) <= domain.end && (
             <g>
               <line x1={x(utc(benchmark.introducedAt))} y1={TOP} x2={x(utc(benchmark.introducedAt))} y2={effectiveHeight - BOTTOM} stroke={CHART_CHROME.refLine} strokeDasharray="3 4" />
-              <text x={x(utc(benchmark.introducedAt)) + 5} y={TOP + 10} fill={INK.faint} fontFamily={FONT.mono} fontSize={8}>benchmark introduced</text>
+              <text x={x(utc(benchmark.introducedAt)) + 5} y={TOP + 10} fill={INK.faint} fontFamily={FONT.sans} fontSize={9.5}>benchmark introduced</text>
             </g>
           )}
           {benchmarkByLab.map((points) => points.length > 1 && (
@@ -234,7 +234,7 @@ export default function FrontierRelayChart({
             const fillMode = point.result.provenance === "benchmark-owner" ? "solid" : point.result.provenance === "independent" ? "hatched" : "hollow";
             return (
               <g key={`${point.model.id}-${point.result.comparabilityKey}`}>
-                {showLabel && <text x={pointX} y={pointY - 11} textAnchor="middle" fill={INK.primary} fontFamily={FONT.mono} fontSize={8}>{point.model.name} · {formatScore(point.result.score, benchmark)}</text>}
+                {showLabel && <text x={pointX} y={pointY - 11} textAnchor="middle" fill={INK.primary} fontFamily={FONT.sans} fontSize={9.5}>{point.model.name} · {formatScore(point.result.score, benchmark)}</text>}
                 <Stamp model={point.model} lab={point.lab} x={pointX} y={pointY} selected={point.model.id === selectedModelId} fillMode={fillMode} onSelect={onSelectModel} onHover={setHoveredModelId} />
               </g>
             );
