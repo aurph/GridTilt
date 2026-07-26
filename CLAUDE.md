@@ -11,7 +11,8 @@ around them. Tagline: "Equities, infrastructure, and power data for the AI power
 economy." Live at gridtilt.com. Built and directed by Jack Schwartz (aurph). Audience:
 the citizen-investor researching the AI power economy, not fund analysts or day traders.
 
-14 sidebar modules, 27 routes (wouter, client/src/App.tsx):
+8 masthead sections (Today, The Stack, Power, Compute, GPUs, Analyze, Catalysts, Analysis) +
+front page at "/", 27 routes (wouter, client/src/App.tsx):
 
 | Module | Route | Key |
 |---|---|---|
@@ -66,11 +67,16 @@ Derived from the code; starred rules confirmed by Jack 2026-07-02.
   hand; grep first.
 - Pages keep small private subcomponents at the bottom of the same file; no per-page component
   folders. data-testid on interactive elements.
-- Styling: dark mode only, forced (html class="dark", :root vars in index.css, no .dark block).
-  Warm charcoal + orange terminal theme. *Brand orange is the literal hex #F07800; keep using
-  the raw hex (211 existing uses; no Tailwind token). Amber #F0A500 is the secondary accent.
-  Fonts: Inter body, JetBrains Mono for data/branding (often inline style), Source Serif 4 on
-  marketing only. The landing has its own scoped tokens (.gt-marketing, client/src/styles/anchor.css).
+- Styling: warm-paper editorial system, LIGHT ONLY (2026-07 redesign; spec at
+  docs/superpowers/specs/2026-07-23-editorial-redesign-design.md). Paper #F6F2EA ground, warm
+  ink #1C1712, hairline rules; tokens in index.css :root mirrored by client/src/lib/tokens.ts
+  (sync test enforced). *Brand orange #F07800 is GRAPHIC-ONLY (logo, active bars, highlighted
+  series); orange as text uses #9E5000 (--brand-ink / text-brand-2). Fonts: Newsreader (serif
+  display) + Public Sans (UI/body, tabular figures via .tnum); NO mono identity type, NO
+  uppercase tracking-widest microlabels (small-caps table heads only). Shared grammar lives in
+  client/src/components/editorial.tsx (PageShell/PageTitle/RuleSection/Provenance/PullStat/
+  EstFlag) + .print-table CSS; every data artifact carries a Provenance line. Shell = masthead
+  (components/masthead.tsx) + colophon; no sidebar, no news ticker.
 - Server layout: every route lives in server/routes.ts; math and fetching live in small pure
   modules routes call (indices.ts, clusters.ts, deals.ts, gpu-index.ts, gpu-economics.ts,
   gpu-history.ts, brief.ts, physical.ts, social-format.ts). New module = pure module + thin
