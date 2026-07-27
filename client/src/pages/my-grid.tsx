@@ -8,7 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { Skeleton } from "@/components/ui/skeleton";
-import { SrChartTable } from "@/components/Freshness";
+import { ErrorState, SrChartTable } from "@/components/Freshness";
 import { PageShell, PageTitle, Provenance, PullStat, RuleSection } from "@/components/editorial";
 import { RTO_CONFIG, RTO_SOURCE_NOTE } from "@/data/rto-config";
 import { STATE_GRID, STATE_GRID_SOURCE } from "@/data/state-grid";
@@ -72,12 +72,21 @@ export default function MyGrid() {
     }
   }
 
-  const { data: facilities, isLoading: facilitiesLoading } = useQuery<Facility[]>({
+  const {
+    data: facilities,
+    isLoading: facilitiesLoading,
+    isError: facilitiesError,
+    refetch: refetchFacilities,
+  } = useQuery<Facility[]>({
     queryKey: ["/api/datacenters"],
     refetchInterval: 900000,
   });
 
-  const { data: rates } = useQuery<RetailRates>({
+  const {
+    data: rates,
+    isError: ratesError,
+    refetch: refetchRates,
+  } = useQuery<RetailRates>({
     queryKey: ["/api/physical/retail-rates"],
     // 503 = honestly unconfigured, still a payload we render; only network
     // failures should register as errors.
@@ -181,6 +190,9 @@ export default function MyGrid() {
           <RuleSection head={`Being built in ${grid.name}`} testId="my-grid-facilities">
             {facilitiesLoading ? (
               <Skeleton className="h-24 w-full" />
+            ) : facilitiesError ? (
+              // A fetch failure must not read as "nothing is being built here".
+              <ErrorState label="Facility registry failed to load." onRetry={() => refetchFacilities()} className="h-24" />
             ) : localFacilities.length === 0 ? (
               <p className="text-[13.5px] text-ink-secondary" data-testid="my-grid-no-facilities">
                 No tracked facilities in {grid.name}. The registry covers hyperscale campuses of
@@ -221,7 +233,9 @@ export default function MyGrid() {
           </RuleSection>
 
           <RuleSection head={`What electricity costs in ${grid.name}`} testId="my-grid-rates">
-            {!rates ? (
+            {ratesError ? (
+              <ErrorState label="Rate data failed to load." onRetry={() => refetchRates()} className="h-40" />
+            ) : !rates ? (
               <Skeleton className="h-40 w-full" />
             ) : !("byState" in rates) ? (
               <p className="max-w-[60ch] text-[13.5px] leading-relaxed text-ink-secondary" data-testid="my-grid-rates-unconfigured">
