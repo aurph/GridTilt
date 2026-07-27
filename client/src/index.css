@@ -40,9 +40,11 @@
   --popover-foreground: 30 16% 7%;
   --popover-border: 41 17% 82%;
 
-  /* Primary: brand orange, graphic use; ink text on it (white fails contrast) */
-  --primary: 30 100% 47%;
-  --primary-foreground: 30 16% 7%;
+  /* Primary action = ink on paper (house rule: orange is graphic-only).
+     Matches the hero CTA (bg-ink / text-paper); orange stays in charts,
+     rules, and the active-nav underline. */
+  --primary: 30 16% 7%;
+  --primary-foreground: 43 37% 96%;
 
   --secondary: 44 28% 92%;
   --secondary-foreground: 30 16% 7%;

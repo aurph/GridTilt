@@ -263,13 +263,22 @@ export default function ComputeFrontier() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-10 gap-y-8 mt-8" data-testid="cf-charts">
         <RuleSection className="mt-0" head={`Planned MW by operator${metrics && metrics.concentration.operatorCount > OP_TOP_N ? ` (top ${OP_TOP_N})` : ""}`}>
           {metricsError ? (
-            <ErrorState label="Cluster metrics failed to load." onRetry={() => refetchMetrics()} className="h-[280px]" />
+            <ErrorState label="Cluster metrics failed to load." onRetry={() => refetchMetrics()} className="h-[380px]" />
           ) : metrics ? (
-            <ResponsiveContainer width="100%" height={280}>
+            <ResponsiveContainer width="100%" height={380}>
               <BarChart data={topOperators} layout="vertical" margin={{ left: 8, right: 16, top: 4, bottom: 4 }}>
                 <CartesianGrid {...gridProps} vertical={true} horizontal={false} />
                 <XAxis {...axisProps} type="number" tickFormatter={(v) => `${(v / 1000).toFixed(0)}`} />
-                <YAxis {...axisProps} type="category" dataKey="operator" width={110} interval={0} />
+                <YAxis
+                  {...axisProps}
+                  type="category"
+                  dataKey="operator"
+                  width={150}
+                  interval={0}
+                  tickFormatter={(name: string) =>
+                    name.length > 16 ? `${name.slice(0, 15).trimEnd()}…` : name
+                  }
+                />
                 <RTooltip contentStyle={tooltipContentStyle} labelStyle={tooltipLabelStyle} itemStyle={tooltipItemStyle} formatter={(v: number, _n, p: any) => [`${v.toLocaleString()} MW`, `${p.payload.count} clusters`]} cursor={{ fill: BRAND.wash }} />
                 <Bar dataKey="plannedMW" fill={BRAND.primary} radius={[0, 2, 2, 0]} />
               </BarChart>

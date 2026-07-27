@@ -353,5 +353,76 @@
       }
     },
     "source": "live"
+  },
+  {
+    "date": "2026-07-27",
+    "prices": {
+      "B300": 7.17,
+      "B200": 5.98,
+      "H200": 3.94,
+      "H100": 2.99,
+      "MI300X": 2.39,
+      "A100": 1.39
+    },
+    "meta": {
+      "B300": {
+        "low": 6.94,
+        "high": 7.39,
+        "sources": [
+          "runpod-secure",
+          "runpod-community"
+        ],
+        "n": 2
+      },
+      "B200": {
+        "low": 5.89,
+        "high": 6.38,
+        "sources": [
+          "runpod-secure",
+          "runpod-community",
+          "vast"
+        ],
+        "n": 3
+      },
+      "H200": {
+        "low": 3.59,
+        "high": 4.39,
+        "sources": [
+          "runpod-secure",
+          "runpod-community",
+          "vast"
+        ],
+        "n": 3
+      },
+      "H100": {
+        "low": 2.69,
+        "high": 3.72,
+        "sources": [
+          "runpod-secure",
+          "runpod-community",
+          "vast"
+        ],
+        "n": 3
+      },
+      "MI300X": {
+        "low": 2.39,
+        "high": 2.39,
+        "sources": [
+          "runpod-secure"
+        ],
+        "n": 1
+      },
+      "A100": {
+        "low": 0.94,
+        "high": 1.49,
+        "sources": [
+          "runpod-secure",
+          "runpod-community",
+          "vast"
+        ],
+        "n": 3
+      }
+    },
+    "source": "live"
   }
 ]

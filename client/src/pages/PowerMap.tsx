@@ -276,7 +276,12 @@ const RTO_MUTED_COLORS: Record<string, string> = {
   NPCC: SERIES[6],  // series slot 7
 };
 
-const GEO_URL = "https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json";
+// Self-hosted copy of us-atlas states-10m (client/public/geo/). The CDN
+// original is blocked by our CSP (connect-src 'self'), which silently
+// stripped the state outlines from the map.
+// ?v= busts the static-asset cache if this file is ever replaced (the
+// public/ path is not content-hashed by the build).
+const GEO_URL = "/geo/us-states-10m.json?v=1";
 
 function RTORegions({ viewMode }: { viewMode: ViewMode }) {
   const map = useMap();
