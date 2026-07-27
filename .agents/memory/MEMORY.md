@@ -1,4 +1,4 @@
 - [Dev metadata plugin vs generic JSX](replit-dev-metadata-plugin-generic-jsx.md) — any `<Comp<T>` generic JSX breaks dev babel; strip type args after pulls.
 - [GitHub pull recurring patches](github-pull-recurring-patches.md) — after every pull re-apply the generic-JSX strip and the sector-pulse stale-ticker fix; skip .replit/post-merge.sh/runtime JSONs.
 - [Node 22 + ET snapshots](node22-and-tz-snapshots.md) — runtime is Node 22; TZ=America/New_York env var required for committed test snapshots.
-- [GitHub push auth](github-push-auth.md) — platform GitHub connection is broken here; pushes use GITHUB_PERSONAL_ACCESS_TOKEN secret via local credential.helper; never embed tokens in remote URLs.
+- [GitHub sync auth](github-push-auth.md) — platform gitPush/gitPull is the auth path; NEVER set a credential.helper (it breaks platform git); user mints no more PATs.

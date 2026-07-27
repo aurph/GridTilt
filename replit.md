@@ -30,3 +30,7 @@ Replit autoscale. A push to GitHub does NOT deploy, and autoscale does not auto-
 ## Style
 
 Plain, direct copy. No em dashes. Data honesty: serve real observations, flag estimates, degrade with explicit errors, never fabricate numbers.
+
+## User preferences
+
+- No new API keys or tokens. Do not ask to mint or configure additional keys (GitHub PATs, EIA, anything). GitHub sync runs on the Replit GitHub connection; My Grid rates stay in their honest unconfigured state unless a key is volunteered.
