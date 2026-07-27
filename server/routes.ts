@@ -28,6 +28,7 @@ import {
 } from "./indices";
 import { recordDailyIndexValues, readIndexHistory } from "./index-history";
 import { getElectricityOutputMonthly, getHourlyDemandUS48 } from "./physical";
+import { getRetailRatesByState } from "./retail-rates";
 import { computeClusterMetrics, type ClusterLite } from "./clusters";
 import { computeGpuIndex } from "./gpu-index";
 import {
@@ -1934,6 +1935,15 @@ export async function registerRoutes(
   app.get("/api/physical/load-hourly", async (_req, res) => {
     try {
       const result = await getHourlyDemandUS48();
+      if (!result.configured) return res.status(503).json(result);
+      res.json(result);
+    } catch {
+      res.status(502).json({ error: "Upstream EIA fetch failed. Try again later." });
+    }
+  });
+  app.get("/api/physical/retail-rates", async (_req, res) => {
+    try {
+      const result = await getRetailRatesByState();
       if (!result.configured) return res.status(503).json(result);
       res.json(result);
     } catch {

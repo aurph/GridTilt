@@ -58,6 +58,7 @@ interface BlogEntry {
 
 const SECTION_DIRECTORY: { label: string; href: string; note: string }[] = [
   { label: "Today", href: "/overview", note: "Daily read" },
+  { label: "My Grid", href: "/my-grid", note: "Your state's operator, buildout, and rates" },
   { label: "The Stack", href: "/stack", note: "Equities" },
   { label: "Power", href: "/power-map", note: "Map, deals, queue" },
   { label: "Compute", href: "/compute-frontier", note: "Cluster registry" },

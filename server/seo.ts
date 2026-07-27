@@ -74,6 +74,11 @@ const STATIC_PAGES: Record<string, { title: string; description: string; slug: s
     description: "One email a week on the grid: power, data centers, and the companies behind both.",
     slug: "subscribe",
   },
+  "/my-grid": {
+    title: "My Grid - Your State's Operator, Buildout, and Rates | GridTilt",
+    description: "Pick a state: see its grid operator and reserve margin, the data center capacity being built there, and what residential electricity costs, from EIA data.",
+    slug: "my-grid",
+  },
   "/about": {
     title: "About GridTilt - Sources, Methods, and Limits",
     description: "What GridTilt is, who makes it, where every number comes from, how often each dataset updates, and what is not covered.",
