@@ -74,5 +74,24 @@
     "sourceName": "DCD",
     "discoveredAt": "2026-07-14T16:03:45.586Z",
     "approxCoords": false
+  },
+  {
+    "id": 63,
+    "name": "OpenAI Unknown (Nvidia considers 250bn backstop for Ope)",
+    "company": "OpenAI",
+    "city": "Unknown",
+    "state": "OH",
+    "lat": 40.388,
+    "lng": -82.764,
+    "powerMW": 10000,
+    "status": "announced",
+    "annualMWh": 74460000,
+    "gridOperator": "Unknown",
+    "openDate": "TBD",
+    "sourceUrl": "https://www.datacenterdynamics.com/en/news/nvidia-considers-250bn-backstop-for-openais-planned-10gw-ohio-data-center-report/",
+    "sourceTitle": "Nvidia considers $250bn backstop for OpenAI's planned 10GW Ohio data center - report",
+    "sourceName": "DCD",
+    "discoveredAt": "2026-07-27T16:02:54.961Z",
+    "approxCoords": true
   }
 ]
