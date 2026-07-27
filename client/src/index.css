@@ -11,41 +11,41 @@
   --elevate-2: rgba(255,255,255, .07);
 
   /* Background: warm dark charcoal (no blue tint) */
-  --background: 20 5% 7%;
-  --foreground: 30 8% 92%;
+  --background: 0 0% 6%;
+  --foreground: 60 3% 95%;
 
   /* Borders: warm gray, not blue-gray */
-  --border: 20 5% 17%;
+  --border: 0 0% 15%;
 
   /* Cards: dark charcoal, barely distinct from background */
-  --card: 20 4% 10%;
+  --card: 0 0% 9%;
   --card-foreground: 30 8% 92%;
-  --card-border: 20 4% 14%;
+  --card-border: 0 0% 14%;
 
   /* Sidebar: slightly darker than background */
-  --sidebar: 20 5% 8%;
-  --sidebar-foreground: 30 8% 92%;
-  --sidebar-border: 20 5% 13%;
+  --sidebar: 0 0% 7%;
+  --sidebar-foreground: 60 3% 95%;
+  --sidebar-border: 0 0% 13%;
   --sidebar-primary: 28 95% 53%;
   --sidebar-primary-foreground: 28 95% 98%;
-  --sidebar-accent: 20 4% 14%;
-  --sidebar-accent-foreground: 30 8% 92%;
+  --sidebar-accent: 0 0% 13%;
+  --sidebar-accent-foreground: 60 3% 95%;
   --sidebar-ring: 28 95% 53%;
 
   /* Popover: warm charcoal */
-  --popover: 20 4% 11%;
+  --popover: 0 0% 11%;
   --popover-foreground: 30 8% 92%;
-  --popover-border: 20 4% 16%;
+  --popover-border: 0 0% 15%;
 
   /* Primary: orange (brand) */
   --primary: 28 95% 53%;
   --primary-foreground: 28 95% 98%;
 
   /* Secondary / muted: warm gray */
-  --secondary: 20 5% 17%;
+  --secondary: 0 0% 14%;
   --secondary-foreground: 30 8% 92%;
-  --muted: 20 4% 14%;
-  --muted-foreground: 20 4% 50%;
+  --muted: 0 0% 13%;
+  --muted-foreground: 60 2% 62%;
 
   /* Accent: orange */
   --accent: 36 100% 47%;
@@ -56,7 +56,7 @@
   --destructive-foreground: 0 75% 98%;
 
   /* Input / ring */
-  --input: 20 5% 19%;
+  --input: 0 0% 16%;
   --ring: 28 95% 53%;
 
   /* Chart palette */
@@ -67,7 +67,7 @@
   --chart-5: 0 75% 55%;
 
   /* Typography */
-  --font-sans: Inter, sans-serif;
+  --font-sans: "Archivo", -apple-system, sans-serif;
   --font-serif: "Source Serif 4", Georgia, serif;
   --font-mono: "JetBrains Mono", monospace;
 
@@ -103,10 +103,10 @@
  */
 :root {
   /* Surface scale - 4 elevations, dark only */
-  --surface-sunken: #0A0A08;
-  --surface-base: #0E0E0C;
-  --surface-raised: #1A1917;
-  --surface-overlay: #26241F;
+  --surface-sunken: #0B0B0B;
+  --surface-base: #101010;
+  --surface-raised: #161616;
+  --surface-overlay: #1D1D1C;
   --border-subtle: rgba(255, 255, 255, 0.06);
   --border-strong: rgba(255, 255, 255, 0.14);
 
@@ -117,10 +117,10 @@
   --brand-wash: rgba(240, 120, 0, 0.05);
 
   /* Ink scale (text on dark surfaces) */
-  --ink: #F2F1ED;
-  --ink-secondary: #B0AEA6;
-  --ink-muted: #8E8B84;
-  --ink-faint: #716E67;
+  --ink: #F2F2F0;
+  --ink-secondary: #ABABA6;
+  --ink-muted: #8A8A85;
+  --ink-faint: #6E6E69;
 
   /* Semantic - state, never series identity */
   --positive: #4ade80;
@@ -139,20 +139,20 @@
   /* Categorical series - fixed order, CVD-validated (min adjacent dE 13.9
      on both surfaces). Assign in order, never cycle; >4 series need direct
      labels. Do not reorder: the order IS the colorblind-safety mechanism. */
-  --series-1: #3987e5;  /* blue */
-  --series-2: #c98500;  /* amber */
-  --series-3: #199e70;  /* teal */
-  --series-4: #9085e9;  /* violet */
-  --series-5: #d55181;  /* magenta */
-  --series-6: #1f9fb5;  /* cyan */
-  --series-7: #d95926;  /* rust */
-  --series-8: #3d9e3d;  /* green */
-  --series-9: #bd6bce;  /* pink */
+  --series-1: #5A93DE;  /* blue */
+  --series-2: #BC8626;  /* amber */
+  --series-3: #34A87E;  /* teal */
+  --series-4: #8F84E6;  /* violet */
+  --series-5: #DE5C8E;  /* magenta */
+  --series-6: #3B9EC4;  /* cyan */
+  --series-7: #E2652A;  /* rust */
+  --series-8: #47A981;  /* green */
+  --series-9: #B372C6;  /* pink */
   --series-10: #44649e; /* slate */
 
   /* Chart chrome */
   --chart-axis: #55534E;
-  --chart-tick: #8E8B84;
+  --chart-tick: #8A8A85;
   --chart-grid: rgba(255, 255, 255, 0.05);
   --chart-crosshair: rgba(255, 255, 255, 0.25);
   --chart-ref-line: rgba(255, 255, 255, 0.18);

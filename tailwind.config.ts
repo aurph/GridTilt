@@ -163,7 +163,7 @@ export default {
         slow: "var(--duration-slow)",
       },
       fontFamily: {
-        sans: ["Inter", "sans-serif"],
+        sans: ["Archivo", "-apple-system", "sans-serif"],
         serif: ["var(--font-serif)"],
         mono: ["JetBrains Mono", "monospace"],
       },
