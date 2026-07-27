@@ -244,7 +244,6 @@ export default function NeocloudIntel() {
     <PageShell>
       <PageTitle
         title="GPU Prices"
-        dek="What AI compute rents for: on-demand GPU rental prices, blended across the major neoclouds and marketplaces."
         right={
           <>
             {data && (
@@ -260,7 +259,7 @@ export default function NeocloudIntel() {
               </span>
             )}
             <AsOf updatedAt={dataUpdatedAt} />
-            <Link href="/compute-frontier" className="text-[12.5px] font-semibold text-brand-ink no-underline hover:text-ink">
+            <Link href="/compute-frontier" className="text-[12.5px] font-semibold text-ink no-underline hover:text-brand-ink">
               Compute Frontier →
             </Link>
           </>

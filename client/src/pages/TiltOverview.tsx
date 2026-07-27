@@ -163,7 +163,7 @@ function MarketsSection({ topMovers, pulse, isLoading, isError, updatedAt, onRet
       aside={
         <>
           <AsOf updatedAt={updatedAt} intervalMs={900_000} />
-          <Link href="/stack" className="text-brand-ink no-underline hover:text-ink">The Stack →</Link>
+          <Link href="/stack" className="text-ink no-underline hover:text-brand-ink">The Stack →</Link>
         </>
       }
       className="mt-0"
@@ -480,7 +480,7 @@ function CatalystCalendarSection() {
       aside={
         <>
           <AsOf updatedAt={dataUpdatedAt} intervalMs={900_000} />
-          <Link href="/catalysts" className="text-brand-ink no-underline hover:text-ink" data-testid="link-all-catalysts">
+          <Link href="/catalysts" className="text-ink no-underline hover:text-brand-ink" data-testid="link-all-catalysts">
             All catalysts →
           </Link>
         </>
@@ -752,7 +752,6 @@ export default function TiltOverview() {
     <PageShell>
       <PageTitle
         title="Today"
-        dek="The daily read on the AI power economy: markets, buildout, and what is on the calendar."
         right={
           tracked && (
             <span className="flex items-baseline gap-2" data-testid="header-tracked">
@@ -819,7 +818,7 @@ export default function TiltOverview() {
                 </div>
               )}
               <p className="mt-2 flex items-baseline justify-between gap-3">
-                <Link href={m.href} className="text-[12.5px] font-semibold text-brand-ink no-underline hover:text-ink">
+                <Link href={m.href} className="text-[12.5px] font-semibold text-ink no-underline hover:text-brand-ink">
                   Full data →
                 </Link>
                 {m.updatedAt !== undefined && <AsOf updatedAt={m.updatedAt} intervalMs={900000} />}

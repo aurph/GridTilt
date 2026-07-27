@@ -115,7 +115,7 @@ export default function OperatorPage() {
           </h1>
           <p className="mt-3 max-w-[68ch] text-[15px] leading-relaxed text-ink-secondary">
             View the{" "}
-            <Link href="/power-map" className="text-brand-ink no-underline hover:text-ink">Power Map</Link>{" "}
+            <Link href="/power-map" className="text-ink no-underline hover:text-brand-ink">Power Map</Link>{" "}
             to see all operators.
           </p>
         </div>
@@ -126,9 +126,9 @@ export default function OperatorPage() {
   return (
     <PageShell>
       <nav className="flex flex-wrap items-center gap-x-2 gap-y-1 pt-7 sm:pt-9 text-[12.5px] text-ink-muted" data-testid="breadcrumb">
-        <Link href="/" className="text-[12.5px] text-brand-ink no-underline hover:text-ink">GridTilt</Link>
+        <Link href="/" className="text-[12.5px] text-ink no-underline hover:text-brand-ink">GridTilt</Link>
         <span>·</span>
-        <Link href="/power-map" className="text-[12.5px] text-brand-ink no-underline hover:text-ink">Power Map</Link>
+        <Link href="/power-map" className="text-[12.5px] text-ink no-underline hover:text-brand-ink">Power Map</Link>
         <span>·</span>
         <span className="text-ink font-medium">{operator.name}</span>
       </nav>
@@ -222,7 +222,7 @@ export default function OperatorPage() {
         <p className="mt-2">
           <Link
             href={`/power-map?company=${slug}`}
-            className="text-[13.5px] font-semibold text-brand-ink no-underline hover:text-ink"
+            className="text-[13.5px] font-semibold text-ink no-underline hover:text-brand-ink"
             data-testid="link-filtered-map"
           >
             Open the Power Map filtered to {operator.name} →
@@ -236,7 +236,7 @@ export default function OperatorPage() {
             <span key={o}>
               <Link
                 href={`/operator/${o}`}
-                className="text-brand-ink no-underline hover:text-ink"
+                className="text-ink no-underline hover:text-brand-ink"
                 data-testid={`link-operator-${o}`}
               >
                 {OPERATOR_META[o].name}
@@ -250,17 +250,17 @@ export default function OperatorPage() {
       <RuleSection head="Related tools">
         <ul>
           <li className="border-b border-rule">
-            <Link href="/power-map" className="block py-2 text-[13.5px] text-brand-ink no-underline hover:text-ink">
+            <Link href="/power-map" className="block py-2 text-[13.5px] text-ink no-underline hover:text-brand-ink">
               Power Map
             </Link>
           </li>
           <li className="border-b border-rule">
-            <Link href="/trade" className="block py-2 text-[13.5px] text-brand-ink no-underline hover:text-ink">
+            <Link href="/trade" className="block py-2 text-[13.5px] text-ink no-underline hover:text-brand-ink">
               Scenario Calculator
             </Link>
           </li>
           <li>
-            <Link href="/catalysts" className="block py-2 text-[13.5px] text-brand-ink no-underline hover:text-ink">
+            <Link href="/catalysts" className="block py-2 text-[13.5px] text-ink no-underline hover:text-brand-ink">
               Catalyst Tracker
             </Link>
           </li>

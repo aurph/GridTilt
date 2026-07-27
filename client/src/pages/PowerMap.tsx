@@ -873,7 +873,6 @@ export default function PowerMap() {
 
       <PageTitle
         title="Power"
-        dek="The physical layer of the AI buildout: where the data centers sit, who contracted the power for them, and what is still waiting on the grid."
         testId="power-header"
       />
 

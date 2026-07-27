@@ -18,7 +18,7 @@ export default function ComputeFrontierMethodology() {
         title="Compute Frontier methodology"
         dek="How the supercluster data is built, what is sourced, what is estimated, and exactly how each headline number is computed."
         right={
-          <Link href="/compute-frontier" className="text-[12.5px] font-semibold text-brand-ink no-underline hover:text-ink" data-testid="cfm-back">
+          <Link href="/compute-frontier" className="text-[12.5px] font-semibold text-ink no-underline hover:text-brand-ink" data-testid="cfm-back">
             ← Compute Frontier
           </Link>
         }
@@ -67,7 +67,7 @@ export default function ComputeFrontierMethodology() {
             deal by its id, and the deal's contracted capacity is rolled up against the planned compute power. Firmness
             (signed versus proposed) is shown where the deal carries it. Most clusters run on the grid or on-site gas and
             carry no nuclear link, which the data states plainly rather than implying coverage that does not exist. Linked
-            deals point to the <Link href="/queue" className="text-brand-ink no-underline hover:text-ink">Backlog</Link> page.
+            deals point to the <Link href="/queue" className="text-ink no-underline hover:text-brand-ink">Backlog</Link> page.
           </p>
         </Section>
 
@@ -89,7 +89,7 @@ export default function ComputeFrontierMethodology() {
         </Section>
 
         <p className="mt-8 text-[12.5px] text-ink-muted">
-          Back to the <Link href="/compute-frontier" className="text-brand-ink no-underline hover:text-ink">Compute Frontier</Link>.
+          Back to the <Link href="/compute-frontier" className="text-ink no-underline hover:text-brand-ink">Compute Frontier</Link>.
         </p>
       </article>
     </PageShell>

@@ -572,7 +572,6 @@ export default function TheStack() {
     <PageShell wide>
       <PageTitle
         title="The Stack"
-        dek="100+ equities across 13 layers of the AI power supply chain, priced intraday."
         right={
           <>
             <span className="flex items-baseline gap-2">

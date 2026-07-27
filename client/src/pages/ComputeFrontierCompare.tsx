@@ -66,16 +66,15 @@ export default function ComputeFrontierCompare() {
     { label: "Energy", render: (c) => c.energySource },
     { label: "Workload", render: (c) => c.workload },
     { label: "Online", render: (c) => <>{c.onlineDate}{est(c, "onlineDate")}</> },
-    { label: "Nuclear deal", render: (c) => (c.linkedDeal ? <Link href="/queue" className="text-brand-ink no-underline hover:text-ink">{c.linkedDeal}</Link> : "none") },
+    { label: "Nuclear deal", render: (c) => (c.linkedDeal ? <Link href="/queue" className="text-ink no-underline hover:text-brand-ink">{c.linkedDeal}</Link> : "none") },
   ];
 
   return (
     <PageShell>
       <PageTitle
         title="Compare clusters"
-        dek="Two or three superclusters side by side, figure for figure."
         right={
-          <Link href="/compute-frontier" className="text-[12.5px] font-semibold text-brand-ink no-underline hover:text-ink" data-testid="cfc-back">
+          <Link href="/compute-frontier" className="text-[12.5px] font-semibold text-ink no-underline hover:text-brand-ink" data-testid="cfc-back">
             ← Compute Frontier
           </Link>
         }
@@ -143,8 +142,8 @@ export default function ComputeFrontierCompare() {
       )}
 
       <p className="mt-8 text-[12.5px] text-ink-muted leading-relaxed">
-        Back to the <Link href="/compute-frontier" className="text-brand-ink no-underline hover:text-ink">Compute Frontier</Link> or read the{" "}
-        <Link href="/compute-frontier/methodology" className="text-brand-ink no-underline hover:text-ink">methodology</Link>.
+        Back to the <Link href="/compute-frontier" className="text-ink no-underline hover:text-brand-ink">Compute Frontier</Link> or read the{" "}
+        <Link href="/compute-frontier/methodology" className="text-ink no-underline hover:text-brand-ink">methodology</Link>.
       </p>
     </PageShell>
   );

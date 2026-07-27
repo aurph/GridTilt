@@ -1008,7 +1008,6 @@ export default function SupplyChain({ embedded = false }: { embedded?: boolean; 
         <PageShell wide>
           <PageTitle
             title="Supply chain"
-            dek="How power becomes compute: the chain from raw materials to AI end use, and the public companies at each link."
           />
           {inner}
         </PageShell>

@@ -53,7 +53,7 @@ export default function ComputeFrontierDetail() {
               </p>
             )}
           </div>
-          <Link href="/compute-frontier" className="text-[12.5px] font-semibold text-brand-ink no-underline hover:text-ink pb-1" data-testid="cfd-back">
+          <Link href="/compute-frontier" className="text-[12.5px] font-semibold text-ink no-underline hover:text-brand-ink pb-1" data-testid="cfd-back">
             ← Compute Frontier
           </Link>
         </div>
@@ -63,7 +63,7 @@ export default function ComputeFrontierDetail() {
         {isError || (!isLoading && !cluster) ? (
           <p className="text-[14px] text-ink-secondary" data-testid="cfd-error">
             No cluster matches this id. Back to the{" "}
-            <Link href="/compute-frontier" className="text-brand-ink no-underline hover:text-ink">Compute Frontier</Link>.
+            <Link href="/compute-frontier" className="text-ink no-underline hover:text-brand-ink">Compute Frontier</Link>.
           </p>
         ) : isLoading ? (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">{Array(8).fill(null).map((_, i) => <Skeleton key={i} className="h-16" />)}</div>
@@ -120,7 +120,7 @@ export default function ComputeFrontierDetail() {
                 <p className="max-w-[68ch] text-[15px] leading-relaxed text-ink-secondary">
                   This cluster's power is tied to a tracked nuclear-for-AI deal,{" "}
                   <span className="text-ink font-medium">{cluster.linkedDeal}</span>. See it on the{" "}
-                  <Link href="/queue" className="text-brand-ink no-underline hover:text-ink">Backlog</Link> page.
+                  <Link href="/queue" className="text-ink no-underline hover:text-brand-ink">Backlog</Link> page.
                 </p>
               ) : (
                 <p className="max-w-[68ch] text-[15px] leading-relaxed text-ink-secondary">

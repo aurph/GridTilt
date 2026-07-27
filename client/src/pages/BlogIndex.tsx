@@ -22,7 +22,6 @@ export default function BlogIndex() {
       <div className="max-w-3xl mx-auto">
         <PageTitle
           title="Analysis"
-          dek="Research on the AI power buildout: sourced, checked, and written to be read."
           testId="blog-header"
         />
 
