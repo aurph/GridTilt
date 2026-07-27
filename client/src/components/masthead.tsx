@@ -112,7 +112,7 @@ export function Masthead() {
               className="hidden md:flex items-center shrink-0 py-2.5 text-[13px] font-semibold leading-none no-underline text-ink hover:text-brand-ink transition-colors duration-fast"
               data-testid="masthead-nav-subscribe"
             >
-              Get the Brief
+              Subscribe
             </Link>
           </div>
         </div>

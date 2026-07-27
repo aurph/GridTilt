@@ -15,7 +15,7 @@ export function Colophon() {
               Grid<em className="italic text-brand-ink">Tilt</em>
             </p>
             <p className="mt-2 text-[13px] leading-relaxed text-ink-secondary">
-              Tracking the AI infrastructure buildout.
+              Power, infrastructure, and the companies behind them.
             </p>
           </div>
           <div>
@@ -30,7 +30,7 @@ export function Colophon() {
           <div>
             <p className="text-[12px] font-semibold text-ink mb-2.5">Follow</p>
             <ul className="space-y-1.5 text-[13px]">
-              <li><Link href="/subscribe" className="text-ink-secondary hover:text-brand-ink no-underline">The Buildout Brief</Link></li>
+              <li><Link href="/subscribe" className="text-ink-secondary hover:text-brand-ink no-underline">The weekly brief</Link></li>
               <li>
                 <a
                   href="https://x.com/gridtilt"

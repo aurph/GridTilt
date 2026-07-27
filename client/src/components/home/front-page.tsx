@@ -152,12 +152,7 @@ export function FrontPage() {
         <article data-testid="front-lead">
           <p className="mb-2.5 flex items-center gap-1.5 text-[13px] font-semibold text-brand-ink">
             <span className="tilt-glyph" aria-hidden />
-            The Buildout Brief
-            {brief && (
-              <span className="font-normal text-ink-muted">
-                {" "}· week of {fmtArticleDate(brief.asOf)}
-              </span>
-            )}
+            This week
           </p>
           {brief ? (
             <>
@@ -173,12 +168,12 @@ export function FrontPage() {
                   href="/blog"
                   className="text-[13.5px] font-semibold text-ink no-underline hover:text-brand-ink"
                 >
-                  Read this week's full Brief →
+                  Full brief →
                 </Link>
               </p>
             </>
           ) : (
-            <p className="font-serif text-[17px] text-ink-muted">Loading this week's Brief…</p>
+            <p className="font-serif text-[17px] text-ink-muted">Loading…</p>
           )}
         </article>
 
@@ -269,9 +264,8 @@ export function FrontPage() {
       {/* Headlines + analysis */}
       <div className="grid gap-8 lg:grid-cols-[1fr_1.4fr]">
         <RuleSection
-          head="Latest headlines"
-          aside={<span>industry wires</span>}
-          testId="front-headlines"
+          head="Headlines"
+                    testId="front-headlines"
         >
           {news && news.length > 0 ? (
             <ul>
@@ -297,7 +291,7 @@ export function FrontPage() {
         </RuleSection>
 
         <RuleSection
-          head="Latest analysis"
+          head="Analysis"
           aside={
             <Link href="/blog" className="text-ink no-underline hover:text-brand-ink">
               All articles →
@@ -359,7 +353,7 @@ export function FrontPage() {
         <div className="flex flex-wrap items-baseline justify-between gap-x-8 gap-y-3">
           <div className="max-w-[52ch]">
             <p className="font-serif font-medium text-[22px] leading-snug text-ink">
-              The Buildout Brief, weekly.
+              The weekly brief.
             </p>
           </div>
           <Link

@@ -151,7 +151,7 @@ export default function BriefPage({ embedded = false }: { embedded?: boolean; pa
     <PageShell>
       <div className="max-w-3xl mx-auto">
         <PageTitle
-          title="The Buildout Brief"
+          title="The Brief"
           right={copyButton}
           testId="brief-header"
         />

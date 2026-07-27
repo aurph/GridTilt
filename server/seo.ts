@@ -15,8 +15,8 @@ const BASE_URL = "https://gridtilt.com";
 
 const STATIC_PAGES: Record<string, { title: string; description: string; slug: string }> = {
   "/": {
-    title: "GridTilt | The AI Buildout, In Plain Sight",
-    description: "A research publication tracking the AI infrastructure buildout: data centers, power, compute, and the public companies behind them. Sourced numbers, plain language, no terminal required.",
+    title: "GridTilt | Energy Infrastructure, In Plain Sight",
+    description: "Tracking the American power grid as data centers rewrite it: generation, transmission, buildout, and the public companies behind them. Sourced numbers, plain language.",
     slug: "",
   },
   "/overview": {
@@ -70,8 +70,8 @@ const STATIC_PAGES: Record<string, { title: string; description: string; slug: s
     slug: "neocloud-intel",
   },
   "/subscribe": {
-    title: "The Buildout Brief - Weekly AI Power Email - GridTilt",
-    description: "One email a week on the AI buildout: power, compute, and the companies behind both. Sourced numbers, no hype.",
+    title: "The GridTilt Brief - Weekly Power and Grid Email",
+    description: "One email a week on the grid: power, data centers, and the companies behind both. Sourced numbers, no hype.",
     slug: "subscribe",
   },
 };
