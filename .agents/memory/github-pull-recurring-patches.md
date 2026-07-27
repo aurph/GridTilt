@@ -10,3 +10,5 @@ After EVERY pull re-apply these local patches (upstream lacks them):
 2. /api/sector-pulse in server/routes.ts: upstream averages `changePercent ?? 0`, diluting sector averages with stale tickers. Replace with filter-to-finite then average (mirror /api/supply-chain). Guarded by server/__tests__/sector-pulse-throttle.test.ts — keep that file.
 
 **Why:** both regressions came back verbatim on consecutive pulls (branch a28f9f5, then main f1003ca).
+
+After any pull that touches server code, restart the Start application workflow BEFORE e2e/API checks: Vite HMR reloads only the client, and a stale server makes new /api routes fall through to the SPA catch-all as 200+HTML — which the client surfaces as a bogus JSON-parse/network error.
