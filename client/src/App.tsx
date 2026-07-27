@@ -22,6 +22,8 @@ import OperatorPage from "@/pages/OperatorPage";
 import BlogIndex from "@/pages/BlogIndex";
 import BlogPost from "@/pages/BlogPost";
 import Subscribe from "@/pages/Subscribe";
+import About from "@/pages/about";
+import MyGrid from "@/pages/my-grid";
 import AdminDatacenters from "@/pages/AdminDatacenters";
 import AdminSocial from "@/pages/AdminSocial";
 import { initAnalytics, trackPageview } from "@/lib/analytics";
@@ -125,6 +127,8 @@ function Router() {
       <Route path="/blog" component={BlogIndex} />
       <Route path="/blog/:slug" component={BlogPost} />
       <Route path="/subscribe" component={Subscribe} />
+      <Route path="/about" component={About} />
+      <Route path="/my-grid" component={MyGrid} />
       <Route path="/admin/datacenters" component={AdminDatacenters} />
       <Route path="/admin/social" component={AdminSocial} />
       <Route component={NotFound} />

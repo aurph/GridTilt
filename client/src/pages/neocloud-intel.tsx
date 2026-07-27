@@ -328,7 +328,12 @@ export default function NeocloudIntel() {
                 <Provenance
                   source="GridTilt GPU price index"
                   updated={updatedDate}
-                  extra={hasEst ? "† estimated value" : undefined}
+                  extra={
+                    <>
+                      on-demand listings only; reserved and contract pricing out of scope
+                      {hasEst ? " · † estimated value" : ""}
+                    </>
+                  }
                 />
               </>
             )}
@@ -526,7 +531,12 @@ export default function NeocloudIntel() {
                 <Provenance
                   source="GridTilt GPU price index"
                   updated={updatedDate}
-                  extra={hasEst ? "† estimated value" : undefined}
+                  extra={
+                    <>
+                      on-demand listings only; reserved and contract pricing out of scope
+                      {hasEst ? " · † estimated value" : ""}
+                    </>
+                  }
                 />
                 <p className="mt-1 text-[12px] leading-relaxed text-ink-muted">
                   1w, 1m, and YTD read "—" until the daily recorder accrues history; 1y is measured from sourced anchors.

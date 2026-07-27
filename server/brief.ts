@@ -110,7 +110,7 @@ export function composeBrief(input: BriefInput): Brief {
     `while ${d.topBuyer ?? "hyperscalers"} and peers lock in their own power.`;
 
   return {
-    title: `The AI Buildout, week of ${input.asOf}`,
+    title: `The Buildout, week of ${input.asOf}`,
     asOf: input.asOf,
     summary,
     sections: [compute, gpu, grid, deals],

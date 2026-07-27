@@ -39,8 +39,8 @@ export default function Subscribe() {
     <PageShell>
       <div className="max-w-xl mx-auto" data-testid="subscribe-page">
         <PageTitle
-          title="The Buildout Brief"
-          dek="One email a week on the AI buildout."
+          title="The Brief"
+          dek="One email a week on the grid."
         />
 
         {status === "success" ? (

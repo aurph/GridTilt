@@ -9,6 +9,7 @@ import logoPath from "@assets/Image_[Vectorized]_(2)_1773890483514.png";
 
 const SECTIONS: { label: string; href: string; match: (path: string) => boolean }[] = [
   { label: "Today", href: "/overview", match: (p) => p === "/overview" },
+  { label: "My Grid", href: "/my-grid", match: (p) => p === "/my-grid" },
   { label: "The Stack", href: "/stack", match: (p) => p === "/stack" || p === "/supply-chain" },
   { label: "Power", href: "/power-map", match: (p) => p.startsWith("/power") || p === "/queue" },
   { label: "Compute", href: "/compute-frontier", match: (p) => p.startsWith("/compute-frontier") },
@@ -112,7 +113,7 @@ export function Masthead() {
               className="hidden md:flex items-center shrink-0 py-2.5 text-[13px] font-semibold leading-none no-underline text-ink hover:text-brand-ink transition-colors duration-fast"
               data-testid="masthead-nav-subscribe"
             >
-              Get the Brief
+              Subscribe
             </Link>
           </div>
         </div>
