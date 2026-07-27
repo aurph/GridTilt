@@ -72,7 +72,7 @@ export const SERIES = [
   "#d95926", // 7 rust
   "#3d9e3d", // 8 green
   "#bd6bce", // 9 pink
-  "#b07d3f", // 10 brown
+  "#44649e", // 10 slate
 ] as const;
 
 /**
@@ -85,7 +85,7 @@ export const CATEGORY_COLORS: Record<string, string> = {
   // Sectors / mover tags
   compute: SERIES[0], // blue
   datacenters: SERIES[2], // teal
-  construction: SERIES[9], // brown
+  construction: SERIES[9], // slate
   power: SERIES[1], // amber
   utilities: SERIES[8], // pink (grid owns cyan; both appear on The Stack)
   uranium: SERIES[4], // magenta

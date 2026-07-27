@@ -6,6 +6,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import {
+  HEAT_BASE,
   HEAT_SATURATION_PCT,
   blendHex,
   buildHeatmapInput,
@@ -219,14 +220,27 @@ describe("heatColor", () => {
     assert.equal(heatColor(HEAT_SATURATION_PCT), heatColor(HEAT_SATURATION_PCT * 3));
   });
   it("larger magnitude moves further from neutral", () => {
+    // Deliberate change (heat re-blend): real values now ramp from the
+    // neutral-cool HEAT_BASE, not the warm SURFACE.overlay, so small red
+    // deltas stop reading brown-maroon. Distance is measured from the ramp's
+    // own base; SURFACE.overlay remains only the null/absent fill.
     const dist = (hex: string) => {
       const c = (s: string, i: number) => parseInt(s.slice(i, i + 2), 16);
-      const n = SURFACE.overlay;
+      const n = HEAT_BASE;
       return (
         Math.abs(c(hex, 1) - c(n, 1)) + Math.abs(c(hex, 3) - c(n, 3)) + Math.abs(c(hex, 5) - c(n, 5))
       );
     };
     assert.ok(dist(heatColor(3)) > dist(heatColor(0.5)));
+  });
+  it("small deltas stay on-hue: red channel leads for losses, green for gains", () => {
+    // Guard for the brown-maroon regression: at 0.5% the dominant channel
+    // of the blended fill must match the sign's semantic hue.
+    const rgb = (hex: string) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+    const [rNeg, gNeg] = rgb(heatColor(-0.5));
+    const [rPos, gPos] = rgb(heatColor(0.5));
+    assert.ok(rNeg > gNeg, "small loss should lean red, not brown");
+    assert.ok(gPos > rPos, "small gain should lean green, not olive");
   });
 });
 

@@ -232,11 +232,20 @@ export function blendHex(a: string, b: string, f: number): string {
 }
 
 /**
- * Diverging fill for a % change: neutral surface at 0, semantic green/red
+ * Diverging fill for a % change: near-neutral at 0, semantic green/red
  * ramping with magnitude, saturating at +-4%. Null (stale/unknown) gets the
- * neutral surface so absence of data never reads as "flat day".
+ * warm neutral surface so absence of data never reads as "flat day".
  */
 export const HEAT_SATURATION_PCT = 4;
+
+/**
+ * Blend base for real values. SURFACE.overlay (#26241F) is warm, so blending
+ * red into it produced brown-maroon and green produced olive at small
+ * deltas. This neutral-cool dark base keeps low-intensity reds red and
+ * greens green; null still returns SURFACE.overlay, which now also visually
+ * separates "no data" from "small move".
+ */
+export const HEAT_BASE = "#1e2126";
 
 export function heatColor(pct: number | null): string {
   if (pct === null || !Number.isFinite(pct)) return SURFACE.overlay;
@@ -244,7 +253,7 @@ export function heatColor(pct: number | null): string {
   // ease so small moves are visible but don't scream
   const eased = Math.pow(f, 0.7);
   const target = pct >= 0 ? SEMANTIC.positiveDeep : SEMANTIC.negativeDeep;
-  return blendHex(SURFACE.overlay, target, 0.12 + eased * 0.7);
+  return blendHex(HEAT_BASE, target, 0.12 + eased * 0.7);
 }
 
 /** Text color that stays readable on heatColor() fills. */

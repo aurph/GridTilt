@@ -4,9 +4,6 @@ import { Link } from "wouter";
 import { MapContainer, TileLayer, ZoomControl, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import "leaflet.markercluster";
-import "leaflet.markercluster/dist/MarkerCluster.css";
-import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AsOf, ErrorState } from "@/components/Freshness";
@@ -456,39 +453,23 @@ function FacilityMarkers({
 }) {
   const map = useMap();
   const markersRef = useRef<Record<number, L.Marker>>({});
-  const clusterRef = useRef<L.MarkerClusterGroup | null>(null);
+  const groupRef = useRef<L.LayerGroup | null>(null);
 
   const passesFilter = useCallback((dc: DataCenter): boolean => {
     return dcPassesFilters(dc, filterCompanies, filterRTOs, filterCapacity, rtoFocus);
   }, [filterCompanies, filterRTOs, filterCapacity, rtoFocus]);
 
-  // Build the cluster layer + markers. NOTE: hoveredId/selected are
-  // deliberately NOT deps here - hover/selection restyle imperatively below,
-  // so mouseover no longer tears down and rebuilds every layer (audit perf fix).
+  // Build the marker layer: every facility is its own marker at every zoom
+  // (no clustering - same approach as the Compute Frontier map). NOTE:
+  // hoveredId/selected are deliberately NOT deps here - hover/selection
+  // restyle imperatively below, so mouseover no longer tears down and
+  // rebuilds every layer (audit perf fix).
   useEffect(() => {
-    if (!clusterRef.current) {
-      clusterRef.current = L.markerClusterGroup({
-        maxClusterRadius: 42,
-        showCoverageOnHover: false,
-        spiderfyOnMaxZoom: true,
-        zoomToBoundsOnClick: true,
-        spiderfyDistanceMultiplier: 1.4,
-        spiderLegPolylineOptions: { weight: 1, color: BRAND.primary, opacity: 0.4 },
-        iconCreateFunction: (cluster) => {
-          const count = cluster.getChildCount();
-          const d = count >= 10 ? 38 : 32;
-          return L.divIcon({
-            html: `<div class="gt-cluster" style="width:${d}px;height:${d}px;">${count}</div>`,
-            className: "gt-cluster-wrap",
-            iconSize: [d, d],
-            iconAnchor: [d / 2, d / 2],
-          });
-        },
-      });
-      map.addLayer(clusterRef.current);
+    if (!groupRef.current) {
+      groupRef.current = L.layerGroup().addTo(map);
     }
 
-    const group = clusterRef.current;
+    const group = groupRef.current;
     group.clearLayers();
 
     const markers: Record<number, L.Marker> = {};
@@ -523,9 +504,9 @@ function FacilityMarkers({
       });
 
       markers[dc.id] = marker;
+      marker.addTo(group);
     });
 
-    group.addLayers(Object.values(markers));
     markersRef.current = markers;
 
     return () => {
@@ -534,12 +515,12 @@ function FacilityMarkers({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [map, passesFilter, viewMode, dataCenters]);
 
-  // Remove the cluster layer on unmount.
+  // Remove the marker layer on unmount.
   useEffect(() => {
     return () => {
-      if (clusterRef.current) {
-        map.removeLayer(clusterRef.current);
-        clusterRef.current = null;
+      if (groupRef.current) {
+        map.removeLayer(groupRef.current);
+        groupRef.current = null;
       }
     };
   }, [map]);
@@ -784,22 +765,19 @@ export default function PowerMap() {
             transform-origin: center;
           }
         }
-        .gt-cluster-wrap {
-          background: none !important;
-          border: none !important;
+        .rto-table-scroll {
+          scrollbar-width: thin;
+          scrollbar-color: rgba(255,255,255,0.18) transparent;
         }
-        .gt-cluster {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border-radius: 9999px;
-          background: ${SURFACE.raised};
-          border: 1px solid ${alpha(BRAND.primary, 0.55)};
-          color: ${BRAND.primary};
-          font-family: ${FONT.mono};
-          font-size: 11px;
-          font-weight: 700;
-          box-shadow: 0 0 0 4px ${alpha(BRAND.primary, 0.12)}, 0 2px 10px rgba(0,0,0,0.5);
+        .rto-table-scroll::-webkit-scrollbar {
+          height: 6px;
+        }
+        .rto-table-scroll::-webkit-scrollbar-thumb {
+          background: rgba(255,255,255,0.18);
+          border-radius: 3px;
+        }
+        .rto-table-scroll::-webkit-scrollbar-track {
+          background: transparent;
         }
         .power-map-tooltip {
           animation: tooltip-fade-in 150ms ease-out;
@@ -900,8 +878,7 @@ export default function PowerMap() {
             <div className="flex items-start gap-2 mb-3">
               <MonitorSmartphone className="h-3.5 w-3.5 text-muted-foreground/60 mt-0.5 flex-shrink-0" />
               <p className="text-xs text-muted-foreground leading-relaxed">
-                The map needs a desktop screen. Everything else on this page works here:
-                the numbers below, upcoming projects, and the grid operator table.
+                Map view is desktop-only; the data below works here.
               </p>
             </div>
             {dcError ? (
@@ -910,12 +887,16 @@ export default function PowerMap() {
               <Skeleton className="h-5 w-56" aria-hidden="true" />
             ) : (
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-11 font-mono">
-                <span className="text-muted-foreground">{dataCenters.length} facilities</span>
-                <span className="text-muted-foreground/30">|</span>
-                <span className="text-brand-2 font-bold" title={`operational + construction; announced (+${(announcedMW / 1000).toFixed(1)} GW) excluded`}>{(totalMW / 1000).toFixed(1)} GW</span>
-                <span className="text-muted-foreground/30">|</span>
-                <span className="text-muted-foreground">{totalTWh} TWh/yr</span>
-                <span className="text-muted-foreground/30">|</span>
+                {/* Numeric stats stay one non-breaking group with their "|"
+                    separators; the dot legend is its own flex item with no
+                    leading pipe, so wrapping never strands a trailing "|". */}
+                <span className="flex items-center gap-3 whitespace-nowrap">
+                  <span className="text-muted-foreground">{dataCenters.length} facilities</span>
+                  <span className="text-muted-foreground/30">|</span>
+                  <span className="text-brand-2 font-bold" title={`operational + construction; announced (+${(announcedMW / 1000).toFixed(1)} GW) excluded`}>{(totalMW / 1000).toFixed(1)} GW</span>
+                  <span className="text-muted-foreground/30">|</span>
+                  <span className="text-muted-foreground">{totalTWh} TWh/yr</span>
+                </span>
                 <div className="flex items-center gap-1.5">
                   <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full inline-block" style={{ backgroundColor: STATUS_COLORS.operational }} /><span className="text-muted-foreground">{opCount}</span></span>
                   <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full inline-block" style={{ backgroundColor: STATUS_COLORS.construction }} /><span className="text-muted-foreground">{conCount}</span></span>
@@ -1419,8 +1400,8 @@ export default function PowerMap() {
             <span className="ml-auto text-10 font-mono text-muted-foreground/50 hidden sm:inline">Click a row to filter the map</span>
           )}
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs font-mono">
+        <div className="overflow-x-auto rto-table-scroll">
+          <table className="w-full min-w-[520px] text-xs font-mono">
             <thead>
               <tr className="border-b border-border/60">
                 <th className="text-left text-muted-foreground/60 font-normal pb-2 pr-6">RTO / ISO</th>
@@ -1468,7 +1449,7 @@ export default function PowerMap() {
                     </td>
                     <td className="py-2">
                       <Badge
-                        className="text-10 font-mono border-transparent"
+                        className="text-10 font-mono border-transparent whitespace-nowrap"
                         style={{ backgroundColor: alpha(sColor, 0.15), color: sColor }}
                       >
                         {cfg.aiSignal}
