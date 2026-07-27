@@ -276,7 +276,7 @@ const RTO_MUTED_COLORS: Record<string, string> = {
   NPCC: SERIES[6],  // series slot 7
 };
 
-const GEO_URL = "https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json";
+const GEO_URL = "/geo/us-states-10m.json?v=1";
 
 function RTORegions({ viewMode }: { viewMode: ViewMode }) {
   const map = useMap();

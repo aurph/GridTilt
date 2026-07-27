@@ -300,7 +300,7 @@ function Overlay({
             {clipped.map((item) => (
               <Group key={`bands-${item.model}`} opacity={seriesOpacity(item.model, hovered)}>
                 {buildDispersionRuns(item.clipped).map((run, index) => (
-                  <Area<ChartPoint>
+                  <Area
                     key={index}
                     data={run}
                     x={(point) => xScale(point.t)}
@@ -320,7 +320,7 @@ function Overlay({
               return (
                 <Group key={item.model} opacity={opacity}>
                   {buildSpans(item.clipped).map((span, index) => (
-                    <LinePath<ChartPoint>
+                    <LinePath
                       key={index}
                       data={span.points}
                       x={(point) => xScale(point.t)}
@@ -343,7 +343,7 @@ function Overlay({
                       strokeWidth={point.kind === "anchor" ? 1.6 : 0}
                     />
                   ))}
-                  <LinePath<ClippedPoint>
+                  <LinePath
                     data={item.clipped}
                     x={(point) => xScale(point.t)}
                     y={(point) => yBundle.project(point.price)}
@@ -551,7 +551,7 @@ function Panel({
           <line x1={0} x2={innerW} y1={innerH} y2={innerH} stroke={AXIS_FILL} opacity={0.35} />
 
           {buildDispersionRuns(series.clipped).map((run, index) => (
-            <Area<ChartPoint>
+            <Area
               key={index}
               data={run}
               x={(point) => xScale(point.t)}
@@ -563,7 +563,7 @@ function Panel({
             />
           ))}
           {buildSpans(series.clipped).map((span, index) => (
-            <LinePath<ChartPoint>
+            <LinePath
               key={index}
               data={span.points}
               x={(point) => xScale(point.t)}
