@@ -152,7 +152,6 @@ export default function BriefPage({ embedded = false }: { embedded?: boolean; pa
       <div className="max-w-3xl mx-auto">
         <PageTitle
           title="The Buildout Brief"
-          dek="One synthesized read on the state of the AI power buildout, generated from every GridTilt dataset. Every figure is live and sourced in its section."
           right={copyButton}
           testId="brief-header"
         />

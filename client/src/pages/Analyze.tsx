@@ -21,7 +21,6 @@ export default function Analyze() {
     <PageShell>
       <PageTitle
         title="Analyze"
-        dek="Worksheets for the AI power thesis: score a portfolio's exposure to the buildout, or model the buildout under your own assumptions."
         testId="analyze-header"
       />
       <ToolTabs tabs={ANALYZE_TABS} active={tab} onChange={setTab} />

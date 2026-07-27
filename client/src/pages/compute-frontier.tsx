@@ -208,7 +208,6 @@ export default function ComputeFrontier() {
     <PageShell>
       <PageTitle
         title="Compute Frontier"
-        dek="The registry of named AI training and inference superclusters being built across the US, with the chips, power, and deals behind each one."
         right={
           <>
             <AsOf updatedAt={dataUpdatedAt} intervalMs={900_000} />

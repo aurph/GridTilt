@@ -40,14 +40,8 @@ export default function Subscribe() {
       <div className="max-w-xl mx-auto" data-testid="subscribe-page">
         <PageTitle
           title="The Buildout Brief"
-          dek="One email a week: what changed in AI power, compute, and the companies behind both. Sourced numbers, no hype."
+          dek="One email a week on the AI buildout."
         />
-
-        <ul className="mb-8 space-y-2 text-[14px] text-ink-secondary leading-relaxed">
-          <li className="flex gap-2"><span className="text-brand" aria-hidden>·</span> The week's buildout numbers: clusters, power deals, the queue</li>
-          <li className="flex gap-2"><span className="text-brand" aria-hidden>·</span> What AI compute rents for, and which way it moved</li>
-          <li className="flex gap-2"><span className="text-brand" aria-hidden>·</span> The markets read across the AI power stack</li>
-        </ul>
 
         {status === "success" ? (
           <div className="border-y-2 border-rule-strong py-8 text-center" data-testid="subscribe-success">

@@ -73,7 +73,6 @@ export default function ComputeFrontierCompare() {
     <PageShell>
       <PageTitle
         title="Compare clusters"
-        dek="Two or three superclusters side by side, figure for figure."
         right={
           <Link href="/compute-frontier" className="text-[12.5px] font-semibold text-ink no-underline hover:text-brand-ink" data-testid="cfc-back">
             ← Compute Frontier

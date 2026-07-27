@@ -131,9 +131,8 @@ export default function FrontierModels({ embedded = false }: { embedded?: boolea
         className="mt-0"
       >
         <p className="max-w-[70ch] text-[13.5px] leading-relaxed text-ink-secondary">
-          Every major lab on one release clock. Switch to a capability lens to compare only the
-          same benchmark, version, and evaluation setup. A point disappears when the evidence is
-          not like-for-like.
+          Capability lenses compare like-for-like only: same benchmark, version, and evaluation
+          setup.
         </p>
       </RuleSection>
 

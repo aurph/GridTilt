@@ -752,7 +752,6 @@ export default function TiltOverview() {
     <PageShell>
       <PageTitle
         title="Today"
-        dek="The daily read on the AI power economy: markets, buildout, and what is on the calendar."
         right={
           tracked && (
             <span className="flex items-baseline gap-2" data-testid="header-tracked">

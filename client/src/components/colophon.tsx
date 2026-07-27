@@ -15,14 +15,7 @@ export function Colophon() {
               Grid<em className="italic text-brand-ink">Tilt</em>
             </p>
             <p className="mt-2 text-[13px] leading-relaxed text-ink-secondary">
-              A research publication tracking the AI infrastructure buildout:
-              data centers, power, compute hardware, and the public companies
-              behind them. Written for citizens and investors, not terminals.
-            </p>
-            <p className="mt-3 text-[12px] leading-relaxed text-ink-muted">
-              Every figure carries its source and update date. Estimates are
-              flagged as estimates. When a data source fails, the page says so
-              instead of inventing numbers.
+              Tracking the AI infrastructure buildout.
             </p>
           </div>
           <div>

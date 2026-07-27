@@ -60,9 +60,6 @@ export function Masthead() {
             </div>
             <div className="hidden sm:block shrink-0 pb-1 text-right">
               <p className="text-[13px] text-ink-secondary">{dateline()}</p>
-              <p className="mt-0.5 text-[12px] text-ink-muted">
-                Power, compute, and the companies behind both
-              </p>
             </div>
           </div>
           <div className="rule-scotch" />

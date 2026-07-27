@@ -423,7 +423,6 @@ export default function CatalystTracker() {
       <PageShell>
         <PageTitle
           title="Catalysts"
-          dek="Earnings dates for tracked equities plus dated policy, regulatory, and industry events, on one calendar and agenda."
           right={
             <>
               {data && (

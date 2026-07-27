@@ -244,7 +244,6 @@ export default function NeocloudIntel() {
     <PageShell>
       <PageTitle
         title="GPU Prices"
-        dek="What AI compute rents for: on-demand GPU rental prices, blended across the major neoclouds and marketplaces."
         right={
           <>
             {data && (

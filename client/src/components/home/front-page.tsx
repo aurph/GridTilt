@@ -56,15 +56,15 @@ interface BlogEntry {
   date: string;
 }
 
-const SECTION_DIRECTORY: { label: string; href: string; blurb: string }[] = [
-  { label: "Today", href: "/overview", blurb: "The daily read: movers, sector pulse, and the buildout at a glance." },
-  { label: "The Stack", href: "/stack", blurb: "60+ public companies across eight layers of the AI supply chain." },
-  { label: "Power", href: "/power-map", blurb: "US data centers on the map, corporate power deals, and the interconnection queue." },
-  { label: "Compute", href: "/compute-frontier", blurb: "The registry of named AI superclusters: GPUs, power, energy sources." },
-  { label: "GPUs", href: "/neocloud-intel", blurb: "What AI compute rents for, tracked weekly across ten accelerators." },
-  { label: "Analyze", href: "/analyze", blurb: "Portfolio exposure and scenario worksheets for the AI power thesis." },
-  { label: "Catalysts", href: "/catalysts", blurb: "Earnings dates and policy events on one calendar." },
-  { label: "Analysis", href: "/blog", blurb: "Research articles and the weekly Buildout Brief." },
+const SECTION_DIRECTORY: { label: string; href: string; note: string }[] = [
+  { label: "Today", href: "/overview", note: "Daily read" },
+  { label: "The Stack", href: "/stack", note: "Equities" },
+  { label: "Power", href: "/power-map", note: "Map, deals, queue" },
+  { label: "Compute", href: "/compute-frontier", note: "Cluster registry" },
+  { label: "GPUs", href: "/neocloud-intel", note: "Price index" },
+  { label: "Analyze", href: "/analyze", note: "Worksheets" },
+  { label: "Catalysts", href: "/catalysts", note: "Calendar" },
+  { label: "Analysis", href: "/blog", note: "Articles and the Brief" },
 ];
 
 function fmtGW(mw: number): string {
@@ -341,11 +341,11 @@ export function FrontPage() {
                   data-testid={`front-directory-${s.label.toLowerCase().replace(/\s+/g, "-")}`}
                 >
                   <span className="tilt-glyph shrink-0" aria-hidden />
-                  <span className="min-w-0">
+                  <span className="flex min-w-0 flex-1 items-baseline justify-between gap-3">
                     <span className="text-[14.5px] font-semibold text-ink group-hover:text-brand-ink">
                       {s.label}
                     </span>
-                    <span className="ml-2 text-[13px] leading-snug text-ink-secondary">{s.blurb}</span>
+                    <span className="text-[12.5px] text-ink-muted">{s.note}</span>
                   </span>
                 </Link>
               ))}
@@ -360,10 +360,6 @@ export function FrontPage() {
           <div className="max-w-[52ch]">
             <p className="font-serif font-medium text-[22px] leading-snug text-ink">
               The Buildout Brief, weekly.
-            </p>
-            <p className="mt-1.5 text-[13.5px] leading-relaxed text-ink-secondary">
-              One email a week: what changed in AI power, compute, and the companies behind both.
-              Sourced numbers, no hype.
             </p>
           </div>
           <Link
