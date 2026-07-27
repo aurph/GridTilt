@@ -7,7 +7,7 @@ import { ArrowLeft, ExternalLink, TrendingUp, TrendingDown, AlertTriangle, Share
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip as RTooltip } from "recharts";
 import { useToast } from "@/hooks/use-toast";
 import { SEMANTIC } from "@/lib/tokens";
-import { tooltipContentStyle } from "@/lib/chart-theme";
+import { axisProps, tooltipContentStyle } from "@/lib/chart-theme";
 
 interface StockInfo {
   ticker: string;
@@ -168,7 +168,7 @@ export default function StockPage() {
             <div className="grid grid-cols-5 gap-2">
               {Object.entries(data.sectors).map(([key, val]) => (
                 <div key={key} className="text-center">
-                  <div className="h-1.5 rounded-full bg-muted/30 overflow-hidden mb-1">
+                  <div className="h-2.5 rounded-full bg-muted/30 overflow-hidden mb-1">
                     <div className="h-full rounded-full bg-brand" style={{ width: `${val}%` }} />
                   </div>
                   <p className="text-10 text-muted-foreground">{key}</p>
@@ -180,11 +180,21 @@ export default function StockPage() {
 
           {chartData.length > 0 && (
             <Card className="p-5 border-card-border" data-testid="price-chart">
-              <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">Price History</h2>
+              <div className="flex items-baseline justify-between gap-3 mb-3">
+                <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Price History</h2>
+                <span className="text-10 font-mono text-muted-foreground/70">past 2 days, 5-min closes</span>
+              </div>
               <ResponsiveContainer width="100%" height={200}>
-                <LineChart data={chartData}>
-                  <XAxis dataKey="i" hide />
-                  <YAxis domain={["auto", "auto"]} hide />
+                <LineChart data={chartData} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
+                  {/* Sparkline payload carries closes only (no timestamps), so the
+                      x axis stays a bare baseline and the label above names the range. */}
+                  <XAxis dataKey="i" {...axisProps} tick={false} height={6} />
+                  <YAxis
+                    {...axisProps}
+                    domain={["auto", "auto"]}
+                    width={52}
+                    tickFormatter={(v: number) => (v >= 100 ? `${Math.round(v)}` : `${v.toFixed(2)}`)}
+                  />
                   <RTooltip
                     contentStyle={tooltipContentStyle}
                     labelStyle={{ display: "none" }}
@@ -236,7 +246,7 @@ export default function StockPage() {
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Daily Change</span>
                   <span className={`font-mono font-semibold ${isUp ? "text-positive" : "text-negative"}`}>
-                    {data.stockData.change != null ? `${isUp ? "+" : ""}$${data.stockData.change.toFixed(2)}` : "--"}
+                    {data.stockData.change != null ? `${data.stockData.change < 0 ? "-" : "+"}${Math.abs(data.stockData.change).toFixed(2)}` : "--"}
                   </span>
                 </div>
               </div>
@@ -272,7 +282,7 @@ export default function StockPage() {
             <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">Tools</h2>
             <div className="space-y-2 text-sm">
               <Link href="/stack" className="block text-brand hover:text-brand-2" data-testid="link-tool-stack">The Stack</Link>
-              <Link href="/portfolio" className="block text-brand hover:text-brand-2" data-testid="link-tool-portfolio">Portfolio Overlay</Link>
+              <Link href="/analyze" className="block text-brand hover:text-brand-2" data-testid="link-tool-analyze">Analyze</Link>
               <Link href="/catalysts" className="block text-brand hover:text-brand-2" data-testid="link-tool-catalysts">Catalyst Tracker</Link>
             </div>
           </Card>

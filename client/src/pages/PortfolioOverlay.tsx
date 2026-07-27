@@ -64,6 +64,14 @@ const SEGMENT_COLORS: Record<string, string> = {
   Grid: CATEGORY_COLORS.grid,
 };
 
+const SEGMENT_SHORT: Record<string, string> = {
+  Compute: "Comp",
+  Infrastructure: "Infra",
+  Power: "Power",
+  Cooling: "Cool",
+  Grid: "Grid",
+};
+
 const CustomRadarTooltip = ({ active, payload }: any) => {
   if (active && payload?.length) {
     return (
@@ -242,7 +250,7 @@ export default function PortfolioOverlay({ embedded = false }: { embedded?: bool
         {/* Input section */}
         <Card className="p-5 border-card-border">
           <label className="text-sm font-medium text-foreground mb-3 block">Enter Your Tickers</label>
-          <div className="flex gap-2 flex-wrap">
+          <div className="flex flex-col sm:flex-row gap-2">
             <Input
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
@@ -251,19 +259,21 @@ export default function PortfolioOverlay({ embedded = false }: { embedded?: bool
               onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
               data-testid="input-tickers"
             />
-            <Button onClick={handleSubmit} disabled={isPending || !inputValue.trim()} data-testid="button-score-portfolio">
-              {isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Search className="h-4 w-4 mr-2" />}
-              Score Portfolio
-            </Button>
-            <Button
-              variant="secondary"
-              onClick={handleShare}
-              disabled={!inputValue.trim()}
-              data-testid="button-share-portfolio"
-              title="Copy shareable link"
-            >
-              {copied ? <Check className="h-4 w-4" /> : <Share2 className="h-4 w-4" />}
-            </Button>
+            <div className="flex gap-2">
+              <Button onClick={handleSubmit} disabled={isPending || !inputValue.trim()} className="flex-1 sm:flex-none" data-testid="button-score-portfolio">
+                {isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Search className="h-4 w-4 mr-2" />}
+                Score Portfolio
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={handleShare}
+                disabled={!inputValue.trim()}
+                data-testid="button-share-portfolio"
+                title="Copy shareable link"
+              >
+                {copied ? <Check className="h-4 w-4" /> : <Share2 className="h-4 w-4" />}
+              </Button>
+            </div>
           </div>
 
           {error && (
@@ -365,7 +375,7 @@ export default function PortfolioOverlay({ embedded = false }: { embedded?: bool
                               style={{ width: `${val}%`, backgroundColor: SEGMENT_COLORS[seg] ?? INK.faint }}
                             />
                           </div>
-                          <p className="text-xs text-muted-foreground">{seg.slice(0, 3)}</p>
+                          <p className="text-xs text-muted-foreground">{SEGMENT_SHORT[seg] ?? seg}</p>
                         </div>
                       ))}
                     </div>
@@ -410,15 +420,6 @@ export default function PortfolioOverlay({ embedded = false }: { embedded?: bool
                     />
                   </RadarChart>
                 </ResponsiveContainer>
-
-                <div className="flex flex-wrap gap-3 justify-center mt-2">
-                  {Object.entries(SEGMENT_COLORS).map(([seg, color]) => (
-                    <div key={seg} className="flex items-center gap-1.5 text-xs">
-                      <div className="h-2 w-2 rounded-full" style={{ backgroundColor: color }} />
-                      <span className="text-muted-foreground">{seg}</span>
-                    </div>
-                  ))}
-                </div>
               </Card>
 
               <Card className="p-4 border-card-border bg-muted/10">

@@ -169,23 +169,14 @@ function CalendarGrid({
               <div className="text-13 font-medium mb-1" style={{ color: isToday ? BRAND.primary : INK.secondary }}>
                 {day}
               </div>
-              <div className="flex flex-wrap gap-1">
-                {dayItems.map((item, j) => {
-                  let color: string = INK.muted;
-                  if (item.type === "earnings") {
-                    color = stageColorOf(item as EarningsItem);
-                  } else {
-                    color = catalystCategoryColors[(item as CatalystItem).category] || INK.muted;
-                  }
-                  return (
-                    <div
-                      key={j}
-                      className="rounded-full"
-                      style={{ width: 8, height: 8, background: color }}
-                      title={item.type === "earnings" ? (item as EarningsItem).ticker : (item as CatalystItem).title}
-                    />
-                  );
-                })}
+              <div className="flex items-center gap-1">
+                {dayItems.slice(0, 3).map((_, j) => (
+                  <div
+                    key={j}
+                    className="rounded-full"
+                    style={{ width: 6, height: 6, background: BRAND.primary }}
+                  />
+                ))}
               </div>
               {dayItems.length > 0 && (
                 <div className="text-9 mt-1 truncate" style={{ color: INK.faint }}>
@@ -317,7 +308,7 @@ function UpcomingTimeline({ items }: { items: MergedItem[] }) {
               <div key={item.id} className="relative flex items-start gap-3 pb-4" data-testid={`timeline-${e.ticker}`}>
                 <div
                   className="absolute left-[-18px] top-[6px] w-[10px] h-[10px] rounded-full"
-                  style={{ background: dotColor }}
+                  style={{ background: INK.faint }}
                 />
                 <div className="flex-1 flex items-center gap-3 flex-wrap">
                   <span
@@ -357,7 +348,7 @@ function UpcomingTimeline({ items }: { items: MergedItem[] }) {
             <div key={item.id} className="relative flex items-start gap-3 pb-4" data-testid={`timeline-${c.id}`}>
               <div
                 className="absolute left-[-18px] top-[6px] w-[10px] h-[10px] rounded-full"
-                style={{ background: catColor }}
+                style={{ background: INK.faint }}
               />
               <div className="flex-1 flex items-center gap-3 flex-wrap">
                 <span className="text-11 font-bold uppercase min-w-[60px]" style={{ color: timeLabelColor }}>

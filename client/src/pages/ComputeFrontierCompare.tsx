@@ -100,8 +100,8 @@ export default function ComputeFrontierCompare() {
                     className="bg-surface-base border border-subtle rounded px-1.5 py-1 text-xs text-foreground focus:outline-none focus:border-brand/40 max-w-[220px]"
                     data-testid={`cfc-select-${i}`}
                   >
-                    <option value="">none</option>
-                    {sorted.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    <option value="" className="bg-surface-raised">none</option>
+                    {sorted.map((c) => <option key={c.id} value={c.id} className="bg-surface-raised">{c.name}</option>)}
                   </select>
                 </label>
               ))}
