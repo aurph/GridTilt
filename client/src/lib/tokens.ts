@@ -131,5 +131,5 @@ export const CHART_CHROME = {
 export const FONT = {
   mono: 'ui-monospace, "SF Mono", monospace',
   sans: '"Public Sans", -apple-system, "Segoe UI", sans-serif',
-  serif: '"Newsreader", Georgia, serif',
+  serif: '"Instrument Serif", Georgia, serif',
 } as const;
