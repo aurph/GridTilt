@@ -38,7 +38,7 @@ const TiltOverview = lazy(() => import("@/pages/TiltOverview"));
 
 // Routes that render WITHOUT the dashboard chrome (no sidebar, no header,
 // no news ticker). Currently just the marketing landing at /.
-const MARKETING_ROUTES = ["/"];
+const MARKETING_ROUTES: string[] = [];
 
 const PAGE_TITLES: Record<string, string> = {
   "/": "GridTilt",

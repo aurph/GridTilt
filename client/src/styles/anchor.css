@@ -16,7 +16,7 @@
  */
 
 .gt-marketing {
-  --mkt-bg:          #0B0B0A;
+  --mkt-bg:          #101010;
   --mkt-bg-elev:     #131211;
   --mkt-bg-deeper:   #060605;
 
@@ -33,7 +33,7 @@
   --mkt-accent-soft: rgba(240, 120, 0, 0.10);
   --mkt-accent-glow: rgba(240, 120, 0, 0.30);
 
-  --mkt-display:     'JetBrains Mono', 'SF Mono', 'Menlo', monospace;
+  --mkt-display:     "Archivo", -apple-system, sans-serif;
   --mkt-body:        'Inter', 'Helvetica Neue', sans-serif;
   --mkt-serif:       'Source Serif 4', 'Iowan Old Style', 'Georgia', serif;
 
