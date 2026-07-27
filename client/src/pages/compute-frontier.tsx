@@ -401,7 +401,7 @@ export default function ComputeFrontier() {
           {clusters && clusters.length > 0 ? (
             <MapContainer center={[39.5, -98.5]} zoom={4} minZoom={3} maxZoom={10} zoomControl={false} style={{ width: "100%", height: "100%", background: SURFACE.base }}>
               <TileLayer
-                url="https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png"
+                url="https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png"
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
                 subdomains="abcd"
               />

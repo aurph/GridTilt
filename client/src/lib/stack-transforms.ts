@@ -250,8 +250,7 @@ export function heatColor(pct: number | null): string {
 /** Text color that stays readable on heatColor() fills. */
 export function heatTextColor(pct: number | null): string {
   if (pct === null || !Number.isFinite(pct)) return INK.muted;
-  // Heavily saturated cells blend most of the way to the deep semantic
-  // color; ink fails there on paper, so they flip to light paper text.
-  if (Math.abs(pct) >= 0.6 * HEAT_SATURATION_PCT) return SURFACE.base;
+  // Dark ground: blends darken toward the semantic deep, so near-white
+  // ink stays readable at every saturation.
   return INK.primary;
 }

@@ -33,11 +33,11 @@ export function PageTitle({
   testId?: string;
 }) {
   return (
-    <div className="pt-7 sm:pt-9 pb-4 border-b border-rule-strong mb-6" data-testid={testId}>
+    <div className="pt-4 sm:pt-5 pb-3 border-b border-rule mb-5" data-testid={testId}>
       <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
         <div className="min-w-0">
           {kicker && <Kicker>{kicker}</Kicker>}
-          <h1 className="font-serif font-medium text-[38px] sm:text-[52px] leading-[0.98] tracking-[-0.015em] text-ink">
+          <h1 className="font-serif text-[22px] sm:text-[26px] leading-none tracking-[-0.01em] text-ink">
             {title}
           </h1>
           {dek && (
