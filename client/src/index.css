@@ -67,7 +67,7 @@
 
   /* Typography */
   --font-sans: "Public Sans", -apple-system, "Segoe UI", sans-serif;
-  --font-serif: "Newsreader", Georgia, serif;
+  --font-serif: "Instrument Serif", Georgia, serif;
   --font-mono: ui-monospace, "SF Mono", monospace;
 
   /* Print corners: near-square */
@@ -188,10 +188,11 @@ html {
     @apply font-sans antialiased bg-background text-foreground;
   }
 
-  /* Let Newsreader's optical-size axis actually work: display sizes render
-     the high-contrast display cut, captions the sturdier text cut. */
+  /* Instrument Serif ships one true weight; never let the browser fake a
+     bold from it. Display presence comes from size, not synthesis. */
   .font-serif {
     font-optical-sizing: auto;
+    font-synthesis: none;
   }
 
   /* Tabular figures wherever numbers sit in columns, so they never jitter */
