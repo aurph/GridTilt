@@ -3695,6 +3695,13 @@
       "gridStress": 67.5,
       "npiEquityLegs": 236.8,
       "npi": 257.8
+    },
+    {
+      "date": "2026-07-27",
+      "aiDemand": 68.2,
+      "gridStress": 65,
+      "npiEquityLegs": 236.1,
+      "npi": 257.1
     }
   ]
 }

@@ -5,7 +5,7 @@
  * the facility list, and residential rates. State choice persists locally;
  * nothing leaves the browser.
  */
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { MapContainer, TileLayer, CircleMarker, GeoJSON as GeoJSONLayer, Tooltip as MapTooltip, useMap } from "react-leaflet";
@@ -13,13 +13,14 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import type { Feature, FeatureCollection } from "geojson";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ErrorState, SrChartTable } from "@/components/Freshness";
-import { PageShell, PageTitle, Provenance, PullStat, RuleSection } from "@/components/editorial";
-import { RTO_CONFIG, RTO_SOURCE_NOTE } from "@/data/rto-config";
+import { AsOf, ErrorState, SrChartTable } from "@/components/Freshness";
+import { PageHeader } from "@/components/PageHeader";
+import { RTO_CONFIG, RTO_SOURCE_NOTE, type RTOConfig } from "@/data/rto-config";
 import { STATE_GRID, STATE_GRID_SOURCE } from "@/data/state-grid";
-import { BRAND, INK } from "@/lib/tokens";
-import { HIGHLIGHT, axisProps, gridProps, tooltipContentStyle, tooltipItemStyle, tooltipLabelStyle } from "@/lib/chart-theme";
+import { BORDER, BRAND, FONT, INK, SEMANTIC, STATUS_COLORS, SURFACE } from "@/lib/tokens";
+import { axisProps, gridProps, tooltipContentStyle, tooltipItemStyle, tooltipLabelStyle } from "@/lib/chart-theme";
 // US state boundaries: US Census cartographic boundary file (public domain),
 // via the widely used us-states GeoJSON distribution.
 import statesGeoRaw from "@/data/us-states.geo.json";
@@ -27,6 +28,10 @@ import statesGeoRaw from "@/data/us-states.geo.json";
 const statesGeo = statesGeoRaw as unknown as FeatureCollection;
 
 const STORAGE_KEY = "gt-my-grid-state";
+
+// Same threshold the Power map honors: only hyperscale-class sites. The
+// captions on this page promise 400 MW and up, so the filter enforces it.
+const MIN_TRACKED_MW = 400;
 
 interface Facility {
   id: number;
@@ -85,11 +90,12 @@ const QUEUE_ISOS: Record<string, string[]> = {
   NPCC: ["NYISO", "ISO-NE"],
 };
 
-const SIGNAL_CLASS: Record<string, string> = {
-  Critical: "text-negative",
-  Elevated: "text-warning",
-  Moderate: "text-ink-secondary",
-  Low: "text-positive",
+/** Same stress ramp the Power map uses: SEMANTIC state colors, one truth. */
+const SIGNAL_COLOR: Record<RTOConfig["aiSignal"], string> = {
+  Critical: SEMANTIC.negativeDeep,
+  Elevated: SEMANTIC.warning,
+  Moderate: SEMANTIC.positiveDeep,
+  Low: SEMANTIC.positive,
 };
 
 const STATUS_LABEL: Record<string, string> = {
@@ -111,7 +117,7 @@ function fmtMonth(month: string): string {
 /** Fly the map to the selected state's bounds (or the continental US). */
 function MapFocus({ feature }: { feature: Feature | null }) {
   const map = useMap();
-  useMemo(() => {
+  useEffect(() => {
     if (feature) {
       map.fitBounds(L.geoJSON(feature).getBounds().pad(0.35), { animate: true, duration: 0.8 });
     } else {
@@ -136,7 +142,7 @@ function MyGridMap({
   );
 
   return (
-    <figure className="border border-rule" data-testid="my-grid-map">
+    <Card className="my-grid-map border-card-border overflow-hidden" data-testid="my-grid-map">
       <div className="h-[440px] w-full isolate z-0">
         <MapContainer
           center={[38.5, -96]}
@@ -145,11 +151,11 @@ function MyGridMap({
           scrollWheelZoom={false}
           attributionControl
           className="h-full w-full"
-          style={{ background: "var(--paper)" }}
+          style={{ background: SURFACE.base }}
         >
           <TileLayer
             url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
           />
           {feature && (
             <GeoJSONLayer
@@ -173,7 +179,7 @@ function MyGridMap({
                 }}
               >
                 <MapTooltip>
-                  <span className="text-[12px]">
+                  <span className="text-11 font-mono">
                     {f.name} · {f.company}
                     {f.powerMW ? ` · ${f.powerMW} MW` : ""} · {STATUS_LABEL[f.status] ?? f.status}
                   </span>
@@ -184,16 +190,21 @@ function MyGridMap({
           <MapFocus feature={feature} />
         </MapContainer>
       </div>
-      <figcaption className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-t border-rule px-3 py-2 text-[12.5px] text-ink-secondary">
-        <span>
+      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-t border-border px-4 py-2">
+        <span className="text-11 text-muted-foreground">
           {stateName
             ? `Tracked facilities in and around ${stateName}; neighbors in gray`
             : "Every tracked US facility; pick a state to zoom in"}
         </span>
-        <span className="text-ink-muted">size = capacity · solid = operational, faint = announced</span>
-      </figcaption>
-    </figure>
+        <span className="text-10 font-mono text-muted-foreground/60">size = capacity · solid = operational, faint = announced</span>
+      </div>
+    </Card>
   );
+}
+
+/** Small mono label above a stat or panel cell. */
+function CellLabel({ children }: { children: React.ReactNode }) {
+  return <p className="text-10 font-mono uppercase tracking-wider text-muted-foreground">{children}</p>;
 }
 
 export default function MyGrid() {
@@ -217,14 +228,21 @@ export default function MyGrid() {
   }
 
   const {
-    data: facilities,
+    data: facilitiesRaw,
     isLoading: facilitiesLoading,
     isError: facilitiesError,
     refetch: refetchFacilities,
+    dataUpdatedAt,
   } = useQuery<Facility[]>({
     queryKey: ["/api/datacenters"],
     refetchInterval: 900000,
   });
+
+  // Honor the 400 MW threshold everywhere on this page, same as the Power map.
+  const facilities = useMemo(
+    () => (facilitiesRaw ?? []).filter((f) => (f.powerMW ?? 0) >= MIN_TRACKED_MW),
+    [facilitiesRaw],
+  );
 
   const { data: queue } = useQuery<QueueResponse>({ queryKey: ["/api/queue"] });
 
@@ -248,7 +266,7 @@ export default function MyGrid() {
   const rto = grid?.region ? RTO_CONFIG[grid.region] : null;
 
   const localFacilities = useMemo(() => {
-    if (!facilities || !state) return [];
+    if (!state) return [];
     return facilities
       .filter((f) => f.state === state)
       .sort((a, b) => (b.powerMW ?? 0) - (a.powerMW ?? 0));
@@ -290,189 +308,267 @@ export default function MyGrid() {
   const stateOptions = Object.entries(STATE_GRID).sort((a, b) => a[1].name.localeCompare(b[1].name));
 
   return (
-    <PageShell>
-      <PageTitle
-        title="My Grid"
-        right={
-          <label className="flex items-baseline gap-2 text-[13px] text-ink-secondary">
-            State
-            <select
-              value={state}
-              onChange={(e) => chooseState(e.target.value)}
-              className="rounded-sm border border-rule bg-card px-2 py-1.5 text-[13.5px] text-ink"
-              data-testid="my-grid-state"
-            >
-              <option value="">Choose…</option>
-              {stateOptions.map(([code, s]) => (
-                <option key={code} value={code}>{s.name}</option>
-              ))}
-            </select>
-          </label>
+    <div className="flex flex-col h-full overflow-y-auto">
+      {/* Dark leaflet chrome for this page's map, scoped under .my-grid-map */}
+      <style>{`
+        .my-grid-map .leaflet-container {
+          background: ${SURFACE.base} !important;
+          font-family: inherit;
         }
+        .my-grid-map .leaflet-control-zoom {
+          border: none !important;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.5) !important;
+        }
+        .my-grid-map .leaflet-control-zoom a {
+          background: ${SURFACE.raised} !important;
+          color: ${INK.secondary} !important;
+          border: 1px solid ${BORDER.subtle} !important;
+        }
+        .my-grid-map .leaflet-control-zoom a:hover {
+          background: ${SURFACE.overlay} !important;
+          color: ${BRAND.primary} !important;
+        }
+        .my-grid-map .leaflet-control-attribution {
+          background: rgba(0,0,0,0.4) !important;
+          color: ${INK.faint} !important;
+          font-size: 9px !important;
+        }
+        .my-grid-map .leaflet-control-attribution a {
+          color: ${INK.faint} !important;
+        }
+        .my-grid-map .leaflet-tooltip {
+          background: ${SURFACE.overlay};
+          border: 1px solid ${BORDER.strong};
+          color: ${INK.primary};
+          font-family: ${FONT.mono};
+          box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+        }
+        .my-grid-map .leaflet-tooltip-top:before { border-top-color: ${BORDER.strong}; }
+        .my-grid-map .leaflet-tooltip-bottom:before { border-bottom-color: ${BORDER.strong}; }
+        .my-grid-map .leaflet-tooltip-left:before { border-left-color: ${BORDER.strong}; }
+        .my-grid-map .leaflet-tooltip-right:before { border-right-color: ${BORDER.strong}; }
+      `}</style>
+
+      <PageHeader
+        title="My Grid"
         testId="my-grid-header"
+        about="Who runs your state's grid, how much headroom the region has, what is being built there, and what residential power costs. The state choice stays in this browser."
+        right={
+          <>
+            <label className="flex items-center gap-2 text-11 font-mono text-muted-foreground">
+              State
+              <select
+                value={state}
+                onChange={(e) => chooseState(e.target.value)}
+                className="rounded border border-subtle bg-surface-base px-2 py-1.5 text-xs font-mono text-foreground"
+                data-testid="my-grid-state"
+              >
+                <option value="">Choose…</option>
+                {stateOptions.map(([code, s]) => (
+                  <option key={code} value={code}>{s.name}</option>
+                ))}
+              </select>
+            </label>
+            <AsOf updatedAt={dataUpdatedAt} intervalMs={900_000} />
+          </>
+        }
       />
 
-      <MyGridMap stateCode={state} stateName={grid?.name ?? null} facilities={facilities ?? []} />
-      <Provenance
-        source="GridTilt facility registry"
-        extra="hyperscale campuses of 400 MW and up; boundaries from US Census cartographic files"
-      />
+      <div className="flex-1 w-full max-w-[1200px] mx-auto p-4 sm:p-6 space-y-4">
+        <MyGridMap stateCode={state} stateName={grid?.name ?? null} facilities={facilities} />
+        <p className="text-10 font-mono text-muted-foreground/60 px-1">
+          GridTilt facility registry · hyperscale campuses of 400 MW and up · boundaries from US Census cartographic files
+        </p>
 
-      {grid && (
-        <>
-          <RuleSection head="Your grid" testId="my-grid-operator">
-            <div className="grid grid-cols-1 gap-x-10 gap-y-6 md:grid-cols-2 lg:grid-cols-4">
-              <div>
-                <p className="text-[13px] leading-tight text-ink-secondary">Grid operator</p>
-                <p className="mt-1 font-serif text-[24px] leading-tight text-ink">{grid.operatorLabel}</p>
-                {grid.note && <p className="mt-2 text-[12.5px] leading-snug text-ink-muted">{grid.note}</p>}
+        {grid && (
+          <>
+            <Card className="border-card-border" data-testid="my-grid-operator">
+              <div className="px-4 py-2 border-b border-border text-10 font-mono uppercase tracking-wider text-muted-foreground">
+                Your grid · {grid.name}
               </div>
-              {rto ? (
-                <>
-                  <PullStat
-                    label="Projected reserve margin"
-                    value={`${rto.reserveMargin.toFixed(1)}%`}
-                    delta={<span className={`text-[13px] font-semibold ${SIGNAL_CLASS[rto.aiSignal] ?? "text-ink-muted"}`}>{rto.aiSignal}</span>}
-                    note="Headroom between expected peak demand and supply"
-                    testId="my-grid-margin"
-                  />
-                  {regionQueue ? (
-                    <PullStat
-                      label={regionQueue.label}
-                      value={`${(regionQueue.mw / 1000).toFixed(1)} GW`}
-                      note={regionQueue.note}
-                      testId="my-grid-queue"
-                    />
-                  ) : (
-                    <div>
-                      <p className="text-[13px] leading-tight text-ink-secondary">Regional queue</p>
-                      <p className="mt-1.5 max-w-[30ch] text-[13px] leading-relaxed text-ink-muted">
-                        No aggregate tracked for this region yet.
+              <div className="p-4 grid grid-cols-1 gap-x-8 gap-y-5 md:grid-cols-2 lg:grid-cols-4">
+                <div>
+                  <CellLabel>Grid operator</CellLabel>
+                  <p className="mt-1 text-base font-semibold text-foreground leading-snug">{grid.operatorLabel}</p>
+                  {grid.note && <p className="mt-1.5 text-11 leading-snug text-muted-foreground">{grid.note}</p>}
+                </div>
+                {rto ? (
+                  <>
+                    <div data-testid="my-grid-margin">
+                      <CellLabel>Projected reserve margin</CellLabel>
+                      <p className="mt-1 font-mono text-2xl font-bold tabular-nums text-foreground">
+                        {rto.reserveMargin.toFixed(1)}%
+                        <span
+                          className="ml-2 align-middle text-xs font-semibold font-sans"
+                          style={{ color: SIGNAL_COLOR[rto.aiSignal] }}
+                        >
+                          {rto.aiSignal}
+                        </span>
+                      </p>
+                      <p className="mt-1.5 text-11 leading-snug text-muted-foreground">
+                        Headroom between expected peak demand and supply
                       </p>
                     </div>
-                  )}
-                  <div>
-                    <p className="text-[13px] leading-tight text-ink-secondary">What the signal means</p>
-                    <p className="mt-1.5 max-w-[36ch] text-[13.5px] leading-relaxed text-ink-secondary">
-                      NERC's reference level is about 15%. Regions under it face constrained
-                      interconnection for large new loads.
+                    {regionQueue ? (
+                      <div data-testid="my-grid-queue">
+                        <CellLabel>{regionQueue.label}</CellLabel>
+                        <p className="mt-1 font-mono text-2xl font-bold tabular-nums text-foreground">
+                          {(regionQueue.mw / 1000).toFixed(1)} GW
+                        </p>
+                        <p className="mt-1.5 text-11 leading-snug text-muted-foreground">{regionQueue.note}</p>
+                      </div>
+                    ) : (
+                      <div>
+                        <CellLabel>Regional queue</CellLabel>
+                        <p className="mt-1.5 text-11 leading-snug text-muted-foreground">
+                          No aggregate tracked for this region yet.
+                        </p>
+                      </div>
+                    )}
+                    <div>
+                      <CellLabel>What the signal means</CellLabel>
+                      <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground max-w-[36ch]">
+                        NERC's reference level is about 15%. Regions under it face constrained
+                        interconnection for large new loads.
+                      </p>
+                    </div>
+                  </>
+                ) : (
+                  <div className="md:col-span-1 lg:col-span-3">
+                    <p className="text-xs leading-relaxed text-muted-foreground max-w-[48ch]">
+                      {grid.note ?? "No regional reliability assessment applies here."}
                     </p>
                   </div>
-                </>
+                )}
+              </div>
+              <div className="px-4 py-2 border-t border-border/50 text-10 font-mono text-muted-foreground/60">
+                {RTO_SOURCE_NOTE} · {STATE_GRID_SOURCE} · queue figures carry their own source and date
+              </div>
+            </Card>
+
+            <Card className="border-card-border overflow-hidden" data-testid="my-grid-facilities">
+              <div className="px-4 py-2 border-b border-border flex flex-wrap items-center justify-between gap-2">
+                <span className="text-10 font-mono uppercase tracking-wider text-muted-foreground">
+                  Being built in {grid.name}
+                </span>
+                <Link
+                  href="/power-map"
+                  className="text-11 font-mono text-brand hover:text-brand-2 no-underline"
+                  data-testid="my-grid-full-map-link"
+                >
+                  Open the full map →
+                </Link>
+              </div>
+              {facilitiesLoading ? (
+                <div className="p-4 space-y-2" aria-hidden="true">
+                  {Array(4).fill(null).map((_, i) => <Skeleton key={i} className="h-7" />)}
+                </div>
+              ) : facilitiesError ? (
+                // A fetch failure must not read as "nothing is being built here".
+                <ErrorState label="Facility registry failed to load." onRetry={() => refetchFacilities()} />
+              ) : localFacilities.length === 0 ? (
+                <p className="p-4 text-xs leading-relaxed text-muted-foreground" data-testid="my-grid-no-facilities">
+                  No tracked facilities in {grid.name}. The registry covers hyperscale campuses of
+                  400 MW and up; smaller sites are out of scope. Gray marks on the map are the
+                  nearest tracked facilities in neighboring states.
+                </p>
               ) : (
-                <div className="md:col-span-3">
-                  <p className="max-w-[48ch] text-[13.5px] leading-relaxed text-ink-secondary">
-                    {grid.note ?? "No regional reliability assessment applies here."}
-                  </p>
+                <div className="overflow-x-auto">
+                  <div className="min-w-[640px]" data-testid="my-grid-facility-table">
+                    <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-surface-base border-b border-border text-10 font-mono uppercase tracking-wider text-muted-foreground">
+                      <span className="col-span-4">Facility</span>
+                      <span className="col-span-3">Operator</span>
+                      <span className="col-span-2">City</span>
+                      <span className="col-span-1 text-right">MW</span>
+                      <span className="col-span-2">Status</span>
+                    </div>
+                    {localFacilities.map((f) => (
+                      <div
+                        key={f.id}
+                        className="grid grid-cols-12 gap-2 px-4 py-2.5 border-b border-border/30 last:border-0 text-xs hover:bg-brand/5"
+                        data-testid={`my-grid-facility-row-${f.id}`}
+                      >
+                        <span className="col-span-4 font-medium text-foreground truncate">{f.name}</span>
+                        <span className="col-span-3 text-muted-foreground truncate">{f.company}</span>
+                        <span className="col-span-2 text-muted-foreground truncate">{f.city}</span>
+                        <span className="col-span-1 font-mono text-foreground text-right tabular-nums">
+                          {f.powerMW ?? "--"}
+                        </span>
+                        <span className="col-span-2 truncate" style={{ color: STATUS_COLORS[f.status as keyof typeof STATUS_COLORS] ?? INK.muted }}>
+                          {STATUS_LABEL[f.status] ?? f.status}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
-            </div>
-            <Provenance
-              source={RTO_SOURCE_NOTE}
-              extra={<>{STATE_GRID_SOURCE}; queue figures carry their own source and date</>}
-            />
-          </RuleSection>
+              <div className="px-4 py-2 border-t border-border/50 text-10 font-mono text-muted-foreground/60">
+                GridTilt facility registry · hyperscale campuses of 400 MW and up
+              </div>
+            </Card>
 
-          <RuleSection head={`Being built in ${grid.name}`} testId="my-grid-facilities">
-            {facilitiesLoading ? (
-              <Skeleton className="h-24 w-full" />
-            ) : facilitiesError ? (
-              // A fetch failure must not read as "nothing is being built here".
-              <ErrorState label="Facility registry failed to load." onRetry={() => refetchFacilities()} className="h-24" />
-            ) : localFacilities.length === 0 ? (
-              <p className="text-[13.5px] text-ink-secondary" data-testid="my-grid-no-facilities">
-                No tracked facilities in {grid.name}. The registry covers hyperscale campuses of
-                400 MW and up; smaller sites are out of scope. Gray marks on the map are the
-                nearest tracked facilities in neighboring states.
-              </p>
-            ) : (
-              <table className="print-table" data-testid="my-grid-facility-table">
-                <thead>
-                  <tr>
-                    <th>Facility</th>
-                    <th>Operator</th>
-                    <th>City</th>
-                    <th className="num">MW</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {localFacilities.map((f) => (
-                    <tr key={f.id}>
-                      <td className="font-semibold text-ink">{f.name}</td>
-                      <td className="text-ink-secondary">{f.company}</td>
-                      <td className="text-ink-secondary">{f.city}</td>
-                      <td className="num">{f.powerMW ?? "--"}</td>
-                      <td className={f.status === "operational" ? "font-semibold text-ink" : f.status === "construction" ? "text-ink-secondary" : "text-ink-muted"}>
-                        {STATUS_LABEL[f.status] ?? f.status}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-            <p className="mt-2">
-              <Link href="/power-map" className="text-[12.5px] font-semibold text-ink no-underline hover:text-brand-ink">
-                Open the full map →
-              </Link>
-            </p>
-            <Provenance source="GridTilt facility registry" extra="hyperscale campuses of 400 MW and up" />
-          </RuleSection>
-
-          <RuleSection head={`What electricity costs in ${grid.name}`} testId="my-grid-rates">
-            {ratesError ? (
-              <ErrorState label="Rate data failed to load." onRetry={() => refetchRates()} className="h-40" />
-            ) : !rates ? (
-              <Skeleton className="h-40 w-full" />
-            ) : !("byState" in rates) ? (
-              <p className="max-w-[60ch] text-[13.5px] leading-relaxed text-ink-secondary" data-testid="my-grid-rates-unconfigured">
-                Rate data is not configured on this deployment yet. It comes straight from the
-                EIA once a free API key is set; nothing is shown in its place.
-              </p>
-            ) : series.length === 0 ? (
-              <p className="text-[13.5px] text-ink-secondary">No EIA series available for {grid.name}.</p>
-            ) : (
-              <>
-                <div className="mb-4 flex flex-wrap items-end gap-x-10 gap-y-4">
-                  <PullStat
-                    label={`Residential average, ${latest ? fmtMonth(latest.month) : ""}`}
-                    value={latest ? `${latest.centsPerKwh.toFixed(1)}¢/kWh` : "--"}
-                    delta={
-                      yoy != null ? (
-                        <span className={`text-[13px] font-semibold tnum ${yoy >= 0 ? "text-negative" : "text-positive"}`}>
-                          {yoy >= 0 ? "+" : "−"}{Math.abs(yoy).toFixed(1)}% y/y
-                        </span>
-                      ) : undefined
-                    }
-                    testId="my-grid-rate"
-                  />
-                </div>
-                <ResponsiveContainer width="100%" height={220}>
-                  <LineChart data={series} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
-                    <CartesianGrid {...gridProps} />
-                    <XAxis {...axisProps} dataKey="month" tickFormatter={fmtMonth} interval="preserveStartEnd" minTickGap={40} />
-                    <YAxis {...axisProps} axisLine={false} width={40} domain={["auto", "auto"]} tickFormatter={(v: number) => `${v.toFixed(0)}¢`} />
-                    <Tooltip
-                      contentStyle={tooltipContentStyle}
-                      labelStyle={tooltipLabelStyle}
-                      itemStyle={tooltipItemStyle}
-                      labelFormatter={(m: string) => fmtMonth(m)}
-                      formatter={(v: number) => [`${v.toFixed(2)}¢/kWh`, "Residential average"]}
+            <Card className="border-card-border" data-testid="my-grid-rates">
+              <div className="px-4 py-2 border-b border-border text-10 font-mono uppercase tracking-wider text-muted-foreground">
+                What electricity costs in {grid.name}
+              </div>
+              <div className="p-4">
+                {ratesError ? (
+                  <ErrorState label="Rate data failed to load." onRetry={() => refetchRates()} />
+                ) : !rates ? (
+                  <Skeleton className="h-40 w-full" aria-hidden="true" />
+                ) : !("byState" in rates) ? (
+                  <p className="text-xs leading-relaxed text-muted-foreground max-w-[60ch]" data-testid="my-grid-rates-unconfigured">
+                    Rate data is not configured on this deployment yet. It comes straight from the
+                    EIA once a free API key is set; nothing is shown in its place.
+                  </p>
+                ) : series.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">No EIA series available for {grid.name}.</p>
+                ) : (
+                  <>
+                    <div className="mb-4" data-testid="my-grid-rate">
+                      <CellLabel>Residential average, {latest ? fmtMonth(latest.month) : ""}</CellLabel>
+                      <p className="mt-1 font-mono text-2xl font-bold tabular-nums text-foreground">
+                        {latest ? `${latest.centsPerKwh.toFixed(1)}¢/kWh` : "--"}
+                        {yoy != null && (
+                          <span className={`ml-2 align-middle text-xs font-semibold tabular-nums ${yoy >= 0 ? "text-negative" : "text-positive"}`}>
+                            {yoy >= 0 ? "+" : "−"}{Math.abs(yoy).toFixed(1)}% y/y
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                    <ResponsiveContainer width="100%" height={220}>
+                      <LineChart data={series} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
+                        <CartesianGrid {...gridProps} />
+                        <XAxis {...axisProps} dataKey="month" tickFormatter={fmtMonth} interval="preserveStartEnd" minTickGap={40} />
+                        <YAxis {...axisProps} axisLine={false} width={40} domain={["auto", "auto"]} tickFormatter={(v: number) => `${v.toFixed(0)}¢`} />
+                        <Tooltip
+                          contentStyle={tooltipContentStyle}
+                          labelStyle={tooltipLabelStyle}
+                          itemStyle={tooltipItemStyle}
+                          labelFormatter={(m: string) => fmtMonth(m)}
+                          formatter={(v: number) => [`${v.toFixed(2)}¢/kWh`, "Residential average"]}
+                        />
+                        <Line type="monotone" dataKey="centsPerKwh" stroke={BRAND.primary} strokeWidth={2} dot={false} isAnimationActive={false} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                    <SrChartTable
+                      caption={`Residential electricity price in ${grid.name}, cents per kWh`}
+                      columns={["Month", "Cents per kWh"]}
+                      rows={series.map((p) => [p.month, p.centsPerKwh.toFixed(2)])}
                     />
-                    <Line type="monotone" dataKey="centsPerKwh" stroke={HIGHLIGHT} strokeWidth={2} dot={false} isAnimationActive={false} />
-                  </LineChart>
-                </ResponsiveContainer>
-                <SrChartTable
-                  caption={`Residential electricity price in ${grid.name}, cents per kWh`}
-                  columns={["Month", "Cents per kWh"]}
-                  rows={series.map((p) => [p.month, p.centsPerKwh.toFixed(2)])}
-                />
-                <Provenance source={rates.source} href={rates.sourceUrl} extra={rates.unit} />
-              </>
-            )}
-          </RuleSection>
-        </>
-      )}
-    </PageShell>
+                    <p className="mt-3 text-10 font-mono text-muted-foreground/60">
+                      <a href={rates.sourceUrl} target="_blank" rel="noopener noreferrer" className="text-brand hover:text-brand-2">
+                        {rates.source}
+                      </a>
+                      {" · "}{rates.unit}
+                    </p>
+                  </>
+                )}
+              </div>
+            </Card>
+          </>
+        )}
+      </div>
+    </div>
   );
 }

@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { groupRetailRows } from "../retail-rates";
+import { getRetailRatesByState, groupRetailRows } from "../retail-rates";
 
 describe("groupRetailRows", () => {
   it("groups by state and sorts oldest first", () => {
@@ -25,5 +25,19 @@ describe("groupRetailRows", () => {
       { period: "2026-05", stateid: "MD", price: 18.2 },
     ]);
     assert.deepEqual(grouped, { MD: [{ month: "2026-05", centsPerKwh: 18.2 }] });
+  });
+});
+
+describe("getRetailRatesByState", () => {
+  it("self-reports unconfigured without an EIA key instead of fabricating", async () => {
+    const saved = process.env.EIA_API_KEY;
+    delete process.env.EIA_API_KEY;
+    try {
+      const result = await getRetailRatesByState();
+      assert.equal(result.configured, false);
+      assert.ok(!result.configured && result.howTo.includes("EIA_API_KEY"));
+    } finally {
+      if (saved !== undefined) process.env.EIA_API_KEY = saved;
+    }
   });
 });

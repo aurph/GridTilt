@@ -8,6 +8,7 @@ import { AppSidebar } from "@/components/app-sidebar";
 import NotFound from "@/pages/not-found";
 import TheStack from "@/pages/TheStack";
 import PowerMap from "@/pages/PowerMap";
+import MyGrid from "@/pages/my-grid";
 import ComputeFrontier from "@/pages/compute-frontier";
 import ComputeFrontierMethodology from "@/pages/ComputeFrontierMethodology";
 import ComputeFrontierCompare from "@/pages/ComputeFrontierCompare";
@@ -45,6 +46,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/overview": "Tilt Overview",
   "/stack": "The Stack",
   "/power-map": "Power",
+  "/my-grid": "My Grid",
   "/compute-frontier": "Compute Frontier",
   "/neocloud-intel": "GPU Prices",
   "/analyze": "Analyze",
@@ -62,6 +64,7 @@ const SHORTCUTS = [
   { keys: ["G", "6"], description: "Go to Catalyst Tracker", path: "/catalysts" },
   { keys: ["G", "7"], description: "Go to Analyze", path: "/analyze" },
   { keys: ["G", "8"], description: "Go to Analysis", path: "/blog" },
+  { keys: ["G", "9"], description: "Go to My Grid", path: "/my-grid" },
   { keys: ["?"], description: "Show this keyboard shortcuts panel", path: null },
 ];
 
@@ -147,6 +150,7 @@ function Router() {
       <Route path="/overview" component={TiltOverview} />
       <Route path="/stack" component={TheStack} />
       <Route path="/power-map" component={PowerMap} />
+      <Route path="/my-grid" component={MyGrid} />
       <Route path="/compute-frontier" component={ComputeFrontier} />
       <Route path="/compute-frontier/methodology" component={ComputeFrontierMethodology} />
       <Route path="/compute-frontier/compare" component={ComputeFrontierCompare} />
@@ -245,7 +249,7 @@ function App() {
         const routes: Record<string, string> = {
           "1": "/overview", "2": "/stack", "3": "/power-map",
           "4": "/compute-frontier", "5": "/neocloud-intel", "6": "/catalysts",
-          "7": "/analyze", "8": "/blog",
+          "7": "/analyze", "8": "/blog", "9": "/my-grid",
         };
         if (routes[e.key]) {
           navigate(routes[e.key]);

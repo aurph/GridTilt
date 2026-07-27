@@ -34,6 +34,11 @@ const STATIC_PAGES: Record<string, { title: string; description: string; slug: s
     description: "48 AI data center facilities mapped by operator, grid region, and capacity. Filter by Google, Amazon, Meta, Microsoft.",
     slug: "power-map",
   },
+  "/my-grid": {
+    title: "My Grid \u2014 Your State's Grid Operator, Buildout, and Rates \u2014 GridTilt",
+    description: "Pick a state to see its grid operator, projected reserve margin, the AI datacenter buildout in and around it, the regional interconnection queue, and residential electricity rates from the EIA.",
+    slug: "my-grid",
+  },
   "/catalysts": {
     title: "AI Power Earnings Calendar and Catalyst Events \u2014 GridTilt",
     description: "Upcoming earnings dates, regulatory decisions, and policy events for AI infrastructure stocks. Auto-updated catalyst calendar.",

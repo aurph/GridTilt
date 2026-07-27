@@ -13,6 +13,7 @@ import {
   LayoutDashboard,
   Layers,
   Map,
+  MapPin,
   Cpu,
   CalendarDays,
   FileText,
@@ -40,6 +41,12 @@ const navItems = [
     url: "/power-map",
     icon: Map,
     description: "Facilities map, deals, grid queue",
+  },
+  {
+    title: "My Grid",
+    url: "/my-grid",
+    icon: MapPin,
+    description: "Your state's operator, buildout, rates",
   },
   {
     title: "Compute Frontier",
