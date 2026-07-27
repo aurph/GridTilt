@@ -11,15 +11,15 @@
  */
 
 export const SURFACE = {
-  sunken: "#F1EEE6",
-  base: "#F9F7F2",
-  raised: "#FCFBF8",
-  overlay: "#FEFDFB",
+  sunken: "#F4F4F3",
+  base: "#FCFCFC",
+  raised: "#FFFFFF",
+  overlay: "#FFFFFF",
 } as const;
 
 export const BORDER = {
-  subtle: "rgba(22, 19, 16, 0.10)",
-  strong: "rgba(22, 19, 16, 0.22)",
+  subtle: "rgba(19, 19, 18, 0.10)",
+  strong: "rgba(19, 19, 18, 0.22)",
 } as const;
 
 /**
@@ -35,10 +35,10 @@ export const BRAND = {
 } as const;
 
 export const INK = {
-  primary: "#161310",
-  secondary: "#57534C",
-  muted: "#837E76",
-  faint: "#A39E95",
+  primary: "#131312",
+  secondary: "#545451",
+  muted: "#807F7B",
+  faint: "#A6A5A1",
 } as const;
 
 /** State colors. Never use these for series identity. */
@@ -121,15 +121,15 @@ export const STATUS_COLORS = {
 } as const;
 
 export const CHART_CHROME = {
-  axis: "#837E76",
-  tick: "#57534C",
-  grid: "rgba(22, 19, 16, 0.08)",
-  crosshair: "rgba(22, 19, 16, 0.30)",
-  refLine: "rgba(22, 19, 16, 0.18)",
+  axis: "#807F7B",
+  tick: "#545451",
+  grid: "rgba(19, 19, 18, 0.08)",
+  crosshair: "rgba(19, 19, 18, 0.30)",
+  refLine: "rgba(19, 19, 18, 0.18)",
 } as const;
 
 export const FONT = {
   mono: 'ui-monospace, "SF Mono", monospace',
-  sans: '"Public Sans", -apple-system, "Segoe UI", sans-serif',
-  serif: '"Instrument Serif", Georgia, serif',
+  sans: '"Archivo", -apple-system, "Segoe UI", sans-serif',
+  serif: '"Archivo", -apple-system, sans-serif',
 } as const;
