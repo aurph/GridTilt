@@ -8,54 +8,54 @@
  * 2026-07-23-editorial-redesign-design.md
  */
 :root {
-  --button-outline: rgba(19, 19, 18, .18);
-  --badge-outline: rgba(19, 19, 18, .10);
+  --button-outline: rgba(255, 255, 255, .18);
+  --badge-outline: rgba(255, 255, 255, .10);
   --opaque-button-border-intensity: -6;
-  --elevate-1: rgba(19, 19, 18, .035);
-  --elevate-2: rgba(19, 19, 18, .07);
+  --elevate-1: rgba(255, 255, 255, .035);
+  --elevate-2: rgba(255, 255, 255, .07);
 
   /* Page ground: warm cream paper */
-  --background: 60 2% 99%;
-  --foreground: 60 2% 7%;
+  --background: 0 0% 6%;
+  --foreground: 60 3% 95%;
 
   /* Hairline rules */
-  --border: 60 1% 88%;
+  --border: 0 0% 15%;
 
   /* Plates: slightly lighter than the page, like coated stock */
-  --card: 0 0% 100%;
-  --card-foreground: 60 2% 7%;
-  --card-border: 60 1% 88%;
+  --card: 0 0% 9%;
+  --card-foreground: 60 3% 95%;
+  --card-border: 0 0% 15%;
 
   /* Sidebar slots kept for the ui/ fork; mapped to paper equivalents */
-  --sidebar: 0 0% 100%;
-  --sidebar-foreground: 60 2% 7%;
-  --sidebar-border: 60 1% 88%;
+  --sidebar: 0 0% 9%;
+  --sidebar-foreground: 60 3% 95%;
+  --sidebar-border: 0 0% 15%;
   --sidebar-primary: 30 100% 31%;
-  --sidebar-primary-foreground: 60 2% 99%;
-  --sidebar-accent: 60 1% 95%;
-  --sidebar-accent-foreground: 60 2% 7%;
+  --sidebar-primary-foreground: 0 0% 6%;
+  --sidebar-accent: 0 0% 13%;
+  --sidebar-accent-foreground: 60 3% 95%;
   --sidebar-ring: 30 100% 31%;
 
-  --popover: 0 0% 100%;
-  --popover-foreground: 60 2% 7%;
-  --popover-border: 60 1% 88%;
+  --popover: 0 0% 11%;
+  --popover-foreground: 60 3% 95%;
+  --popover-border: 0 0% 15%;
 
   /* Primary: brand orange, graphic use; ink text on it (white fails contrast) */
   --primary: 30 100% 47%;
-  --primary-foreground: 60 2% 7%;
+  --primary-foreground: 0 0% 6%;
 
-  --secondary: 60 1% 95%;
-  --secondary-foreground: 60 2% 7%;
-  --muted: 60 1% 95%;
-  --muted-foreground: 60 2% 33%;
+  --secondary: 0 0% 13%;
+  --secondary-foreground: 60 3% 95%;
+  --muted: 0 0% 13%;
+  --muted-foreground: 60 2% 66%;
 
-  --accent: 60 1% 95%;
-  --accent-foreground: 60 2% 7%;
+  --accent: 0 0% 13%;
+  --accent-foreground: 60 3% 95%;
 
   --destructive: 5 61% 44%;
-  --destructive-foreground: 60 2% 99%;
+  --destructive-foreground: 0 0% 6%;
 
-  --input: 60 1% 88%;
+  --input: 0 0% 15%;
   --ring: 30 100% 31%;
 
   /* Legacy shadcn chart slots (few consumers; real palette is --series-*) */
@@ -74,14 +74,14 @@
   --radius: 0rem;
 
   /* Shadows: faint, warm-ink based; paper barely floats */
-  --shadow-2xs: 0px 1px 2px 0px rgba(19, 19, 18, .06);
-  --shadow-xs: 0px 1px 3px 0px rgba(19, 19, 18, .08);
-  --shadow-sm: 0px 2px 4px 0px rgba(19, 19, 18, .08), 0px 1px 2px -1px rgba(19, 19, 18, .06);
-  --shadow: 0px 3px 6px 0px rgba(19, 19, 18, .09), 0px 2px 4px -1px rgba(19, 19, 18, .06);
-  --shadow-md: 0px 4px 10px 0px rgba(19, 19, 18, .10), 0px 2px 4px -1px rgba(19, 19, 18, .06);
-  --shadow-lg: 0px 8px 18px 0px rgba(19, 19, 18, .12), 0px 3px 6px -1px rgba(19, 19, 18, .08);
-  --shadow-xl: 0px 12px 24px 0px rgba(19, 19, 18, .14), 0px 6px 12px -1px rgba(19, 19, 18, .08);
-  --shadow-2xl: 0px 16px 32px 0px rgba(19, 19, 18, .16);
+  --shadow-2xs: 0px 1px 2px 0px rgba(0, 0, 0, .35);
+  --shadow-xs: 0px 1px 3px 0px rgba(0, 0, 0, .08);
+  --shadow-sm: 0px 2px 4px 0px rgba(0, 0, 0, .40), 0px 1px 2px -1px rgba(0, 0, 0, .35);
+  --shadow: 0px 3px 6px 0px rgba(0, 0, 0, .09), 0px 2px 4px -1px rgba(0, 0, 0, .35);
+  --shadow-md: 0px 4px 10px 0px rgba(0, 0, 0, .10), 0px 2px 4px -1px rgba(0, 0, 0, .35);
+  --shadow-lg: 0px 8px 18px 0px rgba(0, 0, 0, .12), 0px 3px 6px -1px rgba(0, 0, 0, .08);
+  --shadow-xl: 0px 12px 24px 0px rgba(0, 0, 0, .14), 0px 6px 12px -1px rgba(0, 0, 0, .08);
+  --shadow-2xl: 0px 16px 32px 0px rgba(0, 0, 0, .16);
   --tracking-normal: 0em;
   --spacing: 0.25rem;
 
@@ -103,72 +103,72 @@
  * closer to the reader), sunken = well (darker), overlay = popover stock.
  */
 :root {
-  --surface-sunken: #F4F4F3;
-  --surface-base: #FCFCFC;
-  --surface-raised: #FFFFFF;
-  --surface-overlay: #FFFFFF;
-  --border-subtle: rgba(19, 19, 18, 0.10);
-  --border-strong: rgba(19, 19, 18, 0.22);
+  --surface-sunken: #161616;
+  --surface-base: #101010;
+  --surface-raised: #161616;
+  --surface-overlay: #161616;
+  --border-subtle: rgba(255, 255, 255, 0.10);
+  --border-strong: rgba(255, 255, 255, 0.22);
 
   /* Editorial aliases (same system, print vocabulary) */
-  --paper: #FCFCFC;
-  --paper-shade: #F4F4F3;
-  --paper-deep: #ECECEA;
-  --rule: #E2E2E0;
-  --rule-strong: #B4B4B0;
+  --paper: #101010;
+  --paper-shade: #161616;
+  --paper-deep: #1D1D1C;
+  --rule: #262626;
+  --rule-strong: #3E3E3C;
 
   /* Brand: #F07800 is graphic-only; --brand-2 is orange as TEXT (AA on paper) */
   --brand: #F07800;
-  --brand-2: #9E5000;
-  --brand-ink: #9E5000;
+  --brand-2: #F58A1F;
+  --brand-ink: #F58A1F;
   --brand-glow: rgba(240, 120, 0, 0.14);
   --brand-wash: rgba(240, 120, 0, 0.07);
 
   /* Ink scale (text on paper) */
-  --ink: #131312;
-  --ink-secondary: #545451;
-  --ink-muted: #807F7B;
-  --ink-faint: #A6A5A1;
+  --ink: #F2F2F0;
+  --ink-secondary: #ABABA6;
+  --ink-muted: #7E7E79;
+  --ink-faint: #5C5C58;
 
   /* Semantic - state, never series identity */
-  --positive: #1E7A46;
-  --positive-deep: #146036;
-  --negative: #B3382C;
-  --negative-deep: #8F2A20;
-  --warning: #8F6400;
-  --critical: #7A1F15;
-  --info: #2B5D8A;
+  --positive: #3FA36A;
+  --positive-deep: #2E8A55;
+  --negative: #E05C4B;
+  --negative-deep: #C24F3F;
+  --warning: #C99A2E;
+  --critical: #D9756A;
+  --info: #5A93DE;
 
   /* Data quality - sourced vs estimated vs synthetic fill */
-  --estimate: #8F6400;
+  --estimate: #C99A2E;
   --dq-estimated-opacity: 0.55;
   --dq-synthetic-opacity: 0.35;
 
   /* Categorical series - fixed order, validated for the paper ground
      (dataviz six-checks: worst adjacent CVD dE 8.5 protan, all >= 3:1 vs
-     #FCFCFC). Assign in order, never cycle; >4 series need direct labels.
+     #101010). Assign in order, never cycle; >4 series need direct labels.
      Do not reorder: order IS the CVD-safety mechanism. */
-  --series-1: #2D5F9E;
-  --series-2: #A67300;
-  --series-3: #00714B;
-  --series-4: #6B5CC4;
-  --series-5: #B03A66;
-  --series-6: #0A76A3;
-  --series-7: #9E3E0E;
-  --series-8: #4E9954;
-  --series-9: #8E4A9E;
-  --series-10: #96601F;
+  --series-1: #5A93DE;
+  --series-2: #BC8626;
+  --series-3: #34A87E;
+  --series-4: #8F84E6;
+  --series-5: #DE5C8E;
+  --series-6: #3B9EC4;
+  --series-7: #E2652A;
+  --series-8: #47A981;
+  --series-9: #B372C6;
+  --series-10: #AD7D1D;
 
   /* Chart chrome */
-  --chart-axis: #807F7B;
-  --chart-tick: #545451;
-  --chart-grid: rgba(19, 19, 18, 0.08);
-  --chart-crosshair: rgba(19, 19, 18, 0.30);
-  --chart-ref-line: rgba(19, 19, 18, 0.18);
-  --chart-context: #A6A5A1;
+  --chart-axis: #7E7E79;
+  --chart-tick: #ABABA6;
+  --chart-grid: rgba(255, 255, 255, 0.08);
+  --chart-crosshair: rgba(255, 255, 255, 0.30);
+  --chart-ref-line: rgba(255, 255, 255, 0.18);
+  --chart-context: #5C5C58;
 
   /* Focus + motion */
-  --focus-ring-color: #9E5000;
+  --focus-ring-color: #F58A1F;
   --focus-ring-width: 2px;
   --duration-fast: 120ms;
   --duration-base: 200ms;
@@ -176,7 +176,7 @@
 }
 
 html {
-  color-scheme: light;
+  color-scheme: dark;
 }
 
 @layer base {
@@ -314,7 +314,7 @@ html {
    - rule-thickthin (historical name) = section openings: strong hairline
    - hairline (border-rule) = rows and internal divisions */
 .rule-scotch {
-  border-top: 2px solid var(--ink);
+  border-top: 1px solid var(--rule-strong);
 }
 .rule-thickthin {
   border-top: 1px solid var(--rule-strong);

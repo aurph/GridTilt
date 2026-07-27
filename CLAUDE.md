@@ -67,7 +67,7 @@ Derived from the code; starred rules confirmed by Jack 2026-07-02.
   hand; grep first.
 - Pages keep small private subcomponents at the bottom of the same file; no per-page component
   folders. data-testid on interactive elements.
-- Styling: warm-paper editorial system, LIGHT ONLY (2026-07 redesign; spec at
+- Styling: dark technical system, DARK ONLY (neutral #101010 ground, validated dark palette) (2026-07 redesign; spec at
   docs/superpowers/specs/2026-07-23-editorial-redesign-design.md). Paper #F6F2EA ground, warm
   ink #1C1712, hairline rules; tokens in index.css :root mirrored by client/src/lib/tokens.ts
   (sync test enforced). *Brand orange #F07800 is GRAPHIC-ONLY (logo, active bars, highlighted

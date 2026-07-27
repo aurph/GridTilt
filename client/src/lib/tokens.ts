@@ -11,45 +11,45 @@
  */
 
 export const SURFACE = {
-  sunken: "#F4F4F3",
-  base: "#FCFCFC",
-  raised: "#FFFFFF",
-  overlay: "#FFFFFF",
+  sunken: "#161616",
+  base: "#101010",
+  raised: "#161616",
+  overlay: "#161616",
 } as const;
 
 export const BORDER = {
-  subtle: "rgba(19, 19, 18, 0.10)",
-  strong: "rgba(19, 19, 18, 0.22)",
+  subtle: "rgba(255, 255, 255, 0.10)",
+  strong: "rgba(255, 255, 255, 0.22)",
 } as const;
 
 /**
  * primary (#F07800) is GRAPHIC-ONLY on paper (~2.8:1 against the ground):
  * logo mark, active bars, the highlighted series, rules. Orange rendered as
- * TEXT uses secondary (#9E5000), which passes AA on the paper ground.
+ * TEXT uses secondary (#F58A1F), which passes AA on the paper ground.
  */
 export const BRAND = {
   primary: "#F07800",
-  secondary: "#9E5000",
+  secondary: "#F58A1F",
   glow: "rgba(240, 120, 0, 0.14)",
   wash: "rgba(240, 120, 0, 0.07)",
 } as const;
 
 export const INK = {
-  primary: "#131312",
-  secondary: "#545451",
-  muted: "#807F7B",
-  faint: "#A6A5A1",
+  primary: "#F2F2F0",
+  secondary: "#ABABA6",
+  muted: "#7E7E79",
+  faint: "#5C5C58",
 } as const;
 
 /** State colors. Never use these for series identity. */
 export const SEMANTIC = {
-  positive: "#1E7A46",
-  positiveDeep: "#146036",
-  negative: "#B3382C",
-  negativeDeep: "#8F2A20",
-  warning: "#8F6400",
-  critical: "#7A1F15",
-  info: "#2B5D8A",
+  positive: "#3FA36A",
+  positiveDeep: "#2E8A55",
+  negative: "#E05C4B",
+  negativeDeep: "#C24F3F",
+  warning: "#C99A2E",
+  critical: "#D9756A",
+  info: "#5A93DE",
 } as const;
 
 /**
@@ -58,7 +58,7 @@ export const SEMANTIC = {
  * spans (interpolation between anchors) render dashed at low opacity.
  */
 export const DATA_QUALITY = {
-  estimateFlag: "#8F6400",
+  estimateFlag: "#C99A2E",
   estimatedOpacity: 0.55,
   syntheticOpacity: 0.35,
   syntheticDash: "4 3",
@@ -72,16 +72,16 @@ export const DATA_QUALITY = {
  * enough in scatter/treemap contexts where any two slots can be adjacent).
  */
 export const SERIES = [
-  "#2D5F9E", // 1 blue
-  "#A67300", // 2 amber
-  "#00714B", // 3 teal
-  "#6B5CC4", // 4 violet
-  "#B03A66", // 5 magenta
-  "#0A76A3", // 6 cyan
-  "#9E3E0E", // 7 rust
-  "#4E9954", // 8 green
-  "#8E4A9E", // 9 pink
-  "#96601F", // 10 brown
+  "#5A93DE", // 1 blue
+  "#BC8626", // 2 amber
+  "#34A87E", // 3 teal
+  "#8F84E6", // 4 violet
+  "#DE5C8E", // 5 magenta
+  "#3B9EC4", // 6 cyan
+  "#E2652A", // 7 rust
+  "#47A981", // 8 green
+  "#B372C6", // 9 pink
+  "#AD7D1D", // 10 brown
 ] as const;
 
 /**
@@ -115,17 +115,17 @@ export const CATEGORY_COLORS: Record<string, string> = {
  * steps. Used by Power Map markers and Compute Frontier status charts.
  */
 export const STATUS_COLORS = {
-  operational: SEMANTIC.positiveDeep,
-  construction: SEMANTIC.warning,
-  announced: INK.muted,
+  operational: BRAND.primary,
+  construction: "#F5A25A",
+  announced: "#BDBAB4",
 } as const;
 
 export const CHART_CHROME = {
-  axis: "#807F7B",
-  tick: "#545451",
-  grid: "rgba(19, 19, 18, 0.08)",
-  crosshair: "rgba(19, 19, 18, 0.30)",
-  refLine: "rgba(19, 19, 18, 0.18)",
+  axis: "#7E7E79",
+  tick: "#ABABA6",
+  grid: "rgba(255, 255, 255, 0.08)",
+  crosshair: "rgba(255, 255, 255, 0.30)",
+  refLine: "rgba(255, 255, 255, 0.18)",
 } as const;
 
 export const FONT = {

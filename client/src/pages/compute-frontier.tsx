@@ -232,6 +232,7 @@ export default function ComputeFrontier() {
             note={metrics ? `of ${gw(metrics.totalRatedMW)} GW rated today` : undefined}
           />
           <PullStat
+            accent
             label="Planned power"
             value={metrics ? `${gw(metrics.totalPlannedMW)} GW` : "—"}
             note="full announced build-out"
@@ -255,7 +256,6 @@ export default function ComputeFrontier() {
         <Provenance
           source="GridTilt cluster registry"
           updated={metrics?.lastRefreshed ?? undefined}
-          extra="tracked, not exhaustive"
         />
       </section>
 
@@ -263,9 +263,9 @@ export default function ComputeFrontier() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-10 gap-y-8 mt-8" data-testid="cf-charts">
         <RuleSection className="mt-0" head={`Planned MW by operator${metrics && metrics.concentration.operatorCount > OP_TOP_N ? ` (top ${OP_TOP_N})` : ""}`}>
           {metricsError ? (
-            <ErrorState label="Cluster metrics failed to load." onRetry={() => refetchMetrics()} className="h-[380px]" />
+            <ErrorState label="Cluster metrics failed to load." onRetry={() => refetchMetrics()} className="h-[280px]" />
           ) : metrics ? (
-            <ResponsiveContainer width="100%" height={380}>
+            <ResponsiveContainer width="100%" height={280}>
               <BarChart data={topOperators} layout="vertical" margin={{ left: 8, right: 16, top: 4, bottom: 4 }}>
                 <CartesianGrid {...gridProps} vertical={true} horizontal={false} />
                 <XAxis {...axisProps} type="number" tickFormatter={(v) => `${(v / 1000).toFixed(0)}`} />
@@ -273,11 +273,9 @@ export default function ComputeFrontier() {
                   {...axisProps}
                   type="category"
                   dataKey="operator"
-                  width={150}
+                  width={118}
                   interval={0}
-                  tickFormatter={(name: string) =>
-                    name.length > 16 ? `${name.slice(0, 15).trimEnd()}…` : name
-                  }
+                  tickFormatter={(name: string) => (name.length > 16 ? `${name.slice(0, 15)}…` : name)}
                 />
                 <RTooltip contentStyle={tooltipContentStyle} labelStyle={tooltipLabelStyle} itemStyle={tooltipItemStyle} formatter={(v: number, _n, p: any) => [`${v.toLocaleString()} MW`, `${p.payload.count} clusters`]} cursor={{ fill: BRAND.wash }} />
                 <Bar dataKey="plannedMW" fill={BRAND.primary} radius={[0, 2, 2, 0]} />
@@ -304,7 +302,7 @@ export default function ComputeFrontier() {
                 <XAxis {...axisProps} dataKey="iso" />
                 <YAxis {...axisProps} tickFormatter={(v) => `${(v / 1000).toFixed(0)}`} />
                 <RTooltip contentStyle={tooltipContentStyle} labelStyle={tooltipLabelStyle} itemStyle={tooltipItemStyle} formatter={(v: number) => [`${v.toLocaleString()} MW`, "planned"]} cursor={{ fill: BRAND.wash }} />
-                <Bar dataKey="plannedMW" fill={BRAND.secondary} radius={[2, 2, 0, 0]} />
+                <Bar dataKey="plannedMW" fill={BRAND.primary} radius={[2, 2, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           ) : <ChartSkeleton />}
@@ -403,7 +401,7 @@ export default function ComputeFrontier() {
           {clusters && clusters.length > 0 ? (
             <MapContainer center={[39.5, -98.5]} zoom={4} minZoom={3} maxZoom={10} zoomControl={false} style={{ width: "100%", height: "100%", background: SURFACE.base }}>
               <TileLayer
-                url="https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png"
+                url="https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png"
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
                 subdomains="abcd"
               />
@@ -541,7 +539,7 @@ export default function ComputeFrontier() {
         <Provenance
           source="GridTilt cluster registry"
           updated={metrics?.lastRefreshed ?? undefined}
-          extra="compiled from public announcements; tracked, not exhaustive"
+          extra="compiled from public announcements"
         />
       </RuleSection>
 

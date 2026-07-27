@@ -50,11 +50,25 @@ type RetailRates =
   | { configured: true; unit: string; source: string; sourceUrl: string; byState: Record<string, RatePoint[]> };
 
 interface QueueProject {
+  id?: string;
   iso: string;
   projectName?: string;
   capacityMW: number | null;
   type?: string;
+  category?: string;
 }
+
+/**
+ * Terse captions for the regional queue aggregates, stated as the source
+ * states them (name, count, and as-of are facts from the row's sources).
+ */
+const AGG_PRESENTATION: Record<string, { label: string; note: string }> = {
+  "pjm-transition-cycle-1": { label: "In the PJM queue", note: "811 active projects · PJM, Apr 2026" },
+  "ercot-large-load": { label: "Large loads waiting in ERCOT", note: "72.9% data centers · ERCOT, late 2025" },
+  "miso-active-queue": { label: "In the MISO queue", note: "910 active projects · MISO" },
+  "caiso-active-queue": { label: "In the CAISO queue", note: "largest single-ISO queue · LBNL 2025" },
+  "noniso-west": { label: "Queued in the non-ISO West", note: "largest US queue volume · LBNL 2025" },
+};
 
 interface QueueResponse {
   projects: QueueProject[];
@@ -134,7 +148,7 @@ function MyGridMap({
           style={{ background: "var(--paper)" }}
         >
           <TileLayer
-            url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+            url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
           />
           {feature && (
@@ -245,15 +259,23 @@ export default function MyGrid() {
     const isos = state === "CA" ? ["CAISO"] : (grid.region ? QUEUE_ISOS[grid.region] ?? [] : []);
     if (isos.length === 0) return null;
     const rows = queue.projects.filter((p) => isos.includes(p.iso));
-    // The dataset mixes LBNL whole-queue aggregate rows with named
-    // AI-relevant projects; summing both would double count. Headline the
-    // aggregate where one exists, count only the named rows.
-    const named = rows.filter((p) => !/aggregate/i.test(p.projectName ?? ""));
-    const agg = rows.find((p) => /aggregate/i.test(p.projectName ?? ""));
-    if (agg?.capacityMW) return { kind: "total" as const, isos, count: named.length, mw: agg.capacityMW };
+    // Aggregate rows are whole-queue figures with their own sources; named
+    // rows are individual projects. Never sum across the two. Present the
+    // known aggregate for the region with its own caption, else sum the
+    // named projects.
+    const agg = rows.find((p) => p.category === "aggregate" && p.id && AGG_PRESENTATION[p.id]);
+    if (agg?.capacityMW && agg.id) {
+      return { kind: "total" as const, mw: agg.capacityMW, ...AGG_PRESENTATION[agg.id] };
+    }
+    const named = rows.filter((p) => p.category !== "aggregate");
     const mw = named.reduce((s, p) => s + (p.capacityMW ?? 0), 0);
     if (named.length === 0) return null;
-    return { kind: "named" as const, isos, count: named.length, mw };
+    return {
+      kind: "named" as const,
+      mw,
+      label: "Tracked queue projects",
+      note: `${named.length} named projects (${isos.join(", ")})`,
+    };
   }, [queue, grid, state]);
 
   const series = useMemo(() => {
@@ -316,20 +338,16 @@ export default function MyGrid() {
                   />
                   {regionQueue ? (
                     <PullStat
-                      label={regionQueue.kind === "total" ? "In your region's queue" : "Tracked queue projects"}
+                      label={regionQueue.label}
                       value={`${(regionQueue.mw / 1000).toFixed(1)} GW`}
-                      note={
-                        regionQueue.kind === "total"
-                          ? `full ${regionQueue.isos.join("/")} queue (LBNL) · ${regionQueue.count} AI-relevant projects tracked`
-                          : `${regionQueue.count} named projects (${regionQueue.isos.join(", ")})`
-                      }
+                      note={regionQueue.note}
                       testId="my-grid-queue"
                     />
                   ) : (
                     <div>
-                      <p className="text-[13px] leading-tight text-ink-secondary">Waiting in your region's queue</p>
+                      <p className="text-[13px] leading-tight text-ink-secondary">Regional queue</p>
                       <p className="mt-1.5 max-w-[30ch] text-[13px] leading-relaxed text-ink-muted">
-                        No AI-relevant projects for this region in the current tracked sample.
+                        No aggregate tracked for this region yet.
                       </p>
                     </div>
                   )}
@@ -351,11 +369,7 @@ export default function MyGrid() {
             </div>
             <Provenance
               source={RTO_SOURCE_NOTE}
-              extra={
-                <>
-                  {STATE_GRID_SOURCE}; queue from LBNL Queued Up, AI-relevant sample
-                </>
-              }
+              extra={<>{STATE_GRID_SOURCE}; queue figures carry their own source and date</>}
             />
           </RuleSection>
 
