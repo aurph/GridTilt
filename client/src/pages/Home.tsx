@@ -1,17 +1,5 @@
-import { Hero } from "@/components/home/Hero";
-import { FeaturesShowcase } from "@/components/home/FeaturesShowcase";
-import { DemandChart } from "@/components/home/DemandChart";
-import { HomeFooter } from "@/components/home/HomeFooter";
-import { FloatingScrollCue } from "@/components/home/FloatingScrollCue";
+import { FrontPage } from "@/components/home/front-page";
 
 export default function Home() {
-  return (
-    <div className="gt-marketing min-h-screen w-full">
-      <Hero />
-      <FeaturesShowcase />
-      <DemandChart />
-      <HomeFooter />
-      <FloatingScrollCue />
-    </div>
-  );
+  return <FrontPage />;
 }

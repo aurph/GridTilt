@@ -12,19 +12,16 @@ import {
   ReferenceLine,
 } from "recharts";
 import { Link } from "wouter";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Tooltip as UITooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Zap, TrendingUp, Activity, AlertTriangle, Info, ArrowUp, ArrowDown, Calendar, ChevronRight, ExternalLink, Cpu, Calculator, Layers, Map, Link2, CalendarDays, LineChart } from "lucide-react";
-import { EmailCapture, ScrollTriggeredBanner } from "@/components/EmailCapture";
 import { AsOf, ErrorState, SrChartTable } from "@/components/Freshness";
+import { PageShell, PageTitle, Provenance, PullStat, RuleSection } from "@/components/editorial";
 import {
-  BRAND, CATEGORY_COLORS as TOKEN_CATEGORY_COLORS, CHART_CHROME, DATA_QUALITY, FONT, INK, SEMANTIC, SERIES,
+  BRAND, CATEGORY_COLORS as TOKEN_CATEGORY_COLORS, DATA_QUALITY, FONT, INK, SEMANTIC, SERIES,
 } from "@/lib/tokens";
 import { axisProps, gridProps, timeTicks, tooltipContentStyle, tooltipItemStyle, tooltipLabelStyle } from "@/lib/chart-theme";
 import { RTO_CONFIG, RTO_SOURCE_NOTE } from "@/data/rto-config";
@@ -35,13 +32,6 @@ import {
 } from "@/lib/real-gauges";
 import { fmtDate } from "@/lib/gpu-series";
 import { heatColor, heatTextColor } from "@/lib/stack-transforms";
-
-import stackPreview from "@assets/previews/stack.svg";
-import supplyChainPreview from "@assets/previews/supply-chain.svg";
-import powerMapPreview from "@assets/previews/power-map.svg";
-import catalystPreview from "@assets/previews/catalyst.svg";
-import portfolioPreview from "@assets/previews/portfolio.svg";
-import calculatorPreview from "@assets/previews/calculator.svg";
 
 /** Token hex + alpha -> rgba() string, so composed tints stay on token values. */
 function alpha(hex: string, a: number): string {
@@ -77,8 +67,8 @@ const electricityData = [
 
 const annotations = [
   { year: "2020", label: "COVID drop", color: alpha(SEMANTIC.negativeDeep, 0.4) },
-  { year: "2022", label: "IRA signed + ChatGPT", color: alpha(BRAND.secondary, 0.4) },
-  { year: "2024", label: "TMI restart + SMR deal", color: alpha(BRAND.secondary, 0.5) },
+  { year: "2022", label: "IRA signed + ChatGPT", color: alpha(BRAND.secondary, 0.5) },
+  { year: "2024", label: "TMI restart + SMR deal", color: alpha(BRAND.secondary, 0.6) },
 ];
 
 /** The slice of /api/gpu-prices/metrics the gauges read. */
@@ -88,7 +78,6 @@ interface GpuFleetLite {
   modelCount: number;
   rows: Array<{ model: string; current: number }>;
 }
-
 
 interface TopMover {
   ticker: string;
@@ -124,13 +113,6 @@ function daysUntil(dateStr: string): number {
   return Math.round((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 }
 
-function formatDateShort(dateStr: string): string {
-  return new Date(dateStr + "T12:00:00").toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-  });
-}
-
 const SECTOR_DEMAND = [
   { sector: "Residential", twh: 1658, yoy: 2.1, color: INK.muted },
   { sector: "Commercial", twh: 1569, yoy: 2.4, color: SERIES[3] }, // series slot 4
@@ -142,11 +124,11 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     const ann = annotations.find((a) => a.year === label);
     return (
-      <div className="bg-card border border-card-border rounded-lg p-3 shadow-xl text-xs">
+      <div className="bg-popover border border-rule rounded-sm p-3 shadow-md text-[12.5px]">
         <p className="font-semibold text-foreground mb-2">{label}</p>
         {payload.map((entry: any, i: number) => (
           entry.value != null && (
-            <p key={i} style={{ color: entry.stroke || entry.color }}>
+            <p key={i} className="tnum" style={{ color: entry.stroke || entry.color }}>
               {entry.name}: {entry.value.toLocaleString()} TWh
             </p>
           )
@@ -156,17 +138,6 @@ const CustomTooltip = ({ active, payload, label }: any) => {
     );
   }
   return null;
-};
-
-const SECTOR_COLORS: Record<string, string> = {
-  compute: TOKEN_CATEGORY_COLORS.compute,
-  nuclear: TOKEN_CATEGORY_COLORS.nuclear,
-  uranium: TOKEN_CATEGORY_COLORS.uranium,
-  powerHardware: TOKEN_CATEGORY_COLORS.power,
-  utilities: TOKEN_CATEGORY_COLORS.utilities,
-  dataCenters: TOKEN_CATEGORY_COLORS.datacenters,
-  construction: TOKEN_CATEGORY_COLORS.construction,
-  etfsBenchmarks: INK.muted, // neutral benchmark bucket (no category token)
 };
 
 const SECTOR_LABEL_SHORT: Record<string, string> = {
@@ -185,163 +156,86 @@ const SECTOR_LABEL_SHORT: Record<string, string> = {
   etfsBenchmarks: "ETFs",
 };
 
-function ErrorCard({ label }: { label: string }) {
+function MarketsSection({ topMovers, pulse, isLoading, isError, updatedAt, onRetry }: { topMovers: TopMover[]; pulse: SectorPulseItem[]; isLoading: boolean; isError?: boolean; updatedAt?: number; onRetry?: () => void }) {
   return (
-    <div className="flex items-center gap-2 py-8 justify-center">
-      <AlertTriangle className="h-4 w-4 text-muted-foreground/50" />
-      <p className="text-xs text-muted-foreground">{label}</p>
-    </div>
-  );
-}
-
-function TopMoversSection({ topMovers, pulse, isLoading, isError, updatedAt, onRetry }: { topMovers: TopMover[]; pulse: SectorPulseItem[]; isLoading: boolean; isError?: boolean; updatedAt?: number; onRetry?: () => void }) {
-  return (
-    <Card className="p-5 border-card-border">
-      <div className="flex items-center gap-2 mb-4">
-        <TrendingUp className="h-3.5 w-3.5 text-brand-2" />
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Top Movers Today</h2>
-        <UITooltip>
-          <TooltipTrigger>
-            <Info className="h-3.5 w-3.5 text-muted-foreground" />
-          </TooltipTrigger>
-          <TooltipContent>
-            <p className="text-xs">Top 5 stocks by absolute % change across all 8 stack layers. Refreshes every 10 min.</p>
-          </TooltipContent>
-        </UITooltip>
-        <AsOf updatedAt={updatedAt} intervalMs={900_000} className="ml-auto" />
-      </div>
-      <div className="space-y-2">
-        {isError ? <ErrorState label="Unable to load movers" onRetry={onRetry} /> : isLoading
-          ? Array(5).fill(null).map((_, i) => (
-              <div key={i} className="flex items-center gap-3 py-1.5">
-                <Skeleton className="h-4 w-12" />
-                <Skeleton className="h-3 w-32 flex-1" />
-                <Skeleton className="h-4 w-16" />
-              </div>
-            ))
-          : topMovers.length === 0 ? <ErrorCard label="No movers data available" /> : topMovers.filter((m) => m.price != null && m.changePercent != null).map((m) => {
-              const isUp = m.changePercent >= 0;
-              const sc = SECTOR_COLORS[m.sector] ?? INK.muted;
-              return (
-                <div key={m.ticker} className="flex items-center gap-3 py-1.5 border-b border-border/30 last:border-0" data-testid={`top-mover-${m.ticker}`}>
-                  <span className="font-mono font-bold text-xs text-foreground w-12 flex-shrink-0">{m.ticker}</span>
-                  <span className="text-xs text-muted-foreground flex-1 truncate min-w-0">{m.name}</span>
-                  <span
-                    className="hidden sm:inline text-10 font-medium px-1.5 py-0.5 rounded border flex-shrink-0"
-                    style={{ color: sc, backgroundColor: `${sc}15`, borderColor: `${sc}30` }}
-                  >
-                    {SECTOR_LABEL_SHORT[m.sector] ?? m.sector}
-                  </span>
-                  <span className="font-mono text-xs text-foreground flex-shrink-0 w-16 text-right">${m.price.toFixed(m.price < 10 ? 2 : m.price < 100 ? 2 : 2)}</span>
-                  <div className={`flex items-center gap-0.5 font-mono font-semibold text-xs flex-shrink-0 w-14 justify-end ${isUp ? "text-positive" : "text-negative"}`}>
-                    {isUp ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
-                    {Math.abs(m.changePercent).toFixed(2)}%
-                  </div>
-                </div>
-              );
-            })}
-      </div>
-      {/* Sector averages (Lake 4C): uniform chip anatomy in an aligned grid,
-          color purely SEMANTIC - green/red intensity by magnitude on the same
-          diverging ramp as The Stack heatmap. Sector identity comes from the
-          label, not a hue. */}
+    <RuleSection
+      head="Markets"
+      aside={
+        <>
+          <AsOf updatedAt={updatedAt} intervalMs={900_000} />
+          <Link href="/stack" className="text-brand-ink no-underline hover:text-ink">The Stack →</Link>
+        </>
+      }
+      className="mt-0"
+      testId="markets-section"
+    >
+      {isError ? (
+        <ErrorState label="Unable to load movers" onRetry={onRetry} />
+      ) : isLoading ? (
+        <div className="space-y-2 py-2">
+          {Array(5).fill(null).map((_, i) => (
+            <div key={i} className="flex items-center gap-3 py-1.5">
+              <Skeleton className="h-4 w-12" />
+              <Skeleton className="h-3 w-32 flex-1" />
+              <Skeleton className="h-4 w-16" />
+            </div>
+          ))}
+        </div>
+      ) : topMovers.length === 0 ? (
+        <p className="py-6 text-[13px] text-ink-muted text-center">No movers data available.</p>
+      ) : (
+        <table className="print-table" data-testid="top-movers-table">
+          <thead>
+            <tr>
+              <th>Ticker</th>
+              <th>Company</th>
+              <th className="hidden sm:table-cell">Sector</th>
+              <th className="num">Price</th>
+              <th className="num">Today</th>
+            </tr>
+          </thead>
+          <tbody>
+            {topMovers.filter((m) => m.price != null && m.changePercent != null).map((m) => (
+              <tr key={m.ticker} className="row-link" data-testid={`top-mover-${m.ticker}`}>
+                <td className="shrink font-semibold">
+                  <Link href={`/stock/${m.ticker}`} className="text-ink no-underline hover:text-brand-ink">{m.ticker}</Link>
+                </td>
+                <td className="text-ink-secondary">{m.name}</td>
+                <td className="hidden sm:table-cell text-ink-muted">{SECTOR_LABEL_SHORT[m.sector] ?? m.sector}</td>
+                <td className="num">${m.price.toFixed(2)}</td>
+                <td className={`num font-semibold ${m.changePercent >= 0 ? "text-positive" : "text-negative"}`}>
+                  {m.changePercent >= 0 ? "+" : "−"}{Math.abs(m.changePercent).toFixed(2)}%
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+      {/* Sector averages: color purely semantic - green/red intensity by
+          magnitude on the same diverging ramp as The Stack heatmap. */}
       {pulse.length > 0 && (
-        <div className="mt-4 pt-3 border-t border-border" data-testid="sector-chips">
-          <span className="text-10 font-mono uppercase tracking-wider text-muted-foreground/60">sectors · avg % today</span>
-          <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-1.5 mt-1.5">
+        <div className="mt-4" data-testid="sector-chips">
+          <p className="text-[12px] text-ink-muted mb-1.5">Sector averages today</p>
+          <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-px">
             {[...pulse].sort((a, b) => b.avgChange - a.avgChange).map((p) => (
               <span
                 key={p.sector}
-                className="flex items-center justify-between gap-1 font-mono text-10 px-1.5 py-1 rounded-sm min-w-0"
+                className="flex items-center justify-between gap-1 text-[11.5px] px-1.5 py-1 min-w-0"
                 style={{ background: heatColor(p.avgChange) }}
                 data-testid={`sector-chip-${p.sector}`}
                 title={`${p.label} average ${p.avgChange >= 0 ? "+" : ""}${p.avgChange.toFixed(2)}% today`}
               >
                 <span className="truncate" style={{ color: heatTextColor(p.avgChange), opacity: 0.9 }}>{p.label}</span>
-                <span className="tabular-nums font-semibold" style={{ color: heatTextColor(p.avgChange) }}>
-                  {p.avgChange >= 0 ? "+" : ""}{p.avgChange.toFixed(2)}%
+                <span className="tnum font-semibold" style={{ color: heatTextColor(p.avgChange) }}>
+                  {p.avgChange >= 0 ? "+" : "−"}{Math.abs(p.avgChange).toFixed(2)}%
                 </span>
               </span>
             ))}
           </div>
         </div>
       )}
-    </Card>
-  );
-}
-
-/** One real gauge: a measured number, its provenance, and where it links. */
-function RealGaugeCard({
-  icon: Icon,
-  title,
-  value,
-  delta,
-  deltaColor,
-  subtitle,
-  methodology,
-  rows,
-  isLoading,
-  href,
-  updatedAt,
-}: {
-  icon: typeof Zap;
-  title: string;
-  value: string | null;
-  delta: string | null;
-  deltaColor?: string;
-  subtitle: string;
-  methodology: string;
-  rows: Array<{ label: string; value: string }>;
-  isLoading: boolean;
-  href: string;
-  updatedAt?: number;
-}) {
-  return (
-    <Card className="p-5 border border-card-border relative" data-testid={`gauge-${title.toLowerCase().replace(/\s+/g, "-")}`}>
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-md bg-brand-2/10 border border-brand-2/25">
-          <Icon className="h-5 w-5 text-brand-2" />
-        </div>
-        <UITooltip>
-          <TooltipTrigger asChild>
-            <button className="text-muted-foreground hover:text-foreground transition-colors" data-testid={`tooltip-${title.toLowerCase().replace(/\s+/g, "-")}`}>
-              <Info className="h-4 w-4" />
-            </button>
-          </TooltipTrigger>
-          <TooltipContent side="left" className="max-w-sm p-3">
-            <p className="text-xs leading-relaxed">{methodology}</p>
-          </TooltipContent>
-        </UITooltip>
-      </div>
-      <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-1.5">{title}</p>
-      {isLoading || value === null ? (
-        <Skeleton className="h-9 w-32 mb-1" />
-      ) : (
-        <div className="flex items-baseline gap-2">
-          <span className="text-3xl font-bold tabular-nums text-brand-2 font-mono">{value}</span>
-          {delta && (
-            <span className="text-11 font-mono tabular-nums" style={{ color: deltaColor ?? INK.muted }}>{delta}</span>
-          )}
-        </div>
-      )}
-      <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>
-      {rows.length > 0 && (
-        <div className="mt-3 pt-3 border-t border-border space-y-1">
-          {rows.map((r) => (
-            <div key={r.label} className="flex items-center justify-between text-11 font-mono">
-              <span className="text-muted-foreground">{r.label}</span>
-              <span className="text-foreground tabular-nums">{r.value}</span>
-            </div>
-          ))}
-        </div>
-      )}
-      <div className="mt-3 flex items-center justify-between">
-        <Link href={href} className="text-11 text-brand hover:text-brand-2 font-medium">
-          Full data <ChevronRight className="h-3 w-3 inline" />
-        </Link>
-        {updatedAt !== undefined && <AsOf updatedAt={updatedAt} intervalMs={900000} />}
-      </div>
-    </Card>
+      <Provenance source="Yahoo Finance" extra="top 5 by absolute move across all layers; quotes may be delayed" />
+    </RuleSection>
   );
 }
 
@@ -383,8 +277,8 @@ function EndLabel({
       y={y - 8}
       textAnchor="end"
       fill={color}
-      fontSize={10}
-      fontFamily={FONT.mono}
+      fontSize={11}
+      fontFamily={FONT.sans}
       fontWeight={600}
     >
       {fmtGW(v)} {field === "online" ? "online" : "committed"}
@@ -397,7 +291,7 @@ function EndLabel({
  * dates. Solid = operational (observed history), dashed = construction
  * pipeline by planned open date (committed, not yet online).
  */
-function BuildoutHistoryCard({
+function BuildoutHistorySection({
   buildout,
   tracked,
   isLoading,
@@ -422,52 +316,36 @@ function BuildoutHistoryCard({
   }, [series]);
 
   return (
-    <Card className="p-5 border-card-border flex-1 flex flex-col" data-testid="buildout-history">
-      <div className="flex items-center gap-2 mb-1">
-        <Activity className="h-3.5 w-3.5 text-brand-2" />
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Tracked Buildout Over Time</h2>
-        <UITooltip>
-          <TooltipTrigger>
-            <Info className="h-3.5 w-3.5 text-muted-foreground" />
-          </TooltipTrigger>
-          <TooltipContent className="max-w-xs">
-            <p className="text-xs">
-              Cumulative rated power of the verified facility dataset by each facility's open date. Solid = operational
-              today (observed history). Dashed = under-construction capacity at its planned open date (committed
-              pipeline, not yet online). Announced projects are excluded entirely.
-            </p>
-          </TooltipContent>
-        </UITooltip>
-        {tracked && (
-          <span className="ml-auto font-mono text-sm font-bold text-brand-2" data-testid="buildout-headline">
+    <RuleSection
+      head="Tracked buildout over time"
+      aside={
+        tracked && (
+          <span className="text-[13px] font-semibold text-ink tnum" data-testid="buildout-headline">
             {fmtGW(tracked.trackedMW)} tracked
           </span>
-        )}
-      </div>
-      <p className="text-10 font-mono text-muted-foreground/60 mb-3">
-        solid: operational · dashed: construction pipeline · announced excluded
-        {buildout && buildout.undatedCount > 0 ? ` · ${buildout.undatedCount} undated sites excluded` : ""}
-      </p>
-
+        )
+      }
+      testId="buildout-history"
+    >
       {isLoading || series.length === 0 ? (
         isLoading ? (
-          <div className="flex-1 flex flex-col justify-center gap-2 min-h-[180px]">
+          <div className="flex flex-col justify-center gap-2 min-h-[220px]">
             <Skeleton className="h-3 w-1/3" />
-            <Skeleton className="h-32 w-full" />
+            <Skeleton className="h-40 w-full" />
           </div>
         ) : (
-          <div className="flex-1 min-h-[180px] flex items-center justify-center text-xs text-muted-foreground">
+          <div className="min-h-[180px] flex items-center justify-center text-[13px] text-ink-muted">
             Facility data unavailable.
           </div>
         )
       ) : (
         <>
-          <div className="flex-1 min-h-[200px]" data-testid="buildout-chart">
+          <div className="h-[260px]" data-testid="buildout-chart">
             <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={series} margin={{ top: 6, right: 8, bottom: 0, left: 0 }}>
+              <ComposedChart data={series} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
                 <defs>
                   <linearGradient id="buildoutGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={BRAND.primary} stopOpacity={0.28} />
+                    <stop offset="0%" stopColor={BRAND.primary} stopOpacity={0.22} />
                     <stop offset="100%" stopColor={BRAND.primary} stopOpacity={0.02} />
                   </linearGradient>
                 </defs>
@@ -503,24 +381,23 @@ function BuildoutHistoryCard({
                   dataKey="online"
                   name="online"
                   stroke={BRAND.primary}
-                  strokeWidth={1.8}
+                  strokeWidth={2}
                   fill="url(#buildoutGrad)"
                   dot={false}
                   connectNulls
-                  label={(props: any) => <EndLabel {...props} data={series} field="online" color={BRAND.primary} />}
+                  label={(props: any) => <EndLabel {...props} data={series} field="online" color={BRAND.secondary} />}
                 />
                 <Line
                   type="stepAfter"
                   dataKey="pipeline"
                   name="pipeline"
-                  stroke={BRAND.secondary}
+                  stroke={INK.muted}
                   strokeWidth={1.6}
                   strokeDasharray="5 4"
-                  strokeOpacity={0.7}
                   dot={false}
                   connectNulls
                   isAnimationActive={false}
-                  label={(props: any) => <EndLabel {...props} data={series} field="pipeline" color={BRAND.secondary} />}
+                  label={(props: any) => <EndLabel {...props} data={series} field="pipeline" color={INK.secondary} />}
                 />
               </ComposedChart>
             </ResponsiveContainer>
@@ -534,9 +411,19 @@ function BuildoutHistoryCard({
               p.online !== null ? "operational" : "pipeline",
             ])}
           />
+          <Provenance
+            source="GridTilt facility registry"
+            extra={
+              <>
+                cumulative rated power by open date; solid = operational, dashed = construction
+                pipeline; announced excluded
+                {buildout && buildout.undatedCount > 0 ? `; ${buildout.undatedCount} undated sites excluded` : ""}
+              </>
+            }
+          />
         </>
       )}
-    </Card>
+    </RuleSection>
   );
 }
 
@@ -588,57 +475,56 @@ function CatalystCalendarSection() {
   }
 
   return (
-    <Card className="p-5 border-card-border" data-testid="catalyst-calendar">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <Calendar className="h-3.5 w-3.5 text-brand-2" />
-          <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Catalyst Tracker</h2>
+    <RuleSection
+      head="Catalyst calendar"
+      aside={
+        <>
           <AsOf updatedAt={dataUpdatedAt} intervalMs={900_000} />
-        </div>
-        <Link
-          href="/catalysts"
-          className="flex items-center gap-1 text-xs text-brand hover:text-brand-2 transition-colors font-medium"
-          data-testid="link-all-catalysts"
-        >
-          All Catalysts <ChevronRight className="h-3 w-3" />
-        </Link>
-      </div>
-
+          <Link href="/catalysts" className="text-brand-ink no-underline hover:text-ink" data-testid="link-all-catalysts">
+            All catalysts →
+          </Link>
+        </>
+      }
+      className="mt-0"
+      testId="catalyst-calendar"
+    >
       {isError ? (
         <ErrorState label="Unable to load catalysts" onRetry={() => refetch()} />
       ) : (
       <>
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-2">
         <button
           onClick={() => {
             if (viewMonth === 0) { setViewMonth(11); setViewYear(y => y - 1); }
             else setViewMonth(m => m - 1);
           }}
-          className="text-muted-foreground hover:text-foreground text-xs px-2 py-0.5 rounded hover:bg-muted/30 transition-colors"
+          className="text-ink-muted hover:text-ink text-[13px] px-2 py-0.5 transition-colors"
           data-testid="calendar-prev"
+          aria-label="Previous month"
         >
           &lsaquo;
         </button>
-        <span className="text-xs font-medium text-foreground">{monthLabel}</span>
+        <span className="text-[13px] font-semibold text-ink">{monthLabel}</span>
         <button
           onClick={() => {
             if (viewMonth === 11) { setViewMonth(0); setViewYear(y => y + 1); }
             else setViewMonth(m => m + 1);
           }}
-          className="text-muted-foreground hover:text-foreground text-xs px-2 py-0.5 rounded hover:bg-muted/30 transition-colors"
+          className="text-ink-muted hover:text-ink text-[13px] px-2 py-0.5 transition-colors"
           data-testid="calendar-next"
+          aria-label="Next month"
         >
           &rsaquo;
         </button>
       </div>
 
-      <div className="grid grid-cols-7 gap-px mb-1">
+      <div className="grid grid-cols-7 mb-1 border-b border-rule pb-1">
         {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((d) => (
-          <div key={d} className="text-center text-10 text-muted-foreground/60 py-0.5">{d}</div>
+          <div key={d} className="text-center text-[11px] text-ink-muted py-0.5">{d}</div>
         ))}
       </div>
 
-      <div className="grid grid-cols-7 gap-px">
+      <div className="grid grid-cols-7">
         {Array(firstDay).fill(null).map((_, i) => <div key={`empty-${i}`} />)}
         {Array.from({ length: daysInMonth }, (_, i) => {
           const day = i + 1;
@@ -651,10 +537,10 @@ function CatalystCalendarSection() {
           const dayButton = (
             <button
               onClick={() => setSelectedDay(isSelected ? null : dateKey)}
-              className={`relative flex flex-col items-center justify-center h-8 rounded text-xs transition-colors w-full ${
-                isSelected ? "bg-brand/20 text-brand-2" :
-                isToday ? "bg-muted/40 text-foreground font-semibold" :
-                "text-muted-foreground hover:bg-muted/20 hover:text-foreground"
+              className={`relative flex flex-col items-center justify-center h-8 text-[12.5px] transition-colors w-full ${
+                isSelected ? "bg-brand/15 text-brand-ink font-semibold" :
+                isToday ? "bg-paper-shade text-ink font-semibold" :
+                "text-ink-secondary hover:bg-paper-shade hover:text-ink"
               }`}
               data-testid={`calendar-day-${day}`}
             >
@@ -674,13 +560,13 @@ function CatalystCalendarSection() {
           );
 
           // Dot days get a hover popover with that day's events, so the dots
-          // are functional, not decorative (Lake 4B, option picked at review).
+          // are functional, not decorative.
           if (!hasItems) return <span key={day}>{dayButton}</span>;
           return (
             <UITooltip key={day}>
               <TooltipTrigger asChild>{dayButton}</TooltipTrigger>
               <TooltipContent side="top" className="max-w-[260px] p-2.5">
-                <p className="text-10 font-mono text-muted-foreground mb-1.5">
+                <p className="text-[11px] text-muted-foreground mb-1.5">
                   {new Date(viewYear, viewMonth, day).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
                   {dayItems.length > 1 ? ` · ${dayItems.length} events` : ""}
                 </p>
@@ -688,14 +574,14 @@ function CatalystCalendarSection() {
                   {dayItems.slice(0, 6).map((item) => (
                     <div key={item.id} className="flex items-start gap-1.5">
                       <span className="h-1.5 w-1.5 rounded-full mt-1 flex-shrink-0" style={{ backgroundColor: getItemColor(item) }} />
-                      <span className="text-11 text-foreground leading-tight">
+                      <span className="text-[12px] text-foreground leading-tight">
                         {getItemLabel(item)}
-                        <span className="text-muted-foreground/60 ml-1">{getItemCategory(item)}</span>
+                        <span className="text-muted-foreground ml-1">{getItemCategory(item)}</span>
                       </span>
                     </div>
                   ))}
                   {dayItems.length > 6 && (
-                    <p className="text-10 text-muted-foreground/60">+{dayItems.length - 6} more - click the day</p>
+                    <p className="text-[11px] text-muted-foreground">+{dayItems.length - 6} more - click the day</p>
                   )}
                 </div>
               </TooltipContent>
@@ -705,15 +591,15 @@ function CatalystCalendarSection() {
       </div>
 
       {selectedItems.length > 0 && (
-        <div className="mt-3 pt-3 border-t border-border space-y-2">
+        <div className="mt-3 pt-3 border-t border-rule space-y-2">
           {selectedItems.map((item) => {
             const cc = getItemColor(item);
             return (
               <div key={item.id} className="flex items-start gap-2">
                 <div className="h-1.5 w-1.5 rounded-full mt-1.5 flex-shrink-0" style={{ backgroundColor: cc }} />
                 <div className="min-w-0">
-                  <p className="text-xs font-medium text-foreground leading-tight">{getItemLabel(item)}</p>
-                  <span className="text-10" style={{ color: cc }}>{getItemCategory(item)}</span>
+                  <p className="text-[13px] font-medium text-ink leading-tight">{getItemLabel(item)}</p>
+                  <span className="text-[11.5px] text-ink-muted">{getItemCategory(item)}</span>
                 </div>
               </div>
             );
@@ -721,8 +607,8 @@ function CatalystCalendarSection() {
         </div>
       )}
 
-      <div className="mt-4 pt-3 border-t border-border">
-        <p className="text-10 uppercase tracking-wider text-muted-foreground/60 mb-2">Next 5 Upcoming</p>
+      <div className="mt-4 pt-3 border-t border-rule">
+        <p className="text-[12px] text-ink-muted mb-2">Next five upcoming</p>
         <div className="space-y-2">
           {isLoading
             ? Array(5).fill(null).map((_, i) => (
@@ -736,11 +622,11 @@ function CatalystCalendarSection() {
                 const cc = getItemColor(item);
                 return (
                   <div key={item.id} className="flex items-center gap-2" data-testid={`upcoming-catalyst-${item.id}`}>
-                    <span className="text-10 font-mono text-muted-foreground w-8 flex-shrink-0">
-                      {days === 0 ? "TODAY" : `${days}d`}
+                    <span className="text-[12px] text-ink-muted w-12 flex-shrink-0 tnum">
+                      {days === 0 ? "Today" : `In ${days}d`}
                     </span>
                     <div className="h-1 w-1 rounded-full flex-shrink-0" style={{ backgroundColor: cc }} />
-                    <span className="text-xs text-foreground truncate flex-1 min-w-0">{getItemLabel(item)}</span>
+                    <span className="text-[13px] text-ink truncate flex-1 min-w-0">{getItemLabel(item)}</span>
                   </div>
                 );
               })}
@@ -748,36 +634,7 @@ function CatalystCalendarSection() {
       </div>
       </>
       )}
-    </Card>
-  );
-}
-
-// X retired third-party timeline embeds, so the old widget rendered as a
-// permanently-empty box. A slim follow strip keeps the social pointer
-// without the dead space.
-function XFollowCard() {
-  return (
-    <Card className="p-5 border-card-border">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="h-3.5 w-3.5 flex items-center justify-center">
-            <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 fill-current text-brand-2">
-              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.259 5.632zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-            </svg>
-          </div>
-          <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">@gridtilt</h2>
-        </div>
-        <a
-          href="https://x.com/gridtilt"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-1 text-xs text-brand hover:text-brand-2 transition-colors font-medium"
-          data-testid="link-gridtilt-x"
-        >
-          Follow <ExternalLink className="h-3 w-3" />
-        </a>
-      </div>
-    </Card>
+    </RuleSection>
   );
 }
 
@@ -802,105 +659,6 @@ interface MergedCatalystItem {
 
 interface AllCatalystsResponse {
   items: MergedCatalystItem[];
-}
-
-function relativeTime(updatedAt: number | undefined): string {
-  if (!updatedAt) return "loading";
-  const seconds = Math.floor((Date.now() - updatedAt) / 1000);
-  if (seconds < 60) return "just now";
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  return `${hours}h ago`;
-}
-
-const FEATURE_SLIDES = [
-  {
-    icon: Layers,
-    title: "The Stack",
-    description: "60+ equities across 8 supply chain layers. Compute, nuclear, uranium, power hardware, utilities, construction, and more.",
-    href: "/stack",
-    accent: BRAND.primary,
-    preview: stackPreview,
-  },
-  {
-    icon: Link2,
-    title: "Supply Chain Flow",
-    description: "Interactive network of 21 nodes and 44 real supply relationships, staged from raw materials to end-use compute. Lives inside The Stack.",
-    href: "/stack?view=flow",
-    accent: BRAND.secondary,
-    preview: supplyChainPreview,
-  },
-  {
-    icon: Map,
-    title: "Power",
-    description: "US data center map, corporate power deals, and the interconnection queue. See where the load is landing.",
-    href: "/power-map",
-    accent: SERIES[9], // series slot 10 (copper accent)
-    preview: powerMapPreview,
-  },
-  {
-    icon: Cpu,
-    title: "Compute Frontier",
-    description: "Named AI superclusters by GPUs, chips, and power, tied to the nuclear-for-AI deals that feed them.",
-    href: "/compute-frontier",
-    accent: BRAND.primary,
-    preview: powerMapPreview,
-  },
-  {
-    icon: CalendarDays,
-    title: "Catalyst Tracker",
-    description: "Live earnings calendar with 80+ tickers from Yahoo Finance, plus thesis catalysts. Never miss a market-moving event.",
-    href: "/catalysts",
-    accent: DATA_QUALITY.estimateFlag,
-    preview: catalystPreview,
-  },
-  {
-    icon: LineChart,
-    title: "GPU Prices",
-    description: "GPU rental price index across the neoclouds, plus cost-of-compute and training-run economics.",
-    href: "/neocloud-intel",
-    accent: BRAND.secondary,
-    preview: calculatorPreview,
-  },
-  {
-    icon: Calculator,
-    title: "Analyze",
-    description: "Score any portfolio for AI power exposure, and model buildout scenarios across demand, nuclear, and grid variables.",
-    href: "/analyze",
-    accent: BRAND.primary,
-    preview: portfolioPreview,
-  },
-];
-
-function ModuleGrid() {
-  return (
-    <div data-testid="module-grid">
-      <div className="flex items-baseline justify-between mb-3">
-        <h2 className="text-sm font-semibold text-foreground">Modules</h2>
-        <span className="text-11 text-muted-foreground/70">{FEATURE_SLIDES.length} tools</span>
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        {FEATURE_SLIDES.map((slide) => {
-          const Icon = slide.icon;
-          return (
-            <Link key={slide.href} href={slide.href}>
-              <Card
-                className="p-4 border-card-border hover:border-border transition-colors cursor-pointer h-full"
-                data-testid={`module-card-${slide.title.toLowerCase().replace(/\s+/g, "-")}`}
-              >
-                <div className="flex items-center gap-2.5 mb-1.5">
-                  <Icon className="h-4 w-4 text-muted-foreground" />
-                  <h3 className="text-sm font-medium text-foreground">{slide.title}</h3>
-                </div>
-                <p className="text-xs text-muted-foreground leading-relaxed">{slide.description}</p>
-              </Card>
-            </Link>
-          );
-        })}
-      </div>
-    </div>
-  );
 }
 
 export default function TiltOverview() {
@@ -943,347 +701,324 @@ export default function TiltOverview() {
     refetchInterval: 900000,
   });
 
+  const keyMetrics: Array<{
+    label: string;
+    value: string | null;
+    delta?: { text: string; tone?: "positive" | "negative" } | null;
+    note: string;
+    rows: Array<{ label: string; value: string }>;
+    href: string;
+    methodology: string;
+    updatedAt?: number;
+  }> = [
+    {
+      label: "Tracked AI DC power",
+      value: tracked ? fmtGW(tracked.trackedMW) : null,
+      delta: tracked ? { text: `${tracked.operationalCount + tracked.constructionCount} facilities` } : null,
+      note: "Operational plus under construction, verified facilities",
+      methodology: `Sum of rated power across the verified US AI data center dataset (facilities >=400 MW). Operational plus under-construction only. Announced projects (${tracked ? fmtGW(tracked.announcedMW) : "-"}) are excluded from the headline until construction is confirmed. Same dataset as the Power map.`,
+      rows: tracked ? [
+        { label: "Operational", value: `${fmtGW(tracked.operationalMW)} · ${tracked.operationalCount} sites` },
+        { label: "Construction", value: `${fmtGW(tracked.constructionMW)} · ${tracked.constructionCount} sites` },
+        { label: "Announced (excluded)", value: `${fmtGW(tracked.announcedMW)} · ${tracked.announcedCount} sites` },
+      ] : [],
+      href: "/power-map",
+      updatedAt: dcUpdatedAt,
+    },
+    {
+      label: "Cost of AI compute",
+      value: gpuData ? `$${gpuData.fleetAvg.toFixed(2)}/hr` : null,
+      delta: gpuData?.fleetAvg1yChange != null
+        ? { text: `${gpuData.fleetAvg1yChange > 0 ? "+" : ""}${gpuData.fleetAvg1yChange.toFixed(1)}% 1y`, tone: gpuData.fleetAvg1yChange > 0 ? "negative" : "positive" }
+        : null,
+      note: `Fleet-average GPU rental across ${gpuData?.modelCount ?? "-"} models`,
+      methodology: "Mean on-demand rental price across the tracked GPU fleet, blended from public neocloud and marketplace listings (sourced estimates, flagged per model on the GPU Prices page). Falling prices mean compute supply is catching demand.",
+      rows: gpuData ? gpuTopRows : [],
+      href: "/neocloud-intel",
+      updatedAt: gpuUpdatedAt,
+    },
+    {
+      label: "Grid headroom",
+      value: headroom ? `${headroom.reserveMarginPct.toFixed(1)}%` : null,
+      delta: headroom ? { text: `${headroom.label} · tightest RTO`, tone: "negative" } : null,
+      note: "Lowest reserve margin among AI-load RTOs",
+      methodology: `Projected reserve margins from ${RTO_SOURCE_NOTE}. The headline shows the tightest region. NERC's reference margin level is roughly 15%; regions below it face constrained interconnection for large new loads.`,
+      rows: headroomRows,
+      href: "/power-map",
+    },
+  ];
 
   return (
-    <div className="flex flex-col h-full overflow-y-auto">
-      {/* Compact header strip - data starts above the fold (Lake 4A) */}
-      <div className="border-b border-border px-4 sm:px-6 py-3">
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
-          <h1 className="text-sm font-semibold text-foreground tracking-tight">Tilt Overview</h1>
-          <span className="hidden sm:block h-4 w-px bg-border" />
-          {tracked && (
-            <span className="flex items-baseline gap-2 font-mono" data-testid="header-tracked">
-              <span className="text-10 uppercase tracking-wider text-muted-foreground">Tracked AI Power</span>
-              <span className="text-sm font-bold text-brand-2 tabular-nums">{fmtGW(tracked.trackedMW)}</span>
-              <span className="text-11 tabular-nums text-muted-foreground">
-                +{fmtGW(tracked.constructionMW)} building
-              </span>
+    <PageShell>
+      <PageTitle
+        title="Today"
+        dek="The daily read on the AI power economy: markets, buildout, and what is on the calendar."
+        right={
+          tracked && (
+            <span className="flex items-baseline gap-2" data-testid="header-tracked">
+              <span className="text-[12.5px] text-ink-secondary">Tracked AI power</span>
+              <span className="text-[15px] font-semibold text-ink tnum">{fmtGW(tracked.trackedMW)}</span>
+              <span className="text-[12.5px] text-ink-muted tnum">+{fmtGW(tracked.constructionMW)} building</span>
             </span>
-          )}
-          <div className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
-            <div className="h-1.5 w-1.5 rounded-full bg-brand-2" />
-            <span className="font-mono text-11 tracking-wide" data-testid="last-updated">Updated {relativeTime(dcUpdatedAt)}</span>
-          </div>
+          )
+        }
+        testId="today-title"
+      />
+
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-x-10 gap-y-8">
+        <div className="lg:col-span-3">
+          <MarketsSection
+            topMovers={topMovers ?? []}
+            pulse={sectorPulse ?? []}
+            isLoading={topMoversLoading}
+            isError={topMoversError}
+            updatedAt={topMoversUpdatedAt}
+            onRetry={() => refetchTopMovers()}
+          />
+        </div>
+        <div className="lg:col-span-2">
+          <CatalystCalendarSection />
         </div>
       </div>
 
-      <div className="flex-1 p-4 sm:p-6 space-y-4 sm:space-y-5">
+      <BuildoutHistorySection buildout={buildout} tracked={tracked} isLoading={dcLoading} />
 
-        {/* Dashboard density - 2-col */}
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-          <div className="lg:col-span-3 flex flex-col gap-4">
-            <TopMoversSection
-              topMovers={topMovers ?? []}
-              pulse={sectorPulse ?? []}
-              isLoading={topMoversLoading}
-              isError={topMoversError}
-              updatedAt={topMoversUpdatedAt}
-              onRetry={() => refetchTopMovers()}
-            />
-            <BuildoutHistoryCard buildout={buildout} tracked={tracked} isLoading={dcLoading} />
-          </div>
-          <div className="lg:col-span-2 space-y-4">
-            <CatalystCalendarSection />
-            <XFollowCard />
-          </div>
-        </div>
-
-        {/* Main demand chart */}
-        <Card id="demand-chart" className="p-6 border-card-border scroll-mt-20">
-          <div className="flex flex-wrap items-start justify-between gap-4 mb-5">
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <h2 className="text-base font-semibold text-foreground">US Electricity Demand</h2>
-                <UITooltip>
-                  <TooltipTrigger>
-                    <Info className="h-3.5 w-3.5 text-muted-foreground" />
-                  </TooltipTrigger>
-                  <TooltipContent className="max-w-xs">
-                    <p className="text-xs">US electricity demand was flat for a decade. AI data centers are now driving load growth that utilities did not plan for.</p>
-                  </TooltipContent>
-                </UITooltip>
-              </div>
-              <p className="text-xs text-muted-foreground">Historical EIA data (TWh) through 2025. Dashed lines are GridTilt projections (2026-2030), not forecasts. Data center subset on right axis.</p>
-            </div>
-            <div className="flex flex-wrap items-center gap-4 text-xs">
-              <div className="flex items-center gap-1.5">
-                <div className="h-2 w-4 rounded-sm bg-series-1" />
-                <span className="text-muted-foreground">Total Actual</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <div className="h-2 w-4 rounded-sm bg-brand-2" />
-                <span className="text-muted-foreground">GridTilt Projection (2026-2030)</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <div className="h-2 w-4 rounded-sm" style={{ backgroundColor: TOKEN_CATEGORY_COLORS.datacenters }} />
-                <span className="text-muted-foreground">DC Demand</span>
-              </div>
-            </div>
-          </div>
-
-          <ResponsiveContainer width="100%" height={340}>
-            <ComposedChart data={electricityData} margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
-              <defs>
-                <linearGradient id="demandGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={SERIES[0]} stopOpacity={0.25} />
-                  <stop offset="95%" stopColor={SERIES[0]} stopOpacity={0.02} />
-                </linearGradient>
-                <linearGradient id="projGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={BRAND.secondary} stopOpacity={0.18} />
-                  <stop offset="95%" stopColor={BRAND.secondary} stopOpacity={0.02} />
-                </linearGradient>
-                <linearGradient id="dcGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={TOKEN_CATEGORY_COLORS.datacenters} stopOpacity={0.25} />
-                  <stop offset="95%" stopColor={TOKEN_CATEGORY_COLORS.datacenters} stopOpacity={0.02} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid {...gridProps} />
-              <XAxis
-                {...axisProps}
-                dataKey="year"
-                interval={2}
-              />
-              <YAxis
-                {...axisProps}
-                yAxisId="total"
-                axisLine={false}
-                tickFormatter={(v) => `${(v / 1000).toFixed(1)}k`}
-                domain={[3600, 6600]}
-                width={42}
-              />
-              <YAxis
-                {...axisProps}
-                yAxisId="dc"
-                orientation="right"
-                axisLine={false}
-                tickFormatter={(v) => `${v}`}
-                domain={[0, 2500]}
-                width={42}
-              />
-              <Tooltip content={<CustomTooltip />} />
-
-              {/* Grid capacity reference line */}
-              <ReferenceLine
-                yAxisId="total"
-                y={5100}
-                stroke={alpha(SEMANTIC.negativeDeep, 0.35)}
-                strokeDasharray="5 3"
-                label={{ value: "Grid Capacity ~5,100 TWh", position: "right", fill: SEMANTIC.negativeDeep, fontSize: 9, dx: -90 }}
-              />
-
-              {/* Event annotations */}
-              {annotations.map((a) => (
-                <ReferenceLine
-                  key={a.year}
-                  yAxisId="total"
-                  x={a.year}
-                  stroke={a.color}
-                  strokeDasharray="3 3"
+      {/* Key measured metrics: direct measurements over sourced data. The
+          synthetic sentiment indices these replaced are archived in
+          docs/INDEX_VALIDATION.md. */}
+      <RuleSection head="Key measures" testId="kpi-triad">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-x-10 gap-y-6">
+          {keyMetrics.map((m) => (
+            <div key={m.label} data-testid={`gauge-${m.label.toLowerCase().replace(/\s+/g, "-")}`}>
+              {m.value === null ? (
+                <Skeleton className="h-9 w-32 mb-1" />
+              ) : (
+                <PullStat
+                  label={m.label}
+                  value={m.value}
+                  delta={
+                    m.delta ? (
+                      <span className={`text-[13px] font-semibold tnum ${
+                        m.delta.tone === "positive" ? "text-positive" : m.delta.tone === "negative" ? "text-negative" : "text-ink-muted"
+                      }`}>
+                        {m.delta.text}
+                      </span>
+                    ) : undefined
+                  }
+                  note={m.note}
                 />
-              ))}
-
-              {/* Flat decade bracket annotation region */}
-              <ReferenceLine
-                yAxisId="total"
-                x="2010"
-                stroke={alpha(INK.muted, 0.2)}
-              />
-
-              <Area
-                yAxisId="total"
-                type="monotone"
-                dataKey="demand"
-                name="Total Actual"
-                stroke={SERIES[0]} // series slot 1
-                strokeWidth={2.5}
-                fill="url(#demandGrad)"
-                dot={false}
-                activeDot={{ r: 4, fill: SERIES[0] }}
-                connectNulls={false}
-              />
-              <Area
-                yAxisId="total"
-                type="monotone"
-                dataKey="projected"
-                name="AI-Era Projection"
-                stroke={BRAND.secondary}
-                strokeWidth={2}
-                strokeDasharray="6 3"
-                fill="url(#projGrad)"
-                dot={false}
-                activeDot={{ r: 4, fill: BRAND.secondary }}
-                connectNulls={false}
-              />
-              <Area
-                yAxisId="dc"
-                type="monotone"
-                dataKey="dcDemand"
-                name="DC Actual"
-                stroke={TOKEN_CATEGORY_COLORS.datacenters}
-                strokeWidth={1.5}
-                fill="url(#dcGrad)"
-                dot={false}
-                connectNulls={false}
-              />
-              <Line
-                yAxisId="dc"
-                type="monotone"
-                dataKey="dcProjected"
-                name="DC Projected"
-                stroke={TOKEN_CATEGORY_COLORS.datacenters}
-                strokeWidth={1.5}
-                strokeDasharray="5 3"
-                dot={false}
-                connectNulls={false}
-              />
-            </ComposedChart>
-          </ResponsiveContainer>
-          <SrChartTable
-            caption="US electricity demand by year (TWh): EIA actuals through 2025, GridTilt projections 2026-2030"
-            columns={["Year", "Total TWh", "DC TWh", "Projected"]}
-            rows={electricityData.map((d) => [
-              d.year,
-              d.demand ?? "—",
-              d.dcDemand ?? d.dcProjected ?? "—",
-              d.projected ?? "—",
-            ])}
-          />
-
-          {/* Annotation key */}
-          <div className="flex flex-wrap gap-4 mt-3 pt-3 border-t border-border text-xs text-muted-foreground">
-            <span className="text-warning/80">* 2022: IRA signed + ChatGPT launch</span>
-            <span className="text-warning/80">* 2024: TMI restart + first commercial SMR contract</span>
-            <span className="text-negative/70">--- Grid capacity ceiling</span>
-          </div>
-        </Card>
-
-        {/* Real gauges (owner-directed): direct measurements over sourced
-            data. The synthetic sentiment indices this replaces are archived
-            in docs/INDEX_VALIDATION.md. */}
-        <div className="pt-2">
-          <div className="text-10 font-mono uppercase tracking-widest text-muted-foreground/70 mb-3">
-            Key metrics
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3" data-testid="kpi-triad">
-            <RealGaugeCard
-              icon={Zap}
-              title="Tracked AI DC Power"
-              value={tracked ? fmtGW(tracked.trackedMW) : null}
-              delta={tracked ? `${tracked.operationalCount + tracked.constructionCount} facilities` : null}
-              subtitle="Operational + under construction, verified facilities"
-              methodology={`Sum of rated power across the verified US AI data center dataset (facilities >=400 MW). Operational plus under-construction only. Announced projects (${tracked ? fmtGW(tracked.announcedMW) : "-"}) are excluded from the headline until construction is confirmed. Same dataset as the Power map.`}
-              isLoading={dcLoading}
-              rows={tracked ? [
-                { label: "Operational", value: `${fmtGW(tracked.operationalMW)} · ${tracked.operationalCount} sites` },
-                { label: "Construction", value: `${fmtGW(tracked.constructionMW)} · ${tracked.constructionCount} sites` },
-                { label: "Announced (excl.)", value: `${fmtGW(tracked.announcedMW)} · ${tracked.announcedCount} sites` },
-              ] : []}
-              href="/power-map"
-              updatedAt={dcUpdatedAt}
-            />
-            <RealGaugeCard
-              icon={Cpu}
-              title="Cost of AI Compute"
-              value={gpuData ? `$${gpuData.fleetAvg.toFixed(2)}/hr` : null}
-              delta={gpuData?.fleetAvg1yChange != null ? `${gpuData.fleetAvg1yChange > 0 ? "+" : ""}${gpuData.fleetAvg1yChange.toFixed(1)}% 1Y` : null}
-              deltaColor={gpuData?.fleetAvg1yChange != null ? (gpuData.fleetAvg1yChange > 0 ? SEMANTIC.negative : SEMANTIC.positive) : undefined}
-              subtitle={`Fleet-average GPU rental, ${gpuData?.modelCount ?? "-"} models`}
-              methodology="Mean on-demand rental price across the tracked GPU fleet, blended from public neocloud and marketplace listings (sourced estimates, flagged per model on the GPU Prices page). Falling prices mean compute supply is catching demand."
-              isLoading={gpuLoading}
-              rows={gpuData ? gpuTopRows : []}
-              href="/neocloud-intel"
-              updatedAt={gpuUpdatedAt}
-            />
-            <RealGaugeCard
-              icon={AlertTriangle}
-              title="Grid Headroom"
-              value={headroom ? `${headroom.reserveMarginPct.toFixed(1)}%` : null}
-              delta={headroom ? `${headroom.label} · tightest RTO` : null}
-              deltaColor={headroom ? SEMANTIC.negative : undefined}
-              subtitle="Lowest reserve margin among AI-load RTOs"
-              methodology={`Projected reserve margins from ${RTO_SOURCE_NOTE}. The headline shows the tightest region. NERC's reference margin level is roughly 15%; regions below it face constrained interconnection for large new loads.`}
-              isLoading={false}
-              rows={headroomRows}
-              href="/power-map"
-            />
-          </div>
-        </div>
-
-        {/* 4-column stat strip */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          {[
-            { label: "DC Share of US Demand", value: "~6.4%", sub: "EIA 2025: ~288 TWh, up from 4.4% in 2023. DOE projects 12%+ by 2028.", color: TOKEN_CATEGORY_COLORS.datacenters },
-            { label: "Nuclear Power Committed", value: "12+ GW", sub: "Big Tech nuclear PPAs as of Q1 2026. Meta 6.6 GW, Microsoft 1.2 GW, Amazon 2.5+ GW.", color: BRAND.secondary },
-            { label: "Grid Reserve Margins", value: "Tightening", sub: "MISO 13.4%, ERCOT 15.8% per NERC 2026. Capacity warnings through 2028.", color: INK.muted },
-          ].map((s) => (
-            <Card key={s.label} className="p-4 border-card-border">
-              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">{s.label}</p>
-              <p className="text-2xl font-bold tabular-nums" style={{ color: s.color }}>{s.value}</p>
-              <p className="text-xs text-muted-foreground mt-1 leading-snug">{s.sub}</p>
-            </Card>
+              )}
+              {m.rows.length > 0 && (
+                <div className="mt-2.5 border-t border-rule pt-2 space-y-1">
+                  {m.rows.map((r) => (
+                    <div key={r.label} className="flex items-baseline justify-between gap-3 text-[12.5px]">
+                      <span className="text-ink-muted">{r.label}</span>
+                      <span className="text-ink tnum text-right">{r.value}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <p className="mt-2 flex items-baseline justify-between gap-3">
+                <Link href={m.href} className="text-[12.5px] font-semibold text-brand-ink no-underline hover:text-ink">
+                  Full data →
+                </Link>
+                {m.updatedAt !== undefined && <AsOf updatedAt={m.updatedAt} intervalMs={900000} />}
+              </p>
+              <details className="mt-1.5">
+                <summary className="cursor-pointer list-none text-[12px] text-ink-muted hover:text-ink-secondary">
+                  Methodology
+                </summary>
+                <p className="mt-1 text-[12px] leading-relaxed text-ink-muted max-w-[48ch]">{m.methodology}</p>
+              </details>
+            </div>
           ))}
         </div>
+      </RuleSection>
 
-        {/* Sector demand breakdown */}
-        <Card className="p-5 border-card-border">
-          <div className="flex items-center gap-2 mb-4">
-            <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">2025 US Electricity Demand by Sector</h2>
-            <UITooltip>
-              <TooltipTrigger>
-                <Info className="h-3.5 w-3.5 text-muted-foreground" />
-              </TooltipTrigger>
-              <TooltipContent>
-                <p className="text-xs">Source: EIA Electric Power Monthly (2025). Data centers are the fastest-growing sector at +33% YoY.</p>
-              </TooltipContent>
-            </UITooltip>
-          </div>
-          <div className="divide-y divide-border">
-            {SECTOR_DEMAND.map((s) => (
-              <div key={s.sector} className="flex items-center gap-4 py-2.5">
-                <div className="w-24 flex-shrink-0">
-                  <p className="text-xs font-medium text-foreground">{s.sector}</p>
-                </div>
-                <div className="flex-1">
-                  <div className="bg-muted/30 rounded-full h-1.5">
-                    <div
-                      className="h-1.5 rounded-full"
-                      style={{
-                        width: `${(s.twh / 4490) * 100}%`,
-                        backgroundColor: s.color,
-                      }}
-                    />
-                  </div>
-                </div>
-                <p className="text-xs font-mono text-foreground w-20 text-right">{s.twh.toLocaleString()} TWh</p>
-                <div className={`flex items-center gap-1 w-16 justify-end text-xs font-mono font-semibold ${s.yoy >= 0 ? "text-positive" : "text-negative"}`}>
-                  {s.yoy >= 0 ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
-                  {Math.abs(s.yoy)}% YoY
+      {/* Main demand chart */}
+      <RuleSection
+        head="US electricity demand"
+        aside={
+          <span className="hidden sm:flex items-center gap-4">
+            <span className="flex items-center gap-1.5">
+              <span className="h-2 w-4" style={{ background: SERIES[0] }} />
+              Total actual
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="h-2 w-4" style={{ background: BRAND.secondary }} />
+              GridTilt projection
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="h-2 w-4" style={{ background: TOKEN_CATEGORY_COLORS.datacenters }} />
+              Data centers
+            </span>
+          </span>
+        }
+        testId="demand-chart"
+      >
+        <p className="mb-4 max-w-[70ch] text-[13.5px] leading-relaxed text-ink-secondary">
+          US electricity demand was flat for a decade. AI data centers are now driving load growth
+          utilities did not plan for. Dashed lines are GridTilt projections through 2030, not
+          forecasts; the data center subset reads on the right axis.
+        </p>
+        <ResponsiveContainer width="100%" height={340}>
+          <ComposedChart data={electricityData} margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
+            <defs>
+              <linearGradient id="demandGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={SERIES[0]} stopOpacity={0.18} />
+                <stop offset="95%" stopColor={SERIES[0]} stopOpacity={0.02} />
+              </linearGradient>
+              <linearGradient id="projGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={BRAND.secondary} stopOpacity={0.12} />
+                <stop offset="95%" stopColor={BRAND.secondary} stopOpacity={0.02} />
+              </linearGradient>
+              <linearGradient id="dcGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={TOKEN_CATEGORY_COLORS.datacenters} stopOpacity={0.18} />
+                <stop offset="95%" stopColor={TOKEN_CATEGORY_COLORS.datacenters} stopOpacity={0.02} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid {...gridProps} />
+            <XAxis
+              {...axisProps}
+              dataKey="year"
+              interval={2}
+            />
+            <YAxis
+              {...axisProps}
+              yAxisId="total"
+              axisLine={false}
+              tickFormatter={(v) => `${(v / 1000).toFixed(1)}k`}
+              domain={[3600, 6600]}
+              width={42}
+            />
+            <YAxis
+              {...axisProps}
+              yAxisId="dc"
+              orientation="right"
+              axisLine={false}
+              tickFormatter={(v) => `${v}`}
+              domain={[0, 2500]}
+              width={42}
+            />
+            <Tooltip content={<CustomTooltip />} />
+
+            {/* Grid capacity reference line */}
+            <ReferenceLine
+              yAxisId="total"
+              y={5100}
+              stroke={alpha(SEMANTIC.negativeDeep, 0.4)}
+              strokeDasharray="5 3"
+              label={{ value: "Grid capacity ~5,100 TWh", position: "right", fill: SEMANTIC.negativeDeep, fontSize: 10, dx: -100 }}
+            />
+
+            {/* Event annotations */}
+            {annotations.map((a) => (
+              <ReferenceLine
+                key={a.year}
+                yAxisId="total"
+                x={a.year}
+                stroke={a.color}
+                strokeDasharray="3 3"
+              />
+            ))}
+
+            <Area
+              yAxisId="total"
+              type="monotone"
+              dataKey="demand"
+              name="Total Actual"
+              stroke={SERIES[0]} // series slot 1
+              strokeWidth={2.5}
+              fill="url(#demandGrad)"
+              dot={false}
+              activeDot={{ r: 4, fill: SERIES[0] }}
+              connectNulls={false}
+            />
+            <Area
+              yAxisId="total"
+              type="monotone"
+              dataKey="projected"
+              name="AI-Era Projection"
+              stroke={BRAND.secondary}
+              strokeWidth={2}
+              strokeDasharray="6 3"
+              fill="url(#projGrad)"
+              dot={false}
+              activeDot={{ r: 4, fill: BRAND.secondary }}
+              connectNulls={false}
+            />
+            <Area
+              yAxisId="dc"
+              type="monotone"
+              dataKey="dcDemand"
+              name="DC Actual"
+              stroke={TOKEN_CATEGORY_COLORS.datacenters}
+              strokeWidth={1.5}
+              fill="url(#dcGrad)"
+              dot={false}
+              connectNulls={false}
+            />
+            <Line
+              yAxisId="dc"
+              type="monotone"
+              dataKey="dcProjected"
+              name="DC Projected"
+              stroke={TOKEN_CATEGORY_COLORS.datacenters}
+              strokeWidth={1.5}
+              strokeDasharray="5 3"
+              dot={false}
+              connectNulls={false}
+            />
+          </ComposedChart>
+        </ResponsiveContainer>
+        <SrChartTable
+          caption="US electricity demand by year (TWh): EIA actuals through 2025, GridTilt projections 2026-2030"
+          columns={["Year", "Total TWh", "DC TWh", "Projected"]}
+          rows={electricityData.map((d) => [
+            d.year,
+            d.demand ?? "—",
+            d.dcDemand ?? d.dcProjected ?? "—",
+            d.projected ?? "—",
+          ])}
+        />
+        <Provenance
+          source="EIA (actuals through 2025); GridTilt projections 2026-2030"
+          extra="marked years: 2020 COVID drop; 2022 IRA signed and ChatGPT launch; 2024 TMI restart and first commercial SMR contract"
+        />
+      </RuleSection>
+
+      {/* Sector demand breakdown */}
+      <RuleSection head="2025 US electricity demand by sector" testId="sector-demand">
+        <div>
+          {SECTOR_DEMAND.map((s) => (
+            <div key={s.sector} className="flex items-center gap-4 py-2.5 border-b border-rule last:border-b-0">
+              <div className="w-28 flex-shrink-0">
+                <p className="text-[13px] font-medium text-ink">{s.sector}</p>
+              </div>
+              <div className="flex-1">
+                <div className="bg-paper-shade h-2">
+                  <div
+                    className="h-2"
+                    style={{
+                      width: `${(s.twh / 4490) * 100}%`,
+                      backgroundColor: s.color,
+                    }}
+                  />
                 </div>
               </div>
-            ))}
-          </div>
-          <p className="text-xs text-muted-foreground mt-3 pt-3 border-t border-border">
-            US electricity demand was flat from 2010-2022. By 2025 it reached ~4,490 TWh, up 15% from the 2022 low. Data center load is now +33% YoY.
-          </p>
-        </Card>
-
-        {/* Explore modules — discovery, moved to the bottom of the dashboard */}
-        <ModuleGrid />
-
-        <EmailCapture variant="inline" />
-
-        <footer className="pt-4 border-t border-border/40 text-11 text-muted-foreground/60 leading-relaxed space-y-1">
-          <p>
-            Data: Yahoo Finance · EIA · DOE · NERC · LBNL · public RSS sources. Composite indices computed in-house; methodology in each card's info tooltip.
-          </p>
-          <p>
-            Research and commentary, not investment advice. Past performance does not predict future returns.
-            Built by Jack Schwartz · <a href="https://x.com/gridtilt" target="_blank" rel="noopener noreferrer" className="hover:text-foreground/80 transition-colors">@gridtilt</a>
-          </p>
-        </footer>
-
-      </div>
-      <ScrollTriggeredBanner />
-    </div>
+              <p className="text-[13px] text-ink w-20 text-right tnum">{s.twh.toLocaleString()} TWh</p>
+              <p className={`w-20 text-right text-[13px] font-semibold tnum ${s.yoy >= 0 ? "text-positive" : "text-negative"}`}>
+                {s.yoy >= 0 ? "+" : "−"}{Math.abs(s.yoy)}% y/y
+              </p>
+            </div>
+          ))}
+        </div>
+        <p className="mt-3 max-w-[70ch] text-[13px] leading-relaxed text-ink-secondary">
+          US electricity demand was flat from 2010 to 2022. By 2025 it reached about 4,490 TWh, up
+          15% from the 2022 low, and data center load is growing 33% year over year.
+        </p>
+        <Provenance source="EIA Electric Power Monthly (2025)" />
+      </RuleSection>
+    </PageShell>
   );
 }

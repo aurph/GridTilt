@@ -3,8 +3,8 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/app-sidebar";
+import { Masthead } from "@/components/masthead";
+import { Colophon } from "@/components/colophon";
 import NotFound from "@/pages/not-found";
 import TheStack from "@/pages/TheStack";
 import PowerMap from "@/pages/PowerMap";
@@ -24,42 +24,24 @@ import BlogPost from "@/pages/BlogPost";
 import Subscribe from "@/pages/Subscribe";
 import AdminDatacenters from "@/pages/AdminDatacenters";
 import AdminSocial from "@/pages/AdminSocial";
-import { NewsTicker } from "@/components/NewsTicker";
 import { initAnalytics, trackPageview } from "@/lib/analytics";
 import { useLocation } from "wouter";
 import { useState, useEffect, lazy, Suspense } from "react";
 import { X, Keyboard } from "lucide-react";
 
-// Lazy-load the marketing landing and the dashboard root so each visitor only
-// pays for the chunks they actually need. Other dashboard pages stay eager —
-// they're only reached after the user has already loaded the dashboard shell.
+// Lazy-load the front page and the Today page so each visitor only pays for
+// the chunks they actually need. Other pages stay eager - they're only
+// reached after the shell has already loaded.
 const Home = lazy(() => import("@/pages/Home"));
 const TiltOverview = lazy(() => import("@/pages/TiltOverview"));
 
-// Routes that render WITHOUT the dashboard chrome (no sidebar, no header,
-// no news ticker). Currently just the marketing landing at /.
-const MARKETING_ROUTES = ["/"];
-
-const PAGE_TITLES: Record<string, string> = {
-  "/": "GridTilt",
-  "/overview": "Tilt Overview",
-  "/stack": "The Stack",
-  "/power-map": "Power",
-  "/compute-frontier": "Compute Frontier",
-  "/neocloud-intel": "GPU Prices",
-  "/analyze": "Analyze",
-  "/catalysts": "Catalyst Tracker",
-  "/blog": "Analysis",
-  "/subscribe": "Subscribe",
-};
-
 const SHORTCUTS = [
-  { keys: ["G", "1"], description: "Go to Tilt Overview", path: "/overview" },
+  { keys: ["G", "1"], description: "Go to Today", path: "/overview" },
   { keys: ["G", "2"], description: "Go to The Stack", path: "/stack" },
   { keys: ["G", "3"], description: "Go to Power", path: "/power-map" },
-  { keys: ["G", "4"], description: "Go to Compute Frontier", path: "/compute-frontier" },
-  { keys: ["G", "5"], description: "Go to GPU Prices", path: "/neocloud-intel" },
-  { keys: ["G", "6"], description: "Go to Catalyst Tracker", path: "/catalysts" },
+  { keys: ["G", "4"], description: "Go to Compute", path: "/compute-frontier" },
+  { keys: ["G", "5"], description: "Go to GPUs", path: "/neocloud-intel" },
+  { keys: ["G", "6"], description: "Go to Catalysts", path: "/catalysts" },
   { keys: ["G", "7"], description: "Go to Analyze", path: "/analyze" },
   { keys: ["G", "8"], description: "Go to Analysis", path: "/blog" },
   { keys: ["?"], description: "Show this keyboard shortcuts panel", path: null },
@@ -71,12 +53,12 @@ function KeyboardShortcutsModal({ onClose }: { onClose: () => void }) {
       className="fixed inset-0 z-[200] flex items-center justify-center"
       data-testid="keyboard-shortcuts-modal"
     >
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-card border border-card-border rounded-lg p-6 shadow-2xl w-full max-w-sm mx-4">
+      <div className="absolute inset-0 bg-ink/25" onClick={onClose} />
+      <div className="relative bg-card border border-rule rounded-sm p-6 shadow-lg w-full max-w-sm mx-4">
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-2">
-            <Keyboard className="h-4 w-4 text-brand" />
-            <h2 className="text-sm font-semibold text-foreground">Keyboard Shortcuts</h2>
+            <Keyboard className="h-4 w-4 text-brand-ink" />
+            <h2 className="text-sm font-semibold text-foreground">Keyboard shortcuts</h2>
           </div>
           <button
             onClick={onClose}
@@ -89,15 +71,15 @@ function KeyboardShortcutsModal({ onClose }: { onClose: () => void }) {
         <div className="space-y-2">
           {SHORTCUTS.map((sc, i) => (
             <div key={i} className="flex items-center justify-between py-1.5">
-              <span className="text-xs text-muted-foreground">{sc.description}</span>
+              <span className="text-[13px] text-muted-foreground">{sc.description}</span>
               <div className="flex items-center gap-1">
                 {sc.keys.map((k, j) => (
                   <span key={j} className="flex items-center gap-1">
-                    <kbd className="px-1.5 py-0.5 text-10 font-mono font-semibold bg-muted border border-border rounded text-foreground">
+                    <kbd className="px-1.5 py-0.5 text-[11px] font-semibold bg-paper-shade border border-rule rounded-sm text-foreground">
                       {k}
                     </kbd>
                     {j < sc.keys.length - 1 && (
-                      <span className="text-10 text-muted-foreground">then</span>
+                      <span className="text-[11px] text-muted-foreground">then</span>
                     )}
                   </span>
                 ))}
@@ -105,38 +87,11 @@ function KeyboardShortcutsModal({ onClose }: { onClose: () => void }) {
             </div>
           ))}
         </div>
-        <p className="text-10 text-muted-foreground/50 mt-4 pt-3 border-t border-border text-center">
+        <p className="text-[12px] text-ink-muted mt-4 pt-3 border-t border-rule text-center">
           Press Esc or click outside to close
         </p>
       </div>
     </div>
-  );
-}
-
-function Header() {
-  const [location] = useLocation();
-  const pageTitle = PAGE_TITLES[location] ?? "GridTilt";
-
-  return (
-    <header
-      className="flex items-center gap-3 px-4 border-b border-border bg-background/90 backdrop-blur-sm flex-shrink-0"
-      style={{ zIndex: 50, height: "42px" }}
-    >
-      <SidebarTrigger data-testid="button-sidebar-toggle" className="text-muted-foreground h-7 w-7" />
-      <div className="w-px h-4 bg-border" />
-      <span className="text-xs font-semibold text-foreground tracking-wide">{pageTitle}</span>
-      <div className="flex-1" />
-      <div className="flex items-center gap-3 text-xs text-muted-foreground">
-        <span className="hidden sm:inline font-mono text-muted-foreground/60">GridTilt</span>
-        <span className="text-border hidden sm:inline">·</span>
-        <span className="hidden md:inline text-muted-foreground/70">AI Infrastructure and Power Economy</span>
-        <span className="text-border hidden md:inline">·</span>
-        <div className="flex items-center gap-1.5">
-          <div className="h-1.5 w-1.5 rounded-full bg-green-500" />
-          <span className="text-muted-foreground/70">Live</span>
-        </div>
-      </div>
-    </header>
   );
 }
 
@@ -177,30 +132,13 @@ function Router() {
   );
 }
 
-// Minimal Suspense fallback while the lazy Home chunk loads on cold visits.
-// Holds the wordmark + a pulse dot in the masthead position so the first paint
-// of / is the brand on the dark surface, not a blank black screen.
-function HomeLoadingShell() {
+// Suspense fallback while a lazy chunk loads: the wordmark on paper.
+function LoadingShell() {
   return (
-    <div
-      className="gt-marketing min-h-screen w-full"
-      style={{ padding: "clamp(24px, 5vw, 96px)" }}
-    >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 14,
-          fontFamily: "JetBrains Mono, monospace",
-          fontSize: 11,
-          letterSpacing: "0.2em",
-          color: "rgba(255,255,255,0.4)",
-          textTransform: "uppercase",
-        }}
-      >
-        <span className="gt-pulse" />
-        <span>Loading · GridTilt</span>
-      </div>
+    <div className="flex items-center justify-center py-24" aria-busy="true">
+      <span className="font-serif text-[22px] text-ink-muted">
+        Grid<em className="italic">Tilt</em>
+      </span>
     </div>
   );
 }
@@ -210,8 +148,6 @@ function App() {
   const [location, navigate] = useLocation();
   const [gPressed, setGPressed] = useState(false);
 
-  const isMarketing = MARKETING_ROUTES.includes(location);
-
   // Privacy-respecting pageviews (GoatCounter); inert unless
   // VITE_GOATCOUNTER_CODE is set at build time.
   useEffect(() => {
@@ -219,6 +155,11 @@ function App() {
   }, []);
   useEffect(() => {
     trackPageview(location);
+  }, [location]);
+
+  // New route = new article: start at the top, like a page turn.
+  useEffect(() => {
+    window.scrollTo(0, 0);
   }, [location]);
 
   useEffect(() => {
@@ -257,50 +198,21 @@ function App() {
     return () => window.removeEventListener("keydown", handler);
   }, [gPressed, navigate]);
 
-  // Marketing layout — bare. No SidebarProvider, no AppSidebar, no Header, no
-  // NewsTicker. The Home component owns its own Swiss surface via .anchor-swiss.
-  if (isMarketing) {
-    return (
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider delayDuration={300}>
-          <Suspense fallback={<HomeLoadingShell />}>
-            <Router />
-          </Suspense>
-          {showShortcuts && (
-            <KeyboardShortcutsModal onClose={() => setShowShortcuts(false)} />
-          )}
-          <Toaster />
-        </TooltipProvider>
-      </QueryClientProvider>
-    );
-  }
-
-  // Dashboard layout — sidebar, header, news ticker shell.
-  const style = {
-    "--sidebar-width": "17rem",
-    "--sidebar-width-icon": "3.5rem",
-  };
-
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider delayDuration={300}>
-        <SidebarProvider style={style as React.CSSProperties} defaultOpen={true}>
-          <div className="flex h-screen w-full bg-background overflow-hidden">
-            <AppSidebar />
-            <div className="flex flex-col flex-1 min-w-0">
-              <Header />
-              <NewsTicker />
-              <main className="flex-1 overflow-auto">
-                <Suspense fallback={null}>
-                  <Router />
-                </Suspense>
-              </main>
-            </div>
-          </div>
-          {showShortcuts && (
-            <KeyboardShortcutsModal onClose={() => setShowShortcuts(false)} />
-          )}
-        </SidebarProvider>
+        <div className="min-h-screen bg-background flex flex-col">
+          <Masthead />
+          <main className="flex-1">
+            <Suspense fallback={<LoadingShell />}>
+              <Router />
+            </Suspense>
+          </main>
+          <Colophon />
+        </div>
+        {showShortcuts && (
+          <KeyboardShortcutsModal onClose={() => setShowShortcuts(false)} />
+        )}
         <Toaster />
       </TooltipProvider>
     </QueryClientProvider>

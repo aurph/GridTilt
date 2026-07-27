@@ -1,9 +1,7 @@
 import { useParams, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, AlertTriangle, TrendingUp, TrendingDown } from "lucide-react";
+import { PageShell, Provenance, PullStat, RuleSection } from "@/components/editorial";
 
 const SECTOR_META: Record<string, { key: string; name: string; description: string; related: string[] }> = {
   "nuclear-power": {
@@ -61,6 +59,11 @@ interface StackData {
   }>;
 }
 
+/** Signed percent with a true minus sign, never a hyphen. */
+function fmtSignedPct(v: number): string {
+  return `${v >= 0 ? "+" : "−"}${Math.abs(v).toFixed(2)}%`;
+}
+
 export default function SectorPage() {
   const { slug } = useParams<{ slug: string }>();
   const sector = slug ? SECTOR_META[slug] : null;
@@ -73,15 +76,18 @@ export default function SectorPage() {
 
   if (!sector) {
     return (
-      <div className="max-w-5xl mx-auto p-6">
-        <Card className="p-8 border-card-border text-center">
-          <AlertTriangle className="h-8 w-8 text-negative mx-auto mb-3" />
-          <h1 className="text-lg font-semibold mb-2">Sector Not Found</h1>
-          <p className="text-sm text-muted-foreground">
-            <Link href="/stack" className="text-brand">Browse The Stack</Link> to see all sectors.
+      <PageShell>
+        <div className="pt-7 sm:pt-9">
+          <h1 className="font-serif font-medium text-[30px] sm:text-[34px] leading-[1.05] tracking-tight text-ink">
+            Sector not found
+          </h1>
+          <p className="mt-3 max-w-[68ch] text-[15px] leading-relaxed text-ink-secondary">
+            Browse{" "}
+            <Link href="/stack" className="text-brand-ink no-underline hover:text-ink">The Stack</Link>{" "}
+            to see all sectors.
           </p>
-        </Card>
-      </div>
+        </div>
+      </PageShell>
     );
   }
 
@@ -93,92 +99,131 @@ export default function SectorPage() {
   const worst = stocks.length > 0 ? [...stocks].sort((a, b) => a.changePercent - b.changePercent)[0] : null;
 
   return (
-    <div className="max-w-5xl mx-auto p-6 space-y-6">
-      <nav className="flex items-center gap-2 text-xs text-muted-foreground" data-testid="breadcrumb">
-        <Link href="/" className="hover:text-foreground">GridTilt</Link>
-        <span>/</span>
-        <Link href="/stack" className="hover:text-foreground">The Stack</Link>
-        <span>/</span>
-        <span className="text-foreground font-medium">{sector.name}</span>
+    <PageShell>
+      <nav className="flex flex-wrap items-center gap-x-2 gap-y-1 pt-7 sm:pt-9 text-[12.5px] text-ink-muted" data-testid="breadcrumb">
+        <Link href="/" className="text-[12.5px] text-brand-ink no-underline hover:text-ink">GridTilt</Link>
+        <span>·</span>
+        <Link href="/stack" className="text-[12.5px] text-brand-ink no-underline hover:text-ink">The Stack</Link>
+        <span>·</span>
+        <span className="text-ink font-medium">{sector.name}</span>
       </nav>
 
-      <div>
-        <h1 className="text-2xl font-bold mb-2" data-testid="sector-heading">{sector.name}</h1>
-        <p className="text-sm text-muted-foreground max-w-3xl">{sector.description}</p>
+      {/* Reference-entry lead: serif name over a plain classification line */}
+      <div className="mt-4 pb-4 border-b border-rule">
+        <h1 className="font-serif font-medium text-[30px] sm:text-[34px] leading-[1.05] tracking-tight text-ink" data-testid="sector-heading">
+          {sector.name}
+        </h1>
+        <p className="mt-1.5 text-[13.5px] text-ink-muted">
+          Equity sector · The Stack{stocks.length > 0 ? ` · ${stocks.length} tracked companies` : ""}
+        </p>
+        <p className="mt-3 max-w-[68ch] text-[15px] leading-relaxed text-ink-secondary">{sector.description}</p>
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
-        <Card className="p-4 border-card-border text-center" data-testid="stat-avg-change">
-          <p className="text-10 uppercase tracking-widest text-muted-foreground mb-1">Avg Change</p>
-          <p className={`text-xl font-bold font-mono ${avgChange >= 0 ? "text-positive" : "text-negative"}`}>
-            {avgChange >= 0 ? "+" : ""}{avgChange.toFixed(2)}%
-          </p>
-        </Card>
-        <Card className="p-4 border-card-border text-center" data-testid="stat-best">
-          <p className="text-10 uppercase tracking-widest text-muted-foreground mb-1">Best Performer</p>
-          <p className="text-sm font-bold font-mono text-positive">{best ? `${best.ticker} +${best.changePercent.toFixed(2)}%` : "N/A"}</p>
-        </Card>
-        <Card className="p-4 border-card-border text-center" data-testid="stat-worst">
-          <p className="text-10 uppercase tracking-widest text-muted-foreground mb-1">Worst Performer</p>
-          <p className="text-sm font-bold font-mono text-negative">{worst ? `${worst.ticker} ${worst.changePercent.toFixed(2)}%` : "N/A"}</p>
-        </Card>
+      {/* Key figures */}
+      <div className="mt-5 flex flex-wrap gap-x-10 gap-y-5 pb-5 border-b border-rule">
+        <PullStat
+          testId="stat-avg-change"
+          label="Average move today"
+          value={stocks.length > 0 ? fmtSignedPct(avgChange) : "--"}
+          note={stocks.length > 0 ? `across ${stocks.length} stocks` : undefined}
+        />
+        <PullStat
+          testId="stat-best"
+          label="Best performer"
+          value={best ? best.ticker : "--"}
+          delta={
+            best && (
+              <span className={`text-[13px] font-semibold tnum ${best.changePercent >= 0 ? "text-positive" : "text-negative"}`}>
+                {fmtSignedPct(best.changePercent)}
+              </span>
+            )
+          }
+        />
+        <PullStat
+          testId="stat-worst"
+          label="Worst performer"
+          value={worst ? worst.ticker : "--"}
+          delta={
+            worst && (
+              <span className={`text-[13px] font-semibold tnum ${worst.changePercent >= 0 ? "text-positive" : "text-negative"}`}>
+                {fmtSignedPct(worst.changePercent)}
+              </span>
+            )
+          }
+        />
       </div>
 
-      <div>
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">
-          {stocks.length} Stocks in {sector.name}
-        </h2>
+      <RuleSection
+        head={`Companies in ${sector.name}`}
+        aside={stocks.length > 0 ? <span className="tnum">{stocks.length} tracked</span> : undefined}
+      >
         {isLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {[1, 2, 3].map((i) => <Skeleton key={i} className="h-24" />)}
+          <div className="space-y-2 py-2">
+            {Array(5).fill(null).map((_, i) => (
+              <div key={i} className="flex items-center gap-3 py-1.5">
+                <Skeleton className="h-4 w-12" />
+                <Skeleton className="h-3 w-32 flex-1" />
+                <Skeleton className="h-4 w-16" />
+              </div>
+            ))}
           </div>
+        ) : stocks.length === 0 ? (
+          <p className="py-6 text-[13px] text-ink-muted text-center">No stock data available.</p>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {stocks.map((s) => {
-              const up = s.changePercent >= 0;
-              return (
-                <Link key={s.ticker} href={`/stock/${s.ticker}`}>
-                  <Card className="p-4 border-card-border hover:-translate-y-0.5 hover:shadow-lg transition-all cursor-pointer" data-testid={`stock-card-${s.ticker}`}>
-                    <div className="flex justify-between items-start mb-2">
-                      <div>
-                        <span className="font-bold text-sm font-mono">{s.ticker}</span>
-                        <p className="text-xs text-muted-foreground truncate max-w-[140px]">{s.name}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-semibold text-sm font-mono">${s.price.toFixed(2)}</p>
-                        <Badge className={`text-xs font-mono ${up ? "bg-positive-deep/15 text-positive" : "bg-negative-deep/15 text-negative"}`}>
-                          {up ? <TrendingUp className="h-2.5 w-2.5 mr-0.5" /> : <TrendingDown className="h-2.5 w-2.5 mr-0.5" />}
-                          {up ? "+" : ""}{s.changePercent.toFixed(2)}%
-                        </Badge>
-                      </div>
-                    </div>
-                    <div className="flex gap-3 text-xs text-muted-foreground">
-                      <span>P/E: {s.pe?.toFixed(1) || "N/A"}</span>
-                      {s.marketCapDisplay && <span>{s.marketCapDisplay}</span>}
-                    </div>
-                  </Card>
-                </Link>
-              );
-            })}
-          </div>
+          <table className="print-table">
+            <thead>
+              <tr>
+                <th>Ticker</th>
+                <th>Company</th>
+                <th className="num">Price</th>
+                <th className="num">Today</th>
+                <th className="num hidden sm:table-cell">P/E</th>
+                <th className="num hidden md:table-cell">Mkt cap</th>
+              </tr>
+            </thead>
+            <tbody>
+              {stocks.map((s) => {
+                const up = s.changePercent >= 0;
+                return (
+                  <tr key={s.ticker} className="row-link" data-testid={`stock-card-${s.ticker}`}>
+                    <td className="shrink font-semibold">
+                      <Link href={`/stock/${s.ticker}`} className="text-ink no-underline hover:text-brand-ink">{s.ticker}</Link>
+                    </td>
+                    <td className="text-ink-secondary">{s.name}</td>
+                    <td className="num">${s.price.toFixed(2)}</td>
+                    <td className={`num font-semibold ${up ? "text-positive" : "text-negative"}`}>
+                      {fmtSignedPct(s.changePercent)}
+                    </td>
+                    <td className="num hidden sm:table-cell text-ink-secondary">{s.pe != null ? s.pe.toFixed(1) : "--"}</td>
+                    <td className="num hidden md:table-cell text-ink-secondary">{s.marketCapDisplay || "--"}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         )}
-      </div>
+        <Provenance source="Yahoo Finance" extra="quotes may be delayed" />
+      </RuleSection>
 
-      <Card className="p-5 border-card-border" data-testid="related-sectors">
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">Related Sectors</h2>
-        <div className="flex flex-wrap gap-2">
+      <RuleSection head="Related sectors" testId="related-sectors">
+        <p className="text-[13.5px] leading-relaxed">
           {sector.related.map((r) => (
-            <Link key={r} href={`/sector/${r}`}>
-              <Badge className="bg-brand/15 text-brand border-brand/25 hover:bg-brand/25 cursor-pointer" data-testid={`link-sector-${r}`}>
+            <span key={r}>
+              <Link
+                href={`/sector/${r}`}
+                className="text-brand-ink no-underline hover:text-ink"
+                data-testid={`link-sector-${r}`}
+              >
                 {SECTOR_SLUG_LABELS[r] || r}
-              </Badge>
-            </Link>
+              </Link>
+              <span className="text-ink-muted"> · </span>
+            </span>
           ))}
-          <Link href="/stack">
-            <Badge className="bg-muted/50 text-muted-foreground hover:bg-muted/70 cursor-pointer">View All Sectors</Badge>
+          <Link href="/stack" className="text-brand-ink no-underline hover:text-ink">
+            All sectors →
           </Link>
-        </div>
-      </Card>
-    </div>
+        </p>
+      </RuleSection>
+    </PageShell>
   );
 }

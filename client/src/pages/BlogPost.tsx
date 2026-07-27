@@ -1,10 +1,9 @@
 import { useParams, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Calendar, ArrowLeft, Share2, ExternalLink, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Share2, ExternalLink, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { PageShell } from "@/components/editorial";
 
 interface BlogArticle {
   slug: string;
@@ -31,31 +30,31 @@ function renderMarkdown(content: string) {
       const text = line.slice(3);
       const id = slugify(text);
       elements.push(
-        <h2 key={i} id={id} className="text-xl font-bold mt-10 mb-4 text-foreground scroll-mt-16">{text}</h2>
+        <h2 key={i} id={id} className="font-serif font-medium text-[24px] mt-10 mb-4 text-ink scroll-mt-16">{text}</h2>
       );
     } else if (line.startsWith("### ")) {
       const text = line.slice(4);
       const id = slugify(text);
       elements.push(
-        <h3 key={i} id={id} className="text-lg font-semibold mt-8 mb-3 text-foreground scroll-mt-16">{text}</h3>
+        <h3 key={i} id={id} className="text-[17px] font-semibold mt-8 mb-3 text-ink scroll-mt-16">{text}</h3>
       );
     } else if (line.startsWith("**") && line.endsWith("**")) {
       elements.push(
-        <p key={i} className="text-sm font-semibold text-foreground mt-5 mb-2">{line.slice(2, -2)}</p>
+        <p key={i} className="text-[15px] font-semibold text-ink mt-5 mb-2">{line.slice(2, -2)}</p>
       );
     } else if (line.startsWith("**")) {
       const parts = line.split(/(\*\*[^*]+\*\*)/);
       elements.push(
-        <p key={i} className="text-15 text-muted-foreground leading-[1.7] mb-4">
+        <p key={i} className="text-[15.5px] text-ink-secondary leading-[1.75] mb-4">
           {parts.map((part, j) => {
             if (part.startsWith("**") && part.endsWith("**")) {
-              return <strong key={j} className="text-foreground font-semibold">{part.slice(2, -2)}</strong>;
+              return <strong key={j} className="text-ink font-semibold">{part.slice(2, -2)}</strong>;
             }
             const linkParts = part.split(/(\[[^\]]+\]\([^)]+\))/);
             return linkParts.map((lp, k) => {
               const linkMatch = lp.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
               if (linkMatch) {
-                return <Link key={k} href={linkMatch[2]} className="text-brand hover:text-brand-2">{linkMatch[1]}</Link>;
+                return <Link key={k} href={linkMatch[2]} className="text-brand-ink underline decoration-rule-strong underline-offset-2 hover:text-ink">{linkMatch[1]}</Link>;
               }
               return lp;
             });
@@ -69,7 +68,7 @@ function renderMarkdown(content: string) {
         i++;
       }
       elements.push(
-        <ol key={`ol-${i}`} className="list-decimal list-inside space-y-2 text-15 text-muted-foreground mb-5 ml-3 leading-[1.7]">
+        <ol key={`ol-${i}`} className="list-decimal list-inside space-y-2 text-[15.5px] text-ink-secondary mb-5 ml-3 leading-[1.75]">
           {items.map((item, j) => <li key={j}>{renderInlineText(item)}</li>)}
         </ol>
       );
@@ -79,11 +78,11 @@ function renderMarkdown(content: string) {
     } else {
       const linkParts = line.split(/(\[[^\]]+\]\([^)]+\))/);
       elements.push(
-        <p key={i} className="text-15 text-muted-foreground leading-[1.7] mb-4">
+        <p key={i} className="text-[15.5px] text-ink-secondary leading-[1.75] mb-4">
           {linkParts.map((part, j) => {
             const linkMatch = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
             if (linkMatch) {
-              return <Link key={j} href={linkMatch[2]} className="text-brand hover:text-brand-2">{linkMatch[1]}</Link>;
+              return <Link key={j} href={linkMatch[2]} className="text-brand-ink underline decoration-rule-strong underline-offset-2 hover:text-ink">{linkMatch[1]}</Link>;
             }
             return part;
           })}
@@ -100,7 +99,7 @@ function renderInlineText(text: string) {
   const parts = text.split(/(\*\*[^*]+\*\*)/);
   return parts.map((part, i) => {
     if (part.startsWith("**") && part.endsWith("**")) {
-      return <strong key={i} className="text-foreground font-semibold">{part.slice(2, -2)}</strong>;
+      return <strong key={i} className="text-ink font-semibold">{part.slice(2, -2)}</strong>;
     }
     return part;
   });
@@ -121,29 +120,27 @@ export default function BlogPost() {
 
   if (isLoading) {
     return (
-      <div className="h-full overflow-y-auto">
-        <div className="max-w-[720px] mx-auto p-6 space-y-6">
+      <PageShell>
+        <div className="max-w-[720px] mx-auto pt-8 space-y-6">
           <Skeleton className="h-8 w-96" />
           <Skeleton className="h-4 w-64" />
           <Skeleton className="h-96 w-full" />
         </div>
-      </div>
+      </PageShell>
     );
   }
 
   if (isError || !article) {
     return (
-      <div className="h-full overflow-y-auto">
-        <div className="max-w-[720px] mx-auto p-6">
-          <Card className="p-8 border-card-border text-center">
-            <AlertTriangle className="h-8 w-8 text-negative mx-auto mb-3" />
-            <h1 className="text-lg font-semibold mb-2">Article Not Found</h1>
-            <p className="text-sm text-muted-foreground">
-              <Link href="/blog" className="text-brand">Browse all articles</Link>
-            </p>
-          </Card>
+      <PageShell>
+        <div className="max-w-[720px] mx-auto pt-16 text-center">
+          <AlertTriangle className="h-8 w-8 text-negative mx-auto mb-3" />
+          <h1 className="font-serif text-[26px] font-medium mb-2 text-ink">Article not found</h1>
+          <p className="text-[14px] text-ink-secondary">
+            <Link href="/blog" className="text-brand-ink">Browse all articles</Link>
+          </p>
         </div>
-      </div>
+      </PageShell>
     );
   }
 
@@ -161,49 +158,36 @@ export default function BlogPost() {
   };
 
   return (
-    <div className="h-full overflow-y-auto scroll-smooth" data-testid="blog-post-scroll-container">
-      <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-sm border-b border-border">
-        <div className="max-w-[720px] mx-auto px-6 py-2">
-          <Link href="/blog" className="flex items-center gap-1.5 text-xs text-brand hover:text-brand-2" data-testid="link-back-blog-sticky">
-            <ArrowLeft className="h-3.5 w-3.5" /> Back to articles
+    <PageShell>
+      <div className="max-w-[720px] mx-auto" data-testid="blog-post-scroll-container">
+        <nav className="pt-6 text-[12.5px] text-ink-muted" data-testid="breadcrumb">
+          <Link href="/blog" className="flex items-center gap-1.5 text-brand-ink no-underline hover:text-ink" data-testid="link-back-blog-sticky">
+            <ArrowLeft className="h-3.5 w-3.5" /> All analysis
           </Link>
-        </div>
-      </div>
-
-      <div className="max-w-[720px] mx-auto px-6 pt-6 pb-16 space-y-6">
-        <nav className="flex items-center gap-2 text-xs text-muted-foreground" data-testid="breadcrumb">
-          <Link href="/" className="hover:text-foreground">GridTilt</Link>
-          <span>/</span>
-          <Link href="/blog" className="hover:text-foreground">Analysis</Link>
-          <span>/</span>
-          <span className="text-foreground font-medium truncate max-w-[200px]">{article.title}</span>
         </nav>
 
-        <article>
-          <header className="mb-8">
-            <h1 className="text-2xl font-bold mb-3 leading-tight" data-testid="article-heading">{article.title}</h1>
-            <div className="flex items-center gap-3 flex-wrap mb-4">
-              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Calendar className="h-3 w-3" />
-                {/* noon anchor: bare YYYY-MM-DD parses as UTC midnight and shifts a day back in US time zones */}
-                {new Date(`${article.date}T12:00:00`).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
-              </div>
-              {article.keywords.map((kw) => (
-                <Badge key={kw} className="text-10 bg-muted/40 text-muted-foreground">{kw}</Badge>
-              ))}
-            </div>
-            <p className="text-15 text-muted-foreground italic leading-[1.6]">{article.description}</p>
+        <article className="pt-5">
+          <header className="mb-8 border-b border-rule pb-6">
+            <h1 className="font-serif font-medium text-[32px] sm:text-[38px] leading-[1.1] tracking-tight text-ink mb-3" data-testid="article-heading">
+              {article.title}
+            </h1>
+            <p className="font-serif italic text-[16.5px] text-ink-secondary leading-relaxed mb-3">{article.description}</p>
+            <p className="text-[12.5px] text-ink-muted">
+              {/* noon anchor: bare YYYY-MM-DD parses as UTC midnight and shifts a day back in US time zones */}
+              {new Date(`${article.date}T12:00:00`).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+              {article.keywords.length > 0 && <> · {article.keywords.slice(0, 4).join(" · ")}</>}
+            </p>
           </header>
 
           {toc.length > 2 && (
-            <Card className="p-4 border-card-border mb-8" data-testid="table-of-contents">
-              <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">Contents</h2>
+            <nav className="mb-8 border-l-2 border-rule pl-4" data-testid="table-of-contents">
+              <p className="text-[13px] font-semibold text-ink mb-1.5">Contents</p>
               <ul className="space-y-1">
                 {toc.map((heading, i) => (
                   <li key={i}>
                     <button
                       onClick={() => handleTocClick(heading)}
-                      className="text-sm text-brand hover:text-brand-2 transition-colors text-left"
+                      className="text-[14px] text-brand-ink hover:text-ink transition-colors text-left"
                       data-testid={`toc-link-${i}`}
                     >
                       {heading}
@@ -211,7 +195,7 @@ export default function BlogPost() {
                   </li>
                 ))}
               </ul>
-            </Card>
+            </nav>
           )}
 
           <div className="prose-gridtilt" data-testid="article-content">
@@ -219,42 +203,42 @@ export default function BlogPost() {
           </div>
         </article>
 
-        <Card className="p-5 border-card-border" data-testid="article-cta">
-          <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">Track this on GridTilt</h2>
-          <div className="flex flex-wrap gap-3 text-sm">
-            <Link href="/overview" className="text-brand hover:text-brand-2">Dashboard</Link>
-            <Link href="/stack" className="text-brand hover:text-brand-2">The Stack</Link>
-            <Link href="/power-map" className="text-brand hover:text-brand-2">Power Map</Link>
-            <Link href="/trade" className="text-brand hover:text-brand-2">Scenario Calculator</Link>
+        <div className="mt-10 border-t-2 border-rule-strong pt-5" data-testid="article-cta">
+          <p className="text-[13.5px] font-semibold text-ink mb-2">Track this on GridTilt</p>
+          <div className="flex flex-wrap gap-4 text-[13.5px]">
+            <Link href="/overview" className="text-brand-ink no-underline hover:text-ink">Today</Link>
+            <Link href="/stack" className="text-brand-ink no-underline hover:text-ink">The Stack</Link>
+            <Link href="/power-map" className="text-brand-ink no-underline hover:text-ink">Power</Link>
+            <Link href="/trade" className="text-brand-ink no-underline hover:text-ink">Scenario worksheet</Link>
           </div>
-        </Card>
+        </div>
 
-        <div className="flex items-center gap-3">
+        <div className="mt-6 flex items-center gap-3">
           <button
             onClick={() => {
               navigator.clipboard.writeText(`https://gridtilt.com/blog/${article.slug}`);
               toast({ title: "Link copied" });
             }}
-            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border border-border hover:bg-muted/50 transition-colors"
+            className="flex items-center gap-1.5 text-[12.5px] px-3 py-1.5 rounded-sm border border-rule hover:border-rule-strong transition-colors"
             data-testid="button-copy-link"
           >
-            <Share2 className="h-3 w-3" /> Copy Link
+            <Share2 className="h-3 w-3" /> Copy link
           </button>
           <a
             href={`https://x.com/intent/tweet?text=${encodeURIComponent(article.title)}&url=${encodeURIComponent(`https://gridtilt.com/blog/${article.slug}`)}&via=gridtilt`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border border-border hover:bg-muted/50 transition-colors"
+            className="flex items-center gap-1.5 text-[12.5px] px-3 py-1.5 rounded-sm border border-rule hover:border-rule-strong transition-colors"
             data-testid="link-share-x"
           >
             Share on X <ExternalLink className="h-3 w-3" />
           </a>
         </div>
 
-        <Link href="/blog" className="flex items-center gap-1 text-sm text-brand hover:text-brand-2" data-testid="link-back-blog">
-          <ArrowLeft className="h-4 w-4" /> All Articles
+        <Link href="/blog" className="mt-8 mb-4 flex items-center gap-1 text-[14px] text-brand-ink no-underline hover:text-ink" data-testid="link-back-blog">
+          <ArrowLeft className="h-4 w-4" /> All analysis
         </Link>
       </div>
-    </div>
+    </PageShell>
   );
 }

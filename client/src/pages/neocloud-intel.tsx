@@ -11,20 +11,15 @@ import {
   type RangeKey,
 } from "@/lib/gpu-series";
 import { useMeasuredWidth } from "@/lib/use-measured-width";
-import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Tooltip as UITooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { ArrowUpDown } from "lucide-react";
 import { AsOf, ErrorState, SrChartTable } from "@/components/Freshness";
 import { ToolTabs, useToolTabs } from "@/components/ToolTabs";
-import { PageHeader, HeaderStat } from "@/components/PageHeader";
+import { EstFlag, PageShell, PageTitle, Provenance, RuleSection } from "@/components/editorial";
 import GpuEconomics from "@/pages/gpu-economics";
 import FrontierModels from "@/pages/frontier-models";
-import { BORDER, BRAND, DATA_QUALITY, FONT, INK, SEMANTIC, SERIES } from "@/lib/tokens";
+import { BORDER, DATA_QUALITY, FONT, INK, SERIES, SURFACE } from "@/lib/tokens";
+import { CONTEXT } from "@/lib/chart-theme";
 
 // ─── Types (mirror /api/gpu-prices/metrics) ────────────────────────────────
 
@@ -81,24 +76,20 @@ interface GpuMetrics {
   health: GpuPipelineHealth;
 }
 
-// Maker colors — the primary "who made this" signal (orange vs cyan, colorblind-safe).
-const VENDOR_COLOR: Record<string, string> = { NVIDIA: BRAND.primary, AMD: SERIES[5] };
-const vendorColor = (v: string) => VENDOR_COLOR[v] ?? INK.muted;
-
-// Per-model accent for the card stripe + row dot (categorical SERIES slots, fixed order).
+// Per-model accent (categorical SERIES slots, fixed order). In the editorial
+// chart grammar these appear on hover/selection; resting series read context gray.
 const MODEL_COLOR: Record<string, string> = {
   GB200: SERIES[0], B300: SERIES[1], B200: SERIES[2], H200: SERIES[3], GH200: SERIES[4],
   H100: SERIES[5], A100: SERIES[6], MI355X: SERIES[7], MI325X: SERIES[8], MI300X: SERIES[9],
 };
 const colorFor = (m: string) => MODEL_COLOR[m] ?? INK.muted;
 
-const CONF_COLOR: Record<string, string> = { high: SEMANTIC.positive, medium: SEMANTIC.warning, low: SEMANTIC.negative };
-
 const fmtUsd = (n: number) => `$${n.toFixed(2)}`;
 const fmtChange = (v: number | null) => (v === null ? "—" : `${v > 0 ? "+" : ""}${v.toFixed(1)}%`);
 // Standard market direction coloring (up green, down red), same as every other
 // module. Direction needs no legend; the renter's cost framing lives in copy.
-const changeColor = (v: number | null): string => (v === null ? INK.faint : v > 0 ? SEMANTIC.positive : v < 0 ? SEMANTIC.negative : INK.muted);
+const changeClass = (v: number | null): string =>
+  v === null ? "text-ink-faint" : v > 0 ? "text-positive" : v < 0 ? "text-negative" : "text-ink-muted";
 
 type SortKey = "current" | "model" | "w1" | "m1" | "ytd" | "y1";
 type ViewKey = "overlay" | "grid";
@@ -110,6 +101,16 @@ const GPU_TABS = [
   { id: "economics", label: "Economics" },
   { id: "frontier", label: "Frontier" },
 ];
+
+// Small segmented-control button, 12px floor for interactive text.
+const ctlBtn = (on: boolean, enabled = true) =>
+  `rounded-sm border px-2 py-0.5 text-[12px] transition-colors duration-fast ${
+    on
+      ? "border-brand/60 bg-brand/10 font-medium text-brand-ink"
+      : enabled
+        ? "border-rule text-ink-secondary hover:border-rule-strong hover:text-ink"
+        : "border-rule text-ink-faint cursor-not-allowed"
+  }`;
 
 // ─── URL-persisted chart state (?gpus=A,B&view=grid&range=1Y) ──────────────
 
@@ -229,342 +230,352 @@ export default function NeocloudIntel() {
     else { setSortKey(k); setSortDir(k === "model" ? "asc" : "desc"); }
   };
 
-  // Cards grouped by maker.
+  // Tables grouped by maker.
   const byVendor = useMemo(() => {
     const groups: Record<string, GpuRow[]> = {};
     for (const r of [...rows].sort((a, b) => b.current - a.current)) (groups[r.vendor] = groups[r.vendor] ?? []).push(r);
     return Object.entries(groups).sort((a, b) => b[1].length - a[1].length);
   }, [rows]);
 
+  const hasEst = rows.some((r) => r.estimated.includes("currentUsdPerHr"));
+  const updatedDate = data?.lastRefreshed ?? data?.asOf ?? undefined;
+
   return (
-    <div className="flex flex-col h-full overflow-y-auto">
-      <PageHeader
+    <PageShell>
+      <PageTitle
         title="GPU Prices"
-        testId="ni-header"
-        about={
-          <>
-            On-demand GPU rental prices ($/GPU/hr) blended across the major neoclouds and marketplaces (Lambda,
-            RunPod, Vast.ai, CoreWeave, TensorWave, Vultr, Nebius) and the getdeploying.com / Silicon Data trackers.
-            Models covered by live provider APIs serve an observed daily price; the rest are sourced blended
-            estimates flagged est. Low and high are the observed marketplace range. Open any table row for sources.
-          </>
-        }
-        stats={
-          data ? (
-            <>
-              <HeaderStat label="Fleet avg" value={`${fmtUsd(data.fleetAvg)}/hr`} />
-              {data.fleetAvg1yChange !== null && (
-                <span className="font-mono text-11 tabular-nums" style={{ color: changeColor(data.fleetAvg1yChange) }}>
-                  {fmtChange(data.fleetAvg1yChange)} 1Y
-                </span>
-              )}
-              <span className="font-mono text-11 text-muted-foreground">{data.modelCount} models</span>
-            </>
-          ) : undefined
-        }
+        dek="What AI compute rents for: on-demand GPU rental prices, blended across the major neoclouds and marketplaces."
         right={
           <>
-            {data?.lastRefreshed && <span className="text-11 font-mono text-muted-foreground/60">source data {data.lastRefreshed}</span>}
+            {data && (
+              <span className="flex items-baseline gap-2" data-testid="ni-fleet-stat">
+                <span className="text-[12.5px] text-ink-secondary">Fleet average</span>
+                <span className="text-[15px] font-semibold text-ink tnum">{fmtUsd(data.fleetAvg)}/hr</span>
+                {data.fleetAvg1yChange !== null && (
+                  <span className={`text-[12.5px] font-semibold tnum ${changeClass(data.fleetAvg1yChange)}`}>
+                    {fmtChange(data.fleetAvg1yChange)} 1y
+                  </span>
+                )}
+                <span className="text-[12.5px] text-ink-muted tnum">{data.modelCount} models</span>
+              </span>
+            )}
             <AsOf updatedAt={dataUpdatedAt} />
-            <Link href="/compute-frontier" className="text-11 text-brand hover:text-brand-2 font-medium">Compute Frontier →</Link>
+            <Link href="/compute-frontier" className="text-[12.5px] font-semibold text-brand-ink no-underline hover:text-ink">
+              Compute Frontier →
+            </Link>
           </>
         }
-        controls={<ToolTabs tabs={GPU_TABS} active={tab} onChange={setTab} />}
+        testId="ni-header"
       />
 
-      <div className="flex-1 p-4 sm:p-6 space-y-5">
-        {tab === "frontier" ? (
-          <FrontierModels embedded />
-        ) : tab === "economics" ? (
-          <GpuEconomics embedded />
-        ) : (
+      <ToolTabs tabs={GPU_TABS} active={tab} onChange={setTab} />
+
+      {tab === "frontier" ? (
+        <FrontierModels embedded />
+      ) : tab === "economics" ? (
+        <GpuEconomics embedded />
+      ) : (
         <>
-        {/* Price cards grouped by maker */}
-        {isLoading ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-            {Array(10).fill(null).map((_, i) => <Skeleton key={i} className="h-28" />)}
-          </div>
-        ) : isError ? (
-          <Card className="border-card-border">
-            <ErrorState label="GPU price index unavailable" onRetry={() => refetch()} />
-          </Card>
-        ) : (
-          byVendor.map(([vendor, vrows]) => (
-            <div key={vendor} className="space-y-2" data-testid={`ni-group-${vendor}`}>
-              <div className="flex items-center gap-2">
-                <span className="h-2.5 w-2.5 rounded-sm" style={{ background: vendorColor(vendor) }} />
-                <span className="text-xs font-mono uppercase tracking-wider text-muted-foreground">{vendor}</span>
-                <span className="text-10 font-mono text-muted-foreground/40">{vrows.length} GPUs</span>
+          {/* Current prices, grouped by maker */}
+          <RuleSection head="Current prices" aside={<span>$/GPU/hr, on demand</span>} testId="ni-groups">
+            {isLoading ? (
+              <div className="space-y-2 py-2">
+                {Array(8).fill(null).map((_, i) => <Skeleton key={i} className="h-7 w-full" />)}
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-                {vrows.map((r) => (
-                  <Card key={r.model} className="border-card-border p-3 relative overflow-hidden" data-testid={`ni-card-${r.model}`}>
-                    <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: colorFor(r.model) }} />
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-mono font-semibold" style={{ color: colorFor(r.model) }}>{r.model}</span>
-                      {r.confidence && (
-                        <span className="flex items-center gap-1 text-8 font-mono uppercase text-muted-foreground/50" title={`price confidence: ${r.confidence}`}>
-                          <span className="h-1.5 w-1.5 rounded-full" style={{ background: CONF_COLOR[r.confidence] ?? INK.faint }} />
-                          {r.confidence}
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-9 font-mono text-muted-foreground/55 mt-0.5 leading-tight">
-                      {[r.architecture, r.vramGB ? `${r.vramGB}GB ${r.vramType ?? ""}`.trim() : null, r.launchYear ? `'${String(r.launchYear).slice(2)}` : null].filter(Boolean).join(" · ")}
-                    </div>
-                    <div className="text-xl font-semibold tabular-nums text-foreground mt-1.5">
-                      {fmtUsd(r.current)}
-                      {r.estimated.includes("currentUsdPerHr") && <span className="ml-1 text-8 font-mono uppercase text-estimate align-top">est.</span>}
-                      <span className="text-10 font-normal text-muted-foreground/50"> /hr</span>
-                    </div>
-                    <div className="flex items-center justify-between mt-0.5">
-                      <span className="text-10 font-mono text-muted-foreground/45">${r.low}–${r.high}</span>
-                      <span className="text-10 font-mono" style={{ color: changeColor(r.changes.y1) }}>
-                        {r.changes.y1 === null ? "1Y —" : `${fmtChange(r.changes.y1)} 1Y`}
-                      </span>
-                    </div>
-                  </Card>
+            ) : isError ? (
+              <ErrorState label="GPU price index unavailable" onRetry={() => refetch()} />
+            ) : (
+              <>
+                {byVendor.map(([vendor, vrows]) => (
+                  <div key={vendor} className="mt-5 first:mt-0" data-testid={`ni-group-${vendor}`}>
+                    <p className="mb-1 text-[13px] font-semibold text-ink">
+                      {vendor} <span className="font-normal text-ink-muted">· {vrows.length} GPUs</span>
+                    </p>
+                    <table className="print-table">
+                      <thead>
+                        <tr>
+                          <th>Model</th>
+                          <th className="hidden sm:table-cell">Architecture</th>
+                          <th className="hidden md:table-cell">Memory</th>
+                          <th className="num">Price</th>
+                          <th className="num hidden sm:table-cell">Observed range</th>
+                          <th className="num">1y</th>
+                          <th className="hidden md:table-cell">Confidence</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {vrows.map((r) => (
+                          <tr key={r.model} data-testid={`ni-card-${r.model}`}>
+                            <td className="shrink font-semibold text-ink">{r.model}</td>
+                            <td className="hidden sm:table-cell text-ink-secondary">
+                              {[r.architecture, r.launchYear].filter(Boolean).join(" · ") || "—"}
+                            </td>
+                            <td className="hidden md:table-cell text-ink-secondary">
+                              {r.vramGB ? `${r.vramGB} GB ${r.vramType ?? ""}`.trim() : "—"}
+                            </td>
+                            <td className="num">
+                              {fmtUsd(r.current)}
+                              {r.estimated.includes("currentUsdPerHr") && <EstFlag />}
+                            </td>
+                            <td className="num hidden sm:table-cell text-ink-muted">${r.low}–${r.high}</td>
+                            <td className={`num font-semibold ${changeClass(r.changes.y1)}`}>{fmtChange(r.changes.y1)}</td>
+                            <td className="hidden md:table-cell text-ink-muted">{r.confidence ?? "—"}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ))}
+                <Provenance
+                  source="GridTilt GPU price index"
+                  updated={updatedDate}
+                  extra={hasEst ? "† estimated value" : undefined}
+                />
+              </>
+            )}
+          </RuleSection>
+
+          {/* Price history: recorded days and estimated anchors remain separate evidence classes. */}
+          <RuleSection
+            head="Price history"
+            aside={
+              <div className="flex flex-wrap items-center justify-end gap-1.5">
+                {RANGE_KEYS.map((r) => (
+                  <button
+                    key={r}
+                    onClick={() => {
+                      if (availableRanges[r].enabled) setRange(r);
+                    }}
+                    aria-disabled={!availableRanges[r].enabled}
+                    aria-pressed={range === r}
+                    title={availableRanges[r].enabled ? `${availableRanges[r].pointCount} points in this window` : "no data in this window"}
+                    className={ctlBtn(range === r, availableRanges[r].enabled)}
+                    data-testid={`ni-range-${r}`}
+                  >
+                    {r}
+                  </button>
+                ))}
+                <span className="mx-1 h-4 w-px bg-rule" />
+                {(["log", "linear"] as ScaleMode[]).map((mode) => (
+                  <button
+                    key={mode}
+                    onClick={() => setScaleMode(mode)}
+                    aria-pressed={scaleMode === mode}
+                    className={ctlBtn(scaleMode === mode)}
+                    data-testid={`ni-scale-${mode}`}
+                  >
+                    {mode}
+                  </button>
+                ))}
+                <span className="mx-1 h-4 w-px bg-rule" />
+                {(["grid", "overlay"] as ViewKey[]).map((v) => (
+                  <button
+                    key={v}
+                    onClick={() => setView(v)}
+                    aria-pressed={view === v}
+                    className={ctlBtn(view === v)}
+                    data-testid={`ni-view-${v}`}
+                  >
+                    {v}
+                  </button>
                 ))}
               </div>
-            </div>
-          ))
-        )}
-
-        {/* Price history: recorded days and estimated anchors remain separate evidence classes. */}
-        <Card className="border-card-border p-3" data-testid="ni-history">
-          <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <span className="text-11 font-mono uppercase tracking-wider text-muted-foreground">
-                Price history · $/GPU/hr
-              </span>
-              {data?.health && <PipelineHealthLine health={data.health} />}
-            </div>
-            <div className="flex flex-wrap items-center justify-end gap-1.5 text-10 font-mono">
-              {RANGE_KEYS.map((r) => (
+            }
+            testId="ni-history"
+          >
+            {/* Model chips toggle visibility. The default set is the four densest series. */}
+            {rows.length > 0 && (
+              <div className="mb-3 flex flex-wrap items-center gap-1.5" data-testid="ni-chips">
                 <button
-                  key={r}
-                  onClick={() => {
-                    if (availableRanges[r].enabled) setRange(r);
-                  }}
-                  aria-disabled={!availableRanges[r].enabled}
-                  aria-pressed={range === r}
-                  title={availableRanges[r].enabled ? `${availableRanges[r].pointCount} points in this window` : "no data in this window"}
-                  className={`px-2 py-0.5 rounded border ${
-                    range === r
-                      ? "border-brand/60 text-brand bg-brand/10"
-                      : availableRanges[r].enabled
-                        ? "border-subtle text-muted-foreground hover:text-foreground"
-                        : "border-subtle text-muted-foreground/30 cursor-not-allowed"
-                  }`}
-                  data-testid={`ni-range-${r}`}
+                  onClick={() => setVisibleModels(visibleSet.size === rows.length ? null : rows.map((row) => row.model))}
+                  aria-pressed={visibleSet.size === rows.length}
+                  className={ctlBtn(visibleSet.size === rows.length)}
+                  data-testid="ni-chip-all"
                 >
-                  {r}
+                  All
                 </button>
-              ))}
-              <span className="w-px h-4 bg-border mx-1" />
-              {(["log", "linear"] as ScaleMode[]).map((mode) => (
-                <button
-                  key={mode}
-                  onClick={() => setScaleMode(mode)}
-                  aria-pressed={scaleMode === mode}
-                  className={`px-2 py-0.5 rounded border ${
-                    scaleMode === mode
-                      ? "border-brand/60 text-brand bg-brand/10"
-                      : "border-subtle text-muted-foreground hover:text-foreground"
-                  }`}
-                  data-testid={`ni-scale-${mode}`}
-                >
-                  {mode}
-                </button>
-              ))}
-              <span className="w-px h-4 bg-border mx-1" />
-              {(["grid", "overlay"] as ViewKey[]).map((v) => (
-                <button
-                  key={v}
-                  onClick={() => setView(v)}
-                  aria-pressed={view === v}
-                  className={`px-2 py-0.5 rounded border ${
-                    view === v
-                      ? "border-brand/60 text-brand bg-brand/10"
-                      : "border-subtle text-muted-foreground hover:text-foreground"
-                  }`}
-                  data-testid={`ni-view-${v}`}
-                >
-                  {v}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Model chips toggle visibility. The default set is the four densest series. */}
-          {rows.length > 0 && (
-            <div className="flex flex-wrap items-center gap-1.5 mb-3" data-testid="ni-chips">
-              <button
-                onClick={() => setVisibleModels(visibleSet.size === rows.length ? null : rows.map((row) => row.model))}
-                aria-pressed={visibleSet.size === rows.length}
-                className={`px-2 py-0.5 rounded border text-10 font-mono ${
-                  visibleSet.size === rows.length
-                    ? "border-brand/60 text-brand bg-brand/10"
-                    : "border-subtle text-muted-foreground hover:text-foreground"
-                }`}
-                data-testid="ni-chip-all"
-              >
-                All
-              </button>
-              {rows.map((r) => {
-                const on = visibleSet.has(r.model);
-                return (
-                  <button
-                    key={r.model}
-                    onClick={() => chipClick(r.model)}
-                    onPointerEnter={() => setHoveredModel(r.model)}
-                    onPointerLeave={() => setHoveredModel(null)}
-                    aria-pressed={on}
-                    title={on && visibleSet.size === 1 ? "At least one model must remain visible" : `Toggle ${r.model}`}
-                    className={`flex items-center gap-1 px-2 py-0.5 rounded border text-10 font-mono ${
-                      on ? "border-strong text-foreground" : "border-subtle text-muted-foreground/50 hover:text-muted-foreground"
-                    }`}
-                    data-testid={`ni-chip-${r.model}`}
-                  >
-                    <span className="h-1.5 w-1.5 rounded-full" style={{ background: colorFor(r.model), opacity: on ? 1 : 0.35 }} />
-                    {r.model}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-
-          <div ref={chartRef}>
-            {isLoading ? (
-              <Skeleton className="h-[380px] w-full" />
-            ) : isError ? (
-              <div className="h-[240px] flex items-center justify-center">
-                <ErrorState label="Price index unavailable" onRetry={() => refetch()} />
+                {rows.map((r) => {
+                  const on = visibleSet.has(r.model);
+                  return (
+                    <button
+                      key={r.model}
+                      onClick={() => chipClick(r.model)}
+                      onPointerEnter={() => setHoveredModel(r.model)}
+                      onPointerLeave={() => setHoveredModel(null)}
+                      aria-pressed={on}
+                      title={on && visibleSet.size === 1 ? "At least one model must remain visible" : `Toggle ${r.model}`}
+                      className={`flex items-center gap-1 rounded-sm border px-2 py-0.5 text-[12px] transition-colors duration-fast ${
+                        on
+                          ? "border-rule-strong text-ink"
+                          : "border-rule text-ink-faint hover:text-ink-secondary"
+                      }`}
+                      data-testid={`ni-chip-${r.model}`}
+                    >
+                      <span className="h-1.5 w-1.5 rounded-full" style={{ background: colorFor(r.model), opacity: on ? 1 : 0.35 }} />
+                      {r.model}
+                    </button>
+                  );
+                })}
               </div>
-            ) : (
-              <PriceHistoryChart
-                series={chartSeries}
-                range={range}
-                now={now}
-                view={view}
-                scaleMode={scaleMode}
-                width={chartWidth}
-                hovered={hoveredModel}
-                onHover={setHoveredModel}
+            )}
+
+            <div ref={chartRef}>
+              {isLoading ? (
+                <Skeleton className="h-[380px] w-full" />
+              ) : isError ? (
+                <div className="h-[240px] flex items-center justify-center">
+                  <ErrorState label="Price index unavailable" onRetry={() => refetch()} />
+                </div>
+              ) : (
+                <PriceHistoryChart
+                  series={chartSeries}
+                  range={range}
+                  now={now}
+                  view={view}
+                  scaleMode={scaleMode}
+                  width={chartWidth}
+                  hovered={hoveredModel}
+                  onHover={setHoveredModel}
+                />
+              )}
+            </div>
+            <p className="mt-2 text-[12.5px] leading-relaxed text-ink-muted">
+              Only plotted points are data. Dashed spans connect unobserved time and are never treated as recorded price action.
+            </p>
+            {data?.health && <PipelineHealthLine health={data.health} />}
+            <Provenance source="GridTilt GPU price index" updated={updatedDate} />
+          </RuleSection>
+
+          {/* Marketplace dispersion: observed low-high per model on one scale, dot = blended price */}
+          <RuleSection head="Marketplace dispersion" aside={<span>$/GPU/hr, observed low to high</span>} testId="ni-chart">
+            <div ref={dispRef}>
+              {isLoading ? (
+                <Skeleton className="h-[320px] w-full" />
+              ) : isError || dispersionRows.length === 0 ? (
+                <div className="h-[240px] flex items-center justify-center text-[13px] text-ink-muted" data-testid="ni-chart-empty">
+                  {isError ? <ErrorState label="Price index unavailable" onRetry={() => refetch()} /> : "No price data."}
+                </div>
+              ) : (
+                <DispersionChart rows={dispersionRows} width={dispWidth} hovered={hoveredModel} onHover={setHoveredModel} />
+              )}
+            </div>
+            {!isLoading && !isError && dispersionRows.length > 0 && (
+              <Provenance
+                source="GridTilt GPU price index"
+                updated={updatedDate}
+                extra={hasEst ? "† estimated value" : undefined}
               />
             )}
-          </div>
-          <p className="text-10 text-muted-foreground/50 mt-1 font-mono">
-            Only plotted points are data. Dashed spans connect unobserved time and are never treated as recorded price action.
-          </p>
-        </Card>
+          </RuleSection>
 
-        {/* Marketplace dispersion: observed low-high per model on one scale, dot = blended price */}
-        <Card className="border-card-border p-3" data-testid="ni-chart">
-          <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-            <span className="text-11 font-mono uppercase tracking-wider text-muted-foreground">Marketplace dispersion · $/GPU/hr</span>
-            <div className="flex items-center gap-3 text-10 font-mono">
-              <span className="flex items-center gap-1 text-muted-foreground/60"><span className="h-2 w-2 rounded-sm" style={{ background: VENDOR_COLOR.NVIDIA }} />NVIDIA</span>
-              <span className="flex items-center gap-1 text-muted-foreground/60"><span className="h-2 w-2 rounded-sm" style={{ background: VENDOR_COLOR.AMD }} />AMD</span>
-            </div>
-          </div>
-
-          <div ref={dispRef}>
+          {/* Price index table (fleet avg is a plain mean; "weighted" would be a lie) */}
+          <RuleSection head="On-demand price index" aside={<span>$/GPU/hr</span>} testId="ni-table">
             {isLoading ? (
-              <Skeleton className="h-[320px] w-full" />
-            ) : isError || dispersionRows.length === 0 ? (
-              <div className="h-[240px] flex items-center justify-center text-xs text-muted-foreground" data-testid="ni-chart-empty">
-                {isError ? <ErrorState label="Price index unavailable" onRetry={() => refetch()} /> : "No price data."}
-              </div>
+              <div className="space-y-2 py-2">{Array(10).fill(null).map((_, i) => <Skeleton key={i} className="h-7" />)}</div>
+            ) : isError ? (
+              <ErrorState label="Price index unavailable" onRetry={() => refetch()} />
             ) : (
-              <DispersionChart rows={dispersionRows} width={dispWidth} hovered={hoveredModel} onHover={setHoveredModel} />
+              <>
+                <table className="print-table">
+                  <thead>
+                    <tr>
+                      <th><SortHeader label="Model" k="model" cur={sortKey} dir={sortDir} onClick={toggleSort} /></th>
+                      <th className="hidden md:table-cell">History</th>
+                      <th className="num"><SortHeader label="Avg" k="current" cur={sortKey} dir={sortDir} onClick={toggleSort} /></th>
+                      <th className="num"><SortHeader label="1w" k="w1" cur={sortKey} dir={sortDir} onClick={toggleSort} /></th>
+                      <th className="num hidden sm:table-cell"><SortHeader label="1m" k="m1" cur={sortKey} dir={sortDir} onClick={toggleSort} /></th>
+                      <th className="num hidden sm:table-cell"><SortHeader label="YTD" k="ytd" cur={sortKey} dir={sortDir} onClick={toggleSort} /></th>
+                      <th className="num"><SortHeader label="1y" k="y1" cur={sortKey} dir={sortDir} onClick={toggleSort} /></th>
+                      <th className="num hidden lg:table-cell">Range</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sortedRows.map((r) => (
+                      <tr
+                        key={r.model}
+                        className={hoveredModel === r.model ? "bg-paper-shade" : ""}
+                        onPointerEnter={() => setHoveredModel(r.model)}
+                        onPointerLeave={() => setHoveredModel(null)}
+                        data-testid={`ni-row-${r.model}`}
+                      >
+                        <td className="shrink">
+                          <span className="flex items-center gap-1.5 font-semibold text-ink">
+                            <span className="h-2 w-2 flex-shrink-0 rounded-full" style={{ background: colorFor(r.model) }} />
+                            {r.model}
+                            <span className="text-[11.5px] font-normal text-ink-muted">{r.vendor}</span>
+                          </span>
+                        </td>
+                        <td className="hidden md:table-cell">
+                          <MiniSpark
+                            series={allSeries.find((s) => s.model === r.model)}
+                            color={hoveredModel === r.model ? colorFor(r.model) : CONTEXT}
+                          />
+                        </td>
+                        <td className="num text-ink">
+                          {fmtUsd(r.current)}
+                          {r.estimated.includes("currentUsdPerHr") && <EstFlag />}
+                        </td>
+                        <td className={`num ${changeClass(r.changes.w1)}`}>{fmtChange(r.changes.w1)}</td>
+                        <td className={`num hidden sm:table-cell ${changeClass(r.changes.m1)}`}>{fmtChange(r.changes.m1)}</td>
+                        <td className={`num hidden sm:table-cell ${changeClass(r.changes.ytd)}`}>{fmtChange(r.changes.ytd)}</td>
+                        <td className={`num ${changeClass(r.changes.y1)}`}>{fmtChange(r.changes.y1)}</td>
+                        <td className="num hidden lg:table-cell text-ink-muted">${r.low}–${r.high}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <Provenance
+                  source="GridTilt GPU price index"
+                  updated={updatedDate}
+                  extra={hasEst ? "† estimated value" : undefined}
+                />
+                <p className="mt-1 text-[12px] leading-relaxed text-ink-muted">
+                  1w, 1m, and YTD read "—" until the daily recorder accrues history; 1y is measured from sourced anchors.
+                </p>
+                <details className="mt-2" data-testid="ni-sources">
+                  <summary className="cursor-pointer list-none text-[12.5px] text-ink-muted hover:text-ink-secondary">
+                    Per-model sources
+                  </summary>
+                  <div className="mt-2 space-y-1.5">
+                    {sortedRows.map((r) => (
+                      <p key={r.model} className="text-[12.5px] leading-relaxed text-ink-muted">
+                        <span className="font-semibold text-ink">{r.model}</span>
+                        {r.liveSources && r.liveSources.length > 0 && (
+                          <span className="text-positive">
+                            {" "}· live price from {r.liveSources.join(" + ")}{r.liveDate ? ` (${r.liveDate})` : ""}
+                          </span>
+                        )}
+                        {r.oneYearTrend && <> · {r.oneYearTrend}</>}
+                        {r.sources.slice(0, 4).map((s) => (
+                          <a
+                            key={s}
+                            href={s}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="ml-2 text-ink-muted underline decoration-rule-strong underline-offset-2 hover:text-brand-ink"
+                          >
+                            {s.replace(/^https?:\/\//, "").split("/")[0]}
+                          </a>
+                        ))}
+                      </p>
+                    ))}
+                  </div>
+                </details>
+              </>
             )}
-          </div>
-        </Card>
+          </RuleSection>
 
-        {/* Price index table (fleet avg is a plain mean; "weighted" would be a lie) */}
-        <Card className="border-card-border overflow-hidden" data-testid="ni-table">
-          <div className="px-4 py-2 bg-surface-base border-b border-border">
-            <span className="text-11 font-mono uppercase tracking-wider text-muted-foreground">On-Demand Price Index</span>
-            <span className="text-10 font-mono text-muted-foreground/40 ml-2">hover a row for sources</span>
-          </div>
-          <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-surface-base border-b border-border text-10 font-mono uppercase tracking-wider text-muted-foreground">
-            <SortHeader label="Model" k="model" cur={sortKey} dir={sortDir} onClick={toggleSort} className="col-span-3" />
-            <span className="col-span-2">History</span>
-            <SortHeader label="Avg" k="current" cur={sortKey} dir={sortDir} onClick={toggleSort} className="col-span-1 justify-end" />
-            <SortHeader label="1W" k="w1" cur={sortKey} dir={sortDir} onClick={toggleSort} className="col-span-1 justify-end" />
-            <SortHeader label="1M" k="m1" cur={sortKey} dir={sortDir} onClick={toggleSort} className="col-span-1 justify-end" />
-            <SortHeader label="YTD" k="ytd" cur={sortKey} dir={sortDir} onClick={toggleSort} className="col-span-1 justify-end" />
-            <SortHeader label="1Y" k="y1" cur={sortKey} dir={sortDir} onClick={toggleSort} className="col-span-1 justify-end" />
-            <span className="col-span-2 text-right">Range</span>
-          </div>
-          {isLoading ? (
-            <div className="p-4 space-y-2">{Array(10).fill(null).map((_, i) => <Skeleton key={i} className="h-7" />)}</div>
-          ) : isError ? (
-            <ErrorState label="Price index unavailable" onRetry={() => refetch()} />
-          ) : (
-            sortedRows.map((r) => (
-              <UITooltip key={r.model}>
-                <TooltipTrigger asChild>
-                  <div
-                    className={`grid grid-cols-12 gap-2 px-4 py-2.5 border-b border-border/30 last:border-0 text-xs cursor-help items-center transition-colors ${
-                      hoveredModel === r.model ? "bg-brand/5" : "hover:bg-brand/5"
-                    }`}
-                    onPointerEnter={() => setHoveredModel(r.model)}
-                    onPointerLeave={() => setHoveredModel(null)}
-                    data-testid={`ni-row-${r.model}`}
-                  >
-                    <span className="col-span-3 font-mono font-semibold flex items-center gap-1.5" style={{ color: colorFor(r.model) }}>
-                      <span className="h-2 w-2 rounded-full flex-shrink-0" style={{ background: colorFor(r.model) }} />
-                      {r.model}
-                      <span className="text-8 font-normal px-1 rounded-sm" style={{ color: vendorColor(r.vendor), border: `1px solid ${vendorColor(r.vendor)}55` }}>{r.vendor}</span>
-                    </span>
-                    <span className="col-span-2">
-                      <MiniSpark series={allSeries.find((s) => s.model === r.model)} />
-                    </span>
-                    <span className="col-span-1 font-mono text-foreground text-right tabular-nums">
-                      {fmtUsd(r.current)}{r.estimated.includes("currentUsdPerHr") && <span className="ml-0.5 text-8 text-estimate">e</span>}
-                    </span>
-                    <span className="col-span-1 font-mono text-right tabular-nums" style={{ color: changeColor(r.changes.w1) }}>{fmtChange(r.changes.w1)}</span>
-                    <span className="col-span-1 font-mono text-right tabular-nums" style={{ color: changeColor(r.changes.m1) }}>{fmtChange(r.changes.m1)}</span>
-                    <span className="col-span-1 font-mono text-right tabular-nums" style={{ color: changeColor(r.changes.ytd) }}>{fmtChange(r.changes.ytd)}</span>
-                    <span className="col-span-1 font-mono text-right tabular-nums" style={{ color: changeColor(r.changes.y1) }}>{fmtChange(r.changes.y1)}</span>
-                    <span className="col-span-2 font-mono text-muted-foreground text-right tabular-nums text-11">${r.low}–${r.high}</span>
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent side="top" className="max-w-md p-3">
-                  <div className="text-xs font-semibold mb-1" style={{ color: colorFor(r.model) }}>
-                    {r.model} · {r.vendor} {r.architecture ? `· ${r.architecture}` : ""} {r.vramGB ? `· ${r.vramGB}GB ${r.vramType ?? ""}` : ""} {r.launchYear ? `· ${r.launchYear}` : ""}
-                  </div>
-                  {r.liveSources && r.liveSources.length > 0 && (
-                    <p className="text-10 font-mono text-positive mb-1">
-                      live price · {r.liveSources.join(" + ")} · {r.liveDate}
-                    </p>
-                  )}
-                  {r.oneYearTrend && <p className="text-11 text-muted-foreground mb-1.5">{r.oneYearTrend}</p>}
-                  {r.sources.length > 0 && (
-                    <div className="text-10 font-mono text-muted-foreground/70 break-all space-y-0.5">
-                      <div className="uppercase tracking-wider text-muted-foreground/50 mb-0.5">Sources</div>
-                      {r.sources.slice(0, 4).map((s) => <div key={s}>{s.replace(/^https?:\/\//, "")}</div>)}
-                    </div>
-                  )}
-                  <p className="text-10 text-muted-foreground/50 mt-1.5">1W/1M/YTD read "—" until the daily recorder accrues history; 1Y is from sourced anchors.</p>
-                </TooltipContent>
-              </UITooltip>
-            ))
-          )}
-        </Card>
-
-        <p className="text-11 text-muted-foreground/60 leading-relaxed px-1" data-testid="ni-methodology">
-          {data?.methodology ?? "Blended on-demand rental prices from public neocloud and marketplace listings and the getdeploying.com / Silicon Data trackers."}
-          {" "}Models covered by live provider APIs (RunPod, Vast.ai marketplace) serve an observed daily price - those
-          drop the est. flag and show their sources on row hover. The rest carry curated, source-verified estimates.
-          Prices move constantly and vary widely by provider, term, and availability; treat these as indicative, not quotes.
-        </p>
+          <p className="mt-6 max-w-[80ch] text-[12.5px] leading-relaxed text-ink-muted" data-testid="ni-methodology">
+            {data?.methodology ?? "Blended on-demand rental prices from public neocloud and marketplace listings and the getdeploying.com / Silicon Data trackers."}
+            {" "}Models covered by live provider APIs (RunPod, Vast.ai marketplace) serve an observed daily price; those
+            carry no estimate dagger and list their sources under the price index table. The rest carry curated,
+            source-verified estimates blended from Lambda, RunPod, Vast.ai, CoreWeave, TensorWave, Vultr, and Nebius
+            listings. Prices move constantly and vary widely by provider, term, and availability; treat these as
+            indicative, not quotes.
+          </p>
         </>
-        )}
-      </div>
-    </div>
+      )}
+    </PageShell>
   );
 }
 
@@ -572,14 +583,14 @@ function PipelineHealthLine({ health }: { health: GpuPipelineHealth }) {
   const sweep = health.lastSweep;
   const failed = sweep ? sweep.perProvider.runpod.failed + sweep.perProvider.vast.failed : 0;
   return (
-    <p className="mt-1 max-w-3xl text-10 font-mono leading-relaxed text-muted-foreground" data-testid="ni-pipeline-health">
+    <p className="mt-1 max-w-3xl text-[12px] leading-relaxed text-ink-muted" data-testid="ni-pipeline-health">
       Live observations: {health.recordedDays} days, last {health.lastRecordedDate ?? "none"}. Curated reprice: {health.curatedLastRefreshed ?? "unknown"}.
       {sweep ? (
-        <span className={failed > 0 ? "text-warning" : "text-muted-foreground/70"}>
+        <span className={failed > 0 ? "text-warning" : ""}>
           {` Last sweep ${sweep.date}: ${failed > 0 ? `${failed} provider request${failed === 1 ? "" : "s"} failed` : `${sweep.usableModels} models recorded`} (RunPod ${sweep.perProvider.runpod.succeeded}/${sweep.perProvider.runpod.requests}, Vast ${sweep.perProvider.vast.succeeded}/${sweep.perProvider.vast.requests}).`}
         </span>
       ) : (
-        <span className="text-muted-foreground/60"> No provider sweep has completed in this process.</span>
+        <span> No provider sweep has completed in this process.</span>
       )}
     </p>
   );
@@ -597,7 +608,8 @@ interface DispersionRow {
 /**
  * Same-scale dispersion strips: the observed low-high marketplace range per
  * model with a dot at the blended price. The spread multiple on the right is
- * the point of the chart: on-demand GPU rent is not one price.
+ * the point of the chart: on-demand GPU rent is not one price. Strips read
+ * context gray until a model is hovered, then take that model's slot color.
  */
 function DispersionChart({
   rows,
@@ -629,19 +641,21 @@ function DispersionChart({
         {ticks.map((t) => (
           <g key={t}>
             <line x1={x(t)} y1={M.top - 4} x2={x(t)} y2={height - 4} stroke={BORDER.subtle} />
-            <text x={x(t)} y={M.top - 8} textAnchor="middle" fontSize={9} fontFamily={FONT.mono} fill={INK.faint}>${t}</text>
+            <text x={x(t)} y={M.top - 8} textAnchor="middle" fontSize={10} fontFamily={FONT.sans} fill={INK.muted}>${t}</text>
           </g>
         ))}
-        <text x={width - M.right + 44} y={M.top - 8} textAnchor="end" fontSize={9} fontFamily={FONT.mono} fill={INK.faint}>blended</text>
-        <text x={width - 8} y={M.top - 8} textAnchor="end" fontSize={9} fontFamily={FONT.mono} fill={INK.faint}>spread</text>
+        <text x={width - M.right + 44} y={M.top - 8} textAnchor="end" fontSize={10} fontFamily={FONT.sans} fill={INK.muted}>blended</text>
+        <text x={width - 8} y={M.top - 8} textAnchor="end" fontSize={10} fontFamily={FONT.sans} fill={INK.muted}>spread</text>
         {rows.map((r, i) => {
           const cy = M.top + i * ROW_H + ROW_H / 2;
-          const dim = hovered !== null && hovered !== r.model;
+          const active = hovered === r.model;
+          const dim = hovered !== null && !active;
+          const mark = active ? colorFor(r.model) : CONTEXT;
           const spread = r.low > 0 ? r.high / r.low : null;
           return (
             <g
               key={r.model}
-              opacity={dim ? 0.35 : 1}
+              opacity={dim ? 0.4 : 1}
               onPointerEnter={() => onHover(r.model)}
               onPointerLeave={() => onHover(null)}
               data-testid={`ni-disp-${r.model}`}
@@ -650,14 +664,14 @@ function DispersionChart({
                 {`${r.model} · $${r.current.toFixed(2)}/hr blended${r.est ? " (est.)" : ""} · observed $${r.low}-$${r.high}${spread ? ` · ${spread.toFixed(1)}x spread` : ""}`}
               </title>
               <rect x={0} y={cy - ROW_H / 2} width={width} height={ROW_H} fill="transparent" />
-              <text x={M.left - 8} y={cy + 3.5} textAnchor="end" fontSize={11} fontWeight={600} fontFamily={FONT.mono} fill={colorFor(r.model)}>{r.model}</text>
-              <rect x={x(r.low)} y={cy - 2} width={Math.max(2, x(r.high) - x(r.low))} height={4} rx={2} fill={vendorColor(r.vendor)} opacity={0.3} />
-              <circle cx={x(r.current)} cy={cy} r={hovered === r.model ? 5 : 4} fill={vendorColor(r.vendor)} />
-              <text x={width - M.right + 44} y={cy + 3.5} textAnchor="end" fontSize={11} fontFamily={FONT.mono} fill={INK.secondary}>
+              <text x={M.left - 8} y={cy + 3.5} textAnchor="end" fontSize={11} fontWeight={600} fontFamily={FONT.sans} fill={active ? colorFor(r.model) : INK.primary}>{r.model}</text>
+              <rect x={x(r.low)} y={cy - 2} width={Math.max(2, x(r.high) - x(r.low))} height={4} rx={2} fill={mark} opacity={0.35} />
+              <circle cx={x(r.current)} cy={cy} r={active ? 5 : 4} fill={mark} />
+              <text x={width - M.right + 44} y={cy + 3.5} textAnchor="end" fontSize={11} fontFamily={FONT.sans} fill={INK.secondary}>
                 {fmtUsd(r.current)}
-                {r.est && <tspan fontSize={8} fill={DATA_QUALITY.estimateFlag} dy={-3}> e</tspan>}
+                {r.est && <tspan fontSize={9} fill={DATA_QUALITY.estimateFlag} dy={-3}>†</tspan>}
               </text>
-              <text x={width - 8} y={cy + 3.5} textAnchor="end" fontSize={10} fontFamily={FONT.mono} fill={INK.faint}>
+              <text x={width - 8} y={cy + 3.5} textAnchor="end" fontSize={10} fontFamily={FONT.sans} fill={INK.muted}>
                 {spread ? `${spread.toFixed(1)}×` : "—"}
               </text>
             </g>
@@ -677,17 +691,17 @@ function DispersionChart({
  * Table sparkline with the same honesty treatment as the main chart:
  * per-series [min, max] domain with 10% padding, dashed interpolated spans,
  * hollow anchor dots and solid recorded dots. A single point renders as a
- * dot, not a fake line.
+ * dot, not a fake line. Reads context gray until its row is hovered.
  */
-function MiniSpark({ series }: { series: ChartSeries | undefined }) {
+function MiniSpark({ series, color }: { series: ChartSeries | undefined; color: string }) {
   const W = 104;
   const H = 22;
   if (!series || series.points.length === 0) {
-    return <span className="text-10 font-mono text-muted-foreground/40">no data</span>;
+    return <span className="text-[11px] text-ink-faint">no data</span>;
   }
   const pts = series.points;
   const geom = sparklineDomain(pts.map((p) => p.price));
-  if (!geom) return <span className="text-10 font-mono text-muted-foreground/40">no data</span>;
+  if (!geom) return <span className="text-[11px] text-ink-faint">no data</span>;
   const [d0, d1] = geom.domain;
   const t0 = pts[0].t;
   const t1 = pts[pts.length - 1].t;
@@ -701,7 +715,7 @@ function MiniSpark({ series }: { series: ChartSeries | undefined }) {
           key={i}
           points={span.points.map((p) => `${x(p.t)},${y(p.price)}`).join(" ")}
           fill="none"
-          stroke={series.color}
+          stroke={color}
           strokeWidth={1.4}
           strokeOpacity={span.quality === "observed" ? 1 : 0.55}
           strokeDasharray={span.quality === "observed" ? undefined : "3 3"}
@@ -714,8 +728,8 @@ function MiniSpark({ series }: { series: ChartSeries | undefined }) {
           cx={x(p.t)}
           cy={y(p.price)}
           r={p.kind === "anchor" ? 2 : 1.3}
-          fill={p.kind === "anchor" ? "hsl(var(--card))" : series.color}
-          stroke={series.color}
+          fill={p.kind === "anchor" ? SURFACE.base : color}
+          stroke={color}
           strokeWidth={p.kind === "anchor" ? 1 : 0}
         />
       ))}
@@ -723,10 +737,14 @@ function MiniSpark({ series }: { series: ChartSeries | undefined }) {
   );
 }
 
-function SortHeader({ label, k, cur, dir, onClick, className = "" }: { label: string; k: SortKey; cur: SortKey; dir: "asc" | "desc"; onClick: (k: SortKey) => void; className?: string }) {
+function SortHeader({ label, k, cur, onClick }: { label: string; k: SortKey; cur: SortKey; dir: "asc" | "desc"; onClick: (k: SortKey) => void }) {
   const active = cur === k;
   return (
-    <button onClick={() => onClick(k)} className={`flex items-center gap-1 hover:text-foreground transition-colors ${active ? "text-brand" : ""} ${className}`} data-testid={`ni-sort-${k}`}>
+    <button
+      onClick={() => onClick(k)}
+      className={`inline-flex items-center gap-1 transition-colors hover:text-ink ${active ? "text-brand-ink" : ""}`}
+      data-testid={`ni-sort-${k}`}
+    >
       {label}
       <ArrowUpDown className="h-3 w-3" style={{ opacity: active ? 1 : 0.3 }} />
     </button>
