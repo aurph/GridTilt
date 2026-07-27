@@ -173,7 +173,7 @@ export default {
         slow: "var(--duration-slow)",
       },
       fontFamily: {
-        sans: ["Public Sans", "-apple-system", "Segoe UI", "sans-serif"],
+        sans: ["Archivo", "-apple-system", "Segoe UI", "sans-serif"],
         serif: ["var(--font-serif)"],
         mono: ["ui-monospace", "SF Mono", "monospace"],
       },

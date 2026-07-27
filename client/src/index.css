@@ -8,56 +8,54 @@
  * 2026-07-23-editorial-redesign-design.md
  */
 :root {
-  --button-outline: rgba(22, 19, 16, .18);
-  --badge-outline: rgba(22, 19, 16, .10);
+  --button-outline: rgba(19, 19, 18, .18);
+  --badge-outline: rgba(19, 19, 18, .10);
   --opaque-button-border-intensity: -6;
-  --elevate-1: rgba(22, 19, 16, .035);
-  --elevate-2: rgba(22, 19, 16, .07);
+  --elevate-1: rgba(19, 19, 18, .035);
+  --elevate-2: rgba(19, 19, 18, .07);
 
   /* Page ground: warm cream paper */
-  --background: 43 37% 96%;
-  --foreground: 30 16% 7%;
+  --background: 60 2% 99%;
+  --foreground: 60 2% 7%;
 
   /* Hairline rules */
-  --border: 41 17% 82%;
+  --border: 60 1% 88%;
 
   /* Plates: slightly lighter than the page, like coated stock */
-  --card: 45 25% 98%;
-  --card-foreground: 30 16% 7%;
-  --card-border: 41 17% 82%;
+  --card: 0 0% 100%;
+  --card-foreground: 60 2% 7%;
+  --card-border: 60 1% 88%;
 
   /* Sidebar slots kept for the ui/ fork; mapped to paper equivalents */
-  --sidebar: 45 25% 98%;
-  --sidebar-foreground: 30 16% 7%;
-  --sidebar-border: 41 17% 82%;
+  --sidebar: 0 0% 100%;
+  --sidebar-foreground: 60 2% 7%;
+  --sidebar-border: 60 1% 88%;
   --sidebar-primary: 30 100% 31%;
-  --sidebar-primary-foreground: 43 37% 96%;
-  --sidebar-accent: 44 28% 92%;
-  --sidebar-accent-foreground: 30 16% 7%;
+  --sidebar-primary-foreground: 60 2% 99%;
+  --sidebar-accent: 60 1% 95%;
+  --sidebar-accent-foreground: 60 2% 7%;
   --sidebar-ring: 30 100% 31%;
 
-  --popover: 40 23% 99%;
-  --popover-foreground: 30 16% 7%;
-  --popover-border: 41 17% 82%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 60 2% 7%;
+  --popover-border: 60 1% 88%;
 
-  /* Primary action = ink on paper (house rule: orange is graphic-only).
-     Matches the hero CTA (bg-ink / text-paper); orange stays in charts,
-     rules, and the active-nav underline. */
-  --primary: 30 16% 7%;
-  --primary-foreground: 43 37% 96%;
+  /* Primary: brand orange, graphic use; ink text on it (white fails contrast) */
+  --primary: 30 100% 47%;
+  --primary-foreground: 60 2% 7%;
 
-  --secondary: 44 28% 92%;
-  --secondary-foreground: 30 16% 7%;
-  --muted: 44 28% 92%;
-  --muted-foreground: 38 7% 32%;
+  --secondary: 60 1% 95%;
+  --secondary-foreground: 60 2% 7%;
+  --muted: 60 1% 95%;
+  --muted-foreground: 60 2% 33%;
 
-  --accent: 44 28% 92%;
-  --accent-foreground: 30 16% 7%;
+  --accent: 60 1% 95%;
+  --accent-foreground: 60 2% 7%;
 
   --destructive: 5 61% 44%;
-  --destructive-foreground: 43 37% 96%;
+  --destructive-foreground: 60 2% 99%;
 
-  --input: 41 17% 82%;
+  --input: 60 1% 88%;
   --ring: 30 100% 31%;
 
   /* Legacy shadcn chart slots (few consumers; real palette is --series-*) */
@@ -68,22 +66,22 @@
   --chart-5: 5 61% 44%;
 
   /* Typography */
-  --font-sans: "Public Sans", -apple-system, "Segoe UI", sans-serif;
-  --font-serif: "Instrument Serif", Georgia, serif;
+  --font-sans: "Archivo", -apple-system, "Segoe UI", sans-serif;
+  --font-serif: "Archivo", -apple-system, sans-serif;
   --font-mono: ui-monospace, "SF Mono", monospace;
 
   /* Print corners: near-square */
   --radius: 0rem;
 
   /* Shadows: faint, warm-ink based; paper barely floats */
-  --shadow-2xs: 0px 1px 2px 0px rgba(22, 19, 16, .06);
-  --shadow-xs: 0px 1px 3px 0px rgba(22, 19, 16, .08);
-  --shadow-sm: 0px 2px 4px 0px rgba(22, 19, 16, .08), 0px 1px 2px -1px rgba(22, 19, 16, .06);
-  --shadow: 0px 3px 6px 0px rgba(22, 19, 16, .09), 0px 2px 4px -1px rgba(22, 19, 16, .06);
-  --shadow-md: 0px 4px 10px 0px rgba(22, 19, 16, .10), 0px 2px 4px -1px rgba(22, 19, 16, .06);
-  --shadow-lg: 0px 8px 18px 0px rgba(22, 19, 16, .12), 0px 3px 6px -1px rgba(22, 19, 16, .08);
-  --shadow-xl: 0px 12px 24px 0px rgba(22, 19, 16, .14), 0px 6px 12px -1px rgba(22, 19, 16, .08);
-  --shadow-2xl: 0px 16px 32px 0px rgba(22, 19, 16, .16);
+  --shadow-2xs: 0px 1px 2px 0px rgba(19, 19, 18, .06);
+  --shadow-xs: 0px 1px 3px 0px rgba(19, 19, 18, .08);
+  --shadow-sm: 0px 2px 4px 0px rgba(19, 19, 18, .08), 0px 1px 2px -1px rgba(19, 19, 18, .06);
+  --shadow: 0px 3px 6px 0px rgba(19, 19, 18, .09), 0px 2px 4px -1px rgba(19, 19, 18, .06);
+  --shadow-md: 0px 4px 10px 0px rgba(19, 19, 18, .10), 0px 2px 4px -1px rgba(19, 19, 18, .06);
+  --shadow-lg: 0px 8px 18px 0px rgba(19, 19, 18, .12), 0px 3px 6px -1px rgba(19, 19, 18, .08);
+  --shadow-xl: 0px 12px 24px 0px rgba(19, 19, 18, .14), 0px 6px 12px -1px rgba(19, 19, 18, .08);
+  --shadow-2xl: 0px 16px 32px 0px rgba(19, 19, 18, .16);
   --tracking-normal: 0em;
   --spacing: 0.25rem;
 
@@ -105,19 +103,19 @@
  * closer to the reader), sunken = well (darker), overlay = popover stock.
  */
 :root {
-  --surface-sunken: #F1EEE6;
-  --surface-base: #F9F7F2;
-  --surface-raised: #FCFBF8;
-  --surface-overlay: #FEFDFB;
-  --border-subtle: rgba(22, 19, 16, 0.10);
-  --border-strong: rgba(22, 19, 16, 0.22);
+  --surface-sunken: #F4F4F3;
+  --surface-base: #FCFCFC;
+  --surface-raised: #FFFFFF;
+  --surface-overlay: #FFFFFF;
+  --border-subtle: rgba(19, 19, 18, 0.10);
+  --border-strong: rgba(19, 19, 18, 0.22);
 
   /* Editorial aliases (same system, print vocabulary) */
-  --paper: #F9F7F2;
-  --paper-shade: #F1EEE6;
-  --paper-deep: #E9E4D8;
-  --rule: #D8D3C8;
-  --rule-strong: #A8A296;
+  --paper: #FCFCFC;
+  --paper-shade: #F4F4F3;
+  --paper-deep: #ECECEA;
+  --rule: #E2E2E0;
+  --rule-strong: #B4B4B0;
 
   /* Brand: #F07800 is graphic-only; --brand-2 is orange as TEXT (AA on paper) */
   --brand: #F07800;
@@ -127,10 +125,10 @@
   --brand-wash: rgba(240, 120, 0, 0.07);
 
   /* Ink scale (text on paper) */
-  --ink: #161310;
-  --ink-secondary: #57534C;
-  --ink-muted: #837E76;
-  --ink-faint: #A39E95;
+  --ink: #131312;
+  --ink-secondary: #545451;
+  --ink-muted: #807F7B;
+  --ink-faint: #A6A5A1;
 
   /* Semantic - state, never series identity */
   --positive: #1E7A46;
@@ -148,7 +146,7 @@
 
   /* Categorical series - fixed order, validated for the paper ground
      (dataviz six-checks: worst adjacent CVD dE 8.5 protan, all >= 3:1 vs
-     #F9F7F2). Assign in order, never cycle; >4 series need direct labels.
+     #FCFCFC). Assign in order, never cycle; >4 series need direct labels.
      Do not reorder: order IS the CVD-safety mechanism. */
   --series-1: #2D5F9E;
   --series-2: #A67300;
@@ -162,12 +160,12 @@
   --series-10: #96601F;
 
   /* Chart chrome */
-  --chart-axis: #837E76;
-  --chart-tick: #57534C;
-  --chart-grid: rgba(22, 19, 16, 0.08);
-  --chart-crosshair: rgba(22, 19, 16, 0.30);
-  --chart-ref-line: rgba(22, 19, 16, 0.18);
-  --chart-context: #A39E95;
+  --chart-axis: #807F7B;
+  --chart-tick: #545451;
+  --chart-grid: rgba(19, 19, 18, 0.08);
+  --chart-crosshair: rgba(19, 19, 18, 0.30);
+  --chart-ref-line: rgba(19, 19, 18, 0.18);
+  --chart-context: #A6A5A1;
 
   /* Focus + motion */
   --focus-ring-color: #9E5000;
@@ -190,11 +188,13 @@ html {
     @apply font-sans antialiased bg-background text-foreground;
   }
 
-  /* Instrument Serif ships one true weight; never let the browser fake a
-     bold from it. Display presence comes from size, not synthesis. */
+  /* Single-family type system: Archivo everywhere. The historical
+     .font-serif class is now the DISPLAY cut - heavy weight, tight
+     tracking - so every headline and pull figure flips with this one
+     rule. Body and UI run 400-600 through the normal font-* utilities. */
   .font-serif {
-    font-optical-sizing: auto;
-    font-synthesis: none;
+    font-variation-settings: "wght" 640;
+    letter-spacing: -0.025em;
   }
 
   /* Tabular figures wherever numbers sit in columns, so they never jitter */
