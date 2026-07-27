@@ -305,34 +305,16 @@ html {
   }
 }
 
-/* The house rule system. Rules carry meaning by weight:
-   - scotch (thick over thin, the classic newspaper pair) = page and
-     masthead level
-   - thickthin = section openings
+/* The house rule system, modern cut. Weight still carries meaning, with
+   clean single strokes only:
+   - rule-scotch (historical name) = page-level: one confident ink stroke
+   - rule-thickthin (historical name) = section openings: strong hairline
    - hairline (border-rule) = rows and internal divisions */
 .rule-scotch {
-  border-top: 3px solid var(--ink);
-  position: relative;
-}
-.rule-scotch::after {
-  content: "";
-  position: absolute;
-  top: 2px;
-  left: 0;
-  right: 0;
-  border-top: 1px solid var(--ink);
+  border-top: 2px solid var(--ink);
 }
 .rule-thickthin {
-  border-top: 2px solid var(--ink);
-  position: relative;
-}
-.rule-thickthin::after {
-  content: "";
-  position: absolute;
-  top: 1px;
-  left: 0;
-  right: 0;
-  border-top: 1px solid var(--rule);
+  border-top: 1px solid var(--rule-strong);
 }
 
 /* The tilt mark as a recurring glyph: two slanted strokes in brand orange.

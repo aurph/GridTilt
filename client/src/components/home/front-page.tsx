@@ -275,24 +275,19 @@ export function FrontPage() {
         >
           {news && news.length > 0 ? (
             <ul>
-              {news.slice(0, 6).map((n, i) => (
-                <li key={n.url} className="flex gap-3 border-b border-rule py-2.5 last:border-b-0">
-                  <span className="w-5 shrink-0 pt-px text-right font-serif text-[17px] leading-none text-ink-faint tnum" aria-hidden>
-                    {i + 1}
-                  </span>
-                  <span className="min-w-0">
-                    <a
-                      href={n.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-[14px] leading-snug text-ink no-underline hover:text-brand-ink"
-                    >
-                      {n.headline}
-                    </a>
-                    <p className="mt-1 text-[12px] text-ink-muted">
-                      {n.source} · {fmtTimeAgo(n.publishedAt)}
-                    </p>
-                  </span>
+              {news.slice(0, 6).map((n) => (
+                <li key={n.url} className="border-b border-rule py-2.5 last:border-b-0">
+                  <a
+                    href={n.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[14px] leading-snug text-ink no-underline hover:text-brand-ink"
+                  >
+                    {n.headline}
+                  </a>
+                  <p className="mt-1 text-[12px] text-ink-muted">
+                    {n.source} · {fmtTimeAgo(n.publishedAt)}
+                  </p>
                 </li>
               ))}
             </ul>
@@ -332,9 +327,9 @@ export function FrontPage() {
         </RuleSection>
       </div>
 
-      {/* Section index: a compact ruled "Inside" listing with the tilt
-          glyph as the bullet, two columns with a column rule */}
-      <RuleSection head="Inside GridTilt" testId="front-directory">
+      {/* Section index: compact ruled listing, tilt glyph as the bullet,
+          two columns with a column rule */}
+      <RuleSection head="Sections" testId="front-directory">
         <div className="grid grid-cols-1 sm:grid-cols-2 sm:divide-x sm:divide-rule">
           {[SECTION_DIRECTORY.slice(0, 4), SECTION_DIRECTORY.slice(4)].map((col, ci) => (
             <div key={ci} className={ci === 1 ? "sm:pl-8" : "sm:pr-8"}>
