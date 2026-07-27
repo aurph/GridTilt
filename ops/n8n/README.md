@@ -70,6 +70,74 @@ weekly run. It does not create observations and it does not repair the separate
 05:00 daily recorder ping. Restarting or repairing the Jetson n8n instance remains
 an owner action required for both schedules to run.
 
+## cluster-refresh.json
+
+Daily refresh for the Compute Frontier cluster registry:
+
+`Daily trigger` (06:30) -> fetch current `server/data/clusters.json` and
+`server/data/interconnection-queue.json` from GitHub -> Claude (Sonnet 4.6)
+with web search researches what changed (status transitions, power figure
+updates, new named superclusters, new operators, disclosed GPU counts) and
+returns a PATCH of changed and new rows only, never the full 235-row file ->
+**hard validation** applies the patch -> commit straight to `main` with subject
+`data: daily cluster refresh` -> ntfy notification.
+
+The validation node aborts the run with NO commit, and fires a separate abort
+ntfy alert, if any of these fail:
+- a changed row does not carry at least one `https://` source
+- a changed row does not carry an explicit `estimated[]` array (estimates and
+  forward targets must be flagged; `[]` means fully sourced)
+- any operational cluster would have 0 rated MW
+- any `linkedDeal` id does not resolve against `interconnection-queue.json`
+- the total cluster count would shrink (it may only grow or stay equal; rows
+  can never be deleted, renamed, or re-id'd through the patch)
+- total planned MW swings more than 15% in a single day
+- a status moves backward (only announced -> construction -> operational)
+- more than 30 rows change in one day (churn that big is never real news)
+- per-row sanity: status outside the three known values, power outside
+  0-15000 MW, gpuCount outside 1-5,000,000, malformed new rows
+
+On a clean pass with zero changes it still commits: only `lastRefreshed`
+moves, which is the "checked today" signal `/api/clusters/metrics` serves.
+Unchanged rows are byte-identical in the output, so git diffs stay minimal.
+
+## Mounting on the Jetson n8n
+
+How to put cluster-refresh.json on the homelab instance. Nothing runs until
+you do this by hand.
+
+Credentials needed (both already exist if the GPU reprice is mounted):
+1. `Anthropic x-api-key` (HTTP Header Auth): Name `x-api-key`, Value = the
+   Anthropic API key. Map it on *Claude research (web search)*.
+2. `GitHub PAT` (HTTP Header Auth): Name `Authorization`, Value
+   `Bearer <PAT>`. The token needs Contents read/write on `aurph/GridTilt`.
+   Map it on *GitHub get clusters file*, *GitHub get deals file*, and
+   *Commit to main*.
+
+Steps:
+1. Import `cluster-refresh.json` into the Jetson n8n. Importing does not
+   activate it.
+2. Map the two credentials as above (4 nodes total).
+3. Subscribe to the ntfy topic `gridtilt-cluster-refresh` on your phone.
+   Both the success summary and the abort alert use this one topic; change
+   it on the *Notify* and *Notify abort* nodes if you want something else.
+4. Run it once manually. Confirm the commit touches only
+   `server/data/clusters.json` and the subject line is exactly
+   `data: daily cluster refresh`.
+5. Activate the workflow.
+
+Schedule: daily at 06:30 in the n8n instance timezone. That sits after the
+05:00 GPU recorder ping and the Monday 06:00 GPU reprice, so the two commit
+flows never race (different files anyway, but no reason to overlap).
+
+Kill switch: toggle the workflow off in n8n. That is the whole mechanism;
+there is no env flag. Off means no research, no commit, no alerts. Revoking
+the GitHub PAT is the harder stop that also freezes the GPU workflows.
+
+If the run aborts you get a high-priority ntfy alert with the exact gate rule
+that tripped, and clusters.json on main is untouched. Fix by hand or wait for
+the next day's run.
+
 ## Notes
 - Push != shipped. After a commit, redeploy on Replit to put it live.
 - A history-backup commit is durable storage, not a deploy. It becomes the recorder

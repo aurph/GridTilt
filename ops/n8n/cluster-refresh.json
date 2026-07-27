@@ -1,0 +1,424 @@
+{
+  "name": "GridTilt Cluster Registry Refresh",
+  "nodes": [
+    {
+      "id": "n-sticky",
+      "name": "Setup notes",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -360,
+        -40
+      ],
+      "parameters": {
+        "width": 460,
+        "height": 420,
+        "content": "## GridTilt Cluster Registry Refresh (daily)\n\nCommits an updated server/data/clusters.json straight to main, gated by hard validation. Claude proposes a PATCH (changed + new rows only); the gate applies it and aborts on anything suspect.\n\n### One-time setup\n1. Map the existing **HTTP Header Auth** credential `Anthropic x-api-key` on *Claude research*.\n2. Map the existing **HTTP Header Auth** credential `GitHub PAT` (Authorization: Bearer <PAT>) on all three GitHub nodes.\n3. Set your ntfy topic on *Notify* and *Notify abort* (default: gridtilt-cluster-refresh).\n4. Repo is hard-coded to aurph/GridTilt on main; change in the URLs if needed.\n\n### Integrity gate (auto, no review needed)\n*Parse + validate* ABORTS (no commit, abort ntfy fires) if: a changed row lacks an https source, estimated[] is missing on a change, an operational cluster has 0 rated MW, a linkedDeal does not resolve against interconnection-queue.json, the cluster count shrinks, total planned MW swings >15% in a day, a status moves backward, or >30 rows change at once.\n\nKill switch: deactivate this workflow in n8n. After a commit, redeploy on Replit to put it live (push != shipped)."
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "daysBetweenTriggers": 1,
+              "triggerAtHour": 6,
+              "triggerAtMinute": 30
+            }
+          ]
+        }
+      },
+      "id": "n-daily",
+      "name": "Daily trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        180,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.github.com/repos/aurph/GridTilt/contents/server/data/clusters.json?ref=main",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "User-Agent",
+              "value": "gridtilt-n8n"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "n-ghget-clusters",
+      "name": "GitHub get clusters file",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        400,
+        0
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_GITHUB",
+          "name": "GitHub PAT (Authorization Bearer)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.github.com/repos/aurph/GridTilt/contents/server/data/interconnection-queue.json?ref=main",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "User-Agent",
+              "value": "gridtilt-n8n"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "n-ghget-deals",
+      "name": "GitHub get deals file",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        620,
+        0
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_GITHUB",
+          "name": "GitHub PAT (Authorization Bearer)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Decode clusters.json and interconnection-queue.json fetched from GitHub.\n// This node's direct input is the deals GET; the clusters GET is referenced by name.\nconst clustersResp = $(\"GitHub get clusters file\").item.json;\nconst b64c = (clustersResp.content || \"\").replace(/\\n/g, \"\");\nconst clustersRoot = JSON.parse(Buffer.from(b64c, \"base64\").toString(\"utf-8\"));\nconst b64d = ($json.content || \"\").replace(/\\n/g, \"\");\nconst dealsRoot = JSON.parse(Buffer.from(b64d, \"base64\").toString(\"utf-8\"));\nconst dealIds = (dealsRoot.projects || []).map((p) => p.id);\nif (!Array.isArray(clustersRoot.clusters) || clustersRoot.clusters.length < 1)\n  throw new Error(\"clusters.json decode failed or empty\");\nif (dealIds.length < 1) throw new Error(\"interconnection-queue.json decode failed or empty\");\nreturn [{ json: { clusters: clustersRoot, dealIds, sha: clustersResp.sha } }];"
+      },
+      "id": "n-decode",
+      "name": "Decode current files",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        840,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Build the Anthropic Messages API request (Claude Sonnet + web search).\n// We send a condensed roster and ask for a PATCH (changed rows + new rows only),\n// never the full 235-row file back. The validate node applies and hard-gates it.\nconst root = $json.clusters;\nconst dealIds = $json.dealIds;\nconst today = new Date().toISOString().slice(0, 10);\n\nconst roster = root.clusters.map((c) => ({\n  id: c.id,\n  name: c.name,\n  operator: c.operator,\n  status: c.status,\n  state: c.location ? c.location.state : null,\n  gridRegion: c.gridRegion,\n  gpuCount: c.gpuCount,\n  chipType: c.chipType,\n  ratedPowerMW: c.ratedPowerMW,\n  plannedPowerMW: c.plannedPowerMW,\n  energySource: c.energySource,\n  workload: c.workload,\n  linkedDeal: c.linkedDeal,\n  onlineDate: c.onlineDate,\n  estimated: c.estimated\n}));\n\nconst prompt = [\n  \"You maintain GridTilt's registry of named AI training/inference superclusters (server/data/clusters.json). Today is \" + today + \". The registry was last refreshed \" + root.lastRefreshed + \".\",\n  \"\",\n  \"Here is the CURRENT roster (condensed; sources/notes/coordinates omitted):\",\n  JSON.stringify(roster),\n  \"\",\n  \"Valid linkedDeal ids (nuclear-for-AI deals in interconnection-queue.json). A cluster's linkedDeal must be one of these or null:\",\n  JSON.stringify(dealIds),\n  \"\",\n  \"Using web search, find what has CHANGED since \" + root.lastRefreshed + \":\",\n  \"1. Status transitions (announced -> construction -> operational) announced by the operator, utilities, or credible trade press (DCD, Data Center Frontier, SemiAnalysis, Tom's Hardware, Reuters, Bloomberg, utility filings).\",\n  \"2. Power figure updates: rated MW newly energized, planned MW revised by the operator.\",\n  \"3. New NAMED superclusters or campuses (including new operators) at 100 MW planned or larger, primarily US.\",\n  \"4. Newly disclosed gpuCount or chipType for existing rows.\",\n  \"\",\n  \"Output ONLY this JSON object, no prose and no markdown fences:\",\n  '{\"updates\": [{\"id\": \"<existing id>\", \"set\": {<only the changed fields>}, \"estimated\": [<full replacement list of field names whose values are estimates or forward targets>], \"addSources\": [\"https://...\"]}], \"newClusters\": [{<full row>}]}',\n  \"\",\n  \"Rules:\",\n  \"- updates[].set may only contain: name, operator, status, gridRegion, gpuCount, chipType, ratedPowerMW, plannedPowerMW, energySource, workload, linkedDeal, onlineDate, notes. Include ONLY fields that changed.\",\n  \"- Every update MUST include addSources with at least one https URL you actually checked this run, and an explicit estimated array (the row's complete new estimated list, [] if every value is sourced).\",\n  \"- Every newClusters row MUST have every field: id (new kebab-case), name, operator, status, location {city, state, lat, lng}, gridRegion (ERCOT|PJM|WECC|MISO|SERC|SPP|NPCC|CAISO), gpuCount (null when undisclosed, never invented), chipType, ratedPowerMW (0 until energized), plannedPowerMW, energySource, workload, linkedDeal (an id from the list above or null), onlineDate, estimated, sources (1+ https URLs), notes.\",\n  \"- status is exactly one of: announced, construction, operational. Never move a status backward. An operational cluster must have ratedPowerMW > 0.\",\n  \"- Do not invent precision. Any figure that is a target, projection, or your estimate goes in that row's estimated array.\",\n  \"- Never delete, rename, or re-id a cluster. Do not restate rows that did not change.\",\n  \"- If nothing changed, output {\\\"updates\\\": [], \\\"newClusters\\\": []}.\"\n].join(\"\\n\");\n\nconst requestBody = {\n  model: \"claude-sonnet-4-6\",\n  max_tokens: 16000,\n  tools: [{ type: \"web_search_20260209\", name: \"web_search\", max_uses: 15 }],\n  messages: [{ role: \"user\", content: prompt }]\n};\nreturn [{ json: { requestBody } }];"
+      },
+      "id": "n-buildreq",
+      "name": "Build Claude request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1060,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.requestBody) }}",
+        "options": {
+          "timeout": 300000
+        }
+      },
+      "id": "n-claude",
+      "name": "Claude research (web search)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1280,
+        0
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_ANTHROPIC",
+          "name": "Anthropic x-api-key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse Claude's patch, apply it to the current registry, then HARD-VALIDATE\n// before anything can be committed. Any throw = abort: no commit, and the\n// error output of this node feeds the abort ntfy alert.\nconst resp = $json;\nlet text = \"\";\nif (Array.isArray(resp.content)) {\n  for (const b of resp.content) { if (b.type === \"text\" && b.text) text += b.text; }\n} else if (typeof resp.content === \"string\") {\n  text = resp.content;\n}\ntext = text.trim();\nconst s = text.indexOf(\"{\");\nconst e = text.lastIndexOf(\"}\");\nif (s === -1 || e === -1) throw new Error(\"No JSON found in Claude response\");\nconst patch = JSON.parse(text.slice(s, e + 1));\n\nconst decoded = $(\"Decode current files\").item.json;\nconst prevRoot = decoded.clusters;\nconst prev = prevRoot.clusters;\nconst dealIds = new Set(decoded.dealIds);\nconst prevById = Object.fromEntries(prev.map((c) => [c.id, c]));\nconst today = new Date().toISOString().slice(0, 10);\n\nconst STATUS_RANK = { announced: 0, construction: 1, operational: 2 };\nconst SETTABLE = new Set([\"name\", \"operator\", \"status\", \"gridRegion\", \"gpuCount\", \"chipType\", \"ratedPowerMW\", \"plannedPowerMW\", \"energySource\", \"workload\", \"linkedDeal\", \"onlineDate\", \"notes\"]);\nconst ROW_FIELDS = [\"id\", \"name\", \"operator\", \"status\", \"location\", \"gridRegion\", \"gpuCount\", \"chipType\", \"ratedPowerMW\", \"plannedPowerMW\", \"energySource\", \"workload\", \"linkedDeal\", \"onlineDate\", \"estimated\", \"sources\", \"notes\"];\nconst isHttps = (u) => typeof u === \"string\" && /^https:\\/\\//.test(u);\n\nconst updates = Array.isArray(patch.updates) ? patch.updates : [];\nconst newClusters = Array.isArray(patch.newClusters) ? patch.newClusters : [];\n\nif (updates.length > 30)\n  throw new Error(\"suspicious churn: \" + updates.length + \" rows changed in one day; blocked for manual review\");\n\n// Clone rows so unchanged rows serialize byte-identical (key order preserved).\nconst merged = prev.map((c) => ({ ...c, estimated: [...(c.estimated || [])], sources: [...(c.sources || [])] }));\nconst mergedById = Object.fromEntries(merged.map((c) => [c.id, c]));\nconst changeLines = [];\n\nfor (const u of updates) {\n  if (!u || typeof u.id !== \"string\" || !mergedById[u.id])\n    throw new Error(\"update targets unknown cluster id: \" + (u && u.id));\n  const row = mergedById[u.id];\n  const before = prevById[u.id];\n  const set = u.set || {};\n  const keys = Object.keys(set);\n  if (keys.length === 0) throw new Error(u.id + \": empty set{} in update\");\n  for (const k of keys) {\n    if (!SETTABLE.has(k)) throw new Error(u.id + \": field not updatable via patch: \" + k);\n  }\n  if (!Array.isArray(u.addSources) || u.addSources.length < 1 || !u.addSources.every(isHttps))\n    throw new Error(u.id + \": changed row missing https source(s)\");\n  if (!Array.isArray(u.estimated) || !u.estimated.every((f) => ROW_FIELDS.includes(f)))\n    throw new Error(u.id + \": estimated[] missing or contains unknown field names\");\n  if (\"status\" in set) {\n    if (!(set.status in STATUS_RANK)) throw new Error(u.id + \": invalid status \" + set.status);\n    if (STATUS_RANK[set.status] < STATUS_RANK[before.status])\n      throw new Error(u.id + \": backward status transition \" + before.status + \" -> \" + set.status + \"; blocked for manual review\");\n  }\n  for (const f of [\"ratedPowerMW\", \"plannedPowerMW\"]) {\n    if (f in set && (typeof set[f] !== \"number\" || set[f] < 0 || set[f] > 15000))\n      throw new Error(u.id + \": \" + f + \" out of range: \" + set[f]);\n  }\n  if (\"gpuCount\" in set && set.gpuCount !== null && (typeof set.gpuCount !== \"number\" || set.gpuCount <= 0 || set.gpuCount > 5000000))\n    throw new Error(u.id + \": gpuCount out of range: \" + set.gpuCount);\n  if (\"linkedDeal\" in set && set.linkedDeal !== null && !dealIds.has(set.linkedDeal))\n    throw new Error(u.id + \": linkedDeal does not resolve in interconnection-queue.json: \" + set.linkedDeal);\n  Object.assign(row, set);\n  row.estimated = u.estimated;\n  for (const src of u.addSources) if (!row.sources.includes(src)) row.sources.push(src);\n  const bits = keys.map((k) => k + \": \" + JSON.stringify(before[k]) + \" -> \" + JSON.stringify(set[k]));\n  changeLines.push(u.id + \" | \" + bits.join(\", \"));\n}\n\nfor (const c of newClusters) {\n  if (!c || typeof c.id !== \"string\" || !/^[a-z0-9][a-z0-9-]*$/.test(c.id))\n    throw new Error(\"new cluster has bad id: \" + (c && c.id));\n  if (mergedById[c.id]) throw new Error(\"new cluster id already exists: \" + c.id);\n  for (const f of ROW_FIELDS) if (!(f in c)) throw new Error(c.id + \": new cluster missing field \" + f);\n  if (!(c.status in STATUS_RANK)) throw new Error(c.id + \": invalid status \" + c.status);\n  if (!c.location || typeof c.location.lat !== \"number\" || typeof c.location.lng !== \"number\" || typeof c.location.city !== \"string\" || typeof c.location.state !== \"string\")\n    throw new Error(c.id + \": bad location\");\n  if (typeof c.ratedPowerMW !== \"number\" || c.ratedPowerMW < 0 || c.ratedPowerMW > 15000)\n    throw new Error(c.id + \": ratedPowerMW out of range\");\n  if (typeof c.plannedPowerMW !== \"number\" || c.plannedPowerMW < 0 || c.plannedPowerMW > 15000)\n    throw new Error(c.id + \": plannedPowerMW out of range\");\n  if (c.gpuCount !== null && (typeof c.gpuCount !== \"number\" || c.gpuCount <= 0 || c.gpuCount > 5000000))\n    throw new Error(c.id + \": gpuCount out of range\");\n  if (!Array.isArray(c.sources) || c.sources.length < 1 || !c.sources.every(isHttps))\n    throw new Error(c.id + \": new cluster needs at least one https source\");\n  if (!Array.isArray(c.estimated) || !c.estimated.every((f) => ROW_FIELDS.includes(f)))\n    throw new Error(c.id + \": bad estimated[]\");\n  if (c.linkedDeal !== null && !dealIds.has(c.linkedDeal))\n    throw new Error(c.id + \": linkedDeal does not resolve: \" + c.linkedDeal);\n  const ordered = {};\n  for (const f of ROW_FIELDS) ordered[f] = c[f];\n  merged.push(ordered);\n  mergedById[c.id] = ordered;\n  changeLines.push(\"NEW \" + c.id + \" (\" + c.status + \", planned \" + c.plannedPowerMW + \" MW)\");\n}\n\n// Whole-registry invariants.\nif (merged.length < prev.length)\n  throw new Error(\"cluster count shrank: \" + merged.length + \" vs \" + prev.length);\nfor (const p of prev) if (!mergedById[p.id]) throw new Error(\"cluster disappeared: \" + p.id);\nfor (const c of merged) {\n  if (c.status === \"operational\" && !(c.ratedPowerMW > 0))\n    throw new Error(c.id + \": operational cluster with 0 rated power\");\n  if (c.linkedDeal != null && !dealIds.has(c.linkedDeal))\n    throw new Error(c.id + \": linkedDeal does not resolve: \" + c.linkedDeal);\n  if (!Array.isArray(c.sources) || c.sources.length < 1 || !c.sources.every(isHttps))\n    throw new Error(c.id + \": row without https sources\");\n}\nconst prevPlanned = prev.reduce((a, c) => a + c.plannedPowerMW, 0);\nconst newPlanned = merged.reduce((a, c) => a + c.plannedPowerMW, 0);\nif (prevPlanned > 0) {\n  const swing = Math.abs(newPlanned - prevPlanned) / prevPlanned;\n  if (swing > 0.15)\n    throw new Error(\"total planned MW swung \" + (swing * 100).toFixed(1) + \"% in one day (\" + prevPlanned + \" -> \" + newPlanned + \" MW); blocked for manual review\");\n}\n\n// lastRefreshed is what /api/clusters/metrics serves (root.lastRefreshed ?? null),\n// format YYYY-MM-DD; bumped on every gate pass, methodology preserved verbatim.\nconst out = { lastRefreshed: today, methodology: prevRoot.methodology, clusters: merged };\nconst fileContent = JSON.stringify(out, null, 2) + \"\\n\";\n\nconst summary =\n  \"GridTilt cluster registry refreshed \" + today + \": \" +\n  updates.length + \" updated, \" + newClusters.length + \" new, \" + merged.length + \" total, \" +\n  Math.round(newPlanned) + \" MW planned.\\n\" +\n  (changeLines.length ? changeLines.join(\"\\n\") : \"No changes found; lastRefreshed bumped.\");\nconst shortline = today + \": \" + updates.length + \" updated, \" + newClusters.length + \" new, \" + merged.length + \" total clusters\";\nreturn [{ json: { fileContent, summary, shortline } }];"
+      },
+      "id": "n-parse",
+      "name": "Parse + validate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1500,
+        0
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Base64-encode the validated file and assemble the GitHub commit payload.\nconst content = $json.fileContent;\nconst b64 = Buffer.from(content, \"utf-8\").toString(\"base64\");\nconst sha = $(\"Decode current files\").item.json.sha;\nconst commitBody = {\n  message: \"data: daily cluster refresh\\n\\n\" + $json.shortline,\n  content: b64,\n  sha,\n  branch: \"main\"\n};\nreturn [{ json: { commitBody, summary: $json.summary } }];"
+      },
+      "id": "n-commitbody",
+      "name": "Build commit",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1720,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "https://api.github.com/repos/aurph/GridTilt/contents/server/data/clusters.json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "User-Agent",
+              "value": "gridtilt-n8n"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.commitBody) }}",
+        "options": {}
+      },
+      "id": "n-ghput",
+      "name": "Commit to main",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1940,
+        0
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_GITHUB",
+          "name": "GitHub PAT (Authorization Bearer)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://ntfy.sh/gridtilt-cluster-refresh",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "text/plain",
+        "body": "={{ $('Build commit').item.json.summary }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Title",
+              "value": "GridTilt clusters updated"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "n-notify",
+      "name": "Notify (ntfy)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2160,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://ntfy.sh/gridtilt-cluster-refresh",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "text/plain",
+        "body": "={{ 'GridTilt cluster refresh ABORTED, no commit. Reason: ' + (typeof $json.error === 'string' ? $json.error : ($json.error && $json.error.message ? $json.error.message : JSON.stringify($json.error || $json))) }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Title",
+              "value": "GridTilt cluster refresh ABORTED"
+            },
+            {
+              "name": "Priority",
+              "value": "high"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "n-abort",
+      "name": "Notify abort (ntfy)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1720,
+        220
+      ]
+    }
+  ],
+  "connections": {
+    "Daily trigger": {
+      "main": [
+        [
+          {
+            "node": "GitHub get clusters file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GitHub get clusters file": {
+      "main": [
+        [
+          {
+            "node": "GitHub get deals file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GitHub get deals file": {
+      "main": [
+        [
+          {
+            "node": "Decode current files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decode current files": {
+      "main": [
+        [
+          {
+            "node": "Build Claude request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Claude request": {
+      "main": [
+        [
+          {
+            "node": "Claude research (web search)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude research (web search)": {
+      "main": [
+        [
+          {
+            "node": "Parse + validate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse + validate": {
+      "main": [
+        [
+          {
+            "node": "Build commit",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Notify abort (ntfy)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build commit": {
+      "main": [
+        [
+          {
+            "node": "Commit to main",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Commit to main": {
+      "main": [
+        [
+          {
+            "node": "Notify (ntfy)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "gridtilt-compute-frontier"
+  },
+  "tags": []
+}
