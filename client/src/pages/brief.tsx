@@ -72,7 +72,7 @@ export default function BriefPage({ embedded = false }: { embedded?: boolean; pa
             <div className="flex items-baseline justify-between border-b border-rule pb-1 mb-2">
               <h3 className="text-[14px] font-semibold text-ink">{s.heading}</h3>
               {SECTION_LINK[s.heading] && (
-                <Link href={SECTION_LINK[s.heading]} className="text-[12.5px] text-brand-ink no-underline hover:text-ink">
+                <Link href={SECTION_LINK[s.heading]} className="text-[12.5px] text-ink no-underline hover:text-brand-ink">
                   Open →
                 </Link>
               )}

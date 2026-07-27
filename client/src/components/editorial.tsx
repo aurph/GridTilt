@@ -41,7 +41,7 @@ export function PageTitle({
             {title}
           </h1>
           {dek && (
-            <p className="mt-2.5 max-w-[62ch] font-serif italic text-[17px] sm:text-[19px] leading-snug text-ink-secondary">
+            <p className="mt-2.5 max-w-[62ch] text-[15px] sm:text-[16px] leading-snug text-ink-secondary">
               {dek}
             </p>
           )}
@@ -79,7 +79,7 @@ export function RuleSection({
   return (
     <section className={`mt-9 ${className}`} data-testid={testId}>
       <div className="rule-thickthin flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 pt-2.5 pb-2 mb-4">
-        <h2 className="text-[15px] font-bold leading-tight text-ink tracking-[0.01em]">{head}</h2>
+        <h2 className="text-[14px] font-bold leading-tight text-ink tracking-[0.01em]">{head}</h2>
         {aside && <div className="flex items-baseline gap-3 text-[12.5px] text-ink-muted">{aside}</div>}
       </div>
       {children}

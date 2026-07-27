@@ -11,15 +11,15 @@
  */
 
 export const SURFACE = {
-  sunken: "#EFE9DD",
-  base: "#F6F2EA",
-  raised: "#F9F6F0",
-  overlay: "#FDFBF7",
+  sunken: "#F1EEE6",
+  base: "#F9F7F2",
+  raised: "#FCFBF8",
+  overlay: "#FEFDFB",
 } as const;
 
 export const BORDER = {
-  subtle: "rgba(28, 23, 18, 0.10)",
-  strong: "rgba(28, 23, 18, 0.22)",
+  subtle: "rgba(22, 19, 16, 0.10)",
+  strong: "rgba(22, 19, 16, 0.22)",
 } as const;
 
 /**
@@ -35,10 +35,10 @@ export const BRAND = {
 } as const;
 
 export const INK = {
-  primary: "#1C1712",
-  secondary: "#5C544A",
-  muted: "#8A8172",
-  faint: "#A79D8C",
+  primary: "#161310",
+  secondary: "#57534C",
+  muted: "#837E76",
+  faint: "#A39E95",
 } as const;
 
 /** State colors. Never use these for series identity. */
@@ -121,11 +121,11 @@ export const STATUS_COLORS = {
 } as const;
 
 export const CHART_CHROME = {
-  axis: "#8A8172",
-  tick: "#5C544A",
-  grid: "rgba(28, 23, 18, 0.08)",
-  crosshair: "rgba(28, 23, 18, 0.30)",
-  refLine: "rgba(28, 23, 18, 0.18)",
+  axis: "#837E76",
+  tick: "#57534C",
+  grid: "rgba(22, 19, 16, 0.08)",
+  crosshair: "rgba(22, 19, 16, 0.30)",
+  refLine: "rgba(22, 19, 16, 0.18)",
 } as const;
 
 export const FONT = {

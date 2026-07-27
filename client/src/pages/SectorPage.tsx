@@ -83,7 +83,7 @@ export default function SectorPage() {
           </h1>
           <p className="mt-3 max-w-[68ch] text-[15px] leading-relaxed text-ink-secondary">
             Browse{" "}
-            <Link href="/stack" className="text-brand-ink no-underline hover:text-ink">The Stack</Link>{" "}
+            <Link href="/stack" className="text-ink no-underline hover:text-brand-ink">The Stack</Link>{" "}
             to see all sectors.
           </p>
         </div>
@@ -101,9 +101,9 @@ export default function SectorPage() {
   return (
     <PageShell>
       <nav className="flex flex-wrap items-center gap-x-2 gap-y-1 pt-7 sm:pt-9 text-[12.5px] text-ink-muted" data-testid="breadcrumb">
-        <Link href="/" className="text-[12.5px] text-brand-ink no-underline hover:text-ink">GridTilt</Link>
+        <Link href="/" className="text-[12.5px] text-ink no-underline hover:text-brand-ink">GridTilt</Link>
         <span>·</span>
-        <Link href="/stack" className="text-[12.5px] text-brand-ink no-underline hover:text-ink">The Stack</Link>
+        <Link href="/stack" className="text-[12.5px] text-ink no-underline hover:text-brand-ink">The Stack</Link>
         <span>·</span>
         <span className="text-ink font-medium">{sector.name}</span>
       </nav>
@@ -211,7 +211,7 @@ export default function SectorPage() {
             <span key={r}>
               <Link
                 href={`/sector/${r}`}
-                className="text-brand-ink no-underline hover:text-ink"
+                className="text-ink no-underline hover:text-brand-ink"
                 data-testid={`link-sector-${r}`}
               >
                 {SECTOR_SLUG_LABELS[r] || r}
@@ -219,7 +219,7 @@ export default function SectorPage() {
               <span className="text-ink-muted"> · </span>
             </span>
           ))}
-          <Link href="/stack" className="text-brand-ink no-underline hover:text-ink">
+          <Link href="/stack" className="text-ink no-underline hover:text-brand-ink">
             All sectors →
           </Link>
         </p>

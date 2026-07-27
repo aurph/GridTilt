@@ -171,7 +171,7 @@ export function FrontPage() {
               <p className="mt-4">
                 <Link
                   href="/blog"
-                  className="text-[13.5px] font-semibold text-brand-ink no-underline hover:text-ink"
+                  className="text-[13.5px] font-semibold text-ink no-underline hover:text-brand-ink"
                 >
                   Read this week's full Brief →
                 </Link>
@@ -185,7 +185,7 @@ export function FrontPage() {
         <aside className="lg:border-l lg:border-rule lg:pl-8" data-testid="front-markets">
           <div className="flex items-baseline justify-between border-b border-rule-strong pb-1.5 mb-1">
             <h2 className="text-[15px] font-semibold text-ink">Markets today</h2>
-            <Link href="/stack" className="text-[12.5px] text-brand-ink no-underline hover:text-ink">
+            <Link href="/stack" className="text-[12.5px] text-ink no-underline hover:text-brand-ink">
               The Stack →
             </Link>
           </div>
@@ -299,7 +299,7 @@ export function FrontPage() {
         <RuleSection
           head="Latest analysis"
           aside={
-            <Link href="/blog" className="text-brand-ink no-underline hover:text-ink">
+            <Link href="/blog" className="text-ink no-underline hover:text-brand-ink">
               All articles →
             </Link>
           }

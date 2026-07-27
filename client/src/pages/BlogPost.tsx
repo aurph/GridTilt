@@ -161,7 +161,7 @@ export default function BlogPost() {
     <PageShell>
       <div className="max-w-[720px] mx-auto" data-testid="blog-post-scroll-container">
         <nav className="pt-6 text-[12.5px] text-ink-muted" data-testid="breadcrumb">
-          <Link href="/blog" className="flex items-center gap-1.5 text-brand-ink no-underline hover:text-ink" data-testid="link-back-blog-sticky">
+          <Link href="/blog" className="flex items-center gap-1.5 text-ink no-underline hover:text-brand-ink" data-testid="link-back-blog-sticky">
             <ArrowLeft className="h-3.5 w-3.5" /> All analysis
           </Link>
         </nav>
@@ -206,10 +206,10 @@ export default function BlogPost() {
         <div className="mt-10 border-t-2 border-rule-strong pt-5" data-testid="article-cta">
           <p className="text-[13.5px] font-semibold text-ink mb-2">Track this on GridTilt</p>
           <div className="flex flex-wrap gap-4 text-[13.5px]">
-            <Link href="/overview" className="text-brand-ink no-underline hover:text-ink">Today</Link>
-            <Link href="/stack" className="text-brand-ink no-underline hover:text-ink">The Stack</Link>
-            <Link href="/power-map" className="text-brand-ink no-underline hover:text-ink">Power</Link>
-            <Link href="/trade" className="text-brand-ink no-underline hover:text-ink">Scenario worksheet</Link>
+            <Link href="/overview" className="text-ink no-underline hover:text-brand-ink">Today</Link>
+            <Link href="/stack" className="text-ink no-underline hover:text-brand-ink">The Stack</Link>
+            <Link href="/power-map" className="text-ink no-underline hover:text-brand-ink">Power</Link>
+            <Link href="/trade" className="text-ink no-underline hover:text-brand-ink">Scenario worksheet</Link>
           </div>
         </div>
 
@@ -235,7 +235,7 @@ export default function BlogPost() {
           </a>
         </div>
 
-        <Link href="/blog" className="mt-8 mb-4 flex items-center gap-1 text-[14px] text-brand-ink no-underline hover:text-ink" data-testid="link-back-blog">
+        <Link href="/blog" className="mt-8 mb-4 flex items-center gap-1 text-[14px] text-ink no-underline hover:text-brand-ink" data-testid="link-back-blog">
           <ArrowLeft className="h-4 w-4" /> All analysis
         </Link>
       </div>

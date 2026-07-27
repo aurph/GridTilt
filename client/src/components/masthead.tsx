@@ -54,7 +54,7 @@ export function Masthead() {
                   <em className="italic text-brand-ink">Tilt</em>
                 </span>
               </Link>
-              <p className="mt-2 font-serif italic text-[15px] sm:text-[16px] leading-snug text-ink-secondary">
+              <p className="mt-2 text-[13.5px] leading-snug text-ink-secondary">
                 Energy infrastructure, in plain sight.
               </p>
             </div>
@@ -112,7 +112,7 @@ export function Masthead() {
             <div className="flex-1" />
             <Link
               href="/subscribe"
-              className="hidden md:flex items-center shrink-0 py-2.5 text-[13px] leading-none no-underline text-brand-ink hover:text-ink transition-colors duration-fast"
+              className="hidden md:flex items-center shrink-0 py-2.5 text-[13px] font-semibold leading-none no-underline text-ink hover:text-brand-ink transition-colors duration-fast"
               data-testid="masthead-nav-subscribe"
             >
               Get the Brief

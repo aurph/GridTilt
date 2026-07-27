@@ -77,7 +77,7 @@ export default function StockPage() {
     return (
       <PageShell>
         <div className="pt-7 sm:pt-9">
-          <Link href="/stack" className="text-[12.5px] font-semibold text-brand-ink no-underline hover:text-ink" data-testid="link-back-stack">
+          <Link href="/stack" className="text-[12.5px] font-semibold text-ink no-underline hover:text-brand-ink" data-testid="link-back-stack">
             ← The Stack
           </Link>
           <h1 className="mt-5 font-serif font-medium text-[30px] sm:text-[34px] leading-[1.05] tracking-tight text-ink">
@@ -85,7 +85,7 @@ export default function StockPage() {
           </h1>
           <p className="mt-3 max-w-[68ch] text-[15px] leading-relaxed text-ink-secondary">
             {upperTicker} is not tracked on GridTilt. Browse{" "}
-            <Link href="/stack" className="text-brand-ink no-underline hover:text-ink">The Stack</Link>{" "}
+            <Link href="/stack" className="text-ink no-underline hover:text-brand-ink">The Stack</Link>{" "}
             to see every tracked equity.
           </p>
         </div>
@@ -111,11 +111,11 @@ export default function StockPage() {
   return (
     <PageShell>
       <nav className="flex flex-wrap items-center gap-x-2 gap-y-1 pt-7 sm:pt-9 text-[12.5px] text-ink-muted" data-testid="breadcrumb">
-        <Link href="/" className="text-[12.5px] text-brand-ink no-underline hover:text-ink">GridTilt</Link>
+        <Link href="/" className="text-[12.5px] text-ink no-underline hover:text-brand-ink">GridTilt</Link>
         <span>·</span>
-        <Link href="/stack" className="text-[12.5px] text-brand-ink no-underline hover:text-ink">The Stack</Link>
+        <Link href="/stack" className="text-[12.5px] text-ink no-underline hover:text-brand-ink">The Stack</Link>
         <span>·</span>
-        <Link href={`/sector/${sectorSlug}`} className="text-[12.5px] text-brand-ink no-underline hover:text-ink">{sectorLabel}</Link>
+        <Link href={`/sector/${sectorSlug}`} className="text-[12.5px] text-ink no-underline hover:text-brand-ink">{sectorLabel}</Link>
         <span>·</span>
         <span className="text-ink font-medium">{data.ticker}</span>
       </nav>
@@ -143,7 +143,7 @@ export default function StockPage() {
               href={`https://x.com/intent/tweet?text=${encodeURIComponent(`$${data.ticker} scores ${data.thesisScore}/100 on the AI power thesis. ${data.primarySegment} sector.`)}&url=${encodeURIComponent(`https://gridtilt.com/stock/${data.ticker}`)}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[12.5px] font-semibold text-brand-ink no-underline hover:text-ink"
+              className="text-[12.5px] font-semibold text-ink no-underline hover:text-brand-ink"
               data-testid="link-share-x"
             >
               Share on X
@@ -261,7 +261,7 @@ export default function StockPage() {
           <RuleSection head="Sector" testId="sector-context">
             <Link
               href={`/sector/${sectorSlug}`}
-              className="text-[13.5px] font-medium text-brand-ink no-underline hover:text-ink"
+              className="text-[13.5px] font-medium text-ink no-underline hover:text-brand-ink"
               data-testid="link-sector"
             >
               {sectorLabel} →
@@ -275,7 +275,7 @@ export default function StockPage() {
                   <li key={t} className="border-b border-rule last:border-b-0">
                     <Link
                       href={`/stock/${t}`}
-                      className="block py-2 text-[13.5px] text-brand-ink no-underline hover:text-ink"
+                      className="block py-2 text-[13.5px] text-ink no-underline hover:text-brand-ink"
                       data-testid={`link-related-${t}`}
                     >
                       {t}
@@ -289,17 +289,17 @@ export default function StockPage() {
           <RuleSection head="Tools">
             <ul>
               <li className="border-b border-rule">
-                <Link href="/stack" className="block py-2 text-[13.5px] text-brand-ink no-underline hover:text-ink" data-testid="link-tool-stack">
+                <Link href="/stack" className="block py-2 text-[13.5px] text-ink no-underline hover:text-brand-ink" data-testid="link-tool-stack">
                   The Stack
                 </Link>
               </li>
               <li className="border-b border-rule">
-                <Link href="/portfolio" className="block py-2 text-[13.5px] text-brand-ink no-underline hover:text-ink" data-testid="link-tool-portfolio">
+                <Link href="/portfolio" className="block py-2 text-[13.5px] text-ink no-underline hover:text-brand-ink" data-testid="link-tool-portfolio">
                   Portfolio Overlay
                 </Link>
               </li>
               <li>
-                <Link href="/catalysts" className="block py-2 text-[13.5px] text-brand-ink no-underline hover:text-ink" data-testid="link-tool-catalysts">
+                <Link href="/catalysts" className="block py-2 text-[13.5px] text-ink no-underline hover:text-brand-ink" data-testid="link-tool-catalysts">
                   Catalyst Tracker
                 </Link>
               </li>

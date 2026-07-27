@@ -212,8 +212,8 @@ export default function ComputeFrontier() {
         right={
           <>
             <AsOf updatedAt={dataUpdatedAt} intervalMs={900_000} />
-            <Link href="/power-map" className="text-[12.5px] font-semibold text-brand-ink no-underline hover:text-ink">Power Map →</Link>
-            <Link href="/queue" className="text-[12.5px] font-semibold text-brand-ink no-underline hover:text-ink">Nuclear deals →</Link>
+            <Link href="/power-map" className="text-[12.5px] font-semibold text-ink no-underline hover:text-brand-ink">Power Map →</Link>
+            <Link href="/queue" className="text-[12.5px] font-semibold text-ink no-underline hover:text-brand-ink">Nuclear deals →</Link>
           </>
         }
         testId="cf-hero"
@@ -509,7 +509,7 @@ export default function ComputeFrontier() {
                           <td className="text-ink-muted whitespace-nowrap">{c.onlineDate}{c.estimated.includes("onlineDate") && <EstFlag />}</td>
                           <td className="shrink text-center">
                             {c.linkedDeal
-                              ? <Link href="/queue" className="text-brand-ink no-underline hover:text-ink" title={`Nuclear deal: ${c.linkedDeal}`}>★</Link>
+                              ? <Link href="/queue" className="text-ink no-underline hover:text-brand-ink" title={`Nuclear deal: ${c.linkedDeal}`}>★</Link>
                               : <span className="text-ink-faint">—</span>}
                           </td>
                         </tr>
@@ -562,12 +562,12 @@ export default function ComputeFrontier() {
       <p className="mt-8 text-[12.5px] text-ink-muted leading-relaxed max-w-[68ch]" data-testid="cf-methodology">
         Compiled from public announcements (company press releases, Reuters, Tom's Hardware, Data Center Dynamics,
         SemiAnalysis, utility filings) and cross-referenced against GridTilt's{" "}
-        <Link href="/power-map" className="text-brand-ink no-underline hover:text-ink">Power Map</Link> registry. The dagger (†)
+        <Link href="/power-map" className="text-ink no-underline hover:text-brand-ink">Power Map</Link> registry. The dagger (†)
         marks GridTilt estimates and announced targets not yet realized;
         GPU counts read "—" where an operator has not disclosed one. Nuclear links point to the tracked deals on the{" "}
-        <Link href="/queue" className="text-brand-ink no-underline hover:text-ink">Backlog</Link> page. Tracked, not exhaustive.
-        Full <Link href="/compute-frontier/methodology" className="text-brand-ink no-underline hover:text-ink">methodology</Link>, or{" "}
-        <Link href="/compute-frontier/compare" className="text-brand-ink no-underline hover:text-ink">compare clusters side by side</Link>.
+        <Link href="/queue" className="text-ink no-underline hover:text-brand-ink">Backlog</Link> page. Tracked, not exhaustive.
+        Full <Link href="/compute-frontier/methodology" className="text-ink no-underline hover:text-brand-ink">methodology</Link>, or{" "}
+        <Link href="/compute-frontier/compare" className="text-ink no-underline hover:text-brand-ink">compare clusters side by side</Link>.
       </p>
     </PageShell>
   );
