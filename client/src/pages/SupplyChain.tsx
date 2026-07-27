@@ -94,6 +94,10 @@ interface SimLink extends d3.SimulationLinkDatum<SimNode> {
 
 const GRAPH_W = 1200;
 const GRAPH_H = 800;
+// Rendered viewBox height only: the sim lays nodes out in the 800-unit canvas
+// but the converged layout leaves the bottom ~80 units as guide-only dead
+// space, so the visible crop trims it. Sim, drag, and zoom math untouched.
+const VIEW_H = 720;
 
 const connectionCounts: Record<string, number> = {};
 supplyLinks.forEach((l) => {
@@ -291,7 +295,7 @@ function NetworkGraph({
     <svg
       ref={svgRef}
       className="sc-graph-svg"
-      viewBox={`0 0 ${GRAPH_W} ${GRAPH_H}`}
+      viewBox={`0 0 ${GRAPH_W} ${VIEW_H}`}
       preserveAspectRatio="xMidYMid meet"
       data-testid="sc-network-graph"
     >
@@ -380,7 +384,8 @@ function NetworkGraph({
           const path = `M ${src.x} ${src.y} C ${midX} ${src.y}, ${midX} ${tgt.y}, ${tgt.x} ${tgt.y}`;
 
           const isGSU = link.label === 'GSU';
-          const opacity = isDimmed ? 0.03 : isHighlighted ? 0.5 : 0.1;
+          // resting edges were near-invisible at 0.1; keep the dim/highlight contrast but let the chain read
+          const opacity = isDimmed ? 0.05 : isHighlighted ? 0.55 : 0.22;
           const width = isHighlighted ? 2.5 : isGSU ? 2 : 1.2;
 
           const delay = entrancePhase >= 2
@@ -408,11 +413,13 @@ function NetworkGraph({
           const isDimmed = connectedSet && !isConnected;
 
           const nodeOpacity = isDimmed ? 0.15 : 1;
+          // idle nodes keep their stage hue at reduced intensity - the legend
+          // promises stage colors, so resting nodes must not all read gray
           const strokeColor = isActive
             ? color
             : isConnected
               ? color
-              : `rgba(${hexToRgb(BRAND.primary)},0.15)`;
+              : `rgba(${hexToRgb(color)},0.5)`;
           const strokeWidth = isActive ? 3 : isConnected ? 2 : 1.5;
           const fillColor = isActive
             ? `rgba(${hexToRgb(color)},0.12)`
@@ -466,7 +473,7 @@ function NetworkGraph({
                   <IconComp
                     size={iconSize}
                     strokeWidth={2}
-                    color={isActive || isConnected ? color : INK.muted}
+                    color={isActive || isConnected ? color : `rgba(${hexToRgb(color)},0.75)`}
                     style={{ transition: 'color 0.25s' }}
                   />
                 </div>

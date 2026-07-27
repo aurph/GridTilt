@@ -135,6 +135,9 @@ export function DemandChart() {
                 }}
               />
 
+              {/* event markers stay unlabeled in the plot: three "top" labels collide
+                  into overlap at most widths, worst on phones. The key below carries
+                  the text instead. */}
               {demandAnnotations.map((a) => (
                 <ReferenceLine
                   key={a.year}
@@ -142,17 +145,40 @@ export function DemandChart() {
                   x={a.year}
                   stroke="rgba(255,255,255,0.14)"
                   strokeDasharray="2 2"
-                  label={{
-                    value: a.label.replace(/—/g, ",").replace(/·/g, ","),
-                    position: "top",
-                    fill: "#B0B0AC",
-                    fontSize: 10,
-                    fontFamily: "JetBrains Mono, monospace",
-                  }}
                 />
               ))}
             </ComposedChart>
           </ResponsiveContainer>
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            rowGap: 6,
+            columnGap: 22,
+            marginTop: 20,
+            fontFamily: "JetBrains Mono, monospace",
+            fontSize: 10,
+            color: "var(--mkt-ink-muted)",
+            letterSpacing: "0.04em",
+          }}
+        >
+          {demandAnnotations.map((a) => (
+            <span key={a.year} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span
+                aria-hidden
+                style={{
+                  width: 0,
+                  height: 10,
+                  borderLeft: "1px dashed rgba(255,255,255,0.35)",
+                  display: "inline-block",
+                }}
+              />
+              <span style={{ color: "#B0B0AC" }}>{a.year}</span>
+              <span>{a.label.replace(/\s*[—·]\s*/g, " + ")}</span>
+            </span>
+          ))}
         </div>
 
         <p
@@ -160,7 +186,7 @@ export function DemandChart() {
             fontFamily: "JetBrains Mono, monospace",
             fontSize: 10,
             color: "var(--mkt-ink-quiet)",
-            marginTop: 24,
+            marginTop: 14,
             letterSpacing: "0.06em",
           }}
         >

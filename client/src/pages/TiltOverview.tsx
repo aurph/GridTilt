@@ -176,7 +176,7 @@ const SECTOR_LABEL_SHORT: Record<string, string> = {
   powerHardware: "Power HW",
   utilities: "Utilities",
   dataCenters: "Data Ctrs",
-  construction: "Construct",
+  construction: "Construction",
   rawMaterialsMining: "Mining",
   rawMaterialsNatGas: "Nat Gas",
   renewableGeneration: "Renewables",
@@ -248,7 +248,7 @@ function TopMoversSection({ topMovers, pulse, isLoading, isError, updatedAt, onR
       {pulse.length > 0 && (
         <div className="mt-4 pt-3 border-t border-border" data-testid="sector-chips">
           <span className="text-10 font-mono uppercase tracking-wider text-muted-foreground/60">sectors · avg % today</span>
-          <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-1.5 mt-1.5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-1.5 mt-1.5">
             {[...pulse].sort((a, b) => b.avgChange - a.avgChange).map((p) => (
               <span
                 key={p.sector}
@@ -257,7 +257,8 @@ function TopMoversSection({ topMovers, pulse, isLoading, isError, updatedAt, onR
                 data-testid={`sector-chip-${p.sector}`}
                 title={`${p.label} average ${p.avgChange >= 0 ? "+" : ""}${p.avgChange.toFixed(2)}% today`}
               >
-                <span className="truncate" style={{ color: heatTextColor(p.avgChange), opacity: 0.9 }}>{p.label}</span>
+                {/* designed short labels, never mid-word ellipsis (grid gives each chip room to fit them) */}
+                <span className="whitespace-nowrap" style={{ color: heatTextColor(p.avgChange), opacity: 0.9 }}>{SECTOR_LABEL_SHORT[p.sector] ?? p.label}</span>
                 <span className="tabular-nums font-semibold" style={{ color: heatTextColor(p.avgChange) }}>
                   {p.avgChange >= 0 ? "+" : ""}{p.avgChange.toFixed(2)}%
                 </span>
@@ -317,10 +318,10 @@ function RealGaugeCard({
       {isLoading || value === null ? (
         <Skeleton className="h-9 w-32 mb-1" />
       ) : (
-        <div className="flex items-baseline gap-2">
+        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
           <span className="text-3xl font-bold tabular-nums text-brand-2 font-mono">{value}</span>
           {delta && (
-            <span className="text-11 font-mono tabular-nums" style={{ color: deltaColor ?? INK.muted }}>{delta}</span>
+            <span className="text-11 font-mono tabular-nums leading-tight" style={{ color: deltaColor ?? INK.muted }}>{delta}</span>
           )}
         </div>
       )}
@@ -423,7 +424,8 @@ function BuildoutHistoryCard({
 
   return (
     <Card className="p-5 border-card-border flex-1 flex flex-col" data-testid="buildout-history">
-      <div className="flex items-center gap-2 mb-1">
+      {/* flex-wrap + nowrap headline: on narrow screens the GW figure drops to its own line instead of breaking mid-phrase */}
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mb-1">
         <Activity className="h-3.5 w-3.5 text-brand-2" />
         <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Tracked Buildout Over Time</h2>
         <UITooltip>
@@ -439,7 +441,7 @@ function BuildoutHistoryCard({
           </TooltipContent>
         </UITooltip>
         {tracked && (
-          <span className="ml-auto font-mono text-sm font-bold text-brand-2" data-testid="buildout-headline">
+          <span className="ml-auto whitespace-nowrap font-mono text-sm font-bold text-brand-2" data-testid="buildout-headline">
             {fmtGW(tracked.trackedMW)} tracked
           </span>
         )}
@@ -464,7 +466,8 @@ function BuildoutHistoryCard({
         <>
           <div className="flex-1 min-h-[200px]" data-testid="buildout-chart">
             <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={series} margin={{ top: 6, right: 8, bottom: 0, left: 0 }}>
+              {/* right margin leaves room for the final x tick ("Jan '28") to render unclipped */}
+              <ComposedChart data={series} margin={{ top: 6, right: 30, bottom: 0, left: 0 }}>
                 <defs>
                   <linearGradient id="buildoutGrad" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor={BRAND.primary} stopOpacity={0.28} />
@@ -1043,12 +1046,14 @@ export default function TiltOverview() {
                 dataKey="year"
                 interval={2}
               />
+              {/* explicit round ticks: recharts autos over these domains land on 5.1k/5.8k/6.6k noise */}
               <YAxis
                 {...axisProps}
                 yAxisId="total"
                 axisLine={false}
                 tickFormatter={(v) => `${(v / 1000).toFixed(1)}k`}
                 domain={[3600, 6600]}
+                ticks={[4000, 5000, 6000]}
                 width={42}
               />
               <YAxis
@@ -1058,6 +1063,7 @@ export default function TiltOverview() {
                 axisLine={false}
                 tickFormatter={(v) => `${v}`}
                 domain={[0, 2500]}
+                ticks={[0, 800, 1600, 2400]}
                 width={42}
               />
               <Tooltip content={<CustomTooltip />} />
@@ -1068,7 +1074,8 @@ export default function TiltOverview() {
                 y={5100}
                 stroke={alpha(SEMANTIC.negativeDeep, 0.35)}
                 strokeDasharray="5 3"
-                label={{ value: "Grid Capacity ~5,100 TWh", position: "right", fill: SEMANTIC.negativeDeep, fontSize: 9, dx: -90 }}
+                // label sits above the line's left end, where the plot is empty until the projection crosses ~2027
+                label={{ value: "Grid Capacity ~5,100 TWh", position: "insideLeft", fill: SEMANTIC.negativeDeep, fontSize: 9, dy: -7 }}
               />
 
               {/* Event annotations */}
@@ -1169,7 +1176,8 @@ export default function TiltOverview() {
               icon={Zap}
               title="Tracked AI DC Power"
               value={tracked ? fmtGW(tracked.trackedMW) : null}
-              delta={tracked ? `${tracked.operationalCount + tracked.constructionCount} facilities` : null}
+              // headline counts built or building only; the Power map header counts all tracked sites incl. announced - say both so the surfaces agree
+              delta={tracked ? `${tracked.operationalCount + tracked.constructionCount} built or building of ${tracked.operationalCount + tracked.constructionCount + tracked.announcedCount} tracked` : null}
               subtitle="Operational + under construction, verified facilities"
               methodology={`Sum of rated power across the verified US AI data center dataset (facilities >=400 MW). Operational plus under-construction only. Announced projects (${tracked ? fmtGW(tracked.announcedMW) : "-"}) are excluded from the headline until construction is confirmed. Same dataset as the Power map.`}
               isLoading={dcLoading}

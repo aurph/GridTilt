@@ -19,7 +19,7 @@ const MODULES: Module[] = [
   {
     number: "01",
     name: "The Stack",
-    caption: "Sixty-plus public companies behind the buildout, priced live.",
+    caption: "One hundred public companies behind the buildout, priced live.",
     cta: "Open the stack",
     diagram: <StackDiagram />,
     route: "/stack",
@@ -27,18 +27,18 @@ const MODULES: Module[] = [
   {
     number: "02",
     name: "Power Map",
-    caption: "Forty-eight data centers, plotted by operator and grid region.",
+    caption: "Thirty-three tracked facilities, plotted by operator and grid region.",
     cta: "Open the map",
     diagram: <PowerMapDiagram />,
     route: "/power-map",
   },
   {
     number: "03",
-    name: "Supply Chain",
-    caption: "Twenty places the buildout can get stuck, mapped to the companies exposed.",
+    name: "Supply Chain Flow",
+    caption: "Where the buildout can get stuck, mapped to the companies exposed. A view inside The Stack.",
     cta: "Trace the chain",
     diagram: <SupplyChainDiagram />,
-    route: "/supply-chain",
+    route: "/stack?view=flow",
   },
   {
     number: "04",
@@ -50,19 +50,19 @@ const MODULES: Module[] = [
   },
   {
     number: "05",
-    name: "Portfolio Overlay",
+    name: "Analyze: Portfolio",
     caption: "Type a ticker. See how exposed it is to the power story.",
     cta: "Score a ticker",
     diagram: <OverlayDiagram />,
-    route: "/portfolio",
+    route: "/analyze?tab=portfolio",
   },
   {
     number: "06",
-    name: "Scenario Calculator",
+    name: "Analyze: Scenario",
     caption: "Pick how fast demand grows. See what it does to the grid by 2030.",
     cta: "Run a scenario",
     diagram: <CalculatorDiagram />,
-    route: "/trade",
+    route: "/analyze?tab=scenario",
   },
 ];
 
@@ -104,7 +104,7 @@ export function FeaturesShowcase() {
               key={m.number}
               href={m.route}
               className="gt-feature-card"
-              data-testid={`feature-card-${m.name.toLowerCase().replace(/\s+/g, "-")}`}
+              data-testid={`feature-card-${m.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
             >
               <div className="gt-feature-card__num">
                 <span>{m.number}</span>

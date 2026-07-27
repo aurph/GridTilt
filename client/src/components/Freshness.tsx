@@ -11,13 +11,14 @@ function fmtClock(ts: number): string {
   return new Date(ts).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", second: "2-digit" });
 }
 
+/** Full "as of" phrase. Under a minute reads "just now": raw second counts imply a precision the refresh cycle does not have. */
 function fmtAge(ageMs: number): string {
   const s = Math.floor(ageMs / 1000);
-  if (s < 60) return `${s}s ago`;
+  if (s < 60) return "just now";
   const m = Math.floor(s / 60);
-  if (m < 60) return `${m}m ago`;
+  if (m < 60) return `as of ${m}m ago`;
   const h = Math.floor(m / 60);
-  return `${h}h ${m % 60}m ago`;
+  return `as of ${h}h ${m % 60}m ago`;
 }
 
 /**
@@ -52,7 +53,7 @@ export function AsOf({
       title={`as of ${fmtClock(updatedAt)}`}
       data-testid="asof"
     >
-      as of {fmtAge(age)}
+      {fmtAge(age)}
     </span>
   );
 }

@@ -37,6 +37,8 @@ import {
   pctFromSparkline,
   sortTableRows,
   windowDirection,
+  type HeatGroupRect,
+  type HeatRect,
   type TableSortKey,
 } from "@/lib/stack-transforms";
 
@@ -259,8 +261,8 @@ function StockCard({ stock, timeframe, majorityState }: { stock: StockData; time
   const liveCapB = marketCapOf(stock);
   return (
     <Card
-      className={`p-4 border-card-border transition-all duration-200 cursor-pointer hover:-translate-y-0.5 hover:shadow-lg ${isDown ? "border-negative-deep/20 bg-negative-deep/5" : ""} ${isStale ? "opacity-80" : ""}`}
-      style={{ boxShadow: isDown ? `inset 0 0 20px ${SEMANTIC.negativeDeep}0A` : undefined }}
+      // sharp losers (< -2%) get a red left rail; card surface stays clean (the old bg wash + inset glow read muddy)
+      className={`p-4 border-card-border transition-all duration-200 cursor-pointer hover:-translate-y-0.5 hover:shadow-lg ${isDown ? "border-l-2 border-l-negative/70" : ""} ${isStale ? "opacity-80" : ""}`}
       data-testid={`stock-card-${stock.ticker}`}
     >
       <div className="flex items-start justify-between mb-2">
@@ -1066,13 +1068,31 @@ function StackTable({
         )}
       </table>
       <p className="px-3 py-2 text-10 text-muted-foreground/50 font-mono border-t border-border">
-        5D / 1M columns compute from each window's own price series; — means the window has no data yet. Click a layer to collapse it.
+        5D / 1M columns compute from each window's own price series; a dash means the window has no data yet. Click a layer to collapse it.
       </p>
     </Card>
   );
 }
 
 // ─── Heatmap view (Lake 3B) ─────────────────────────────────────────────────
+
+// Two-band heatmap: with one dominant layer (compute is ~70% of drawn cap),
+// a single cap-proportional treemap collapses every small layer into an
+// unreadable sliver column. Layers under MINOR_SHARE of drawn cap therefore
+// leave the treemap and stack underneath as fixed-height panels that never
+// go narrower than MIN_PANEL_W. Tile area stays cap-proportional inside the
+// treemap and inside each panel.
+const MINOR_SHARE = 0.02;
+const PANEL_H = 132;
+const MIN_PANEL_W = 170;
+
+// Short header labels for narrow treemap columns; the hover title always
+// carries the full layer name. Designed short forms, never mid-word ellipsis.
+const HEAT_GROUP_SHORT: Record<string, string> = {
+  rawMaterialsMining: "Mining",
+  rawMaterialsNatGas: "Natural Gas",
+  transmissionGrid: "Grid Hardware",
+};
 
 function StackHeatmap({
   layers,
@@ -1109,7 +1129,28 @@ function StackHeatmap({
   }, [layers, data, timeframe]);
 
   const height = Math.max(440, Math.min(660, Math.round(width * 0.52)));
-  const { tiles, groups } = useMemo(() => layoutHeatmap(input, width, height), [input, width, height]);
+  const { tiles, groups, totalH } = useMemo(() => {
+    const totalB = input.groups.reduce((s, g) => s + g.totalB, 0);
+    if (width === 0 || totalB <= 0) return { tiles: [] as HeatRect[], groups: [] as HeatGroupRect[], totalH: height };
+    const majors = input.groups.filter((g) => g.totalB / totalB >= MINOR_SHARE);
+    const minors = majors.length > 0 ? input.groups.filter((g) => g.totalB / totalB < MINOR_SHARE) : [];
+    const perRow = minors.length > 0 ? Math.max(1, Math.min(minors.length, Math.floor(width / MIN_PANEL_W))) : 1;
+    const rows = minors.length > 0 ? Math.ceil(minors.length / perRow) : 0;
+    const stripH = rows * PANEL_H;
+    const majorH = Math.max(320, height - stripH);
+    const laid = layoutHeatmap({ groups: majors.length > 0 ? majors : input.groups, unsized: [] }, width, majorH);
+    const tiles: HeatRect[] = [...laid.tiles];
+    const groups: HeatGroupRect[] = [...laid.groups];
+    const colW = Math.floor(width / perRow);
+    minors.forEach((g, i) => {
+      const dx = (i % perRow) * colW;
+      const dy = majorH + Math.floor(i / perRow) * PANEL_H;
+      const one = layoutHeatmap({ groups: [g], unsized: [] }, colW, PANEL_H);
+      for (const t of one.tiles) tiles.push({ ...t, x0: t.x0 + dx, x1: t.x1 + dx, y0: t.y0 + dy, y1: t.y1 + dy });
+      for (const gr of one.groups) groups.push({ ...gr, x0: gr.x0 + dx, x1: gr.x1 + dx, y0: gr.y0 + dy, y1: gr.y1 + dy });
+    });
+    return { tiles, groups, totalH: majorH + stripH };
+  }, [input, width, height]);
 
   if (isError) {
     return (
@@ -1133,7 +1174,7 @@ function StackHeatmap({
           <span>+{4}%</span>
         </div>
       </div>
-      <div ref={ref} className="relative w-full bg-surface-base rounded-sm overflow-hidden" style={{ height }}>
+      <div ref={ref} className="relative w-full bg-surface-base rounded-sm overflow-hidden" style={{ height: totalH }}>
         {isLoading || width === 0 ? (
           <Skeleton className="absolute inset-0" />
         ) : tiles.length === 0 ? (
@@ -1147,7 +1188,7 @@ function StackHeatmap({
                 style={{ left: g.x0 + 2, top: g.y0 + 2, width: g.x1 - g.x0 - 4, color: g.color }}
                 title={`${g.title} · $${fmtCapB(g.totalB)} combined`}
               >
-                {g.title}
+                {HEAT_GROUP_SHORT[g.key] ?? g.title}
               </div>
             ))}
             {tiles.map((t) => {
@@ -1186,6 +1227,7 @@ function StackHeatmap({
         Grouped by layer. ETF benchmarks excluded (fund AUM is not corporate market cap).
         {input.unsized.length > 0 && ` Not sized (no market cap data): ${input.unsized.join(", ")}.`}
         {" "}Gray tiles = delayed quote, change unknown.
+        {" "}Layers under 2% of drawn cap sit in the bottom strip at readable width; tile size stays proportional within each layer.
       </p>
     </Card>
   );
