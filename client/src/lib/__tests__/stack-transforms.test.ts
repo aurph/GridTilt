@@ -231,18 +231,8 @@ describe("heatColor", () => {
 });
 
 describe("heatTextColor", () => {
-  // Updated knowingly for the warm-paper redesign: cells at or beyond 60%
-  // of the saturation cap blend dark enough that ink text fails, so they
-  // flip to light paper text (INK.primary). Mild moves keep primary ink.
-  it("muted ink on unknown, primary ink on mild values", () => {
+  it("muted ink on unknown, primary ink on real values", () => {
     assert.equal(heatTextColor(null), INK.muted);
-    assert.equal(heatTextColor(NaN), INK.muted);
-    assert.equal(heatTextColor(1), INK.primary);
-    assert.equal(heatTextColor(0.59 * HEAT_SATURATION_PCT), INK.primary);
-  });
-  it("light paper text on heavily saturated cells, both directions", () => {
-    assert.equal(heatTextColor(0.6 * HEAT_SATURATION_PCT), INK.primary);
-    assert.equal(heatTextColor(-0.6 * HEAT_SATURATION_PCT), INK.primary);
-    assert.equal(heatTextColor(HEAT_SATURATION_PCT * 3), INK.primary);
+    assert.equal(heatTextColor(2.5), INK.primary);
   });
 });

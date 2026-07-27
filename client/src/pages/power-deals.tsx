@@ -1,5 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "wouter";
+import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AsOf, ErrorState, SrChartTable } from "@/components/Freshness";
 import {
@@ -11,15 +13,15 @@ import {
   ResponsiveContainer,
   BarChart,
   Bar,
+  Cell,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip as RTooltip,
 } from "recharts";
-import { ArrowUpDown } from "lucide-react";
-import { BORDER, BRAND, CATEGORY_COLORS, FONT, INK, SERIES } from "@/lib/tokens";
+import { Handshake, ArrowUpDown } from "lucide-react";
+import { BORDER, BRAND, CATEGORY_COLORS, FONT, INK, SEMANTIC, SERIES, STATUS_COLORS } from "@/lib/tokens";
 import { axisProps, gridProps, tooltipContentStyle } from "@/lib/chart-theme";
-import { PageShell, Provenance, PullStat, RuleSection } from "@/components/editorial";
 
 interface Bucket { key: string; count: number; mw: number; }
 interface DealRow {
@@ -50,7 +52,7 @@ interface DealMetrics {
 
 // Energy types from CATEGORY_COLORS; hybrid/geothermal have no token
 // category, so they take free SERIES slots (distinct from co-occurring types;
-// hybrid matches Queue's slot). Used only for the filter-chip swatches.
+// hybrid matches Queue's slot).
 const TYPE_COLOR: Record<string, string> = {
   nuclear: CATEGORY_COLORS.nuclear,
   solar: CATEGORY_COLORS.solar,
@@ -62,11 +64,10 @@ const TYPE_COLOR: Record<string, string> = {
 };
 const typeColor = (t: string) => TYPE_COLOR[t] ?? INK.muted;
 
-// Deal status as typography, not a pill (tooltip context uses popover inks).
-const STATUS_CLASS: Record<string, string> = {
-  operational: "font-semibold text-foreground",
-  active: "text-foreground",
-  announced: "text-muted-foreground",
+const STATUS_COLOR: Record<string, string> = {
+  operational: STATUS_COLORS.operational,
+  active: SEMANTIC.warning,
+  announced: STATUS_COLORS.announced,
 };
 
 const gw = (mw: number) => (mw / 1000).toFixed(mw >= 10_000 ? 0 : 1);
@@ -105,84 +106,104 @@ export default function PowerDeals({ embedded = false }: { embedded?: boolean; p
     else { setSortKey(k); setSortDir(k === "capacityMW" ? "desc" : "asc"); }
   };
 
-  const chipBase = "inline-flex items-center gap-1.5 rounded-sm border px-2.5 py-1 text-[12px] transition-colors";
-  const chipOn = "border-rule-strong bg-brand/10 font-medium text-brand-ink";
-  const chipOff = "border-rule text-ink-secondary hover:bg-paper-shade hover:text-ink";
+  // Shared by both intros: the freshness / headline chip column.
+  const asOfChip = (
+    <div className="text-11 text-muted-foreground/70 font-mono tracking-wide text-right space-y-0.5" data-testid="deals-sync">
+      <div><AsOf updatedAt={dataUpdatedAt} intervalMs={900_000} /></div>
+      {data?.lastRefreshed && <div className="text-muted-foreground/60">data as of {data.lastRefreshed}</div>}
+      {data && <div>{data.dealCount} deals · {gw(data.totalContractedMW)} GW contracted</div>}
+      {data?.topBuyer && <div>top buyer: <span className="text-brand">{data.topBuyer}</span></div>}
+    </div>
+  );
 
-  const body = (
-    <>
-      <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
-        <p className="max-w-[68ch] text-[13.5px] leading-relaxed text-ink-secondary">
-          Corporate power procurement for AI: every named deal where a hyperscaler or AI company has
-          contracted generation (a PPA, a reactor restart, an SMR option) to feed its compute.
-          Capacity is the contracted figure; hover a row for terms and sources.
-        </p>
-        <div className="space-y-0.5 text-right text-[12px] text-ink-muted" data-testid="deals-sync">
-          <div><AsOf updatedAt={dataUpdatedAt} intervalMs={900_000} /></div>
-          {data?.lastRefreshed && <div>Data as of {data.lastRefreshed}</div>}
-          {data && <div className="tnum">{data.dealCount} deals · {gw(data.totalContractedMW)} GW contracted</div>}
-          {data?.topBuyer && <div>Top buyer: <span className="font-semibold text-ink-secondary">{data.topBuyer}</span></div>}
+  // Embedded mode (Power tool, Deals tab): the host page owns the hero, so
+  // render a slim intro row instead of the full-page header.
+  const intro = embedded ? (
+    <div className="flex flex-wrap items-start justify-between gap-3 px-1">
+      <p className="text-muted-foreground text-xs leading-relaxed max-w-3xl">
+        Corporate power procurement for AI: every named deal where a hyperscaler or AI company has contracted
+        generation (a PPA, a reactor restart, an SMR option) to feed its compute. Capacity is the contracted
+        figure; open a row for terms and sources.
+      </p>
+      {asOfChip}
+    </div>
+  ) : (
+    <div className="border-b border-border px-4 sm:px-6 py-6 sm:py-8" data-testid="deals-header">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="max-w-3xl">
+          <div className="flex items-center gap-2 mb-2">
+            <Handshake className="h-5 w-5 text-brand" />
+            <h1 className="text-2xl sm:text-3xl font-semibold text-foreground tracking-tight" style={{ fontFamily: FONT.mono }}>
+              AI Power Deals
+            </h1>
+          </div>
+          <p className="text-muted-foreground text-sm leading-relaxed">
+            Corporate power procurement for AI: every named deal where a hyperscaler or AI company has
+            contracted generation (a PPA, a reactor restart, an SMR option) to feed its compute. The data-center
+            sites themselves live in <Link href="/compute-frontier" className="text-brand hover:text-brand-2">Compute Frontier</Link>;
+            this is the power behind them. Capacity is the contracted figure; open a row for terms and sources.
+          </p>
         </div>
+        {asOfChip}
       </div>
+    </div>
+  );
 
-      {/* Key figures */}
-      <div className="mt-5 grid grid-cols-2 gap-x-8 gap-y-5 sm:grid-cols-4">
-        <DealStat label="Tracked deals" value={data ? String(data.dealCount) : "—"} loading={isLoading} />
-        <DealStat label="Contracted power" value={data ? `${gw(data.totalContractedMW)} GW` : "—"} loading={isLoading} />
-        <DealStat label="Top buyer" value={data?.topBuyer ?? "—"} loading={isLoading} />
-        <DealStat label="Energy types" value={data ? String(data.byType.length) : "—"} loading={isLoading} />
-      </div>
+  return (
+    <div className={embedded ? "flex flex-col" : "flex flex-col h-full overflow-y-auto"}>
+      {intro}
 
-      <RuleSection
-        head="Contracted power by buyer"
-        aside={<span>Gigawatts, all tracked deals</span>}
-        testId="deals-buyers"
-      >
-        {isLoading ? (
-          <Skeleton className="h-[300px] w-full" />
-        ) : isError ? (
-          <ErrorState label="The deals dataset failed to load." onRetry={() => refetch()} className="h-[300px]" />
-        ) : byBuyer.length === 0 ? (
-          <div className="flex h-[200px] items-center justify-center text-[13px] text-ink-muted">No deals.</div>
-        ) : (
-          <ResponsiveContainer width="100%" height={Math.max(220, byBuyer.length * 32)}>
-            <BarChart data={byBuyer} layout="vertical" margin={{ left: 8, right: 56, top: 8, bottom: 4 }}>
-              <CartesianGrid {...gridProps} vertical={true} horizontal={false} />
-              <XAxis {...axisProps} type="number" tickFormatter={(v) => `${v}`} />
-              <YAxis {...axisProps} type="category" dataKey="buyer" width={140} axisLine={false} />
-              <RTooltip
-                cursor={{ fill: BORDER.subtle }}
-                contentStyle={tooltipContentStyle}
-                formatter={(v: number, _n, p: any) => [`${v} GW across ${p.payload.count} deal${p.payload.count === 1 ? "" : "s"}`, p.payload.buyer]}
-              />
-              <Bar dataKey="gw" fill={BRAND.primary} radius={[0, 2, 2, 0]} isAnimationActive={false}
-                label={{ position: "right", formatter: (v: number) => `${v}`, fill: INK.secondary, fontSize: 11, fontFamily: FONT.sans }} />
-            </BarChart>
-          </ResponsiveContainer>
-        )}
-        {byBuyer.length > 0 && (
-          <SrChartTable
-            caption="Contracted power by buyer, in gigawatts"
-            columns={["Buyer", "GW"]}
-            rows={byBuyer.map((b) => [b.buyer, b.gw])}
-          />
-        )}
-        <Provenance source="GridTilt deal registry" updated={data?.lastRefreshed ?? undefined} />
-      </RuleSection>
+      <div className={embedded ? "flex-1 space-y-5 mt-3" : "flex-1 p-4 sm:p-6 space-y-5"}>
+        {/* Headline tiles */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <StatTile label="Tracked deals" value={data ? String(data.dealCount) : "—"} loading={isLoading} />
+          <StatTile label="Contracted power" value={data ? `${gw(data.totalContractedMW)} GW` : "—"} loading={isLoading} />
+          <StatTile label="Top buyer" value={data?.topBuyer ?? "—"} loading={isLoading} />
+          <StatTile label="Energy types" value={data ? String(data.byType.length) : "—"} loading={isLoading} />
+        </div>
 
-      <RuleSection
-        head="Deals"
-        aside={<span className="tnum">{visibleRows.length} shown · hover a row for terms and sources</span>}
-        testId="deals-table"
-      >
+        {/* Contracted power by buyer */}
+        <Card className="border-card-border p-3" data-testid="deals-buyers">
+          <span className="text-11 font-mono uppercase tracking-wider text-muted-foreground">Contracted power by buyer · GW</span>
+          {isLoading ? (
+            <Skeleton className="h-[300px] w-full mt-2" />
+          ) : isError ? (
+            <ErrorState label="The deals dataset failed to load." onRetry={() => refetch()} className="h-[300px]" />
+          ) : byBuyer.length === 0 ? (
+            <div className="h-[300px] flex items-center justify-center text-xs text-muted-foreground">No deals.</div>
+          ) : (
+            <ResponsiveContainer width="100%" height={Math.max(220, byBuyer.length * 32)}>
+              <BarChart data={byBuyer} layout="vertical" margin={{ left: 8, right: 56, top: 8, bottom: 4 }}>
+                <CartesianGrid {...gridProps} vertical={true} horizontal={false} />
+                <XAxis {...axisProps} type="number" tickFormatter={(v) => `${v}`} />
+                <YAxis {...axisProps} type="category" dataKey="buyer" width={140} />
+                <RTooltip
+                  cursor={{ fill: BORDER.subtle }}
+                  contentStyle={tooltipContentStyle}
+                  formatter={(v: number, _n, p: any) => [`${v} GW across ${p.payload.count} deal${p.payload.count === 1 ? "" : "s"}`, p.payload.buyer]}
+                />
+                <Bar dataKey="gw" fill={BRAND.primary} radius={[0, 3, 3, 0]} isAnimationActive={false}
+                  label={{ position: "right", formatter: (v: number) => `${v}`, fill: INK.muted, fontSize: 10, fontFamily: FONT.mono }} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+          {byBuyer.length > 0 && (
+            <SrChartTable
+              caption="Contracted power by buyer, in gigawatts"
+              columns={["Buyer", "GW"]}
+              rows={byBuyer.map((b) => [b.buyer, b.gw])}
+            />
+          )}
+        </Card>
+
         {/* Energy type filter row */}
         {data && (
-          <div className="mb-3 flex flex-wrap items-center gap-1.5" data-testid="deals-type-filter">
+          <div className="flex flex-wrap items-center gap-1.5" data-testid="deals-type-filter">
             <button
               onClick={() => setTypeFilter(null)}
-              className={`${chipBase} ${typeFilter === null ? chipOn : chipOff}`}
+              className={`px-2.5 py-1 rounded text-xs font-mono border transition-colors ${typeFilter === null ? "border-brand text-brand bg-brand/10" : "border-subtle text-muted-foreground hover:text-foreground"}`}
             >
-              All types
+              all types
             </button>
             {data.byType.map((b) => {
               const on = typeFilter === b.key;
@@ -190,121 +211,103 @@ export default function PowerDeals({ embedded = false }: { embedded?: boolean; p
                 <button
                   key={b.key}
                   onClick={() => setTypeFilter(on ? null : b.key)}
-                  className={`${chipBase} ${on ? chipOn : chipOff}`}
+                  className="px-2.5 py-1 rounded text-xs font-mono border transition-colors"
+                  style={{
+                    borderColor: on ? typeColor(b.key) : BORDER.subtle,
+                    color: on ? typeColor(b.key) : INK.muted,
+                    background: on ? `${typeColor(b.key)}14` : "transparent",
+                  }}
                 >
-                  <span className="h-2 w-2 flex-shrink-0 rounded-full" style={{ background: typeColor(b.key) }} />
-                  <span className="capitalize">{b.key}</span>
-                  <span className="tnum">{gw(b.mw)} GW</span>
+                  {b.key} · {gw(b.mw)} GW
                 </button>
               );
             })}
           </div>
         )}
 
-        {isError ? (
-          <ErrorState label="The deals dataset failed to load." onRetry={() => refetch()} />
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="print-table min-w-[680px]">
-              <thead>
-                <tr>
-                  <th><SortTh label="Buyer" k="offtaker" cur={sortKey} dir={sortDir} onClick={toggleSort} /></th>
-                  <th>Project</th>
-                  <th><SortTh label="Type" k="type" cur={sortKey} dir={sortDir} onClick={toggleSort} /></th>
-                  <th className="num"><SortTh label="Capacity" k="capacityMW" cur={sortKey} dir={sortDir} onClick={toggleSort} /></th>
-                  <th className="num"><SortTh label="Online" k="online" cur={sortKey} dir={sortDir} onClick={toggleSort} /></th>
-                </tr>
-              </thead>
-              <tbody>
-                {isLoading ? (
-                  <tr>
-                    <td colSpan={5} className="p-0">
-                      <div className="space-y-2 p-4">{Array(10).fill(null).map((_, i) => <Skeleton key={i} className="h-7" />)}</div>
-                    </td>
-                  </tr>
-                ) : (
-                  visibleRows.map((r) => (
-                    <UITooltip key={r.id}>
-                      <TooltipTrigger asChild>
-                        <tr className="cursor-help" data-testid={`deal-row-${r.id}`}>
-                          <td className="shrink font-semibold text-ink">{r.offtaker}</td>
-                          <td className="text-ink-secondary">
-                            {r.name} <span className="text-ink-muted">· {r.sponsor}</span>
-                          </td>
-                          <td className="capitalize text-ink-secondary">{r.type}</td>
-                          <td className="num text-ink">{gw(r.capacityMW)} GW</td>
-                          <td className="num text-ink-muted">{r.online ?? "—"}</td>
-                        </tr>
-                      </TooltipTrigger>
-                      <TooltipContent side="top" className="max-w-md p-3">
-                        <div className="mb-1 text-[13px] font-semibold text-foreground">{r.name}</div>
-                        <div className="mb-1.5 text-[12px] text-muted-foreground">
-                          <span className="capitalize">{r.type}</span> · {gw(r.capacityMW)} GW · {r.sponsor} → {r.offtakerRaw}
-                          {r.state ? ` · ${r.state}` : ""}{r.iso ? ` (${r.iso})` : ""} ·{" "}
-                          <span className={STATUS_CLASS[r.status] ?? "text-muted-foreground"}>{r.status}</span>
-                        </div>
-                        {r.notes && <p className="mb-1.5 text-[12px] text-muted-foreground">{r.notes}</p>}
-                        {r.sources.length > 0 && (
-                          <p className="text-[12px] text-muted-foreground">Sources: {r.sources.join(" · ")}</p>
-                        )}
-                      </TooltipContent>
-                    </UITooltip>
-                  ))
-                )}
-              </tbody>
-            </table>
+        {/* Deals table */}
+        <Card className="border-card-border overflow-hidden" data-testid="deals-table">
+          <div className="px-4 py-2 bg-surface-base border-b border-border">
+            <span className="text-11 font-mono uppercase tracking-wider text-muted-foreground">Deals</span>
+            <span className="text-10 font-mono text-muted-foreground/40 ml-2">{visibleRows.length} shown · hover for terms + sources</span>
           </div>
-        )}
-        <Provenance
-          source="GridTilt deal registry"
-          updated={data?.lastRefreshed ?? undefined}
-          extra="capacity is the contracted figure as disclosed; staged deals show their full target"
-        />
-      </RuleSection>
+          {isError ? (
+            <ErrorState label="The deals dataset failed to load." onRetry={() => refetch()} />
+          ) : (
+          <div className="overflow-x-auto">
+          <div className="min-w-[680px]">
+          <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-surface-base border-b border-border text-10 font-mono uppercase tracking-wider text-muted-foreground">
+            <SortHeader label="Buyer" k="offtaker" cur={sortKey} dir={sortDir} onClick={toggleSort} className="col-span-2" />
+            <span className="col-span-4">Generator / project</span>
+            <SortHeader label="Type" k="type" cur={sortKey} dir={sortDir} onClick={toggleSort} className="col-span-2" />
+            <SortHeader label="Capacity" k="capacityMW" cur={sortKey} dir={sortDir} onClick={toggleSort} className="col-span-2 justify-end" />
+            <SortHeader label="Online" k="online" cur={sortKey} dir={sortDir} onClick={toggleSort} className="col-span-2 justify-end" />
+          </div>
+          {isLoading ? (
+            <div className="p-4 space-y-2">{Array(10).fill(null).map((_, i) => <Skeleton key={i} className="h-7" />)}</div>
+          ) : (
+            visibleRows.map((r) => (
+              <UITooltip key={r.id}>
+                <TooltipTrigger asChild>
+                  <div className="grid grid-cols-12 gap-2 px-4 py-2.5 border-b border-border/30 last:border-0 text-xs hover:bg-brand/5 cursor-help items-center" data-testid={`deal-row-${r.id}`}>
+                    <span className="col-span-2 font-mono font-semibold text-foreground truncate">{r.offtaker}</span>
+                    <span className="col-span-4 text-muted-foreground truncate">{r.name} <span className="text-muted-foreground/40">· {r.sponsor}</span></span>
+                    <span className="col-span-2 font-mono">
+                      <span className="inline-flex items-center gap-1.5">
+                        <span className="h-2 w-2 rounded-full flex-shrink-0" style={{ background: typeColor(r.type) }} />
+                        <span style={{ color: typeColor(r.type) }}>{r.type}</span>
+                      </span>
+                    </span>
+                    <span className="col-span-2 font-mono text-foreground text-right tabular-nums">{gw(r.capacityMW)} GW</span>
+                    <span className="col-span-2 font-mono text-muted-foreground text-right tabular-nums text-11">{r.online ?? "—"}</span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-md p-3">
+                  <div className="text-xs font-semibold mb-1 text-foreground">{r.name}</div>
+                  <div className="text-11 text-muted-foreground mb-1.5">
+                    <span style={{ color: typeColor(r.type) }}>{r.type}</span> · {gw(r.capacityMW)} GW · {r.sponsor} → {r.offtakerRaw}
+                    {r.state ? ` · ${r.state}` : ""}{r.iso ? ` (${r.iso})` : ""} · <span style={{ color: STATUS_COLOR[r.status] ?? INK.muted }}>{r.status}</span>
+                  </div>
+                  {r.notes && <p className="text-11 text-muted-foreground/80 mb-1.5">{r.notes}</p>}
+                  {r.sources.length > 0 && (
+                    <div className="text-10 font-mono text-muted-foreground/60">
+                      <span className="uppercase tracking-wider text-muted-foreground/50">sources: </span>{r.sources.join(" · ")}
+                    </div>
+                  )}
+                </TooltipContent>
+              </UITooltip>
+            ))
+          )}
+          </div>
+          </div>
+          )}
+        </Card>
 
-      <p className="mt-4 max-w-[70ch] text-[12.5px] leading-relaxed text-ink-muted">
-        Deals are corporate power purchase agreements, reactor restarts, and SMR options with a named
-        AI or hyperscaler offtaker, curated by hand in the GridTilt deal registry. Terms and sources
-        are on each row.
-      </p>
-    </>
+        <p className="text-11 text-muted-foreground/60 leading-relaxed px-1">
+          Deals are corporate power-purchase agreements, reactor restarts, and SMR options with a named AI / hyperscaler
+          offtaker, drawn from <span className="font-mono">server/data/interconnection-queue.json</span>. Capacity is the
+          contracted figure as disclosed; staged deals show their full target. Terms and sources are on each row.
+        </p>
+      </div>
+    </div>
   );
+}
 
-  // Embedded mode (Power tool, Deals tab): the host page owns the title and
-  // tabs; the standalone route wraps the same content in the page shell.
-  if (embedded) return <div className="flex flex-col">{body}</div>;
+function StatTile({ label, value, loading }: { label: string; value: string; loading: boolean }) {
   return (
-    <PageShell>
-      <div className="pt-7 sm:pt-9">
-        <RuleSection head="AI power deals" className="mt-0" testId="deals-header">
-          {body}
-        </RuleSection>
-      </div>
-    </PageShell>
+    <Card className="border-card-border p-3">
+      <div className="text-10 font-mono uppercase tracking-wider text-muted-foreground/60">{label}</div>
+      {loading ? <Skeleton className="h-6 w-16 mt-1" /> : <div className="text-lg font-semibold text-foreground mt-0.5 truncate">{value}</div>}
+    </Card>
   );
 }
 
-function DealStat({ label, value, loading }: { label: string; value: string; loading: boolean }) {
-  if (loading) {
-    return (
-      <div>
-        <p className="text-[13px] leading-tight text-ink-secondary">{label}</p>
-        <Skeleton className="mt-1.5 h-8 w-24" />
-      </div>
-    );
-  }
-  return <PullStat label={label} value={value} />;
-}
-
-function SortTh({ label, k, cur, dir, onClick }: { label: string; k: SortKey; cur: SortKey; dir: "asc" | "desc"; onClick: (k: SortKey) => void }) {
+function SortHeader({ label, k, cur, dir, onClick, className = "" }: { label: string; k: SortKey; cur: SortKey; dir: "asc" | "desc"; onClick: (k: SortKey) => void; className?: string }) {
   const active = cur === k;
   return (
-    <button
-      onClick={() => onClick(k)}
-      className={`inline-flex items-center gap-1 text-[12px] transition-colors hover:text-ink ${active ? "text-ink" : ""}`}
-    >
+    <button onClick={() => onClick(k)} className={`flex items-center gap-1 hover:text-foreground transition-colors ${active ? "text-brand" : ""} ${className}`}>
       {label}
-      <ArrowUpDown className={`h-3 w-3 ${active ? (dir === "asc" ? "rotate-180" : "") : "opacity-40"}`} />
+      <ArrowUpDown className="h-3 w-3" style={{ opacity: active ? 1 : 0.3 }} />
     </button>
   );
 }

@@ -48,11 +48,11 @@ export function AsOf({
   const age = Date.now() - updatedAt;
   return (
     <span
-      className={`text-[12px] text-ink-muted cursor-default ${className}`}
+      className={`text-9 font-mono text-muted-foreground/60 cursor-default ${className}`}
       title={`as of ${fmtClock(updatedAt)}`}
       data-testid="asof"
     >
-      Updated {fmtAge(age)}
+      as of {fmtAge(age)}
     </span>
   );
 }
@@ -77,15 +77,15 @@ export function ErrorState({
       data-testid="error-state"
     >
       <AlertTriangle className="h-4 w-4 text-negative" />
-      <p className="text-[13px] text-muted-foreground">{label}</p>
+      <p className="text-xs text-muted-foreground">{label}</p>
       {onRetry && (
         <button
           onClick={onRetry}
-          className="inline-flex items-center gap-1.5 rounded-sm border border-rule px-2.5 py-1 text-[12.5px] text-foreground hover:border-rule-strong transition-colors"
+          className="inline-flex items-center gap-1.5 rounded border border-subtle px-2.5 py-1 text-11 font-mono text-foreground hover:border-strong transition-colors"
           data-testid="error-retry"
         >
           <RotateCw className="h-3 w-3" />
-          Retry
+          retry
         </button>
       )}
     </div>

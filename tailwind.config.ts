@@ -16,9 +16,9 @@ export default {
   theme: {
     extend: {
       borderRadius: {
-        lg: ".25rem",
-        md: ".1875rem",
-        sm: ".125rem",
+        lg: ".5625rem",
+        md: ".375rem",
+        sm: ".1875rem",
       },
       colors: {
         background: "hsl(var(--background) / <alpha-value>)",
@@ -111,16 +111,6 @@ export default {
         brand: {
           DEFAULT: tokenColor("--brand"),
           "2": tokenColor("--brand-2"),
-          ink: tokenColor("--brand-ink"),
-        },
-        paper: {
-          DEFAULT: tokenColor("--paper"),
-          shade: tokenColor("--paper-shade"),
-          deep: tokenColor("--paper-deep"),
-        },
-        rule: {
-          DEFAULT: tokenColor("--rule"),
-          strong: tokenColor("--rule-strong"),
         },
         ink: {
           DEFAULT: tokenColor("--ink"),
@@ -173,9 +163,9 @@ export default {
         slow: "var(--duration-slow)",
       },
       fontFamily: {
-        sans: ["Archivo", "-apple-system", "Segoe UI", "sans-serif"],
+        sans: ["Inter", "sans-serif"],
         serif: ["var(--font-serif)"],
-        mono: ["ui-monospace", "SF Mono", "monospace"],
+        mono: ["JetBrains Mono", "monospace"],
       },
       keyframes: {
         "accordion-down": {

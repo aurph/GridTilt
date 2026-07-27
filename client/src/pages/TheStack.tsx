@@ -6,6 +6,7 @@ import { useMeasuredWidth } from "@/lib/use-measured-width";
 // when the flow tab is opened.
 const SupplyChainFlow = lazy(() => import("@/pages/SupplyChain"));
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Tooltip as UITooltip,
@@ -21,9 +22,9 @@ import {
   CartesianGrid,
   Tooltip,
 } from "recharts";
-import { Info, Clock, ChevronDown, ChevronRight, ArrowUpDown } from "lucide-react";
+import { Cpu, Server, Zap, TrendingUp, TrendingDown, Info, Clock, ChevronDown, ChevronRight, ArrowUpDown } from "lucide-react";
 import { AsOf, ErrorState } from "@/components/Freshness";
-import { PageShell, PageTitle, Provenance, PullStat, RuleSection } from "@/components/editorial";
+import { PageHeader, HeaderStat } from "@/components/PageHeader";
 import { BRAND, CATEGORY_COLORS, CHART_CHROME, INK, SEMANTIC } from "@/lib/tokens";
 import { axisProps, gridProps } from "@/lib/chart-theme";
 import { sparklineDomain } from "@/lib/gpu-series";
@@ -104,7 +105,7 @@ function Sparkline({ data, refValue, refLabel, height = 40 }: { data: number[] |
   if (!data || data.length === 0) {
     return (
       <div
-        className="flex items-center justify-center rounded-sm border border-dashed border-subtle text-[11px] text-ink-muted select-none"
+        className="flex items-center justify-center rounded-sm border border-dashed border-subtle text-9 font-mono text-muted-foreground/50 select-none"
         style={{ height }}
         data-testid="sparkline-empty"
       >
@@ -181,7 +182,7 @@ function StaleBadge({ ticker }: { ticker: string }) {
     <UITooltip>
       <TooltipTrigger asChild>
         <span
-          className="inline-flex items-center gap-1 text-[11.5px] text-warning"
+          className="inline-flex items-center gap-1 rounded-sm border border-brand-2/30 bg-brand-2/10 px-1.5 py-0 text-10 font-mono text-brand-2/90 leading-4"
           data-testid={`stale-indicator-${ticker}`}
         >
           <Clock className="h-2.5 w-2.5" />
@@ -211,7 +212,7 @@ function MarketStateBadge({ state, majority }: { state: string | null | undefine
   if (!state || state === majority) return null;
   const label = state.startsWith("PRE") ? "pre" : state.startsWith("POST") ? "post" : state === "REGULAR" ? "live" : "closed";
   return (
-    <span className="text-[11px] text-ink-muted" title={`this ticker: ${marketStateLabel(state)} (differs from the rest of the page)`}>
+    <span className="text-8 font-mono uppercase px-1 rounded-sm border border-subtle text-muted-foreground/70" title={`this ticker: ${marketStateLabel(state)} (differs from the rest of the page)`}>
       {label}
     </span>
   );
@@ -236,15 +237,15 @@ function majorityMarketState(data: StackData | undefined, layerKeys: readonly st
 
 /** P/E cell contents with defined states: N/A and negative are explicit. */
 function peCell(pe: number | null): { text: string; className: string; title: string } {
-  if (pe === null || !Number.isFinite(pe)) return { text: "—", className: "text-ink-muted", title: "No P/E: unprofitable or not reported" };
-  if (pe < 0) return { text: `−${Math.abs(pe).toFixed(1)}`, className: "text-negative", title: "Negative P/E: trailing earnings are negative" };
-  return { text: pe.toFixed(1), className: "text-ink", title: "Trailing P/E" };
+  if (pe === null || !Number.isFinite(pe)) return { text: "—", className: "text-muted-foreground/50", title: "No P/E: unprofitable or not reported" };
+  if (pe < 0) return { text: pe.toFixed(1), className: "text-negative", title: "Negative P/E: trailing earnings are negative" };
+  return { text: pe.toFixed(1), className: "text-foreground", title: "Trailing P/E" };
 }
 
 function revGrowthCell(rg: number | null): { text: string; className: string; title: string } {
-  if (rg === null || !Number.isFinite(rg)) return { text: "—", className: "text-ink-muted", title: "Revenue growth not reported" };
-  const cls = rg > 0 ? "text-positive" : rg < 0 ? "text-negative" : "text-ink-muted";
-  return { text: `${rg > 0 ? "+" : rg < 0 ? "−" : ""}${Math.abs(rg).toFixed(1)}%`, className: cls, title: "Revenue growth year over year" };
+  if (rg === null || !Number.isFinite(rg)) return { text: "—", className: "text-muted-foreground/50", title: "Revenue growth not reported" };
+  const cls = rg > 0 ? "text-positive" : rg < 0 ? "text-negative" : "text-muted-foreground";
+  return { text: `${rg > 0 ? "+" : ""}${rg.toFixed(1)}%`, className: cls, title: "Revenue growth YoY" };
 }
 
 function StockCard({ stock, timeframe, majorityState }: { stock: StockData; timeframe: Timeframe; majorityState: string | null }) {
@@ -258,31 +259,32 @@ function StockCard({ stock, timeframe, majorityState }: { stock: StockData; time
   const liveCapB = marketCapOf(stock);
   return (
     <Card
-      className={`p-4 border-card-border ${isDown ? "border-negative-deep/20 bg-negative-deep/5" : ""} ${isStale ? "opacity-80" : ""}`}
+      className={`p-4 border-card-border transition-all duration-200 cursor-pointer hover:-translate-y-0.5 hover:shadow-lg ${isDown ? "border-negative-deep/20 bg-negative-deep/5" : ""} ${isStale ? "opacity-80" : ""}`}
+      style={{ boxShadow: isDown ? `inset 0 0 20px ${SEMANTIC.negativeDeep}0A` : undefined }}
       data-testid={`stock-card-${stock.ticker}`}
     >
       <div className="flex items-start justify-between mb-2">
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-semibold text-[13.5px] text-ink">{stock.ticker}</span>
+            <span className="font-bold text-sm text-foreground font-mono">{stock.ticker}</span>
             {isStale ? (
               <StaleBadge ticker={stock.ticker} />
             ) : (
-              <span className={`text-[12.5px] font-semibold tnum ${isUp ? "text-positive" : "text-negative"}`}>
-                {isUp ? "+" : "−"}{Math.abs(stock.changePercent as number).toFixed(2)}%
-              </span>
+              <Badge className={`text-xs px-1.5 py-0 font-mono ${isUp ? "bg-positive-deep/15 text-positive" : "bg-negative-deep/15 text-negative"}`}>
+                {isUp ? "+" : ""}{(stock.changePercent as number).toFixed(2)}%
+              </Badge>
             )}
             <MarketStateBadge state={stock.marketState} majority={majorityState} />
           </div>
-          <p className="text-[12px] text-ink-secondary mt-0.5 truncate max-w-[150px]">{stock.name}</p>
-          <p className="text-[12px] text-ink-muted mt-0.5 tnum">
+          <p className="text-xs text-muted-foreground mt-0.5 truncate max-w-[150px]">{stock.name}</p>
+          <p className="text-xs text-muted-foreground/60 mt-0.5 font-mono">
             {liveCapB !== null ? `$${fmtCapB(liveCapB)}` : stock.marketCapDisplay ?? "—"} mkt cap
           </p>
         </div>
         <div className="text-right flex-shrink-0">
-          <p className="font-semibold text-[13.5px] text-ink tnum">${stock.price.toFixed(2)}</p>
-          <p className={`text-[12px] tnum ${isStale ? "text-ink-muted" : isUp ? "text-positive" : "text-negative"}`}>
-            {isStale || stock.change === null ? "—" : `${stock.change >= 0 ? "+" : "−"}${Math.abs(stock.change).toFixed(2)}`}
+          <p className="font-semibold text-sm text-foreground font-mono">${stock.price.toFixed(2)}</p>
+          <p className={`text-xs font-mono ${isStale ? "text-muted-foreground" : isUp ? "text-positive" : "text-negative"}`}>
+            {isStale || stock.change === null ? "—" : `${isUp ? "+" : ""}${stock.change.toFixed(2)}`}
           </p>
         </div>
       </div>
@@ -291,14 +293,14 @@ function StockCard({ stock, timeframe, majorityState }: { stock: StockData; time
         <Sparkline data={stock.sparkline} refValue={ref.value} refLabel={ref.label} />
       </div>
 
-      <div className="grid grid-cols-2 gap-x-4 border-t border-rule pt-2 text-[12px]">
-        <div className="flex items-baseline justify-between gap-2">
-          <span className="text-ink-muted">P/E</span>
-          <span className={`font-semibold tnum ${pe.className}`} title={pe.title}>{pe.text}</span>
+      <div className="grid grid-cols-2 gap-2 text-xs">
+        <div className="bg-muted/40 rounded-sm p-2">
+          <p className="text-muted-foreground mb-0.5">P/E Ratio</p>
+          <p className={`font-semibold font-mono ${pe.className}`} title={pe.title}>{pe.text}</p>
         </div>
-        <div className="flex items-baseline justify-between gap-2">
-          <span className="text-ink-muted">Rev y/y</span>
-          <span className={`font-semibold tnum ${rg.className}`} title={rg.title}>{rg.text}</span>
+        <div className="bg-muted/40 rounded-sm p-2">
+          <p className="text-muted-foreground mb-0.5">Rev Growth YoY</p>
+          <p className={`font-semibold font-mono ${rg.className}`} title={rg.title}>{rg.text}</p>
         </div>
       </div>
     </Card>
@@ -334,9 +336,9 @@ function StockCardSkeleton() {
 const CustomScatterTooltip = ({ active, payload }: any) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-popover border border-rule rounded-sm p-3 text-[12.5px] shadow-md">
-        <p className="text-ink-secondary">SRUUF: <span className="text-ink font-medium tnum">${payload[0]?.value?.toFixed(2)}</span></p>
-        <p className="text-ink-secondary">CCJ: <span className="text-ink font-medium tnum">${payload[1]?.value?.toFixed(2)}</span></p>
+      <div className="bg-card border border-card-border rounded-lg p-3 text-xs shadow-xl">
+        <p className="text-muted-foreground">SRUUF: <span className="text-foreground font-mono font-medium">${payload[0]?.value?.toFixed(2)}</span></p>
+        <p className="text-muted-foreground">CCJ: <span className="text-foreground font-mono font-medium">${payload[1]?.value?.toFixed(2)}</span></p>
       </div>
     );
   }
@@ -415,7 +417,6 @@ function sortStocks(stocks: StockData[], sortBy: SortBy): StockData[] {
 type ViewMode = "cards" | "table" | "heatmap" | "flow";
 const VIEW_LS_KEY = "gridtilt.stack.view";
 const VIEW_MODES: ViewMode[] = ["cards", "table", "heatmap", "flow"];
-const VIEW_LABELS: Record<ViewMode, string> = { cards: "Cards", table: "Table", heatmap: "Heatmap", flow: "Flow" };
 
 function readStoredView(): ViewMode {
   // URL param wins (the /supply-chain redirect lands on /stack?view=flow),
@@ -476,28 +477,32 @@ export default function TheStack() {
   const layerConfig = [
     {
       key: "compute",
-      title: "Compute layer",
+      title: "Compute Layer",
+      icon: Cpu,
       color: CATEGORY_COLORS.compute,
       description: "AI chips, hyperscalers, and the foundries powering model training.",
       tooltip: "NVIDIA's H100/B200 GPUs power virtually every major AI training cluster. TSMC manufactures all advanced AI chips. Hyperscalers (MSFT, GOOGL, META, AMZN) are both the largest compute consumers and primary drivers of data center power demand.",
     },
     {
       key: "nuclear",
-      title: "Nuclear power",
+      title: "Nuclear Power",
+      icon: Zap,
       color: CATEGORY_COLORS.nuclear,
       description: "Nuclear operators, SMR developers, and advanced reactor companies.",
       tooltip: "AI requires uninterruptible clean baseload. Microsoft restarted Three Mile Island. Amazon co-located with Talen's Susquehanna plant. Oklo has a 14 GW DC customer pipeline. BWXT is the sole US naval reactor manufacturer.",
     },
     {
       key: "uranium",
-      title: "Uranium and fuel cycle",
+      title: "Uranium & Fuel Cycle",
+      icon: Zap,
       color: CATEGORY_COLORS.uranium,
       description: "Uranium miners and fuel cycle companies supplying the nuclear renaissance.",
       tooltip: "Uranium spot ~$92/lb (Mar 2026). Cameco is the largest public miner with direct spot beta. NexGen's Rook I is the highest-grade undeveloped uranium deposit. Centrus is the only US-licensed HALEU producer.",
     },
     {
       key: "powerHardware",
-      title: "Power hardware",
+      title: "Power Hardware",
+      icon: Server,
       color: CATEGORY_COLORS.power,
       description: "Transformers, switchgear, cooling, and electrical equipment.",
       tooltip: "GE Vernova's turbine order book leads DC buildout pace. Eaton is at max switchgear/transformer capacity. Vertiv is the fastest-growing power/cooling infrastructure company. Transformer shortages remain the primary bottleneck on DC energization.",
@@ -505,62 +510,71 @@ export default function TheStack() {
     {
       key: "utilities",
       title: "Utilities",
+      icon: Zap,
       color: CATEGORY_COLORS.utilities,
       description: "Utilities signing long-term power agreements with hyperscalers.",
       tooltip: "Dominion serves Northern Virginia (70% of global internet traffic). NextEra signed a 2.5 GW deal with Meta. Southern Company's Georgia territory is the center of Southeast DC growth. Regulated utilities benefit from structurally rising electricity demand.",
     },
     {
       key: "dataCenters",
-      title: "Data centers",
+      title: "Data Centers",
+      icon: Server,
       color: CATEGORY_COLORS.datacenters,
       description: "REITs and colocation operators. Direct proxies for AI capacity buildout.",
       tooltip: "Equinix operates 273 data centers across 77 markets. Digital Realty has 300+ facilities globally. IREN is pivoting from Bitcoin mining to GPU-as-a-Service. Power contracts and land-bank are the critical metrics.",
     },
     {
       key: "construction",
-      title: "Construction and EPC",
+      title: "Construction & EPC",
+      icon: Server,
       color: CATEGORY_COLORS.construction,
       description: "Electrical contractors and engineers building grid connections for AI campuses.",
       tooltip: "Quanta is the largest electrical utility contractor in North America, building transmission lines and substations for DC campuses. EMCOR has a record $4.3B backlog. Sterling Infrastructure has 125% YoY DC revenue growth.",
     },
     {
       key: "rawMaterialsMining",
-      title: "Raw materials: mining and metals",
+      title: "Raw Materials - Mining & Metals",
+      icon: Server,
       color: INK.secondary, // periphery tier: gray = supporting layer, hues are reserved for the 10 thesis layers
       description: "Copper, steel, and rare earth producers supplying data center and grid buildout.",
       tooltip: "Copper is the essential conductor in every transformer, busbar, and cable connecting grid to rack. Steel is the structural backbone of data center campuses. Rare earths power wind turbines and EV motors in the energy transition.",
     },
     {
       key: "rawMaterialsNatGas",
-      title: "Raw materials: natural gas",
+      title: "Raw Materials - Natural Gas",
+      icon: Zap,
       color: CATEGORY_COLORS.gas,
       description: "Natural gas producers fueling bridge power generation for data centers.",
       tooltip: "Gas-fired generation is the bridge fuel while nuclear and renewables scale. Appalachian and Haynesville producers benefit from rising gas demand as hyperscalers seek reliable, dispatchable power generation capacity.",
     },
     {
       key: "renewableGeneration",
-      title: "Renewable generation",
+      title: "Renewable Generation",
+      icon: Zap,
       color: CATEGORY_COLORS.renewables,
       description: "Solar manufacturers and renewable energy companies powering clean data center commitments.",
       tooltip: "Hyperscalers have committed to 100% renewable energy targets. First Solar is the largest US panel maker. AES has signed multi-GW PPAs with Google and Microsoft. Solar and wind are the fastest-growing power sources for data center operations.",
     },
     {
       key: "transmissionGrid",
-      title: "Transmission and grid hardware",
+      title: "Transmission & Grid Hardware",
+      icon: Server,
       color: CATEGORY_COLORS.grid,
       description: "Wire, generators, and grid equipment connecting power to data center campuses.",
       tooltip: "Every data center requires extensive copper wiring (Encore Wire), backup generators (Generac), and electrical infrastructure. Grid interconnection is the bottleneck for new data center energization timelines.",
     },
     {
       key: "cryptoAIDC",
-      title: "Crypto/AI DC operators",
+      title: "Crypto/AI DC Operators",
+      icon: Cpu,
       color: INK.secondary, // periphery tier (non-adjacent to mining in display order, always labeled)
       description: "Bitcoin miners pivoting infrastructure and power contracts toward AI/HPC hosting.",
       tooltip: "CleanSpark and MARA Holdings are the largest public Bitcoin miners exploring AI/HPC hosting. Their existing power contracts, cooling infrastructure, and facility footprints are directly transferable to GPU-as-a-Service operations.",
     },
     {
       key: "etfsBenchmarks",
-      title: "ETF benchmarks",
+      title: "ETF Benchmarks",
+      icon: TrendingUp,
       color: INK.muted, // benchmarks are neutral, not a category
       description: "Sector ETFs for uranium, data centers, grid infrastructure, and utilities.",
       tooltip: "URA and URNM track uranium mining. DTCR tracks data center/digital infrastructure. GRID tracks smart grid companies. XLU tracks utilities. Compare individual picks against these benchmarks.",
@@ -569,132 +583,146 @@ export default function TheStack() {
 
   return (
     <PerfProfiler>
-    <PageShell wide>
-      <PageTitle
+    <div className="flex flex-col h-full overflow-y-auto">
+      <PageHeader
         title="The Stack"
+        testId="stack-header"
+        about="100+ equities across 13 layers of the AI power supply chain, with intraday prices from Yahoo Finance. Cards, table, heatmap, and supply-chain flow views."
+        stats={<HeaderStat label="Equities" value="100" valueClass="text-foreground" />}
         right={
           <>
-            <span className="flex items-baseline gap-2">
-              <span className="text-[12.5px] text-ink-secondary">Equities</span>
-              <span className="text-[15px] font-semibold text-ink tnum">100</span>
-            </span>
             {majorityState && majorityState !== "REGULAR" && (
-              <span className="text-[12.5px] text-ink-muted" data-testid="market-state-chip">
+              <Badge className="bg-muted/40 text-muted-foreground border-border font-mono text-xs" data-testid="market-state-chip">
                 {marketStateLabel(majorityState)}
-              </span>
+              </Badge>
             )}
+            <Badge className="bg-brand-2/15 text-brand-2 border-brand-2/30 font-mono text-xs">
+              Yahoo Finance{majorityState === "REGULAR" ? " · Live" : ""}
+            </Badge>
             <AsOf updatedAt={dataUpdatedAt} intervalMs={900_000} />
           </>
         }
-        testId="stack-header"
+        controls={
+          <div className="flex flex-wrap items-center gap-4">
+          {/* View toggle (persisted per user) */}
+          <div className="flex items-center gap-1 bg-muted/30 rounded-md p-0.5 border border-card-border">
+            {VIEW_MODES.map((v) => (
+              <button
+                key={v}
+                onClick={() => setView(v)}
+                data-testid={`view-${v}`}
+                className={`px-3 py-1 text-xs font-mono font-semibold rounded transition-all ${
+                  view === v ? "bg-brand text-white" : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {v}
+              </button>
+            ))}
+          </div>
+
+          {/* Timeframe applies to price views, not the supply-chain flow */}
+          {view !== "flow" && (
+            <>
+              <div className="w-px h-5 bg-border" />
+              <div className="flex items-center gap-1 bg-muted/30 rounded-md p-0.5 border border-card-border">
+                {(["1D", "5D", "1M"] as Timeframe[]).map((tf) => (
+                  <button
+                    key={tf}
+                    onClick={() => setTimeframe(tf)}
+                    data-testid={`timeframe-${tf.toLowerCase()}`}
+                    className={`px-3 py-1 text-xs font-mono font-semibold rounded transition-all ${
+                      timeframe === tf
+                        ? "bg-brand text-white"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {tf}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+
+          {/* Sort toggle - cards view only; table sorts by column, heatmap by size */}
+          {view === "cards" && (
+            <>
+              <div className="w-px h-5 bg-border" />
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">Sort by</span>
+                <div className="flex items-center gap-1 bg-muted/30 rounded-md p-0.5 border border-card-border">
+                  {([
+                    { id: "change", label: "% Change" },
+                    { id: "marketcap", label: "Mkt Cap" },
+                    { id: "alpha", label: "Alphabetical" },
+                  ] as { id: SortBy; label: string }[]).map((opt) => (
+                    <button
+                      key={opt.id}
+                      onClick={() => setSortBy(opt.id)}
+                      data-testid={`sort-${opt.id}`}
+                      className={`px-3 py-1 text-xs font-medium rounded transition-all ${
+                        sortBy === opt.id
+                          ? "bg-muted text-foreground"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+          </div>
+        }
       />
 
-      <div className="flex flex-wrap items-end gap-x-8 gap-y-2 border-b border-rule mb-6">
-        {/* View toggle (persisted per user) */}
-        <div className="flex items-center gap-5" role="tablist">
-          {VIEW_MODES.map((v) => (
-            <button
-              key={v}
-              role="tab"
-              aria-selected={view === v}
-              onClick={() => setView(v)}
-              data-testid={`view-${v}`}
-              className={`relative pb-2 text-[13.5px] leading-none transition-colors duration-fast ${
-                view === v ? "font-semibold text-brand-ink" : "text-ink-secondary hover:text-ink"
-              }`}
-            >
-              {VIEW_LABELS[v]}
-              {view === v && <span aria-hidden className="absolute inset-x-0 -bottom-px h-[2px] bg-brand" />}
-            </button>
-          ))}
-        </div>
-
-        {/* Timeframe applies to price views, not the supply-chain flow */}
-        {view !== "flow" && (
-          <div className="flex items-center gap-3 pb-2">
-            {(["1D", "5D", "1M"] as Timeframe[]).map((tf) => (
-              <button
-                key={tf}
-                onClick={() => setTimeframe(tf)}
-                data-testid={`timeframe-${tf.toLowerCase()}`}
-                className={`text-[12.5px] leading-none tnum transition-colors duration-fast ${
-                  timeframe === tf ? "font-semibold text-brand-ink" : "text-ink-secondary hover:text-ink"
-                }`}
-              >
-                {tf}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* Sort control - cards view only; table sorts by column, heatmap by size */}
-        {view === "cards" && (
-          <div className="flex items-center gap-3 pb-2">
-            <span className="text-[12.5px] text-ink-muted">Sort by</span>
-            {([
-              { id: "change", label: "% change" },
-              { id: "marketcap", label: "Market cap" },
-              { id: "alpha", label: "Alphabetical" },
-            ] as { id: SortBy; label: string }[]).map((opt) => (
-              <button
-                key={opt.id}
-                onClick={() => setSortBy(opt.id)}
-                data-testid={`sort-${opt.id}`}
-                className={`text-[12.5px] leading-none transition-colors duration-fast ${
-                  sortBy === opt.id ? "font-semibold text-ink" : "text-ink-secondary hover:text-ink"
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div>
-        {view === "cards" && (
-          <>
-            {layerConfig.map((layer) => {
-              const stocks = (data as any)?.[layer.key] as StockData[] | undefined;
-              return (
-                // content-visibility virtualizes off-screen layer sections:
-                // render/layout/paint are skipped until scrolled near.
-                <div key={layer.key} className="mt-8 first:mt-0" style={{ contentVisibility: "auto", containIntrinsicSize: "auto 560px" }}>
-                  <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-rule-strong pb-1.5 mb-4">
-                    <span className="flex items-center gap-2.5">
-                      <span aria-hidden className="h-2.5 w-2.5" style={{ background: layer.color }} />
-                      <h2 className="text-[17px] font-semibold leading-tight text-ink">{layer.title}</h2>
+      <div className="flex-1 p-6 space-y-8">
+        {view === "cards" &&
+          layerConfig.map((layer) => {
+            const stocks = (data as any)?.[layer.key] as StockData[] | undefined;
+            return (
+              // content-visibility virtualizes off-screen layer sections:
+              // render/layout/paint are skipped until scrolled near.
+              <div key={layer.key} style={{ contentVisibility: "auto", containIntrinsicSize: "auto 560px" }}>
+                <div className="flex items-center gap-3 mb-4">
+                  <div
+                    className="flex h-8 w-8 items-center justify-center rounded-md"
+                    style={{ backgroundColor: `${layer.color}18`, border: `1px solid ${layer.color}30` }}
+                  >
+                    <layer.icon className="h-4 w-4" style={{ color: layer.color }} />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h2 className="font-semibold text-foreground">{layer.title}</h2>
                       <UITooltip>
                         <TooltipTrigger>
-                          <Info className="h-3.5 w-3.5 text-ink-muted" />
+                          <Info className="h-3.5 w-3.5 text-muted-foreground" />
                         </TooltipTrigger>
                         <TooltipContent side="right" className="max-w-xs">
                           <p className="text-xs leading-relaxed">{layer.tooltip}</p>
                         </TooltipContent>
                       </UITooltip>
-                    </span>
-                    <span className="text-[12.5px] text-ink-muted">{layer.description}</span>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                    {isError ? (
-                      <ErrorState label="Unable to load equities data" onRetry={() => refetch()} className="col-span-full" />
-                    ) : isLoading
-                      ? Array(4).fill(null).map((_, i) => <StockCardSkeleton key={i} />)
-                      : (stocks ?? []).length === 0 ? (
-                        <div className="col-span-full py-4">
-                          <p className="text-[13px] text-ink-muted text-center">No equities in this layer</p>
-                        </div>
-                      ) : sortStocks(stocks ?? [], sortBy).map((stock) => (
-                          <StockCard key={stock.ticker} stock={stock} timeframe={timeframe} majorityState={majorityState} />
-                        ))}
+                    </div>
+                    <p className="text-xs text-muted-foreground">{layer.description}</p>
                   </div>
                 </div>
-              );
-            })}
-            <Provenance source="Yahoo Finance" extra="intraday quotes; delayed tickers flagged per card" />
-          </>
-        )}
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                  {isError ? (
+                    <ErrorState label="Unable to load equities data" onRetry={() => refetch()} className="col-span-full" />
+                  ) : isLoading
+                    ? Array(4).fill(null).map((_, i) => <StockCardSkeleton key={i} />)
+                    : (stocks ?? []).length === 0 ? (
+                      <div className="col-span-full py-4">
+                        <p className="text-xs text-muted-foreground text-center">No equities in this layer</p>
+                      </div>
+                    ) : sortStocks(stocks ?? [], sortBy).map((stock) => (
+                        <StockCard key={stock.ticker} stock={stock} timeframe={timeframe} majorityState={majorityState} />
+                      ))}
+                </div>
+              </div>
+            );
+          })}
 
         {view === "table" && (
           <StackTable
@@ -719,31 +747,42 @@ export default function TheStack() {
           </Suspense>
         )}
 
-        {/* Uranium vs CCJ correlation scatter (price views only) */}
+        {/* Uranium vs CCJ Correlation scatter (price views only) */}
         <div className={view === "flow" ? "hidden" : undefined}>
-          <RuleSection
-            head="Uranium proxy vs CCJ correlation"
-            aside={data?.correlationMeta ? <span className="tnum">{data.correlationMeta.weeks} weeks paired</span> : undefined}
-          >
-            <p className="mb-4 max-w-[70ch] text-[13.5px] leading-relaxed text-ink-secondary">
-              Weekly closes, trailing year: SRUUF (Sprott Physical Uranium Trust, a physical uranium
-              fund) against CCJ. Each dot is one week.
-            </p>
-            <div className="flex flex-wrap gap-x-12 gap-y-4 mb-4">
-              {data?.correlationCoeff !== undefined && data?.correlationCoeff !== null && (
-                <PullStat
-                  label="CCJ Pearson r"
-                  value={data.correlationCoeff.toFixed(3)}
-                  note={`${data.correlationCoeff > 0.7 ? "Strong" : data.correlationCoeff > 0.4 ? "Moderate" : "Weak"} correlation`}
-                />
-              )}
-              {data?.cegCorrelationCoeff !== undefined && data?.cegCorrelationCoeff !== null && (
-                <PullStat
-                  label="CEG Pearson r"
-                  value={data.cegCorrelationCoeff.toFixed(3)}
-                  note="Utility beta"
-                />
-              )}
+          <Card className="p-6 border-card-border">
+            <div className="flex items-start justify-between gap-4 mb-4 flex-wrap">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <h2 className="font-semibold text-foreground">Uranium Proxy vs. CCJ Correlation</h2>
+                  <UITooltip>
+                    <TooltipTrigger>
+                      <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                      <p className="text-xs leading-relaxed">CCJ is the largest public uranium miner with the highest direct spot price beta. CEG (utility) is influenced by electricity contracts and regulated returns. CCJ = commodity bet, CEG = infrastructure bet.</p>
+                    </TooltipContent>
+                  </UITooltip>
+                </div>
+                <p className="text-xs text-muted-foreground">Weekly closes, trailing year: SRUUF (Sprott Physical Uranium Trust, a physical uranium fund) vs. CCJ. Each dot = one week.{data?.correlationMeta ? ` ${data.correlationMeta.weeks} weeks paired.` : ""}</p>
+              </div>
+              <div className="flex items-center gap-6">
+                {data?.correlationCoeff !== undefined && data?.correlationCoeff !== null && (
+                  <div className="text-right">
+                    <p className="text-xs text-muted-foreground font-mono">CCJ Pearson r</p>
+                    <p className="text-2xl font-bold font-mono text-brand-2">{data.correlationCoeff.toFixed(3)}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {data.correlationCoeff > 0.7 ? "Strong" : data.correlationCoeff > 0.4 ? "Moderate" : "Weak"} correlation
+                    </p>
+                  </div>
+                )}
+                {data?.cegCorrelationCoeff !== undefined && data?.cegCorrelationCoeff !== null && (
+                  <div className="text-right">
+                    <p className="text-xs text-muted-foreground font-mono">CEG Pearson r</p>
+                    <p className="text-2xl font-bold font-mono text-foreground">{data.cegCorrelationCoeff.toFixed(3)}</p>
+                    <p className="text-xs text-muted-foreground">Utility beta</p>
+                  </div>
+                )}
+              </div>
             </div>
 
             {isError ? (
@@ -814,7 +853,7 @@ export default function TheStack() {
                     />
                   </ScatterChart>
                 </ResponsiveContainer>
-                <div className="flex items-center gap-5 text-[12px] text-ink-muted mt-1 mb-1">
+                <div className="flex items-center gap-5 text-xs text-muted-foreground mt-1 mb-1">
                   <div className="flex items-center gap-1.5">
                     <div className="h-2 w-2 rounded-full bg-brand-2 opacity-70" />
                     <span>Weekly observation</span>
@@ -831,7 +870,7 @@ export default function TheStack() {
               </>
             )}
 
-            <div className="mt-3 pt-3 border-t border-rule grid grid-cols-1 md:grid-cols-2 gap-3 text-[12.5px] leading-relaxed text-ink-secondary">
+            <div className="mt-3 pt-3 border-t border-border grid grid-cols-1 md:grid-cols-2 gap-3 text-xs text-muted-foreground">
               <p>
                 <span className="text-brand-2 font-semibold">CCJ (pure miner)</span> has higher uranium spot beta. Its P&L moves directly with U3O8 pricing.
               </p>
@@ -839,11 +878,10 @@ export default function TheStack() {
                 <span className="text-ink-muted font-semibold">CEG (nuclear utility)</span> is influenced by electricity contracts and regulated returns. Smoother, less volatile nuclear exposure.
               </p>
             </div>
-            <Provenance source="Yahoo Finance weekly closes, trailing year" />
-          </RuleSection>
+          </Card>
         </div>
       </div>
-    </PageShell>
+    </div>
     </PerfProfiler>
   );
 }
@@ -853,6 +891,7 @@ export default function TheStack() {
 interface LayerDef {
   key: string;
   title: string;
+  icon: typeof Cpu;
   color: string;
   description: string;
   tooltip: string;
@@ -871,9 +910,9 @@ function pctMapOf(sd: StackData | undefined, layerKeys: string[]): Record<string
 }
 
 function pctCell(v: number | null): { text: string; className: string } {
-  if (v === null || !Number.isFinite(v)) return { text: "—", className: "text-ink-muted" };
-  const cls = v > 0 ? "text-positive font-semibold" : v < 0 ? "text-negative font-semibold" : "text-ink-muted";
-  return { text: `${v > 0 ? "+" : v < 0 ? "−" : ""}${Math.abs(v).toFixed(2)}%`, className: cls };
+  if (v === null || !Number.isFinite(v)) return { text: "—", className: "text-muted-foreground/50" };
+  const cls = v > 0 ? "text-positive" : v < 0 ? "text-negative" : "text-muted-foreground";
+  return { text: `${v > 0 ? "+" : ""}${v.toFixed(2)}%`, className: cls };
 }
 
 const TABLE_COLS: Array<{ key: TableSortKey; label: string; align: "left" | "right" }> = [
@@ -882,9 +921,9 @@ const TABLE_COLS: Array<{ key: TableSortKey; label: string; align: "left" | "rig
   { key: "d1", label: "1D %", align: "right" },
   { key: "d5", label: "5D %", align: "right" },
   { key: "m1", label: "1M %", align: "right" },
-  { key: "mktcap", label: "Mkt cap", align: "right" },
+  { key: "mktcap", label: "Mkt Cap", align: "right" },
   { key: "pe", label: "P/E", align: "right" },
-  { key: "revGrowth", label: "Rev y/y", align: "right" },
+  { key: "revGrowth", label: "Rev YoY", align: "right" },
 ];
 
 function StackTable({
@@ -923,27 +962,27 @@ function StackTable({
 
   if (isError) {
     return (
-      <div data-testid="stack-table-error">
+      <Card className="border-card-border" data-testid="stack-table-error">
         <ErrorState label="Unable to load equities data" onRetry={onRetry} />
-      </div>
+      </Card>
     );
   }
 
   return (
-    <div className="overflow-x-auto" data-testid="stack-table">
-      <table className="print-table min-w-[760px]">
+    <Card className="border-card-border overflow-x-auto" data-testid="stack-table">
+      <table className="w-full text-xs font-mono min-w-[760px]">
         <thead>
-          <tr>
+          <tr className="bg-surface-base border-b border-border text-10 uppercase tracking-wider text-muted-foreground">
             {TABLE_COLS.map((c) => (
-              <th key={c.key} className={c.align === "right" ? "num" : undefined}>
+              <th key={c.key} className={`px-3 py-2 font-medium ${c.align === "right" ? "text-right" : "text-left"}`}>
                 <button
                   onClick={() => toggleSort(c.key)}
-                  className={`inline-flex items-center gap-1 hover:text-ink transition-colors ${sortKey === c.key ? "text-brand-ink" : ""}`}
+                  className={`inline-flex items-center gap-1 hover:text-foreground transition-colors ${sortKey === c.key ? "text-brand" : ""}`}
                   data-testid={`stack-sort-${c.key}`}
                 >
                   {c.label}
                   <ArrowUpDown className="h-2.5 w-2.5" style={{ opacity: sortKey === c.key ? 1 : 0.3 }} />
-                  {sortKey === c.key && <span aria-hidden>{sortDir === "asc" ? "▲" : "▼"}</span>}
+                  {sortKey === c.key && <span className="text-8">{sortDir === "asc" ? "▲" : "▼"}</span>}
                 </button>
               </th>
             ))}
@@ -952,8 +991,8 @@ function StackTable({
         {isLoading ? (
           <tbody>
             {Array(12).fill(null).map((_, i) => (
-              <tr key={i}>
-                <td colSpan={TABLE_COLS.length}>
+              <tr key={i} className="border-b border-border/30">
+                <td colSpan={TABLE_COLS.length} className="px-3 py-1.5">
                   <Skeleton className="h-5 w-full" />
                 </td>
               </tr>
@@ -981,16 +1020,16 @@ function StackTable({
             return (
               <tbody key={layer.key} style={{ contentVisibility: "auto", containIntrinsicSize: "auto 200px" }}>
                 <tr
-                  className="cursor-pointer"
+                  className="bg-surface-base/80 border-y border-border cursor-pointer hover:bg-surface-overlay/40 transition-colors"
                   onClick={() => setCollapsed((c) => ({ ...c, [layer.key]: !isCollapsed }))}
                   data-testid={`stack-group-${layer.key}`}
                 >
-                  <td colSpan={TABLE_COLS.length}>
+                  <td colSpan={TABLE_COLS.length} className="px-3 py-1.5">
                     <span className="inline-flex items-center gap-2">
-                      {isCollapsed ? <ChevronRight className="h-3 w-3 text-ink-muted" /> : <ChevronDown className="h-3 w-3 text-ink-muted" />}
-                      <span aria-hidden className="h-2 w-2 rounded-sm" style={{ background: layer.color }} />
-                      <span className="font-semibold text-ink">{layer.title}</span>
-                      <span className="text-ink-muted tnum">{stocks.length}</span>
+                      {isCollapsed ? <ChevronRight className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                      <span className="h-2 w-2 rounded-sm" style={{ background: layer.color }} />
+                      <span className="font-semibold text-foreground font-sans">{layer.title}</span>
+                      <span className="text-muted-foreground/50">{stocks.length}</span>
                     </span>
                   </td>
                 </tr>
@@ -1002,22 +1041,22 @@ function StackTable({
                     const pe = peCell(r.pe);
                     const rg = revGrowthCell(r.revGrowth);
                     return (
-                      <tr key={r.ticker} data-testid={`stack-row-${r.ticker}`}>
-                        <td>
+                      <tr key={r.ticker} className="border-b border-border/20 last:border-0 hover:bg-brand/5 transition-colors" data-testid={`stack-row-${r.ticker}`}>
+                        <td className="px-3 py-1.5">
                           <span className="inline-flex items-center gap-1.5">
-                            <span className="font-semibold text-ink">{r.ticker}</span>
-                            <span className="text-ink-muted truncate max-w-[140px] hidden lg:inline">{r.stock.name}</span>
-                            {r.stock.stale && <Clock className="h-2.5 w-2.5 text-warning" aria-label="delayed quote" />}
+                            <span className="font-semibold text-foreground">{r.ticker}</span>
+                            <span className="text-muted-foreground/50 font-sans truncate max-w-[140px] hidden lg:inline">{r.stock.name}</span>
+                            {r.stock.stale && <Clock className="h-2.5 w-2.5 text-brand-2/80" aria-label="delayed quote" />}
                             <MarketStateBadge state={r.stock.marketState} majority={majorityState} />
                           </span>
                         </td>
-                        <td className="num text-ink">{r.price !== null ? `$${r.price.toFixed(2)}` : "—"}</td>
-                        <td className={`num ${d1.className}`}>{d1.text}</td>
-                        <td className={`num ${d5.className}`}>{d5.text}</td>
-                        <td className={`num ${m1.className}`}>{m1.text}</td>
-                        <td className="num text-ink-secondary">{r.mktcap !== null ? `$${fmtCapB(r.mktcap)}` : "—"}</td>
-                        <td className={`num ${pe.className}`} title={pe.title}>{pe.text}</td>
-                        <td className={`num ${rg.className}`} title={rg.title}>{rg.text}</td>
+                        <td className="px-3 py-1.5 text-right tabular-nums text-foreground">{r.price !== null ? `$${r.price.toFixed(2)}` : "—"}</td>
+                        <td className={`px-3 py-1.5 text-right tabular-nums ${d1.className}`}>{d1.text}</td>
+                        <td className={`px-3 py-1.5 text-right tabular-nums ${d5.className}`}>{d5.text}</td>
+                        <td className={`px-3 py-1.5 text-right tabular-nums ${m1.className}`}>{m1.text}</td>
+                        <td className="px-3 py-1.5 text-right tabular-nums text-muted-foreground">{r.mktcap !== null ? `$${fmtCapB(r.mktcap)}` : "—"}</td>
+                        <td className={`px-3 py-1.5 text-right tabular-nums ${pe.className}`} title={pe.title}>{pe.text}</td>
+                        <td className={`px-3 py-1.5 text-right tabular-nums ${rg.className}`} title={rg.title}>{rg.text}</td>
                       </tr>
                     );
                   })}
@@ -1026,11 +1065,10 @@ function StackTable({
           })
         )}
       </table>
-      <p className="mt-2 text-[12px] leading-relaxed text-ink-muted">
+      <p className="px-3 py-2 text-10 text-muted-foreground/50 font-mono border-t border-border">
         5D / 1M columns compute from each window's own price series; — means the window has no data yet. Click a layer to collapse it.
       </p>
-      <Provenance source="Yahoo Finance" extra="intraday quotes; delayed tickers flagged per row" />
-    </div>
+    </Card>
   );
 }
 
@@ -1075,24 +1113,24 @@ function StackHeatmap({
 
   if (isError) {
     return (
-      <div data-testid="stack-heatmap-error">
+      <Card className="border-card-border" data-testid="stack-heatmap-error">
         <ErrorState label="Unable to load equities data" onRetry={onRetry} />
-      </div>
+      </Card>
     );
   }
 
   return (
-    <div className="border border-rule rounded-sm p-3" data-testid="stack-heatmap">
+    <Card className="border-card-border p-3" data-testid="stack-heatmap">
       <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-        <span className="text-[12.5px] text-ink-secondary">
+        <span className="text-11 font-mono uppercase tracking-wider text-muted-foreground">
           Market cap heatmap · tile = market cap · color = {timeframe} change
         </span>
-        <div className="flex items-center gap-1.5 text-[11px] text-ink-muted tnum">
-          <span>−4%</span>
+        <div className="flex items-center gap-1.5 text-9 font-mono text-muted-foreground/70">
+          <span>-{4}%</span>
           {[-4, -2, -0.75, 0, 0.75, 2, 4].map((v) => (
             <span key={v} className="h-3 w-5 rounded-[2px]" style={{ background: heatColor(v) }} />
           ))}
-          <span>+4%</span>
+          <span>+{4}%</span>
         </div>
       </div>
       <div ref={ref} className="relative w-full bg-surface-base rounded-sm overflow-hidden" style={{ height }}>
@@ -1105,7 +1143,7 @@ function StackHeatmap({
             {groups.map((g) => (
               <div
                 key={g.key}
-                className="absolute text-[10px] font-semibold truncate px-1"
+                className="absolute text-9 font-mono uppercase tracking-wider truncate px-1"
                 style={{ left: g.x0 + 2, top: g.y0 + 2, width: g.x1 - g.x0 - 4, color: g.color }}
                 title={`${g.title} · $${fmtCapB(g.totalB)} combined`}
               >
@@ -1128,12 +1166,12 @@ function StackHeatmap({
                 >
                   {showTicker && (
                     <div className="px-1 pt-0.5 leading-tight">
-                      <div className="text-10 font-semibold" style={{ color: heatTextColor(pct) }}>
+                      <div className="text-10 font-mono font-semibold" style={{ color: heatTextColor(pct) }}>
                         {t.ticker}
                       </div>
                       {showPct && (
-                        <div className="text-9 tnum" style={{ color: heatTextColor(pct), opacity: 0.85 }}>
-                          {pct === null ? "—" : `${pct > 0 ? "+" : pct < 0 ? "−" : ""}${Math.abs(pct).toFixed(2)}%`}
+                        <div className="text-9 font-mono" style={{ color: heatTextColor(pct), opacity: 0.85 }}>
+                          {pct === null ? "—" : `${pct > 0 ? "+" : ""}${pct.toFixed(2)}%`}
                         </div>
                       )}
                     </div>
@@ -1144,12 +1182,11 @@ function StackHeatmap({
           </>
         )}
       </div>
-      <p className="mt-2 text-[12px] leading-relaxed text-ink-muted">
+      <p className="mt-2 text-10 text-muted-foreground/50 font-mono">
         Grouped by layer. ETF benchmarks excluded (fund AUM is not corporate market cap).
         {input.unsized.length > 0 && ` Not sized (no market cap data): ${input.unsized.join(", ")}.`}
         {" "}Gray tiles = delayed quote, change unknown.
       </p>
-      <Provenance source="Yahoo Finance" />
-    </div>
+    </Card>
   );
 }

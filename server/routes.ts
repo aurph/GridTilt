@@ -28,7 +28,6 @@ import {
 } from "./indices";
 import { recordDailyIndexValues, readIndexHistory } from "./index-history";
 import { getElectricityOutputMonthly, getHourlyDemandUS48 } from "./physical";
-import { getRetailRatesByState } from "./retail-rates";
 import { computeClusterMetrics, type ClusterLite } from "./clusters";
 import { computeGpuIndex } from "./gpu-index";
 import {
@@ -1941,15 +1940,6 @@ export async function registerRoutes(
       res.status(502).json({ error: "Upstream EIA fetch failed. Try again later." });
     }
   });
-  app.get("/api/physical/retail-rates", async (_req, res) => {
-    try {
-      const result = await getRetailRatesByState();
-      if (!result.configured) return res.status(503).json(result);
-      res.json(result);
-    } catch {
-      res.status(502).json({ error: "Upstream EIA fetch failed. Try again later." });
-    }
-  });
 
   // Stack endpoint - 8 layers, 10-min cache
   app.get("/api/stack", async (req, res) => {
@@ -2041,10 +2031,8 @@ export async function registerRoutes(
       };
 
       const pulse = Object.entries(STACK_TICKERS).map(([key, tickers]) => {
-        const changes = tickers
-          .map((t) => stockData[t]?.changePercent)
-          .filter((v): v is number => typeof v === "number" && Number.isFinite(v));
-        const avg = changes.length > 0 ? changes.reduce((s, v) => s + v, 0) / changes.length : 0;
+        const changes = tickers.map((t) => stockData[t]?.changePercent ?? 0);
+        const avg = changes.reduce((s, v) => s + v, 0) / changes.length;
         return { sector: key, label: SECTOR_LABELS[key] ?? key, avgChange: parseFloat(avg.toFixed(2)) };
       });
 

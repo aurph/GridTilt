@@ -13,8 +13,8 @@ import { Group } from "@visx/group";
 import { scaleLinear, scaleLog, scaleUtc } from "@visx/scale";
 import { Area, LinePath } from "@visx/shape";
 import { SrChartTable } from "@/components/Freshness";
-import { CHART_CHROME, FONT, INK, SURFACE } from "@/lib/tokens";
-import { CONTEXT, timeTicks } from "@/lib/chart-theme";
+import { FONT, INK, SURFACE } from "@/lib/tokens";
+import { timeTicks } from "@/lib/chart-theme";
 import {
   type ChartPoint,
   type ChartSeries,
@@ -49,9 +49,9 @@ export interface PriceHistoryChartProps {
 
 type ClippedSeries = ChartSeries & { clipped: ClippedPoint[] };
 
-const GRID_STROKE = CHART_CHROME.grid;
-const AXIS_FILL = CHART_CHROME.axis;
-const DATA_FONT = FONT.sans;
+const GRID_STROKE = "rgba(255,255,255,0.05)";
+const AXIS_FILL = "#9ca3af";
+const DATA_FONT = FONT.mono;
 const MARGIN = { top: 18, right: 114, bottom: 30, left: 48 };
 const GRID_MARGIN = { top: 24, right: 14, bottom: 24, left: 42 };
 const OVERLAY_HEIGHT = 390;
@@ -99,17 +99,6 @@ function seriesOpacity(model: string, hovered: string | null): number {
   return model === hovered ? 1 : 0.2;
 }
 
-/**
- * Editorial chart grammar: when several series share one plot, unhovered
- * lines read in warm context gray; the hovered (or only) series takes its
- * assigned categorical slot. Direct end-of-line labels carry identity while
- * everything is gray.
- */
-function seriesStroke(item: ChartSeries, hovered: string | null, seriesCount: number): string {
-  if (seriesCount === 1 || hovered === item.model) return item.color;
-  return CONTEXT;
-}
-
 function valuesWithDispersion(series: ClippedSeries[]): number[] {
   const values: number[] = [];
   for (const item of series) {
@@ -151,8 +140,8 @@ export default function PriceHistoryChart(props: PriceHistoryChartProps) {
   if (clipped.length === 0) {
     return (
       <div className="min-h-[260px] flex flex-col items-center justify-center gap-2 text-center" data-testid="ni-history-empty">
-        <span className="text-[14px] text-ink">No price points in this window.</span>
-        <span className="max-w-md text-[12.5px] leading-relaxed text-ink-muted">
+        <span className="text-sm text-foreground">No price points in this window.</span>
+        <span className="max-w-md text-11 font-mono text-muted-foreground">
           {series.length === 0
             ? "No GPU models are selected. Use All to restore the chart."
             : "This range has no plotted evidence. Choose All to see the available recorded days and estimated anchors."}
@@ -180,23 +169,23 @@ export default function PriceHistoryChart(props: PriceHistoryChartProps) {
 
 function EvidenceLegend() {
   return (
-    <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-[12px] text-ink-muted" data-testid="ni-history-legend">
+    <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-10 font-mono text-muted-foreground" data-testid="ni-history-legend">
       <span className="flex items-center gap-2">
         <span className="relative block h-2 w-7" aria-hidden="true">
-          <span className="absolute left-0 right-0 top-1 h-px bg-ink/70" />
-          <span className="absolute left-3 top-0.5 h-1.5 w-1.5 rounded-full bg-ink" />
+          <span className="absolute left-0 right-0 top-1 h-px bg-foreground/70" />
+          <span className="absolute left-3 top-0.5 h-1.5 w-1.5 rounded-full bg-foreground" />
         </span>
         recorded daily
       </span>
       <span className="flex items-center gap-2">
         <span className="relative block h-2 w-7" aria-hidden="true">
-          <span className="absolute left-0 right-0 top-1 border-t border-dashed border-ink-muted/60" />
-          <span className="absolute left-3 top-0 h-2 w-2 rounded-full border border-ink-muted bg-paper" />
+          <span className="absolute left-0 right-0 top-1 border-t border-dashed border-muted-foreground/50" />
+          <span className="absolute left-3 top-0 h-2 w-2 rounded-full border border-muted-foreground bg-card" />
         </span>
         monthly anchor (estimated)
       </span>
       <span className="flex items-center gap-2">
-        <span className="block h-2 w-7 rounded-sm bg-ink-faint/40 border-y border-ink-faint/60" aria-hidden="true" />
+        <span className="block h-2 w-7 rounded-sm bg-brand/15 border-y border-brand/25" aria-hidden="true" />
         recorded low-high spread
       </span>
     </div>
@@ -311,14 +300,14 @@ function Overlay({
             {clipped.map((item) => (
               <Group key={`bands-${item.model}`} opacity={seriesOpacity(item.model, hovered)}>
                 {buildDispersionRuns(item.clipped).map((run, index) => (
-                  <Area
+                  <Area<ChartPoint>
                     key={index}
                     data={run}
                     x={(point) => xScale(point.t)}
                     y0={(point) => yBundle.project(point.high!)}
                     y1={(point) => yBundle.project(point.low!)}
-                    fill={seriesStroke(item, hovered, clipped.length)}
-                    fillOpacity={0.14}
+                    fill={item.color}
+                    fillOpacity={0.12}
                     stroke="none"
                     pointerEvents="none"
                   />
@@ -328,18 +317,17 @@ function Overlay({
 
             {clipped.map((item) => {
               const opacity = seriesOpacity(item.model, hovered);
-              const stroke = seriesStroke(item, hovered, clipped.length);
               return (
                 <Group key={item.model} opacity={opacity}>
                   {buildSpans(item.clipped).map((span, index) => (
-                    <LinePath
+                    <LinePath<ChartPoint>
                       key={index}
                       data={span.points}
                       x={(point) => xScale(point.t)}
                       y={(point) => yBundle.project(point.price)}
-                      stroke={stroke}
+                      stroke={item.color}
                       strokeWidth={span.quality === "observed" ? 2.2 : 1.4}
-                      strokeOpacity={span.quality === "observed" ? 0.95 : 0.45}
+                      strokeOpacity={span.quality === "observed" ? 0.95 : 0.35}
                       strokeDasharray={span.quality === "observed" ? undefined : "4 5"}
                       strokeLinecap="round"
                     />
@@ -350,12 +338,12 @@ function Overlay({
                       cx={xScale(point.t)}
                       cy={yBundle.project(point.price)}
                       r={point.kind === "anchor" ? 4 : 2.4}
-                      fill={point.kind === "anchor" ? SURFACE.raised : stroke}
-                      stroke={stroke}
+                      fill={point.kind === "anchor" ? SURFACE.raised : item.color}
+                      stroke={item.color}
                       strokeWidth={point.kind === "anchor" ? 1.6 : 0}
                     />
                   ))}
-                  <LinePath
+                  <LinePath<ClippedPoint>
                     data={item.clipped}
                     x={(point) => xScale(point.t)}
                     y={(point) => yBundle.project(point.price)}
@@ -376,13 +364,12 @@ function Overlay({
               const labelY = labelById.get(item.model);
               if (labelY == null) return null;
               const last = item.clipped[item.clipped.length - 1];
-              const active = hovered === item.model || clipped.length === 1;
               return (
                 <g key={`label-${item.model}`} opacity={seriesOpacity(item.model, hovered)} onPointerEnter={() => onHover(item.model)}>
-                  <line x1={innerW} x2={innerW + 7} y1={yBundle.project(last.price)} y2={labelY} stroke={seriesStroke(item, hovered, clipped.length)} opacity={0.6} />
-                  <text x={innerW + 10} y={labelY} dy="0.32em" fill={active ? item.color : INK.secondary} fontSize={11} fontFamily={DATA_FONT} fontWeight={600}>
+                  <line x1={innerW} x2={innerW + 7} y1={yBundle.project(last.price)} y2={labelY} stroke={item.color} opacity={0.5} />
+                  <text x={innerW + 10} y={labelY} dy="0.32em" fill={item.color} fontSize={11} fontFamily={DATA_FONT} fontWeight={600}>
                     {item.model}
-                    {!compact && <tspan fill={INK.muted} fontWeight={400}>{` $${last.price.toFixed(2)}`}</tspan>}
+                    {!compact && <tspan fill={INK.secondary} fontWeight={400}>{` $${last.price.toFixed(2)}`}</tspan>}
                   </text>
                 </g>
               );
@@ -390,7 +377,7 @@ function Overlay({
           </Group>
         </svg>
 
-        <div className="absolute top-0 left-12 text-[11px] text-ink-muted select-none" data-testid="ni-scale-label">
+        <div className="absolute top-0 left-12 text-9 font-mono uppercase tracking-wider text-muted-foreground select-none" data-testid="ni-scale-label">
           {scaleMode} scale
         </div>
         {tip && tipRows.length > 0 && (
@@ -403,11 +390,11 @@ function Overlay({
       </div>
 
       {sparse.length > 0 && (
-        <div className="grid gap-x-5 gap-y-1 border-t border-rule pt-2 sm:grid-cols-2" data-testid="ni-sparse-coverage">
+        <div className="grid gap-x-5 gap-y-1 border-t border-border/60 pt-2 sm:grid-cols-2" data-testid="ni-sparse-coverage">
           {sparse.map((item) => (
-            <p key={item.model} className="flex gap-2 text-[12px] leading-relaxed text-ink-muted">
+            <p key={item.model} className="flex gap-2 text-10 font-mono leading-relaxed text-muted-foreground">
               <span className="mt-1 h-1.5 w-1.5 flex-none rounded-full" style={{ background: item.color }} />
-              <span><strong className="font-semibold text-ink">{item.model}</strong> {coverageCaption(item.clipped)}</span>
+              <span><strong className="font-semibold" style={{ color: item.color }}>{item.model}</strong> {coverageCaption(item.clipped)}</span>
             </p>
           ))}
         </div>
@@ -429,21 +416,21 @@ function EvidenceTooltip({
   const dayPrecision = rows.some((row) => row.point.kind === "recorded");
   return (
     <div
-      className="absolute z-20 min-w-[216px] rounded-sm border border-rule px-3 py-2 pointer-events-none shadow-md"
-      style={{ left, top, background: SURFACE.overlay, fontFamily: DATA_FONT }}
+      className="absolute z-20 min-w-[216px] rounded border px-3 py-2 pointer-events-none shadow-xl"
+      style={{ left, top, background: "hsl(var(--card))", borderColor: "hsl(var(--border))", fontFamily: DATA_FONT }}
       data-testid="ni-history-tooltip"
     >
-      <div className="mb-1.5 text-[11px] text-ink-muted">{fmtDate(datePoint.t, dayPrecision)}</div>
+      <div className="mb-1.5 text-10 text-muted-foreground">{fmtDate(datePoint.t, dayPrecision)}</div>
       {rows.map(({ model, color, point }) => (
-        <div key={model} className="border-t border-rule/60 py-1.5 first:border-0 first:pt-0">
-          <div className="flex items-center justify-between gap-4 text-[12px]">
+        <div key={model} className="border-t border-border/50 py-1.5 first:border-0 first:pt-0">
+          <div className="flex items-center justify-between gap-4 text-11">
             <span className="font-semibold" style={{ color }}>{model}</span>
-            <span className="tnum text-ink">${point.price.toFixed(2)}/hr</span>
+            <span className="tabular-nums text-foreground">${point.price.toFixed(2)}/hr</span>
           </div>
-          <div className="mt-0.5 flex items-center justify-between gap-4 text-[11px] text-ink-muted">
+          <div className="mt-0.5 flex items-center justify-between gap-4 text-9 text-muted-foreground">
             <span>{provenance(point)}</span>
             {point.low != null && point.high != null && (
-              <span className="tnum">${point.low.toFixed(2)}-${point.high.toFixed(2)}</span>
+              <span className="tabular-nums">${point.low.toFixed(2)}-${point.high.toFixed(2)}</span>
             )}
           </div>
         </div>
@@ -474,7 +461,6 @@ function SmallMultiples({
           x1={now}
           width={panelWidth}
           dim={hovered !== null && hovered !== item.model}
-          active={hovered === item.model}
           onHover={onHover}
           scaleMode={scaleMode}
         />
@@ -489,7 +475,6 @@ function Panel({
   x1,
   width,
   dim,
-  active,
   onHover,
   scaleMode,
 }: {
@@ -498,7 +483,6 @@ function Panel({
   x1: number;
   width: number;
   dim: boolean;
-  active: boolean;
   onHover: (model: string | null) => void;
   scaleMode: ScaleMode;
 }) {
@@ -524,13 +508,10 @@ function Panel({
     if (point) setTip({ point, x: xScale(point.t) + GRID_MARGIN.left });
   }, [innerW, points, xScale]);
 
-  // Panels default to context gray; the hovered panel takes its slot color.
-  const stroke = active ? series.color : CONTEXT;
-
   return (
     <div
-      className="relative min-w-0 border-t border-rule pt-1"
-      style={{ opacity: dim ? 0.35 : 1 }}
+      className="relative min-w-0 border-t border-border/70 pt-1"
+      style={{ opacity: dim ? 0.28 : 1 }}
       onPointerEnter={() => onHover(series.model)}
       onPointerLeave={() => {
         setTip(null);
@@ -538,9 +519,9 @@ function Panel({
       }}
       data-testid={`ni-panel-${series.model}`}
     >
-      <div className="absolute left-10 top-2 z-10 flex items-baseline gap-1.5 text-[11px]">
-        <span className="font-semibold text-ink">{series.model}</span>
-        <span className="tnum text-ink-secondary">${last.price.toFixed(2)}</span>
+      <div className="absolute left-10 top-2 z-10 flex items-baseline gap-1.5 font-mono text-10">
+        <span className="font-semibold" style={{ color: series.color }}>{series.model}</span>
+        <span className="tabular-nums text-foreground">${last.price.toFixed(2)}</span>
         <span className={last.kind === "recorded" ? "text-positive" : "text-estimate"}>
           {last.kind === "recorded" ? "recorded" : "est. anchor"}
         </span>
@@ -570,26 +551,26 @@ function Panel({
           <line x1={0} x2={innerW} y1={innerH} y2={innerH} stroke={AXIS_FILL} opacity={0.35} />
 
           {buildDispersionRuns(series.clipped).map((run, index) => (
-            <Area
+            <Area<ChartPoint>
               key={index}
               data={run}
               x={(point) => xScale(point.t)}
               y0={(point) => yBundle.project(point.high!)}
               y1={(point) => yBundle.project(point.low!)}
-              fill={stroke}
+              fill={series.color}
               fillOpacity={0.14}
               stroke="none"
             />
           ))}
           {buildSpans(series.clipped).map((span, index) => (
-            <LinePath
+            <LinePath<ChartPoint>
               key={index}
               data={span.points}
               x={(point) => xScale(point.t)}
               y={(point) => yBundle.project(point.price)}
-              stroke={stroke}
+              stroke={series.color}
               strokeWidth={span.quality === "observed" ? 1.9 : 1.2}
-              strokeOpacity={span.quality === "observed" ? 0.95 : 0.45}
+              strokeOpacity={span.quality === "observed" ? 0.95 : 0.35}
               strokeDasharray={span.quality === "observed" ? undefined : "4 5"}
               strokeLinecap="round"
             />
@@ -600,8 +581,8 @@ function Panel({
               cx={xScale(point.t)}
               cy={yBundle.project(point.price)}
               r={point.kind === "anchor" ? 3.5 : 2.1}
-              fill={point.kind === "anchor" ? SURFACE.raised : stroke}
-              stroke={stroke}
+              fill={point.kind === "anchor" ? SURFACE.raised : series.color}
+              stroke={series.color}
               strokeWidth={point.kind === "anchor" ? 1.4 : 0}
             />
           ))}
@@ -632,7 +613,7 @@ function Panel({
           top={26}
         />
       )}
-      <p className={`min-h-8 px-2 pb-1 text-[11px] leading-relaxed ${sparse ? "text-ink-muted" : "text-ink-faint"}`}>
+      <p className={`min-h-8 px-2 pb-1 text-9 font-mono leading-relaxed ${sparse ? "text-muted-foreground" : "text-muted-foreground/50"}`}>
         {sparse ? coverageCaption(points) : `${points.length} plotted points in range.`}
       </p>
     </div>

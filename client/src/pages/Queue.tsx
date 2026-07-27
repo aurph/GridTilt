@@ -1,5 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AsOf, ErrorState } from "@/components/Freshness";
 import {
@@ -7,8 +9,10 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { ArrowUpDown } from "lucide-react";
-import { EstFlag, PageShell, Provenance, RuleSection } from "@/components/editorial";
+import {
+  Zap, ArrowUpDown, ExternalLink, Sun, Wind, Atom, Flame, Battery, Cable, Server, Layers,
+} from "lucide-react";
+import { CATEGORY_COLORS, INK, SEMANTIC, SERIES } from "@/lib/tokens";
 
 interface BacklogProject {
   id: string;
@@ -54,17 +58,41 @@ interface BacklogResponse {
   /**
    * Headline fields whose values came from hardcoded fallback literals (the
    * old-shape API has no source for them), not sourced data. Rendered with
-   * the dagger flag so they are distinguishable from sourced numbers.
+   * an "est." flag so they are distinguishable from sourced numbers.
    */
   estimatedHeadline?: string[];
 }
 
+// Energy types from CATEGORY_COLORS; hybrid/load have no token category, so
+// they take free SERIES slots (distinct from every co-occurring type here).
+const TYPE_COLORS: Record<string, string> = {
+  nuclear: CATEGORY_COLORS.nuclear,
+  gas: CATEGORY_COLORS.gas,
+  solar: CATEGORY_COLORS.solar,
+  wind: CATEGORY_COLORS.wind,
+  storage: CATEGORY_COLORS.storage,
+  hybrid: SERIES[5], // series slot 6
+  load: SERIES[2], // series slot 3 (teal, shared with datacenters - load rows are DC demand)
+  other: INK.muted,
+};
+
+const TYPE_ICONS: Record<string, any> = {
+  nuclear: Atom,
+  gas: Flame,
+  solar: Sun,
+  wind: Wind,
+  storage: Battery,
+  hybrid: Cable,
+  load: Server,
+  other: Layers,
+};
+
 const CATEGORY_LABELS: Record<string, string> = {
-  generation: "Generation",
-  load: "Load",
-  ppa: "PPA",
-  aggregate: "Aggregate",
-  regulatory: "Regulatory",
+  generation: "generation",
+  load: "load",
+  ppa: "ppa",
+  aggregate: "aggregate",
+  regulatory: "regulatory",
 };
 
 type SortKey = "capacityMW" | "projectName" | "iso" | "type" | "expectedOnline";
@@ -101,7 +129,7 @@ function normalizeBacklog(raw: any): BacklogResponse | undefined {
     }));
     const nonAgg = projects.filter((p) => p.category !== "aggregate");
     // The old shape has no source for these headline fields; the literals
-    // below are estimates, so flag them for the dagger marker in the UI.
+    // below are estimates, so flag them for the "est." marker in the UI.
     const estimatedHeadline = [
       "dominionContractedGW",
       "duke5yrGenAddGW",
@@ -139,13 +167,10 @@ function normalizeBacklog(raw: any): BacklogResponse | undefined {
   return undefined;
 }
 
-/**
- * Footnote dagger for headline numbers the old-shape fallback filled with
- * hardcoded estimates; the "† estimated" footnote sits in the provenance line.
- */
+/** Small "est." tag for headline numbers the old-shape fallback filled with hardcoded estimates. */
 function Est({ on }: { on: boolean }) {
   if (!on) return null;
-  return <EstFlag title="Estimated value, not from the sourced dataset" />;
+  return <span className="ml-1 text-8 font-mono uppercase tracking-wide text-estimate align-top">est.</span>;
 }
 
 // `params` keeps this assignable to wouter's <Route component={...}> while the
@@ -195,208 +220,215 @@ export default function Queue({ embedded = false }: { embedded?: boolean; params
   const types = data?.projects ? Array.from(new Set(data.projects.map((p) => p.type))) : [];
   const h = data?.headline;
   const isEst = (field: string) => !!data?.estimatedHeadline?.includes(field);
-  const anyEst =
-    isEst("historicalWithdrawalPct") || isEst("metaHyperionGW") || isEst("stargateAbileneGW");
 
-  const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
-
-  const body = (
-    <>
-      <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
-        <p className="max-w-[68ch] text-[13.5px] leading-relaxed text-ink-secondary">
-          The named US power projects and hyperscaler campuses waiting on the grid, plus the ISO
-          totals that contain them.
-          {h && (
-            <>
-              {" "}The overall US queue holds about {h.queueOverallGW.toLocaleString()} GW across{" "}
-              {h.queueOverallProjects.toLocaleString()} projects, with a median wait of{" "}
-              {h.medianWaitMonths} months.
-            </>
-          )}
-        </p>
-        <div className="space-y-0.5 text-right text-[12px] text-ink-muted" data-testid="backlog-sources">
-          <div><AsOf updatedAt={dataUpdatedAt} intervalMs={24 * 60 * 60 * 1000} /></div>
-          {data && <div><FreshnessChip lastRefreshed={data.lastRefreshed} /></div>}
-        </div>
-      </div>
-
-      {/* One compact summary strip (replaces 4 stat boxes) */}
-      {isLoading && <Skeleton className="mt-4 h-5 w-full max-w-3xl" aria-hidden="true" />}
-      {h && (
-        <div className="mt-4 flex flex-wrap items-baseline gap-x-6 gap-y-1.5 text-[12.5px] text-ink-secondary" data-testid="summary-strip">
-          <span><span className="font-semibold text-ink tnum">{h.trackedProjects}</span> named projects tracked</span>
-          <span><span className="font-semibold text-ink tnum">{h.trackedCapacityGW.toLocaleString()} GW</span> across those projects</span>
-          <span><span className="font-semibold text-ink tnum">{h.pjmReopenedGW} GW</span> in PJM's reopened queue</span>
-          <span><span className="font-semibold text-ink tnum">{h.historicalWithdrawalPct}%</span><Est on={isEst("historicalWithdrawalPct")} /> historical withdrawal rate</span>
-          <span>Meta Hyperion <span className="font-semibold text-ink tnum">{h.metaHyperionGW} GW</span><Est on={isEst("metaHyperionGW")} /></span>
-          <span>Stargate Abilene <span className="font-semibold text-ink tnum">{h.stargateAbileneGW} GW</span><Est on={isEst("stargateAbileneGW")} /></span>
-        </div>
-      )}
-
-      <RuleSection
-        head="Projects in the queue"
-        aside={<span className="tnum">{filtered.length} of {data?.projects?.length ?? 0} shown</span>}
-        testId="backlog-table"
-      >
-        {/* Filters - compact row */}
-        <div className="mb-3 flex flex-wrap items-center gap-2" data-testid="backlog-filters">
-          <ChipSelect label="Category" value={categoryFilter} onChange={setCategoryFilter} options={[
-            { value: "non-aggregate", label: "Specific only" },
-            { value: "all", label: "All" },
-            { value: "generation", label: "Generation" },
-            { value: "load", label: "Load" },
-            { value: "ppa", label: "PPAs" },
-            { value: "aggregate", label: "Aggregates" },
-            { value: "regulatory", label: "Regulatory" },
-          ]} />
-          <ChipSelect label="Type" value={typeFilter} onChange={setTypeFilter} options={[{ value: "all", label: "All" }, ...types.map((t) => ({ value: t, label: cap(t) }))]} />
-          <ChipSelect label="Region" value={isoFilter} onChange={setIsoFilter} options={[{ value: "all", label: "All" }, ...isos.map((i) => ({ value: i, label: i }))]} />
-          <label className="flex cursor-pointer items-center gap-1.5 rounded-sm border border-rule px-2 py-1 text-[12px] text-ink-secondary hover:border-rule-strong" data-testid="filter-dc-only">
-            <input type="checkbox" checked={dcOnly} onChange={(e) => setDcOnly(e.target.checked)} className="accent-brand" />
-            DC-relevant only
-          </label>
-        </div>
-
-        {isError ? (
-          <div data-testid="backlog-error">
-            <ErrorState label="The backlog dataset failed to load." onRetry={() => refetch()} />
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="print-table min-w-[760px]">
-              <thead>
-                <tr>
-                  <th><SortHeader label="Project" sortKey="projectName" current={sortKey} dir={sortDir} onClick={toggleSort} /></th>
-                  <th><SortHeader label="Type" sortKey="type" current={sortKey} dir={sortDir} onClick={toggleSort} /></th>
-                  <th className="num"><SortHeader label="MW" sortKey="capacityMW" current={sortKey} dir={sortDir} onClick={toggleSort} /></th>
-                  <th><SortHeader label="Region" sortKey="iso" current={sortKey} dir={sortDir} onClick={toggleSort} /></th>
-                  <th>State</th>
-                  <th><SortHeader label="Online" sortKey="expectedOnline" current={sortKey} dir={sortDir} onClick={toggleSort} /></th>
-                  <th>Category</th>
-                  <th className="text-center">DC</th>
-                </tr>
-              </thead>
-              <tbody>
-                {isLoading ? (
-                  <tr>
-                    <td colSpan={8} className="p-0">
-                      <div className="space-y-2 p-4">
-                        {Array(12).fill(null).map((_, i) => <Skeleton key={i} className="h-7" />)}
-                      </div>
-                    </td>
-                  </tr>
-                ) : filtered.length === 0 ? (
-                  <tr>
-                    <td colSpan={8} className="py-6 text-center text-[13px] text-ink-muted" data-testid="backlog-empty">
-                      No projects match the current filters.
-                    </td>
-                  </tr>
-                ) : (
-                  filtered.map((p) => {
-                    const isAggregate = p.category === "aggregate";
-                    const hasTooltip = !!p.notes || !!(p.sources && p.sources.length > 0);
-                    const row = (
-                      <tr
-                        key={p.id}
-                        className={`${hasTooltip ? "cursor-help" : ""} ${isAggregate ? "bg-paper-shade" : ""}`}
-                        data-testid={`backlog-row-${p.id}`}
-                      >
-                        <td>
-                          <span className="flex items-baseline gap-1.5 font-medium text-ink">
-                            {p.projectName}
-                            {p.status === "operational" && (
-                              <span className="text-[12px] font-semibold text-positive">live</span>
-                            )}
-                          </span>
-                          <span className="block text-[12px] text-ink-muted">
-                            {p.sponsor}{p.offtaker ? ` → ${p.offtaker}` : ""}
-                          </span>
-                        </td>
-                        <td className="capitalize text-ink-secondary">{p.type}</td>
-                        <td className="num text-ink">
-                          {p.capacityMW === 0 ? "—" : p.capacityMW >= 10000 ? `${(p.capacityMW / 1000).toFixed(0)}k` : p.capacityMW.toLocaleString()}
-                        </td>
-                        <td className="text-ink-secondary">{p.iso}</td>
-                        <td className="text-ink-muted">{p.state}</td>
-                        <td className="text-ink-muted tnum">{p.expectedOnline ?? "—"}</td>
-                        <td className="text-ink-muted">{CATEGORY_LABELS[p.category] ?? p.category}</td>
-                        <td className="text-center">
-                          {p.dcRelevant
-                            ? <span className="text-brand-ink" title="Data-center relevant">★</span>
-                            : <span className="text-ink-faint">—</span>}
-                        </td>
-                      </tr>
-                    );
-                    if (!hasTooltip) return row;
-                    return (
-                      <UITooltip key={p.id}>
-                        <TooltipTrigger asChild>{row}</TooltipTrigger>
-                        <TooltipContent side="top" className="max-w-md p-3">
-                          {p.notes && <p className="mb-1.5 text-[12.5px] leading-relaxed">{p.notes}</p>}
-                          {p.sources && p.sources.length > 0 && (
-                            <p className="text-[12px] text-muted-foreground">
-                              Sources: {p.sources.join(" · ")}
-                            </p>
-                          )}
-                        </TooltipContent>
-                      </UITooltip>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
+  // Embedded mode (Power tool, Queue tab): the host page owns the hero, so
+  // render a slim intro row instead of the narrative header.
+  const intro = embedded ? (
+    <div className="flex flex-wrap items-start justify-between gap-3 px-1">
+      <p className="text-muted-foreground text-xs leading-relaxed max-w-3xl">
+        The named US power projects and hyperscaler campuses waiting on the grid, plus the ISO totals that contain them.
+        {h && (
+          <>
+            {" "}The overall US queue holds ~{h.queueOverallGW.toLocaleString()} GW across ~{h.queueOverallProjects.toLocaleString()} projects,
+            with a median wait of {h.medianWaitMonths} months.
+          </>
         )}
-        <Provenance
-          source="LBNL Queued Up + GridTilt curation"
-          updated={data?.lastRefreshed}
-          extra={
-            <>
-              queue totals {h?.queueOverallAsOf ?? "LBNL Queued Up 2025"} · PJM cycle{" "}
-              {h?.pjmReopenedAsOf ?? "Apr 2026"} · ERCOT load {h?.ercotLargeLoadAsOf ?? "late 2025"} ·{" "}
+      </p>
+      <div className="text-11 text-muted-foreground/70 font-mono tracking-wide text-right space-y-0.5" data-testid="backlog-sources">
+        <div><AsOf updatedAt={dataUpdatedAt} intervalMs={24 * 60 * 60 * 1000} /></div>
+        {data && <FreshnessChip lastRefreshed={data.lastRefreshed} />}
+      </div>
+    </div>
+  ) : (
+    <div className="border-b border-border px-4 sm:px-6 py-6 sm:py-8" data-testid="backlog-hero">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="max-w-3xl">
+            <h1 className="text-2xl sm:text-3xl font-semibold text-foreground tracking-tight mb-2">
+              Interconnection Backlog
+            </h1>
+            {h ? (
+              <p className="text-muted-foreground text-sm leading-relaxed">
+                The named US power projects and hyperscaler campuses waiting on the grid, plus the ISO totals that contain them.
+                The overall US queue holds <span className="text-foreground font-mono">~{h.queueOverallGW.toLocaleString()} GW</span> across{" "}
+                <span className="text-foreground font-mono">~{h.queueOverallProjects.toLocaleString()}</span> projects, with a median wait of{" "}
+                <span className="text-foreground font-mono">{h.medianWaitMonths} months</span>. ERCOT's large-load queue alone is{" "}
+                <span className="text-foreground font-mono">{h.ercotLargeLoadGW} GW</span>, of which{" "}
+                <span className="text-foreground font-mono">{h.ercotLargeLoadDataCenterPct}%</span> is datacenters.
+                Dominion has <span className="text-foreground font-mono">{h.dominionContractedGW} GW</span><Est on={isEst("dominionContractedGW")} /> already under hyperscaler contract in Virginia alone.
+              </p>
+            ) : isError ? (
+              <p className="text-muted-foreground text-sm">The backlog dataset failed to load.</p>
+            ) : (
+              <div className="space-y-2 max-w-3xl" aria-hidden="true">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-2/3" />
+              </div>
+            )}
+          </div>
+          {data && (
+            <div className="text-11 text-muted-foreground/70 font-mono tracking-wide text-right space-y-0.5" data-testid="backlog-sources">
+              <div><AsOf updatedAt={dataUpdatedAt} intervalMs={24 * 60 * 60 * 1000} /></div>
+              <FreshnessChip lastRefreshed={data.lastRefreshed} />
+              <div className="text-muted-foreground/50">queue totals · {h?.queueOverallAsOf}</div>
+              <div className="text-muted-foreground/50">PJM cycle · {h?.pjmReopenedAsOf}</div>
+              <div className="text-muted-foreground/50">ERCOT load · {h?.ercotLargeLoadAsOf}</div>
               <a
                 href={h?.queueOverallSourceUrl ?? "https://emp.lbl.gov/queues"}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="underline decoration-rule-strong underline-offset-2 hover:text-brand-ink"
+                className="text-brand hover:text-brand-2 inline-flex items-center gap-0.5"
                 data-testid="link-lbnl"
               >
-                full LBNL dataset
+                LBNL dataset <ExternalLink className="h-3 w-3" />
               </a>
-              {anyEst && <> · † estimated</>}
-            </>
-          }
-        />
-      </RuleSection>
-
-      <p className="mt-4 max-w-[70ch] text-[12.5px] leading-relaxed text-ink-muted">
-        Specific projects are verified against SEC filings, utility press releases, FERC dockets,
-        NRC documents, and trade press. Aggregate rows roll up entire ISO cycles or fleet positions;
-        the "Specific only" category filter hides them. The full{" "}
-        {h?.queueOverallProjects?.toLocaleString() ?? "10,300"}-project LBNL dataset is at{" "}
-        <a
-          href="https://emp.lbl.gov/queues"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="underline decoration-rule-strong underline-offset-2 hover:text-brand-ink"
-        >
-          emp.lbl.gov/queues
-        </a>.
-      </p>
-    </>
+            </div>
+          )}
+        </div>
+    </div>
   );
 
-  // Embedded mode (Power tool, Queue tab): the host page owns the title and
-  // tabs; the standalone route wraps the same content in the page shell.
-  if (embedded) return <div className="flex flex-col">{body}</div>;
   return (
-    <PageShell>
-      <div className="pt-7 sm:pt-9">
-        <RuleSection head="Interconnection backlog" className="mt-0" testId="backlog-hero">
-          {body}
-        </RuleSection>
+    <div className={embedded ? "flex flex-col" : "flex flex-col h-full overflow-y-auto"}>
+      {intro}
+
+      <div className={embedded ? "flex-1 space-y-3 mt-3" : "flex-1 p-4 sm:p-6 space-y-3"}>
+
+        {/* One compact summary strip (replaces 4 stat boxes) */}
+        {isLoading && <Skeleton className="h-5 w-full max-w-3xl" aria-hidden="true" />}
+        {h && (
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-1.5 px-1 text-11 font-mono text-muted-foreground" data-testid="summary-strip">
+            <span><span className="text-foreground">{h.trackedProjects}</span> named projects tracked</span>
+            <span className="text-muted-foreground/30">·</span>
+            <span><span className="text-foreground">{h.trackedCapacityGW.toLocaleString()} GW</span> across those projects</span>
+            <span className="text-muted-foreground/30">·</span>
+            <span><span className="text-foreground">{h.pjmReopenedGW}</span> GW in PJM's reopened queue</span>
+            <span className="text-muted-foreground/30">·</span>
+            <span><span className="text-foreground">{h.historicalWithdrawalPct}%</span><Est on={isEst("historicalWithdrawalPct")} /> historical withdrawal rate</span>
+            <span className="text-muted-foreground/30">·</span>
+            <span>Meta Hyperion: <span className="text-foreground">{h.metaHyperionGW} GW</span><Est on={isEst("metaHyperionGW")} /></span>
+            <span className="text-muted-foreground/30">·</span>
+            <span>Stargate Abilene: <span className="text-foreground">{h.stargateAbileneGW} GW</span><Est on={isEst("stargateAbileneGW")} /></span>
+          </div>
+        )}
+
+        {/* Filters — compact chip row */}
+        <div className="flex flex-wrap items-center gap-2 text-xs" data-testid="backlog-filters">
+          <ChipSelect label="Category" value={categoryFilter} onChange={setCategoryFilter} options={[
+            { value: "non-aggregate", label: "specific only" },
+            { value: "all", label: "all" },
+            { value: "generation", label: "generation" },
+            { value: "load", label: "load" },
+            { value: "ppa", label: "ppas" },
+            { value: "aggregate", label: "aggregates" },
+            { value: "regulatory", label: "regulatory" },
+          ]} />
+          <ChipSelect label="Type" value={typeFilter} onChange={setTypeFilter} options={[{ value: "all", label: "all" }, ...types.map((t) => ({ value: t, label: t }))]} />
+          <ChipSelect label="Region" value={isoFilter} onChange={setIsoFilter} options={[{ value: "all", label: "all" }, ...isos.map((i) => ({ value: i, label: i }))]} />
+          <label className="flex items-center gap-1.5 text-muted-foreground cursor-pointer px-2 py-1 rounded border border-subtle hover:border-strong" data-testid="filter-dc-only">
+            <input type="checkbox" checked={dcOnly} onChange={(e) => setDcOnly(e.target.checked)} className="accent-brand" />
+            DC-relevant only
+          </label>
+          <span className="text-muted-foreground/60 font-mono ml-auto">{filtered.length} of {data?.projects?.length ?? 0}</span>
+        </div>
+
+        {/* Projects table — the page is THIS now */}
+        <Card className="border-card-border overflow-hidden" data-testid="backlog-table">
+          {isError ? (
+            <div data-testid="backlog-error">
+              <ErrorState label="The backlog dataset failed to load." onRetry={() => refetch()} />
+            </div>
+          ) : (
+          <div className="overflow-x-auto">
+          <div className="min-w-[760px]">
+          <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-surface-base border-b border-border text-10 font-mono uppercase tracking-wider text-muted-foreground">
+            <SortHeader label="Project" sortKey="projectName" current={sortKey} dir={sortDir} onClick={toggleSort} className="col-span-4" />
+            <SortHeader label="Type" sortKey="type" current={sortKey} dir={sortDir} onClick={toggleSort} className="col-span-1" />
+            <SortHeader label="MW" sortKey="capacityMW" current={sortKey} dir={sortDir} onClick={toggleSort} className="col-span-1 text-right" />
+            <SortHeader label="Region" sortKey="iso" current={sortKey} dir={sortDir} onClick={toggleSort} className="col-span-1" />
+            <span className="col-span-1">State</span>
+            <SortHeader label="Online" sortKey="expectedOnline" current={sortKey} dir={sortDir} onClick={toggleSort} className="col-span-2" />
+            <span className="col-span-1 text-center">Cat</span>
+            <span className="col-span-1 text-center">DC</span>
+          </div>
+          {isLoading ? (
+            <div className="p-4 space-y-2">
+              {Array(12).fill(null).map((_, i) => <Skeleton key={i} className="h-7" />)}
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="p-6 text-center text-xs text-muted-foreground" data-testid="backlog-empty">No projects match the current filters.</div>
+          ) : (
+            filtered.map((p) => {
+              const Icon = TYPE_ICONS[p.type] ?? Zap;
+              const statusColor = p.status === "active" ? SEMANTIC.warning : p.status === "operational" ? SEMANTIC.positiveDeep : INK.faint;
+              const isAggregate = p.category === "aggregate";
+              const hasTooltip = !!p.notes || !!(p.sources && p.sources.length > 0);
+              const row = (
+                    <div
+                      key={p.id}
+                      className={`grid grid-cols-12 gap-2 px-4 py-2.5 border-b border-border/30 last:border-0 text-xs hover:bg-brand/5 ${hasTooltip ? "cursor-help" : ""} ${isAggregate ? "bg-surface-sunken" : ""}`}
+                      data-testid={`backlog-row-${p.id}`}
+                    >
+                      <div className="col-span-4 min-w-0">
+                        <div className="font-medium text-foreground truncate flex items-center gap-1.5">
+                          {p.projectName}
+                          {p.status === "operational" && (
+                            <Badge variant="outline" className="text-8 font-mono px-1 py-0 text-positive border-positive/30">live</Badge>
+                          )}
+                        </div>
+                        <div className="text-10 text-muted-foreground truncate">
+                          {p.sponsor}{p.offtaker ? ` → ${p.offtaker}` : ""}
+                        </div>
+                      </div>
+                      <span className="col-span-1 inline-flex items-center gap-1 capitalize" style={{ color: TYPE_COLORS[p.type] ?? INK.muted }}>
+                        <Icon className="h-3 w-3 flex-shrink-0" />
+                        <span className="truncate">{p.type}</span>
+                      </span>
+                      <span className="col-span-1 font-mono text-foreground text-right tabular-nums">
+                        {p.capacityMW === 0 ? "—" : p.capacityMW >= 10000 ? `${(p.capacityMW / 1000).toFixed(0)}k` : p.capacityMW.toLocaleString()}
+                      </span>
+                      <span className="col-span-1 font-mono text-foreground truncate">{p.iso}</span>
+                      <span className="col-span-1 font-mono text-muted-foreground truncate">{p.state}</span>
+                      <span className="col-span-2 font-mono text-muted-foreground text-10 truncate">{p.expectedOnline ?? "—"}</span>
+                      <span className="col-span-1 text-center">
+                        <Badge variant="outline" className="text-9 font-mono px-1.5 py-0" style={{ color: statusColor, borderColor: `${statusColor}40` }}>
+                          {CATEGORY_LABELS[p.category] ?? p.category}
+                        </Badge>
+                      </span>
+                      <span className="col-span-1 text-center font-mono text-10">
+                        {p.dcRelevant ? <span className="text-brand">★</span> : <span className="text-muted-foreground/30">—</span>}
+                      </span>
+                    </div>
+              );
+              if (!hasTooltip) return row;
+              return (
+                <UITooltip key={p.id}>
+                  <TooltipTrigger asChild>{row}</TooltipTrigger>
+                  <TooltipContent side="top" className="max-w-md p-3">
+                    {p.notes && <p className="text-xs leading-relaxed mb-1.5">{p.notes}</p>}
+                    {p.sources && p.sources.length > 0 && (
+                      <p className="text-10 text-muted-foreground">
+                        sources: {p.sources.join(" · ")}
+                      </p>
+                    )}
+                  </TooltipContent>
+                </UITooltip>
+              );
+            })
+          )}
+          </div>
+          </div>
+          )}
+        </Card>
+
+        <p className="text-11 text-muted-foreground/60 leading-relaxed px-1">
+          Specific projects are verified against SEC filings, utility press releases, FERC dockets, NRC documents, and trade press.
+          Aggregate rows roll up entire ISO cycles or fleet positions; toggle "specific only" to filter them out.
+          The full ~{h?.queueOverallProjects?.toLocaleString() ?? "10,300"}-project LBNL dataset is at{" "}
+          <a href="https://emp.lbl.gov/queues" target="_blank" rel="noopener noreferrer" className="text-brand hover:text-brand-2">emp.lbl.gov/queues</a>.
+        </p>
       </div>
-    </PageShell>
+    </div>
   );
 }
 
@@ -405,11 +437,11 @@ function FreshnessChip({ lastRefreshed }: { lastRefreshed: string }) {
   const days = Math.max(0, Math.floor((Date.now() - refreshDate.getTime()) / 86400000));
   const label = days === 0 ? "refreshed today" : days === 1 ? "refreshed yesterday" : `refreshed ${days} days ago`;
   const color =
-    days <= 14 ? "text-positive" :
-    days <= 60 ? "text-warning" :
-    "text-negative";
+    days <= 14 ? "text-positive border-positive/30" :
+    days <= 60 ? "text-warning border-warning/30" :
+    "text-negative border-negative/30";
   return (
-    <span className={`font-medium ${color}`} data-testid="freshness-chip">
+    <span className={`inline-block px-1.5 py-0.5 rounded border ${color}`} data-testid="freshness-chip">
       {label}
     </span>
   );
@@ -417,29 +449,29 @@ function FreshnessChip({ lastRefreshed }: { lastRefreshed: string }) {
 
 function ChipSelect({ label, value, onChange, options }: { label: string; value: string; onChange: (v: string) => void; options: { value: string; label: string }[] }) {
   return (
-    <label className="flex items-center gap-1.5 rounded-sm border border-rule px-2 py-1 text-[12px] text-ink-secondary hover:border-rule-strong">
-      <span className="text-ink-muted">{label}</span>
+    <label className="flex items-center gap-1.5 text-muted-foreground px-2 py-1 rounded border border-subtle hover:border-strong">
+      <span className="text-10 uppercase tracking-wider text-muted-foreground/60">{label}</span>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="cursor-pointer bg-transparent text-[12.5px] text-ink outline-none"
+        className="bg-transparent text-foreground text-xs outline-none cursor-pointer"
         data-testid={`filter-${label.toLowerCase()}`}
       >
         {options.map((o) => (
-          <option key={o.value} value={o.value} className="bg-surface-overlay">{o.label}</option>
+          <option key={o.value} value={o.value} className="bg-surface-raised">{o.label}</option>
         ))}
       </select>
     </label>
   );
 }
 
-function SortHeader({ label, sortKey, current, dir, onClick }: { label: string; sortKey: SortKey; current: SortKey; dir: SortDir; onClick: (k: SortKey) => void }) {
+function SortHeader({ label, sortKey, current, dir, onClick, className }: { label: string; sortKey: SortKey; current: SortKey; dir: SortDir; onClick: (k: SortKey) => void; className?: string }) {
   const active = current === sortKey;
   return (
     <button
       type="button"
       onClick={() => onClick(sortKey)}
-      className={`inline-flex items-center gap-1 text-[12px] transition-colors hover:text-ink ${active ? "text-ink" : ""}`}
+      className={`flex items-center gap-1 text-left ${active ? "text-foreground" : ""} ${className ?? ""}`}
       data-testid={`sort-${sortKey}`}
     >
       {label}

@@ -15,32 +15,32 @@ const BASE_URL = "https://gridtilt.com";
 
 const STATIC_PAGES: Record<string, { title: string; description: string; slug: string }> = {
   "/": {
-    title: "GridTilt | Energy Infrastructure, In Plain Sight",
-    description: "Tracking the American power grid as data centers rewrite it: generation, transmission, buildout, and the public companies behind them. Sourced numbers, plain language.",
+    title: "GridTilt \u2014 The AI Power Buildout, Tracked Honestly",
+    description: "A research dashboard for the AI infrastructure buildout \u2014 data centers, power, compute, and the public equities behind them. Three live market gauges. Six modules. No Bloomberg required.",
     slug: "",
   },
   "/overview": {
-    title: "Today | GridTilt",
-    description: "The daily read on the AI power economy: top movers, sector pulse, tracked buildout, and the catalyst calendar. Updated through the trading day.",
+    title: "Tilt Overview \u2014 Live Dashboard \u2014 GridTilt",
+    description: "Live composite indices, top movers, sector pulse, and catalyst calendar across the AI power thesis. Updated every 15 minutes.",
     slug: "overview",
   },
   "/stack": {
-    title: "AI Power Stocks by Sector - GridTilt",
+    title: "AI Power Stocks by Sector \u2014 GridTilt",
     description: "Live prices for 60+ stocks across nuclear, uranium, construction, utilities, data centers, and power hardware. Updated every 15 minutes.",
     slug: "stack",
   },
   "/power-map": {
-    title: "AI Data Center Map - Locations by Grid Region - GridTilt",
+    title: "AI Data Center Map \u2014 Locations by Grid Region \u2014 GridTilt",
     description: "48 AI data center facilities mapped by operator, grid region, and capacity. Filter by Google, Amazon, Meta, Microsoft.",
     slug: "power-map",
   },
   "/catalysts": {
-    title: "AI Power Earnings Calendar and Catalyst Events - GridTilt",
+    title: "AI Power Earnings Calendar and Catalyst Events \u2014 GridTilt",
     description: "Upcoming earnings dates, regulatory decisions, and policy events for AI infrastructure stocks. Auto-updated catalyst calendar.",
     slug: "catalysts",
   },
   "/blog": {
-    title: "AI Power Infrastructure Analysis - GridTilt",
+    title: "AI Power Infrastructure Analysis \u2014 GridTilt",
     description: "Research and analysis on the AI power infrastructure thesis. Data center power demand, nuclear energy, grid constraints, and investment implications.",
     slug: "blog",
   },
@@ -70,19 +70,9 @@ const STATIC_PAGES: Record<string, { title: string; description: string; slug: s
     slug: "neocloud-intel",
   },
   "/subscribe": {
-    title: "The GridTilt Brief - Weekly Power and Grid Email",
-    description: "One email a week on the grid: power, data centers, and the companies behind both.",
+    title: "Get the Tilt \u2014 Weekly AI Power Market Intel \u2014 GridTilt",
+    description: "Weekly digest of AI power market moves, catalysts, and thesis updates. Built for investors tracking the buildout.",
     slug: "subscribe",
-  },
-  "/my-grid": {
-    title: "My Grid - Your State's Operator, Buildout, and Rates | GridTilt",
-    description: "Pick a state: see its grid operator and reserve margin, the data center capacity being built there, and what residential electricity costs, from EIA data.",
-    slug: "my-grid",
-  },
-  "/about": {
-    title: "About GridTilt - Sources, Methods, and Limits",
-    description: "What GridTilt is, who makes it, where every number comes from, how often each dataset updates, and what is not covered.",
-    slug: "about",
   },
 };
 
@@ -152,7 +142,7 @@ function datasetJsonLd(): object {
   return {
     "@context": "https://schema.org",
     "@type": "Dataset",
-    "name": "AI Data Center Locations - United States",
+    "name": "AI Data Center Locations \u2014 United States",
     "description": "48 active and planned AI data center facilities mapped by operator, grid region, capacity, and status",
     "url": `${BASE_URL}/power-map`,
     "creator": { "@type": "Organization", "name": "GridTilt" },
@@ -294,7 +284,7 @@ export function getPageMeta(pathname: string): PageMeta {
   if (stockMatch) {
     const ticker = stockMatch[1].toUpperCase();
     return {
-      title: `$${ticker} - AI Power Thesis Analysis | GridTilt`,
+      title: `$${ticker} \u2014 AI Power Thesis Analysis | GridTilt`,
       description: `${ticker} analysis for the AI power infrastructure thesis. Live price, thesis score, sector context. Track ${ticker} on GridTilt.`,
       canonical: `${BASE_URL}/stock/${ticker}`,
       ogImage: `${BASE_URL}/api/og?ticker=${ticker}`,
@@ -303,7 +293,7 @@ export function getPageMeta(pathname: string): PageMeta {
         {
           "@context": "https://schema.org",
           "@type": "FinancialProduct",
-          "name": `${ticker} - AI Power Thesis Analysis`,
+          "name": `${ticker} \u2014 AI Power Thesis Analysis`,
           "description": `Live price data, thesis alignment score, and sector analysis for ${ticker} on GridTilt`,
           "url": `${BASE_URL}/stock/${ticker}`,
           "provider": { "@type": "Organization", "name": "GridTilt" },
@@ -343,7 +333,7 @@ export function getPageMeta(pathname: string): PageMeta {
     const region = REGION_SLUGS[slug];
     if (region) {
       return {
-        title: `${region.name} Grid Region - AI Data Center Locations | GridTilt`,
+        title: `${region.name} Grid Region \u2014 AI Data Center Locations | GridTilt`,
         description: region.description,
         canonical: `${BASE_URL}/region/${slug}`,
         ogImage: `${BASE_URL}/api/og?page=region&name=${encodeURIComponent(region.name)}`,
@@ -363,7 +353,7 @@ export function getPageMeta(pathname: string): PageMeta {
     const name = OPERATOR_SLUGS[slug];
     if (name) {
       return {
-        title: `${name} AI Data Centers - Locations and Capacity | GridTilt`,
+        title: `${name} AI Data Centers \u2014 Locations and Capacity | GridTilt`,
         description: `${name} AI data center facilities tracked on GridTilt. Map, capacity data, and grid analysis.`,
         canonical: `${BASE_URL}/operator/${slug}`,
         ogImage: `${BASE_URL}/api/og?page=operator&name=${encodeURIComponent(name)}`,
@@ -470,7 +460,7 @@ export function getPageMeta(pathname: string): PageMeta {
   }
 
   return {
-    title: "GridTilt - AI Power Infrastructure Dashboard",
+    title: "GridTilt \u2014 AI Power Infrastructure Dashboard",
     description: "Track the AI power buildout. Live stock data, data center mapping, and thesis modeling for 60+ companies across 9 sectors.",
     canonical: BASE_URL,
     ogImage: `${BASE_URL}/api/og?page=home`,

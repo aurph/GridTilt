@@ -1,4 +1,4 @@
-modules = ["web", "postgresql-16", "python-3.11", "nodejs-22"]
+modules = ["nodejs-20", "web", "postgresql-16", "python-3.11"]
 run = "npm run dev"
 hidden = [".config", ".git", "generated-icon.png", "node_modules", "dist"]
 
@@ -34,10 +34,6 @@ author = "agent"
 task = "workflow.run"
 args = "Start application"
 
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "test"
-
 [[workflows.workflow]]
 name = "Start application"
 author = "agent"
@@ -47,25 +43,9 @@ task = "shell.exec"
 args = "npm run dev"
 waitForPort = 5000
 
-[[workflows.workflow]]
-name = "test"
-author = "agent"
-
-[workflows.workflow.metadata]
-isValidation = true
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "node --import tsx --test server/__tests__/*.test.ts"
-
 [postMerge]
 path = "scripts/post-merge.sh"
-timeoutMs = 120000
+timeoutMs = 20000
 
 [agent]
 integrations = ["github:1.0.0"]
-
-[userenv]
-
-[userenv.shared]
-TZ = "America/New_York"

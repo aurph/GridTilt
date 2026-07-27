@@ -6,24 +6,18 @@
  */
 import type { CSSProperties } from "react";
 import { utcMonth, utcYear } from "d3-time";
-import { BORDER, BRAND, CHART_CHROME, FONT, INK, SURFACE } from "./tokens";
+import { BORDER, CHART_CHROME, FONT, INK, SURFACE } from "./tokens";
 
-/**
- * Editorial chart grammar: charts sit directly on the paper ground (no chart
- * boxes), solid hairline grid, sans labels, direct end-of-line labels over
- * legend boxes wherever the layout allows. One highlighted series per chart
- * (HIGHLIGHT); everything contextual reads in warm gray (CONTEXT).
- */
 export const chartTheme = {
   axis: {
     stroke: CHART_CHROME.axis,
     tickFill: CHART_CHROME.tick,
-    fontSize: 11,
-    fontFamily: FONT.sans,
+    fontSize: 10,
+    fontFamily: FONT.mono,
   },
   grid: {
     stroke: CHART_CHROME.grid,
-    strokeDasharray: "0",
+    strokeDasharray: "3 3",
   },
   crosshair: {
     stroke: CHART_CHROME.crosshair,
@@ -39,13 +33,13 @@ export const chartTheme = {
     border: BORDER.strong,
     labelColor: INK.secondary,
     valueColor: INK.primary,
-    fontSize: 12,
-    fontFamily: FONT.sans,
-    radius: 2,
+    fontSize: 11,
+    fontFamily: FONT.mono,
+    radius: 4,
   },
   label: {
-    fontSize: 12,
-    fontFamily: FONT.sans,
+    fontSize: 11,
+    fontFamily: FONT.mono,
     fill: INK.secondary,
   },
   line: {
@@ -54,15 +48,6 @@ export const chartTheme = {
     activeDotRadius: 3,
   },
 } as const;
-
-/**
- * The one highlighted series per chart: brand orange. Never a categorical
- * slot; if two series need emphasis the chart is over-asked - split it.
- */
-export const HIGHLIGHT = BRAND.primary;
-
-/** De-emphasized context series (other lines behind the highlight). */
-export const CONTEXT = INK.faint;
 
 /** Spread into Recharts <XAxis>/<YAxis>: {...axisProps} */
 export const axisProps = {

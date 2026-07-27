@@ -250,7 +250,5 @@ export function heatColor(pct: number | null): string {
 /** Text color that stays readable on heatColor() fills. */
 export function heatTextColor(pct: number | null): string {
   if (pct === null || !Number.isFinite(pct)) return INK.muted;
-  // Dark ground: blends darken toward the semantic deep, so near-white
-  // ink stays readable at every saturation.
   return INK.primary;
 }

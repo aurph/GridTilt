@@ -1,31 +1,33 @@
 import { type ReactNode } from "react";
 import { Link } from "wouter";
-import { PageShell, PageTitle } from "@/components/editorial";
+import { Card } from "@/components/ui/card";
+import { ArrowLeft } from "lucide-react";
+import { PageHeader } from "@/components/PageHeader";
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="mt-8">
-      <h2 className="font-serif text-[24px] font-medium leading-tight text-ink mb-3">{title}</h2>
-      <div className="text-[15px] leading-relaxed text-ink-secondary space-y-3">{children}</div>
-    </section>
+    <Card className="border-card-border p-4">
+      <h2 className="text-sm font-semibold text-foreground mb-2">{title}</h2>
+      <div className="text-sm text-muted-foreground leading-relaxed space-y-2">{children}</div>
+    </Card>
   );
 }
 
 export default function ComputeFrontierMethodology() {
   return (
-    <PageShell>
-      <PageTitle
+    <div className="flex flex-col h-full overflow-y-auto">
+      <PageHeader
         title="Compute Frontier methodology"
-        dek="How the supercluster data is built, what is sourced, what is estimated, and exactly how each headline number is computed."
+        testId="cfm-header"
+        about="How the supercluster data is built, what is sourced, what is estimated, and exactly how each headline number is computed."
         right={
-          <Link href="/compute-frontier" className="text-[12.5px] font-semibold text-ink no-underline hover:text-brand-ink" data-testid="cfm-back">
-            ← Compute Frontier
+          <Link href="/compute-frontier" className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground" data-testid="cfm-back">
+            <ArrowLeft className="h-3.5 w-3.5" /> Compute Frontier
           </Link>
         }
-        testId="cfm-header"
       />
 
-      <article className="max-w-[68ch]">
+      <div className="flex-1 p-4 sm:p-6 space-y-4 max-w-4xl">
         <Section title="What this tracks">
           <p>
             Compute Frontier is a registry of named AI training and inference superclusters in the US. It is the compute
@@ -41,8 +43,8 @@ export default function ComputeFrontierMethodology() {
           <p>
             Data integrity is the point of the project, so the data is explicit about what is known. Each cluster carries
             a list of the fields whose values are GridTilt estimates or announced targets that have not been built yet.
-            Those values render with an ochre dagger (<span className="text-warning font-semibold">†</span>). Everything
-            else is taken from a cited source, and every cluster lists its own source links.
+            Those values render with an <span className="text-brand-2">est.</span> tag. Everything else is taken from a
+            cited source, and every cluster lists its own source links.
           </p>
           <p>
             GPU and accelerator counts appear only where an operator has actually disclosed one. Where no count has been
@@ -53,11 +55,11 @@ export default function ComputeFrontierMethodology() {
 
         <Section title="How the numbers are computed">
           <p>The headline metrics are deterministic functions of the dataset, unit-tested in the repo:</p>
-          <ul className="list-disc pl-5 space-y-2">
-            <li><span className="text-ink font-medium">Operational power</span> sums the rated MW of clusters whose status is operational. <span className="text-ink font-medium">Planned power</span> sums plannedPowerMW across all clusters.</li>
-            <li><span className="text-ink font-medium">Tracked GPUs</span> sums disclosed accelerator counts only, and reports how many clusters contributed.</li>
-            <li><span className="text-ink font-medium">GPUs per MW</span> divides total disclosed GPUs by the rated MW of only the clusters that disclosed GPUs, so a GPU-less cluster cannot dilute the ratio. It is null when no cluster discloses both.</li>
-            <li><span className="text-ink font-medium">Concentration</span> is the Herfindahl index of operator shares of planned MW (1.0 means one operator owns the whole buildout, lower means more distributed), plus the leading operator and its share. This is the "who controls the frontier" measure.</li>
+          <ul className="list-disc pl-5 space-y-1">
+            <li><span className="text-foreground">Operational power</span> sums the rated MW of clusters whose status is operational. <span className="text-foreground">Planned power</span> sums plannedPowerMW across all clusters.</li>
+            <li><span className="text-foreground">Tracked GPUs</span> sums disclosed accelerator counts only, and reports how many clusters contributed.</li>
+            <li><span className="text-foreground">GPUs per MW</span> divides total disclosed GPUs by the rated MW of only the clusters that disclosed GPUs, so a GPU-less cluster cannot dilute the ratio. It is null when no cluster discloses both.</li>
+            <li><span className="text-foreground">Concentration</span> is the Herfindahl index of operator shares of planned MW (1.0 means one operator owns the whole buildout, lower means more distributed), plus the leading operator and its share. This is the "who controls the frontier" measure.</li>
           </ul>
         </Section>
 
@@ -67,7 +69,7 @@ export default function ComputeFrontierMethodology() {
             deal by its id, and the deal's contracted capacity is rolled up against the planned compute power. Firmness
             (signed versus proposed) is shown where the deal carries it. Most clusters run on the grid or on-site gas and
             carry no nuclear link, which the data states plainly rather than implying coverage that does not exist. Linked
-            deals point to the <Link href="/queue" className="text-ink no-underline hover:text-brand-ink">Backlog</Link> page.
+            deals point to the <Link href="/queue" className="text-brand hover:text-brand-2">Backlog</Link> page.
           </p>
         </Section>
 
@@ -81,17 +83,17 @@ export default function ComputeFrontierMethodology() {
         </Section>
 
         <Section title="Limitations">
-          <ul className="list-disc pl-5 space-y-2">
+          <ul className="list-disc pl-5 space-y-1">
             <li>The registry is a curated sample of the largest, clearly AI-specific clusters, not a census of every facility.</li>
             <li>Forward power and GPU targets are announcements, not guarantees; they are flagged as estimates and will move.</li>
             <li>A cluster appearing here and on the Power Map is intentional; the two views answer different questions.</li>
           </ul>
         </Section>
 
-        <p className="mt-8 text-[12.5px] text-ink-muted">
-          Back to the <Link href="/compute-frontier" className="text-ink no-underline hover:text-brand-ink">Compute Frontier</Link>.
+        <p className="text-11 text-muted-foreground/60">
+          Back to the <Link href="/compute-frontier" className="text-brand hover:text-brand-2">Compute Frontier</Link>.
         </p>
-      </article>
-    </PageShell>
+      </div>
+    </div>
   );
 }

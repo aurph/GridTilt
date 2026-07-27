@@ -1,11 +1,13 @@
 import { useParams, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ArrowLeft, ExternalLink, TrendingUp, TrendingDown, AlertTriangle, Share2, Clock } from "lucide-react";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip as RTooltip } from "recharts";
 import { useToast } from "@/hooks/use-toast";
-import { PageShell, Provenance, PullStat, RuleSection } from "@/components/editorial";
 import { SEMANTIC } from "@/lib/tokens";
-import { tooltipContentStyle, tooltipItemStyle } from "@/lib/chart-theme";
+import { tooltipContentStyle } from "@/lib/chart-theme";
 
 interface StockInfo {
   ticker: string;
@@ -41,11 +43,6 @@ const SECTOR_SLUG_MAP: Record<string, string> = {
   construction: "construction-epc", etfsBenchmarks: "etf-benchmarks",
 };
 
-/** Signed percent with a true minus sign, never a hyphen. */
-function fmtSignedPct(v: number): string {
-  return `${v >= 0 ? "+" : "−"}${Math.abs(v).toFixed(2)}%`;
-}
-
 export default function StockPage() {
   const { ticker } = useParams<{ ticker: string }>();
   const upperTicker = ticker?.toUpperCase() || "";
@@ -63,33 +60,28 @@ export default function StockPage() {
 
   if (isLoading) {
     return (
-      <PageShell>
-        <div className="pt-7 sm:pt-9 space-y-6">
-          <Skeleton className="h-9 w-64" />
-          <Skeleton className="h-48 w-full" />
-          <Skeleton className="h-32 w-full" />
-        </div>
-      </PageShell>
+      <div className="max-w-5xl mx-auto p-6 space-y-6">
+        <Skeleton className="h-8 w-64" />
+        <Skeleton className="h-48 w-full" />
+        <Skeleton className="h-32 w-full" />
+      </div>
     );
   }
 
   if (isError || !data) {
     return (
-      <PageShell>
-        <div className="pt-7 sm:pt-9">
-          <Link href="/stack" className="text-[12.5px] font-semibold text-ink no-underline hover:text-brand-ink" data-testid="link-back-stack">
-            ← The Stack
-          </Link>
-          <h1 className="mt-5 font-serif font-medium text-[30px] sm:text-[34px] leading-[1.05] tracking-tight text-ink">
-            Ticker not found
-          </h1>
-          <p className="mt-3 max-w-[68ch] text-[15px] leading-relaxed text-ink-secondary">
-            {upperTicker} is not tracked on GridTilt. Browse{" "}
-            <Link href="/stack" className="text-ink no-underline hover:text-brand-ink">The Stack</Link>{" "}
-            to see every tracked equity.
+      <div className="max-w-5xl mx-auto p-6">
+        <Link href="/stack" className="flex items-center gap-1 text-sm text-brand mb-6" data-testid="link-back-stack">
+          <ArrowLeft className="h-4 w-4" /> Back to The Stack
+        </Link>
+        <Card className="p-8 border-card-border text-center">
+          <AlertTriangle className="h-8 w-8 text-negative mx-auto mb-3" />
+          <h1 className="text-lg font-semibold mb-2">Ticker Not Found</h1>
+          <p className="text-sm text-muted-foreground">
+            ${upperTicker} is not tracked on GridTilt. <Link href="/stack" className="text-brand">Browse The Stack</Link> to see all 60+ tracked equities.
           </p>
-        </div>
-      </PageShell>
+        </Card>
+      </div>
     );
   }
 
@@ -98,7 +90,6 @@ export default function StockPage() {
   const isStale = !!data.stockData?.stale;
   const chartData = data.stockData?.sparkline?.map((v, i) => ({ i, price: v })) || [];
   const sectorSlug = SECTOR_SLUG_MAP[data.layerKey] || data.layerKey;
-  const sectorLabel = SECTOR_LABELS[data.layerKey] || data.layerKey;
 
   function handleShare() {
     const url = `https://gridtilt.com/stock/${data!.ticker}`;
@@ -109,119 +100,87 @@ export default function StockPage() {
   }
 
   return (
-    <PageShell>
-      <nav className="flex flex-wrap items-center gap-x-2 gap-y-1 pt-7 sm:pt-9 text-[12.5px] text-ink-muted" data-testid="breadcrumb">
-        <Link href="/" className="text-[12.5px] text-ink no-underline hover:text-brand-ink">GridTilt</Link>
-        <span>·</span>
-        <Link href="/stack" className="text-[12.5px] text-ink no-underline hover:text-brand-ink">The Stack</Link>
-        <span>·</span>
-        <Link href={`/sector/${sectorSlug}`} className="text-[12.5px] text-ink no-underline hover:text-brand-ink">{sectorLabel}</Link>
-        <span>·</span>
-        <span className="text-ink font-medium">{data.ticker}</span>
+    <div className="max-w-5xl mx-auto p-6 space-y-6">
+      <nav className="flex items-center gap-2 text-xs text-muted-foreground" data-testid="breadcrumb">
+        <Link href="/" className="hover:text-foreground">GridTilt</Link>
+        <span>/</span>
+        <Link href="/stack" className="hover:text-foreground">The Stack</Link>
+        <span>/</span>
+        <Link href={`/sector/${sectorSlug}`} className="hover:text-foreground">{SECTOR_LABELS[data.layerKey] || data.layerKey}</Link>
+        <span>/</span>
+        <span className="text-foreground font-medium">{data.ticker}</span>
       </nav>
 
-      {/* Reference-entry lead: serif name over a plain classification line */}
-      <div className="mt-4 pb-4 border-b border-rule mb-5">
-        <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
-          <div className="min-w-0">
-            <h1 className="font-serif font-medium text-[30px] sm:text-[34px] leading-[1.05] tracking-tight text-ink" data-testid="stock-heading">
-              {data.name}
-            </h1>
-            <p className="mt-1.5 text-[13.5px] text-ink-muted">
-              {data.ticker} · {data.primarySegment} · {sectorLabel}
-            </p>
+      <div className="flex items-start justify-between flex-wrap gap-4">
+        <div>
+          <div className="flex items-center gap-3 mb-1">
+            <h1 className="text-2xl font-bold" data-testid="stock-heading">{data.name}</h1>
+            <Badge className="text-sm font-mono bg-muted/50 text-muted-foreground">${data.ticker}</Badge>
           </div>
-          <div className="flex items-center gap-4 pb-1">
-            <button
-              onClick={handleShare}
-              className="text-[12.5px] font-semibold text-brand-ink hover:text-ink transition-colors"
-              data-testid="button-share"
-            >
-              Share
-            </button>
-            <a
-              href={`https://x.com/intent/tweet?text=${encodeURIComponent(`$${data.ticker} scores ${data.thesisScore}/100 on the AI power thesis. ${data.primarySegment} sector.`)}&url=${encodeURIComponent(`https://gridtilt.com/stock/${data.ticker}`)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[12.5px] font-semibold text-ink no-underline hover:text-brand-ink"
-              data-testid="link-share-x"
-            >
-              Share on X
-            </a>
+          <div className="flex items-center gap-3 flex-wrap">
+            <Badge className="bg-brand/15 text-brand border-brand/25">{data.primarySegment}</Badge>
+            {data.stockData && (
+              <>
+                <span className="text-xl font-bold font-mono" data-testid="stock-price">${data.stockData.price.toFixed(2)}</span>
+                {hasLiveChg ? (
+                  <Badge className={`font-mono ${isUp ? "bg-positive-deep/15 text-positive" : "bg-negative-deep/15 text-negative"}`} data-testid="stock-change">
+                    {isUp ? <TrendingUp className="h-3 w-3 mr-1" /> : <TrendingDown className="h-3 w-3 mr-1" />}
+                    {isUp ? "+" : ""}{(data.stockData.changePercent as number).toFixed(2)}%
+                  </Badge>
+                ) : (
+                  <Badge className="font-mono bg-brand-2/15 text-brand-2 border-brand-2/30 inline-flex items-center gap-1" data-testid="stock-stale">
+                    <Clock className="h-3 w-3" />
+                    {isStale ? "delayed" : "—"}
+                  </Badge>
+                )}
+              </>
+            )}
           </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleShare}
+            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border border-border hover:bg-muted/50 transition-colors"
+            data-testid="button-share"
+          >
+            <Share2 className="h-3 w-3" /> Share
+          </button>
+          <a
+            href={`https://x.com/intent/tweet?text=${encodeURIComponent(`$${data.ticker} scores ${data.thesisScore}/100 on the AI power thesis. ${data.primarySegment} sector.`)}&url=${encodeURIComponent(`https://gridtilt.com/stock/${data.ticker}`)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border border-border hover:bg-muted/50 transition-colors"
+            data-testid="link-share-x"
+          >
+            Share on X <ExternalLink className="h-3 w-3" />
+          </a>
         </div>
       </div>
 
-      {/* Key figures */}
-      {data.stockData && (
-        <div className="flex flex-wrap gap-x-10 gap-y-5 pb-5 border-b border-rule" data-testid="key-metrics">
-          <PullStat
-            testId="stock-price"
-            label="Price"
-            value={`$${data.stockData.price.toFixed(2)}`}
-            delta={
-              hasLiveChg ? (
-                <span
-                  className={`text-[13px] font-semibold tnum ${isUp ? "text-positive" : "text-negative"}`}
-                  data-testid="stock-change"
-                >
-                  {fmtSignedPct(data.stockData.changePercent as number)}
-                </span>
-              ) : (
-                <span className="text-[13px] text-ink-muted" data-testid="stock-stale">
-                  {isStale ? "delayed" : "--"}
-                </span>
-              )
-            }
-            note={
-              hasLiveChg && data.stockData.change != null
-                ? `${isUp ? "+" : "−"}$${Math.abs(data.stockData.change).toFixed(2)} today`
-                : isStale
-                  ? "Quote delayed"
-                  : undefined
-            }
-          />
-          <PullStat label="Market cap" value={data.stockData.marketCapDisplay || "--"} />
-          <PullStat label="P/E ratio" value={data.stockData.pe != null ? data.stockData.pe.toFixed(1) : "--"} />
-          <PullStat
-            label="Revenue growth"
-            value={
-              data.stockData.revenueGrowth != null
-                ? `${data.stockData.revenueGrowth >= 0 ? "+" : "−"}${Math.abs(data.stockData.revenueGrowth).toFixed(1)}%`
-                : "--"
-            }
-            note="year over year"
-          />
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-x-10">
-        <div className="lg:col-span-2">
-          <RuleSection
-            head="Thesis alignment"
-            aside={
-              <span className="text-[13px] font-semibold text-ink tnum" data-testid="thesis-score">
-                {data.thesisScore}/100
-              </span>
-            }
-            testId="thesis-score-card"
-          >
-            <p className="max-w-[68ch] text-[14px] leading-relaxed text-ink-secondary">{data.explanation}</p>
-            <div className="mt-4 grid grid-cols-5 gap-3">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 space-y-6">
+          <Card className="p-5 border-card-border" data-testid="thesis-score-card">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Thesis Alignment Score</h2>
+              <span className="text-3xl font-bold font-mono text-brand-2" data-testid="thesis-score">{data.thesisScore}/100</span>
+            </div>
+            <p className="text-sm text-muted-foreground mb-4">{data.explanation}</p>
+            <div className="grid grid-cols-5 gap-2">
               {Object.entries(data.sectors).map(([key, val]) => (
-                <div key={key}>
-                  <div className="h-1.5 bg-paper-shade mb-1.5">
-                    <div className="h-full bg-brand" style={{ width: `${val}%` }} />
+                <div key={key} className="text-center">
+                  <div className="h-1.5 rounded-full bg-muted/30 overflow-hidden mb-1">
+                    <div className="h-full rounded-full bg-brand" style={{ width: `${val}%` }} />
                   </div>
-                  <p className="text-[12px] leading-tight text-ink-muted">{key}</p>
-                  <p className="text-[12.5px] font-semibold text-ink tnum">{val}</p>
+                  <p className="text-10 text-muted-foreground">{key}</p>
+                  <p className="text-xs font-mono font-semibold">{val}</p>
                 </div>
               ))}
             </div>
-          </RuleSection>
+          </Card>
 
           {chartData.length > 0 && (
-            <RuleSection head="Price history" testId="price-chart">
+            <Card className="p-5 border-card-border" data-testid="price-chart">
+              <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">Price History</h2>
               <ResponsiveContainer width="100%" height={200}>
                 <LineChart data={chartData}>
                   <XAxis dataKey="i" hide />
@@ -229,84 +188,96 @@ export default function StockPage() {
                   <RTooltip
                     contentStyle={tooltipContentStyle}
                     labelStyle={{ display: "none" }}
-                    itemStyle={tooltipItemStyle}
                     formatter={(val: number) => [`$${val.toFixed(2)}`, "Price"]}
                   />
                   <Line type="monotone" dataKey="price" stroke={isUp ? SEMANTIC.positiveDeep : SEMANTIC.negativeDeep} strokeWidth={2} dot={false} />
                 </LineChart>
               </ResponsiveContainer>
-              <Provenance source="Yahoo Finance" extra="quotes may be delayed" />
-            </RuleSection>
+            </Card>
           )}
 
           {data.relatedCatalysts.length > 0 && (
-            <RuleSection head="Upcoming catalysts" testId="stock-catalysts">
-              <ul>
+            <Card className="p-5 border-card-border" data-testid="stock-catalysts">
+              <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">Upcoming Catalysts</h2>
+              <div className="space-y-3">
                 {data.relatedCatalysts.map((c) => (
-                  <li key={c.id} className="flex items-start gap-4 py-2.5 border-b border-rule last:border-b-0">
-                    <span className="w-24 flex-shrink-0 text-[12.5px] text-ink-muted tnum">{c.date}</span>
-                    <div className="min-w-0">
-                      <p className="text-[13.5px] font-medium leading-snug text-ink">{c.title}</p>
-                      <p className="mt-0.5 text-[12.5px] leading-relaxed text-ink-muted">{c.thesisImpact.slice(0, 150)}...</p>
+                  <div key={c.id} className="flex items-start gap-3 text-sm">
+                    <Badge className="text-10 font-mono bg-muted/40 text-muted-foreground flex-shrink-0">{c.date}</Badge>
+                    <div>
+                      <p className="font-medium text-foreground">{c.title}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{c.thesisImpact.slice(0, 150)}...</p>
                     </div>
-                  </li>
+                  </div>
                 ))}
-              </ul>
-              <Provenance source="GridTilt catalyst registry" />
-            </RuleSection>
+              </div>
+            </Card>
           )}
         </div>
 
-        <div>
-          <RuleSection head="Sector" testId="sector-context">
-            <Link
-              href={`/sector/${sectorSlug}`}
-              className="text-[13.5px] font-medium text-ink no-underline hover:text-brand-ink"
-              data-testid="link-sector"
-            >
-              {sectorLabel} →
+        <div className="space-y-6">
+          {data.stockData && (
+            <Card className="p-5 border-card-border" data-testid="key-metrics">
+              <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">Key Metrics</h2>
+              <div className="space-y-3">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Market Cap</span>
+                  <span className="font-mono font-semibold">{data.stockData.marketCapDisplay || "N/A"}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">P/E Ratio</span>
+                  <span className="font-mono font-semibold">{data.stockData.pe?.toFixed(1) || "N/A"}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Rev Growth YoY</span>
+                  <span className={`font-mono font-semibold ${(data.stockData.revenueGrowth ?? 0) > 0 ? "text-positive" : "text-negative"}`}>
+                    {data.stockData.revenueGrowth != null ? `${data.stockData.revenueGrowth > 0 ? "+" : ""}${data.stockData.revenueGrowth.toFixed(1)}%` : "N/A"}
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Daily Change</span>
+                  <span className={`font-mono font-semibold ${isUp ? "text-positive" : "text-negative"}`}>
+                    {data.stockData.change != null ? `${isUp ? "+" : ""}$${data.stockData.change.toFixed(2)}` : "--"}
+                  </span>
+                </div>
+              </div>
+            </Card>
+          )}
+
+          <Card className="p-5 border-card-border" data-testid="sector-context">
+            <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">Sector Context</h2>
+            <Link href={`/sector/${sectorSlug}`} className="text-sm text-brand hover:text-brand-2 font-medium" data-testid="link-sector">
+              {SECTOR_LABELS[data.layerKey] || data.layerKey} Sector
             </Link>
-          </RuleSection>
+          </Card>
 
           {data.relatedTickers.length > 0 && (
-            <RuleSection head="Related stocks" testId="related-stocks">
-              <ul>
+            <Card className="p-5 border-card-border" data-testid="related-stocks">
+              <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">Related Stocks</h2>
+              <div className="space-y-2">
                 {data.relatedTickers.map((t) => (
-                  <li key={t} className="border-b border-rule last:border-b-0">
-                    <Link
-                      href={`/stock/${t}`}
-                      className="block py-2 text-[13.5px] text-ink no-underline hover:text-brand-ink"
-                      data-testid={`link-related-${t}`}
-                    >
-                      {t}
-                    </Link>
-                  </li>
+                  <Link
+                    key={t}
+                    href={`/stock/${t}`}
+                    className="block text-sm font-mono text-brand hover:text-brand-2"
+                    data-testid={`link-related-${t}`}
+                  >
+                    ${t}
+                  </Link>
                 ))}
-              </ul>
-            </RuleSection>
+              </div>
+            </Card>
           )}
 
-          <RuleSection head="Tools">
-            <ul>
-              <li className="border-b border-rule">
-                <Link href="/stack" className="block py-2 text-[13.5px] text-ink no-underline hover:text-brand-ink" data-testid="link-tool-stack">
-                  The Stack
-                </Link>
-              </li>
-              <li className="border-b border-rule">
-                <Link href="/portfolio" className="block py-2 text-[13.5px] text-ink no-underline hover:text-brand-ink" data-testid="link-tool-portfolio">
-                  Portfolio Overlay
-                </Link>
-              </li>
-              <li>
-                <Link href="/catalysts" className="block py-2 text-[13.5px] text-ink no-underline hover:text-brand-ink" data-testid="link-tool-catalysts">
-                  Catalyst Tracker
-                </Link>
-              </li>
-            </ul>
-          </RuleSection>
+          <Card className="p-5 border-card-border">
+            <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">Tools</h2>
+            <div className="space-y-2 text-sm">
+              <Link href="/stack" className="block text-brand hover:text-brand-2" data-testid="link-tool-stack">The Stack</Link>
+              <Link href="/portfolio" className="block text-brand hover:text-brand-2" data-testid="link-tool-portfolio">Portfolio Overlay</Link>
+              <Link href="/catalysts" className="block text-brand hover:text-brand-2" data-testid="link-tool-catalysts">Catalyst Tracker</Link>
+            </div>
+          </Card>
         </div>
       </div>
-    </PageShell>
+    </div>
   );
 }

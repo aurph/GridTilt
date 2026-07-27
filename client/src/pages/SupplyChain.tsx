@@ -10,9 +10,8 @@ import {
   MemoryStick, Network, Users, RotateCw,
 } from "lucide-react";
 import { AsOf } from "@/components/Freshness";
-import { PageShell, PageTitle, Provenance } from "@/components/editorial";
 import { SiBitcoin } from "react-icons/si";
-import { BRAND, INK, SURFACE, SEMANTIC, CHART_CHROME } from "@/lib/tokens";
+import { BRAND, INK, SURFACE, SEMANTIC, DATA_QUALITY, CHART_CHROME } from "@/lib/tokens";
 import {
   Tooltip as UITooltip,
   TooltipContent,
@@ -317,7 +316,7 @@ function NetworkGraph({
           const meta = stageMeta[s.id];
           const pillColor = meta ? STATUS_COLOR[meta.status] : null;
           const tip = meta
-            ? `${meta.status}: ${meta.detail}${meta.keyMetric ? ` (${meta.keyMetric})` : ''}`
+            ? `${meta.status.toUpperCase()}: ${meta.detail}${meta.keyMetric ? ` (${meta.keyMetric})` : ''}`
             : undefined;
           return (
             <g key={s.id} data-testid={`stage-label-${s.id}`}>
@@ -733,8 +732,8 @@ function DetailPanel({
         <div className="flex items-center gap-3">
           <Icon style={{ width: 18, height: 18, color: stageColor }} />
           <div>
-            <span className="text-15 font-semibold text-ink">{node.name}</span>
-            <span className="text-11 ml-2" style={{ color: "var(--ink-muted)" }}>
+            <span className="sc-mono text-15 font-bold text-ink">{node.name}</span>
+            <span className="text-11 ml-2 uppercase" style={{ color: INK.faint }}>
               {STAGE_LABELS.find((s) => s.id === node.stage)?.name}
             </span>
           </div>
@@ -745,7 +744,7 @@ function DetailPanel({
       </div>
 
       {node.keyMetric && (
-        <div className="text-11 tnum mb-2" style={{ color: stageColor }}>
+        <div className="sc-mono text-11 mb-2" style={{ color: stageColor }}>
           {node.keyMetric.label}: {node.keyMetric.value}
         </div>
       )}
@@ -757,7 +756,7 @@ function DetailPanel({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
         {upstreamNodes.length > 0 && (
           <div>
-            <div className="sc-section-label">Receives from</div>
+            <div className="sc-section-label" style={{ color: DATA_QUALITY.estimateFlag }}>RECEIVES FROM</div>
             <div className="flex flex-wrap gap-1">
               {upstreamNodes.map((u, i) => (
                 <span
@@ -775,7 +774,7 @@ function DetailPanel({
         )}
         {downstreamNodes.length > 0 && (
           <div>
-            <div className="sc-section-label">Feeds into</div>
+            <div className="sc-section-label" style={{ color: BRAND.secondary }}>FEEDS INTO</div>
             <div className="flex flex-wrap gap-1">
               {downstreamNodes.map((d, i) => (
                 <span
@@ -793,13 +792,13 @@ function DetailPanel({
         )}
       </div>
 
-      <div className="sc-section-label">Securities</div>
+      <div className="sc-section-label">SECURITIES</div>
       <div className="sc-stock-table">
         <div className="sc-stock-header">
-          <span className="sc-stock-col-ticker">Ticker</span>
-          <span className="sc-stock-col-name">Name</span>
-          <span className="sc-stock-col-price">Price</span>
-          <span className="sc-stock-col-chg">Chg %</span>
+          <span className="sc-stock-col-ticker">TICKER</span>
+          <span className="sc-stock-col-name">NAME</span>
+          <span className="sc-stock-col-price">PRICE</span>
+          <span className="sc-stock-col-chg">CHG%</span>
         </div>
         {node.companies.map((c) => {
           const stock = stockMap[c.ticker];
@@ -818,11 +817,11 @@ function DetailPanel({
               onClick={() => onNavigate(`/stock/${c.ticker}`)}
               data-testid={`company-${c.ticker}`}
             >
-              <span className="sc-stock-col-ticker font-semibold text-ink">{c.ticker}</span>
+              <span className="sc-stock-col-ticker sc-mono font-bold text-ink">{c.ticker}</span>
               <span className="sc-stock-col-name text-ink-faint truncate">{c.name}</span>
-              <span className="sc-stock-col-price text-ink-muted">{price ? `$${price.toFixed(2)}` : "--"}</span>
-              <span className={`sc-stock-col-chg font-medium ${chgColor} inline-flex items-center justify-end gap-1`}>
-                {hasLiveChg ? `${chg! >= 0 ? "+" : "−"}${Math.abs(chg!).toFixed(2)}%` : "--"}
+              <span className="sc-stock-col-price sc-mono text-ink-muted">{price ? `$${price.toFixed(2)}` : "--"}</span>
+              <span className={`sc-stock-col-chg sc-mono font-medium ${chgColor} inline-flex items-center justify-end gap-1`}>
+                {hasLiveChg ? `${chg! >= 0 ? "+" : ""}${chg!.toFixed(2)}%` : "--"}
                 {stock?.stale && (
                   <UITooltip>
                     <TooltipTrigger asChild>
@@ -905,53 +904,50 @@ export default function SupplyChain({ embedded = false }: { embedded?: boolean; 
 
   const activeNodeData = activeNode ? supplyNodes.find((n) => n.id === activeNode) : null;
 
-  // The topbar, graph, legend, and detail panel are identical embedded and
-  // standalone; only the page lead differs (the host page owns the title
-  // when this renders inside The Stack's flow view).
-  const inner = (
-    <>
+  return (
+    // Embedded (The Stack flow view): the host owns page scroll/padding.
+    <div className={embedded ? "sc-page sc-page-embedded" : "sc-page"} data-testid="supply-chain-page" onClick={() => setActiveNode(null)}>
       <div className="sc-topbar" data-testid="sc-summary-bar">
         <div className="sc-topbar-left">
-          <span className="text-15 font-semibold text-ink">Supply chain</span>
-          <span className="text-[12.5px] text-ink-muted">AI power infrastructure</span>
+          <span className="sc-mono text-13 font-bold" style={{ color: BRAND.primary }}>SUPPLY CHAIN</span>
+          <span className="sc-topbar-sep">|</span>
+          <span className="sc-mono text-11 text-ink">AI Power Infrastructure</span>
         </div>
         <div className="sc-topbar-right">
-          <span className="flex items-baseline gap-1.5">
-            <span className="text-[12px] text-ink-muted">Nodes</span>
-            <span className="text-[12.5px] font-semibold text-ink tnum">{supplyNodes.length}</span>
-          </span>
-          <span className="flex items-baseline gap-1.5">
-            <span className="text-[12px] text-ink-muted">Connections</span>
-            <span className="text-[12.5px] font-semibold text-ink tnum">{supplyLinks.length}</span>
-          </span>
-          <span className="flex items-baseline gap-1.5">
-            <span className="text-[12px] text-ink-muted">Securities</span>
-            <span className="text-[12.5px] font-semibold text-ink tnum">{totalCompanies}</span>
-          </span>
+          <span className="sc-mono text-10" style={{ color: INK.faint }}>NODES</span>
+          <span className="sc-mono text-11 text-ink">{supplyNodes.length}</span>
+          <span className="sc-topbar-sep">|</span>
+          <span className="sc-mono text-10" style={{ color: INK.faint }}>CONNECTIONS</span>
+          <span className="sc-mono text-11 text-ink">{supplyLinks.length}</span>
+          <span className="sc-topbar-sep">|</span>
+          <span className="sc-mono text-10" style={{ color: INK.faint }}>SECURITIES</span>
+          <span className="sc-mono text-11 text-ink">{totalCompanies}</span>
+          <span className="sc-topbar-sep">|</span>
           {isError ? (
             <button
               onClick={(e) => { e.stopPropagation(); refetch(); }}
-              className="inline-flex items-center gap-1.5 text-[12px] text-negative hover:text-negative-deep transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-sm border border-negative/40 bg-negative/10 px-1.5 py-0.5 text-9 font-mono uppercase tracking-wide text-negative hover:border-negative/70 transition-colors"
               title="Live quotes and bottleneck statuses failed to load - the chain diagram itself is unaffected. Click to retry."
               data-testid="sc-quotes-retry"
             >
               <RotateCw className="h-2.5 w-2.5" />
-              Quotes offline · retry
+              quotes offline · retry
             </button>
           ) : (
             <AsOf updatedAt={dataUpdatedAt} intervalMs={5 * 60 * 1000} />
           )}
+          <span className="sc-topbar-sep">|</span>
           <div className="sc-view-toggle" data-testid="sc-view-toggle" onClick={(e) => e.stopPropagation()}>
             <button
               className={`sc-view-btn ${viewMode === "network" ? "sc-view-btn-active" : ""}`}
               onClick={() => setView("network")}
               data-testid="view-network"
-            >Network</button>
+            >network</button>
             <button
               className={`sc-view-btn ${viewMode === "flow" ? "sc-view-btn-active" : ""}`}
               onClick={() => setView("flow")}
               data-testid="view-flow"
-            >Flow</button>
+            >flow</button>
           </div>
         </div>
       </div>
@@ -982,8 +978,6 @@ export default function SupplyChain({ embedded = false }: { embedded?: boolean; 
         <span className="sc-legend-hint">x = supply chain stage · node size = connection count · click a node to explore. scroll to zoom. double-click to reset.</span>
       </div>
 
-      <Provenance source="GridTilt supply-chain registry" extra="quotes and bottleneck statuses from Yahoo Finance" />
-
       {activeNodeData && (
         <div onClick={(e) => e.stopPropagation()}>
           <DetailPanel
@@ -994,23 +988,6 @@ export default function SupplyChain({ embedded = false }: { embedded?: boolean; 
             onSelectNode={setActiveNode}
           />
         </div>
-      )}
-    </>
-  );
-
-  return (
-    // Embedded (The Stack flow view): the host owns page scroll/padding and
-    // the page lead - no PageTitle here in that case.
-    <div className={embedded ? "sc-page sc-page-embedded" : "sc-page"} data-testid="supply-chain-page" onClick={() => setActiveNode(null)}>
-      {embedded ? (
-        inner
-      ) : (
-        <PageShell wide>
-          <PageTitle
-            title="Supply chain"
-          />
-          {inner}
-        </PageShell>
       )}
     </div>
   );

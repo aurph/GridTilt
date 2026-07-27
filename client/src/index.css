@@ -2,86 +2,87 @@
 @tailwind components;
 @tailwind utilities;
 
-/*
- * GridTilt editorial system: warm paper, warm ink, brand orange as the one
- * graphic accent. Light only. Spec: docs/superpowers/specs/
- * 2026-07-23-editorial-redesign-design.md
- */
+/* DARK MODE ONLY - GridTilt terminal theme: warm charcoal + orange */
 :root {
-  --button-outline: rgba(255, 255, 255, .18);
-  --badge-outline: rgba(255, 255, 255, .10);
-  --opaque-button-border-intensity: -6;
-  --elevate-1: rgba(255, 255, 255, .035);
-  --elevate-2: rgba(255, 255, 255, .07);
+  --button-outline: rgba(255,255,255, .10);
+  --badge-outline: rgba(255,255,255, .05);
+  --opaque-button-border-intensity: 8;
+  --elevate-1: rgba(255,255,255, .035);
+  --elevate-2: rgba(255,255,255, .07);
 
-  /* Page ground: warm cream paper */
-  --background: 0 0% 6%;
-  --foreground: 60 3% 95%;
+  /* Background: warm dark charcoal (no blue tint) */
+  --background: 20 5% 7%;
+  --foreground: 30 8% 92%;
 
-  /* Hairline rules */
-  --border: 0 0% 15%;
+  /* Borders: warm gray, not blue-gray */
+  --border: 20 5% 17%;
 
-  /* Plates: slightly lighter than the page, like coated stock */
-  --card: 0 0% 9%;
-  --card-foreground: 60 3% 95%;
-  --card-border: 0 0% 15%;
+  /* Cards: dark charcoal, barely distinct from background */
+  --card: 20 4% 10%;
+  --card-foreground: 30 8% 92%;
+  --card-border: 20 4% 14%;
 
-  /* Sidebar slots kept for the ui/ fork; mapped to paper equivalents */
-  --sidebar: 0 0% 9%;
-  --sidebar-foreground: 60 3% 95%;
-  --sidebar-border: 0 0% 15%;
-  --sidebar-primary: 30 100% 31%;
-  --sidebar-primary-foreground: 0 0% 6%;
-  --sidebar-accent: 0 0% 13%;
-  --sidebar-accent-foreground: 60 3% 95%;
-  --sidebar-ring: 30 100% 31%;
+  /* Sidebar: slightly darker than background */
+  --sidebar: 20 5% 8%;
+  --sidebar-foreground: 30 8% 92%;
+  --sidebar-border: 20 5% 13%;
+  --sidebar-primary: 28 95% 53%;
+  --sidebar-primary-foreground: 28 95% 98%;
+  --sidebar-accent: 20 4% 14%;
+  --sidebar-accent-foreground: 30 8% 92%;
+  --sidebar-ring: 28 95% 53%;
 
-  --popover: 0 0% 11%;
-  --popover-foreground: 60 3% 95%;
-  --popover-border: 0 0% 15%;
+  /* Popover: warm charcoal */
+  --popover: 20 4% 11%;
+  --popover-foreground: 30 8% 92%;
+  --popover-border: 20 4% 16%;
 
-  /* Primary: brand orange, graphic use; ink text on it (white fails contrast) */
-  --primary: 30 100% 47%;
-  --primary-foreground: 0 0% 6%;
+  /* Primary: orange (brand) */
+  --primary: 28 95% 53%;
+  --primary-foreground: 28 95% 98%;
 
-  --secondary: 0 0% 13%;
-  --secondary-foreground: 60 3% 95%;
-  --muted: 0 0% 13%;
-  --muted-foreground: 60 2% 66%;
+  /* Secondary / muted: warm gray */
+  --secondary: 20 5% 17%;
+  --secondary-foreground: 30 8% 92%;
+  --muted: 20 4% 14%;
+  --muted-foreground: 20 4% 50%;
 
-  --accent: 0 0% 13%;
-  --accent-foreground: 60 3% 95%;
+  /* Accent: orange */
+  --accent: 36 100% 47%;
+  --accent-foreground: 36 100% 10%;
 
-  --destructive: 5 61% 44%;
-  --destructive-foreground: 0 0% 6%;
+  /* Destructive */
+  --destructive: 0 75% 50%;
+  --destructive-foreground: 0 75% 98%;
 
-  --input: 0 0% 15%;
-  --ring: 30 100% 31%;
+  /* Input / ring */
+  --input: 20 5% 19%;
+  --ring: 28 95% 53%;
 
-  /* Legacy shadcn chart slots (few consumers; real palette is --series-*) */
-  --chart-1: 30 100% 47%;
-  --chart-2: 208 52% 35%;
-  --chart-3: 146 61% 30%;
-  --chart-4: 288 25% 43%;
-  --chart-5: 5 61% 44%;
+  /* Chart palette */
+  --chart-1: 28 95% 53%;
+  --chart-2: 36 100% 50%;
+  --chart-3: 160 70% 45%;
+  --chart-4: 270 65% 65%;
+  --chart-5: 0 75% 55%;
 
   /* Typography */
-  --font-sans: "Archivo", -apple-system, "Segoe UI", sans-serif;
-  --font-serif: "Archivo", -apple-system, sans-serif;
-  --font-mono: ui-monospace, "SF Mono", monospace;
+  --font-sans: Inter, sans-serif;
+  --font-serif: "Source Serif 4", Georgia, serif;
+  --font-mono: "JetBrains Mono", monospace;
 
-  /* Print corners: near-square */
-  --radius: 0rem;
+  /* Slightly sharper corners - more terminal, less consumer app */
+  --radius: 0.35rem;
 
-  /* Shadows: faint, warm-ink based; paper barely floats */
-  --shadow-2xs: 0px 1px 2px 0px rgba(0, 0, 0, .35);
-  --shadow-xs: 0px 1px 3px 0px rgba(0, 0, 0, .08);
-  --shadow-sm: 0px 2px 4px 0px rgba(0, 0, 0, .40), 0px 1px 2px -1px rgba(0, 0, 0, .35);
-  --shadow: 0px 3px 6px 0px rgba(0, 0, 0, .09), 0px 2px 4px -1px rgba(0, 0, 0, .35);
-  --shadow-md: 0px 4px 10px 0px rgba(0, 0, 0, .10), 0px 2px 4px -1px rgba(0, 0, 0, .35);
-  --shadow-lg: 0px 8px 18px 0px rgba(0, 0, 0, .12), 0px 3px 6px -1px rgba(0, 0, 0, .08);
-  --shadow-xl: 0px 12px 24px 0px rgba(0, 0, 0, .14), 0px 6px 12px -1px rgba(0, 0, 0, .08);
-  --shadow-2xl: 0px 16px 32px 0px rgba(0, 0, 0, .16);
+  /* Shadows (deeper for dark charcoal bg) */
+  --shadow-2xs: 0px 1px 2px 0px rgba(0,0,0,.5);
+  --shadow-xs: 0px 2px 4px 0px rgba(0,0,0,.5);
+  --shadow-sm: 0px 2px 4px 0px rgba(0,0,0,.5), 0px 1px 2px -1px rgba(0,0,0,.6);
+  --shadow: 0px 4px 8px 0px rgba(0,0,0,.5), 0px 2px 4px -1px rgba(0,0,0,.6);
+  --shadow-md: 0px 6px 12px 0px rgba(0,0,0,.6), 0px 3px 6px -1px rgba(0,0,0,.6);
+  --shadow-lg: 0px 8px 16px 0px rgba(0,0,0,.6), 0px 4px 8px -1px rgba(0,0,0,.7);
+  --shadow-xl: 0px 12px 24px 0px rgba(0,0,0,.7), 0px 6px 12px -1px rgba(0,0,0,.7);
+  --shadow-2xl: 0px 16px 32px 0px rgba(0,0,0,.8);
   --tracking-normal: 0em;
   --spacing: 0.25rem;
 
@@ -95,86 +96,76 @@
 }
 
 /*
- * GridTilt data tokens - single source of truth for every color, size, and
- * chart value. TS mirror for chart code: client/src/lib/tokens.ts - keep in
- * sync (enforced by tokens-sync.test.ts).
- *
- * Surface semantics on paper: base = page ground, raised = plate (lighter,
- * closer to the reader), sunken = well (darker), overlay = popover stock.
+ * GridTilt data tokens (Lake 1)
+ * Single source of truth for every color, size, and chart value in the
+ * dashboard. TS mirror for chart code: client/src/lib/tokens.ts - keep in sync.
+ * The Swiss homepage (/) has its own isolated contract in styles/anchor.css.
  */
 :root {
-  --surface-sunken: #161616;
-  --surface-base: #101010;
-  --surface-raised: #161616;
-  --surface-overlay: #161616;
-  --border-subtle: rgba(255, 255, 255, 0.10);
-  --border-strong: rgba(255, 255, 255, 0.22);
+  /* Surface scale - 4 elevations, dark only */
+  --surface-sunken: #0A0A08;
+  --surface-base: #0E0E0C;
+  --surface-raised: #1A1917;
+  --surface-overlay: #26241F;
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-strong: rgba(255, 255, 255, 0.14);
 
-  /* Editorial aliases (same system, print vocabulary) */
-  --paper: #101010;
-  --paper-shade: #161616;
-  --paper-deep: #1D1D1C;
-  --rule: #262626;
-  --rule-strong: #3E3E3C;
-
-  /* Brand: #F07800 is graphic-only; --brand-2 is orange as TEXT (AA on paper) */
+  /* Brand */
   --brand: #F07800;
-  --brand-2: #F58A1F;
-  --brand-ink: #F58A1F;
-  --brand-glow: rgba(240, 120, 0, 0.14);
-  --brand-wash: rgba(240, 120, 0, 0.07);
+  --brand-2: #F0A500;
+  --brand-glow: rgba(240, 120, 0, 0.12);
+  --brand-wash: rgba(240, 120, 0, 0.05);
 
-  /* Ink scale (text on paper) */
-  --ink: #F2F2F0;
-  --ink-secondary: #ABABA6;
-  --ink-muted: #7E7E79;
-  --ink-faint: #5C5C58;
+  /* Ink scale (text on dark surfaces) */
+  --ink: #F2F1ED;
+  --ink-secondary: #B0AEA6;
+  --ink-muted: #8E8B84;
+  --ink-faint: #716E67;
 
   /* Semantic - state, never series identity */
-  --positive: #3FA36A;
-  --positive-deep: #2E8A55;
-  --negative: #E05C4B;
-  --negative-deep: #C24F3F;
-  --warning: #C99A2E;
-  --critical: #D9756A;
-  --info: #5A93DE;
+  --positive: #4ade80;
+  --positive-deep: #22c55e;
+  --negative: #f87171;
+  --negative-deep: #ef4444;
+  --warning: #eab308;
+  --critical: #dc2626;
+  --info: #4dabf7;
 
   /* Data quality - sourced vs estimated vs synthetic fill */
-  --estimate: #C99A2E;
+  --estimate: #d4a843;
   --dq-estimated-opacity: 0.55;
   --dq-synthetic-opacity: 0.35;
 
-  /* Categorical series - fixed order, validated for the paper ground
-     (dataviz six-checks: worst adjacent CVD dE 8.5 protan, all >= 3:1 vs
-     #101010). Assign in order, never cycle; >4 series need direct labels.
-     Do not reorder: order IS the CVD-safety mechanism. */
-  --series-1: #5A93DE;
-  --series-2: #BC8626;
-  --series-3: #34A87E;
-  --series-4: #8F84E6;
-  --series-5: #DE5C8E;
-  --series-6: #3B9EC4;
-  --series-7: #E2652A;
-  --series-8: #47A981;
-  --series-9: #B372C6;
-  --series-10: #AD7D1D;
+  /* Categorical series - fixed order, CVD-validated (min adjacent dE 13.9
+     on both surfaces). Assign in order, never cycle; >4 series need direct
+     labels. Do not reorder: the order IS the colorblind-safety mechanism. */
+  --series-1: #3987e5;  /* blue */
+  --series-2: #c98500;  /* amber */
+  --series-3: #199e70;  /* teal */
+  --series-4: #9085e9;  /* violet */
+  --series-5: #d55181;  /* magenta */
+  --series-6: #1f9fb5;  /* cyan */
+  --series-7: #d95926;  /* rust */
+  --series-8: #3d9e3d;  /* green */
+  --series-9: #bd6bce;  /* pink */
+  --series-10: #b07d3f; /* brown */
 
   /* Chart chrome */
-  --chart-axis: #7E7E79;
-  --chart-tick: #ABABA6;
-  --chart-grid: rgba(255, 255, 255, 0.08);
-  --chart-crosshair: rgba(255, 255, 255, 0.30);
+  --chart-axis: #55534E;
+  --chart-tick: #8E8B84;
+  --chart-grid: rgba(255, 255, 255, 0.05);
+  --chart-crosshair: rgba(255, 255, 255, 0.25);
   --chart-ref-line: rgba(255, 255, 255, 0.18);
-  --chart-context: #5C5C58;
 
   /* Focus + motion */
-  --focus-ring-color: #F58A1F;
+  --focus-ring-color: #F0A500;
   --focus-ring-width: 2px;
   --duration-fast: 120ms;
   --duration-base: 200ms;
   --duration-slow: 350ms;
 }
 
+/* Force dark mode always */
 html {
   color-scheme: dark;
 }
@@ -188,24 +179,15 @@ html {
     @apply font-sans antialiased bg-background text-foreground;
   }
 
-  /* Single-family type system: Archivo everywhere. The historical
-     .font-serif class is now the DISPLAY cut - heavy weight, tight
-     tracking - so every headline and pull figure flips with this one
-     rule. Body and UI run 400-600 through the normal font-* utilities. */
-  .font-serif {
-    font-variation-settings: "wght" 640;
-    letter-spacing: -0.025em;
-  }
-
-  /* Tabular figures wherever numbers sit in columns, so they never jitter */
+  /* Tabular figures on all data type so numbers never jitter on refresh */
+  .font-mono,
+  code,
   td,
-  th,
-  .tnum,
-  code {
+  th {
     font-variant-numeric: tabular-nums;
   }
 
-  /* Visible keyboard focus on every interactive element.
+  /* Visible keyboard focus on every interactive element (Lake 7E).
      :focus-visible only - mouse clicks do not ring. */
   :focus-visible {
     outline: var(--focus-ring-width) solid var(--focus-ring-color);
@@ -214,28 +196,88 @@ html {
   }
 }
 
-/* Reduced motion: kill decorative animation and long transitions for users
-   who asked for less motion. Data still updates instantly. */
+/* Reduced motion (Lake 7E): kill decorative animation and long transitions
+   for users who asked for less motion. Data still updates instantly. */
 @media (prefers-reduced-motion: reduce) {
+  .ticker-scroll,
+  .live-pulse::before,
+  .carousel-card-enter,
+  .animate-ping,
+  .animate-pulse {
+    animation: none !important;
+  }
   *,
   *::before,
   *::after {
-    animation: none !important;
     transition-duration: 0.01ms !important;
   }
 }
 
-/* Chart tooltip: paper plate */
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: hsl(var(--background));
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground));
+}
+
+/* Sidebar nav hover */
+.sidebar-nav-link:not(.sidebar-nav-active):hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+.sidebar-nav-link:not(.sidebar-nav-active):hover .sidebar-nav-icon-box {
+  background: rgba(255, 255, 255, 0.06);
+}
+.sidebar-nav-link:not(.sidebar-nav-active):hover .sidebar-nav-title {
+  color: #fff;
+}
+
+/* Animated pulse for live indicators */
+@keyframes pulse-ring {
+  0% { transform: scale(0.8); opacity: 1; }
+  100% { transform: scale(2); opacity: 0; }
+}
+.live-pulse::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  animation: pulse-ring 1.5s ease-out infinite;
+}
+
+/* Chart tooltip custom style */
 .recharts-tooltip-wrapper .recharts-default-tooltip {
-  background: var(--surface-overlay) !important;
-  border: 1px solid var(--rule) !important;
-  border-radius: 2px !important;
-  padding: 10px 12px !important;
-  box-shadow: var(--shadow-md) !important;
+  background: hsl(var(--card)) !important;
+  border: 1px solid hsl(var(--card-border)) !important;
+  border-radius: 8px !important;
+  padding: 12px !important;
+}
+
+/* News ticker scroll animation */
+@keyframes ticker-scroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.ticker-scroll {
+  display: inline-block;
+  animation: ticker-scroll 160s linear infinite;
+  padding-left: 1rem;
+}
+.ticker-scroll:hover {
+  animation-play-state: paused;
 }
 
 /**
- * Elevation system (shadcn house fork depends on these utilities)
+ * Elevation system
  */
 @layer utilities {
   input[type="search"]::-webkit-search-cancel-button {
@@ -308,76 +350,11 @@ html {
   }
 }
 
-/* The house rule system, modern cut. Weight still carries meaning, with
-   clean single strokes only:
-   - rule-scotch (historical name) = page-level: one confident ink stroke
-   - rule-thickthin (historical name) = section openings: strong hairline
-   - hairline (border-rule) = rows and internal divisions */
-.rule-scotch {
-  border-top: 1px solid var(--rule-strong);
-}
-.rule-thickthin {
-  border-top: 1px solid var(--rule-strong);
+.sc-mono {
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', 'Consolas', monospace;
+  letter-spacing: 0.01em;
 }
 
-/* The tilt mark as a recurring glyph: two slanted strokes in brand orange.
-   Use ::before on .tilt-bullet list items or standalone .tilt-glyph. */
-.tilt-glyph {
-  display: inline-block;
-  width: 0.7em;
-  height: 0.62em;
-  background:
-    linear-gradient(104deg, transparent 24%, var(--brand) 24%, var(--brand) 42%, transparent 42%,
-      transparent 56%, var(--brand) 56%, var(--brand) 74%, transparent 74%);
-  transform: translateY(0.02em);
-}
-
-/* Print table: hairline horizontal rules only, small-caps column heads,
-   right-aligned tabular figures via td.num / th.num. */
-.print-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-.print-table thead th {
-  font-size: 11.5px;
-  font-weight: 600;
-  font-variant-caps: all-small-caps;
-  letter-spacing: 0.04em;
-  color: var(--ink-muted);
-  text-align: left;
-  padding: 5px 10px;
-  border-bottom: 1px solid var(--rule-strong);
-  white-space: nowrap;
-}
-.print-table tbody td {
-  font-size: 13.5px;
-  padding: 8px 10px;
-  border-bottom: 1px solid var(--rule);
-  vertical-align: baseline;
-}
-.print-table tbody tr:last-child td {
-  border-bottom-color: var(--rule-strong);
-}
-.print-table tbody tr[data-href],
-.print-table tbody tr.row-link {
-  cursor: pointer;
-}
-.print-table tbody tr:hover {
-  background: var(--paper-shade);
-}
-.print-table th.num,
-.print-table td.num {
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-}
-.print-table td.shrink,
-.print-table th.shrink {
-  width: 1%;
-  white-space: nowrap;
-}
-
-/* Supply-chain flow view: structural rules. Type inherits the app sans;
-   color flips ride on the token values above. */
 .sc-page {
   width: 100%;
   min-height: 100vh;
@@ -399,9 +376,11 @@ html {
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 8px 16px;
-  padding: 8px 0;
-  border-bottom: 1px solid var(--rule);
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--surface-base);
+  border: 1px solid var(--border-subtle);
+  border-radius: 3px;
   margin-bottom: 16px;
 }
 
@@ -409,15 +388,20 @@ html {
 .sc-topbar-right {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
+}
+
+.sc-topbar-sep {
+  color: var(--ink-faint);
+  font-size: 11px;
 }
 
 .sc-graph-container {
   position: relative;
   width: 100%;
   background: var(--surface-base);
-  border: 1px solid var(--rule);
-  border-radius: 2px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 3px;
   overflow: hidden;
 }
 
@@ -443,29 +427,35 @@ html {
 }
 
 .sc-stage-label {
-  font-size: 11px;
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 10px;
   font-weight: 600;
-  letter-spacing: 0.04em;
-  fill: var(--ink-secondary);
+  letter-spacing: 2px;
+  fill: var(--brand);
 }
 
 .sc-node-label {
-  font-size: 11px;
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 10px;
   font-weight: 600;
 }
 
 .sc-node-sublabel {
-  font-size: 9px;
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 8px;
 }
 
 .sc-link-label {
-  font-size: 9px;
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 8px;
   fill: var(--ink-muted);
 }
 
 .sc-stage-pill-text {
-  font-size: 10px;
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 9px;
   font-weight: 600;
+  letter-spacing: 1px;
 }
 
 .sc-legend {
@@ -473,11 +463,14 @@ html {
   align-items: center;
   flex-wrap: wrap;
   gap: 14px;
-  padding: 8px 0;
+  padding: 8px 12px;
   margin-top: 12px;
-  border-top: 1px solid var(--rule);
-  font-size: 12px;
-  color: var(--ink-secondary);
+  background: var(--surface-base);
+  border: 1px solid var(--border-subtle);
+  border-radius: 3px;
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 10px;
+  color: var(--ink-faint);
 }
 .sc-legend-swatch {
   display: inline-block;
@@ -489,29 +482,33 @@ html {
 }
 .sc-legend-hint {
   margin-left: auto;
-  color: var(--ink-muted);
+  color: var(--ink-faint);
+  letter-spacing: 0.5px;
 }
 
 .sc-view-toggle {
   display: inline-flex;
-  gap: 12px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 3px;
+  overflow: hidden;
 }
 .sc-view-btn {
-  font-size: 13px;
-  padding: 3px 0;
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 10px;
+  letter-spacing: 1px;
+  padding: 3px 10px;
   background: transparent;
-  color: var(--ink-secondary);
+  color: var(--ink-faint);
   border: none;
-  border-bottom: 2px solid transparent;
   cursor: pointer;
-  transition: color 0.15s, border-color 0.15s;
+  transition: color 0.15s, background 0.15s;
 }
 .sc-view-btn:hover {
   color: var(--ink);
 }
 .sc-view-btn-active {
-  color: var(--brand-ink);
-  border-bottom-color: var(--brand);
+  background: var(--brand-glow);
+  color: var(--brand);
 }
 
 .sc-node-hidden {
@@ -560,9 +557,9 @@ html {
   width: 100%;
   max-width: 900px;
   margin: 16px auto 0;
-  background: var(--surface-raised);
-  border: 1px solid var(--rule);
-  border-radius: 2px;
+  background: var(--surface-base);
+  border: 1px solid var(--brand-glow);
+  border-radius: 4px;
   padding: 24px;
   animation: scSlideDown 0.3s ease-out;
 }
@@ -574,23 +571,26 @@ html {
 
 .sc-divider {
   height: 1px;
-  background: var(--rule);
+  background: var(--border-subtle);
 }
 
 .sc-section-label {
-  font-size: 12px;
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 10px;
   font-weight: 600;
-  color: var(--ink-muted);
+  letter-spacing: 0.08em;
+  color: var(--ink-faint);
   margin-bottom: 8px;
 }
 
 .sc-flow-tag {
   display: inline-block;
-  font-size: 12px;
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 11px;
   color: var(--ink-secondary);
-  background: var(--paper-shade);
-  border: 1px solid var(--rule);
-  border-radius: 2px;
+  background: var(--surface-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: 3px;
   padding: 3px 8px;
 }
 .sc-flow-tag-clickable {
@@ -598,12 +598,13 @@ html {
   transition: border-color 0.2s, color 0.2s;
 }
 .sc-flow-tag-clickable:hover {
-  border-color: var(--rule-strong);
-  color: var(--brand-ink);
+  border-color: color-mix(in srgb, var(--brand) 40%, transparent);
+  color: var(--brand);
 }
 
 .sc-stock-table {
-  border-top: 1px solid var(--rule-strong);
+  border: 1px solid var(--border-subtle);
+  border-radius: 2px;
   overflow: hidden;
 }
 
@@ -612,12 +613,12 @@ html {
   grid-template-columns: 70px 1fr 90px 80px;
   gap: 0;
   padding: 6px 10px;
-  font-size: 11px;
+  background: var(--surface-base);
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 9px;
   font-weight: 600;
-  font-variant-caps: all-small-caps;
-  letter-spacing: 0.03em;
-  color: var(--ink-muted);
-  border-bottom: 1px solid var(--rule);
+  letter-spacing: 0.08em;
+  color: var(--ink-faint);
 }
 
 .sc-stock-row {
@@ -625,20 +626,24 @@ html {
   grid-template-columns: 70px 1fr 90px 80px;
   gap: 0;
   padding: 7px 10px;
-  font-size: 13px;
+  font-size: 11px;
   cursor: pointer;
-  border-bottom: 1px solid var(--border-subtle);
+  border-top: 1px solid var(--border-subtle);
   transition: background 0.12s;
 }
 
 .sc-stock-row:hover {
-  background: var(--paper-shade);
+  background: var(--brand-wash);
 }
 
 .sc-stock-col-ticker { text-align: left; }
 .sc-stock-col-name { text-align: left; overflow: hidden; }
-.sc-stock-col-price { text-align: right; font-variant-numeric: tabular-nums; }
-.sc-stock-col-chg { text-align: right; font-variant-numeric: tabular-nums; }
+.sc-stock-col-price { text-align: right; }
+.sc-stock-col-chg { text-align: right; }
+
+.custom-scrollbar::-webkit-scrollbar { width: 4px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
 
 @media (max-width: 1023px) {
   .sc-topbar {
@@ -670,12 +675,45 @@ html {
   }
   .sc-stock-header {
     grid-template-columns: 55px 1fr 70px 65px;
-    font-size: 10px;
+    font-size: 8px;
     padding: 5px 8px;
   }
   .sc-stock-row {
     grid-template-columns: 55px 1fr 70px 65px;
-    font-size: 12px;
+    font-size: 10px;
     padding: 6px 8px;
   }
+}
+
+@keyframes carousel-slide-in {
+  0% { opacity: 0; transform: translateY(8px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.carousel-card-enter {
+  animation: carousel-slide-in 0.35s ease-out forwards;
+}
+
+.feature-preview-img {
+  border-radius: 4px;
+  border: 1px solid hsl(20 5% 17%);
+  object-fit: cover;
+  object-position: center;
+  width: 100%;
+  height: 80px;
+  margin-bottom: 12px;
+  opacity: 0.85;
+  transition: opacity 0.2s ease;
+  display: block;
+  background-color: hsl(20 4% 10%);
+}
+
+@media (max-width: 768px) {
+  .feature-preview-img {
+    height: 100px;
+  }
+}
+
+.group:hover .feature-preview-img {
+  opacity: 1;
 }
