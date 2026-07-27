@@ -147,10 +147,11 @@ export function FrontPage() {
 
   return (
     <PageShell>
-      {/* Lead band: the Brief + markets today */}
-      <div className="grid gap-8 lg:grid-cols-[1.9fr_1fr] pt-7 sm:pt-9">
+      {/* Lead band: the Brief + markets today, broadsheet proportions */}
+      <div className="grid gap-8 lg:grid-cols-[2.1fr_1fr] pt-6 sm:pt-8">
         <article data-testid="front-lead">
-          <p className="text-[12.5px] font-semibold text-brand-ink mb-2">
+          <p className="mb-2.5 flex items-center gap-1.5 text-[13px] font-semibold text-brand-ink">
+            <span className="tilt-glyph" aria-hidden />
             The Buildout Brief
             {brief && (
               <span className="font-normal text-ink-muted">
@@ -160,10 +161,10 @@ export function FrontPage() {
           </p>
           {brief ? (
             <>
-              <h1 className="font-serif font-medium text-[30px] sm:text-[38px] leading-[1.08] tracking-tight text-ink max-w-[24ch]">
+              <h1 className="font-serif font-medium text-[42px] sm:text-[64px] leading-[0.97] tracking-[-0.02em] text-ink max-w-[18ch]">
                 {brief.title.replace(/,? (— )?week of.*$/, "")}
               </h1>
-              <p className="mt-3 max-w-[62ch] font-serif text-[17px] leading-relaxed text-ink-secondary">
+              <p className="mt-4 max-w-[58ch] font-serif text-[18px] sm:text-[19px] leading-[1.55] text-ink">
                 {brief.summary}
               </p>
               {clusters && <BuildoutBar metrics={clusters} />}
@@ -218,9 +219,10 @@ export function FrontPage() {
         </aside>
       </div>
 
-      {/* Key numbers */}
-      <div className="mt-9 border-y-2 border-rule-strong py-5" data-testid="front-key-numbers">
-        <div className="grid grid-cols-2 gap-x-6 gap-y-5 lg:grid-cols-4">
+      {/* Key numbers: the figures band under a Scotch rule, column rules
+          between figures like a broadsheet stats strip */}
+      <div className="mt-9 rule-scotch border-b border-rule pt-5 pb-5" data-testid="front-key-numbers">
+        <div className="grid grid-cols-2 gap-x-6 gap-y-5 lg:grid-cols-4 lg:divide-x lg:divide-rule lg:[&>div+div]:pl-6">
           <div>
             <PullStat
               label="Operational AI power"
@@ -273,19 +275,24 @@ export function FrontPage() {
         >
           {news && news.length > 0 ? (
             <ul>
-              {news.slice(0, 6).map((n) => (
-                <li key={n.url} className="border-b border-rule py-2.5 last:border-b-0">
-                  <a
-                    href={n.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-[14px] leading-snug text-ink no-underline hover:text-brand-ink"
-                  >
-                    {n.headline}
-                  </a>
-                  <p className="mt-1 text-[12px] text-ink-muted">
-                    {n.source} · {fmtTimeAgo(n.publishedAt)}
-                  </p>
+              {news.slice(0, 6).map((n, i) => (
+                <li key={n.url} className="flex gap-3 border-b border-rule py-2.5 last:border-b-0">
+                  <span className="w-5 shrink-0 pt-px text-right font-serif text-[17px] leading-none text-ink-faint tnum" aria-hidden>
+                    {i + 1}
+                  </span>
+                  <span className="min-w-0">
+                    <a
+                      href={n.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[14px] leading-snug text-ink no-underline hover:text-brand-ink"
+                    >
+                      {n.headline}
+                    </a>
+                    <p className="mt-1 text-[12px] text-ink-muted">
+                      {n.source} · {fmtTimeAgo(n.publishedAt)}
+                    </p>
+                  </span>
                 </li>
               ))}
             </ul>
@@ -325,27 +332,35 @@ export function FrontPage() {
         </RuleSection>
       </div>
 
-      {/* Section directory */}
-      <RuleSection head="In this publication" testId="front-directory">
-        <div className="grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2 lg:grid-cols-4">
-          {SECTION_DIRECTORY.map((s) => (
-            <Link
-              key={s.href}
-              href={s.href}
-              className="group no-underline"
-              data-testid={`front-directory-${s.label.toLowerCase().replace(/\s+/g, "-")}`}
-            >
-              <p className="text-[14.5px] font-semibold text-ink group-hover:text-brand-ink">
-                {s.label} <span aria-hidden>→</span>
-              </p>
-              <p className="mt-1 text-[13px] leading-snug text-ink-secondary">{s.blurb}</p>
-            </Link>
+      {/* Section index: a compact ruled "Inside" listing with the tilt
+          glyph as the bullet, two columns with a column rule */}
+      <RuleSection head="Inside GridTilt" testId="front-directory">
+        <div className="grid grid-cols-1 sm:grid-cols-2 sm:divide-x sm:divide-rule">
+          {[SECTION_DIRECTORY.slice(0, 4), SECTION_DIRECTORY.slice(4)].map((col, ci) => (
+            <div key={ci} className={ci === 1 ? "sm:pl-8" : "sm:pr-8"}>
+              {col.map((s) => (
+                <Link
+                  key={s.href}
+                  href={s.href}
+                  className="group flex items-baseline gap-2.5 border-b border-rule py-2.5 no-underline last:border-b-0"
+                  data-testid={`front-directory-${s.label.toLowerCase().replace(/\s+/g, "-")}`}
+                >
+                  <span className="tilt-glyph shrink-0" aria-hidden />
+                  <span className="min-w-0">
+                    <span className="text-[14.5px] font-semibold text-ink group-hover:text-brand-ink">
+                      {s.label}
+                    </span>
+                    <span className="ml-2 text-[13px] leading-snug text-ink-secondary">{s.blurb}</span>
+                  </span>
+                </Link>
+              ))}
+            </div>
           ))}
         </div>
       </RuleSection>
 
       {/* Subscribe band */}
-      <div className="mt-10 border-t-2 border-rule-strong pt-6 pb-2" data-testid="front-subscribe">
+      <div className="mt-10 rule-scotch pt-6 pb-2" data-testid="front-subscribe">
         <div className="flex flex-wrap items-baseline justify-between gap-x-8 gap-y-3">
           <div className="max-w-[52ch]">
             <p className="font-serif font-medium text-[22px] leading-snug text-ink">

@@ -23,29 +23,42 @@ export function PageTitle({
   title,
   dek,
   right,
+  kicker,
   testId,
 }: {
   title: string;
   dek?: ReactNode;
   right?: ReactNode;
+  kicker?: string;
   testId?: string;
 }) {
   return (
-    <div className="pt-7 sm:pt-9 pb-4 border-b border-rule mb-5" data-testid={testId}>
+    <div className="pt-7 sm:pt-9 pb-5 border-b-2 border-ink mb-6" data-testid={testId}>
       <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
         <div className="min-w-0">
-          <h1 className="font-serif font-medium text-[30px] sm:text-[36px] leading-[1.05] tracking-tight text-ink">
+          {kicker && <Kicker>{kicker}</Kicker>}
+          <h1 className="font-serif font-medium text-[38px] sm:text-[52px] leading-[0.98] tracking-[-0.015em] text-ink">
             {title}
           </h1>
           {dek && (
-            <p className="mt-2 max-w-[68ch] font-serif italic text-[15.5px] sm:text-[16.5px] leading-snug text-ink-secondary">
+            <p className="mt-2.5 max-w-[62ch] font-serif italic text-[17px] sm:text-[19px] leading-snug text-ink-secondary">
               {dek}
             </p>
           )}
         </div>
-        {right && <div className="flex flex-wrap items-center gap-x-5 gap-y-2 pb-1">{right}</div>}
+        {right && <div className="flex flex-wrap items-center gap-x-5 gap-y-2 pb-1.5">{right}</div>}
       </div>
     </div>
+  );
+}
+
+/** Kicker: the small orange line above a headline, with the tilt glyph. */
+export function Kicker({ children }: { children: ReactNode }) {
+  return (
+    <p className="mb-1.5 flex items-center gap-1.5 text-[13px] font-semibold text-brand-ink">
+      <span className="tilt-glyph" aria-hidden />
+      {children}
+    </p>
   );
 }
 
@@ -64,9 +77,9 @@ export function RuleSection({
   testId?: string;
 }) {
   return (
-    <section className={`mt-8 ${className}`} data-testid={testId}>
-      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-rule-strong pb-1.5 mb-4">
-        <h2 className="text-[17px] font-semibold leading-tight text-ink">{head}</h2>
+    <section className={`mt-9 ${className}`} data-testid={testId}>
+      <div className="rule-thickthin flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 pt-2.5 pb-2 mb-4">
+        <h2 className="text-[15px] font-bold leading-tight text-ink tracking-[0.01em]">{head}</h2>
         {aside && <div className="flex items-baseline gap-3 text-[12.5px] text-ink-muted">{aside}</div>}
       </div>
       {children}
@@ -131,7 +144,7 @@ export function PullStat({
     <div data-testid={testId}>
       <p className="text-[13px] leading-tight text-ink-secondary">{label}</p>
       <p className="mt-1 flex items-baseline gap-2">
-        <span className="font-serif font-medium text-[28px] sm:text-[32px] leading-none text-ink tnum">
+        <span className="font-serif font-medium text-[34px] sm:text-[42px] leading-none tracking-[-0.01em] text-ink tnum">
           {value}
         </span>
         {delta}

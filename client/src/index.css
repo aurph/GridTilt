@@ -188,6 +188,12 @@ html {
     @apply font-sans antialiased bg-background text-foreground;
   }
 
+  /* Let Newsreader's optical-size axis actually work: display sizes render
+     the high-contrast display cut, captions the sturdier text cut. */
+  .font-serif {
+    font-optical-sizing: auto;
+  }
+
   /* Tabular figures wherever numbers sit in columns, so they never jitter */
   td,
   th,
@@ -297,6 +303,48 @@ html {
   .border.hover-elevate:not(.no-hover-interaction-elevate)::after {
     inset: -1px;
   }
+}
+
+/* The house rule system. Rules carry meaning by weight:
+   - scotch (thick over thin, the classic newspaper pair) = page and
+     masthead level
+   - thickthin = section openings
+   - hairline (border-rule) = rows and internal divisions */
+.rule-scotch {
+  border-top: 3px solid var(--ink);
+  position: relative;
+}
+.rule-scotch::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 0;
+  right: 0;
+  border-top: 1px solid var(--ink);
+}
+.rule-thickthin {
+  border-top: 2px solid var(--ink);
+  position: relative;
+}
+.rule-thickthin::after {
+  content: "";
+  position: absolute;
+  top: 1px;
+  left: 0;
+  right: 0;
+  border-top: 1px solid var(--rule);
+}
+
+/* The tilt mark as a recurring glyph: two slanted strokes in brand orange.
+   Use ::before on .tilt-bullet list items or standalone .tilt-glyph. */
+.tilt-glyph {
+  display: inline-block;
+  width: 0.7em;
+  height: 0.62em;
+  background:
+    linear-gradient(104deg, transparent 24%, var(--brand) 24%, var(--brand) 42%, transparent 42%,
+      transparent 56%, var(--brand) 56%, var(--brand) 74%, transparent 74%);
+  transform: translateY(0.02em);
 }
 
 /* Print table: hairline horizontal rules only, small-caps column heads,

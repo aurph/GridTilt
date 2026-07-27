@@ -33,44 +33,48 @@ export function Masthead() {
 
   return (
     <header data-testid="masthead">
-      {/* Brand block: scrolls away */}
-      <div className="border-b border-rule">
+      {/* Brand block: scrolls away. Dateline rides a hairline above the
+          wordmark; a Scotch rule closes the block, broadsheet style. */}
+      <div>
         <div className="mx-auto max-w-[1200px] px-5 sm:px-8">
-          <div className="flex items-end justify-between gap-4 pt-5 pb-4 sm:pt-7 sm:pb-5">
+          <div className="flex items-baseline justify-between gap-4 border-b border-rule pt-3 pb-1.5 text-[12px] text-ink-muted">
+            <span>{dateline()}</span>
+            <span className="hidden sm:inline">
+              Tracking the AI buildout: power, compute, and the companies behind both
+            </span>
+          </div>
+          <div className="flex items-end justify-between gap-4 pt-4 pb-4 sm:pt-5 sm:pb-5">
             <div className="min-w-0">
               <Link
                 href="/"
-                className="group inline-flex items-center gap-3 no-underline"
+                className="group inline-flex items-center gap-3.5 no-underline"
                 data-testid="masthead-wordmark"
               >
                 <img
                   src={logoPath}
                   alt=""
-                  className="h-7 w-7 sm:h-9 sm:w-9 select-none"
+                  className="h-9 w-9 sm:h-12 sm:w-12 select-none"
                   draggable={false}
                 />
-                <span className="font-serif text-[28px] sm:text-[36px] leading-none tracking-tight text-ink">
+                <span className="font-serif font-medium text-[40px] sm:text-[54px] leading-none tracking-[-0.02em] text-ink">
                   Grid
                   <em className="italic text-brand-ink">Tilt</em>
                 </span>
               </Link>
-              <p className="mt-1.5 font-serif italic text-[14px] sm:text-[15px] leading-snug text-ink-secondary">
-                Energy infrastructure, in plain sight.
-              </p>
             </div>
-            <div className="hidden sm:block text-right shrink-0 pb-0.5">
-              <p className="text-[13px] text-ink-secondary">{dateline()}</p>
-              <p className="mt-0.5 text-[12px] text-ink-muted">
-                Tracking the AI buildout: power, compute, and the companies behind both
-              </p>
-            </div>
+            <p className="hidden sm:block shrink-0 pb-1.5 font-serif italic text-[16px] leading-snug text-ink-secondary">
+              Energy infrastructure, in plain sight.
+            </p>
           </div>
+        </div>
+        <div className="mx-auto max-w-[1200px] px-5 sm:px-8">
+          <div className="rule-scotch" />
         </div>
       </div>
 
       {/* Section nav: sticks. Double rule below = the fold line. */}
       <nav
-        className="sticky top-0 z-50 bg-paper border-b-2 border-rule-strong"
+        className="sticky top-0 z-50 bg-paper border-b border-rule shadow-[0_1px_0_rgba(28,23,18,0.04)]"
         aria-label="Sections"
         data-testid="masthead-nav"
       >
