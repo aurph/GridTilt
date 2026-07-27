@@ -232,6 +232,7 @@ export default function ComputeFrontier() {
             note={metrics ? `of ${gw(metrics.totalRatedMW)} GW rated today` : undefined}
           />
           <PullStat
+            accent
             label="Planned power"
             value={metrics ? `${gw(metrics.totalPlannedMW)} GW` : "—"}
             note="full announced build-out"
@@ -255,7 +256,6 @@ export default function ComputeFrontier() {
         <Provenance
           source="GridTilt cluster registry"
           updated={metrics?.lastRefreshed ?? undefined}
-          extra="tracked, not exhaustive"
         />
       </section>
 
@@ -269,7 +269,14 @@ export default function ComputeFrontier() {
               <BarChart data={topOperators} layout="vertical" margin={{ left: 8, right: 16, top: 4, bottom: 4 }}>
                 <CartesianGrid {...gridProps} vertical={true} horizontal={false} />
                 <XAxis {...axisProps} type="number" tickFormatter={(v) => `${(v / 1000).toFixed(0)}`} />
-                <YAxis {...axisProps} type="category" dataKey="operator" width={110} interval={0} />
+                <YAxis
+                  {...axisProps}
+                  type="category"
+                  dataKey="operator"
+                  width={118}
+                  interval={0}
+                  tickFormatter={(name: string) => (name.length > 16 ? `${name.slice(0, 15)}…` : name)}
+                />
                 <RTooltip contentStyle={tooltipContentStyle} labelStyle={tooltipLabelStyle} itemStyle={tooltipItemStyle} formatter={(v: number, _n, p: any) => [`${v.toLocaleString()} MW`, `${p.payload.count} clusters`]} cursor={{ fill: BRAND.wash }} />
                 <Bar dataKey="plannedMW" fill={BRAND.primary} radius={[0, 2, 2, 0]} />
               </BarChart>
@@ -295,7 +302,7 @@ export default function ComputeFrontier() {
                 <XAxis {...axisProps} dataKey="iso" />
                 <YAxis {...axisProps} tickFormatter={(v) => `${(v / 1000).toFixed(0)}`} />
                 <RTooltip contentStyle={tooltipContentStyle} labelStyle={tooltipLabelStyle} itemStyle={tooltipItemStyle} formatter={(v: number) => [`${v.toLocaleString()} MW`, "planned"]} cursor={{ fill: BRAND.wash }} />
-                <Bar dataKey="plannedMW" fill={BRAND.secondary} radius={[2, 2, 0, 0]} />
+                <Bar dataKey="plannedMW" fill={BRAND.primary} radius={[2, 2, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           ) : <ChartSkeleton />}
@@ -532,7 +539,7 @@ export default function ComputeFrontier() {
         <Provenance
           source="GridTilt cluster registry"
           updated={metrics?.lastRefreshed ?? undefined}
-          extra="compiled from public announcements; tracked, not exhaustive"
+          extra="compiled from public announcements"
         />
       </RuleSection>
 

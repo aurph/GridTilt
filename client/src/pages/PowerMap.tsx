@@ -4,12 +4,6 @@ import { Link } from "wouter";
 import { MapContainer, TileLayer, ZoomControl, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import "leaflet.markercluster";
-// MarkerCluster.Default.css is intentionally NOT imported: it only supplies
-// the library's blue cluster blobs, which clash with the paper ground. Our
-// iconCreateFunction renders .gt-cluster icons styled in the <style> block
-// below, so the default sheet has no consumer here.
-import "leaflet.markercluster/dist/MarkerCluster.css";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AsOf, ErrorState } from "@/components/Freshness";
 import { X, SlidersHorizontal, ChevronDown } from "lucide-react";
@@ -100,8 +94,8 @@ const companyColors: Record<string, string> = {
  */
 const MARKER_COLORS: Record<DataCenter["status"], string> = {
   operational:  BRAND.primary,   // #F07800
-  construction: INK.secondary,   // #5C544A, drawn as a ring
-  announced:    SEMANTIC.warning, // #8F6400
+  construction: "#F5A25A",   // #5C544A, drawn as a ring
+  announced:    "#BDBAB4", // neutral: not yet real
 };
 
 /** Status as typography, not a pill: weight and ink step carry the state. */
@@ -453,7 +447,7 @@ function FacilityMarkers({
 }) {
   const map = useMap();
   const markersRef = useRef<Record<number, L.Marker>>({});
-  const clusterRef = useRef<L.MarkerClusterGroup | null>(null);
+  const clusterRef = useRef<L.LayerGroup | null>(null);
 
   const passesFilter = useCallback((dc: DataCenter): boolean => {
     return dcPassesFilters(dc, filterCompanies, filterRTOs, filterCapacity, rtoFocus);
@@ -463,25 +457,10 @@ function FacilityMarkers({
   // deliberately NOT deps here - hover/selection restyle imperatively below,
   // so mouseover no longer tears down and rebuilds every layer (audit perf fix).
   useEffect(() => {
+    // No clustering: 33 facilities read better as individual sized pins
+    // than as abstract count bubbles. Every node stays inspectable.
     if (!clusterRef.current) {
-      clusterRef.current = L.markerClusterGroup({
-        maxClusterRadius: 42,
-        showCoverageOnHover: false,
-        spiderfyOnMaxZoom: true,
-        zoomToBoundsOnClick: true,
-        spiderfyDistanceMultiplier: 1.4,
-        spiderLegPolylineOptions: { weight: 1, color: BRAND.primary, opacity: 0.4 },
-        iconCreateFunction: (cluster) => {
-          const count = cluster.getChildCount();
-          const d = count >= 10 ? 38 : 32;
-          return L.divIcon({
-            html: `<div class="gt-cluster" style="width:${d}px;height:${d}px;">${count}</div>`,
-            className: "gt-cluster-wrap",
-            iconSize: [d, d],
-            iconAnchor: [d / 2, d / 2],
-          });
-        },
-      });
+      clusterRef.current = L.layerGroup();
       map.addLayer(clusterRef.current);
     }
 
@@ -522,7 +501,7 @@ function FacilityMarkers({
       markers[dc.id] = marker;
     });
 
-    group.addLayers(Object.values(markers));
+    Object.values(markers).forEach((m) => group.addLayer(m));
     markersRef.current = markers;
 
     return () => {

@@ -33,7 +33,7 @@ export function PageTitle({
   testId?: string;
 }) {
   return (
-    <div className="pt-7 sm:pt-9 pb-5 border-b-2 border-ink mb-6" data-testid={testId}>
+    <div className="pt-7 sm:pt-9 pb-4 border-b border-rule-strong mb-6" data-testid={testId}>
       <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
         <div className="min-w-0">
           {kicker && <Kicker>{kicker}</Kicker>}
@@ -132,19 +132,22 @@ export function PullStat({
   value,
   delta,
   note,
+  accent = false,
   testId,
 }: {
   label: string;
   value: string;
   delta?: ReactNode;
   note?: string;
+  /** the one headline figure per band renders in brand orange */
+  accent?: boolean;
   testId?: string;
 }) {
   return (
     <div data-testid={testId}>
       <p className="text-[13px] leading-tight text-ink-secondary">{label}</p>
       <p className="mt-1 flex items-baseline gap-2">
-        <span className="font-serif font-medium text-[34px] sm:text-[42px] leading-none tracking-[-0.01em] text-ink tnum">
+        <span className={`font-serif font-medium text-[34px] sm:text-[42px] leading-none tracking-[-0.01em] tnum ${accent ? "text-brand-2" : "text-ink"}`}>
           {value}
         </span>
         {delta}

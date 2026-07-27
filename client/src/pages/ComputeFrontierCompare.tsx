@@ -135,7 +135,7 @@ export default function ComputeFrontierCompare() {
                 </tbody>
               </table>
               <p className="mt-3 text-[12.5px] text-ink-muted">† estimated value</p>
-              <Provenance source="GridTilt cluster registry" extra="tracked, not exhaustive" />
+              <Provenance source="GridTilt cluster registry" />
             </div>
           )}
         </>

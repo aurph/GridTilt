@@ -314,7 +314,7 @@ html {
    - rule-thickthin (historical name) = section openings: strong hairline
    - hairline (border-rule) = rows and internal divisions */
 .rule-scotch {
-  border-top: 2px solid var(--ink);
+  border-top: 1px solid var(--rule-strong);
 }
 .rule-thickthin {
   border-top: 1px solid var(--rule-strong);

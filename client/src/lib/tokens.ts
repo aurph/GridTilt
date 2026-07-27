@@ -115,9 +115,9 @@ export const CATEGORY_COLORS: Record<string, string> = {
  * steps. Used by Power Map markers and Compute Frontier status charts.
  */
 export const STATUS_COLORS = {
-  operational: SEMANTIC.positiveDeep,
-  construction: SEMANTIC.warning,
-  announced: INK.muted,
+  operational: BRAND.primary,
+  construction: "#F5A25A",
+  announced: "#BDBAB4",
 } as const;
 
 export const CHART_CHROME = {
