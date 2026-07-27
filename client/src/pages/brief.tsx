@@ -106,7 +106,7 @@ export default function BriefPage({ embedded = false }: { embedded?: boolean; pa
             <h2 className="text-base font-semibold text-foreground tracking-tight" style={{ fontFamily: FONT.mono }}>
               The Buildout Brief
             </h2>
-            <Badge className="text-10 font-mono bg-brand/15 text-brand border-transparent">daily</Badge>
+            <Badge className="text-10 font-mono bg-brand/15 text-brand border-transparent">weekly</Badge>
           </div>
           <div className="flex items-center gap-3">
             <AsOf updatedAt={dataUpdatedAt} intervalMs={900_000} />
@@ -190,10 +190,6 @@ export default function BriefPage({ embedded = false }: { embedded?: boolean; pa
               </header>
 
               {body}
-
-              <p className="text-11 text-muted-foreground/50 pt-2 border-t border-border">
-                Auto-generated from live data. The weekly cadence is what the daily social posts roll up into.
-              </p>
             </article>
           )}
         </Card>

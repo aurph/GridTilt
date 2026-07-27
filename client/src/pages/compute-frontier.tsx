@@ -114,6 +114,7 @@ function mwCell(n: number): string {
 
 function gpuCell(n: number | null): string {
   if (n == null) return "—";
+  if (n >= 1_000_000) return `${(n / 1_000_000).toLocaleString("en-US", { maximumFractionDigits: 2 })}M`;
   if (n >= 1000) return `${(n / 1000).toLocaleString("en-US", { maximumFractionDigits: 0 })}k`;
   return n.toLocaleString("en-US");
 }

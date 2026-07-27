@@ -245,8 +245,10 @@ export default function NeocloudIntel() {
           <>
             On-demand GPU rental prices ($/GPU/hr) blended across the major neoclouds and marketplaces (Lambda,
             RunPod, Vast.ai, CoreWeave, TensorWave, Vultr, Nebius) and the getdeploying.com / Silicon Data trackers.
-            Models covered by live provider APIs serve an observed daily price; the rest are sourced blended
-            estimates flagged est. Low and high are the observed marketplace range. Open any table row for sources.
+            Models covered by live provider prices (RunPod, Vast.ai marketplace) show an observed daily price and
+            drop the est. flag; the rest are curated, source-verified estimates flagged est. Low and high are the
+            observed marketplace range. Prices move constantly and vary widely by provider, term, and availability.
+            Open any table row for sources.
           </>
         }
         stats={
@@ -557,9 +559,7 @@ export default function NeocloudIntel() {
 
         <p className="text-11 text-muted-foreground/60 leading-relaxed px-1" data-testid="ni-methodology">
           {data?.methodology ?? "Blended on-demand rental prices from public neocloud and marketplace listings and the getdeploying.com / Silicon Data trackers."}
-          {" "}Models covered by live provider APIs (RunPod, Vast.ai marketplace) serve an observed daily price - those
-          drop the est. flag and show their sources on row hover. The rest carry curated, source-verified estimates.
-          Prices move constantly and vary widely by provider, term, and availability; treat these as indicative, not quotes.
+          {" "}Prices vary widely by provider, term, and availability; treat these as indicative, not quotes.
         </p>
         </>
         )}
@@ -579,7 +579,7 @@ function PipelineHealthLine({ health }: { health: GpuPipelineHealth }) {
           {` Last sweep ${sweep.date}: ${failed > 0 ? `${failed} provider request${failed === 1 ? "" : "s"} failed` : `${sweep.usableModels} models recorded`} (RunPod ${sweep.perProvider.runpod.succeeded}/${sweep.perProvider.runpod.requests}, Vast ${sweep.perProvider.vast.succeeded}/${sweep.perProvider.vast.requests}).`}
         </span>
       ) : (
-        <span className="text-muted-foreground/60"> No provider sweep has completed in this process.</span>
+        <span className="text-muted-foreground/60"> Live prices update shortly.</span>
       )}
     </p>
   );

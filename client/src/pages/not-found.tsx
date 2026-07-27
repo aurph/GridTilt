@@ -16,7 +16,7 @@ export default function NotFound() {
           Page not found
         </p>
         <p className="text-sm text-muted-foreground leading-relaxed mb-8">
-          The grid coordinates you requested are offline. The AI power economy continues without this route.
+          This page doesn't exist.
         </p>
         <Link
           href="/overview"
@@ -25,9 +25,6 @@ export default function NotFound() {
         >
           Return to Tilt Overview
         </Link>
-        <p className="text-xs text-muted-foreground/50 mt-8 font-mono">
-          GridTilt -- gridtilt.com
-        </p>
       </div>
     </div>
   );

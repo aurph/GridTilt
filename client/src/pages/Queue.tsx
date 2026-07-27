@@ -90,7 +90,7 @@ const TYPE_ICONS: Record<string, any> = {
 const CATEGORY_LABELS: Record<string, string> = {
   generation: "generation",
   load: "load",
-  ppa: "ppa",
+  ppa: "PPA",
   aggregate: "aggregate",
   regulatory: "regulatory",
 };
@@ -319,7 +319,7 @@ export default function Queue({ embedded = false }: { embedded?: boolean; params
             { value: "all", label: "all" },
             { value: "generation", label: "generation" },
             { value: "load", label: "load" },
-            { value: "ppa", label: "ppas" },
+            { value: "ppa", label: "PPAs" },
             { value: "aggregate", label: "aggregates" },
             { value: "regulatory", label: "regulatory" },
           ]} />
@@ -348,8 +348,8 @@ export default function Queue({ embedded = false }: { embedded?: boolean; params
             <SortHeader label="Region" sortKey="iso" current={sortKey} dir={sortDir} onClick={toggleSort} className="col-span-1" />
             <span className="col-span-1">State</span>
             <SortHeader label="Online" sortKey="expectedOnline" current={sortKey} dir={sortDir} onClick={toggleSort} className="col-span-2" />
-            <span className="col-span-1 text-center">Cat</span>
-            <span className="col-span-1 text-center">DC</span>
+            <span className="col-span-1 text-center">Category</span>
+            <span className="col-span-1 text-center cursor-help" title="Data-center relevant: ★ marks projects tied to AI data-center demand">DC ★</span>
           </div>
           {isLoading ? (
             <div className="p-4 space-y-2">
@@ -385,7 +385,7 @@ export default function Queue({ embedded = false }: { embedded?: boolean; params
                         <span className="truncate">{p.type}</span>
                       </span>
                       <span className="col-span-1 font-mono text-foreground text-right tabular-nums">
-                        {p.capacityMW === 0 ? "—" : p.capacityMW >= 10000 ? `${(p.capacityMW / 1000).toFixed(0)}k` : p.capacityMW.toLocaleString()}
+                        {p.capacityMW === 0 ? "—" : p.capacityMW.toLocaleString()}
                       </span>
                       <span className="col-span-1 font-mono text-foreground truncate">{p.iso}</span>
                       <span className="col-span-1 font-mono text-muted-foreground truncate">{p.state}</span>
@@ -396,7 +396,9 @@ export default function Queue({ embedded = false }: { embedded?: boolean; params
                         </Badge>
                       </span>
                       <span className="col-span-1 text-center font-mono text-10">
-                        {p.dcRelevant ? <span className="text-brand">★</span> : <span className="text-muted-foreground/30">—</span>}
+                        {p.dcRelevant
+                          ? <span className="text-brand cursor-help" title="Tied to AI data-center demand">★</span>
+                          : <span className="text-muted-foreground/30">—</span>}
                       </span>
                     </div>
               );

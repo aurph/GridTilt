@@ -317,7 +317,7 @@ export default function GpuEconomics({ embedded = false }: { embedded?: boolean 
                   <label className="block">
                     <span className="text-11 font-mono uppercase tracking-wider text-muted-foreground">GPU</span>
                     <select value={gpuModel} onChange={(e) => setGpuModel(e.target.value)} className="mt-1 w-full bg-surface-base border border-subtle rounded px-2 py-1.5 text-sm text-foreground font-mono" data-testid="econ-gpu">
-                      {calcGpus.map((g) => <option key={g.model} value={g.model}>{g.model} — {usd(g.pricePerHr)}/hr, {(g.tflopsBf16! / 1000).toFixed(2)} PF</option>)}
+                      {calcGpus.map((g) => <option key={g.model} value={g.model}>{g.model} · {usd(g.pricePerHr)}/hr, {(g.tflopsBf16! / 1000).toFixed(2)} PF</option>)}
                     </select>
                   </label>
                   <label className="block">

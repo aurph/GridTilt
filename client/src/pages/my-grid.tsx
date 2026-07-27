@@ -518,8 +518,7 @@ export default function MyGrid() {
                   <Skeleton className="h-40 w-full" aria-hidden="true" />
                 ) : !("byState" in rates) ? (
                   <p className="text-xs leading-relaxed text-muted-foreground max-w-[60ch]" data-testid="my-grid-rates-unconfigured">
-                    Rate data is not configured on this deployment yet. It comes straight from the
-                    EIA once a free API key is set; nothing is shown in its place.
+                    Rate data connects soon; nothing is shown in its place.
                   </p>
                 ) : series.length === 0 ? (
                   <p className="text-xs text-muted-foreground">No EIA series available for {grid.name}.</p>

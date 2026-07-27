@@ -85,9 +85,19 @@ export default function PowerDeals({ embedded = false }: { embedded?: boolean; p
   const rows = data?.rows ?? [];
 
   const byBuyer = useMemo(
-    () => (data?.byOfftaker ?? []).map((b) => ({ buyer: b.key, gw: +(b.mw / 1000).toFixed(2), count: b.count })),
+    () => (data?.byOfftaker ?? []).map((b) => ({ buyer: b.key, gw: +(b.mw / 1000).toFixed(1), count: b.count })),
     [data],
   );
+
+  // Signed now vs staged ramp-ups, split on the disclosed online field
+  // ("2029-2032 staged" style entries mark deals that build to a target).
+  const firmness = useMemo(() => {
+    if (!data) return null;
+    const stagedMW = data.rows
+      .filter((r) => /staged/i.test(r.online ?? ""))
+      .reduce((s, r) => s + r.capacityMW, 0);
+    return { stagedMW, signedMW: data.totalContractedMW - stagedMW };
+  }, [data]);
 
   const visibleRows = useMemo(() => {
     const filtered = typeFilter ? rows.filter((r) => r.type === typeFilter) : rows;
@@ -111,8 +121,6 @@ export default function PowerDeals({ embedded = false }: { embedded?: boolean; p
     <div className="text-11 text-muted-foreground/70 font-mono tracking-wide text-right space-y-0.5" data-testid="deals-sync">
       <div><AsOf updatedAt={dataUpdatedAt} intervalMs={900_000} /></div>
       {data?.lastRefreshed && <div className="text-muted-foreground/60">data as of {data.lastRefreshed}</div>}
-      {data && <div>{data.dealCount} deals · {gw(data.totalContractedMW)} GW contracted</div>}
-      {data?.topBuyer && <div>top buyer: <span className="text-brand">{data.topBuyer}</span></div>}
     </div>
   );
 
@@ -159,7 +167,7 @@ export default function PowerDeals({ embedded = false }: { embedded?: boolean; p
           <StatTile label="Tracked deals" value={data ? String(data.dealCount) : "—"} loading={isLoading} />
           <StatTile label="Contracted power" value={data ? `${gw(data.totalContractedMW)} GW` : "—"} loading={isLoading} />
           <StatTile label="Top buyer" value={data?.topBuyer ?? "—"} loading={isLoading} />
-          <StatTile label="Energy types" value={data ? String(data.byType.length) : "—"} loading={isLoading} />
+          <StatTile label="Signed vs staged" value={firmness ? `${gw(firmness.signedMW)} / ${gw(firmness.stagedMW)} GW` : "—"} loading={isLoading} />
         </div>
 
         {/* Contracted power by buyer */}
@@ -285,7 +293,7 @@ export default function PowerDeals({ embedded = false }: { embedded?: boolean; p
 
         <p className="text-11 text-muted-foreground/60 leading-relaxed px-1">
           Deals are corporate power-purchase agreements, reactor restarts, and SMR options with a named AI / hyperscaler
-          offtaker, drawn from <span className="font-mono">server/data/interconnection-queue.json</span>. Capacity is the
+          offtaker, drawn from GridTilt's curated deal registry. Capacity is the
           contracted figure as disclosed; staged deals show their full target. Terms and sources are on each row.
         </p>
       </div>

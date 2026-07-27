@@ -46,7 +46,7 @@ export default function Subscribe() {
             The GridTilt Brief
           </h1>
           <p className="text-sm text-white/50 max-w-md mx-auto leading-relaxed">
-            Thesis health, top movers, new facilities, one data point. Monthly. No spam.
+            Thesis health, top movers, new facilities, one data point. Weekly. No spam.
           </p>
         </div>
 
@@ -68,7 +68,7 @@ export default function Subscribe() {
           <div className="bg-positive-deep/10 border border-positive-deep/20 rounded-lg p-6 text-center" data-testid="subscribe-success">
             <CheckCircle2 className="h-8 w-8 text-positive mx-auto mb-2" />
             <div className="text-sm font-semibold text-positive">You're in</div>
-            <div className="text-xs text-white/40 mt-1">First brief arrives next month.</div>
+            <div className="text-xs text-white/40 mt-1">Your first brief arrives with the next weekly send.</div>
           </div>
         ) : status === "exists" ? (
           <div className="bg-brand-2/10 border border-brand-2/20 rounded-lg p-6 text-center" data-testid="subscribe-exists">
@@ -100,7 +100,7 @@ export default function Subscribe() {
               <p className="text-xs text-negative" data-testid="subscribe-error">{errorMsg}</p>
             )}
             <p className="text-10 text-white/25 text-center">
-              One email per month. Unsubscribe anytime.
+              One email per week. Unsubscribe anytime.
             </p>
           </form>
         )}

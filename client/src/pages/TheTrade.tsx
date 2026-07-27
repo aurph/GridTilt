@@ -1,6 +1,5 @@
 import { useState, useMemo } from "react";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -260,20 +259,6 @@ export default function TheTrade({ embedded = false }: { embedded?: boolean; par
     { key: "Aggressive", label: "Aggressive" },
   ];
 
-  const sourcedBadge = (
-    <UITooltip>
-      <TooltipTrigger asChild>
-        <Badge className="bg-brand-2/15 text-brand-2 border-brand-2/30 cursor-help">
-          <Info className="h-3 w-3 mr-1" />
-          Sourced + Defensible
-        </Badge>
-      </TooltipTrigger>
-      <TooltipContent className="max-w-xs">
-        <p className="text-xs leading-relaxed">All defaults trace to named sources: IEA, EIA, DOE, McKinsey, hyperscaler earnings calls. See Methodology panel for citations.</p>
-      </TooltipContent>
-    </UITooltip>
-  );
-
   const presetSelector = (
     <div className="flex items-center gap-2 mt-4 flex-wrap">
       <span className="text-10 font-mono text-muted-foreground/60 tracking-wider uppercase mr-1">Scenario:</span>
@@ -306,24 +291,18 @@ export default function TheTrade({ embedded = false }: { embedded?: boolean; par
   // so render a slim intro (description + presets) instead of the full header.
   const intro = embedded ? (
     <div className="px-1">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <p className="text-muted-foreground text-xs leading-relaxed max-w-3xl">
-          50 GW of new AI datacenter capacity is projected by 2030. Model capex, grid interconnect timelines, and power supply mix under different assumptions.
-        </p>
-        {sourcedBadge}
-      </div>
+      <p className="text-muted-foreground text-xs leading-relaxed max-w-3xl">
+        50 GW of new AI datacenter capacity is projected by 2030. Model capex, grid interconnect timelines, and power supply mix under different assumptions.
+      </p>
       {presetSelector}
     </div>
   ) : (
     <div className="border-b border-border px-6 py-5">
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground tracking-tight">Scenario Calculator</h1>
-          <p className="text-muted-foreground text-sm mt-1 max-w-xl">
-            50 GW of new AI datacenter capacity is projected by 2030. Model capex, grid interconnect timelines, and power supply mix under different assumptions.
-          </p>
-        </div>
-        {sourcedBadge}
+      <div>
+        <h1 className="text-2xl font-bold text-foreground tracking-tight">Scenario Calculator</h1>
+        <p className="text-muted-foreground text-sm mt-1 max-w-xl">
+          50 GW of new AI datacenter capacity is projected by 2030. Model capex, grid interconnect timelines, and power supply mix under different assumptions.
+        </p>
       </div>
       {presetSelector}
     </div>
@@ -723,7 +702,7 @@ export default function TheTrade({ embedded = false }: { embedded?: boolean; par
                   <div className="flex items-center gap-2">
                     <Info className="h-3.5 w-3.5 text-muted-foreground" />
                     <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">Methodology</span>
-                    <span className="text-10 text-muted-foreground/50 font-mono">Sources, formulas, and key sensitivities</span>
+                    <span className="text-10 text-muted-foreground/50 font-mono">Sources (IEA, EIA, DOE, McKinsey, hyperscaler earnings calls), formulas, and key sensitivities</span>
                   </div>
                   <ChevronDown
                     className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${methodologyOpen ? "rotate-180" : ""}`}
