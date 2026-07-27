@@ -3698,10 +3698,10 @@
     },
     {
       "date": "2026-07-27",
-      "aiDemand": 68.2,
+      "aiDemand": 68,
       "gridStress": 65,
-      "npiEquityLegs": 236.1,
-      "npi": 257.1
+      "npiEquityLegs": 237,
+      "npi": 258
     }
   ]
 }
