@@ -71,8 +71,13 @@ const STATIC_PAGES: Record<string, { title: string; description: string; slug: s
   },
   "/subscribe": {
     title: "The GridTilt Brief - Weekly Power and Grid Email",
-    description: "One email a week on the grid: power, data centers, and the companies behind both. Sourced numbers, no hype.",
+    description: "One email a week on the grid: power, data centers, and the companies behind both.",
     slug: "subscribe",
+  },
+  "/about": {
+    title: "About GridTilt - Sources, Methods, and Limits",
+    description: "What GridTilt is, who makes it, where every number comes from, how often each dataset updates, and what is not covered.",
+    slug: "about",
   },
 };
 

@@ -21,7 +21,8 @@ export function Colophon() {
           <div>
             <p className="text-[12px] font-semibold text-ink mb-2.5">Reference</p>
             <ul className="space-y-1.5 text-[13px]">
-              <li><Link href="/compute-frontier/methodology" className="text-ink-secondary hover:text-brand-ink no-underline">Methodology</Link></li>
+              <li><Link href="/about" className="text-ink-secondary hover:text-brand-ink no-underline">About, sources, and limits</Link></li>
+              <li><Link href="/compute-frontier/methodology" className="text-ink-secondary hover:text-brand-ink no-underline">Cluster methodology</Link></li>
               <li><Link href="/blog" className="text-ink-secondary hover:text-brand-ink no-underline">Analysis archive</Link></li>
               <li><Link href="/compute-frontier" className="text-ink-secondary hover:text-brand-ink no-underline">Cluster registry</Link></li>
               <li><Link href="/power-map?tab=queue" className="text-ink-secondary hover:text-brand-ink no-underline">Interconnection queue</Link></li>
@@ -49,7 +50,11 @@ export function Colophon() {
             © {year} GridTilt. Code MIT; curated datasets © GridTilt.
           </p>
           <p className="text-[12px] text-ink-muted">
-            Market data may be delayed. Nothing here is investment advice.
+            Market data may be delayed. Nothing here is investment advice. Wrong number?{" "}
+            <a href="https://x.com/gridtilt" target="_blank" rel="noopener noreferrer" className="underline decoration-rule-strong underline-offset-2 hover:text-brand-ink">
+              Tell me
+            </a>
+            .
           </p>
         </div>
       </div>
