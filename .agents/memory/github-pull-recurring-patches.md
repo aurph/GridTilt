@@ -12,3 +12,6 @@ After EVERY pull re-apply these local patches (upstream lacks them):
 **Why:** both regressions came back verbatim on consecutive pulls (branch a28f9f5, then main f1003ca).
 
 After any pull that touches server code, restart the Start application workflow BEFORE e2e/API checks: Vite HMR reloads only the client, and a stale server makes new /api routes fall through to the SPA catch-all as 200+HTML — which the client surfaces as a bogus JSON-parse/network error.
+
+## My Grid error-state wiring
+The user reworks `my-grid.tsx` from their local copy, which predates the error-state fix (fetch failure must render ErrorState + retry, not false "No tracked facilities" / endless skeleton). A pull that touches my-grid.tsx likely clobbers it — re-check `ErrorState` wiring on the facilities and rates queries after every such pull, re-apply if gone (happened 2026-07-27).
