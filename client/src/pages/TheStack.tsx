@@ -1130,10 +1130,13 @@ function StackHeatmap({
 
   const height = Math.max(560, Math.min(880, Math.round(width * 0.62)));
   const { tiles, groups, totalH } = useMemo(() => {
-    const totalB = input.groups.reduce((s, g) => s + g.totalB, 0);
+    // sqrt-dampened layer weights: every layer stays legible, order by
+    // size holds, tiles inside a layer remain cap-proportional.
+    const w = (b: number) => Math.pow(Math.max(b, 0), 0.7);
+    const totalB = input.groups.reduce((s, g) => s + w(g.totalB), 0);
     if (width === 0 || totalB <= 0) return { tiles: [] as HeatRect[], groups: [] as HeatGroupRect[], totalH: height };
-    const majors = input.groups.filter((g) => g.totalB / totalB >= MINOR_SHARE);
-    const minors = majors.length > 0 ? input.groups.filter((g) => g.totalB / totalB < MINOR_SHARE) : [];
+    const majors = input.groups.filter((g) => w(g.totalB) / totalB >= MINOR_SHARE);
+    const minors = majors.length > 0 ? input.groups.filter((g) => w(g.totalB) / totalB < MINOR_SHARE) : [];
     const perRow = minors.length > 0 ? Math.max(1, Math.min(minors.length, Math.floor(width / MIN_PANEL_W))) : 1;
     const rows = minors.length > 0 ? Math.ceil(minors.length / perRow) : 0;
     const stripH = rows * PANEL_H;
@@ -1164,7 +1167,6 @@ function StackHeatmap({
     <Card className="border-card-border p-3" data-testid="stack-heatmap">
       <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
         <span className="text-[12px] text-muted-foreground">
-          Market cap heatmap · tile = market cap · color = {timeframe} change
         </span>
         <div className="flex items-center gap-1.5 text-9 font-mono text-muted-foreground/70">
           <span>-{4}%</span>
