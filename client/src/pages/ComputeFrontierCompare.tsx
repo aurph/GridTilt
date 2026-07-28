@@ -54,7 +54,7 @@ export default function ComputeFrontierCompare() {
 
   const rows: Array<{ label: string; render: (c: Cluster) => ReactNode }> = [
     { label: "Operator", render: (c) => c.operator },
-    { label: "Status", render: (c) => <Badge variant="outline" className="text-9 font-mono px-1.5 py-0" style={{ color: STATUS_COLOR[c.status], borderColor: `${STATUS_COLOR[c.status]}55` }}>{c.status}</Badge> },
+    { label: "Status", render: (c) => <Badge variant="outline" className="text-9 px-1.5 py-0" style={{ color: STATUS_COLOR[c.status], borderColor: `${STATUS_COLOR[c.status]}55` }}>{c.status}</Badge> },
     { label: "Location", render: (c) => `${c.location.city}, ${c.location.state}` },
     { label: "Grid region", render: (c) => c.gridRegion },
     { label: "Chip", render: (c) => c.chipType },
@@ -115,7 +115,7 @@ export default function ComputeFrontierCompare() {
                 <table className="w-full text-xs">
                   <thead>
                     <tr className="bg-surface-base border-b border-border">
-                      <th className="text-left px-4 py-2 text-10 font-mono uppercase tracking-wider text-muted-foreground font-medium w-32">Field</th>
+                      <th className="text-left px-4 py-2 text-[11px] text-muted-foreground font-medium w-32">Field</th>
                       {chosen.map((c) => (
                         <th key={c.id} className="text-left px-4 py-2 min-w-[180px]">
                           <Link href={`/compute-frontier/${c.id}`} className="text-foreground hover:text-brand font-semibold no-underline">{c.name}</Link>
@@ -126,7 +126,7 @@ export default function ComputeFrontierCompare() {
                   <tbody>
                     {rows.map((row) => (
                       <tr key={row.label} className="border-b border-border/30 last:border-0">
-                        <td className="px-4 py-2 text-10 font-mono uppercase tracking-wider text-muted-foreground/70 align-top">{row.label}</td>
+                        <td className="px-4 py-2 text-[11px] text-muted-foreground/70 align-top">{row.label}</td>
                         {chosen.map((c) => (
                           <td key={c.id} className="px-4 py-2 text-foreground align-top">{row.render(c)}</td>
                         ))}

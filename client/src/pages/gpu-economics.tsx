@@ -141,7 +141,7 @@ export default function GpuEconomics({ embedded = false }: { embedded?: boolean 
         <div className="max-w-3xl">
           <div className="flex items-center gap-2 mb-2">
             <Calculator className="h-5 w-5 text-brand" />
-            <h1 className="text-2xl sm:text-3xl font-semibold text-foreground tracking-tight" style={{ fontFamily: FONT.mono }}>
+            <h1 className="text-2xl sm:text-3xl font-semibold text-foreground tracking-tight">
               GPU Economics
             </h1>
           </div>
@@ -169,10 +169,10 @@ export default function GpuEconomics({ embedded = false }: { embedded?: boolean 
         <Card className="border-card-border overflow-hidden" data-testid="econ-efficiency-chart">
           <div className="px-4 py-3 bg-surface-base border-b border-border flex flex-wrap items-start justify-between gap-3">
             <div>
-              <div className="text-11 font-mono uppercase tracking-wider text-muted-foreground">Compute efficiency · $/PFLOP-hr</div>
+              <div className="text-[13px] font-semibold text-foreground">Compute efficiency · $/PFLOP-hr</div>
               <div className="text-10 text-muted-foreground/50 mt-0.5">Lower is better · on-demand hourly price normalized by peak BF16 compute</div>
             </div>
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-10 font-mono">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-10">
               <LegendDot color={NVIDIA_COLOR} label="NVIDIA" />
               <LegendDot color={AMD_COLOR} label="AMD" />
               {efficiencyRows[0] && (
@@ -239,7 +239,7 @@ export default function GpuEconomics({ embedded = false }: { embedded?: boolean 
               </ResponsiveContainer>
             </div>
           )}
-          <div className="px-4 py-2 text-10 text-muted-foreground/50 font-mono border-t border-border">
+          <div className="px-4 py-2 text-10 text-muted-foreground/50 border-t border-border">
             Bars use published dense BF16 peak throughput. They compare rental compute economics, not realized application performance.
           </div>
         </Card>
@@ -247,15 +247,15 @@ export default function GpuEconomics({ embedded = false }: { embedded?: boolean 
         {/* Cost-of-compute table */}
         <Card className="border-card-border overflow-hidden" data-testid="econ-table">
           <div className="px-4 py-2 bg-surface-base border-b border-border">
-            <span className="text-11 font-mono uppercase tracking-wider text-muted-foreground">Cost of compute</span>
-            <span className="text-10 font-mono text-muted-foreground/40 ml-2">sorted by cheapest compute (lower $/PFLOP-hr is better)</span>
+            <span className="text-[13px] font-semibold text-foreground">Cost of compute</span>
+            <span className="text-[11px] text-muted-foreground/40 ml-2">sorted by cheapest compute (lower $/PFLOP-hr is better)</span>
           </div>
           {isError ? (
             <ErrorState label="GPU economics failed to load." onRetry={() => refetch()} />
           ) : (
             <div className="overflow-x-auto">
               <div className="min-w-[560px]">
-                <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-surface-base border-b border-border text-10 font-mono uppercase tracking-wider text-muted-foreground">
+                <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-surface-base border-b border-border text-[11px] text-muted-foreground">
                   <span className="col-span-3">Model</span>
                   <span className="col-span-2 text-right">$/hr</span>
                   <span className="col-span-2 text-right">$/year</span>
@@ -282,7 +282,7 @@ export default function GpuEconomics({ embedded = false }: { embedded?: boolean 
               </div>
             </div>
           )}
-          <div className="px-4 py-2 text-10 text-muted-foreground/50 font-mono border-t border-border">
+          <div className="px-4 py-2 text-10 text-muted-foreground/50 border-t border-border">
             $/year = on-demand rate held for 8,760 hours. Peak BF16 = vendor dense tensor throughput (PF = petaflops). $/PFLOP-hr = rate ÷ petaflops.
           </div>
         </Card>
@@ -308,25 +308,25 @@ export default function GpuEconomics({ embedded = false }: { embedded?: boolean 
                 {/* Inputs */}
                 <div className="space-y-3">
                   <label className="block">
-                    <span className="text-11 font-mono uppercase tracking-wider text-muted-foreground">Model scale</span>
-                    <select value={presetIdx} onChange={(e) => setPresetIdx(+e.target.value)} className="mt-1 w-full bg-surface-base border border-subtle rounded px-2 py-1.5 text-sm text-foreground font-mono" data-testid="econ-preset">
+                    <span className="text-[11px] text-muted-foreground">Model scale</span>
+                    <select value={presetIdx} onChange={(e) => setPresetIdx(+e.target.value)} className="mt-1 w-full bg-surface-base border border-subtle rounded px-2 py-1.5 text-sm text-foreground" data-testid="econ-preset">
                       {presets.map((p, i) => <option key={p.label} value={i}>{p.label}</option>)}
                     </select>
                     {presets[presetIdx] && <span className="text-10 text-muted-foreground/50 mt-0.5 block">{presets[presetIdx].flops.toExponential(1)} FLOPs · {presets[presetIdx].note}</span>}
                   </label>
                   <label className="block">
-                    <span className="text-11 font-mono uppercase tracking-wider text-muted-foreground">GPU</span>
-                    <select value={gpuModel} onChange={(e) => setGpuModel(e.target.value)} className="mt-1 w-full bg-surface-base border border-subtle rounded px-2 py-1.5 text-sm text-foreground font-mono" data-testid="econ-gpu">
+                    <span className="text-[11px] text-muted-foreground">GPU</span>
+                    <select value={gpuModel} onChange={(e) => setGpuModel(e.target.value)} className="mt-1 w-full bg-surface-base border border-subtle rounded px-2 py-1.5 text-sm text-foreground" data-testid="econ-gpu">
                       {calcGpus.map((g) => <option key={g.model} value={g.model}>{g.model} · {usd(g.pricePerHr)}/hr, {(g.tflopsBf16! / 1000).toFixed(2)} PF</option>)}
                     </select>
                   </label>
                   <label className="block">
-                    <span className="text-11 font-mono uppercase tracking-wider text-muted-foreground">Utilization (MFU): {mfu}%</span>
+                    <span className="text-[11px] text-muted-foreground">Utilization (MFU): {mfu}%</span>
                     <input type="range" min={20} max={60} value={mfu} onChange={(e) => setMfu(+e.target.value)} className="mt-1 w-full accent-brand" data-testid="econ-mfu" />
                     <span className="text-10 text-muted-foreground/50">real training runs land ~30-50%</span>
                   </label>
                   <label className="block">
-                    <span className="text-11 font-mono uppercase tracking-wider text-muted-foreground">Cluster size (GPUs)</span>
+                    <span className="text-[11px] text-muted-foreground">Cluster size (GPUs)</span>
                     <input type="number" min={1} value={gpuCount} onChange={(e) => setGpuCount(Math.max(1, +e.target.value || 1))} className="mt-1 w-full bg-surface-base border border-subtle rounded px-2 py-1.5 text-sm text-foreground font-mono" data-testid="econ-gpucount" />
                   </label>
                 </div>
@@ -349,7 +349,7 @@ export default function GpuEconomics({ embedded = false }: { embedded?: boolean 
                 <div className="mt-5 pt-4 border-t border-border" data-testid="econ-sensitivity-chart">
                   <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
                     <div>
-                      <div className="text-11 font-mono uppercase tracking-wider text-muted-foreground">Training cost sensitivity</div>
+                      <div className="text-[13px] font-semibold text-foreground">Training cost sensitivity</div>
                       <p className="text-10 text-muted-foreground/50 mt-0.5">Modeled training cost across machine utilization. Same inputs and formula as the calculator.</p>
                     </div>
                     <div className="text-10 font-mono text-right" style={{ color: NVIDIA_COLOR }}>
@@ -441,7 +441,7 @@ function LegendDot({ color, label }: { color: string; label: string }) {
 function Out({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
   return (
     <div>
-      <div className="text-10 font-mono uppercase tracking-wider text-muted-foreground/60">{label}</div>
+      <div className="text-[11px] text-muted-foreground/60">{label}</div>
       <div className={`font-semibold tabular-nums ${accent ? "text-2xl text-brand" : "text-lg text-foreground"}`}>{value}</div>
     </div>
   );
