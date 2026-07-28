@@ -107,7 +107,7 @@ function Sparkline({ data, refValue, refLabel, height = 40 }: { data: number[] |
   if (!data || data.length === 0) {
     return (
       <div
-        className="flex items-center justify-center rounded-sm border border-dashed border-subtle text-9 font-mono text-muted-foreground/50 select-none"
+        className="flex items-center justify-center rounded-sm border border-dashed border-subtle text-9 text-muted-foreground/50 select-none"
         style={{ height }}
         data-testid="sparkline-empty"
       >
@@ -184,7 +184,7 @@ function StaleBadge({ ticker }: { ticker: string }) {
     <UITooltip>
       <TooltipTrigger asChild>
         <span
-          className="inline-flex items-center gap-1 rounded-sm border border-brand-2/30 bg-brand-2/10 px-1.5 py-0 text-10 font-mono text-brand-2/90 leading-4"
+          className="inline-flex items-center gap-1 rounded-sm border border-brand-2/30 bg-brand-2/10 px-1.5 py-0 text-10 text-brand-2/90 leading-4"
           data-testid={`stale-indicator-${ticker}`}
         >
           <Clock className="h-2.5 w-2.5" />
@@ -214,7 +214,7 @@ function MarketStateBadge({ state, majority }: { state: string | null | undefine
   if (!state || state === majority) return null;
   const label = state.startsWith("PRE") ? "pre" : state.startsWith("POST") ? "post" : state === "REGULAR" ? "live" : "closed";
   return (
-    <span className="text-8 font-mono uppercase px-1 rounded-sm border border-subtle text-muted-foreground/70" title={`this ticker: ${marketStateLabel(state)} (differs from the rest of the page)`}>
+    <span className="text-8 px-1 rounded-sm border border-subtle text-muted-foreground/70" title={`this ticker: ${marketStateLabel(state)} (differs from the rest of the page)`}>
       {label}
     </span>
   );
@@ -594,11 +594,11 @@ export default function TheStack() {
         right={
           <>
             {majorityState && majorityState !== "REGULAR" && (
-              <Badge className="bg-muted/40 text-muted-foreground border-border font-mono text-xs" data-testid="market-state-chip">
+              <Badge className="bg-muted/40 text-muted-foreground border-border text-xs" data-testid="market-state-chip">
                 {marketStateLabel(majorityState)}
               </Badge>
             )}
-            <Badge className="bg-brand-2/15 text-brand-2 border-brand-2/30 font-mono text-xs">
+            <Badge className="bg-brand-2/15 text-brand-2 border-brand-2/30 text-xs">
               Yahoo Finance{majorityState === "REGULAR" ? " · Live" : ""}
             </Badge>
             <AsOf updatedAt={dataUpdatedAt} intervalMs={900_000} />
@@ -613,7 +613,7 @@ export default function TheStack() {
                 key={v}
                 onClick={() => setView(v)}
                 data-testid={`view-${v}`}
-                className={`px-3 py-1 text-xs font-mono font-semibold rounded transition-all ${
+                className={`px-3 py-1 text-xs font-semibold capitalize rounded transition-all ${
                   view === v ? "bg-brand text-white" : "text-muted-foreground hover:text-foreground"
                 }`}
               >
@@ -632,7 +632,7 @@ export default function TheStack() {
                     key={tf}
                     onClick={() => setTimeframe(tf)}
                     data-testid={`timeframe-${tf.toLowerCase()}`}
-                    className={`px-3 py-1 text-xs font-mono font-semibold rounded transition-all ${
+                    className={`px-3 py-1 text-xs font-semibold capitalize rounded transition-all ${
                       timeframe === tf
                         ? "bg-brand text-white"
                         : "text-muted-foreground hover:text-foreground"
@@ -770,7 +770,7 @@ export default function TheStack() {
               <div className="flex items-center gap-6">
                 {data?.correlationCoeff !== undefined && data?.correlationCoeff !== null && (
                   <div className="text-right">
-                    <p className="text-xs text-muted-foreground font-mono">CCJ Pearson r</p>
+                    <p className="text-xs text-muted-foreground">CCJ Pearson r</p>
                     <p className="text-2xl font-bold font-mono text-brand-2">{data.correlationCoeff.toFixed(3)}</p>
                     <p className="text-xs text-muted-foreground">
                       {data.correlationCoeff > 0.7 ? "Strong" : data.correlationCoeff > 0.4 ? "Moderate" : "Weak"} correlation
@@ -779,7 +779,7 @@ export default function TheStack() {
                 )}
                 {data?.cegCorrelationCoeff !== undefined && data?.cegCorrelationCoeff !== null && (
                   <div className="text-right">
-                    <p className="text-xs text-muted-foreground font-mono">CEG Pearson r</p>
+                    <p className="text-xs text-muted-foreground">CEG Pearson r</p>
                     <p className="text-2xl font-bold font-mono text-foreground">{data.cegCorrelationCoeff.toFixed(3)}</p>
                     <p className="text-xs text-muted-foreground">Utility beta</p>
                   </div>
@@ -974,7 +974,7 @@ function StackTable({
     <Card className="border-card-border overflow-x-auto" data-testid="stack-table">
       <table className="w-full text-xs font-mono min-w-[760px]">
         <thead>
-          <tr className="bg-surface-base border-b border-border text-10 uppercase tracking-wider text-muted-foreground">
+          <tr className="bg-surface-base border-b border-border font-sans text-[11px] text-muted-foreground">
             {TABLE_COLS.map((c) => (
               <th key={c.key} className={`px-3 py-2 font-medium ${c.align === "right" ? "text-right" : "text-left"}`}>
                 <button
@@ -1067,7 +1067,7 @@ function StackTable({
           })
         )}
       </table>
-      <p className="px-3 py-2 text-10 text-muted-foreground/50 font-mono border-t border-border">
+      <p className="px-3 py-2 text-10 text-muted-foreground/50 border-t border-border">
         5D / 1M columns compute from each window's own price series; a dash means the window has no data yet. Click a layer to collapse it.
       </p>
     </Card>
@@ -1163,7 +1163,7 @@ function StackHeatmap({
   return (
     <Card className="border-card-border p-3" data-testid="stack-heatmap">
       <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-        <span className="text-11 font-mono uppercase tracking-wider text-muted-foreground">
+        <span className="text-[12px] text-muted-foreground">
           Market cap heatmap · tile = market cap · color = {timeframe} change
         </span>
         <div className="flex items-center gap-1.5 text-9 font-mono text-muted-foreground/70">
@@ -1184,7 +1184,7 @@ function StackHeatmap({
             {groups.map((g) => (
               <div
                 key={g.key}
-                className="absolute text-9 font-mono uppercase tracking-wider truncate px-1"
+                className="absolute text-9 font-medium truncate px-1"
                 style={{ left: g.x0 + 2, top: g.y0 + 2, width: g.x1 - g.x0 - 4, color: g.color }}
                 title={`${g.title} · $${fmtCapB(g.totalB)} combined`}
               >
@@ -1223,7 +1223,7 @@ function StackHeatmap({
           </>
         )}
       </div>
-      <p className="mt-2 text-10 text-muted-foreground/50 font-mono">
+      <p className="mt-2 text-10 text-muted-foreground/50">
         Grouped by layer. ETF benchmarks excluded (fund AUM is not corporate market cap).
         {input.unsized.length > 0 && ` Not sized (no market cap data): ${input.unsized.join(", ")}.`}
         {" "}Gray tiles = delayed quote, change unknown.

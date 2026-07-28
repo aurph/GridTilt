@@ -846,7 +846,7 @@ export default function PowerMap() {
         className="border-b border-border px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3"
         data-testid="power-header"
       >
-        <h1 className="text-base sm:text-lg font-semibold text-foreground tracking-tight" style={{ fontFamily: FONT.mono }}>
+        <h1 className="text-base sm:text-lg font-semibold text-foreground tracking-tight">
           Power <span className="text-muted-foreground/50 font-normal">/ {POWER_SUBTITLES[tab]}</span>
         </h1>
         <ToolTabs tabs={POWER_TABS} active={tab} onChange={setTab} />
@@ -929,8 +929,8 @@ export default function PowerMap() {
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="bottom" align="start" className="max-w-xs z-[1200] p-3">
-                    <p className="text-11 font-mono font-bold tracking-widest text-brand uppercase mb-1.5">&ge; 400 MW only</p>
-                    <p className="text-11 leading-snug text-white/70 normal-case">
+                    <p className="text-[11px] font-semibold text-brand mb-1.5">&ge; 400 MW only</p>
+                    <p className="text-11 leading-snug text-white/70">
                       We track hyperscale AI campuses. Smaller sites exist by the thousands. Sources like <span className="text-white/90 font-medium">DC Map</span> and <span className="text-white/90 font-medium">Data Center Knowledge</span> cover them better. For the compute layer (GPUs, chips, secured power) see <Link href="/compute-frontier" className="text-brand hover:text-brand-2">Compute Frontier</Link>.
                     </p>
                   </TooltipContent>
@@ -955,7 +955,7 @@ export default function PowerMap() {
           </div>
 
           <div className="absolute top-3 right-3 z-[1000] flex flex-col items-end gap-2 pointer-events-auto">
-            <div className="flex rounded-md overflow-hidden border border-subtle text-xs font-mono shadow-lg">
+            <div className="flex rounded-md overflow-hidden border border-subtle text-xs shadow-lg">
               <button
                 className={`px-3 py-1.5 transition-all duration-500 ${viewMode === "dc" ? "bg-brand text-black font-semibold" : "bg-surface-raised/90 text-white/60 hover:text-white/90 backdrop-blur-md"}`}
                 onClick={() => setViewMode("dc")}
@@ -981,7 +981,7 @@ export default function PowerMap() {
                   setFiltersExpanded(!filtersExpanded);
                 }
               }}
-              className="flex items-center gap-2 bg-surface-raised/90 backdrop-blur-md border border-subtle rounded-md px-3 py-1.5 text-xs font-mono text-white/60 hover:text-white/90 transition-colors shadow-lg"
+              className="flex items-center gap-2 bg-surface-raised/90 backdrop-blur-md border border-subtle rounded-md px-3 py-1.5 text-xs text-white/60 hover:text-white/90 transition-colors shadow-lg"
               data-testid="filter-bar-toggle"
             >
               <SlidersHorizontal className="h-3 w-3" />
@@ -998,7 +998,7 @@ export default function PowerMap() {
             {rtoFocus && (
               <button
                 onClick={() => setRtoFocus(null)}
-                className="flex items-center gap-1.5 bg-surface-raised/90 backdrop-blur-md border rounded-md px-2.5 py-1 text-10 font-mono shadow-lg"
+                className="flex items-center gap-1.5 bg-surface-raised/90 backdrop-blur-md border rounded-md px-2.5 py-1 text-10 shadow-lg"
                 style={{ borderColor: alpha(BRAND.primary, 0.4), color: BRAND.primary }}
                 data-testid="map-rto-focus-chip"
               >
@@ -1023,20 +1023,20 @@ export default function PowerMap() {
                 {anyFilterActive && (
                   <div className="flex flex-wrap gap-1.5 mb-3 pb-3 border-b border-subtle">
                     {filterCompanies.map((c) => (
-                      <Badge key={c} className="bg-brand/15 text-brand border-brand/30 text-10 font-mono gap-1 cursor-pointer hover:bg-brand/25" onClick={() => removeCompanyFilter(c)}>
+                      <Badge key={c} className="bg-brand/15 text-brand border-brand/30 text-10 gap-1 cursor-pointer hover:bg-brand/25" onClick={() => removeCompanyFilter(c)}>
                         <div className="h-1.5 w-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: companyColors[c] ?? INK.faint }} />
                         {c}
                         <X className="h-2.5 w-2.5" />
                       </Badge>
                     ))}
                     {filterRTOs.map((rto) => (
-                      <Badge key={rto} className="bg-brand/15 text-brand border-brand/30 text-10 font-mono gap-1 cursor-pointer hover:bg-brand/25" onClick={() => removeRTOFilter(rto)}>
+                      <Badge key={rto} className="bg-brand/15 text-brand border-brand/30 text-10 gap-1 cursor-pointer hover:bg-brand/25" onClick={() => removeRTOFilter(rto)}>
                         {rto}
                         <X className="h-2.5 w-2.5" />
                       </Badge>
                     ))}
                     {filterCapacity !== "all" && (
-                      <Badge className="bg-brand/15 text-brand border-brand/30 text-10 font-mono gap-1 cursor-pointer hover:bg-brand/25" onClick={removeCapacityFilter}>
+                      <Badge className="bg-brand/15 text-brand border-brand/30 text-10 gap-1 cursor-pointer hover:bg-brand/25" onClick={removeCapacityFilter}>
                         {capacityLabels[filterCapacity]}
                         <X className="h-2.5 w-2.5" />
                       </Badge>
@@ -1046,7 +1046,7 @@ export default function PowerMap() {
 
                 <div className="space-y-3">
                   <div>
-                    <p className="text-10 font-mono text-white/40 uppercase tracking-wider mb-2">Operator</p>
+                    <p className="text-[11px] text-white/40 mb-2">Operator</p>
                     <div className="flex flex-wrap gap-1.5">
                       {allCompanies.map((c) => {
                         const active = filterCompanies.includes(c);
@@ -1072,7 +1072,7 @@ export default function PowerMap() {
                   </div>
 
                   <div>
-                    <p className="text-10 font-mono text-white/40 uppercase tracking-wider mb-2">Grid Region</p>
+                    <p className="text-[11px] text-white/40 mb-2">Grid Region</p>
                     <div className="flex flex-wrap gap-1.5">
                       {ALL_RTOS.map((rto) => {
                         const active = filterRTOs.includes(rto);
@@ -1098,7 +1098,7 @@ export default function PowerMap() {
                   </div>
 
                   <div>
-                    <p className="text-10 font-mono text-white/40 uppercase tracking-wider mb-2">Capacity</p>
+                    <p className="text-[11px] text-white/40 mb-2">Capacity</p>
                     <div className="flex flex-wrap gap-1.5">
                       {[
                         { key: "all",    label: "All" },
@@ -1131,7 +1131,7 @@ export default function PowerMap() {
               {viewMode === "dc" ? (
                 <div className="flex items-start gap-4">
                   <div>
-                    <p className="text-9 font-mono text-white/40 uppercase tracking-wider mb-1.5">Size = capacity</p>
+                    <p className="text-10 text-white/40 mb-1.5">Size = capacity</p>
                     <div className="flex items-end gap-2.5">
                       {legendSizes.map(({ mw, label }) => {
                         const d = Math.round(pinRadius(mw) * 2);
@@ -1153,8 +1153,8 @@ export default function PowerMap() {
                     </div>
                   </div>
                   <div>
-                    <p className="text-9 font-mono text-white/40 uppercase tracking-wider mb-1.5">Color = status</p>
-                    <div className="space-y-1 text-10 font-mono text-white/60">
+                    <p className="text-10 text-white/40 mb-1.5">Color = status</p>
+                    <div className="space-y-1 text-10 text-white/60">
                       <div className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ backgroundColor: STATUS_COLORS.operational }} />Operational</div>
                       <div className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ backgroundColor: STATUS_COLORS.construction }} />Construction</div>
                       <div className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ backgroundColor: STATUS_COLORS.announced }} />Announced</div>
@@ -1163,8 +1163,8 @@ export default function PowerMap() {
                 </div>
               ) : (
                 <>
-                  <p className="text-9 font-mono text-white/40 uppercase tracking-wider mb-1.5">Grid stress</p>
-                  <div className="space-y-1 text-10 font-mono text-white/60">
+                  <p className="text-10 text-white/40 mb-1.5">Grid stress</p>
+                  <div className="space-y-1 text-10 text-white/60">
                     {([
                       ["Critical", "<16%"],
                       ["Elevated", "16-18%"],
@@ -1242,7 +1242,7 @@ export default function PowerMap() {
               }}
             >
               <div
-                className="border rounded-lg shadow-2xl text-xs font-mono min-w-[260px] max-w-[280px] overflow-hidden"
+                className="border rounded-lg shadow-2xl text-xs min-w-[260px] max-w-[280px] overflow-hidden"
                 style={{
                   background: SURFACE.raised,
                   borderColor: alpha(BRAND.primary, 0.3),
@@ -1279,7 +1279,7 @@ export default function PowerMap() {
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-white/40 text-xs">Capacity</span>
-                    <span className="text-brand-2 font-bold text-13">{displayDC.powerMW} MW</span>
+                    <span className="text-brand-2 font-mono font-bold text-13 tabular-nums">{displayDC.powerMW} MW</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-white/40 text-xs">Grid Region</span>
@@ -1289,7 +1289,7 @@ export default function PowerMap() {
                     <>
                       <div className="flex items-center justify-between">
                         <span className="text-white/40 text-xs">Annual Power</span>
-                        <span className="text-white text-xs">{(displayDC.annualMWh / 1_000_000).toFixed(2)} TWh</span>
+                        <span className="text-white text-xs font-mono tabular-nums">{(displayDC.annualMWh / 1_000_000).toFixed(2)} TWh</span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-white/40 text-xs">Online</span>
@@ -1317,12 +1317,12 @@ export default function PowerMap() {
       <div className="border-t border-border px-4 sm:px-6 py-4" data-testid="upcoming-projects-section">
         <div className="flex items-center gap-2 mb-3">
           <Calendar className="h-4 w-4 text-muted-foreground" />
-          <h2 className="text-xs font-semibold tracking-wider uppercase text-muted-foreground">Upcoming Projects</h2>
-          <span className="text-10 font-mono text-muted-foreground/50">Announced facilities not yet built</span>
+          <h2 className="text-[13px] font-semibold text-foreground">Upcoming Projects</h2>
+          <span className="text-10 text-muted-foreground/50">Announced facilities not yet built</span>
           {announced.length > 0 && (
             <button
               onClick={() => setShowAllUpcoming((v) => !v)}
-              className="ml-auto text-10 font-mono text-brand hover:text-brand-2 transition-colors"
+              className="ml-auto text-10 text-brand hover:text-brand-2 transition-colors"
               data-testid="upcoming-show-all"
             >
               {showAllUpcoming ? "Collapse" : `Show all ${announced.length}`}
@@ -1357,7 +1357,7 @@ export default function PowerMap() {
               >
                 <div className="flex items-center gap-1.5 mb-2">
                   <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: cColor }} />
-                  <span className="text-10 font-mono font-semibold" style={{ color: cColor }}>{dc.company}</span>
+                  <span className="text-10 font-semibold" style={{ color: cColor }}>{dc.company}</span>
                 </div>
                 <p className="text-xs font-semibold text-foreground leading-tight mb-2">{dc.name}</p>
                 <div className="flex items-center justify-between text-10 font-mono text-muted-foreground">
@@ -1367,8 +1367,8 @@ export default function PowerMap() {
                 {rtoColor && (
                   <div className="flex items-center gap-1 mt-1.5">
                     <div className="h-1.5 w-1.5 rounded-sm" style={{ backgroundColor: rtoColor, opacity: 0.8 }} />
-                    <span className="text-9 font-mono text-muted-foreground/70">{rto}</span>
-                    <span className="text-9 font-mono text-muted-foreground/50 ml-auto">{dc.city}, {dc.state}</span>
+                    <span className="text-9 text-muted-foreground/70">{rto}</span>
+                    <span className="text-9 text-muted-foreground/50 ml-auto">{dc.city}, {dc.state}</span>
                   </div>
                 )}
               </button>
@@ -1380,12 +1380,12 @@ export default function PowerMap() {
       <div className="border-t border-border px-4 sm:px-6 py-4" data-testid="grid-stress-table">
         <div className="flex items-center gap-2 mb-3">
           <Network className="h-4 w-4 text-muted-foreground" />
-          <h2 className="text-xs font-semibold tracking-wider uppercase text-muted-foreground">Grid Operator Load Analysis</h2>
-          <span className="text-10 font-mono text-muted-foreground/50">Reserve margins: NERC LTRA 2025 (2026 projections)</span>
+          <h2 className="text-[13px] font-semibold text-foreground">Grid Operator Load Analysis</h2>
+          <span className="text-10 text-muted-foreground/50">Reserve margins: NERC LTRA 2025 (2026 projections)</span>
           {rtoFocus ? (
             <button
               onClick={() => setRtoFocus(null)}
-              className="ml-auto flex items-center gap-1 text-10 font-mono px-2 py-0.5 rounded border transition-colors"
+              className="ml-auto flex items-center gap-1 text-10 px-2 py-0.5 rounded border transition-colors"
               style={{
                 borderColor: alpha(BRAND.primary, 0.4),
                 color: BRAND.primary,
@@ -1397,13 +1397,13 @@ export default function PowerMap() {
               <X className="h-2.5 w-2.5" />
             </button>
           ) : (
-            <span className="ml-auto text-10 font-mono text-muted-foreground/50 hidden sm:inline">Click a row to filter the map</span>
+            <span className="ml-auto text-10 text-muted-foreground/50 hidden sm:inline">Click a row to filter the map</span>
           )}
         </div>
         <div className="overflow-x-auto rto-table-scroll">
           <table className="w-full min-w-[520px] text-xs font-mono">
             <thead>
-              <tr className="border-b border-border/60">
+              <tr className="border-b border-border/60 font-sans">
                 <th className="text-left text-muted-foreground/60 font-normal pb-2 pr-6">RTO / ISO</th>
                 <th className="text-right text-muted-foreground/60 font-normal pb-2 pr-6">Tracked AI Load</th>
                 <th className="text-right text-muted-foreground/60 font-normal pb-2 pr-6">Reserve Margin</th>
@@ -1427,7 +1427,7 @@ export default function PowerMap() {
                       <div className="flex items-center gap-1.5">
                         <div className="h-2 w-2 rounded-sm" style={{ backgroundColor: RTO_MUTED_COLORS[rto], opacity: 0.9 }} />
                         <span className="text-foreground font-semibold">{rto}</span>
-                        {active && <span className="text-9 text-brand">on map</span>}
+                        {active && <span className="text-9 font-sans text-brand">on map</span>}
                       </div>
                     </td>
                     <td className="py-2 pr-6 text-right text-foreground">
@@ -1449,7 +1449,7 @@ export default function PowerMap() {
                     </td>
                     <td className="py-2">
                       <Badge
-                        className="text-10 font-mono border-transparent whitespace-nowrap"
+                        className="text-10 border-transparent whitespace-nowrap"
                         style={{ backgroundColor: alpha(sColor, 0.15), color: sColor }}
                       >
                         {cfg.aiSignal}
@@ -1489,7 +1489,7 @@ export default function PowerMap() {
 
             <div className="space-y-5">
               <div>
-                <p className="text-10 font-mono text-white/40 uppercase tracking-wider mb-2">Operator</p>
+                <p className="text-[11px] text-white/40 mb-2">Operator</p>
                 <div className="flex flex-wrap gap-2">
                   {allCompanies.map((c) => {
                     const active = filterCompanies.includes(c);
@@ -1511,7 +1511,7 @@ export default function PowerMap() {
               </div>
 
               <div>
-                <p className="text-10 font-mono text-white/40 uppercase tracking-wider mb-2">Grid Region</p>
+                <p className="text-[11px] text-white/40 mb-2">Grid Region</p>
                 <div className="flex flex-wrap gap-2">
                   {ALL_RTOS.map((rto) => {
                     const active = filterRTOs.includes(rto);
@@ -1533,7 +1533,7 @@ export default function PowerMap() {
               </div>
 
               <div>
-                <p className="text-10 font-mono text-white/40 uppercase tracking-wider mb-2">Capacity</p>
+                <p className="text-[11px] text-white/40 mb-2">Capacity</p>
                 <div className="flex flex-wrap gap-2">
                   {[
                     { key: "all",    label: "All Sizes" },

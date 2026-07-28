@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { AsOf } from "@/components/Freshness";
 import { SiBitcoin } from "react-icons/si";
-import { BRAND, INK, SURFACE, SEMANTIC, DATA_QUALITY, CHART_CHROME } from "@/lib/tokens";
+import { BRAND, FONT, INK, SURFACE, SEMANTIC, DATA_QUALITY, CHART_CHROME } from "@/lib/tokens";
 import {
   Tooltip as UITooltip,
   TooltipContent,
@@ -76,6 +76,10 @@ const STATUS_COLOR: Record<BottleneckStatus, string> = {
   Tightening: SEMANTIC.warning,
   Bottlenecked: SEMANTIC.negativeDeep,
 };
+
+/** Stage names ship as uppercase literals in the config; display them in title case. */
+const stageTitle = (name: string) =>
+  name.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
 
 interface SimNode extends d3.SimulationNodeDatum {
   id: string;
@@ -320,7 +324,7 @@ function NetworkGraph({
           const meta = stageMeta[s.id];
           const pillColor = meta ? STATUS_COLOR[meta.status] : null;
           const tip = meta
-            ? `${meta.status.toUpperCase()}: ${meta.detail}${meta.keyMetric ? ` (${meta.keyMetric})` : ''}`
+            ? `${meta.status}: ${meta.detail}${meta.keyMetric ? ` (${meta.keyMetric})` : ''}`
             : undefined;
           return (
             <g key={s.id} data-testid={`stage-label-${s.id}`}>
@@ -329,8 +333,9 @@ function NetworkGraph({
                 y={24}
                 textAnchor="middle"
                 className="sc-stage-label"
+                style={{ fontFamily: FONT.sans, letterSpacing: "0.02em" }}
               >
-                {s.name}
+                {stageTitle(s.name)}
               </text>
               {meta && (
                 <g transform={`translate(${x}, 40)`}>
@@ -350,6 +355,7 @@ function NetworkGraph({
                     x={-22}
                     y={4}
                     className="sc-stage-pill-text"
+                    style={{ fontFamily: FONT.sans, letterSpacing: "0.02em" }}
                     fill={pillColor!}
                   >
                     {meta.status}
@@ -482,6 +488,7 @@ function NetworkGraph({
                 y={r + 14}
                 textAnchor="middle"
                 className="sc-node-label"
+                style={{ fontFamily: FONT.sans }}
                 fill={INK.primary}
               >
                 {node.name}
@@ -618,8 +625,8 @@ function FlowView({
         const stageX = [0.08, 0.28, 0.5, 0.72, 0.92];
         const x = stageX[s.index] * W;
         return (
-          <text key={s.id} x={x} y={28} textAnchor="middle" className="sc-stage-label">
-            {s.name}
+          <text key={s.id} x={x} y={28} textAnchor="middle" className="sc-stage-label" style={{ fontFamily: FONT.sans, letterSpacing: "0.02em" }}>
+            {stageTitle(s.name)}
           </text>
         );
       })}
@@ -694,7 +701,7 @@ function FlowView({
               y={pos.y + pos.h / 2 + 3}
               className="sc-node-label"
               fill={isActive || isConnected ? INK.primary : INK.muted}
-              style={{ pointerEvents: 'none' }}
+              style={{ pointerEvents: 'none', fontFamily: FONT.sans }}
             >
               {node.name}
             </text>
@@ -739,9 +746,9 @@ function DetailPanel({
         <div className="flex items-center gap-3">
           <Icon style={{ width: 18, height: 18, color: stageColor }} />
           <div>
-            <span className="sc-mono text-15 font-bold text-ink">{node.name}</span>
-            <span className="text-11 ml-2 uppercase" style={{ color: INK.faint }}>
-              {STAGE_LABELS.find((s) => s.id === node.stage)?.name}
+            <span className="text-15 font-semibold text-ink">{node.name}</span>
+            <span className="text-11 ml-2" style={{ color: INK.faint }}>
+              {stageTitle(STAGE_LABELS.find((s) => s.id === node.stage)?.name ?? "")}
             </span>
           </div>
         </div>
@@ -763,7 +770,7 @@ function DetailPanel({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
         {upstreamNodes.length > 0 && (
           <div>
-            <div className="sc-section-label" style={{ color: DATA_QUALITY.estimateFlag }}>RECEIVES FROM</div>
+            <div className="text-[11px] font-medium mb-2" style={{ color: DATA_QUALITY.estimateFlag }}>Receives from</div>
             <div className="flex flex-wrap gap-1">
               {upstreamNodes.map((u, i) => (
                 <span
@@ -781,7 +788,7 @@ function DetailPanel({
         )}
         {downstreamNodes.length > 0 && (
           <div>
-            <div className="sc-section-label" style={{ color: BRAND.secondary }}>FEEDS INTO</div>
+            <div className="text-[11px] font-medium mb-2" style={{ color: BRAND.secondary }}>Feeds into</div>
             <div className="flex flex-wrap gap-1">
               {downstreamNodes.map((d, i) => (
                 <span
@@ -799,13 +806,13 @@ function DetailPanel({
         )}
       </div>
 
-      <div className="sc-section-label">SECURITIES</div>
+      <div className="text-[11px] font-medium text-muted-foreground mb-2">Securities</div>
       <div className="sc-stock-table">
-        <div className="sc-stock-header">
-          <span className="sc-stock-col-ticker">TICKER</span>
-          <span className="sc-stock-col-name">NAME</span>
-          <span className="sc-stock-col-price">PRICE</span>
-          <span className="sc-stock-col-chg">CHG%</span>
+        <div className="sc-stock-header" style={{ fontFamily: FONT.sans, letterSpacing: "normal", fontSize: 10 }}>
+          <span className="sc-stock-col-ticker">Ticker</span>
+          <span className="sc-stock-col-name">Name</span>
+          <span className="sc-stock-col-price">Price</span>
+          <span className="sc-stock-col-chg">Chg %</span>
         </div>
         {node.companies.map((c) => {
           const stock = stockMap[c.ticker];
@@ -916,24 +923,24 @@ export default function SupplyChain({ embedded = false }: { embedded?: boolean; 
     <div className={embedded ? "sc-page sc-page-embedded" : "sc-page"} data-testid="supply-chain-page" onClick={() => setActiveNode(null)}>
       <div className="sc-topbar" data-testid="sc-summary-bar">
         <div className="sc-topbar-left">
-          <span className="sc-mono text-13 font-bold" style={{ color: BRAND.primary }}>SUPPLY CHAIN</span>
+          <span className="text-13 font-semibold" style={{ color: BRAND.primary }}>Supply Chain</span>
           <span className="sc-topbar-sep">|</span>
-          <span className="sc-mono text-11 text-ink">AI Power Infrastructure</span>
+          <span className="text-11 text-ink">AI Power Infrastructure</span>
         </div>
         <div className="sc-topbar-right">
-          <span className="sc-mono text-10" style={{ color: INK.faint }}>NODES</span>
+          <span className="text-10" style={{ color: INK.faint }}>Nodes</span>
           <span className="sc-mono text-11 text-ink">{supplyNodes.length}</span>
           <span className="sc-topbar-sep">|</span>
-          <span className="sc-mono text-10" style={{ color: INK.faint }}>CONNECTIONS</span>
+          <span className="text-10" style={{ color: INK.faint }}>Connections</span>
           <span className="sc-mono text-11 text-ink">{supplyLinks.length}</span>
           <span className="sc-topbar-sep">|</span>
-          <span className="sc-mono text-10" style={{ color: INK.faint }}>SECURITIES</span>
+          <span className="text-10" style={{ color: INK.faint }}>Securities</span>
           <span className="sc-mono text-11 text-ink">{totalCompanies}</span>
           <span className="sc-topbar-sep">|</span>
           {isError ? (
             <button
               onClick={(e) => { e.stopPropagation(); refetch(); }}
-              className="inline-flex items-center gap-1.5 rounded-sm border border-negative/40 bg-negative/10 px-1.5 py-0.5 text-9 font-mono uppercase tracking-wide text-negative hover:border-negative/70 transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-sm border border-negative/40 bg-negative/10 px-1.5 py-0.5 text-10 text-negative hover:border-negative/70 transition-colors"
               title="Live quotes and bottleneck statuses failed to load - the chain diagram itself is unaffected. Click to retry."
               data-testid="sc-quotes-retry"
             >
@@ -975,11 +982,11 @@ export default function SupplyChain({ embedded = false }: { embedded?: boolean; 
         )}
       </div>
 
-      <div className="sc-legend" data-testid="sc-legend" onClick={(e) => e.stopPropagation()}>
+      <div className="sc-legend" style={{ fontFamily: FONT.sans }} data-testid="sc-legend" onClick={(e) => e.stopPropagation()}>
         {STAGE_LABELS.map((s) => (
           <span key={s.id}>
             <span className="sc-legend-swatch" style={{ background: STAGE_COLORS[s.id] }} />
-            {s.name}
+            {stageTitle(s.name)}
           </span>
         ))}
         <span className="sc-legend-hint">x = supply chain stage · node size = connection count · click a node to explore. scroll to zoom. double-click to reset.</span>
