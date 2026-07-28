@@ -243,7 +243,7 @@ function TopMoversSection({ topMovers, pulse, isLoading, isError, updatedAt, onR
       </div>
       {/* Sector averages (Lake 4C): uniform chip anatomy in an aligned grid,
           color purely SEMANTIC - green/red intensity by magnitude on the same
-          diverging ramp as The Stack heatmap. Sector identity comes from the
+          diverging ramp as Equities heatmap. Sector identity comes from the
           label, not a hue. */}
       {pulse.length > 0 && (
         <div className="mt-4 pt-3 border-t border-border" data-testid="sector-chips">
@@ -820,7 +820,7 @@ function relativeTime(updatedAt: number | undefined): string {
 const FEATURE_SLIDES = [
   {
     icon: Layers,
-    title: "The Stack",
+    title: "Equities",
     description: "60+ equities across 8 supply chain layers. Compute, nuclear, uranium, power hardware, utilities, construction, and more.",
     href: "/stack",
     accent: BRAND.primary,
@@ -829,7 +829,7 @@ const FEATURE_SLIDES = [
   {
     icon: Link2,
     title: "Supply Chain Flow",
-    description: "Interactive network of 21 nodes and 44 real supply relationships, staged from raw materials to end-use compute. Lives inside The Stack.",
+    description: "Interactive network of 21 nodes and 44 real supply relationships, staged from raw materials to end-use compute. Lives inside Equities.",
     href: "/stack?view=flow",
     accent: BRAND.secondary,
     preview: supplyChainPreview,

@@ -112,7 +112,7 @@ export default function RegionPage() {
         <div className="space-y-2 text-sm">
           <Link href="/power-map" className="block text-brand hover:text-brand-2">Power Map</Link>
           <Link href="/trade" className="block text-brand hover:text-brand-2">Scenario Calculator</Link>
-          <Link href="/stack" className="block text-brand hover:text-brand-2">The Stack</Link>
+          <Link href="/stack" className="block text-brand hover:text-brand-2">Equities</Link>
         </div>
       </Card>
     </div>

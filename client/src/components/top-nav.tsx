@@ -9,7 +9,7 @@ import logoPath from "@assets/Image_[Vectorized]_(2)_1773890483514.png";
 
 const SECTIONS: { label: string; href: string; match: (p: string) => boolean }[] = [
   { label: "Overview", href: "/overview", match: (p) => p === "/overview" },
-  { label: "The Stack", href: "/stack", match: (p) => p === "/stack" || p === "/supply-chain" },
+  { label: "Equities", href: "/stack", match: (p) => p === "/stack" || p === "/supply-chain" },
   { label: "Power", href: "/power-map", match: (p) => p.startsWith("/power") || p === "/queue" },
   { label: "My Grid", href: "/my-grid", match: (p) => p === "/my-grid" },
   { label: "Compute", href: "/compute-frontier", match: (p) => p.startsWith("/compute-frontier") },

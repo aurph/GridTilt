@@ -587,7 +587,7 @@ export default function TheStack() {
     <PerfProfiler>
     <div className="flex flex-col h-full overflow-y-auto">
       <PageHeader
-        title="The Stack"
+        title="Equity Heatmap"
         testId="stack-header"
         about="100+ equities across 13 layers of the AI power supply chain, with intraday prices from Yahoo Finance. Cards, table, heatmap, and supply-chain flow views."
         stats={<HeaderStat label="Equities" value="100" valueClass="text-foreground" />}

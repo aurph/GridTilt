@@ -46,7 +46,7 @@ interface RadarDataPoint {
   fullMark: number;
 }
 
-// One per segment; all tracked in The Stack (/stack), so every suggestion
+// One per segment; all tracked in Equities (/stack), so every suggestion
 // resolves to a real /stock/:ticker page.
 const STACK_EXAMPLE_TICKERS = ["NVDA", "CEG", "VRT", "CCJ", "EQIX", "PWR"];
 
@@ -443,7 +443,7 @@ export default function PortfolioOverlay({ embedded = false }: { embedded?: bool
             <p className="text-sm font-medium text-muted-foreground">Enter your tickers above to score your portfolio</p>
             <p className="text-xs text-muted-foreground mt-1">Supports US-listed equities and ETFs</p>
             <div className="flex flex-wrap items-center justify-center gap-1.5 mt-4">
-              <span className="text-xs text-muted-foreground/60">Try tickers from The Stack:</span>
+              <span className="text-xs text-muted-foreground/60">Try tickers from Equities:</span>
               {STACK_EXAMPLE_TICKERS.map((t) => (
                 <button
                   key={t}

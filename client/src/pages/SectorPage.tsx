@@ -78,7 +78,7 @@ export default function SectorPage() {
           <AlertTriangle className="h-8 w-8 text-negative mx-auto mb-3" />
           <h1 className="text-lg font-semibold mb-2">Sector Not Found</h1>
           <p className="text-sm text-muted-foreground">
-            <Link href="/stack" className="text-brand">Browse The Stack</Link> to see all sectors.
+            <Link href="/stack" className="text-brand">Browse Equities</Link> to see all sectors.
           </p>
         </Card>
       </div>
@@ -97,7 +97,7 @@ export default function SectorPage() {
       <nav className="flex items-center gap-2 text-xs text-muted-foreground" data-testid="breadcrumb">
         <Link href="/" className="hover:text-foreground">GridTilt</Link>
         <span>/</span>
-        <Link href="/stack" className="hover:text-foreground">The Stack</Link>
+        <Link href="/stack" className="hover:text-foreground">Equities</Link>
         <span>/</span>
         <span className="text-foreground font-medium">{sector.name}</span>
       </nav>

@@ -43,7 +43,7 @@ const MARKETING_ROUTES: string[] = [];
 const PAGE_TITLES: Record<string, string> = {
   "/": "GridTilt",
   "/overview": "Tilt Overview",
-  "/stack": "The Stack",
+  "/stack": "Equities",
   "/power-map": "Power",
   "/my-grid": "My Grid",
   "/compute-frontier": "Compute Frontier",
@@ -56,7 +56,7 @@ const PAGE_TITLES: Record<string, string> = {
 
 const SHORTCUTS = [
   { keys: ["G", "1"], description: "Go to Tilt Overview", path: "/overview" },
-  { keys: ["G", "2"], description: "Go to The Stack", path: "/stack" },
+  { keys: ["G", "2"], description: "Go to Equities", path: "/stack" },
   { keys: ["G", "3"], description: "Go to Power", path: "/power-map" },
   { keys: ["G", "4"], description: "Go to Compute Frontier", path: "/compute-frontier" },
   { keys: ["G", "5"], description: "Go to GPU Prices", path: "/neocloud-intel" },

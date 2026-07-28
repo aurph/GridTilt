@@ -31,7 +31,7 @@ const navItems = [
     description: "Live KPIs and demand chart",
   },
   {
-    title: "The Stack",
+    title: "Equities",
     url: "/stack",
     icon: Layers,
     description: "Sector breakdown",

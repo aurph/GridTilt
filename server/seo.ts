@@ -261,7 +261,7 @@ export function getPageMeta(pathname: string): PageMeta {
     } else if (pathname === "/stack") {
       jsonLd.push(breadcrumbJsonLd([
         { name: "GridTilt", url: BASE_URL },
-        { name: "The Stack", url: `${BASE_URL}/stack` },
+        { name: "Equities", url: `${BASE_URL}/stack` },
       ]));
     } else if (pathname === "/catalysts") {
       jsonLd.push(breadcrumbJsonLd([
@@ -305,7 +305,7 @@ export function getPageMeta(pathname: string): PageMeta {
         },
         breadcrumbJsonLd([
           { name: "GridTilt", url: BASE_URL },
-          { name: "The Stack", url: `${BASE_URL}/stack` },
+          { name: "Equities", url: `${BASE_URL}/stack` },
           { name: ticker, url: `${BASE_URL}/stock/${ticker}` },
         ]),
       ],
@@ -325,7 +325,7 @@ export function getPageMeta(pathname: string): PageMeta {
         ogType: "website",
         jsonLd: [breadcrumbJsonLd([
           { name: "GridTilt", url: BASE_URL },
-          { name: "The Stack", url: `${BASE_URL}/stack` },
+          { name: "Equities", url: `${BASE_URL}/stack` },
           { name: sector.name, url: `${BASE_URL}/sector/${slug}` },
         ])],
       };

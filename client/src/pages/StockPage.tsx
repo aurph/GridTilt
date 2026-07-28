@@ -72,13 +72,13 @@ export default function StockPage() {
     return (
       <div className="max-w-5xl mx-auto p-6">
         <Link href="/stack" className="flex items-center gap-1 text-sm text-brand mb-6" data-testid="link-back-stack">
-          <ArrowLeft className="h-4 w-4" /> Back to The Stack
+          <ArrowLeft className="h-4 w-4" /> Back to Equities
         </Link>
         <Card className="p-8 border-card-border text-center">
           <AlertTriangle className="h-8 w-8 text-negative mx-auto mb-3" />
           <h1 className="text-lg font-semibold mb-2">Ticker Not Found</h1>
           <p className="text-sm text-muted-foreground">
-            ${upperTicker} is not tracked on GridTilt. <Link href="/stack" className="text-brand">Browse The Stack</Link> to see all 60+ tracked equities.
+            ${upperTicker} is not tracked on GridTilt. <Link href="/stack" className="text-brand">Browse Equities</Link> to see all 60+ tracked equities.
           </p>
         </Card>
       </div>
@@ -104,7 +104,7 @@ export default function StockPage() {
       <nav className="flex items-center gap-2 text-xs text-muted-foreground" data-testid="breadcrumb">
         <Link href="/" className="hover:text-foreground">GridTilt</Link>
         <span>/</span>
-        <Link href="/stack" className="hover:text-foreground">The Stack</Link>
+        <Link href="/stack" className="hover:text-foreground">Equities</Link>
         <span>/</span>
         <Link href={`/sector/${sectorSlug}`} className="hover:text-foreground">{SECTOR_LABELS[data.layerKey] || data.layerKey}</Link>
         <span>/</span>
@@ -281,7 +281,7 @@ export default function StockPage() {
           <Card className="p-5 border-card-border">
             <h2 className="text-[13px] font-semibold text-foreground mb-3">Tools</h2>
             <div className="space-y-2 text-sm">
-              <Link href="/stack" className="block text-brand hover:text-brand-2" data-testid="link-tool-stack">The Stack</Link>
+              <Link href="/stack" className="block text-brand hover:text-brand-2" data-testid="link-tool-stack">Equities</Link>
               <Link href="/analyze" className="block text-brand hover:text-brand-2" data-testid="link-tool-analyze">Analyze</Link>
               <Link href="/catalysts" className="block text-brand hover:text-brand-2" data-testid="link-tool-catalysts">Catalyst Tracker</Link>
             </div>

@@ -363,7 +363,7 @@ html {
   height: 100%;
 }
 
-/* Embedded inside The Stack's flow view: host owns scroll and page padding */
+/* Embedded inside Equities's flow view: host owns scroll and page padding */
 .sc-page-embedded {
   min-height: 0;
   height: auto;

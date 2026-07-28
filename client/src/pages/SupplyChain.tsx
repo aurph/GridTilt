@@ -919,7 +919,7 @@ export default function SupplyChain({ embedded = false }: { embedded?: boolean; 
   const activeNodeData = activeNode ? supplyNodes.find((n) => n.id === activeNode) : null;
 
   return (
-    // Embedded (The Stack flow view): the host owns page scroll/padding.
+    // Embedded (Equities flow view): the host owns page scroll/padding.
     <div className={embedded ? "sc-page sc-page-embedded" : "sc-page"} data-testid="supply-chain-page" onClick={() => setActiveNode(null)}>
       <div className="sc-topbar" data-testid="sc-summary-bar">
         <div className="sc-topbar-left">

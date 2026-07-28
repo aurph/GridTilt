@@ -226,7 +226,7 @@ export default function BlogPost() {
           <h2 className="text-[13px] font-semibold text-foreground mb-2">Track this on GridTilt</h2>
           <div className="flex flex-wrap gap-3 text-sm">
             <Link href="/overview" className="text-brand hover:text-brand-2">Dashboard</Link>
-            <Link href="/stack" className="text-brand hover:text-brand-2">The Stack</Link>
+            <Link href="/stack" className="text-brand hover:text-brand-2">Equities</Link>
             <Link href="/power-map" className="text-brand hover:text-brand-2">Power Map</Link>
             <Link href="/trade" className="text-brand hover:text-brand-2">Scenario Calculator</Link>
           </div>

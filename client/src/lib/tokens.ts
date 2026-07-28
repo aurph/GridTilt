@@ -77,7 +77,7 @@ export const SERIES = [
 
 /**
  * Stable category -> color mapping. Same category = same color everywhere
- * in the app (Tilt Overview mover tags, The Stack layers, Power Map,
+ * in the app (Tilt Overview mover tags, Equities layers, Power Map,
  * Compute Frontier, TheTrade). Categories that never co-occur in one chart
  * may share a slot (solar/power); co-occurring ones never do.
  */
@@ -87,7 +87,7 @@ export const CATEGORY_COLORS: Record<string, string> = {
   datacenters: SERIES[2], // teal
   construction: SERIES[9], // slate
   power: SERIES[1], // amber
-  utilities: SERIES[8], // pink (grid owns cyan; both appear on The Stack)
+  utilities: SERIES[8], // pink (grid owns cyan; both appear on Equities)
   uranium: SERIES[4], // magenta
   // Energy sources (TheTrade + Compute Frontier co-occur: must be distinct)
   nuclear: SERIES[3], // violet - matches existing purple convention

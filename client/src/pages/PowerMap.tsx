@@ -1303,7 +1303,7 @@ export default function PowerMap() {
                       className="text-11 text-brand hover:text-brand-2 transition-colors pointer-events-auto"
                       data-testid="link-view-in-stack"
                     >
-                      View in The Stack &rarr;
+                      View in Equities &rarr;
                     </a>
                   </div>
                 </div>
