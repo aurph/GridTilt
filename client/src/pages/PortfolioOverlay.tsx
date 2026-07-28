@@ -327,7 +327,7 @@ export default function PortfolioOverlay({ embedded = false }: { embedded?: bool
             {/* Stock list */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                <h2 className="text-[13px] font-semibold text-foreground">
                   {sortedResults.length} Holdings Scored
                 </h2>
                 {avgScore !== null && (
@@ -387,7 +387,7 @@ export default function PortfolioOverlay({ embedded = false }: { embedded?: bool
             <div className="space-y-4">
               <div>
                 <div className="flex items-center gap-2 mb-1">
-                  <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Portfolio Exposure Radar</h2>
+                  <h2 className="text-[13px] font-semibold text-foreground">Portfolio Exposure Radar</h2>
                   <UITooltip>
                     <TooltipTrigger>
                       <Info className="h-3.5 w-3.5 text-muted-foreground" />

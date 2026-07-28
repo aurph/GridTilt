@@ -282,7 +282,7 @@ function UpcomingTimeline({ items }: { items: MergedItem[] }) {
     <div data-testid="upcoming-timeline">
       <div className="flex items-center gap-2 mb-4">
         <Clock style={{ width: 14, height: 14, color: BRAND.primary }} />
-        <span className="text-13 font-semibold text-white uppercase tracking-wider">
+        <span className="text-[13px] font-semibold text-foreground">
           Upcoming Catalysts
         </span>
       </div>
@@ -297,8 +297,8 @@ function UpcomingTimeline({ items }: { items: MergedItem[] }) {
           const days = daysUntil(item.sortDate);
           let timeLabel = `${formatDateShort(item.sortDate)}`;
           let timeLabelColor: string = INK.muted;
-          if (days === 0) { timeLabel = "TODAY"; timeLabelColor = BRAND.primary; }
-          else if (days === 1) { timeLabel = "TOMORROW"; timeLabelColor = BRAND.secondary; }
+          if (days === 0) { timeLabel = "Today"; timeLabelColor = BRAND.primary; }
+          else if (days === 1) { timeLabel = "Tomorrow"; timeLabelColor = BRAND.secondary; }
           else if (days <= 7) { timeLabel = `In ${days}d`; timeLabelColor = INK.muted; }
 
           if (item.type === "earnings") {
@@ -312,7 +312,7 @@ function UpcomingTimeline({ items }: { items: MergedItem[] }) {
                 />
                 <div className="flex-1 flex items-center gap-3 flex-wrap">
                   <span
-                    className="text-11 font-bold uppercase min-w-[60px]"
+                    className="text-11 font-semibold min-w-[60px]"
                     style={{ color: timeLabelColor }}
                   >
                     {timeLabel}
@@ -351,7 +351,7 @@ function UpcomingTimeline({ items }: { items: MergedItem[] }) {
                 style={{ background: INK.faint }}
               />
               <div className="flex-1 flex items-center gap-3 flex-wrap">
-                <span className="text-11 font-bold uppercase min-w-[60px]" style={{ color: timeLabelColor }}>
+                <span className="text-11 font-semibold min-w-[60px]" style={{ color: timeLabelColor }}>
                   {timeLabel}
                 </span>
                 <span className="text-13 font-semibold text-white">{c.title}</span>
@@ -409,7 +409,7 @@ function ThesisCatalysts({ catalysts }: { catalysts: CatalystItem[] }) {
     <div data-testid="thesis-catalysts">
       <div className="flex items-center gap-2 mb-4">
         <TrendingUp style={{ width: 14, height: 14, color: BRAND.secondary }} />
-        <span className="text-13 font-semibold text-white uppercase tracking-wider">
+        <span className="text-[13px] font-semibold text-foreground">
           Thesis Catalysts
         </span>
       </div>
@@ -531,7 +531,7 @@ export default function CatalystTracker() {
             </p>
             <button
               onClick={() => refetch()}
-              className="mt-3 inline-flex items-center gap-1.5 rounded border border-subtle px-2.5 py-1 text-11 font-mono text-foreground hover:border-strong transition-colors"
+              className="mt-3 inline-flex items-center gap-1.5 rounded border border-subtle px-2.5 py-1 text-11 text-foreground hover:border-strong transition-colors"
               data-testid="error-retry"
             >
               <RotateCw className="h-3 w-3" />

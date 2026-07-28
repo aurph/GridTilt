@@ -33,7 +33,7 @@ export default function BlogIndex() {
             so it can never blank the post list below. */}
         <BriefPage embedded />
 
-        <h2 className="text-xs font-mono uppercase tracking-wider text-muted-foreground pt-2" data-testid="blog-archive-heading">
+        <h2 className="text-[13px] font-semibold text-foreground pt-2" data-testid="blog-archive-heading">
           Long-form posts
         </h2>
 

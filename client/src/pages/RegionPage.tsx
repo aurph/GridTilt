@@ -81,7 +81,7 @@ export default function RegionPage() {
       </div>
 
       <Card className="p-5 border-card-border" data-testid="region-map-link">
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">Interactive Map</h2>
+        <h2 className="text-[13px] font-semibold text-foreground mb-3">Interactive Map</h2>
         <p className="text-sm text-muted-foreground mb-3">
           View all data center facilities in the {region.name} region on the interactive Power Map.
         </p>
@@ -95,7 +95,7 @@ export default function RegionPage() {
       </Card>
 
       <Card className="p-5 border-card-border" data-testid="related-regions">
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">Other Grid Regions</h2>
+        <h2 className="text-[13px] font-semibold text-foreground mb-3">Other Grid Regions</h2>
         <div className="flex flex-wrap gap-2">
           {ALL_REGIONS.filter((r) => r !== slug).map((r) => (
             <Link key={r} href={`/region/${r}`}>
@@ -108,7 +108,7 @@ export default function RegionPage() {
       </Card>
 
       <Card className="p-5 border-card-border">
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">Related Tools</h2>
+        <h2 className="text-[13px] font-semibold text-foreground mb-3">Related Tools</h2>
         <div className="space-y-2 text-sm">
           <Link href="/power-map" className="block text-brand hover:text-brand-2">Power Map</Link>
           <Link href="/trade" className="block text-brand hover:text-brand-2">Scenario Calculator</Link>
