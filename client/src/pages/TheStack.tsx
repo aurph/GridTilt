@@ -272,9 +272,9 @@ function StockCard({ stock, timeframe, majorityState }: { stock: StockData; time
             {isStale ? (
               <StaleBadge ticker={stock.ticker} />
             ) : (
-              <Badge className={`text-xs px-1.5 py-0 font-mono ${isUp ? "bg-positive-deep/15 text-positive" : "bg-negative-deep/15 text-negative"}`}>
+              <span className={`font-mono text-xs font-semibold tabular-nums ${isUp ? "text-positive" : "text-negative"}`}>
                 {isUp ? "+" : ""}{(stock.changePercent as number).toFixed(2)}%
-              </Badge>
+              </span>
             )}
             <MarketStateBadge state={stock.marketState} majority={majorityState} />
           </div>
@@ -418,7 +418,7 @@ function sortStocks(stocks: StockData[], sortBy: SortBy): StockData[] {
 
 type ViewMode = "cards" | "table" | "heatmap" | "flow";
 const VIEW_LS_KEY = "gridtilt.stack.view";
-const VIEW_MODES: ViewMode[] = ["cards", "table", "heatmap", "flow"];
+const VIEW_MODES: ViewMode[] = ["heatmap", "cards", "table", "flow"];
 
 function readStoredView(): ViewMode {
   // URL param wins (the /supply-chain redirect lands on /stack?view=flow),
@@ -427,9 +427,9 @@ function readStoredView(): ViewMode {
     const q = new URLSearchParams(window.location.search).get("view");
     if (q && (VIEW_MODES as string[]).includes(q)) return q as ViewMode;
     const v = window.localStorage.getItem(VIEW_LS_KEY);
-    return v && (VIEW_MODES as string[]).includes(v) ? (v as ViewMode) : "cards";
+    return v && (VIEW_MODES as string[]).includes(v) ? (v as ViewMode) : "heatmap";
   } catch {
-    return "cards";
+    return "heatmap";
   }
 }
 
@@ -1128,7 +1128,7 @@ function StackHeatmap({
     return buildHeatmapInput(layers, byLayer);
   }, [layers, data, timeframe]);
 
-  const height = Math.max(440, Math.min(660, Math.round(width * 0.52)));
+  const height = Math.max(560, Math.min(880, Math.round(width * 0.62)));
   const { tiles, groups, totalH } = useMemo(() => {
     const totalB = input.groups.reduce((s, g) => s + g.totalB, 0);
     if (width === 0 || totalB <= 0) return { tiles: [] as HeatRect[], groups: [] as HeatGroupRect[], totalH: height };

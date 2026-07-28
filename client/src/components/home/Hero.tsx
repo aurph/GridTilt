@@ -5,6 +5,7 @@ import { motion, type Variants } from "framer-motion";
 import { Zap, Handshake, Cpu, MapPin } from "lucide-react";
 import { Wordmark } from "./Wordmark";
 import { GridPulse } from "./grid-pulse";
+import { MarketTape } from "./market-tape";
 
 interface ClusterMetrics {
   clusterCount: number;
@@ -62,7 +63,7 @@ export function Hero() {
       style={{ minHeight: "calc(100vh - 88px)" }}
       data-testid="home-hero"
     >
-      <div className="absolute inset-0 z-0 opacity-60" aria-hidden>
+      <div className="absolute inset-0 z-0 opacity-75" aria-hidden>
         <GridPulse />
       </div>
 
@@ -123,6 +124,7 @@ export function Hero() {
           </motion.div>
         </motion.div>
       </div>
+      <MarketTape />
     </section>
   );
 }

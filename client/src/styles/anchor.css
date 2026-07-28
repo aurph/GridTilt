@@ -486,3 +486,18 @@
 @media (prefers-reduced-motion: reduce) {
   .gt-pulse-path, .gt-pulse-node { animation: none; opacity: 0.3; }
 }
+
+/* Hero market tape: seamless leftward scroll over quadrupled content. */
+.gt-tape { overflow: hidden; }
+.gt-tape-track {
+  width: max-content;
+  padding-left: 100%;
+  animation: gt-tape-scroll 55s linear infinite;
+}
+@keyframes gt-tape-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gt-tape-track { animation: none; padding-left: 0; }
+}
