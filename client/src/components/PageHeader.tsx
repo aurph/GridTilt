@@ -66,7 +66,7 @@ export function PageHeader({
 export function HeaderStat({ label, value, valueClass = "text-brand-2" }: { label: string; value: string; valueClass?: string }) {
   return (
     <span className="flex items-baseline gap-2 font-mono">
-      <span className="text-10 uppercase tracking-wider text-muted-foreground">{label}</span>
+      <span className="text-[11px] text-muted-foreground">{label}</span>
       <span className={`text-sm font-bold tabular-nums ${valueClass}`}>{value}</span>
     </span>
   );
