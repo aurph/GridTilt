@@ -50,7 +50,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/neocloud-intel": "GPU Prices",
   "/analyze": "Analyze",
   "/catalysts": "Catalyst Tracker",
-  "/blog": "Analysis",
+  "/blog": "Research",
   "/subscribe": "Subscribe",
 };
 
@@ -62,7 +62,7 @@ const SHORTCUTS = [
   { keys: ["G", "5"], description: "Go to GPU Prices", path: "/neocloud-intel" },
   { keys: ["G", "6"], description: "Go to Catalyst Tracker", path: "/catalysts" },
   { keys: ["G", "7"], description: "Go to Analyze", path: "/analyze" },
-  { keys: ["G", "8"], description: "Go to Analysis", path: "/blog" },
+  { keys: ["G", "8"], description: "Go to Research", path: "/blog" },
   { keys: ["G", "9"], description: "Go to My Grid", path: "/my-grid" },
   { keys: ["?"], description: "Show this keyboard shortcuts panel", path: null },
 ];

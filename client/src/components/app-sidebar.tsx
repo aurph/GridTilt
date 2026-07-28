@@ -73,7 +73,7 @@ const navItems = [
     description: "Upcoming market events",
   },
   {
-    title: "Analysis",
+    title: "Research",
     url: "/blog",
     icon: FileText,
     description: "Research and data",
