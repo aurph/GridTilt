@@ -93,5 +93,43 @@
     "sourceName": "DCD",
     "discoveredAt": "2026-07-27T16:02:54.961Z",
     "approxCoords": true
+  },
+  {
+    "id": 64,
+    "name": "Meta Unknown (Meta and BlackRock team up for data cent)",
+    "company": "Meta",
+    "city": "Unknown",
+    "state": "TX",
+    "lat": 31.054,
+    "lng": -97.563,
+    "powerMW": 1000,
+    "status": "announced",
+    "annualMWh": 7446000,
+    "gridOperator": "Unknown",
+    "openDate": "TBD",
+    "sourceUrl": "https://www.datacenterdynamics.com/en/news/meta-and-blackrock-team-up-for-data-center-in-el-paso-texas/",
+    "sourceTitle": "Meta and BlackRock team up for data center in El Paso, Texas",
+    "sourceName": "DCD",
+    "discoveredAt": "2026-07-29T10:00:53.210Z",
+    "approxCoords": true
+  },
+  {
+    "id": 65,
+    "name": "Google Unknown (Michigan utility DTE data center pipelin)",
+    "company": "Google",
+    "city": "Unknown",
+    "state": "MI",
+    "lat": 43.326,
+    "lng": -84.536,
+    "powerMW": 8000,
+    "status": "announced",
+    "annualMWh": 59568000,
+    "gridOperator": "Unknown",
+    "openDate": "TBD",
+    "sourceUrl": "https://www.datacenterdynamics.com/en/news/michigan-utility-dte-data-center-pipeline-increases-to-more-than-8gw-on-the-back-of-deals-with-oracle-and-google/",
+    "sourceTitle": "Michigan utility DTE data center pipeline increases to more than 8GW, on the back of deals with Oracle and Google",
+    "sourceName": "DCD",
+    "discoveredAt": "2026-07-29T11:00:20.473Z",
+    "approxCoords": true
   }
 ]
