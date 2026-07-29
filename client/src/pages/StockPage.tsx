@@ -72,13 +72,13 @@ export default function StockPage() {
     return (
       <div className="max-w-5xl mx-auto p-6">
         <Link href="/stack" className="flex items-center gap-1 text-sm text-brand mb-6" data-testid="link-back-stack">
-          <ArrowLeft className="h-4 w-4" /> Back to The Stack
+          <ArrowLeft className="h-4 w-4" /> Back to Equities
         </Link>
         <Card className="p-8 border-card-border text-center">
           <AlertTriangle className="h-8 w-8 text-negative mx-auto mb-3" />
           <h1 className="text-lg font-semibold mb-2">Ticker Not Found</h1>
           <p className="text-sm text-muted-foreground">
-            ${upperTicker} is not tracked on GridTilt. <Link href="/stack" className="text-brand">Browse The Stack</Link> to see all 60+ tracked equities.
+            ${upperTicker} is not tracked on GridTilt. <Link href="/stack" className="text-brand">Browse Equities</Link> to see all 60+ tracked equities.
           </p>
         </Card>
       </div>
@@ -104,7 +104,7 @@ export default function StockPage() {
       <nav className="flex items-center gap-2 text-xs text-muted-foreground" data-testid="breadcrumb">
         <Link href="/" className="hover:text-foreground">GridTilt</Link>
         <span>/</span>
-        <Link href="/stack" className="hover:text-foreground">The Stack</Link>
+        <Link href="/stack" className="hover:text-foreground">Equities</Link>
         <span>/</span>
         <Link href={`/sector/${sectorSlug}`} className="hover:text-foreground">{SECTOR_LABELS[data.layerKey] || data.layerKey}</Link>
         <span>/</span>
@@ -130,7 +130,7 @@ export default function StockPage() {
                 ) : (
                   <Badge className="font-mono bg-brand-2/15 text-brand-2 border-brand-2/30 inline-flex items-center gap-1" data-testid="stock-stale">
                     <Clock className="h-3 w-3" />
-                    {isStale ? "delayed" : "—"}
+                    {isStale ? "delayed" : "--"}
                   </Badge>
                 )}
               </>
@@ -161,7 +161,7 @@ export default function StockPage() {
         <div className="lg:col-span-2 space-y-6">
           <Card className="p-5 border-card-border" data-testid="thesis-score-card">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Thesis Alignment Score</h2>
+              <h2 className="text-[13px] font-semibold text-foreground">Thesis Alignment Score</h2>
               <span className="text-3xl font-bold font-mono text-brand-2" data-testid="thesis-score">{data.thesisScore}/100</span>
             </div>
             <p className="text-sm text-muted-foreground mb-4">{data.explanation}</p>
@@ -181,8 +181,8 @@ export default function StockPage() {
           {chartData.length > 0 && (
             <Card className="p-5 border-card-border" data-testid="price-chart">
               <div className="flex items-baseline justify-between gap-3 mb-3">
-                <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Price History</h2>
-                <span className="text-10 font-mono text-muted-foreground/70">past 2 days, 5-min closes</span>
+                <h2 className="text-[13px] font-semibold text-foreground">Price History</h2>
+                <span className="text-[11px] text-muted-foreground/70">past 2 days, 5-min closes</span>
               </div>
               <ResponsiveContainer width="100%" height={200}>
                 <LineChart data={chartData} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
@@ -208,7 +208,7 @@ export default function StockPage() {
 
           {data.relatedCatalysts.length > 0 && (
             <Card className="p-5 border-card-border" data-testid="stock-catalysts">
-              <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">Upcoming Catalysts</h2>
+              <h2 className="text-[13px] font-semibold text-foreground mb-3">Upcoming Catalysts</h2>
               <div className="space-y-3">
                 {data.relatedCatalysts.map((c) => (
                   <div key={c.id} className="flex items-start gap-3 text-sm">
@@ -227,7 +227,7 @@ export default function StockPage() {
         <div className="space-y-6">
           {data.stockData && (
             <Card className="p-5 border-card-border" data-testid="key-metrics">
-              <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">Key Metrics</h2>
+              <h2 className="text-[13px] font-semibold text-foreground mb-3">Key Metrics</h2>
               <div className="space-y-3">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Market Cap</span>
@@ -254,7 +254,7 @@ export default function StockPage() {
           )}
 
           <Card className="p-5 border-card-border" data-testid="sector-context">
-            <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">Sector Context</h2>
+            <h2 className="text-[13px] font-semibold text-foreground mb-3">Sector Context</h2>
             <Link href={`/sector/${sectorSlug}`} className="text-sm text-brand hover:text-brand-2 font-medium" data-testid="link-sector">
               {SECTOR_LABELS[data.layerKey] || data.layerKey} Sector
             </Link>
@@ -262,7 +262,7 @@ export default function StockPage() {
 
           {data.relatedTickers.length > 0 && (
             <Card className="p-5 border-card-border" data-testid="related-stocks">
-              <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">Related Stocks</h2>
+              <h2 className="text-[13px] font-semibold text-foreground mb-3">Related Stocks</h2>
               <div className="space-y-2">
                 {data.relatedTickers.map((t) => (
                   <Link
@@ -279,9 +279,9 @@ export default function StockPage() {
           )}
 
           <Card className="p-5 border-card-border">
-            <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">Tools</h2>
+            <h2 className="text-[13px] font-semibold text-foreground mb-3">Tools</h2>
             <div className="space-y-2 text-sm">
-              <Link href="/stack" className="block text-brand hover:text-brand-2" data-testid="link-tool-stack">The Stack</Link>
+              <Link href="/stack" className="block text-brand hover:text-brand-2" data-testid="link-tool-stack">Equities</Link>
               <Link href="/analyze" className="block text-brand hover:text-brand-2" data-testid="link-tool-analyze">Analyze</Link>
               <Link href="/catalysts" className="block text-brand hover:text-brand-2" data-testid="link-tool-catalysts">Catalyst Tracker</Link>
             </div>

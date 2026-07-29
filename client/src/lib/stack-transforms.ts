@@ -1,5 +1,5 @@
 /**
- * Pure data transforms for The Stack (Lake 3). No React, no DOM - unit
+ * Pure data transforms for Equities (Lake 3). No React, no DOM - unit
  * tested in Lake 8.
  */
 import { hierarchy, treemap, treemapSquarify, type HierarchyRectangularNode } from "d3-hierarchy";

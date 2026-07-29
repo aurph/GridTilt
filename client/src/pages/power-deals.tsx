@@ -141,7 +141,7 @@ export default function PowerDeals({ embedded = false }: { embedded?: boolean; p
         <div className="max-w-3xl">
           <div className="flex items-center gap-2 mb-2">
             <Handshake className="h-5 w-5 text-brand" />
-            <h1 className="text-2xl sm:text-3xl font-semibold text-foreground tracking-tight" style={{ fontFamily: FONT.mono }}>
+            <h1 className="text-2xl sm:text-3xl font-semibold text-foreground tracking-tight">
               AI Power Deals
             </h1>
           </div>
@@ -172,7 +172,7 @@ export default function PowerDeals({ embedded = false }: { embedded?: boolean; p
 
         {/* Contracted power by buyer */}
         <Card className="border-card-border p-3" data-testid="deals-buyers">
-          <span className="text-11 font-mono uppercase tracking-wider text-muted-foreground">Contracted power by buyer · GW</span>
+          <span className="text-[13px] font-semibold text-foreground">Contracted power by buyer · GW</span>
           {isLoading ? (
             <Skeleton className="h-[300px] w-full mt-2" />
           ) : isError ? (
@@ -209,7 +209,7 @@ export default function PowerDeals({ embedded = false }: { embedded?: boolean; p
           <div className="flex flex-wrap items-center gap-1.5" data-testid="deals-type-filter">
             <button
               onClick={() => setTypeFilter(null)}
-              className={`px-2.5 py-1 rounded text-xs font-mono border transition-colors ${typeFilter === null ? "border-brand text-brand bg-brand/10" : "border-subtle text-muted-foreground hover:text-foreground"}`}
+              className={`px-2.5 py-1 rounded text-xs border transition-colors ${typeFilter === null ? "border-brand text-brand bg-brand/10" : "border-subtle text-muted-foreground hover:text-foreground"}`}
             >
               all types
             </button>
@@ -219,7 +219,7 @@ export default function PowerDeals({ embedded = false }: { embedded?: boolean; p
                 <button
                   key={b.key}
                   onClick={() => setTypeFilter(on ? null : b.key)}
-                  className="px-2.5 py-1 rounded text-xs font-mono border transition-colors"
+                  className="px-2.5 py-1 rounded text-xs border transition-colors"
                   style={{
                     borderColor: on ? typeColor(b.key) : BORDER.subtle,
                     color: on ? typeColor(b.key) : INK.muted,
@@ -236,15 +236,15 @@ export default function PowerDeals({ embedded = false }: { embedded?: boolean; p
         {/* Deals table */}
         <Card className="border-card-border overflow-hidden" data-testid="deals-table">
           <div className="px-4 py-2 bg-surface-base border-b border-border">
-            <span className="text-11 font-mono uppercase tracking-wider text-muted-foreground">Deals</span>
-            <span className="text-10 font-mono text-muted-foreground/40 ml-2">{visibleRows.length} shown · hover for terms + sources</span>
+            <span className="text-[13px] font-semibold text-foreground">Deals</span>
+            <span className="text-10 text-muted-foreground/40 ml-2">{visibleRows.length} shown · hover for terms + sources</span>
           </div>
           {isError ? (
             <ErrorState label="The deals dataset failed to load." onRetry={() => refetch()} />
           ) : (
           <div className="overflow-x-auto">
           <div className="min-w-[680px]">
-          <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-surface-base border-b border-border text-10 font-mono uppercase tracking-wider text-muted-foreground">
+          <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-surface-base border-b border-border text-[11px] text-muted-foreground">
             <SortHeader label="Buyer" k="offtaker" cur={sortKey} dir={sortDir} onClick={toggleSort} className="col-span-2" />
             <span className="col-span-4">Generator / project</span>
             <SortHeader label="Type" k="type" cur={sortKey} dir={sortDir} onClick={toggleSort} className="col-span-2" />
@@ -258,9 +258,9 @@ export default function PowerDeals({ embedded = false }: { embedded?: boolean; p
               <UITooltip key={r.id}>
                 <TooltipTrigger asChild>
                   <div className="grid grid-cols-12 gap-2 px-4 py-2.5 border-b border-border/30 last:border-0 text-xs hover:bg-brand/5 cursor-help items-center" data-testid={`deal-row-${r.id}`}>
-                    <span className="col-span-2 font-mono font-semibold text-foreground truncate">{r.offtaker}</span>
+                    <span className="col-span-2 font-semibold text-foreground truncate">{r.offtaker}</span>
                     <span className="col-span-4 text-muted-foreground truncate">{r.name} <span className="text-muted-foreground/40">· {r.sponsor}</span></span>
-                    <span className="col-span-2 font-mono">
+                    <span className="col-span-2">
                       <span className="inline-flex items-center gap-1.5">
                         <span className="h-2 w-2 rounded-full flex-shrink-0" style={{ background: typeColor(r.type) }} />
                         <span style={{ color: typeColor(r.type) }}>{r.type}</span>
@@ -278,8 +278,8 @@ export default function PowerDeals({ embedded = false }: { embedded?: boolean; p
                   </div>
                   {r.notes && <p className="text-11 text-muted-foreground/80 mb-1.5">{r.notes}</p>}
                   {r.sources.length > 0 && (
-                    <div className="text-10 font-mono text-muted-foreground/60">
-                      <span className="uppercase tracking-wider text-muted-foreground/50">sources: </span>{r.sources.join(" · ")}
+                    <div className="text-10 text-muted-foreground/60">
+                      <span className="text-muted-foreground/50">Sources: </span>{r.sources.join(" · ")}
                     </div>
                   )}
                 </TooltipContent>
@@ -304,8 +304,8 @@ export default function PowerDeals({ embedded = false }: { embedded?: boolean; p
 function StatTile({ label, value, loading }: { label: string; value: string; loading: boolean }) {
   return (
     <Card className="border-card-border p-3">
-      <div className="text-10 font-mono uppercase tracking-wider text-muted-foreground/60">{label}</div>
-      {loading ? <Skeleton className="h-6 w-16 mt-1" /> : <div className="text-lg font-semibold text-foreground mt-0.5 truncate">{value}</div>}
+      <div className="text-[11px] text-muted-foreground/60">{label}</div>
+      {loading ? <Skeleton className="h-6 w-16 mt-1" /> : <div className="text-lg font-semibold tabular-nums text-foreground mt-0.5 truncate">{value}</div>}
     </Card>
   );
 }

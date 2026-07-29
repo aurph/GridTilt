@@ -78,7 +78,7 @@ export default function SectorPage() {
           <AlertTriangle className="h-8 w-8 text-negative mx-auto mb-3" />
           <h1 className="text-lg font-semibold mb-2">Sector Not Found</h1>
           <p className="text-sm text-muted-foreground">
-            <Link href="/stack" className="text-brand">Browse The Stack</Link> to see all sectors.
+            <Link href="/stack" className="text-brand">Browse Equities</Link> to see all sectors.
           </p>
         </Card>
       </div>
@@ -97,7 +97,7 @@ export default function SectorPage() {
       <nav className="flex items-center gap-2 text-xs text-muted-foreground" data-testid="breadcrumb">
         <Link href="/" className="hover:text-foreground">GridTilt</Link>
         <span>/</span>
-        <Link href="/stack" className="hover:text-foreground">The Stack</Link>
+        <Link href="/stack" className="hover:text-foreground">Equities</Link>
         <span>/</span>
         <span className="text-foreground font-medium">{sector.name}</span>
       </nav>
@@ -109,23 +109,23 @@ export default function SectorPage() {
 
       <div className="grid grid-cols-3 gap-4">
         <Card className="p-4 border-card-border text-center" data-testid="stat-avg-change">
-          <p className="text-10 uppercase tracking-widest text-muted-foreground mb-1">Avg Change</p>
+          <p className="text-[11px] text-muted-foreground mb-1">Avg Change</p>
           <p className={`text-xl font-bold font-mono ${avgChange >= 0 ? "text-positive" : "text-negative"}`}>
             {avgChange >= 0 ? "+" : ""}{avgChange.toFixed(2)}%
           </p>
         </Card>
         <Card className="p-4 border-card-border text-center" data-testid="stat-best">
-          <p className="text-10 uppercase tracking-widest text-muted-foreground mb-1">Best Performer</p>
+          <p className="text-[11px] text-muted-foreground mb-1">Best Performer</p>
           <p className="text-sm font-bold font-mono text-positive">{best ? `${best.ticker} +${best.changePercent.toFixed(2)}%` : "N/A"}</p>
         </Card>
         <Card className="p-4 border-card-border text-center" data-testid="stat-worst">
-          <p className="text-10 uppercase tracking-widest text-muted-foreground mb-1">Worst Performer</p>
+          <p className="text-[11px] text-muted-foreground mb-1">Worst Performer</p>
           <p className="text-sm font-bold font-mono text-negative">{worst ? `${worst.ticker} ${worst.changePercent.toFixed(2)}%` : "N/A"}</p>
         </Card>
       </div>
 
       <div>
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">
+        <h2 className="text-[13px] font-semibold text-foreground mb-3">
           {stocks.length} Stocks in {sector.name}
         </h2>
         {isLoading ? (
@@ -165,7 +165,7 @@ export default function SectorPage() {
       </div>
 
       <Card className="p-5 border-card-border" data-testid="related-sectors">
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">Related Sectors</h2>
+        <h2 className="text-[13px] font-semibold text-foreground mb-3">Related Sectors</h2>
         <div className="flex flex-wrap gap-2">
           {sector.related.map((r) => (
             <Link key={r} href={`/sector/${r}`}>

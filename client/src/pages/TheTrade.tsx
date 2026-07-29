@@ -125,7 +125,7 @@ function NumField({
     <div className="space-y-1">
       <div className="flex items-center justify-between">
         <span className="text-xs text-muted-foreground">{label}</span>
-        {unit && <span className="text-10 font-mono text-muted-foreground/60">{unit}</span>}
+        {unit && <span className="text-10 text-muted-foreground/60">{unit}</span>}
       </div>
       <Input
         type="number"
@@ -150,7 +150,7 @@ function MixWarning({ mixSum, testId }: { mixSum: number; testId: string }) {
   return (
     <div className="flex items-center justify-center gap-2 text-negative" data-testid={testId}>
       <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
-      <span className="text-xs font-mono">Mix sums to {mixSum.toFixed(0)}% - adjust to 100%</span>
+      <span className="text-xs">Mix sums to {mixSum.toFixed(0)}% - adjust to 100%</span>
     </div>
   );
 }
@@ -261,7 +261,7 @@ export default function TheTrade({ embedded = false }: { embedded?: boolean; par
 
   const presetSelector = (
     <div className="flex items-center gap-2 mt-4 flex-wrap">
-      <span className="text-10 font-mono text-muted-foreground/60 tracking-wider uppercase mr-1">Scenario:</span>
+      <span className="text-[11px] text-muted-foreground mr-1">Scenario:</span>
       {presetButtons.map(({ key, label }) => (
         <button
           key={key}
@@ -317,13 +317,13 @@ export default function TheTrade({ embedded = false }: { embedded?: boolean; par
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* ---- LEFT: INPUTS ---- */}
           <div className="space-y-5">
-            <h2 className="text-10 font-semibold uppercase tracking-widest text-muted-foreground">Scenario Inputs</h2>
+            <h2 className="text-[13px] font-semibold text-foreground">Scenario Inputs</h2>
 
             {/* Infrastructure Buildout */}
             <Card className="p-4 border-card-border space-y-4">
               <div className="flex items-center gap-2">
                 <DollarSign className="h-3.5 w-3.5 text-brand-2" />
-                <p className="text-xs font-semibold text-foreground tracking-wide">Infrastructure Buildout</p>
+                <p className="text-xs font-semibold text-foreground">Infrastructure Buildout</p>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <NumField
@@ -370,7 +370,7 @@ export default function TheTrade({ embedded = false }: { embedded?: boolean; par
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Zap className="h-3.5 w-3.5 text-brand-2" />
-                  <p className="text-xs font-semibold text-foreground tracking-wide">New Power Supply Mix</p>
+                  <p className="text-xs font-semibold text-foreground">New Power Supply Mix</p>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <span className={`text-xs font-mono font-bold ${mixValid ? "text-positive" : "text-negative"}`}>
@@ -450,7 +450,7 @@ export default function TheTrade({ embedded = false }: { embedded?: boolean; par
             <Card className="p-4 border-card-border space-y-4">
               <div className="flex items-center gap-2">
                 <Cpu className="h-3.5 w-3.5 text-brand-2" />
-                <p className="text-xs font-semibold text-foreground tracking-wide">AI Demand Model</p>
+                <p className="text-xs font-semibold text-foreground">AI Demand Model</p>
                 <UITooltip>
                   <TooltipTrigger>
                     <Info className="h-3 w-3 text-muted-foreground/60" />
@@ -497,18 +497,18 @@ export default function TheTrade({ embedded = false }: { embedded?: boolean; par
 
           {/* ---- RIGHT: OUTPUTS ---- */}
           <div className="space-y-5">
-            <h2 className="text-10 font-semibold uppercase tracking-widest text-muted-foreground">Scenario Outputs</h2>
+            <h2 className="text-[13px] font-semibold text-foreground">Scenario Outputs</h2>
 
             {/* 4 KPI output cards */}
             <div className="grid grid-cols-2 gap-3">
               <Card className="p-3.5 border-card-border" data-testid="output-total-capex">
-                <p className="text-10 text-muted-foreground uppercase tracking-wider mb-1">Total Capex</p>
+                <p className="text-[11px] text-muted-foreground mb-1">Total Capex</p>
                 <p className="text-2xl font-bold font-mono text-brand-2">${outputs.totalCapexB.toFixed(0)}B</p>
                 <p className="text-10 text-muted-foreground/60 mt-0.5">{inputs.newCapacityGW} GW × ${inputs.capexPerMW}M/MW</p>
               </Card>
 
               <Card className={`p-3.5 border-card-border`} data-testid="output-lpt-demand">
-                <p className="text-10 text-muted-foreground uppercase tracking-wider mb-1">Annual LPTs Needed</p>
+                <p className="text-[11px] text-muted-foreground mb-1">Annual LPTs Needed</p>
                 <p className={`text-2xl font-bold font-mono ${lptColor}`}>{outputs.annualLPT.toFixed(0)}/yr</p>
                 <p className="text-10 text-muted-foreground/60 mt-0.5">
                   vs. {US_LPT_CAPACITY} domestic · {(outputs.lptRatio * 100).toFixed(0)}% of US capacity
@@ -516,7 +516,7 @@ export default function TheTrade({ embedded = false }: { embedded?: boolean; par
               </Card>
 
               <Card className="p-3.5 border-card-border" data-testid="output-nuclear-gw">
-                <p className="text-10 text-muted-foreground uppercase tracking-wider mb-1">Nuclear Build by 2030</p>
+                <p className="text-[11px] text-muted-foreground mb-1">Nuclear Build by 2030</p>
                 {mixValid ? (
                   <>
                     <p className="text-2xl font-bold font-mono text-foreground">{outputs.nuclearGW.toFixed(1)} GW</p>
@@ -524,14 +524,14 @@ export default function TheTrade({ embedded = false }: { embedded?: boolean; par
                   </>
                 ) : (
                   <>
-                    <p className="text-2xl font-bold font-mono text-muted-foreground/40">—</p>
+                    <p className="text-2xl font-bold font-mono text-muted-foreground/40">--</p>
                     <p className="text-10 text-negative/80 mt-0.5">Mix sums to {mixSum.toFixed(0)}% - adjust to 100%</p>
                   </>
                 )}
               </Card>
 
               <Card className="p-3.5 border-card-border" data-testid="output-interconnect">
-                <p className="text-10 text-muted-foreground uppercase tracking-wider mb-1">Grid Interconnect</p>
+                <p className="text-[11px] text-muted-foreground mb-1">Grid Interconnect</p>
                 <p className="text-lg font-bold font-mono text-foreground leading-snug mt-0.5">{inputs.interconnectYears}</p>
                 <p className="text-10 text-muted-foreground/60 mt-1">Avg queue-to-energize lead time</p>
               </Card>
@@ -540,7 +540,7 @@ export default function TheTrade({ embedded = false }: { embedded?: boolean; par
             {/* Buildout timeline chart */}
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <h2 className="text-10 font-semibold uppercase tracking-widest text-muted-foreground">Annual Buildout Timeline</h2>
+                <h2 className="text-[13px] font-semibold text-foreground">Annual Buildout Timeline</h2>
                 <UITooltip>
                   <TooltipTrigger>
                     <Info className="h-3.5 w-3.5 text-muted-foreground/60" />
@@ -600,7 +600,7 @@ export default function TheTrade({ embedded = false }: { embedded?: boolean; par
                       ))}
                     </div>
                     {activePreset === "Custom" && (
-                      <p className="text-10 text-muted-foreground/50 font-mono mt-1.5" data-testid="custom-ramp-footnote">
+                      <p className="text-10 text-muted-foreground/50 mt-1.5" data-testid="custom-ramp-footnote">
                         assumed build ramp: fixed S-curve over 2025-2030, scaled to your {inputs.newCapacityGW} GW total
                       </p>
                     )}
@@ -616,7 +616,7 @@ export default function TheTrade({ embedded = false }: { embedded?: boolean; par
             {/* Company rankings */}
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <h2 className="text-10 font-semibold uppercase tracking-widest text-muted-foreground">Scenario-Adjusted Positions</h2>
+                <h2 className="text-[13px] font-semibold text-foreground">Scenario-Adjusted Positions</h2>
                 <UITooltip>
                   <TooltipTrigger>
                     <Info className="h-3.5 w-3.5 text-muted-foreground/60" />
@@ -634,10 +634,10 @@ export default function TheTrade({ embedded = false }: { embedded?: boolean; par
                 ) : (
                 <>
                 <div className="grid grid-cols-[1.5rem_1fr_auto_auto] gap-x-3 px-3 py-2 border-b border-border bg-muted/20">
-                  <span className="text-10 text-muted-foreground font-mono">#</span>
-                  <span className="text-10 text-muted-foreground uppercase tracking-wider">Position</span>
-                  <span className="text-10 text-muted-foreground uppercase tracking-wider text-right">Score</span>
-                  <span className="text-10 text-muted-foreground uppercase tracking-wider text-right w-12">Delta</span>
+                  <span className="text-[11px] text-muted-foreground">#</span>
+                  <span className="text-[11px] text-muted-foreground">Position</span>
+                  <span className="text-[11px] text-muted-foreground text-right">Score</span>
+                  <span className="text-[11px] text-muted-foreground text-right w-12">Delta</span>
                 </div>
                 {rankedCompanies.map((company, index) => {
                   const SegIcon = segmentIcons[company.segment] ?? DollarSign;
@@ -666,7 +666,7 @@ export default function TheTrade({ embedded = false }: { embedded?: boolean; par
                               style={{ width: `${(company.adjusted / 10) * 100}%`, backgroundColor: company.color, opacity: 0.8 }}
                             />
                           </div>
-                          <span className="text-10 text-muted-foreground/60 font-mono truncate max-w-[90px]">{company.rationale}</span>
+                          <span className="text-10 text-muted-foreground/60 truncate max-w-[90px]">{company.rationale}</span>
                         </div>
                       </div>
                       <div className="text-right">
@@ -701,8 +701,8 @@ export default function TheTrade({ embedded = false }: { embedded?: boolean; par
                 >
                   <div className="flex items-center gap-2">
                     <Info className="h-3.5 w-3.5 text-muted-foreground" />
-                    <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">Methodology</span>
-                    <span className="text-10 text-muted-foreground/50 font-mono">Sources (IEA, EIA, DOE, McKinsey, hyperscaler earnings calls), formulas, and key sensitivities</span>
+                    <span className="text-[13px] font-semibold text-foreground">Methodology</span>
+                    <span className="text-10 text-muted-foreground/50">Sources (IEA, EIA, DOE, McKinsey, hyperscaler earnings calls), formulas, and key sensitivities</span>
                   </div>
                   <ChevronDown
                     className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${methodologyOpen ? "rotate-180" : ""}`}
@@ -713,26 +713,26 @@ export default function TheTrade({ embedded = false }: { embedded?: boolean; par
                 <div className="border-t border-border px-5 py-5 grid grid-cols-1 md:grid-cols-3 gap-6 text-xs">
                   {/* Sources */}
                   <div className="space-y-3">
-                    <p className="font-semibold text-foreground uppercase tracking-wider text-10">Sources</p>
+                    <p className="text-[12px] font-semibold text-foreground">Sources</p>
                     <ul className="space-y-2 text-muted-foreground leading-relaxed">
                       <li className="flex gap-2">
-                        <span className="text-brand-2 font-mono flex-shrink-0">IEA</span>
+                        <span className="text-brand-2 font-medium flex-shrink-0">IEA</span>
                         <span>Electricity 2025: AI data centers projected at 400-1,000 TWh global consumption by 2026</span>
                       </li>
                       <li className="flex gap-2">
-                        <span className="text-brand-2 font-mono flex-shrink-0">EIA</span>
+                        <span className="text-brand-2 font-medium flex-shrink-0">EIA</span>
                         <span>Annual Energy Outlook 2025: US baseline consumption ~4,490 TWh (2025E); data centers = 6.4% of US load</span>
                       </li>
                       <li className="flex gap-2">
-                        <span className="text-brand-2 font-mono flex-shrink-0">McKinsey</span>
+                        <span className="text-brand-2 font-medium flex-shrink-0">McKinsey</span>
                         <span>$5.2T global AI infrastructure investment projection through 2030 (2024 Global Technology Report)</span>
                       </li>
                       <li className="flex gap-2">
-                        <span className="text-brand-2 font-mono flex-shrink-0">DOE</span>
+                        <span className="text-brand-2 font-medium flex-shrink-0">DOE</span>
                         <span>Transformer Supply Chain Study 2023: US domestic large power transformer (LPT) manufacturing capacity ~60 units/year</span>
                       </li>
                       <li className="flex gap-2">
-                        <span className="text-brand-2 font-mono flex-shrink-0">Hyperscalers</span>
+                        <span className="text-brand-2 font-medium flex-shrink-0">Hyperscalers</span>
                         <span>2024-2025 earnings calls: all-in capex guidance of $7-12M/MW for hyperscale AI data centers (AWS, Google, Microsoft, Meta)</span>
                       </li>
                     </ul>
@@ -740,22 +740,22 @@ export default function TheTrade({ embedded = false }: { embedded?: boolean; par
 
                   {/* Formulas */}
                   <div className="space-y-3">
-                    <p className="font-semibold text-foreground uppercase tracking-wider text-10">Formulas</p>
+                    <p className="text-[12px] font-semibold text-foreground">Formulas</p>
                     <div className="space-y-3 text-muted-foreground">
                       <div>
-                        <p className="font-mono text-10 text-foreground/80 mb-0.5">Total Capex ($B)</p>
+                        <p className="text-10 font-medium text-foreground/80 mb-0.5">Total Capex ($B)</p>
                         <p className="leading-relaxed">GW × 1,000 (MW/GW) × Capex ($/MW in millions) / 1,000 = GW × Capex/MW. Example: 50 GW × $9M/MW = $450B.</p>
                       </div>
                       <div>
-                        <p className="font-mono text-10 text-foreground/80 mb-0.5">Annual LPT Demand</p>
+                        <p className="text-10 font-medium text-foreground/80 mb-0.5">Annual LPT Demand</p>
                         <p className="leading-relaxed">Total GW × LPTs per GW / 5 years. Default 4 LPTs/GW sourced from DOE interconnection studies. Compare against {US_LPT_CAPACITY} units/year domestic manufacturing capacity.</p>
                       </div>
                       <div>
-                        <p className="font-mono text-10 text-foreground/80 mb-0.5">Generation Breakdown</p>
+                        <p className="text-10 font-medium text-foreground/80 mb-0.5">Generation Breakdown</p>
                         <p className="leading-relaxed">New Capacity (GW) × Supply Mix %. Annual ramp × mix applied year-by-year in the chart.</p>
                       </div>
                       <div>
-                        <p className="font-mono text-10 text-foreground/80 mb-0.5">AI Demand (TWh)</p>
+                        <p className="text-10 font-medium text-foreground/80 mb-0.5">AI Demand (TWh)</p>
                         <p className="leading-relaxed">Base Grid (4,490 TWh) × AI share (4.5% 2025E) × (1 + CAGR)^years × PUE. Compounded annually from 2025 baseline.</p>
                       </div>
                     </div>
@@ -763,7 +763,7 @@ export default function TheTrade({ embedded = false }: { embedded?: boolean; par
 
                   {/* Sensitivities + Disclaimer */}
                   <div className="space-y-3">
-                    <p className="font-semibold text-foreground uppercase tracking-wider text-10">Key Sensitivities</p>
+                    <p className="text-[12px] font-semibold text-foreground">Key Sensitivities</p>
                     <div className="space-y-2 text-muted-foreground leading-relaxed">
                       <p><span className="text-foreground font-medium">Nuclear %</span> is the highest-leverage input. Each 10pp increase re-rates CEG, CCJ, and VST scores.</p>
                       <p><span className="text-foreground font-medium">Capex per MW</span> drives total capital deployed. At 50 GW, the $7M-$12M range = $150B swing.</p>

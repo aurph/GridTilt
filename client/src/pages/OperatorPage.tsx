@@ -85,12 +85,12 @@ export default function OperatorPage() {
       </div>
 
       <Card className="p-5 border-card-border" data-testid="operator-strategy">
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">Geographic Strategy</h2>
+        <h2 className="text-[13px] font-semibold text-foreground mb-3">Geographic Strategy</h2>
         <p className="text-sm text-muted-foreground">{operator.strategy}</p>
       </Card>
 
       <Card className="p-5 border-card-border" data-testid="operator-map-link">
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">Facilities on the Map</h2>
+        <h2 className="text-[13px] font-semibold text-foreground mb-3">Facilities on the Map</h2>
         <p className="text-sm text-muted-foreground mb-3">
           View all {operator.name} data center facilities on the interactive Power Map.
         </p>
@@ -104,7 +104,7 @@ export default function OperatorPage() {
       </Card>
 
       <Card className="p-5 border-card-border" data-testid="other-operators">
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">Other Operators</h2>
+        <h2 className="text-[13px] font-semibold text-foreground mb-3">Other Operators</h2>
         <div className="flex flex-wrap gap-2">
           {ALL_OPERATORS.filter((o) => o !== slug).map((o) => (
             <Link key={o} href={`/operator/${o}`}>
@@ -117,7 +117,7 @@ export default function OperatorPage() {
       </Card>
 
       <Card className="p-5 border-card-border">
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">Related Tools</h2>
+        <h2 className="text-[13px] font-semibold text-foreground mb-3">Related Tools</h2>
         <div className="space-y-2 text-sm">
           <Link href="/power-map" className="block text-brand hover:text-brand-2">Power Map</Link>
           <Link href="/trade" className="block text-brand hover:text-brand-2">Scenario Calculator</Link>

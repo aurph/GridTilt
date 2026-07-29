@@ -199,7 +199,7 @@ function TopMoversSection({ topMovers, pulse, isLoading, isError, updatedAt, onR
     <Card className="p-5 border-card-border">
       <div className="flex items-center gap-2 mb-4">
         <TrendingUp className="h-3.5 w-3.5 text-brand-2" />
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Top Movers Today</h2>
+        <h2 className="text-[13px] font-semibold text-foreground">Top Movers Today</h2>
         <UITooltip>
           <TooltipTrigger>
             <Info className="h-3.5 w-3.5 text-muted-foreground" />
@@ -243,11 +243,11 @@ function TopMoversSection({ topMovers, pulse, isLoading, isError, updatedAt, onR
       </div>
       {/* Sector averages (Lake 4C): uniform chip anatomy in an aligned grid,
           color purely SEMANTIC - green/red intensity by magnitude on the same
-          diverging ramp as The Stack heatmap. Sector identity comes from the
+          diverging ramp as Equities heatmap. Sector identity comes from the
           label, not a hue. */}
       {pulse.length > 0 && (
         <div className="mt-4 pt-3 border-t border-border" data-testid="sector-chips">
-          <span className="text-10 font-mono uppercase tracking-wider text-muted-foreground/60">sectors · avg % today</span>
+          <span className="text-[11px] text-muted-foreground/70">sectors · avg % today</span>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-1.5 mt-1.5">
             {[...pulse].sort((a, b) => b.avgChange - a.avgChange).map((p) => (
               <span
@@ -314,7 +314,7 @@ function RealGaugeCard({
           </TooltipContent>
         </UITooltip>
       </div>
-      <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-1.5">{title}</p>
+      <p className="text-[13px] font-semibold text-foreground mb-1.5">{title}</p>
       {isLoading || value === null ? (
         <Skeleton className="h-9 w-32 mb-1" />
       ) : (
@@ -427,7 +427,7 @@ function BuildoutHistoryCard({
       {/* flex-wrap + nowrap headline: on narrow screens the GW figure drops to its own line instead of breaking mid-phrase */}
       <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mb-1">
         <Activity className="h-3.5 w-3.5 text-brand-2" />
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Tracked Buildout Over Time</h2>
+        <h2 className="text-[13px] font-semibold text-foreground">Tracked Buildout Over Time</h2>
         <UITooltip>
           <TooltipTrigger>
             <Info className="h-3.5 w-3.5 text-muted-foreground" />
@@ -595,7 +595,7 @@ function CatalystCalendarSection() {
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Calendar className="h-3.5 w-3.5 text-brand-2" />
-          <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Catalyst Tracker</h2>
+          <h2 className="text-[13px] font-semibold text-foreground">Catalyst Tracker</h2>
           <AsOf updatedAt={dataUpdatedAt} intervalMs={900_000} />
         </div>
         <Link
@@ -725,7 +725,7 @@ function CatalystCalendarSection() {
       )}
 
       <div className="mt-4 pt-3 border-t border-border">
-        <p className="text-10 uppercase tracking-wider text-muted-foreground/60 mb-2">Next 5 Upcoming</p>
+        <p className="text-[11px] text-muted-foreground/70 mb-2">Next 5 Upcoming</p>
         <div className="space-y-2">
           {isLoading
             ? Array(5).fill(null).map((_, i) => (
@@ -768,7 +768,7 @@ function XFollowCard() {
               <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.259 5.632zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
             </svg>
           </div>
-          <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">@gridtilt</h2>
+          <h2 className="text-[13px] font-semibold text-foreground">@gridtilt</h2>
         </div>
         <a
           href="https://x.com/gridtilt"
@@ -820,7 +820,7 @@ function relativeTime(updatedAt: number | undefined): string {
 const FEATURE_SLIDES = [
   {
     icon: Layers,
-    title: "The Stack",
+    title: "Equities",
     description: "60+ equities across 8 supply chain layers. Compute, nuclear, uranium, power hardware, utilities, construction, and more.",
     href: "/stack",
     accent: BRAND.primary,
@@ -829,7 +829,7 @@ const FEATURE_SLIDES = [
   {
     icon: Link2,
     title: "Supply Chain Flow",
-    description: "Interactive network of 21 nodes and 44 real supply relationships, staged from raw materials to end-use compute. Lives inside The Stack.",
+    description: "Interactive network of 21 nodes and 44 real supply relationships, staged from raw materials to end-use compute. Lives inside Equities.",
     href: "/stack?view=flow",
     accent: BRAND.secondary,
     preview: supplyChainPreview,
@@ -956,7 +956,7 @@ export default function TiltOverview() {
           <span className="hidden sm:block h-4 w-px bg-border" />
           {tracked && (
             <span className="flex items-baseline gap-2 font-mono" data-testid="header-tracked">
-              <span className="text-10 uppercase tracking-wider text-muted-foreground">Tracked AI Power</span>
+              <span className="text-[11px] text-muted-foreground">Tracked AI Power</span>
               <span className="text-sm font-bold text-brand-2 tabular-nums">{fmtGW(tracked.trackedMW)}</span>
               <span className="text-11 tabular-nums text-muted-foreground">
                 +{fmtGW(tracked.constructionMW)} building
@@ -1168,7 +1168,7 @@ export default function TiltOverview() {
             data. The synthetic sentiment indices this replaces are archived
             in docs/INDEX_VALIDATION.md. */}
         <div className="pt-2">
-          <div className="text-10 font-mono uppercase tracking-widest text-muted-foreground/70 mb-3">
+          <div className="text-[12px] font-semibold text-muted-foreground mb-3">
             Key metrics
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3" data-testid="kpi-triad">
@@ -1225,7 +1225,7 @@ export default function TiltOverview() {
             { label: "Grid Reserve Margins", value: "Tightening", sub: "MISO 13.4%, ERCOT 15.8% per NERC 2026. Capacity warnings through 2028.", color: INK.muted },
           ].map((s) => (
             <Card key={s.label} className="p-4 border-card-border">
-              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">{s.label}</p>
+              <p className="text-xs text-muted-foreground mb-2">{s.label}</p>
               <p className="text-2xl font-bold tabular-nums" style={{ color: s.color }}>{s.value}</p>
               <p className="text-xs text-muted-foreground mt-1 leading-snug">{s.sub}</p>
             </Card>
@@ -1235,7 +1235,7 @@ export default function TiltOverview() {
         {/* Sector demand breakdown */}
         <Card className="p-5 border-card-border">
           <div className="flex items-center gap-2 mb-4">
-            <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">2025 US Electricity Demand by Sector</h2>
+            <h2 className="text-[13px] font-semibold text-foreground">2025 US Electricity Demand by Sector</h2>
             <UITooltip>
               <TooltipTrigger>
                 <Info className="h-3.5 w-3.5 text-muted-foreground" />

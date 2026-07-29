@@ -1,153 +1,130 @@
+import { useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
+import { motion, type Variants } from "framer-motion";
+import { Zap, Handshake, Cpu, MapPin } from "lucide-react";
 import { Wordmark } from "./Wordmark";
-import type { KpiData } from "@/lib/types";
-import logoPath from "@assets/Image_[Vectorized]_(2)_1773890483514.png";
-import powerMapSvg from "@assets/previews/power-map.svg";
+import { GridPulse } from "./grid-pulse";
+import { MarketTape } from "./market-tape";
 
-const HORIZ_PAD = "clamp(24px, 5vw, 96px)";
+interface ClusterMetrics {
+  clusterCount: number;
+  operationalMW: number;
+  totalPlannedMW: number;
+  byOperator: { operator: string }[];
+}
+interface DealMetrics { dealCount: number; totalContractedMW: number; }
+interface GpuMetrics { fleetAvg: number; fleetAvg1yChange: number; modelCount: number; }
 
-function formatRefreshTimeFromIso(iso: string | undefined): string | null {
-  if (!iso) return null;
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return null;
-  return new Intl.DateTimeFormat("en-GB", {
-    hour: "2-digit",
-    minute: "2-digit",
-    timeZoneName: "short",
-  }).format(d);
+/** rAF count-up toward a target once it arrives; honest "--" before data. */
+function useCountUp(target: number | null, decimals = 1, ms = 1100): string | null {
+  const [display, setDisplay] = useState<string | null>(null);
+  const started = useRef(false);
+  useEffect(() => {
+    if (target == null || started.current) return;
+    started.current = true;
+    const t0 = performance.now();
+    const tick = (now: number) => {
+      const p = Math.min(1, (now - t0) / ms);
+      const eased = 1 - Math.pow(1 - p, 3);
+      setDisplay((target * eased).toFixed(decimals));
+      if (p < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }, [target, decimals, ms]);
+  return display;
 }
 
+const fadeUp: Variants = {
+  hidden: { opacity: 0, y: 14 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.55, ease: "easeOut" } },
+};
+
 export function Hero() {
-  const { data } = useQuery<KpiData>({
-    queryKey: ["/api/kpis"],
-    refetchInterval: 5 * 60_000,
-    refetchIntervalInBackground: false,
-  });
-  const refresh = formatRefreshTimeFromIso(data?.asOf);
-  const sourceKnown = data?.source === "live" || data?.source === "static";
-  const isLive = data?.source === "live";
+  const { data: clusters } = useQuery<ClusterMetrics>({ queryKey: ["/api/clusters/metrics"] });
+  const { data: deals } = useQuery<DealMetrics>({ queryKey: ["/api/deals/metrics"] });
+  const { data: gpu } = useQuery<GpuMetrics>({ queryKey: ["/api/gpu-prices/metrics"] });
+
+  const opGw = useCountUp(clusters ? clusters.operationalMW / 1000 : null);
+  const dealGw = useCountUp(deals ? deals.totalContractedMW / 1000 : null);
+  const gpuHr = useCountUp(gpu ? gpu.fleetAvg : null, 2);
+  const clusterCount = useCountUp(clusters ? clusters.clusterCount : null, 0);
+
+  const stats: { icon: typeof Zap; label: string; value: string; sub?: string }[] = [
+    { icon: Zap, label: "Operational power for compute", value: opGw ? `${opGw} GW` : "--", sub: clusters ? `${(clusters.totalPlannedMW / 1000).toFixed(1)} GW planned` : undefined },
+    { icon: Handshake, label: "Contracted power deals", value: dealGw ? `${dealGw} GW` : "--", sub: deals ? `${deals.dealCount} corporate deals` : undefined },
+    { icon: Cpu, label: "Cost of compute", value: gpuHr ? `$${gpuHr}/hr` : "--", sub: gpu ? `${gpu.fleetAvg1yChange}% over a year` : undefined },
+    { icon: MapPin, label: "Tracked clusters", value: clusterCount ?? "--", sub: clusters?.byOperator ? `${clusters.byOperator.length} operators` : undefined },
+  ];
 
   return (
     <section
-      className="gt-marketing-grid"
-      style={{
-        position: "relative",
-        minHeight: "100vh",
-        width: "100%",
-        display: "flex",
-        flexDirection: "column",
-        paddingTop: 36,
-        paddingBottom: 80,
-        overflow: "hidden",
-      }}
+      className="gt-marketing relative w-full overflow-hidden border-b border-border"
+      style={{ minHeight: "calc(100vh - 88px)" }}
       data-testid="home-hero"
     >
-      {/* Faded power map decoration. Sits behind the content on the right. */}
-      <img
-        src={powerMapSvg}
-        alt=""
-        aria-hidden
-        className="gt-hero-map"
-        data-testid="hero-map-backdrop"
-      />
-
-      {/* Top bar: logo + last refresh */}
-      <div
-        style={{
-          position: "relative",
-          zIndex: 2,
-          width: "100%",
-          maxWidth: 1280,
-          margin: "0 auto",
-          paddingLeft: HORIZ_PAD,
-          paddingRight: HORIZ_PAD,
-          display: "flex",
-          alignItems: "flex-start",
-          justifyContent: "space-between",
-          gap: 24,
-        }}
-      >
-        <Link href="/" aria-label="GridTilt home" style={{ display: "inline-flex" }}>
-          <img
-            src={logoPath}
-            alt="GridTilt logo"
-            style={{
-              height: 88,
-              width: 88,
-              display: "block",
-              borderRadius: 12,
-            }}
-            data-testid="home-logo-mark"
-          />
-        </Link>
-        {sourceKnown && refresh && (
-          <span
-            style={{
-              fontFamily: "JetBrains Mono, monospace",
-              fontSize: 11,
-              color: "var(--mkt-ink-muted)",
-              letterSpacing: "0.04em",
-              textAlign: "right",
-              lineHeight: 1.4,
-              paddingTop: 14,
-            }}
-            data-testid="hero-refresh"
-          >
-            {isLive ? "data refreshed" : "static fallback"} {refresh}
-          </span>
-        )}
+      <div className="absolute inset-0 z-0 opacity-75" aria-hidden>
+        <GridPulse />
       </div>
 
-      {/* Main content area. Left-aligned. */}
-      <div
-        style={{
-          position: "relative",
-          zIndex: 2,
-          flex: 1,
-          width: "100%",
-          maxWidth: 1280,
-          margin: "0 auto",
-          paddingLeft: HORIZ_PAD,
-          paddingRight: HORIZ_PAD,
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          paddingTop: "clamp(40px, 8vh, 96px)",
-        }}
-      >
+      <div className="relative z-10 mx-auto flex min-h-[inherit] max-w-[1200px] flex-col items-center justify-center px-6 py-16 text-center">
         <Wordmark />
-
-        <div className="gt-rise gt-rise-2" style={{ marginTop: 44 }}>
-          <p className="gt-tagline-primary">Energy infrastructure,</p>
-          <p className="gt-tagline-emphasis">in plain sight.</p>
-        </div>
-
-        <div
-          className="gt-rise gt-rise-3"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 28,
-            flexWrap: "wrap",
-            marginTop: 48,
-          }}
+        <motion.div
+          initial="hidden"
+          animate="show"
+          transition={{ staggerChildren: 0.14, delayChildren: 1.5 }}
+          className="flex w-full flex-col items-center"
         >
-          <Link href="/overview" className="gt-cta-primary" data-testid="hero-cta-dashboard">
-            <span>Open the dashboard</span>
-            <span className="gt-cta-primary__arrow" aria-hidden>
-              →
-            </span>
-          </Link>
-          <a
-            href="#stack"
-            className="gt-cta-secondary"
-            data-testid="hero-cta-browse"
+          <motion.p variants={fadeUp} className="mt-5 text-[16px] font-semibold text-foreground sm:text-[18px]">
+            Energy infrastructure, in plain sight.
+          </motion.p>
+          <motion.p variants={fadeUp} className="mx-auto mt-3 max-w-[54ch] text-[14px] leading-[1.65] text-muted-foreground sm:text-[15px]">
+            Data centers are rewriting the American power grid. GridTilt maps who is building,
+            where the electricity comes from, and what it means for the bill you pay.
+          </motion.p>
+          <motion.div variants={fadeUp} className="mt-8 flex flex-wrap items-center justify-center gap-4">
+            <Link
+              href="/overview"
+              className="rounded bg-brand px-6 py-3 text-[14px] font-semibold text-black no-underline transition-opacity hover:opacity-90"
+              data-testid="hero-cta-dashboard"
+            >
+              Open the dashboard
+            </Link>
+            <Link
+              href="/power-map"
+              className="rounded border border-border bg-card/60 px-6 py-3 text-[14px] font-semibold text-foreground no-underline transition-colors hover:border-brand/50"
+              data-testid="hero-cta-map"
+            >
+              Explore the map
+            </Link>
+          </motion.div>
+
+          <motion.div
+            variants={fadeUp}
+            className="mt-14 grid w-full grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4"
+            data-testid="hero-stats"
           >
-            or browse the tools
-          </a>
-        </div>
+            {stats.map(({ icon: Icon, label, value, sub }) => (
+              <motion.div
+                key={label}
+                whileHover={{ y: -3 }}
+                transition={{ type: "spring", stiffness: 300, damping: 22 }}
+                className="rounded-md border border-border bg-card/80 px-4 py-3.5 text-left"
+              >
+                <div className="flex items-center gap-2">
+                  <Icon className="h-4 w-4 text-brand" aria-hidden />
+                  <span className="text-[12px] leading-tight text-muted-foreground">{label}</span>
+                </div>
+                <p className="mt-1.5 font-mono text-[24px] font-bold leading-none tracking-tight text-foreground tabular-nums">
+                  {value}
+                </p>
+                {sub && <p className="mt-1 text-[11.5px] text-muted-foreground/80">{sub}</p>}
+              </motion.div>
+            ))}
+          </motion.div>
+        </motion.div>
       </div>
+      <MarketTape />
     </section>
   );
 }

@@ -200,7 +200,7 @@ export default function BlogPost() {
 
           {toc.length > 2 && (
             <Card className="p-4 border-card-border mb-8" data-testid="table-of-contents">
-              <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">Contents</h2>
+              <h2 className="text-[13px] font-semibold text-foreground mb-2">Contents</h2>
               <ul className="space-y-1">
                 {toc.map((heading, i) => (
                   <li key={i}>
@@ -223,10 +223,10 @@ export default function BlogPost() {
         </article>
 
         <Card className="p-5 border-card-border" data-testid="article-cta">
-          <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">Track this on GridTilt</h2>
+          <h2 className="text-[13px] font-semibold text-foreground mb-2">Track this on GridTilt</h2>
           <div className="flex flex-wrap gap-3 text-sm">
             <Link href="/overview" className="text-brand hover:text-brand-2">Dashboard</Link>
-            <Link href="/stack" className="text-brand hover:text-brand-2">The Stack</Link>
+            <Link href="/stack" className="text-brand hover:text-brand-2">Equities</Link>
             <Link href="/power-map" className="text-brand hover:text-brand-2">Power Map</Link>
             <Link href="/trade" className="text-brand hover:text-brand-2">Scenario Calculator</Link>
           </div>

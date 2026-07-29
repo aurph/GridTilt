@@ -1,5 +1,5 @@
 /**
- * Lake 8: exhaustive unit coverage for The Stack transform module -
+ * Lake 8: exhaustive unit coverage for Equities transform module -
  * market-cap parsing/sorting, sparkline window math, treemap layout,
  * diverging heat colors.
  */

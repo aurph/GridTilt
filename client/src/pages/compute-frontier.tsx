@@ -122,7 +122,7 @@ function gpuCell(n: number | null): string {
 /** Small "est." tag for any value whose field is in the cluster's estimated[]. */
 function Est({ on }: { on: boolean }) {
   if (!on) return null;
-  return <span className="ml-1 text-8 font-mono uppercase tracking-wide text-brand-2/80 align-top">est.</span>;
+  return <span className="ml-1 text-8 text-brand-2/80 align-top">est.</span>;
 }
 
 type SortKey = "name" | "operator" | "plannedPowerMW" | "ratedPowerMW" | "gpuCount" | "onlineDate";
@@ -273,7 +273,7 @@ export default function ComputeFrontier() {
                 rows={topOperators.map((o) => [o.operator, o.plannedMW.toLocaleString()])}
               />
             )}
-            <p className="text-10 text-muted-foreground/50 mt-1 font-mono">x axis in GW{metrics && metrics.concentration.operatorCount > OP_TOP_N ? ` · ${metrics.concentration.operatorCount} operators total` : ""}</p>
+            <p className="text-10 text-muted-foreground/50 mt-1">x axis in GW{metrics && metrics.concentration.operatorCount > OP_TOP_N ? ` · ${metrics.concentration.operatorCount} operators total` : ""}</p>
           </ChartCard>
 
           <ChartCard title="Planned MW by grid region (ISO)">
@@ -297,7 +297,7 @@ export default function ComputeFrontier() {
                 rows={metrics.byIso.map((b) => [b.iso, b.plannedMW.toLocaleString()])}
               />
             )}
-            <p className="text-10 text-muted-foreground/50 mt-1 font-mono">y axis in GW</p>
+            <p className="text-10 text-muted-foreground/50 mt-1">y axis in GW</p>
           </ChartCard>
 
           <ChartCard title="Planned MW by status">
@@ -323,7 +323,7 @@ export default function ComputeFrontier() {
                 rows={metrics.byStatus.map((s) => [s.status, s.plannedMW.toLocaleString()])}
               />
             )}
-            <p className="text-10 text-muted-foreground/50 mt-1 font-mono">y axis in GW</p>
+            <p className="text-10 text-muted-foreground/50 mt-1">y axis in GW</p>
           </ChartCard>
 
           <ChartCard title="Build timeline (planned GW online by year)">
@@ -349,7 +349,7 @@ export default function ComputeFrontier() {
                 rows={timeline.map((t) => [t.year, t.gw])}
               />
             )}
-            <p className="text-10 text-muted-foreground/50 mt-1 font-mono">bucketed by first announced year{timeline.some((t) => t.year === "n/a") ? " · n/a = no announced online date" : ""}</p>
+            <p className="text-10 text-muted-foreground/50 mt-1">bucketed by first announced year{timeline.some((t) => t.year === "n/a") ? " · n/a = no announced online date" : ""}</p>
           </ChartCard>
 
           <ChartCard title="Planned MW by energy source">
@@ -375,15 +375,15 @@ export default function ComputeFrontier() {
                 rows={metrics.byEnergySource.map((e) => [e.source, e.plannedMW.toLocaleString()])}
               />
             )}
-            <p className="text-10 text-muted-foreground/50 mt-1 font-mono">x axis in GW · grid vs behind-the-meter gas, nuclear, renewables</p>
+            <p className="text-10 text-muted-foreground/50 mt-1">x axis in GW · grid vs behind-the-meter gas, nuclear, renewables</p>
           </ChartCard>
         </div>
 
         {/* Map */}
         <Card className="border-card-border overflow-hidden" data-testid="cf-map">
           <div className="flex items-center justify-between px-4 py-2 bg-surface-base border-b border-border">
-            <span className="text-11 font-mono uppercase tracking-wider text-muted-foreground">Cluster map</span>
-            <div className="flex items-center gap-3 text-10 text-muted-foreground font-mono">
+            <span className="text-[13px] font-semibold text-foreground">Cluster map</span>
+            <div className="flex items-center gap-3 text-10 text-muted-foreground">
               <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ background: STATUS_COLOR.operational }} />operational</span>
               <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ background: STATUS_COLOR.construction }} />construction</span>
               <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ background: STATUS_COLOR.announced }} />announced</span>
@@ -450,7 +450,7 @@ export default function ComputeFrontier() {
           ) : (
           <div className="overflow-x-auto">
           <div className="min-w-[820px]">
-          <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-surface-base border-b border-border text-10 font-mono uppercase tracking-wider text-muted-foreground">
+          <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-surface-base border-b border-border text-[11px] text-muted-foreground">
             <SortHeader label="Cluster" k="name" cur={sortKey} dir={sortDir} onClick={toggleSort} className="col-span-3" />
             <span className="col-span-1">Status</span>
             <SortHeader label="GPUs" k="gpuCount" cur={sortKey} dir={sortDir} onClick={toggleSort} className="col-span-1 justify-end" />
@@ -475,7 +475,7 @@ export default function ComputeFrontier() {
                       <div className="text-10 text-muted-foreground truncate">{c.operator}</div>
                     </div>
                     <span className="col-span-1">
-                      <Badge variant="outline" className="text-9 font-mono px-1.5 py-0" style={{ color: STATUS_COLOR[c.status] ?? INK.muted, borderColor: `${STATUS_COLOR[c.status] ?? INK.muted}55` }}>
+                      <Badge variant="outline" className="text-9 px-1.5 py-0" style={{ color: STATUS_COLOR[c.status] ?? INK.muted, borderColor: `${STATUS_COLOR[c.status] ?? INK.muted}55` }}>
                         {STATUS_LABEL[c.status]}
                       </Badge>
                     </span>
@@ -485,7 +485,7 @@ export default function ComputeFrontier() {
                     <span className="col-span-1 font-mono text-foreground text-right tabular-nums">{mwCell(c.plannedPowerMW)}<Est on={c.estimated.includes("plannedPowerMW")} /></span>
                     <span className="col-span-1 font-mono text-muted-foreground truncate">{c.gridRegion}</span>
                     <span className="col-span-1 font-mono text-muted-foreground text-10 truncate">{c.onlineDate}<Est on={c.estimated.includes("onlineDate")} /></span>
-                    <span className="col-span-1 text-center font-mono text-10">
+                    <span className="col-span-1 text-center text-10">
                       {c.linkedDeal ? <Link href="/queue" className="text-brand hover:text-brand-2">★</Link> : <span className="text-muted-foreground/30">—</span>}
                     </span>
                   </div>
@@ -511,7 +511,7 @@ export default function ComputeFrontier() {
           <Card className="border-card-border p-4" data-testid="cf-power-secured">
             <div className="flex items-center gap-2 mb-2">
               <Atom className="h-4 w-4 text-brand" />
-              <span className="text-11 font-mono uppercase tracking-wider text-muted-foreground">Power needed vs power secured</span>
+              <span className="text-[13px] font-semibold text-foreground">Power needed vs power secured</span>
             </div>
             <p className="text-xs text-muted-foreground leading-relaxed mb-3">
               Of <span className="text-foreground font-mono">{gw(ps.totalPlannedMW)} GW</span> planned across the tracked frontier,{" "}
@@ -522,9 +522,9 @@ export default function ComputeFrontier() {
             </p>
             <div className="space-y-1.5">
               {ps.deals.map((d) => (
-                <div key={d.id} className="flex items-center justify-between text-11 font-mono border-t border-border/30 pt-1.5">
+                <div key={d.id} className="flex items-center justify-between text-11 border-t border-border/30 pt-1.5">
                   <span className="text-foreground">{d.projectName}</span>
-                  <span className="text-muted-foreground">{d.capacityMW.toLocaleString()} MW · {d.firmness} · {d.clusterIds.join(", ")}</span>
+                  <span className="font-mono tabular-nums text-muted-foreground">{d.capacityMW.toLocaleString()} MW · {d.firmness} · {d.clusterIds.join(", ")}</span>
                 </div>
               ))}
             </div>
@@ -552,7 +552,7 @@ export default function ComputeFrontier() {
 function MetricCard({ label, value, sub, accent }: { label: string; value: string; sub?: string; accent?: boolean }) {
   return (
     <Card className={`border-card-border p-3 ${accent ? "ring-1 ring-brand/20" : ""}`}>
-      <div className="text-10 font-mono uppercase tracking-wider text-muted-foreground/70">{label}</div>
+      <div className="text-[11px] text-muted-foreground/70">{label}</div>
       <div className={`text-lg font-semibold tabular-nums mt-0.5 ${accent ? "text-brand" : "text-foreground"}`}>{value}</div>
       {sub && <div className="text-10 text-muted-foreground/60 truncate">{sub}</div>}
     </Card>
@@ -562,7 +562,7 @@ function MetricCard({ label, value, sub, accent }: { label: string; value: strin
 function ChartCard({ title, children }: { title: string; children: ReactNode }) {
   return (
     <Card className="border-card-border p-3">
-      <div className="text-11 font-mono uppercase tracking-wider text-muted-foreground mb-2">{title}</div>
+      <div className="text-[13px] font-semibold text-foreground mb-2">{title}</div>
       {children}
     </Card>
   );

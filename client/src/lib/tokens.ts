@@ -6,10 +6,10 @@
  */
 
 export const SURFACE = {
-  sunken: "#0A0A08",
-  base: "#0E0E0C",
-  raised: "#1A1917",
-  overlay: "#26241F",
+  sunken: "#0B0B0B",
+  base: "#101010",
+  raised: "#161616",
+  overlay: "#1D1D1C",
 } as const;
 
 export const BORDER = {
@@ -25,10 +25,10 @@ export const BRAND = {
 } as const;
 
 export const INK = {
-  primary: "#F2F1ED",
-  secondary: "#B0AEA6",
-  muted: "#8E8B84",
-  faint: "#716E67",
+  primary: "#F2F2F0",
+  secondary: "#ABABA6",
+  muted: "#8A8A85",
+  faint: "#6E6E69",
 } as const;
 
 /** State colors. Never use these for series identity. */
@@ -63,21 +63,21 @@ export const DATA_QUALITY = {
  * enough in scatter/treemap contexts where any two slots can be adjacent).
  */
 export const SERIES = [
-  "#3987e5", // 1 blue
-  "#c98500", // 2 amber
-  "#199e70", // 3 teal
-  "#9085e9", // 4 violet
-  "#d55181", // 5 magenta
-  "#1f9fb5", // 6 cyan
-  "#d95926", // 7 rust
-  "#3d9e3d", // 8 green
-  "#bd6bce", // 9 pink
+  "#5A93DE", // 1 blue
+  "#BC8626", // 2 amber
+  "#34A87E", // 3 teal
+  "#8F84E6", // 4 violet
+  "#DE5C8E", // 5 magenta
+  "#3B9EC4", // 6 cyan
+  "#E2652A", // 7 rust
+  "#47A981", // 8 green
+  "#B372C6", // 9 pink
   "#44649e", // 10 slate
 ] as const;
 
 /**
  * Stable category -> color mapping. Same category = same color everywhere
- * in the app (Tilt Overview mover tags, The Stack layers, Power Map,
+ * in the app (Tilt Overview mover tags, Equities layers, Power Map,
  * Compute Frontier, TheTrade). Categories that never co-occur in one chart
  * may share a slot (solar/power); co-occurring ones never do.
  */
@@ -87,7 +87,7 @@ export const CATEGORY_COLORS: Record<string, string> = {
   datacenters: SERIES[2], // teal
   construction: SERIES[9], // slate
   power: SERIES[1], // amber
-  utilities: SERIES[8], // pink (grid owns cyan; both appear on The Stack)
+  utilities: SERIES[8], // pink (grid owns cyan; both appear on Equities)
   uranium: SERIES[4], // magenta
   // Energy sources (TheTrade + Compute Frontier co-occur: must be distinct)
   nuclear: SERIES[3], // violet - matches existing purple convention
@@ -113,7 +113,7 @@ export const STATUS_COLORS = {
 
 export const CHART_CHROME = {
   axis: "#55534E",
-  tick: "#8E8B84",
+  tick: "#8A8A85",
   grid: "rgba(255, 255, 255, 0.05)",
   crosshair: "rgba(255, 255, 255, 0.25)",
   refLine: "rgba(255, 255, 255, 0.18)",

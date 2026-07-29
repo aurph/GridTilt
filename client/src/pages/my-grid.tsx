@@ -202,9 +202,9 @@ function MyGridMap({
   );
 }
 
-/** Small mono label above a stat or panel cell. */
+/** Small label above a stat or panel cell. */
 function CellLabel({ children }: { children: React.ReactNode }) {
-  return <p className="text-10 font-mono uppercase tracking-wider text-muted-foreground">{children}</p>;
+  return <p className="text-[11px] text-muted-foreground">{children}</p>;
 }
 
 export default function MyGrid() {
@@ -355,12 +355,12 @@ export default function MyGrid() {
         about="Who runs your state's grid, how much headroom the region has, what is being built there, and what residential power costs. The state choice stays in this browser."
         right={
           <>
-            <label className="flex items-center gap-2 text-11 font-mono text-muted-foreground">
+            <label className="flex items-center gap-2 text-11 text-muted-foreground">
               State
               <select
                 value={state}
                 onChange={(e) => chooseState(e.target.value)}
-                className="rounded border border-subtle bg-surface-base px-2 py-1.5 text-xs font-mono text-foreground"
+                className="rounded border border-subtle bg-surface-base px-2 py-1.5 text-xs text-foreground"
                 data-testid="my-grid-state"
               >
                 <option value="">Choose…</option>
@@ -376,14 +376,14 @@ export default function MyGrid() {
 
       <div className="flex-1 w-full max-w-[1200px] mx-auto p-4 sm:p-6 space-y-4">
         <MyGridMap stateCode={state} stateName={grid?.name ?? null} facilities={facilities} />
-        <p className="text-10 font-mono text-muted-foreground/60 px-1">
+        <p className="text-10 text-muted-foreground/60 px-1">
           GridTilt facility registry · hyperscale campuses of 400 MW and up · boundaries from US Census cartographic files
         </p>
 
         {grid && (
           <>
             <Card className="border-card-border" data-testid="my-grid-operator">
-              <div className="px-4 py-2 border-b border-border text-10 font-mono uppercase tracking-wider text-muted-foreground">
+              <div className="px-4 py-2 border-b border-border text-[13px] font-semibold text-foreground">
                 Your grid · {grid.name}
               </div>
               <div className="p-4 grid grid-cols-1 gap-x-8 gap-y-5 md:grid-cols-2 lg:grid-cols-4">
@@ -441,19 +441,19 @@ export default function MyGrid() {
                   </div>
                 )}
               </div>
-              <div className="px-4 py-2 border-t border-border/50 text-10 font-mono text-muted-foreground/60">
+              <div className="px-4 py-2 border-t border-border/50 text-10 text-muted-foreground/60">
                 {RTO_SOURCE_NOTE} · {STATE_GRID_SOURCE} · queue figures carry their own source and date
               </div>
             </Card>
 
             <Card className="border-card-border overflow-hidden" data-testid="my-grid-facilities">
               <div className="px-4 py-2 border-b border-border flex flex-wrap items-center justify-between gap-2">
-                <span className="text-10 font-mono uppercase tracking-wider text-muted-foreground">
+                <span className="text-[13px] font-semibold text-foreground">
                   Being built in {grid.name}
                 </span>
                 <Link
                   href="/power-map"
-                  className="text-11 font-mono text-brand hover:text-brand-2 no-underline"
+                  className="text-11 text-brand hover:text-brand-2 no-underline"
                   data-testid="my-grid-full-map-link"
                 >
                   Open the full map →
@@ -475,7 +475,7 @@ export default function MyGrid() {
               ) : (
                 <div className="overflow-x-auto">
                   <div className="min-w-[640px]" data-testid="my-grid-facility-table">
-                    <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-surface-base border-b border-border text-10 font-mono uppercase tracking-wider text-muted-foreground">
+                    <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-surface-base border-b border-border text-[11px] text-muted-foreground">
                       <span className="col-span-4">Facility</span>
                       <span className="col-span-3">Operator</span>
                       <span className="col-span-2">City</span>
@@ -502,13 +502,13 @@ export default function MyGrid() {
                   </div>
                 </div>
               )}
-              <div className="px-4 py-2 border-t border-border/50 text-10 font-mono text-muted-foreground/60">
+              <div className="px-4 py-2 border-t border-border/50 text-10 text-muted-foreground/60">
                 GridTilt facility registry · hyperscale campuses of 400 MW and up
               </div>
             </Card>
 
             <Card className="border-card-border" data-testid="my-grid-rates">
-              <div className="px-4 py-2 border-b border-border text-10 font-mono uppercase tracking-wider text-muted-foreground">
+              <div className="px-4 py-2 border-b border-border text-[13px] font-semibold text-foreground">
                 What electricity costs in {grid.name}
               </div>
               <div className="p-4">
@@ -555,7 +555,7 @@ export default function MyGrid() {
                       columns={["Month", "Cents per kWh"]}
                       rows={series.map((p) => [p.month, p.centsPerKwh.toFixed(2)])}
                     />
-                    <p className="mt-3 text-10 font-mono text-muted-foreground/60">
+                    <p className="mt-3 text-10 text-muted-foreground/60">
                       <a href={rates.sourceUrl} target="_blank" rel="noopener noreferrer" className="text-brand hover:text-brand-2">
                         {rates.source}
                       </a>

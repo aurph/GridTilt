@@ -295,8 +295,8 @@ export default function NeocloudIntel() {
             <div key={vendor} className="space-y-2" data-testid={`ni-group-${vendor}`}>
               <div className="flex items-center gap-2">
                 <span className="h-2.5 w-2.5 rounded-sm" style={{ background: vendorColor(vendor) }} />
-                <span className="text-xs font-mono uppercase tracking-wider text-muted-foreground">{vendor}</span>
-                <span className="text-10 font-mono text-muted-foreground/40">{vrows.length} GPUs</span>
+                <span className="text-[13px] font-semibold text-foreground">{vendor}</span>
+                <span className="text-[11px] text-muted-foreground/40">{vrows.length} GPUs</span>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                 {vrows.map((r) => (
@@ -305,7 +305,7 @@ export default function NeocloudIntel() {
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-mono font-semibold" style={{ color: colorFor(r.model) }}>{r.model}</span>
                       {r.confidence && (
-                        <span className="flex items-center gap-1 text-8 font-mono uppercase text-muted-foreground/50" title={`price confidence: ${r.confidence}`}>
+                        <span className="flex items-center gap-1 text-8 text-muted-foreground/50" title={`price confidence: ${r.confidence}`}>
                           <span className="h-1.5 w-1.5 rounded-full" style={{ background: CONF_COLOR[r.confidence] ?? INK.faint }} />
                           {r.confidence}
                         </span>
@@ -316,7 +316,7 @@ export default function NeocloudIntel() {
                     </div>
                     <div className="text-xl font-semibold tabular-nums text-foreground mt-1.5">
                       {fmtUsd(r.current)}
-                      {r.estimated.includes("currentUsdPerHr") && <span className="ml-1 text-8 font-mono uppercase text-estimate align-top">est.</span>}
+                      {r.estimated.includes("currentUsdPerHr") && <span className="ml-1 text-8 text-estimate align-top">est.</span>}
                       <span className="text-10 font-normal text-muted-foreground/50"> /hr</span>
                     </div>
                     <div className="flex items-center justify-between mt-0.5">
@@ -336,12 +336,12 @@ export default function NeocloudIntel() {
         <Card className="border-card-border p-3" data-testid="ni-history">
           <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
             <div>
-              <span className="text-11 font-mono uppercase tracking-wider text-muted-foreground">
+              <span className="text-[13px] font-semibold text-foreground">
                 Price history · $/GPU/hr
               </span>
               {data?.health && <PipelineHealthLine health={data.health} />}
             </div>
-            <div className="flex flex-wrap items-center justify-end gap-1.5 text-10 font-mono">
+            <div className="flex flex-wrap items-center justify-end gap-1.5 text-10">
               {RANGE_KEYS.map((r) => (
                 <button
                   key={r}
@@ -404,7 +404,7 @@ export default function NeocloudIntel() {
               <button
                 onClick={() => setVisibleModels(visibleSet.size === rows.length ? null : rows.map((row) => row.model))}
                 aria-pressed={visibleSet.size === rows.length}
-                className={`px-2 py-0.5 rounded border text-10 font-mono ${
+                className={`px-2 py-0.5 rounded border text-10 ${
                   visibleSet.size === rows.length
                     ? "border-brand/60 text-brand bg-brand/10"
                     : "border-subtle text-muted-foreground hover:text-foreground"
@@ -423,7 +423,7 @@ export default function NeocloudIntel() {
                     onPointerLeave={() => setHoveredModel(null)}
                     aria-pressed={on}
                     title={on && visibleSet.size === 1 ? "At least one model must remain visible" : `Toggle ${r.model}`}
-                    className={`flex items-center gap-1 px-2 py-0.5 rounded border text-10 font-mono ${
+                    className={`flex items-center gap-1 px-2 py-0.5 rounded border text-10 ${
                       on ? "border-strong text-foreground" : "border-subtle text-muted-foreground/50 hover:text-muted-foreground"
                     }`}
                     data-testid={`ni-chip-${r.model}`}
@@ -456,7 +456,7 @@ export default function NeocloudIntel() {
               />
             )}
           </div>
-          <p className="text-10 text-muted-foreground/50 mt-1 font-mono">
+          <p className="text-10 text-muted-foreground/50 mt-1">
             Only plotted points are data. Dashed spans connect unobserved time and are never treated as recorded price action.
           </p>
         </Card>
@@ -464,8 +464,8 @@ export default function NeocloudIntel() {
         {/* Marketplace dispersion: observed low-high per model on one scale, dot = blended price */}
         <Card className="border-card-border p-3" data-testid="ni-chart">
           <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-            <span className="text-11 font-mono uppercase tracking-wider text-muted-foreground">Marketplace dispersion · $/GPU/hr</span>
-            <div className="flex items-center gap-3 text-10 font-mono">
+            <span className="text-[13px] font-semibold text-foreground">Marketplace dispersion · $/GPU/hr</span>
+            <div className="flex items-center gap-3 text-10">
               <span className="flex items-center gap-1 text-muted-foreground/60"><span className="h-2 w-2 rounded-sm" style={{ background: VENDOR_COLOR.NVIDIA }} />NVIDIA</span>
               <span className="flex items-center gap-1 text-muted-foreground/60"><span className="h-2 w-2 rounded-sm" style={{ background: VENDOR_COLOR.AMD }} />AMD</span>
             </div>
@@ -487,10 +487,10 @@ export default function NeocloudIntel() {
         {/* Price index table (fleet avg is a plain mean; "weighted" would be a lie) */}
         <Card className="border-card-border overflow-hidden" data-testid="ni-table">
           <div className="px-4 py-2 bg-surface-base border-b border-border">
-            <span className="text-11 font-mono uppercase tracking-wider text-muted-foreground">On-Demand Price Index</span>
-            <span className="text-10 font-mono text-muted-foreground/40 ml-2">hover a row for sources</span>
+            <span className="text-[13px] font-semibold text-foreground">On-Demand Price Index</span>
+            <span className="text-[11px] text-muted-foreground/40 ml-2">hover a row for sources</span>
           </div>
-          <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-surface-base border-b border-border text-10 font-mono uppercase tracking-wider text-muted-foreground">
+          <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-surface-base border-b border-border text-[11px] text-muted-foreground">
             <SortHeader label="Model" k="model" cur={sortKey} dir={sortDir} onClick={toggleSort} className="col-span-3" />
             <span className="col-span-2">History</span>
             <SortHeader label="Avg" k="current" cur={sortKey} dir={sortDir} onClick={toggleSort} className="col-span-1 justify-end" />
@@ -539,15 +539,15 @@ export default function NeocloudIntel() {
                     {r.model} · {r.vendor} {r.architecture ? `· ${r.architecture}` : ""} {r.vramGB ? `· ${r.vramGB}GB ${r.vramType ?? ""}` : ""} {r.launchYear ? `· ${r.launchYear}` : ""}
                   </div>
                   {r.liveSources && r.liveSources.length > 0 && (
-                    <p className="text-10 font-mono text-positive mb-1">
+                    <p className="text-10 text-positive mb-1">
                       live price · {r.liveSources.join(" + ")} · {r.liveDate}
                     </p>
                   )}
                   {r.oneYearTrend && <p className="text-11 text-muted-foreground mb-1.5">{r.oneYearTrend}</p>}
                   {r.sources.length > 0 && (
-                    <div className="text-10 font-mono text-muted-foreground/70 break-all space-y-0.5">
-                      <div className="uppercase tracking-wider text-muted-foreground/50 mb-0.5">Sources</div>
-                      {r.sources.slice(0, 4).map((s) => <div key={s}>{s.replace(/^https?:\/\//, "")}</div>)}
+                    <div className="text-10 text-muted-foreground/70 break-all space-y-0.5">
+                      <div className="text-muted-foreground/50 mb-0.5">Sources</div>
+                      {r.sources.slice(0, 4).map((s) => <div key={s} className="font-mono">{s.replace(/^https?:\/\//, "")}</div>)}
                     </div>
                   )}
                   <p className="text-10 text-muted-foreground/50 mt-1.5">1W/1M/YTD read "—" until the daily recorder accrues history; 1Y is from sourced anchors.</p>
@@ -572,7 +572,7 @@ function PipelineHealthLine({ health }: { health: GpuPipelineHealth }) {
   const sweep = health.lastSweep;
   const failed = sweep ? sweep.perProvider.runpod.failed + sweep.perProvider.vast.failed : 0;
   return (
-    <p className="mt-1 max-w-3xl text-10 font-mono leading-relaxed text-muted-foreground" data-testid="ni-pipeline-health">
+    <p className="mt-1 max-w-3xl text-10 leading-relaxed text-muted-foreground" data-testid="ni-pipeline-health">
       Live observations: {health.recordedDays} days, last {health.lastRecordedDate ?? "none"}. Curated reprice: {health.curatedLastRefreshed ?? "unknown"}.
       {sweep ? (
         <span className={failed > 0 ? "text-warning" : "text-muted-foreground/70"}>
@@ -683,11 +683,11 @@ function MiniSpark({ series }: { series: ChartSeries | undefined }) {
   const W = 104;
   const H = 22;
   if (!series || series.points.length === 0) {
-    return <span className="text-10 font-mono text-muted-foreground/40">no data</span>;
+    return <span className="text-10 text-muted-foreground/40">no data</span>;
   }
   const pts = series.points;
   const geom = sparklineDomain(pts.map((p) => p.price));
-  if (!geom) return <span className="text-10 font-mono text-muted-foreground/40">no data</span>;
+  if (!geom) return <span className="text-10 text-muted-foreground/40">no data</span>;
   const [d0, d1] = geom.domain;
   const t0 = pts[0].t;
   const t1 = pts[pts.length - 1].t;

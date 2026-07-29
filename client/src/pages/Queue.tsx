@@ -170,7 +170,7 @@ function normalizeBacklog(raw: any): BacklogResponse | undefined {
 /** Small "est." tag for headline numbers the old-shape fallback filled with hardcoded estimates. */
 function Est({ on }: { on: boolean }) {
   if (!on) return null;
-  return <span className="ml-1 text-8 font-mono uppercase tracking-wide text-estimate align-top">est.</span>;
+  return <span className="ml-1 text-8 text-estimate align-top">est.</span>;
 }
 
 // `params` keeps this assignable to wouter's <Route component={...}> while the
@@ -341,7 +341,7 @@ export default function Queue({ embedded = false }: { embedded?: boolean; params
           ) : (
           <div className="overflow-x-auto">
           <div className="min-w-[760px]">
-          <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-surface-base border-b border-border text-10 font-mono uppercase tracking-wider text-muted-foreground">
+          <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-surface-base border-b border-border text-[11px] text-muted-foreground">
             <SortHeader label="Project" sortKey="projectName" current={sortKey} dir={sortDir} onClick={toggleSort} className="col-span-4" />
             <SortHeader label="Type" sortKey="type" current={sortKey} dir={sortDir} onClick={toggleSort} className="col-span-1" />
             <SortHeader label="MW" sortKey="capacityMW" current={sortKey} dir={sortDir} onClick={toggleSort} className="col-span-1 text-right" />
@@ -373,7 +373,7 @@ export default function Queue({ embedded = false }: { embedded?: boolean; params
                         <div className="font-medium text-foreground truncate flex items-center gap-1.5">
                           {p.projectName}
                           {p.status === "operational" && (
-                            <Badge variant="outline" className="text-8 font-mono px-1 py-0 text-positive border-positive/30">live</Badge>
+                            <Badge variant="outline" className="text-8 px-1 py-0 text-positive border-positive/30">live</Badge>
                           )}
                         </div>
                         <div className="text-10 text-muted-foreground truncate">
@@ -391,11 +391,11 @@ export default function Queue({ embedded = false }: { embedded?: boolean; params
                       <span className="col-span-1 font-mono text-muted-foreground truncate">{p.state}</span>
                       <span className="col-span-2 font-mono text-muted-foreground text-10 truncate">{p.expectedOnline ?? "—"}</span>
                       <span className="col-span-1 text-center">
-                        <Badge variant="outline" className="text-9 font-mono px-1.5 py-0" style={{ color: statusColor, borderColor: `${statusColor}40` }}>
+                        <Badge variant="outline" className="text-9 px-1.5 py-0" style={{ color: statusColor, borderColor: `${statusColor}40` }}>
                           {CATEGORY_LABELS[p.category] ?? p.category}
                         </Badge>
                       </span>
-                      <span className="col-span-1 text-center font-mono text-10">
+                      <span className="col-span-1 text-center text-10">
                         {p.dcRelevant
                           ? <span className="text-brand cursor-help" title="Tied to AI data-center demand">★</span>
                           : <span className="text-muted-foreground/30">—</span>}
@@ -452,7 +452,7 @@ function FreshnessChip({ lastRefreshed }: { lastRefreshed: string }) {
 function ChipSelect({ label, value, onChange, options }: { label: string; value: string; onChange: (v: string) => void; options: { value: string; label: string }[] }) {
   return (
     <label className="flex items-center gap-1.5 text-muted-foreground px-2 py-1 rounded border border-subtle hover:border-strong">
-      <span className="text-10 uppercase tracking-wider text-muted-foreground/60">{label}</span>
+      <span className="text-[11px] text-muted-foreground/60">{label}</span>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}

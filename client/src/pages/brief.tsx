@@ -6,7 +6,6 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AsOf, ErrorState } from "@/components/Freshness";
 import { Newspaper, Copy, Check, ChevronDown, ChevronUp } from "lucide-react";
-import { FONT } from "@/lib/tokens";
 
 interface BriefSection { heading: string; points: string[]; }
 interface Brief {
@@ -55,7 +54,7 @@ export default function BriefPage({ embedded = false }: { embedded?: boolean; pa
   const copyButton = data && (
     <button
       onClick={copy}
-      className="flex items-center gap-1.5 px-3 py-1.5 rounded border border-subtle text-xs font-mono text-muted-foreground hover:text-foreground hover:border-brand/40 transition-colors"
+      className="flex items-center gap-1.5 px-3 py-1.5 rounded border border-subtle text-xs text-muted-foreground hover:text-foreground hover:border-brand/40 transition-colors"
       data-testid="brief-copy"
     >
       {copied ? <Check className="h-3.5 w-3.5 text-positive" /> : <Copy className="h-3.5 w-3.5" />}
@@ -72,9 +71,9 @@ export default function BriefPage({ embedded = false }: { embedded?: boolean; pa
         {data.sections.map((s) => (
           <section key={s.heading} data-testid={`brief-section-${s.heading}`}>
             <div className="flex items-center justify-between mb-1.5">
-              <h3 className="text-xs font-mono uppercase tracking-wider text-brand">{s.heading}</h3>
+              <h3 className="text-[13px] font-semibold text-brand">{s.heading}</h3>
               {SECTION_LINK[s.heading] && (
-                <Link href={SECTION_LINK[s.heading]} className="text-10 font-mono text-muted-foreground/50 hover:text-brand">open →</Link>
+                <Link href={SECTION_LINK[s.heading]} className="text-[11px] text-muted-foreground/50 hover:text-brand">open →</Link>
               )}
             </div>
             <ul className="space-y-1">
@@ -103,10 +102,10 @@ export default function BriefPage({ embedded = false }: { embedded?: boolean; pa
         <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 mb-4">
           <div className="flex items-center gap-2">
             <Newspaper className="h-4 w-4 text-brand" />
-            <h2 className="text-base font-semibold text-foreground tracking-tight" style={{ fontFamily: FONT.mono }}>
+            <h2 className="text-base font-semibold text-foreground tracking-tight">
               The Buildout Brief
             </h2>
-            <Badge className="text-10 font-mono bg-brand/15 text-brand border-transparent">weekly</Badge>
+            <Badge className="text-10 bg-brand/15 text-brand border-transparent">weekly</Badge>
           </div>
           <div className="flex items-center gap-3">
             <AsOf updatedAt={dataUpdatedAt} intervalMs={900_000} />
@@ -127,7 +126,7 @@ export default function BriefPage({ embedded = false }: { embedded?: boolean; pa
           <>
             <div ref={contentRef} className={expanded ? undefined : "relative max-h-36 overflow-hidden"}>
               <article className="space-y-4">
-                <h3 className="text-15 font-semibold text-foreground" style={{ fontFamily: FONT.mono }}>{data.title}</h3>
+                <h3 className="text-15 font-semibold text-foreground">{data.title}</h3>
                 {body}
               </article>
               {!expanded && clipped && (
@@ -137,7 +136,7 @@ export default function BriefPage({ embedded = false }: { embedded?: boolean; pa
             {(clipped || expanded) && (
               <button
                 onClick={() => setExpanded((v) => !v)}
-                className="mt-3 flex items-center gap-1 text-xs font-mono text-brand hover:text-brand-2 transition-colors"
+                className="mt-3 flex items-center gap-1 text-xs text-brand hover:text-brand-2 transition-colors"
                 data-testid="brief-expand"
               >
                 {expanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
@@ -158,7 +157,7 @@ export default function BriefPage({ embedded = false }: { embedded?: boolean; pa
           <div className="max-w-3xl">
             <div className="flex items-center gap-2 mb-2">
               <Newspaper className="h-5 w-5 text-brand" />
-              <h1 className="text-2xl sm:text-3xl font-semibold text-foreground tracking-tight" style={{ fontFamily: FONT.mono }}>
+              <h1 className="text-2xl sm:text-3xl font-semibold text-foreground tracking-tight">
                 The Buildout Brief
               </h1>
             </div>
@@ -185,7 +184,7 @@ export default function BriefPage({ embedded = false }: { embedded?: boolean; pa
           ) : (
             <article className="space-y-5">
               <header className="border-b border-border pb-4 flex flex-wrap items-baseline justify-between gap-2">
-                <h2 className="text-xl font-semibold text-foreground" style={{ fontFamily: FONT.mono }}>{data.title}</h2>
+                <h2 className="text-xl font-semibold text-foreground">{data.title}</h2>
                 <AsOf updatedAt={dataUpdatedAt} intervalMs={900_000} />
               </header>
 

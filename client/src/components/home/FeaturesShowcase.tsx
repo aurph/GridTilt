@@ -18,7 +18,7 @@ interface Module {
 const MODULES: Module[] = [
   {
     number: "01",
-    name: "The Stack",
+    name: "Equities",
     caption: "One hundred public companies behind the buildout, priced live.",
     cta: "Open the stack",
     diagram: <StackDiagram />,
@@ -35,7 +35,7 @@ const MODULES: Module[] = [
   {
     number: "03",
     name: "Supply Chain Flow",
-    caption: "Where the buildout can get stuck, mapped to the companies exposed. A view inside The Stack.",
+    caption: "Where the buildout can get stuck, mapped to the companies exposed. A view inside Equities.",
     cta: "Trace the chain",
     diagram: <SupplyChainDiagram />,
     route: "/stack?view=flow",
@@ -128,7 +128,7 @@ export function FeaturesShowcase() {
 
 const SVG_STYLE: React.CSSProperties = { width: "100%", height: "100%", display: "block" };
 
-/** 01 — The Stack. Stacked horizontal bars of varying width. One highlighted. */
+/** 01 — Equities. Stacked horizontal bars of varying width. One highlighted. */
 function StackDiagram() {
   const bars = [
     { w: 138, accent: false },

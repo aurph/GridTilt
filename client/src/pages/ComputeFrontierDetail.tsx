@@ -32,13 +32,13 @@ const STATUS_COLOR: Record<string, string> = STATUS_COLORS;
 
 function Est({ on }: { on: boolean }) {
   if (!on) return null;
-  return <span className="ml-1 text-9 font-mono uppercase tracking-wide text-brand-2/80 align-top">est.</span>;
+  return <span className="ml-1 text-9 text-brand-2/80 align-top">est.</span>;
 }
 
 function Fact({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="border border-card-border rounded p-3 bg-card/40">
-      <div className="text-10 font-mono uppercase tracking-wider text-muted-foreground/70 mb-0.5">{label}</div>
+      <div className="text-[11px] text-muted-foreground/70 mb-0.5">{label}</div>
       <div className="text-sm text-foreground tabular-nums">{children}</div>
     </div>
   );
@@ -60,7 +60,7 @@ export default function ComputeFrontierDetail() {
         stats={
           cluster ? (
             <>
-              <Badge variant="outline" className="text-10 font-mono px-1.5 py-0" style={{ color: STATUS_COLOR[cluster.status], borderColor: `${STATUS_COLOR[cluster.status]}55` }}>
+              <Badge variant="outline" className="text-10 px-1.5 py-0" style={{ color: STATUS_COLOR[cluster.status], borderColor: `${STATUS_COLOR[cluster.status]}55` }}>
                 {cluster.status}
               </Badge>
               <span className="text-xs text-muted-foreground">{cluster.operator}</span>
@@ -98,7 +98,7 @@ export default function ComputeFrontierDetail() {
 
             {cluster.notes && (
               <Card className="border-card-border p-4">
-                <div className="text-10 font-mono uppercase tracking-wider text-muted-foreground/70 mb-1">Context</div>
+                <div className="text-[13px] font-semibold text-foreground mb-1">Context</div>
                 <p className="text-sm text-muted-foreground leading-relaxed">{cluster.notes}</p>
               </Card>
             )}
@@ -106,7 +106,7 @@ export default function ComputeFrontierDetail() {
             <Card className="border-card-border p-4" data-testid="cfd-power">
               <div className="flex items-center gap-2 mb-1.5">
                 <Atom className="h-4 w-4 text-brand" />
-                <span className="text-10 font-mono uppercase tracking-wider text-muted-foreground/70">Power</span>
+                <span className="text-[13px] font-semibold text-foreground">Power</span>
               </div>
               {cluster.linkedDeal ? (
                 <p className="text-sm text-muted-foreground leading-relaxed">
@@ -123,7 +123,7 @@ export default function ComputeFrontierDetail() {
             </Card>
 
             <Card className="border-card-border p-4" data-testid="cfd-sources">
-              <div className="text-10 font-mono uppercase tracking-wider text-muted-foreground/70 mb-2">Sources</div>
+              <div className="text-[13px] font-semibold text-foreground mb-2">Sources</div>
               <ul className="space-y-1">
                 {cluster.sources.map((s, i) => (
                   <li key={i}>
