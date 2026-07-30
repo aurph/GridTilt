@@ -56,6 +56,10 @@ const EXAMPLE_PORTFOLIOS = [
   { label: "Utility Mix", tickers: "NEE, CEG, VST, ETR, XLU" },
 ];
 
+// Preloaded on mount so the page never opens to an empty state - a real
+// scored example, not a placeholder.
+const DEFAULT_EXAMPLE = EXAMPLE_PORTFOLIOS[0];
+
 const SEGMENT_COLORS: Record<string, string> = {
   Compute: CATEGORY_COLORS.compute,
   Infrastructure: CATEGORY_COLORS.construction,
@@ -112,6 +116,9 @@ export default function PortfolioOverlay({ embedded = false }: { embedded?: bool
   const [results, setResults] = useState<PortfolioResult[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  // True only for the auto-loaded default example, never for a user-entered
+  // or user-picked portfolio - drives the "Showing an example" note.
+  const [isDefaultExample, setIsDefaultExample] = useState(false);
   const { toast } = useToast();
 
   const { mutate, isPending } = useMutation({
@@ -128,6 +135,8 @@ export default function PortfolioOverlay({ embedded = false }: { embedded?: bool
     },
   });
 
+  // On mount: score whatever is in the URL (a shared link), or fall back to
+  // a real example portfolio so the tool is never a blank input on load.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const tickerParam = params.get("tickers");
@@ -137,8 +146,14 @@ export default function PortfolioOverlay({ embedded = false }: { embedded?: bool
       const tickers = decoded.split(",").map((t) => t.trim().toUpperCase()).filter(Boolean);
       if (tickers.length > 0 && tickers.length <= 15) {
         mutate(tickers);
+        return;
       }
     }
+    setInputValue(DEFAULT_EXAMPLE.tickers);
+    setIsDefaultExample(true);
+    const tickers = DEFAULT_EXAMPLE.tickers.split(",").map((t) => t.trim().toUpperCase()).filter(Boolean);
+    mutate(tickers);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleSubmit = () => {
@@ -152,6 +167,7 @@ export default function PortfolioOverlay({ embedded = false }: { embedded?: bool
       return;
     }
     setError(null);
+    setIsDefaultExample(false);
     const encoded = encodeURIComponent(tickers.join(","));
     // Embedded (Analyze tool): keep the host route in the URL bar instead of
     // rewriting it to /portfolio out from under the tab.
@@ -192,6 +208,22 @@ export default function PortfolioOverlay({ embedded = false }: { embedded?: bool
         fullMark: 100,
       }))
     : [];
+
+  const sortedSegments = useMemo(
+    () => [...radarData].sort((a, b) => b.value - a.value),
+    [radarData],
+  );
+
+  // How many holdings are primarily classified into each segment - a
+  // different cut on the same real results, not a duplicate of the radar.
+  const segmentMix = useMemo(() => {
+    if (!results) return [] as [string, number][];
+    const counts: Record<string, number> = {};
+    results.forEach((r) => {
+      counts[r.primarySegment] = (counts[r.primarySegment] ?? 0) + 1;
+    });
+    return Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  }, [results]);
 
   const avgScore = results
     ? Math.round(results.reduce((s, r) => s + r.score, 0) / results.length)
@@ -276,6 +308,12 @@ export default function PortfolioOverlay({ embedded = false }: { embedded?: bool
             </div>
           </div>
 
+          {isDefaultExample && !error && (
+            <p className="mt-2 text-xs text-muted-foreground/70 italic" data-testid="default-example-note">
+              Showing an example. Enter your own tickers to replace it.
+            </p>
+          )}
+
           {error && (
             <div className="mt-3 flex items-center gap-2 text-negative text-xs">
               <AlertCircle className="h-3.5 w-3.5" />
@@ -301,10 +339,24 @@ export default function PortfolioOverlay({ embedded = false }: { embedded?: bool
               ))}
             </div>
           </div>
+
+          <div className="mt-3 flex flex-wrap items-center gap-1.5">
+            <span className="text-xs text-muted-foreground/60">Add tickers from Equities:</span>
+            {STACK_EXAMPLE_TICKERS.map((t) => (
+              <button
+                key={t}
+                onClick={() => addTicker(t)}
+                className="text-xs font-mono px-1.5 py-0.5 rounded border border-subtle text-brand hover:border-brand/40"
+                data-testid={`suggest-ticker-${t}`}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
         </Card>
 
         {isPending && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="space-y-3">
               {Array(4).fill(null).map((_, i) => (
                 <Card key={i} className="p-4 border-card-border">
@@ -319,11 +371,12 @@ export default function PortfolioOverlay({ embedded = false }: { embedded?: bool
               ))}
             </div>
             <Skeleton className="h-80 w-full rounded-lg" />
+            <Skeleton className="h-80 w-full rounded-lg" />
           </div>
         )}
 
         {sortedResults && !isPending && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Stock list */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
@@ -400,7 +453,7 @@ export default function PortfolioOverlay({ embedded = false }: { embedded?: bool
               </div>
               <Card className="p-5 border-card-border">
                 <ResponsiveContainer width="100%" height={300}>
-                  <RadarChart data={radarData} margin={{ top: 20, right: 30, bottom: 20, left: 30 }}>
+                  <RadarChart data={radarData} outerRadius="65%" margin={{ top: 20, right: 20, bottom: 10, left: 20 }}>
                     <PolarGrid stroke={CHART_CHROME.grid} />
                     <PolarAngleAxis dataKey="axis" tick={{ fill: CHART_CHROME.tick, fontSize: 12, fontFamily: FONT.mono }} />
                     <PolarRadiusAxis
@@ -434,28 +487,66 @@ export default function PortfolioOverlay({ embedded = false }: { embedded?: bool
                 </div>
               </Card>
             </div>
+
+            {/* Segment breakdown */}
+            <div className="space-y-4">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <h2 className="text-[13px] font-semibold text-foreground">Segment Breakdown</h2>
+                  <UITooltip>
+                    <TooltipTrigger>
+                      <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                      <p className="text-xs">Portfolio-average exposure per segment, plus how many holdings are primarily classified into each.</p>
+                    </TooltipContent>
+                  </UITooltip>
+                </div>
+              </div>
+              <Card className="p-5 border-card-border space-y-3" data-testid="segment-breakdown">
+                {sortedSegments.map((seg) => (
+                  <div key={seg.axis} className="space-y-1">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-foreground font-medium">{seg.axis}</span>
+                      <span className="font-mono text-muted-foreground">{seg.value.toFixed(0)}/100</span>
+                    </div>
+                    <div className="h-2 rounded-full bg-muted/20 overflow-hidden">
+                      <div
+                        className="h-2 rounded-full"
+                        style={{ width: `${seg.value}%`, backgroundColor: SEGMENT_COLORS[seg.axis] ?? INK.faint }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </Card>
+
+              <Card className="p-4 border-card-border bg-muted/10">
+                <p className="text-xs font-semibold text-foreground mb-2">Primary segment mix</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {segmentMix.map(([seg, count]) => (
+                    <Badge
+                      key={seg}
+                      className="text-xs px-1.5 py-0"
+                      style={{
+                        backgroundColor: `${SEGMENT_COLORS[seg] ?? INK.faint}20`,
+                        color: SEGMENT_COLORS[seg] ?? INK.muted,
+                      }}
+                      data-testid={`segment-mix-${seg.toLowerCase()}`}
+                    >
+                      {seg} &middot; {count}
+                    </Badge>
+                  ))}
+                </div>
+              </Card>
+            </div>
           </div>
         )}
 
-        {!results && !isPending && (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <BarChart3 className="h-12 w-12 text-muted-foreground/30 mb-4" />
-            <p className="text-sm font-medium text-muted-foreground">Enter your tickers above to score your portfolio</p>
-            <p className="text-xs text-muted-foreground mt-1">Supports US-listed equities and ETFs</p>
-            <div className="flex flex-wrap items-center justify-center gap-1.5 mt-4">
-              <span className="text-xs text-muted-foreground/60">Try tickers from Equities:</span>
-              {STACK_EXAMPLE_TICKERS.map((t) => (
-                <button
-                  key={t}
-                  onClick={() => addTicker(t)}
-                  className="text-xs font-mono px-1.5 py-0.5 rounded border border-subtle text-brand hover:border-brand/40"
-                  data-testid={`suggest-ticker-${t}`}
-                >
-                  {t}
-                </button>
-              ))}
-            </div>
-          </div>
+        {!results && !isPending && error && (
+          <Card className="p-6 border-card-border text-center" data-testid="portfolio-load-error">
+            <AlertCircle className="h-6 w-6 text-negative/70 mx-auto mb-2" />
+            <p className="text-sm text-muted-foreground">Could not score the portfolio. Enter tickers above and try again.</p>
+          </Card>
         )}
       </div>
     </div>
