@@ -174,7 +174,7 @@ export default function BlogPost() {
         <nav className="flex items-center gap-2 text-xs text-muted-foreground" data-testid="breadcrumb">
           <Link href="/" className="hover:text-foreground">GridTilt</Link>
           <span>/</span>
-          <Link href="/blog" className="hover:text-foreground">Analysis</Link>
+          <Link href="/blog" className="hover:text-foreground">Research</Link>
           <span>/</span>
           <span className="text-foreground font-medium truncate max-w-[200px]">{article.title}</span>
         </nav>
