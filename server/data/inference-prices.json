@@ -1,0 +1,31 @@
+{
+  "asOf": "2026-07-30",
+  "methodology": "Published on-demand API list prices for frontier text models, per million tokens, taken from each provider's official pricing page on the accessed date. Blended price assumes a 3-to-1 input-to-output token mix and is a comparison aid, not a quote. Prices are standard tier, no batch or cache discounts. Models are a curated cross-section of each lab's flagship, mid, and efficient tiers, not the full catalog.",
+  "blendRatioInput": 3,
+  "blendRatioOutput": 1,
+  "labs": [
+    { "id": "openai", "name": "OpenAI", "color": "#F07800" },
+    { "id": "anthropic", "name": "Anthropic", "color": "#F0A500" },
+    { "id": "google", "name": "Google", "color": "#22D3EE" }
+  ],
+  "sources": [
+    { "id": "openai-pricing", "publisher": "OpenAI", "title": "API Pricing", "url": "https://developers.openai.com/api/docs/pricing", "publishedAt": "2026-07-30", "accessedAt": "2026-07-30", "locator": "Standard pricing: gpt-5.6-sol, gpt-5.6-terra, gpt-5.6-luna" },
+    { "id": "openai-luna-cut", "publisher": "Sam Altman, OpenAI", "title": "API price cut announcement", "url": "https://x.com/sama/status/2082880720989532597", "publishedAt": "2026-07-30", "accessedAt": "2026-07-30", "locator": "80% cut to GPT-5.6 Luna to $0.20/$1.20; 20% cut to Terra to $2/$12" },
+    { "id": "anthropic-pricing", "publisher": "Anthropic", "title": "Pricing", "url": "https://platform.claude.com/docs/en/about-claude/pricing", "publishedAt": "2026-07-30", "accessedAt": "2026-07-30", "locator": "Model pricing table: Opus 4.8, Sonnet 5, Haiku 4.5" },
+    { "id": "google-pricing", "publisher": "Google", "title": "Gemini API Pricing", "url": "https://ai.google.dev/gemini-api/docs/pricing", "publishedAt": "2026-07-30", "accessedAt": "2026-07-30", "locator": "Standard pricing: Gemini 3.1 Pro, 3.5 Flash, 3.5 Flash-Lite" }
+  ],
+  "models": [
+    { "id": "gpt-5-6-sol", "labId": "openai", "name": "GPT-5.6 Sol", "tier": "flagship", "inputPerMTok": 5, "outputPerMTok": 30, "sourceId": "openai-pricing" },
+    { "id": "gpt-5-6-terra", "labId": "openai", "name": "GPT-5.6 Terra", "tier": "mid", "inputPerMTok": 2, "outputPerMTok": 12, "sourceId": "openai-pricing" },
+    { "id": "gpt-5-6-luna", "labId": "openai", "name": "GPT-5.6 Luna", "tier": "efficient", "inputPerMTok": 0.2, "outputPerMTok": 1.2, "sourceId": "openai-pricing", "note": "Cut 80% on 2026-07-30" },
+    { "id": "claude-opus-4-8", "labId": "anthropic", "name": "Claude Opus 4.8", "tier": "flagship", "inputPerMTok": 5, "outputPerMTok": 25, "sourceId": "anthropic-pricing" },
+    { "id": "claude-sonnet-5", "labId": "anthropic", "name": "Claude Sonnet 5", "tier": "mid", "inputPerMTok": 2, "outputPerMTok": 10, "sourceId": "anthropic-pricing", "note": "Introductory price through 2026-08-31, then $3/$15" },
+    { "id": "claude-haiku-4-5", "labId": "anthropic", "name": "Claude Haiku 4.5", "tier": "efficient", "inputPerMTok": 1, "outputPerMTok": 5, "sourceId": "anthropic-pricing" },
+    { "id": "gemini-3-1-pro", "labId": "google", "name": "Gemini 3.1 Pro", "tier": "flagship", "inputPerMTok": 2, "outputPerMTok": 12, "sourceId": "google-pricing", "note": "Standard tier, prompts up to 200k tokens" },
+    { "id": "gemini-3-5-flash", "labId": "google", "name": "Gemini 3.5 Flash", "tier": "mid", "inputPerMTok": 1.5, "outputPerMTok": 9, "sourceId": "google-pricing" },
+    { "id": "gemini-3-5-flash-lite", "labId": "google", "name": "Gemini 3.5 Flash-Lite", "tier": "efficient", "inputPerMTok": 0.3, "outputPerMTok": 2.5, "sourceId": "google-pricing" }
+  ],
+  "events": [
+    { "id": "luna-cut-2026-07-30", "date": "2026-07-30", "headline": "OpenAI cut GPT-5.6 Luna 80% to $0.20 and $1.20 per M tokens, and Terra 20% to $2 and $12.", "sourceIds": ["openai-luna-cut", "openai-pricing"] }
+  ]
+}
