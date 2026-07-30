@@ -102,12 +102,13 @@ export const CATEGORY_COLORS: Record<string, string> = {
 };
 
 /**
- * Facility/project status - state, not identity, so it draws on semantic
- * steps. Used by Power Map markers and Compute Frontier status charts.
+ * Facility/project status - a build-progress ramp on the brand hue, not
+ * the red/green semantic scale (that stays reserved for price direction).
+ * Used by Power Map markers and Compute Frontier status charts.
  */
 export const STATUS_COLORS = {
-  operational: SEMANTIC.positiveDeep,
-  construction: SEMANTIC.warning,
+  operational: BRAND.primary,
+  construction: BRAND.secondary,
   announced: INK.muted,
 } as const;
 

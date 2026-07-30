@@ -306,7 +306,7 @@ export default function ComputeFrontier() {
                   <XAxis {...axisProps} dataKey="iso" />
                   <YAxis {...axisProps} tickFormatter={(v) => `${(v / 1000).toFixed(0)}`} />
                   <RTooltip formatter={(v: number) => [`${v.toLocaleString()} MW`, "planned"]} cursor={{ fill: BRAND.glow }} />
-                  <Bar dataKey="plannedMW" fill={BRAND.secondary} radius={[2, 2, 0, 0]} />
+                  <Bar dataKey="plannedMW" fill={BRAND.primary} radius={[2, 2, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             ) : <ChartSkeleton />}
