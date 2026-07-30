@@ -952,7 +952,7 @@ export default function TiltOverview() {
       {/* Compact header strip - data starts above the fold (Lake 4A) */}
       <div className="border-b border-border px-4 sm:px-6 py-3">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
-          <h1 className="text-sm font-semibold text-foreground tracking-tight">Tilt Overview</h1>
+          <h1 className="text-sm font-semibold text-foreground tracking-tight">Overview</h1>
           <span className="hidden sm:block h-4 w-px bg-border" />
           {tracked && (
             <span className="flex items-baseline gap-2 font-mono" data-testid="header-tracked">

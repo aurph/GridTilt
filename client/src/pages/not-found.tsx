@@ -23,7 +23,7 @@ export default function NotFound() {
           className="px-5 py-2.5 bg-brand/15 hover:bg-brand/25 border border-brand/30 rounded-md text-sm font-medium text-brand transition-colors"
           data-testid="link-home"
         >
-          Return to Tilt Overview
+          Back to the dashboard
         </Link>
       </div>
     </div>

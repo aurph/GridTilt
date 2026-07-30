@@ -488,7 +488,7 @@ export default function CatalystTracker() {
   return (
     <div className="flex flex-col h-full overflow-y-auto" data-testid="catalyst-tracker-page">
       <PageHeader
-        title="Catalyst Tracker"
+        title="Catalysts"
         testId="catalyst-header"
         about="Earnings dates for tracked equities plus dated thesis catalysts (regulatory, policy, infrastructure, market, industry) on one calendar and timeline."
         stats={
