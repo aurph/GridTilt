@@ -31,17 +31,36 @@ interface StockInfo {
   relatedCatalysts: Array<{ id: number; date: string; title: string; category: string; thesisImpact: string }>;
 }
 
+// All 13 STACK_TICKERS layers (server/routes.ts) get a human label + a
+// SectorPage slug here. Layers missing from this map used to fall back to
+// their raw camelCase key (e.g. "rawMaterialsMining") in both the badge and
+// the sector link, which 404'd on SectorPage - about 30 of the 100 tracked
+// tickers live in the five layers added below.
 const SECTOR_LABELS: Record<string, string> = {
   compute: "Compute", nuclear: "Nuclear Power", uranium: "Uranium & Fuel Cycle",
   powerHardware: "Power Hardware", utilities: "Utilities", dataCenters: "Data Center REITs",
   construction: "Construction & EPC", etfsBenchmarks: "ETF Benchmarks",
+  rawMaterialsMining: "Raw Materials & Mining", rawMaterialsNatGas: "Natural Gas",
+  renewableGeneration: "Renewable Generation", transmissionGrid: "Transmission & Grid Hardware",
+  cryptoAIDC: "Crypto & AI Hosting",
 };
 
 const SECTOR_SLUG_MAP: Record<string, string> = {
   compute: "compute", nuclear: "nuclear-power", uranium: "uranium",
   powerHardware: "power-hardware", utilities: "utilities", dataCenters: "data-center-reits",
   construction: "construction-epc", etfsBenchmarks: "etf-benchmarks",
+  rawMaterialsMining: "raw-materials-mining", rawMaterialsNatGas: "natural-gas",
+  renewableGeneration: "renewable-generation", transmissionGrid: "transmission-grid-hardware",
+  cryptoAIDC: "crypto-ai-hosting",
 };
+
+interface StackData {
+  [key: string]: Array<{
+    ticker: string; name: string; price: number; change: number;
+    changePercent: number | null; pe: number | null; revenueGrowth: number | null;
+    marketCapDisplay?: string;
+  }>;
+}
 
 export default function StockPage() {
   const { ticker } = useParams<{ ticker: string }>();
@@ -58,9 +77,18 @@ export default function StockPage() {
     refetchInterval: 900000,
   });
 
+  // Same endpoint + queryKey SectorPage uses, so the cache is shared: prices
+  // for the related-tickers row below cost nothing extra once either page
+  // has loaded this session.
+  const { data: stackData } = useQuery<StackData>({
+    queryKey: ["/api/stack", "1D"],
+    queryFn: () => fetch("/api/stack?timeframe=1D").then((r) => r.json()),
+    refetchInterval: 900000,
+  });
+
   if (isLoading) {
     return (
-      <div className="max-w-5xl mx-auto p-6 space-y-6">
+      <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-6 space-y-6">
         <Skeleton className="h-8 w-64" />
         <Skeleton className="h-48 w-full" />
         <Skeleton className="h-32 w-full" />
@@ -70,7 +98,7 @@ export default function StockPage() {
 
   if (isError || !data) {
     return (
-      <div className="max-w-5xl mx-auto p-6">
+      <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-6">
         <Link href="/stack" className="flex items-center gap-1 text-sm text-brand mb-6" data-testid="link-back-stack">
           <ArrowLeft className="h-4 w-4" /> Back to Equities
         </Link>
@@ -78,7 +106,7 @@ export default function StockPage() {
           <AlertTriangle className="h-8 w-8 text-negative mx-auto mb-3" />
           <h1 className="text-lg font-semibold mb-2">Ticker Not Found</h1>
           <p className="text-sm text-muted-foreground">
-            ${upperTicker} is not tracked on GridTilt. <Link href="/stack" className="text-brand">Browse Equities</Link> to see all 60+ tracked equities.
+            ${upperTicker} is not tracked on GridTilt. <Link href="/stack" className="text-brand">Browse Equities</Link> to see all 100+ tracked equities.
           </p>
         </Card>
       </div>
@@ -89,7 +117,14 @@ export default function StockPage() {
   const isUp = hasLiveChg && (data.stockData!.changePercent as number) >= 0;
   const isStale = !!data.stockData?.stale;
   const chartData = data.stockData?.sparkline?.map((v, i) => ({ i, price: v })) || [];
+  const sectorLabel = SECTOR_LABELS[data.layerKey] || data.layerKey;
   const sectorSlug = SECTOR_SLUG_MAP[data.layerKey] || data.layerKey;
+
+  const sectorStocks = stackData?.[data.layerKey] || [];
+  const sectorAvgChange = sectorStocks.length > 0
+    ? sectorStocks.reduce((s, st) => s + (st.changePercent || 0), 0) / sectorStocks.length
+    : null;
+  const relatedRows = new Map(sectorStocks.map((s) => [s.ticker, s]));
 
   function handleShare() {
     const url = `https://gridtilt.com/stock/${data!.ticker}`;
@@ -100,13 +135,13 @@ export default function StockPage() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto p-6 space-y-6">
+    <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-6 space-y-6">
       <nav className="flex items-center gap-2 text-xs text-muted-foreground" data-testid="breadcrumb">
         <Link href="/" className="hover:text-foreground">GridTilt</Link>
         <span>/</span>
         <Link href="/stack" className="hover:text-foreground">Equities</Link>
         <span>/</span>
-        <Link href={`/sector/${sectorSlug}`} className="hover:text-foreground">{SECTOR_LABELS[data.layerKey] || data.layerKey}</Link>
+        <Link href={`/sector/${sectorSlug}`} className="hover:text-foreground">{sectorLabel}</Link>
         <span>/</span>
         <span className="text-foreground font-medium">{data.ticker}</span>
       </nav>
@@ -165,7 +200,7 @@ export default function StockPage() {
               <span className="text-3xl font-bold font-mono text-brand-2" data-testid="thesis-score">{data.thesisScore}/100</span>
             </div>
             <p className="text-sm text-muted-foreground mb-4">{data.explanation}</p>
-            <div className="grid grid-cols-5 gap-2">
+            <div className="grid grid-cols-5 gap-3">
               {Object.entries(data.sectors).map(([key, val]) => (
                 <div key={key} className="text-center">
                   <div className="h-2.5 rounded-full bg-muted/30 overflow-hidden mb-1">
@@ -184,7 +219,7 @@ export default function StockPage() {
                 <h2 className="text-[13px] font-semibold text-foreground">Price History</h2>
                 <span className="text-[11px] text-muted-foreground/70">past 2 days, 5-min closes</span>
               </div>
-              <ResponsiveContainer width="100%" height={200}>
+              <ResponsiveContainer width="100%" height={220}>
                 <LineChart data={chartData} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
                   {/* Sparkline payload carries closes only (no timestamps), so the
                       x axis stays a bare baseline and the label above names the range. */}
@@ -253,39 +288,59 @@ export default function StockPage() {
             </Card>
           )}
 
-          <Card className="p-5 border-card-border" data-testid="sector-context">
-            <h2 className="text-[13px] font-semibold text-foreground mb-3">Sector Context</h2>
-            <Link href={`/sector/${sectorSlug}`} className="text-sm text-brand hover:text-brand-2 font-medium" data-testid="link-sector">
-              {SECTOR_LABELS[data.layerKey] || data.layerKey} Sector
-            </Link>
-          </Card>
-
           {data.relatedTickers.length > 0 && (
             <Card className="p-5 border-card-border" data-testid="related-stocks">
-              <h2 className="text-[13px] font-semibold text-foreground mb-3">Related Stocks</h2>
-              <div className="space-y-2">
-                {data.relatedTickers.map((t) => (
-                  <Link
-                    key={t}
-                    href={`/stock/${t}`}
-                    className="block text-sm font-mono text-brand hover:text-brand-2"
-                    data-testid={`link-related-${t}`}
-                  >
-                    ${t}
-                  </Link>
-                ))}
+              <div className="flex items-baseline justify-between gap-2 mb-1">
+                <h2 className="text-[13px] font-semibold text-foreground">Related Stocks</h2>
+                <Link href={`/sector/${sectorSlug}`} className="text-10 text-muted-foreground hover:text-brand whitespace-nowrap" data-testid="link-sector">
+                  {sectorLabel} &rarr;
+                </Link>
+              </div>
+              {sectorAvgChange !== null && (
+                <p className="text-10 text-muted-foreground mb-3">
+                  Sector avg today:{" "}
+                  <span className={`font-mono font-semibold ${sectorAvgChange >= 0 ? "text-positive" : "text-negative"}`}>
+                    {sectorAvgChange >= 0 ? "+" : ""}{sectorAvgChange.toFixed(2)}%
+                  </span>{" "}
+                  across {sectorStocks.length} tracked
+                </p>
+              )}
+              <div>
+                {data.relatedTickers.map((t) => {
+                  const row = relatedRows.get(t);
+                  const hasChg = typeof row?.changePercent === "number";
+                  const rowUp = hasChg && (row!.changePercent as number) >= 0;
+                  return (
+                    <Link
+                      key={t}
+                      href={`/stock/${t}`}
+                      className="flex items-center justify-between gap-3 py-2 border-b border-border/60 last:border-0 -mx-1 px-1 rounded hover:bg-muted/20 transition-colors"
+                      data-testid={`link-related-${t}`}
+                    >
+                      <span className="min-w-0">
+                        <span className="block font-mono text-sm font-semibold text-brand">${t}</span>
+                        {row?.name && <span className="block text-10 text-muted-foreground truncate max-w-[150px]">{row.name}</span>}
+                      </span>
+                      {row ? (
+                        <span className="text-right flex-shrink-0">
+                          <span className="block font-mono text-sm font-semibold">${row.price.toFixed(2)}</span>
+                          {hasChg ? (
+                            <span className={`block text-10 font-mono ${rowUp ? "text-positive" : "text-negative"}`}>
+                              {rowUp ? "+" : ""}{(row.changePercent as number).toFixed(2)}%
+                            </span>
+                          ) : (
+                            <span className="block text-10 font-mono text-muted-foreground">--</span>
+                          )}
+                        </span>
+                      ) : (
+                        <span className="text-10 text-muted-foreground flex-shrink-0">--</span>
+                      )}
+                    </Link>
+                  );
+                })}
               </div>
             </Card>
           )}
-
-          <Card className="p-5 border-card-border">
-            <h2 className="text-[13px] font-semibold text-foreground mb-3">Tools</h2>
-            <div className="space-y-2 text-sm">
-              <Link href="/stack" className="block text-brand hover:text-brand-2" data-testid="link-tool-stack">Equities</Link>
-              <Link href="/analyze" className="block text-brand hover:text-brand-2" data-testid="link-tool-analyze">Analyze</Link>
-              <Link href="/catalysts" className="block text-brand hover:text-brand-2" data-testid="link-tool-catalysts">Catalyst Tracker</Link>
-            </div>
-          </Card>
         </div>
       </div>
     </div>
