@@ -63,8 +63,18 @@ export function Hero() {
       style={{ minHeight: "calc(100vh - 88px)" }}
       data-testid="home-hero"
     >
-      <div className="absolute inset-0 z-0 opacity-75" aria-hidden>
-        <GridPulse />
+      {/* Real night-grid backdrop (generated), with a vignette that keeps the
+          center dark for the wordmark; the animated pulse layers on top. */}
+      <div className="absolute inset-0 z-0" aria-hidden>
+        <div
+          className="absolute inset-0 bg-cover bg-center opacity-70"
+          style={{ backgroundImage: "url(/hero-grid.webp)" }}
+        />
+        <div
+          className="absolute inset-0"
+          style={{ background: "radial-gradient(ellipse 55% 60% at 50% 42%, rgba(11,11,11,0.92) 0%, rgba(11,11,11,0.55) 45%, rgba(11,11,11,0.15) 100%)" }}
+        />
+        <div className="absolute inset-0 opacity-40"><GridPulse /></div>
       </div>
 
       <div className="relative z-10 mx-auto flex min-h-[inherit] max-w-[1200px] flex-col items-center justify-center px-6 py-16 text-center">
