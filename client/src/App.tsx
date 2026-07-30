@@ -25,6 +25,7 @@ import Subscribe from "@/pages/Subscribe";
 import AdminDatacenters from "@/pages/AdminDatacenters";
 import AdminSocial from "@/pages/AdminSocial";
 import { NewsTicker } from "@/components/NewsTicker";
+import { SiteFooter } from "@/components/site-footer";
 import { initAnalytics, trackPageview } from "@/lib/analytics";
 import { useLocation } from "wouter";
 import { useState, useEffect, lazy, Suspense } from "react";
@@ -262,6 +263,7 @@ function App() {
             <Suspense fallback={null}>
               <Router />
             </Suspense>
+            <SiteFooter />
           </main>
         </div>
         {showShortcuts && (
