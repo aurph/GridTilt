@@ -25,6 +25,17 @@ describe("readInferencePrices", () => {
       assert.match(source!.accessedAt, /^20\d\d-\d\d-\d\d$/);
     }
   });
+
+  test("every trajectory point is dated, priced, and cited", () => {
+    const registry = readInferencePrices();
+    const byId = new Map(registry.sources.map((s) => [s.id, s]));
+    assert.ok(registry.trajectory.points.length >= 3);
+    for (const point of registry.trajectory.points) {
+      assert.match(point.date, /^20\d\d-\d\d-\d\d$/);
+      assert.ok(point.inputPerMTok > 0);
+      assert.ok(byId.get(point.sourceId), `trajectory point ${point.id} has a resolvable source`);
+    }
+  });
 });
 
 describe("blendedPrice", () => {
@@ -48,6 +59,9 @@ describe("buildInferencePriceView", () => {
     }
     assert.equal(view.cheapestId, view.rows[0]?.id);
     assert.equal(view.priciestId, view.rows.at(-1)?.id);
+    for (let i = 1; i < view.trajectory.points.length; i++) {
+      assert.ok(view.trajectory.points[i].date >= view.trajectory.points[i - 1].date, "trajectory sorted by date");
+    }
     for (const row of view.rows) {
       assert.ok(row.labName, "row has a joined lab name");
       assert.ok(row.source.url, "row has a joined source");
@@ -64,6 +78,7 @@ describe("validateInferencePrices", () => {
     labs: [{ id: "openai", name: "OpenAI", color: "#f07800" }],
     sources: [{ id: "src", publisher: "OpenAI", title: "Pricing", url: "https://example.com/p", publishedAt: "2026-07-30", accessedAt: "2026-07-30", locator: "row" }],
     models: [{ id: "m1", labId: "openai", name: "Model One", tier: "flagship", inputPerMTok: 5, outputPerMTok: 30, sourceId: "src" }],
+    trajectory: { metric: "input $/M at release", note: "milestones", points: [{ id: "t1", name: "Model One", tier: "flagship", date: "2023-03-14", inputPerMTok: 30, sourceId: "src" }] },
     events: [],
   });
 
@@ -99,5 +114,11 @@ describe("validateInferencePrices", () => {
     const bad = base();
     bad.events = [{ id: "e1", date: "2026-08-01", headline: "Future.", sourceIds: ["src"] }];
     assert.throws(() => validateInferencePrices(bad), /invalid date/i);
+  });
+
+  test("rejects a trajectory point referencing a missing source", () => {
+    const bad = base();
+    bad.trajectory.points[0].sourceId = "ghost";
+    assert.throws(() => validateInferencePrices(bad), /missing source/i);
   });
 });

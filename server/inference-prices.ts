@@ -45,6 +45,21 @@ export interface PriceEvent {
   sourceIds: string[];
 }
 
+export interface TrajectoryPoint {
+  id: string;
+  name: string;
+  tier: PriceTier;
+  date: string;
+  inputPerMTok: number;
+  sourceId: string;
+}
+
+export interface Trajectory {
+  metric: string;
+  note: string;
+  points: TrajectoryPoint[];
+}
+
 export interface InferencePriceRegistry {
   asOf: string;
   methodology: string;
@@ -53,6 +68,7 @@ export interface InferencePriceRegistry {
   labs: PriceLab[];
   sources: PriceSource[];
   models: InferencePriceModel[];
+  trajectory: Trajectory;
   events: PriceEvent[];
 }
 
@@ -134,6 +150,19 @@ export function validateInferencePrices(value: unknown): InferencePriceRegistry 
     }
   }
 
+  const traj = root.trajectory;
+  if (!traj || typeof traj !== "object") throw new Error("inference prices needs a trajectory");
+  if (!traj.metric?.trim() || !traj.note?.trim()) throw new Error("trajectory needs metric and note");
+  if (!Array.isArray(traj.points) || traj.points.length === 0) throw new Error("trajectory needs points");
+  uniqueIds(traj.points, "trajectory point");
+  for (const point of traj.points) {
+    if (!point.name?.trim()) throw new Error(`trajectory point ${point.id} has no name`);
+    if (!TIERS.has(point.tier)) throw new Error(`trajectory point ${point.id} has invalid tier`);
+    if (!isRealDay(point.date) || point.date > root.asOf) throw new Error(`trajectory point ${point.id} has invalid date`);
+    if (!Number.isFinite(point.inputPerMTok) || point.inputPerMTok <= 0) throw new Error(`trajectory point ${point.id} has invalid price`);
+    if (!sources.has(point.sourceId)) throw new Error(`trajectory point ${point.id} references missing source ${point.sourceId}`);
+  }
+
   return root;
 }
 
@@ -155,6 +184,7 @@ export interface InferencePriceView {
   blend: { input: number; output: number };
   labs: PriceLab[];
   sources: PriceSource[];
+  trajectory: Trajectory;
   events: PriceEvent[];
   rows: InferencePriceRow[];
   cheapestId: string | null;
@@ -185,6 +215,7 @@ export function buildInferencePriceView(registry: InferencePriceRegistry): Infer
     blend: { input: registry.blendRatioInput, output: registry.blendRatioOutput },
     labs: registry.labs,
     sources: registry.sources,
+    trajectory: { ...registry.trajectory, points: [...registry.trajectory.points].sort((a, b) => a.date.localeCompare(b.date)) },
     events: registry.events,
     rows,
     cheapestId: rows[0]?.id ?? null,
