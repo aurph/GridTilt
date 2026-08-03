@@ -119,6 +119,13 @@ function gpuCell(n: number | null): string {
   return n.toLocaleString("en-US");
 }
 
+/** Truncate a long category-axis label to a fixed length with an ellipsis, so
+ *  crowded horizontal bar charts (long operator/company names) never smear
+ *  into each other. Full names still surface in the tooltip and screen-reader table. */
+function truncateLabel(s: string, max = 16): string {
+  return s.length > max ? `${s.slice(0, max - 1).trimEnd()}…` : s;
+}
+
 /** Small "est." tag for any value whose field is in the cluster's estimated[]. */
 function Est({ on }: { on: boolean }) {
   if (!on) return null;
@@ -205,6 +212,12 @@ export default function ComputeFrontier() {
     return [...top, others];
   }, [metrics]);
 
+  // Fixed row height per operator bar so labels always have their own clear
+  // line at interval={0}; grows past the 280px default once there are enough
+  // bars (15 top + Others) that a static height would pack rows too tight.
+  const OPERATOR_ROW_HEIGHT = 26;
+  const operatorChartHeight = Math.max(280, topOperators.length * OPERATOR_ROW_HEIGHT + 40);
+
   const ps = metrics?.powerSecured;
 
   return (
@@ -256,11 +269,18 @@ export default function ComputeFrontier() {
             {metricsError ? (
               <ErrorState label="Cluster metrics failed to load." onRetry={() => refetchMetrics()} className="h-[280px]" />
             ) : metrics ? (
-              <ResponsiveContainer width="100%" height={280}>
+              <ResponsiveContainer width="100%" height={operatorChartHeight}>
                 <BarChart data={topOperators} layout="vertical" margin={{ left: 8, right: 16, top: 4, bottom: 4 }}>
                   <CartesianGrid {...gridProps} vertical={true} horizontal={false} />
                   <XAxis {...axisProps} type="number" tickFormatter={(v) => `${(v / 1000).toFixed(0)}`} />
-                  <YAxis {...axisProps} type="category" dataKey="operator" width={110} interval={0} />
+                  <YAxis
+                    {...axisProps}
+                    type="category"
+                    dataKey="operator"
+                    width={150}
+                    interval={0}
+                    tickFormatter={(v: string) => truncateLabel(v, 16)}
+                  />
                   <RTooltip formatter={(v: number, _n, p: any) => [`${v.toLocaleString()} MW`, `${p.payload.count} clusters`]} cursor={{ fill: BRAND.glow }} />
                   <Bar dataKey="plannedMW" fill={BRAND.primary} radius={[0, 2, 2, 0]} />
                 </BarChart>
@@ -286,7 +306,7 @@ export default function ComputeFrontier() {
                   <XAxis {...axisProps} dataKey="iso" />
                   <YAxis {...axisProps} tickFormatter={(v) => `${(v / 1000).toFixed(0)}`} />
                   <RTooltip formatter={(v: number) => [`${v.toLocaleString()} MW`, "planned"]} cursor={{ fill: BRAND.glow }} />
-                  <Bar dataKey="plannedMW" fill={BRAND.secondary} radius={[2, 2, 0, 0]} />
+                  <Bar dataKey="plannedMW" fill={BRAND.primary} radius={[2, 2, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             ) : <ChartSkeleton />}

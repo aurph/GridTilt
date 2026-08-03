@@ -165,12 +165,15 @@ function MyGridMap({
             />
           )}
           {facilities.map((f) => {
-            const inState = stateCode !== "" && f.state === stateCode;
+            // No state chosen: every facility is in view, so all render in
+            // brand orange. Once a state is picked, out-of-state dims to gray.
+            const noneChosen = stateCode === "";
+            const inState = noneChosen || f.state === stateCode;
             return (
               <CircleMarker
                 key={f.id}
                 center={[f.lat, f.lng]}
-                radius={inState ? Math.max(6, Math.min(14, Math.sqrt(f.powerMW ?? 100) / 2.6)) : 4}
+                radius={inState ? Math.max(noneChosen ? 4 : 6, Math.min(noneChosen ? 9 : 14, Math.sqrt(f.powerMW ?? 100) / (noneChosen ? 3.4 : 2.6))) : 4}
                 pathOptions={{
                   color: inState ? BRAND.primary : INK.faint,
                   weight: 1,

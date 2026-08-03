@@ -20,7 +20,7 @@ import {
   Tooltip as RTooltip,
 } from "recharts";
 import { Handshake, ArrowUpDown } from "lucide-react";
-import { BORDER, BRAND, CATEGORY_COLORS, FONT, INK, SEMANTIC, SERIES, STATUS_COLORS } from "@/lib/tokens";
+import { BORDER, BRAND, CATEGORY_COLORS, FONT, INK, SERIES, STATUS_COLORS } from "@/lib/tokens";
 import { axisProps, gridProps, tooltipContentStyle } from "@/lib/chart-theme";
 
 interface Bucket { key: string; count: number; mw: number; }
@@ -66,7 +66,7 @@ const typeColor = (t: string) => TYPE_COLOR[t] ?? INK.muted;
 
 const STATUS_COLOR: Record<string, string> = {
   operational: STATUS_COLORS.operational,
-  active: SEMANTIC.warning,
+  active: STATUS_COLORS.construction,
   announced: STATUS_COLORS.announced,
 };
 

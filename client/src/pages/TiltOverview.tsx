@@ -952,7 +952,7 @@ export default function TiltOverview() {
       {/* Compact header strip - data starts above the fold (Lake 4A) */}
       <div className="border-b border-border px-4 sm:px-6 py-3">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
-          <h1 className="text-sm font-semibold text-foreground tracking-tight">Tilt Overview</h1>
+          <h1 className="text-sm font-semibold text-foreground tracking-tight">Overview</h1>
           <span className="hidden sm:block h-4 w-px bg-border" />
           {tracked && (
             <span className="flex items-baseline gap-2 font-mono" data-testid="header-tracked">
@@ -1280,15 +1280,6 @@ export default function TiltOverview() {
 
         <EmailCapture variant="inline" />
 
-        <footer className="pt-4 border-t border-border/40 text-11 text-muted-foreground/60 leading-relaxed space-y-1">
-          <p>
-            Data: Yahoo Finance · EIA · DOE · NERC · LBNL · public RSS sources. Composite indices computed in-house; methodology in each card's info tooltip.
-          </p>
-          <p>
-            Research and commentary, not investment advice. Past performance does not predict future returns.
-            Built by Jack Schwartz · <a href="https://x.com/gridtilt" target="_blank" rel="noopener noreferrer" className="hover:text-foreground/80 transition-colors">@gridtilt</a>
-          </p>
-        </footer>
 
       </div>
       <ScrollTriggeredBanner />

@@ -47,6 +47,7 @@ import { computeDealMetrics, type DealProject } from "./deals";
 import { composeBrief, renderBriefText, type BriefInput } from "./brief";
 import { computeGpuEconomics, TRAINING_PRESETS } from "./gpu-economics";
 import { readFrontierRegistry, summarizeFrontierRegistry } from "./frontier-models";
+import { readInferencePrices, buildInferencePriceView } from "./inference-prices";
 import {
   buildBuildoutTweet,
   buildGpuRentalTweet,
@@ -3946,6 +3947,16 @@ ${rssItems}
     } catch (err) {
       console.error("Frontier model registry error:", err);
       res.status(500).json({ error: "Failed to load frontier model registry" });
+    }
+  });
+
+  // Frontier inference pricing relay: the demand side, per million tokens, cited.
+  app.get("/api/inference-prices", (_req, res) => {
+    try {
+      res.json(buildInferencePriceView(readInferencePrices()));
+    } catch (err) {
+      console.error("Inference price registry error:", err);
+      res.status(500).json({ error: "Failed to load inference price registry" });
     }
   });
 

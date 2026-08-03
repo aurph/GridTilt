@@ -25,6 +25,7 @@ import Subscribe from "@/pages/Subscribe";
 import AdminDatacenters from "@/pages/AdminDatacenters";
 import AdminSocial from "@/pages/AdminSocial";
 import { NewsTicker } from "@/components/NewsTicker";
+import { SiteFooter } from "@/components/site-footer";
 import { initAnalytics, trackPageview } from "@/lib/analytics";
 import { useLocation } from "wouter";
 import { useState, useEffect, lazy, Suspense } from "react";
@@ -42,7 +43,7 @@ const MARKETING_ROUTES: string[] = [];
 
 const PAGE_TITLES: Record<string, string> = {
   "/": "GridTilt",
-  "/overview": "Tilt Overview",
+  "/overview": "Overview",
   "/stack": "Equities",
   "/power-map": "Power",
   "/my-grid": "My Grid",
@@ -55,7 +56,7 @@ const PAGE_TITLES: Record<string, string> = {
 };
 
 const SHORTCUTS = [
-  { keys: ["G", "1"], description: "Go to Tilt Overview", path: "/overview" },
+  { keys: ["G", "1"], description: "Go to Overview", path: "/overview" },
   { keys: ["G", "2"], description: "Go to Equities", path: "/stack" },
   { keys: ["G", "3"], description: "Go to Power", path: "/power-map" },
   { keys: ["G", "4"], description: "Go to Compute Frontier", path: "/compute-frontier" },
@@ -262,6 +263,7 @@ function App() {
             <Suspense fallback={null}>
               <Router />
             </Suspense>
+            <SiteFooter />
           </main>
         </div>
         {showShortcuts && (

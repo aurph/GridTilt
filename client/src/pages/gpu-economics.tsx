@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -35,6 +35,22 @@ interface EconRow {
 interface TrainingPreset { label: string; flops: number; note: string; }
 interface EconData { rows: EconRow[]; trainingPresets: TrainingPreset[]; lastRefreshed: string | null; }
 
+interface InfSource { id: string; publisher: string; title: string; url: string; publishedAt: string; accessedAt: string; locator: string; }
+interface InfPriceRow {
+  id: string; labId: string; name: string; tier: "flagship" | "mid" | "efficient";
+  inputPerMTok: number; outputPerMTok: number; sourceId: string; note?: string;
+  labName: string; labColor: string; blendedPerMTok: number; source: InfSource;
+}
+interface InfPriceEvent { id: string; date: string; headline: string; sourceIds: string[]; }
+interface InfTrajPoint { id: string; name: string; tier: "flagship" | "mid" | "efficient"; date: string; inputPerMTok: number; sourceId: string; }
+interface InfPriceView {
+  asOf: string; methodology: string; blend: { input: number; output: number };
+  labs: { id: string; name: string; color: string }[];
+  sources: InfSource[]; events: InfPriceEvent[];
+  trajectory: { metric: string; note: string; points: InfTrajPoint[] };
+  rows: InfPriceRow[]; cheapestId: string | null; priciestId: string | null;
+}
+
 const NVIDIA_COLOR = "#F07800";
 const AMD_COLOR = "#22D3EE";
 const AMBER = "#F0A500";
@@ -56,6 +72,7 @@ function numBig(n: number): string {
 
 export default function GpuEconomics({ embedded = false }: { embedded?: boolean }) {
   const { data, isLoading, isError, refetch, dataUpdatedAt } = useQuery<EconData>({ queryKey: ["/api/gpu-economics"] });
+  const inf = useQuery<InfPriceView>({ queryKey: ["/api/inference-prices"] });
   const rows = data?.rows ?? [];
   // Presentation-layer sort: cheapest compute first ($/PFLOP-hr ascending, nulls last),
   // so the table matches the header claim regardless of server order.
@@ -165,6 +182,9 @@ export default function GpuEconomics({ embedded = false }: { embedded?: boolean 
       {intro}
 
       <div className={embedded ? "flex-1 space-y-5 mt-3" : "flex-1 p-4 sm:p-6 space-y-5"}>
+        {/* Demand side: what the compute below actually produces, priced and cited. */}
+        <TokenPriceCard q={inf} />
+
         {/* Comparable compute efficiency, with vendor identity and the cheapest option explicit. */}
         <Card className="border-card-border overflow-hidden" data-testid="econ-efficiency-chart">
           <div className="px-4 py-3 bg-surface-base border-b border-border flex flex-wrap items-start justify-between gap-3">
@@ -443,6 +463,193 @@ function Out({ label, value, accent }: { label: string; value: string; accent?: 
     <div>
       <div className="text-[11px] text-muted-foreground/60">{label}</div>
       <div className={`font-semibold tabular-nums ${accent ? "text-2xl text-brand" : "text-lg text-foreground"}`}>{value}</div>
+    </div>
+  );
+}
+
+function TokenPriceCard({ q }: { q: UseQueryResult<InfPriceView> }) {
+  const view = q.data;
+  const rows = view?.rows ?? [];
+  const maxBlended = rows.reduce((m, r) => Math.max(m, r.blendedPerMTok), 0) || 1;
+  const event = view?.events?.[0];
+  const srcById = new Map((view?.sources ?? []).map((s) => [s.id, s] as const));
+  const modelSourceIds = new Set(rows.map((r) => r.sourceId));
+
+  return (
+    <Card className="border-card-border overflow-hidden" data-testid="token-prices">
+      <div className="px-4 py-3 bg-surface-base border-b border-border flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="text-[13px] font-semibold text-foreground">The price of a token</div>
+          <div className="text-10 text-muted-foreground/50 mt-0.5">What frontier labs charge to run a model, per million tokens. Blended at a 3-to-1 input-to-output mix.</div>
+        </div>
+        {view?.asOf && <div className="text-10 text-muted-foreground/70 font-mono whitespace-nowrap">list prices as of {view.asOf}</div>}
+      </div>
+
+      <div className="px-4 py-3">
+        <TrajectoryChart traj={view?.trajectory} sources={view?.sources ?? []} />
+
+        <p className="text-xs text-muted-foreground leading-relaxed max-w-3xl mb-3">
+          This is the demand side of the buildout. As inference gets cheaper, work that was not worth running becomes
+          worth running, so total compute keeps climbing even as unit prices fall. That rising compute is what shows up
+          downstream as datacenter load and power demand.
+        </p>
+
+        {event && (
+          <div className="mb-3 rounded-md border border-brand/30 bg-brand/5 px-3 py-2" data-testid="token-price-event">
+            <div className="flex items-baseline gap-2">
+              <span className="text-10 font-mono text-brand flex-shrink-0">{event.date}</span>
+              <span className="text-xs text-foreground leading-snug">{event.headline}</span>
+            </div>
+            <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
+              {event.sourceIds.map((id) => {
+                const src = srcById.get(id);
+                return src ? (
+                  <a key={id} href={src.url} target="_blank" rel="noopener noreferrer" className="text-10 text-brand/80 hover:text-brand underline underline-offset-2">{src.publisher}</a>
+                ) : null;
+              })}
+            </div>
+          </div>
+        )}
+
+        {q.isLoading ? (
+          <div className="space-y-2">{Array(6).fill(null).map((_, i) => <Skeleton key={i} className="h-7" />)}</div>
+        ) : q.isError ? (
+          <ErrorState label="Frontier pricing failed to load." onRetry={() => q.refetch()} />
+        ) : (
+          <div className="overflow-x-auto">
+            <div className="min-w-[520px]">
+              <div className="grid grid-cols-12 gap-2 px-1 pb-1.5 border-b border-border text-[11px] text-muted-foreground">
+                <span className="col-span-4">Model</span>
+                <span className="col-span-2 text-right">In $/M</span>
+                <span className="col-span-2 text-right">Out $/M</span>
+                <span className="col-span-4">Blended $/M</span>
+              </div>
+              {rows.map((r) => {
+                const cheapest = r.id === view?.cheapestId;
+                return (
+                  <div key={r.id} className="grid grid-cols-12 gap-2 px-1 py-2 border-b border-border/30 last:border-0 text-xs items-center hover:bg-brand/5" data-testid={`token-row-${r.id}`}>
+                    <span className="col-span-4 flex items-center gap-1.5 min-w-0">
+                      <span className="h-2 w-2 rounded-full flex-shrink-0" style={{ background: r.labColor }} />
+                      <span className="font-mono font-semibold text-foreground truncate">{r.name}</span>
+                      <span className="text-8 uppercase tracking-wide text-muted-foreground/50 border border-border rounded-sm px-1 flex-shrink-0">{r.tier}</span>
+                    </span>
+                    <span className="col-span-2 font-mono text-muted-foreground text-right tabular-nums">${r.inputPerMTok.toFixed(2)}</span>
+                    <span className="col-span-2 font-mono text-muted-foreground text-right tabular-nums">${r.outputPerMTok.toFixed(2)}</span>
+                    <span className="col-span-4 flex items-center gap-2">
+                      <span className="relative h-3 flex-1 rounded-sm bg-surface-sunken overflow-hidden">
+                        <span className="absolute inset-y-0 left-0 rounded-sm" style={{ width: `${Math.max(3, (r.blendedPerMTok / maxBlended) * 100)}%`, background: cheapest ? AMBER : NVIDIA_COLOR, opacity: cheapest ? 1 : 0.62 }} />
+                      </span>
+                      <span className="font-mono tabular-nums w-12 text-right flex-shrink-0" style={{ color: cheapest ? AMBER : "#e5e7eb" }}>${r.blendedPerMTok.toFixed(2)}</span>
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="px-4 py-2 text-10 text-muted-foreground/50 border-t border-border flex flex-wrap items-center gap-x-3 gap-y-1">
+        <span>Standard tier list prices, curated cross-section. Sources:</span>
+        {(view?.sources ?? []).filter((src) => modelSourceIds.has(src.id)).map((src) => (
+          <a key={src.id} href={src.url} target="_blank" rel="noopener noreferrer" className="text-brand/70 hover:text-brand underline underline-offset-2">{src.publisher}</a>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
+function decimalYear(d: string): number {
+  const [y, m, day] = d.split("-").map(Number);
+  return y + ((m - 1) + (day - 1) / 31) / 12;
+}
+
+function fmtTraj(v: number): string {
+  return v >= 1 ? `$${v}` : `$${v.toFixed(2)}`;
+}
+
+function TrajectoryChart({ traj, sources }: { traj?: InfPriceView["trajectory"]; sources: InfSource[] }) {
+  if (!traj || traj.points.length === 0) return null;
+  const pts = traj.points;
+  const byX = new Map<number, Record<string, number | string>>();
+  for (const p of pts) {
+    const x = decimalYear(p.date);
+    const row = byX.get(x) ?? { x, year: p.date.slice(0, 4) };
+    const key = p.tier === "efficient" ? "efficient" : "flagship";
+    row[key] = p.inputPerMTok;
+    row[key + "Name"] = p.name;
+    byX.set(x, row);
+  }
+  const data = Array.from(byX.values()).sort((a, b) => (a.x as number) - (b.x as number));
+  const flagshipFirst = pts.find((p) => p.tier !== "efficient");
+  const efficientLast = [...pts].reverse().find((p) => p.tier === "efficient");
+  const srcIds = Array.from(new Set(pts.map((p) => p.sourceId)));
+  const srcById = new Map(sources.map((src) => [src.id, src] as const));
+
+  return (
+    <div className="mb-4" data-testid="token-trajectory">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 mb-1">
+        <div className="text-[13px] font-semibold text-foreground">Since GPT-4, the price has collapsed</div>
+        <div className="flex items-center gap-3 text-10 text-muted-foreground">
+          <span className="inline-flex items-center gap-1"><span className="h-0.5 w-3 inline-block" style={{ background: NVIDIA_COLOR }} />flagship</span>
+          <span className="inline-flex items-center gap-1"><span className="h-0 w-3 inline-block border-t border-dashed" style={{ borderColor: AMBER }} />efficient</span>
+        </div>
+      </div>
+      {flagshipFirst && efficientLast && (
+        <p className="text-xs text-muted-foreground leading-relaxed mb-2">
+          {flagshipFirst.name} cost {fmtTraj(flagshipFirst.inputPerMTok)} per million input tokens at launch. Today the efficient
+          tier is {fmtTraj(efficientLast.inputPerMTok)}. OpenAI list price, input tokens, log scale.
+        </p>
+      )}
+      <div role="img" aria-label="Line chart of OpenAI input token price per million from 2023 to 2026, flagship and efficient tiers, log scale.">
+        <ResponsiveContainer width="100%" height={220}>
+          <LineChart data={data} margin={{ top: 18, right: 22, bottom: 22, left: 6 }}>
+            <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
+            <XAxis
+              type="number"
+              dataKey="x"
+              domain={[2023, 2027]}
+              ticks={[2023, 2024, 2025, 2026, 2027]}
+              tickFormatter={(v: number) => `${Math.round(v)}`}
+              tick={{ fill: "#9ca3af", fontFamily: FONT.mono, fontSize: 10 }}
+              axisLine={{ stroke: "rgba(255,255,255,0.12)" }}
+              tickLine={false}
+            />
+            <YAxis
+              scale="log"
+              domain={[0.1, 40]}
+              ticks={[0.1, 1, 10, 30]}
+              tickFormatter={(v: number) => `$${v}`}
+              tick={{ fill: "#9ca3af", fontFamily: FONT.mono, fontSize: 10 }}
+              axisLine={false}
+              tickLine={false}
+              width={40}
+            />
+            <ChartTooltip
+              contentStyle={CHART_TOOLTIP_STYLE}
+              itemStyle={{ color: "#e5e7eb", fontFamily: FONT.mono, fontSize: 11 }}
+              labelStyle={{ color: "#9ca3af", fontFamily: FONT.mono, fontSize: 10, marginBottom: 4 }}
+              labelFormatter={(v: number) => `${Math.round(v)}`}
+              formatter={(value: number, key: string, item: { payload?: Record<string, string> }) => [`$${value} / M input`, item?.payload?.[key + "Name"] ?? key]}
+            />
+            <Line type="linear" dataKey="flagship" stroke={NVIDIA_COLOR} strokeWidth={2} connectNulls dot={{ r: 3, fill: NVIDIA_COLOR }} isAnimationActive={false}>
+              <LabelList dataKey="flagship" position="top" formatter={(v: number) => (v != null ? fmtTraj(v) : "")} fill="#e5e7eb" fontFamily={FONT.mono} fontSize={9} />
+            </Line>
+            <Line type="linear" dataKey="efficient" stroke={AMBER} strokeWidth={2} strokeDasharray="4 3" connectNulls dot={{ r: 3, fill: AMBER }} isAnimationActive={false}>
+              <LabelList dataKey="efficient" position="bottom" formatter={(v: number) => (v != null ? fmtTraj(v) : "")} fill={AMBER} fontFamily={FONT.mono} fontSize={9} />
+            </Line>
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+      <div className="text-10 text-muted-foreground/50 flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-1">
+        <span>{traj.note} Sources:</span>
+        {srcIds.map((id) => {
+          const src = srcById.get(id);
+          return src ? (
+            <a key={id} href={src.url} target="_blank" rel="noopener noreferrer" className="text-brand/70 hover:text-brand underline underline-offset-2">{src.publishedAt}</a>
+          ) : null;
+        })}
+      </div>
     </div>
   );
 }

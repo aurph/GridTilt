@@ -12,7 +12,7 @@ import {
 import {
   Zap, ArrowUpDown, ExternalLink, Sun, Wind, Atom, Flame, Battery, Cable, Server, Layers,
 } from "lucide-react";
-import { CATEGORY_COLORS, INK, SEMANTIC, SERIES } from "@/lib/tokens";
+import { CATEGORY_COLORS, INK, SERIES, STATUS_COLORS } from "@/lib/tokens";
 
 interface BacklogProject {
   id: string;
@@ -360,7 +360,7 @@ export default function Queue({ embedded = false }: { embedded?: boolean; params
           ) : (
             filtered.map((p) => {
               const Icon = TYPE_ICONS[p.type] ?? Zap;
-              const statusColor = p.status === "active" ? SEMANTIC.warning : p.status === "operational" ? SEMANTIC.positiveDeep : INK.faint;
+              const statusColor = p.status === "active" ? STATUS_COLORS.construction : p.status === "operational" ? STATUS_COLORS.operational : INK.faint;
               const isAggregate = p.category === "aggregate";
               const hasTooltip = !!p.notes || !!(p.sources && p.sources.length > 0);
               const row = (

@@ -97,8 +97,8 @@ const companyColors: Record<string, string> = {
 
 function getStatusBadge(status: DataCenter["status"]) {
   const map = {
-    operational:  { label: "Operational",        class: "bg-positive-deep/15 text-positive" },
-    construction: { label: "Under Construction",  class: "bg-warning/15 text-warning" },
+    operational:  { label: "Operational",        class: "bg-brand/15 text-brand" },
+    construction: { label: "Under Construction",  class: "bg-brand-2/15 text-brand-2" },
     announced:    { label: "Announced",           class: "bg-ink-muted/15 text-ink-muted" },
   };
   return map[status];
@@ -1258,7 +1258,7 @@ export default function PowerMap() {
                       className="text-10 px-2 py-0.5 rounded-full font-medium whitespace-nowrap"
                       style={{
                         backgroundColor: alpha(STATUS_COLORS[displayDC.status], 0.15),
-                        color: displayDC.status === "operational" ? SEMANTIC.positive : STATUS_COLORS[displayDC.status],
+                        color: STATUS_COLORS[displayDC.status],
                       }}
                     >
                       {getStatusBadge(displayDC.status).label}

@@ -488,7 +488,7 @@ export default function CatalystTracker() {
   return (
     <div className="flex flex-col h-full overflow-y-auto" data-testid="catalyst-tracker-page">
       <PageHeader
-        title="Catalyst Tracker"
+        title="Catalysts"
         testId="catalyst-header"
         about="Earnings dates for tracked equities plus dated thesis catalysts (regulatory, policy, infrastructure, market, industry) on one calendar and timeline."
         stats={
@@ -541,7 +541,7 @@ export default function CatalystTracker() {
         ) : (
           <>
             <div className="flex flex-col lg:flex-row gap-6" style={{ alignItems: "flex-start" }}>
-              <div className="w-full lg:w-auto" style={{ flex: "0 0 auto", maxWidth: 420 }}>
+              <div className="w-full lg:w-auto space-y-6" style={{ flex: "0 0 auto", maxWidth: 420 }}>
                 <CalendarGrid
                   items={items}
                   currentMonth={currentMonth}
@@ -549,14 +549,13 @@ export default function CatalystTracker() {
                   selectedDate={selectedDate}
                   onDateSelect={setSelectedDate}
                 />
+                <div style={{ borderTop: `1px solid ${BORDER.subtle}`, paddingTop: 24 }}>
+                  <ThesisCatalysts catalysts={catalysts} />
+                </div>
               </div>
               <div className="flex-1 min-w-0 border-t lg:border-t-0 lg:border-l pt-6 lg:pt-0 lg:pl-6" style={{ borderColor: BORDER.subtle }}>
                 <UpcomingTimeline items={items} />
               </div>
-            </div>
-
-            <div style={{ borderTop: `1px solid ${BORDER.subtle}`, paddingTop: 32 }}>
-              <ThesisCatalysts catalysts={catalysts} />
             </div>
           </>
         )}
