@@ -1055,12 +1055,53 @@ interface BacklogDataset {
 type QueueDataset = BacklogDataset;
 
 // ─── OG image renderer (shared by /api/og and the X media upload path) ─────
+//
+// Layout, fonts and the map projection live in server/og-card.ts. This file
+// only gathers the data each template shows. Every card must carry an asOf
+// and a source line; see the header of og-card.ts for why.
 
-interface OgStat { label: string; value: string }
-interface OgCard {
-  title: string;
-  subtitle: string;
-  stats: OgStat[];
+import type { OgStat, OgCard, MapDot, Bar } from "./og-card.js";
+import { renderOgPng, formatAsOf } from "./og-card.js";
+
+/** Provenance strings. Keep these specific and true; they are a public claim. */
+const SOURCE_CLUSTERS = "company filings, utility records, trade press";
+const SOURCE_QUEUE = "LBNL Queued Up + public ISO interconnection queues";
+const SOURCE_GPU = "neocloud and marketplace on-demand list prices";
+const SOURCE_MARKET = "Yahoo Finance daily closes";
+
+/** Reads clusters.json once and reports how many entries carry a source. */
+function clusterSourceLine(clusters: Array<{ sources?: unknown[] }>): string {
+  const sourced = clusters.filter((c) => Array.isArray(c.sources) && c.sources.length > 0).length;
+  return `${sourced}/${clusters.length} entries sourced · ${SOURCE_CLUSTERS}`;
+}
+
+/**
+ * Page OG images (link previews for /stack, /blog, ...). These are page
+ * furniture rather than a dataset claim, but they still show live numbers, so
+ * they carry the same as-of and source line as everything else. Defaults to
+ * today plus the market source; pass `source` when the stats come from a
+ * curated dataset instead.
+ */
+function pageCard(
+  title: string,
+  subtitle: string,
+  stats: OgStat[],
+  opts: { source?: string; visual?: OgCard["visual"] } = {},
+): OgCard {
+  return {
+    title,
+    subtitle,
+    stats,
+    asOf: formatAsOf(new Date().toISOString().slice(0, 10)),
+    source: opts.source ?? SOURCE_MARKET,
+    visual: opts.visual ?? { kind: "none" },
+  };
+}
+
+function clusterDots(clusters: Array<any>): MapDot[] {
+  return clusters
+    .filter((c) => typeof c?.location?.lat === "number" && typeof c?.location?.lng === "number")
+    .map((c) => ({ lat: c.location.lat, lng: c.location.lng, mw: c.plannedPowerMW, status: c.status }));
 }
 
 async function liveIndicesStats(): Promise<OgStat[]> {
@@ -1082,19 +1123,24 @@ async function liveIndicesStats(): Promise<OgStat[]> {
 
 // Per-template OG card content. Pulled from the same data sources the tweet
 // composers use, so the card and the tweet text stay in sync.
-async function ogCardForTemplate(template: string): Promise<OgCard> {
+/** Exported for tests and scripts/preview-cards.mjs; routes are the only caller. */
+export async function ogCardForTemplate(template: string): Promise<OgCard> {
   // ── Daily rotation cards (real data, matched to the tweet copy) ──
   if (template === "buildout") {
     const root = JSON.parse(readFileSync(join(process.cwd(), "server", "data", "clusters.json"), "utf-8"));
-    const m = computeClusterMetrics((root.clusters ?? []) as ClusterLite[]);
+    const clusters = (root.clusters ?? []) as Array<any>;
+    const m = computeClusterMetrics(clusters as ClusterLite[]);
     return {
       title: "the AI buildout, tracked",
-      subtitle: "named US AI compute clusters",
+      subtitle: "every US compute cluster we count carries a public source",
       stats: [
         { label: "Clusters", value: String(m.clusterCount) },
         { label: "Planned", value: `${Math.round(m.totalPlannedMW / 1000)} GW` },
         { label: "Operators", value: String(m.concentration.operatorCount) },
       ],
+      asOf: formatAsOf(root.lastRefreshed),
+      source: clusterSourceLine(clusters),
+      visual: { kind: "map", dots: clusterDots(clusters), legend: true },
     };
   }
   if (template === "gpu_rental") {
@@ -1102,14 +1148,29 @@ async function ogCardForTemplate(template: string): Promise<OgCard> {
     const g = computeGpuIndex(root.models ?? [], new Date().toISOString().slice(0, 10));
     const by = Object.fromEntries(g.rows.map((r) => [r.model, r]));
     const px = (n?: number) => (n == null ? "n/a" : Number.isInteger(n) ? `$${n}` : `$${n.toFixed(2)}`);
+    // Price ladder across every model we track, most expensive first.
+    const ladder = g.rows
+      .filter((r) => typeof r.current === "number" && r.current > 0)
+      .sort((a, b) => (b.current as number) - (a.current as number))
+      .slice(0, 6);
     return {
       title: "GPU rental prices",
-      subtitle: "on-demand, blended $/GPU-hr",
+      subtitle: "on-demand, blended $/GPU-hr across neoclouds and marketplaces",
       stats: [
         { label: "H100", value: px(by.H100?.current) },
         { label: "H200", value: px(by.H200?.current) },
         { label: "GB200", value: px(by.GB200?.current) },
       ],
+      asOf: formatAsOf(root.lastRefreshed),
+      source: SOURCE_GPU,
+      visual: {
+        kind: "columns",
+        columns: ladder.map((r) => ({
+          label: r.model,
+          value: r.current as number,
+          display: px(r.current as number),
+        })),
+      },
     };
   }
   if (template === "cluster_spotlight") {
@@ -1133,38 +1194,85 @@ async function ogCardForTemplate(template: string): Promise<OgCard> {
           { label: "Operator", value: (c.operator as string) ?? "n/a" },
           { label: "Region", value: (c.gridRegion as string) ?? state ?? "n/a" },
         ],
+        asOf: formatAsOf(root.lastRefreshed),
+        source: clusterSourceLine(clusters),
+        visual: {
+          kind: "map",
+          dots: clusterDots(clusters).map((d) => ({
+            ...d,
+            highlight: d.lat === c.location?.lat && d.lng === c.location?.lng,
+          })),
+        },
       };
     }
-    return { title: "Compute Frontier", subtitle: "AI superclusters by GPUs and power", stats: await computeFrontierOgStats() };
+    return {
+      title: "Compute Frontier",
+      subtitle: "AI superclusters by GPUs and power",
+      stats: await computeFrontierOgStats(),
+      asOf: formatAsOf(root.lastRefreshed),
+      source: clusterSourceLine(clusters),
+      visual: { kind: "map", dots: clusterDots(clusters), legend: true },
+    };
   }
   if (template === "grid_backlog") {
     try {
       const data = JSON.parse(readFileSync(join(process.cwd(), "server", "data", "interconnection-queue.json"), "utf-8")) as BacklogDataset;
       const h = data.headline;
+      const gw = (n: number) => `${n.toLocaleString("en-US")} GW`;
+      // The 2,290 GW national total is already the lead stat; including it here
+      // would flatten every regional bar into a sliver. Bars show the breakdown.
+      const bars: Bar[] = [
+        { label: "PJM reopened cycle", value: h.pjmReopenedGW, display: gw(h.pjmReopenedGW) },
+        { label: "ERCOT large-load", value: h.ercotLargeLoadGW, display: gw(h.ercotLargeLoadGW), hot: true },
+        { label: "Dominion contracted", value: h.dominionContractedGW, display: gw(h.dominionContractedGW) },
+      ].filter((b) => typeof b.value === "number" && b.value > 0);
+      return {
+        title: "the grid is the bottleneck",
+        subtitle: "power waiting to connect, by queue",
+        stats: [
+          { label: "Total queue", value: gw(h.queueOverallGW) },
+          { label: "Median wait", value: `${h.medianWaitMonths} mo` },
+          { label: "Withdrawn", value: `${h.historicalWithdrawalPct}%` },
+        ],
+        asOf: formatAsOf(data.lastRefreshed),
+        source: SOURCE_QUEUE,
+        visual: { kind: "bars", bars },
+      };
+    } catch {
       return {
         title: "the grid is the bottleneck",
         subtitle: "US interconnection backlog",
-        stats: [
-          { label: "Total queue", value: `${h.queueOverallGW.toLocaleString()} GW` },
-          { label: "Median wait", value: `${h.medianWaitMonths} mo` },
-          { label: "ERCOT large-load", value: `${h.ercotLargeLoadGW} GW` },
-        ],
+        stats: [],
+        asOf: null,
+        source: SOURCE_QUEUE,
+        visual: { kind: "none" },
       };
-    } catch {
-      return { title: "the grid is the bottleneck", subtitle: "US interconnection backlog", stats: [] };
     }
   }
   if (template === "power_mix") {
     const root = JSON.parse(readFileSync(join(process.cwd(), "server", "data", "clusters.json"), "utf-8"));
-    const m = computeClusterMetrics((root.clusters ?? []) as ClusterLite[]);
+    const clusters = (root.clusters ?? []) as Array<any>;
+    const m = computeClusterMetrics(clusters as ClusterLite[]);
+    const ranked = m.byEnergySource.filter((b) => b.plannedMW > 0).slice(0, 5);
     return {
       title: "how the buildout gets power",
-      subtitle: "planned AI compute by source",
+      subtitle: "planned AI compute capacity by energy source",
       stats: m.byEnergySource.slice(0, 3).map((b) => ({ label: b.source, value: `${Math.round(b.plannedMW / 1000)} GW` })),
+      asOf: formatAsOf(root.lastRefreshed),
+      source: clusterSourceLine(clusters),
+      visual: {
+        kind: "bars",
+        bars: ranked.map((b, i) => ({
+          label: b.source,
+          value: b.plannedMW,
+          display: `${Math.round(b.plannedMW / 1000)} GW`,
+          hot: i === 0,
+        })),
+      },
     };
   }
   if (template === "tilt_status") {
-    return { title: "today's market gauges", subtitle: "ai demand · nuclear · grid stress", stats: await liveIndicesStats() };
+    return pageCard("today's market gauges", "ai demand · nuclear · grid stress", await liveIndicesStats());
   }
   if (template === "top_movers") {
     const sd = await getCachedStockData("1D");
@@ -1172,23 +1280,34 @@ async function ogCardForTemplate(template: string): Promise<OgCard> {
       .filter((s) => s && typeof s.changePercent === "number")
       .sort((a, b) => Math.abs(b.changePercent) - Math.abs(a.changePercent))
       .slice(0, 3);
-    return {
-      title: "today's biggest moves",
-      subtitle: "ai infrastructure equities",
-      stats: movers.map((s) => ({ label: `$${s.ticker}`, value: `${s.changePercent >= 0 ? "+" : ""}${s.changePercent.toFixed(2)}%` })),
-    };
+    return pageCard(
+      "today's biggest moves",
+      "ai infrastructure equities",
+      movers.map((s) => ({ label: `$${s.ticker}`, value: `${s.changePercent >= 0 ? "+" : ""}${s.changePercent.toFixed(2)}%` })),
+      {
+        visual: {
+          kind: "bars",
+          bars: movers.map((s) => ({
+            label: `$${s.ticker}`,
+            value: Math.abs(s.changePercent),
+            display: `${s.changePercent >= 0 ? "+" : ""}${s.changePercent.toFixed(2)}%`,
+            hot: s.changePercent >= 0,
+          })),
+        },
+      },
+    );
   }
   if (template === "npi_update") {
     const k = await computeKpis();
-    return {
-      title: "nuclear power index",
-      subtitle: `${k.npiValue.toFixed(0)} (baseline 100, jan 2024)`,
-      stats: [
+    return pageCard(
+      "nuclear power index",
+      `${k.npiValue.toFixed(0)} (baseline 100, jan 2024)`,
+      [
         { label: "VST", value: `${k.constituents.vstPerf >= 1 ? "+" : ""}${((k.constituents.vstPerf - 1) * 100).toFixed(0)}%` },
         { label: "CEG", value: `${k.constituents.cegPerf >= 1 ? "+" : ""}${((k.constituents.cegPerf - 1) * 100).toFixed(0)}%` },
         { label: "CCJ", value: `${k.constituents.ccjPerf >= 1 ? "+" : ""}${((k.constituents.ccjPerf - 1) * 100).toFixed(0)}%` },
       ],
-    };
+    );
   }
   if (template === "queue_update") {
     try {
@@ -1204,96 +1323,26 @@ async function ogCardForTemplate(template: string): Promise<OgCard> {
           { label: "Median wait", value: `${h.medianWaitMonths} mo` },
           { label: "Withdrawal", value: `${h.historicalWithdrawalPct}%` },
         ],
+        asOf: formatAsOf(data.lastRefreshed),
+        source: SOURCE_QUEUE,
+        visual: { kind: "none" },
       };
     } catch {
-      return { title: "us interconnection backlog", subtitle: "every named power project we can verify", stats: [] };
+      return {
+        title: "us interconnection backlog",
+        subtitle: "every named power project we can verify",
+        stats: [],
+        asOf: null,
+        source: SOURCE_QUEUE,
+        visual: { kind: "none" },
+      };
     }
   }
   if (template === "catalyst_preview") {
-    return { title: "this week's catalysts", subtitle: "earnings · regulatory · policy", stats: await liveIndicesStats() };
+    return pageCard("this week's catalysts", "earnings · regulatory · policy", await liveIndicesStats());
   }
   // Fallback
-  return { title: "gridtilt", subtitle: "ai power infrastructure", stats: await liveIndicesStats() };
-}
-
-async function renderOgPng(card: OgCard): Promise<Buffer> {
-  const satori = (await import("satori")).default;
-  const { Resvg } = await import("@resvg/resvg-js");
-  const fontData = readFileSync(join(process.cwd(), "server", "fonts", "Inter-Regular.ttf"));
-
-  const svg = await satori(
-    {
-      type: "div",
-      props: {
-        style: {
-          width: "1200px",
-          height: "630px",
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "space-between",
-          padding: "60px",
-          background: "linear-gradient(135deg, #121110 0%, #1a1917 50%, #121110 100%)",
-          fontFamily: "Inter, sans-serif",
-          color: "#ffffff",
-        },
-        children: [
-          {
-            type: "div",
-            props: {
-              style: { display: "flex", flexDirection: "column", gap: "16px" },
-              children: [
-                {
-                  type: "div",
-                  props: {
-                    style: { display: "flex", alignItems: "center", gap: "12px" },
-                    children: [
-                      { type: "div", props: { style: { width: "8px", height: "32px", backgroundColor: "#F07800", borderRadius: "4px" } } },
-                      { type: "div", props: { style: { fontSize: "28px", fontWeight: "700", color: "#F07800", letterSpacing: "2px" }, children: "GRIDTILT" } },
-                    ],
-                  },
-                },
-                { type: "div", props: { style: { fontSize: "52px", fontWeight: "800", lineHeight: "1.1", maxWidth: "900px" }, children: card.title } },
-                { type: "div", props: { style: { fontSize: "24px", color: "#9ca3af", maxWidth: "900px" }, children: card.subtitle } },
-              ],
-            },
-          },
-          {
-            type: "div",
-            props: {
-              style: { display: "flex", justifyContent: "space-between", alignItems: "flex-end" },
-              children: [
-                {
-                  type: "div",
-                  props: {
-                    style: { display: "flex", gap: "40px" },
-                    children: card.stats.map((s) => ({
-                      type: "div",
-                      props: {
-                        style: { display: "flex", flexDirection: "column", gap: "4px" },
-                        children: [
-                          { type: "div", props: { style: { fontSize: "14px", color: "#6b7280", textTransform: "uppercase", letterSpacing: "2px" }, children: s.label } },
-                          { type: "div", props: { style: { fontSize: "40px", fontWeight: "700", color: "#F0A500", fontFamily: "monospace" }, children: s.value } },
-                        ],
-                      },
-                    })),
-                  },
-                },
-                { type: "div", props: { style: { fontSize: "18px", color: "#6b7280" }, children: "gridtilt.com" } },
-              ],
-            },
-          },
-        ],
-      },
-    } as unknown as Parameters<typeof satori>[0],
-    {
-      width: 1200,
-      height: 630,
-      fonts: [{ name: "Inter", data: fontData, weight: 400, style: "normal" as const }],
-    },
-  );
-
-  const resvg = new Resvg(svg, { fitTo: { mode: "width", value: 1200 } });
-  return Buffer.from(resvg.render().asPng());
+  return pageCard("gridtilt", "ai power infrastructure", await liveIndicesStats());
 }
 
 // ─── X (Twitter) OAuth 1.0a posting client ──────────────────────────────────
@@ -3057,44 +3106,44 @@ Preferred-Languages: en
         card = await ogCardForTemplate(template);
       } else if (ticker) {
         const companyInfo = COMPANY_DATABASE[ticker.toUpperCase()];
-        card = {
-          title: companyInfo ? `${companyInfo.name} ($${ticker.toUpperCase()})` : `$${ticker.toUpperCase()}`,
-          subtitle: companyInfo ? `${companyInfo.primarySegment} Sector` : "AI Power Thesis Analysis",
-          stats: [{ label: "Sector", value: companyInfo?.primarySegment || "Unknown" }],
-        };
+        card = pageCard(
+          companyInfo ? `${companyInfo.name} ($${ticker.toUpperCase()})` : `$${ticker.toUpperCase()}`,
+          companyInfo ? `${companyInfo.primarySegment} Sector` : "AI Power Thesis Analysis",
+          [{ label: "Sector", value: companyInfo?.primarySegment || "Unknown" }],
+        );
       } else if (page === "stack") {
-        card = { title: "60+ AI Power Stocks", subtitle: "Live Data Across 8 Sectors", stats: await liveIndicesStats() };
+        card = pageCard("60+ AI Power Stocks", "Live Data Across 8 Sectors", await liveIndicesStats());
       } else if (page === "power-map") {
-        card = { title: "US AI Data Center Map", subtitle: "Filter by operator, region, and capacity (\u2265 400 MW)", stats: await liveIndicesStats() };
+        card = pageCard("US AI Data Center Map", "Filter by operator, region, and capacity (\u2265 400 MW)", await liveIndicesStats());
       } else if (page === "compute-frontier" && name) {
-        card = { title: name, subtitle: "AI Supercluster \u00b7 GridTilt", stats: await computeFrontierOgStats() };
+        card = pageCard(name, "AI Supercluster \u00b7 GridTilt", await computeFrontierOgStats());
       } else if (page === "compute-frontier") {
-        card = { title: "Compute Frontier", subtitle: "AI superclusters by GPUs and power", stats: await computeFrontierOgStats() };
+        card = pageCard("Compute Frontier", "AI superclusters by GPUs and power", await computeFrontierOgStats());
       } else if (page === "supply-chain") {
-        card = { title: "AI Power Supply Chain", subtitle: "5 systems, 20 sub-systems, silicon to substation", stats: await liveIndicesStats() };
+        card = pageCard("AI Power Supply Chain", "5 systems, 20 sub-systems, silicon to substation", await liveIndicesStats());
       } else if (page === "queue") {
         card = await ogCardForTemplate("queue_update");
       } else if (page === "trade") {
-        card = { title: "AI Power Scenario Calculator", subtitle: "Model demand, capex, and LPT requirements through 2030", stats: await liveIndicesStats() };
+        card = pageCard("AI Power Scenario Calculator", "Model demand, capex, and LPT requirements through 2030", await liveIndicesStats());
       } else if (page === "portfolio") {
-        card = { title: "AI Power Thesis Score", subtitle: "Rate any portfolio against the AI power buildout", stats: await liveIndicesStats() };
+        card = pageCard("AI Power Thesis Score", "Rate any portfolio against the AI power buildout", await liveIndicesStats());
       } else if (page === "catalysts") {
-        card = { title: "Catalyst Calendar", subtitle: "Earnings, policy, and regulatory events for AI power", stats: await liveIndicesStats() };
+        card = pageCard("Catalyst Calendar", "Earnings, policy, and regulatory events for AI power", await liveIndicesStats());
       } else if (page === "blog" && name) {
-        card = { title: name, subtitle: "GridTilt Analysis", stats: await liveIndicesStats() };
+        card = pageCard(name, "GridTilt Analysis", await liveIndicesStats());
       } else if (page === "blog") {
-        card = { title: "GridTilt Analysis", subtitle: "Research on the AI power infrastructure thesis", stats: await liveIndicesStats() };
+        card = pageCard("GridTilt Analysis", "Research on the AI power infrastructure thesis", await liveIndicesStats());
       } else if (page === "subscribe") {
-        card = { title: "Get the Tilt", subtitle: "Weekly AI power market intel, in your inbox", stats: await liveIndicesStats() };
+        card = pageCard("Get the Tilt", "Weekly AI power market intel, in your inbox", await liveIndicesStats());
       } else if (page === "sector" && name) {
-        card = { title: `${name} Sector`, subtitle: "AI Power Infrastructure Stocks", stats: await liveIndicesStats() };
+        card = pageCard(`${name} Sector`, "AI Power Infrastructure Stocks", await liveIndicesStats());
       } else if (page === "region" && name) {
-        card = { title: `${name} Grid Region`, subtitle: "AI Data Center Locations", stats: await liveIndicesStats() };
+        card = pageCard(`${name} Grid Region`, "AI Data Center Locations", await liveIndicesStats());
       } else if (page === "operator" && name) {
-        card = { title: `${name} AI Data Centers`, subtitle: "Locations and Capacity", stats: await liveIndicesStats() };
+        card = pageCard(`${name} AI Data Centers`, "Locations and Capacity", await liveIndicesStats());
       } else {
         // home (default)
-        card = { title: "The grid is tilting.", subtitle: "AI power infrastructure dashboard", stats: await liveIndicesStats() };
+        card = pageCard("The grid is tilting.", "AI power infrastructure dashboard", await liveIndicesStats());
       }
 
       const png = await renderOgPng(card);
