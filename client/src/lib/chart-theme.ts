@@ -61,6 +61,34 @@ export const axisProps = {
   axisLine: { stroke: chartTheme.axis.stroke },
 };
 
+/**
+ * True when the visitor has asked their OS to reduce motion.
+ *
+ * Evaluated once at module load, matching how axisProps/gridProps are used.
+ * The app is a client-rendered SPA, so there is no SSR window to guard beyond
+ * the typeof check, and nobody toggles this setting mid-session.
+ */
+export const prefersReducedMotion: boolean =
+  typeof window !== "undefined" &&
+  typeof window.matchMedia === "function" &&
+  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/**
+ * Spread into any animated Recharts series: <Bar {...seriesAnimation} />.
+ *
+ * Recharts animates every series by default and does not consult
+ * prefers-reduced-motion on its own, so charts used to grow from zero no
+ * matter what the visitor asked for. It also means the series geometry only
+ * exists after react-smooth's first rAF tick: with animation on, a chart that
+ * never gets a frame renders empty <g class="recharts-bar-rectangle"> groups
+ * with no path inside. Turning animation off makes the chart render its final
+ * geometry synchronously, which is both what reduced-motion users want and
+ * what makes these charts screenshot-testable.
+ */
+export const seriesAnimation = {
+  isAnimationActive: !prefersReducedMotion,
+};
+
 /** Spread into Recharts <CartesianGrid>: {...gridProps} */
 export const gridProps = {
   stroke: chartTheme.grid.stroke,

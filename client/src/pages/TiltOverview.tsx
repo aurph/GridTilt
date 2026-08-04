@@ -26,7 +26,7 @@ import { AsOf, ErrorState, SrChartTable } from "@/components/Freshness";
 import {
   BRAND, CATEGORY_COLORS as TOKEN_CATEGORY_COLORS, CHART_CHROME, DATA_QUALITY, FONT, INK, SEMANTIC, SERIES,
 } from "@/lib/tokens";
-import { axisProps, gridProps, timeTicks, tooltipContentStyle, tooltipItemStyle, tooltipLabelStyle } from "@/lib/chart-theme";
+import { axisProps, gridProps, timeTicks, tooltipContentStyle, tooltipItemStyle, tooltipLabelStyle, seriesAnimation } from "@/lib/chart-theme";
 import { RTO_CONFIG, RTO_SOURCE_NOTE } from "@/data/rto-config";
 import { STAGE_COLORS } from "@/data/catalyst-config";
 import {
@@ -501,7 +501,7 @@ function BuildoutHistoryCard({
                     return [`${fmtGW(value)}${detail}`, name === "online" ? "Operational" : "Pipeline"];
                   }}
                 />
-                <Area
+                <Area {...seriesAnimation}
                   type="stepAfter"
                   dataKey="online"
                   name="online"
@@ -512,7 +512,7 @@ function BuildoutHistoryCard({
                   connectNulls
                   label={(props: any) => <EndLabel {...props} data={series} field="online" color={BRAND.primary} />}
                 />
-                <Line
+                <Line {...seriesAnimation}
                   type="stepAfter"
                   dataKey="pipeline"
                   name="pipeline"
@@ -1096,7 +1096,7 @@ export default function TiltOverview() {
                 stroke={alpha(INK.muted, 0.2)}
               />
 
-              <Area
+              <Area {...seriesAnimation}
                 yAxisId="total"
                 type="monotone"
                 dataKey="demand"
@@ -1108,7 +1108,7 @@ export default function TiltOverview() {
                 activeDot={{ r: 4, fill: SERIES[0] }}
                 connectNulls={false}
               />
-              <Area
+              <Area {...seriesAnimation}
                 yAxisId="total"
                 type="monotone"
                 dataKey="projected"
@@ -1121,7 +1121,7 @@ export default function TiltOverview() {
                 activeDot={{ r: 4, fill: BRAND.secondary }}
                 connectNulls={false}
               />
-              <Area
+              <Area {...seriesAnimation}
                 yAxisId="dc"
                 type="monotone"
                 dataKey="dcDemand"
@@ -1132,7 +1132,7 @@ export default function TiltOverview() {
                 dot={false}
                 connectNulls={false}
               />
-              <Line
+              <Line {...seriesAnimation}
                 yAxisId="dc"
                 type="monotone"
                 dataKey="dcProjected"

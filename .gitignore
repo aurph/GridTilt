@@ -46,3 +46,4 @@ attached_assets/Pasted-*
 /tmp/
 coverage/
 .nyc_output/
+.card-preview/
