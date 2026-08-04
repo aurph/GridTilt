@@ -2,19 +2,35 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { motion, type Variants } from "framer-motion";
-import { Zap, Handshake, Cpu, MapPin } from "lucide-react";
 import { Wordmark } from "./Wordmark";
 import { GridPulse } from "./grid-pulse";
 import { MarketTape } from "./market-tape";
+import { HeroMap } from "./hero-map";
+
+// The hero's job is to say what GridTilt is and prove the numbers are real.
+// Every figure below carries the date its dataset was last refreshed, read
+// from the same API that serves the figure. Nothing here is hardcoded, and a
+// stat with no refresh date says so rather than borrowing today's.
 
 interface ClusterMetrics {
   clusterCount: number;
   operationalMW: number;
   totalPlannedMW: number;
   byOperator: { operator: string }[];
+  lastRefreshed: string | null;
 }
-interface DealMetrics { dealCount: number; totalContractedMW: number; }
-interface GpuMetrics { fleetAvg: number; fleetAvg1yChange: number; modelCount: number; }
+interface DealMetrics {
+  dealCount: number;
+  totalContractedMW: number;
+  lastRefreshed: string | null;
+}
+interface GpuMetrics {
+  fleetAvg: number;
+  fleetAvg1yChange: number;
+  modelCount: number;
+  lastRefreshed: string | null;
+  asOf: string | null;
+}
 
 /** rAF count-up toward a target once it arrives; honest "--" before data. */
 function useCountUp(target: number | null, decimals = 1, ms = 1100): string | null {
@@ -35,10 +51,30 @@ function useCountUp(target: number | null, decimals = 1, ms = 1100): string | nu
   return display;
 }
 
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+/** "2026-06-26" -> "26 Jun 2026". Null when the API gave us nothing usable. */
+function shortDate(iso: string | null | undefined): string | null {
+  if (!iso) return null;
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
+  if (!m) return null;
+  const mon = MONTHS[Number(m[2]) - 1];
+  return mon ? `${Number(m[3])} ${mon} ${m[1]}` : null;
+}
+
 const fadeUp: Variants = {
-  hidden: { opacity: 0, y: 14 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.55, ease: "easeOut" } },
+  hidden: { opacity: 0, y: 12 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } },
 };
+
+interface HeroStat {
+  label: string;
+  value: string;
+  sub?: string;
+  /** Dataset refresh date. Null renders "no date" rather than inventing one. */
+  asOf: string | null;
+  href: string;
+}
 
 export function Hero() {
   const { data: clusters } = useQuery<ClusterMetrics>({ queryKey: ["/api/clusters/metrics"] });
@@ -50,11 +86,35 @@ export function Hero() {
   const gpuHr = useCountUp(gpu ? gpu.fleetAvg : null, 2);
   const clusterCount = useCountUp(clusters ? clusters.clusterCount : null, 0);
 
-  const stats: { icon: typeof Zap; label: string; value: string; sub?: string }[] = [
-    { icon: Zap, label: "Operational power for compute", value: opGw ? `${opGw} GW` : "--", sub: clusters ? `${(clusters.totalPlannedMW / 1000).toFixed(1)} GW planned` : undefined },
-    { icon: Handshake, label: "Contracted power deals", value: dealGw ? `${dealGw} GW` : "--", sub: deals ? `${deals.dealCount} corporate deals` : undefined },
-    { icon: Cpu, label: "Cost of compute", value: gpuHr ? `$${gpuHr}/hr` : "--", sub: gpu ? `${gpu.fleetAvg1yChange}% over a year` : undefined },
-    { icon: MapPin, label: "Tracked clusters", value: clusterCount ?? "--", sub: clusters?.byOperator ? `${clusters.byOperator.length} operators` : undefined },
+  const stats: HeroStat[] = [
+    {
+      label: "Operational power for compute",
+      value: opGw ? `${opGw} GW` : "--",
+      sub: clusters ? `${(clusters.totalPlannedMW / 1000).toFixed(1)} GW planned` : undefined,
+      asOf: shortDate(clusters?.lastRefreshed),
+      href: "/compute-frontier",
+    },
+    {
+      label: "Contracted power deals",
+      value: dealGw ? `${dealGw} GW` : "--",
+      sub: deals ? `${deals.dealCount} corporate deals` : undefined,
+      asOf: shortDate(deals?.lastRefreshed),
+      href: "/power-deals",
+    },
+    {
+      label: "Cost of compute",
+      value: gpuHr ? `$${gpuHr}/hr` : "--",
+      sub: gpu ? `${gpu.fleetAvg1yChange}% over a year` : undefined,
+      asOf: shortDate(gpu?.asOf ?? gpu?.lastRefreshed),
+      href: "/neocloud-intel",
+    },
+    {
+      label: "Tracked clusters",
+      value: clusterCount ?? "--",
+      sub: clusters?.byOperator ? `${clusters.byOperator.length} operators` : undefined,
+      asOf: shortDate(clusters?.lastRefreshed),
+      href: "/power-map",
+    },
   ];
 
   return (
@@ -66,23 +126,41 @@ export function Hero() {
       <div className="absolute inset-0 z-0 opacity-75" aria-hidden>
         <GridPulse />
       </div>
+      <HeroMap />
 
-      <div className="relative z-10 mx-auto flex min-h-[inherit] max-w-[1200px] flex-col items-center justify-center px-6 py-16 text-center">
-        <Wordmark />
+      <div className="relative z-10 mx-auto flex min-h-[inherit] max-w-[1200px] flex-col justify-center px-6 py-16">
         <motion.div
           initial="hidden"
           animate="show"
-          transition={{ staggerChildren: 0.14, delayChildren: 1.5 }}
-          className="flex w-full flex-col items-center"
+          transition={{ staggerChildren: 0.09, delayChildren: 0.12 }}
+          className="flex w-full flex-col"
         >
-          <motion.p variants={fadeUp} className="mt-5 text-[16px] font-semibold text-foreground sm:text-[18px]">
-            Energy infrastructure, in plain sight.
+          {/* Masthead. The wordmark anchors the brand at reading size so the
+              sentence below can lead; the nav already carries it persistently. */}
+          <motion.div
+            variants={fadeUp}
+            className="flex items-end justify-between gap-6 border-b pb-4"
+            style={{ borderColor: "var(--mkt-line-bright)" }}
+          >
+            <div className="gt-hero-masthead">
+              <Wordmark />
+            </div>
+          </motion.div>
+
+          <motion.h1 variants={fadeUp} className="gt-tagline-primary mt-9 max-w-[19ch]">
+            The AI power buildout, tracked with{" "}
+            <span className="gt-tagline-emphasis">sourced numbers.</span>
+          </motion.h1>
+
+          <motion.p
+            variants={fadeUp}
+            className="mt-5 max-w-[46ch] text-[15px] leading-[1.7] sm:text-[16.5px]"
+            style={{ color: "var(--mkt-ink-muted)" }}
+          >
+            Data centers, generation, transmission, and the companies behind them.
           </motion.p>
-          <motion.p variants={fadeUp} className="mx-auto mt-3 max-w-[54ch] text-[14px] leading-[1.65] text-muted-foreground sm:text-[15px]">
-            Data centers are rewriting the American power grid. GridTilt maps who is building,
-            where the electricity comes from, and what it means for the bill you pay.
-          </motion.p>
-          <motion.div variants={fadeUp} className="mt-8 flex flex-wrap items-center justify-center gap-4">
+
+          <motion.div variants={fadeUp} className="mt-9 flex flex-wrap items-center gap-4">
             <Link
               href="/overview"
               className="rounded bg-brand px-6 py-3 text-[14px] font-semibold text-black no-underline transition-opacity hover:opacity-90"
@@ -99,27 +177,49 @@ export function Hero() {
             </Link>
           </motion.div>
 
+          {/* The ledger. Each figure links to the module that shows its working
+              and prints the date its dataset was last refreshed. This is the
+              claim in the headline, made checkable in the same viewport. */}
           <motion.div
             variants={fadeUp}
-            className="mt-14 grid w-full grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4"
+            className="mt-14 grid w-full grid-cols-2 border-t lg:grid-cols-4"
+            style={{ borderColor: "var(--mkt-line-bright)" }}
             data-testid="hero-stats"
           >
-            {stats.map(({ icon: Icon, label, value, sub }) => (
-              <motion.div
+            {stats.map(({ label, value, sub, asOf, href }, i) => (
+              <Link
                 key={label}
-                whileHover={{ y: -3 }}
-                transition={{ type: "spring", stiffness: 300, damping: 22 }}
-                className="rounded-md border border-border bg-card/80 px-4 py-3.5 text-left"
+                href={href}
+                className="group border-b px-1 py-5 no-underline transition-colors sm:px-5 lg:border-b-0"
+                style={{
+                  borderColor: "var(--mkt-line)",
+                  borderLeftWidth: i === 0 ? 0 : 1,
+                  borderLeftStyle: "solid",
+                  borderLeftColor: "var(--mkt-line)",
+                }}
+                data-testid={`hero-stat-${i}`}
               >
-                <div className="flex items-center gap-2">
-                  <Icon className="h-4 w-4 text-brand" aria-hidden />
-                  <span className="text-[12px] leading-tight text-muted-foreground">{label}</span>
-                </div>
-                <p className="mt-1.5 font-mono text-[24px] font-bold leading-none tracking-tight text-foreground tabular-nums">
+                <p
+                  className="font-mono text-[26px] font-bold leading-none tracking-tight tabular-nums transition-colors group-hover:text-brand"
+                  style={{ color: "var(--mkt-ink)" }}
+                >
                   {value}
                 </p>
-                {sub && <p className="mt-1 text-[11.5px] text-muted-foreground/80">{sub}</p>}
-              </motion.div>
+                <p className="mt-2 text-[12.5px] leading-tight" style={{ color: "var(--mkt-ink-muted)" }}>
+                  {label}
+                </p>
+                {sub && (
+                  <p className="mt-1 text-[11.5px]" style={{ color: "var(--mkt-ink-quiet)" }}>
+                    {sub}
+                  </p>
+                )}
+                <p
+                  className="mt-2.5 font-mono text-[10.5px] uppercase tracking-[0.14em]"
+                  style={{ color: "var(--mkt-ink-quiet)" }}
+                >
+                  {asOf ? `as of ${asOf}` : "no date"}
+                </p>
+              </Link>
             ))}
           </motion.div>
         </motion.div>
