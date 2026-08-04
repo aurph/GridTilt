@@ -1,7 +1,18 @@
 import { useEffect, useState } from "react";
 
-const TEXT = "GridTilt";
-const SPLIT = 4; // "Grid" then "tilt"
+/**
+ * The brand lockup, exported so every surface splits the same string the same
+ * way. The footer used to hardcode its own "Grid" + "tilt" and rendered the
+ * second half lowercase, so the header and footer disagreed on the company's
+ * own name.
+ */
+export const BRAND_TEXT = "GridTilt";
+export const BRAND_SPLIT = 4;
+export const BRAND_HEAD = BRAND_TEXT.slice(0, BRAND_SPLIT); // "Grid"
+export const BRAND_TAIL = BRAND_TEXT.slice(BRAND_SPLIT); // "Tilt"
+
+const TEXT = BRAND_TEXT;
+const SPLIT = BRAND_SPLIT; // "Grid" then "Tilt"
 const STEP_MS = 95;
 const FIRST_DELAY_MS = 220;
 const TILT_DELAY_MS = 240;
