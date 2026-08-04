@@ -200,14 +200,32 @@ function PreviewSkeleton() {
 interface Module { number: string; name: string; caption: string; cta: string; route: string; preview: () => JSX.Element; }
 const MODULES: Module[] = [
   { number: "01", name: "Equity Heatmap", caption: "One hundred public companies behind the buildout, priced live.", cta: "Open the heatmap", route: "/stack", preview: SectorHeatStrip },
-  { number: "02", name: "Power Map", caption: "Thirty-three tracked facilities, plotted by operator and grid region.", cta: "Open the map", route: "/power-map", preview: RealUSMap },
+  // Caption is filled in from /api/datacenters at render; see facilityCaption.
+  // A hardcoded count cannot survive here: the datacenter ingester appends new
+  // facilities every 6 hours, which is how this card came to claim 33 while the
+  // map directly beneath it plotted 58.
+  { number: "02", name: "Power Map", caption: "", cta: "Open the map", route: "/power-map", preview: RealUSMap },
   { number: "03", name: "Supply Chain Flow", caption: "Where the buildout can get stuck, mapped to the companies exposed.", cta: "Trace the chain", route: "/stack?view=flow", preview: SupplyChainMini },
   { number: "04", name: "Catalyst Tracker", caption: "Earnings dates, rule changes, and policy votes. One calendar.", cta: "See what's next", route: "/catalysts", preview: CatalystRows },
   { number: "05", name: "Analyze: Portfolio", caption: "Type a ticker. See how exposed it is to the power story.", cta: "Score a ticker", route: "/analyze?tab=portfolio", preview: PortfolioPentagon },
   { number: "06", name: "Analyze: Scenario", caption: "Pick how fast demand grows. See what it does to the grid by 2030.", cta: "Run a scenario", route: "/analyze?tab=scenario", preview: DemandSparkline },
 ];
 
+/**
+ * Live caption for the Power Map card. Shares the /api/datacenters query key
+ * with RealUSMap, so react-query serves both from one fetch and the sentence
+ * can never disagree with the dots underneath it. Falls back to a claim with
+ * no number rather than guessing one while the request is in flight.
+ */
+function useFacilityCaption(): string {
+  const { data } = useQuery<Facility[]>({ queryKey: ["/api/datacenters"] });
+  const suffix = "plotted by operator and grid region.";
+  if (!data) return `Tracked facilities, ${suffix}`;
+  return `${data.length} tracked facilities, ${suffix}`;
+}
+
 export function FeaturesShowcase() {
+  const facilityCaption = useFacilityCaption();
   return (
     <section className="border-b border-border bg-background" data-testid="home-features">
       <div className="mx-auto max-w-[1200px] px-6 py-16 sm:py-20">
@@ -231,7 +249,9 @@ export function FeaturesShowcase() {
                   <h3 className="text-[17px] font-semibold text-foreground">{m.name}</h3>
                   <span className="font-mono text-[11px] tabular-nums text-muted-foreground/50">{m.number}</span>
                 </div>
-                <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">{m.caption}</p>
+                <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">
+                  {m.caption || facilityCaption}
+                </p>
                 <div className="my-4 h-[120px] w-full rounded border border-border/60 bg-background/60 p-2.5">
                   <Preview />
                 </div>
