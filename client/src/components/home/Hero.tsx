@@ -2,15 +2,16 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { motion, type Variants } from "framer-motion";
+import { Zap, Handshake, Cpu, MapPin } from "lucide-react";
 import { Wordmark } from "./Wordmark";
 import { GridPulse } from "./grid-pulse";
 import { MarketTape } from "./market-tape";
-import { HeroMap } from "./hero-map";
 
-// The hero's job is to say what GridTilt is and prove the numbers are real.
-// Every figure below carries the date its dataset was last refreshed, read
-// from the same API that serves the figure. Nothing here is hardcoded, and a
-// stat with no refresh date says so rather than borrowing today's.
+// The wordmark leads and the tagline stays as shipped; the hero's job here is
+// to prove the numbers under it are real. Every figure carries the date its
+// dataset was last refreshed, read from the same API that serves the figure.
+// Nothing is hardcoded, and a stat with no refresh date says so rather than
+// borrowing today's.
 
 interface ClusterMetrics {
   clusterCount: number;
@@ -68,6 +69,7 @@ const fadeUp: Variants = {
 };
 
 interface HeroStat {
+  icon: typeof Zap;
   label: string;
   value: string;
   sub?: string;
@@ -88,6 +90,7 @@ export function Hero() {
 
   const stats: HeroStat[] = [
     {
+      icon: Zap,
       label: "Operational power for compute",
       value: opGw ? `${opGw} GW` : "--",
       sub: clusters ? `${(clusters.totalPlannedMW / 1000).toFixed(1)} GW planned` : undefined,
@@ -95,6 +98,7 @@ export function Hero() {
       href: "/compute-frontier",
     },
     {
+      icon: Handshake,
       label: "Contracted power deals",
       value: dealGw ? `${dealGw} GW` : "--",
       sub: deals ? `${deals.dealCount} corporate deals` : undefined,
@@ -102,6 +106,7 @@ export function Hero() {
       href: "/power-deals",
     },
     {
+      icon: Cpu,
       label: "Cost of compute",
       value: gpuHr ? `$${gpuHr}/hr` : "--",
       sub: gpu ? `${gpu.fleetAvg1yChange}% over a year` : undefined,
@@ -109,6 +114,7 @@ export function Hero() {
       href: "/neocloud-intel",
     },
     {
+      icon: MapPin,
       label: "Tracked clusters",
       value: clusterCount ?? "--",
       sub: clusters?.byOperator ? `${clusters.byOperator.length} operators` : undefined,
@@ -126,41 +132,23 @@ export function Hero() {
       <div className="absolute inset-0 z-0 opacity-75" aria-hidden>
         <GridPulse />
       </div>
-      <HeroMap />
 
-      <div className="relative z-10 mx-auto flex min-h-[inherit] max-w-[1200px] flex-col justify-center px-6 py-16">
+      <div className="relative z-10 mx-auto flex min-h-[inherit] max-w-[1200px] flex-col items-center justify-center px-6 py-16 text-center">
+        <Wordmark />
         <motion.div
           initial="hidden"
           animate="show"
-          transition={{ staggerChildren: 0.09, delayChildren: 0.12 }}
-          className="flex w-full flex-col"
+          transition={{ staggerChildren: 0.14, delayChildren: 1.5 }}
+          className="flex w-full flex-col items-center"
         >
-          {/* Masthead. The wordmark anchors the brand at reading size so the
-              sentence below can lead; the nav already carries it persistently. */}
-          <motion.div
-            variants={fadeUp}
-            className="flex items-end justify-between gap-6 border-b pb-4"
-            style={{ borderColor: "var(--mkt-line-bright)" }}
-          >
-            <div className="gt-hero-masthead">
-              <Wordmark />
-            </div>
-          </motion.div>
-
-          <motion.h1 variants={fadeUp} className="gt-tagline-primary mt-9 max-w-[19ch]">
-            The AI power buildout, tracked with{" "}
-            <span className="gt-tagline-emphasis">sourced numbers.</span>
-          </motion.h1>
-
-          <motion.p
-            variants={fadeUp}
-            className="mt-5 max-w-[46ch] text-[15px] leading-[1.7] sm:text-[16.5px]"
-            style={{ color: "var(--mkt-ink-muted)" }}
-          >
-            Data centers, generation, transmission, and the companies behind them.
+          <motion.p variants={fadeUp} className="mt-5 text-[16px] font-semibold text-foreground sm:text-[18px]">
+            Energy infrastructure, in plain sight.
           </motion.p>
-
-          <motion.div variants={fadeUp} className="mt-9 flex flex-wrap items-center gap-4">
+          <motion.p variants={fadeUp} className="mx-auto mt-3 max-w-[54ch] text-[14px] leading-[1.65] text-muted-foreground sm:text-[15px]">
+            Data centers are rewriting the American power grid. GridTilt maps who is building,
+            where the electricity comes from, and what it means for the bill you pay.
+          </motion.p>
+          <motion.div variants={fadeUp} className="mt-8 flex flex-wrap items-center justify-center gap-4">
             <Link
               href="/overview"
               className="rounded bg-brand px-6 py-3 text-[14px] font-semibold text-black no-underline transition-opacity hover:opacity-90"
@@ -178,47 +166,37 @@ export function Hero() {
           </motion.div>
 
           {/* The ledger. Each figure links to the module that shows its working
-              and prints the date its dataset was last refreshed. This is the
-              claim in the headline, made checkable in the same viewport. */}
+              and prints the date its own dataset was last refreshed, so a stale
+              number is visible as stale instead of reading as today's. */}
           <motion.div
             variants={fadeUp}
-            className="mt-14 grid w-full grid-cols-2 border-t lg:grid-cols-4"
-            style={{ borderColor: "var(--mkt-line-bright)" }}
+            className="mt-14 grid w-full grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4"
             data-testid="hero-stats"
           >
-            {stats.map(({ label, value, sub, asOf, href }, i) => (
+            {stats.map(({ icon: Icon, label, value, sub, asOf, href }, i) => (
               <Link
                 key={label}
                 href={href}
-                className="group border-b px-1 py-5 no-underline transition-colors sm:px-5 lg:border-b-0"
-                style={{
-                  borderColor: "var(--mkt-line)",
-                  borderLeftWidth: i === 0 ? 0 : 1,
-                  borderLeftStyle: "solid",
-                  borderLeftColor: "var(--mkt-line)",
-                }}
+                className="no-underline"
                 data-testid={`hero-stat-${i}`}
               >
-                <p
-                  className="font-mono text-[26px] font-bold leading-none tracking-tight tabular-nums transition-colors group-hover:text-brand"
-                  style={{ color: "var(--mkt-ink)" }}
+                <motion.div
+                  whileHover={{ y: -3 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 22 }}
+                  className="group h-full rounded-md border border-border bg-card/80 px-4 py-3.5 text-left transition-colors hover:border-brand/50"
                 >
-                  {value}
-                </p>
-                <p className="mt-2 text-[12.5px] leading-tight" style={{ color: "var(--mkt-ink-muted)" }}>
-                  {label}
-                </p>
-                {sub && (
-                  <p className="mt-1 text-[11.5px]" style={{ color: "var(--mkt-ink-quiet)" }}>
-                    {sub}
+                  <div className="flex items-center gap-2">
+                    <Icon className="h-4 w-4 text-brand" aria-hidden />
+                    <span className="text-[12px] leading-tight text-muted-foreground">{label}</span>
+                  </div>
+                  <p className="mt-1.5 font-mono text-[24px] font-bold leading-none tracking-tight text-foreground tabular-nums transition-colors group-hover:text-brand">
+                    {value}
                   </p>
-                )}
-                <p
-                  className="mt-2.5 font-mono text-[10.5px] uppercase tracking-[0.14em]"
-                  style={{ color: "var(--mkt-ink-quiet)" }}
-                >
-                  {asOf ? `as of ${asOf}` : "no date"}
-                </p>
+                  {sub && <p className="mt-1 text-[11.5px] text-muted-foreground/80">{sub}</p>}
+                  <p className="mt-2 font-mono text-[10.5px] uppercase tracking-[0.14em] text-muted-foreground/70">
+                    {asOf ? `as of ${asOf}` : "no date"}
+                  </p>
+                </motion.div>
               </Link>
             ))}
           </motion.div>

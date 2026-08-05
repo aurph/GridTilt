@@ -96,34 +96,23 @@
 
 /* ─── Hero faded power map decoration ──────────────────────────────────── */
 
-/* Sits in the right half, clear of the headline column, so it can carry real
-   contrast instead of hiding at decoration opacity. The cluster dots are the
-   point: they are the same 235 records the ledger below counts. */
 .gt-hero-map {
   position: absolute;
-  right: 0;
+  right: -8%;
   top: 50%;
   transform: translateY(-50%);
-  width: 56vw;
-  max-width: 740px;
+  width: 62vw;
+  max-width: 720px;
   height: auto;
-  opacity: 0.5;
+  opacity: 0.085;
   pointer-events: none;
   z-index: 0;
+  filter: saturate(0.7) contrast(1.1);
   animation: gt-hero-map-breathe 18s ease-in-out infinite;
 }
 @keyframes gt-hero-map-breathe {
-  0%, 100% { opacity: 0.42; transform: translateY(-50%) scale(1); }
-  50%      { opacity: 0.56; transform: translateY(-50%) scale(1.012); }
-}
-
-/* Below the lg breakpoint the headline reflows over the map's column, so it
-   drops back to a faint texture rather than competing with the type. */
-@media (max-width: 1023px) {
-  .gt-hero-map { opacity: 0.14; animation: none; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .gt-hero-map { animation: none; }
+  0%, 100% { opacity: 0.06; transform: translateY(-50%) scale(1); }
+  50%      { opacity: 0.11; transform: translateY(-50%) scale(1.015); }
 }
 
 /* ─── Animated wordmark ────────────────────────────────────────────────── */
@@ -165,40 +154,26 @@
 @keyframes gt-caret      { to { opacity: 0; } }
 @keyframes gt-caret-fade { to { opacity: 0; } }
 
-/* ─── Hero masthead ────────────────────────────────────────────────────── */
-
-/* The wordmark drops to reading size on the hero so the sentence leads. The
-   nav carries the brand persistently, so a full-bleed logo here would spend
-   the best real estate on something the visitor can already see. */
-.gt-hero-masthead .gt-wordmark {
-  font-size: clamp(28px, 3.2vw, 40px);
-  letter-spacing: -0.03em;
-}
-
 /* ─── Tagline ──────────────────────────────────────────────────────────── */
 
-/* Sized to lead the hero. The emphasis span carries the differentiator
-   ("sourced numbers") in the editorial serif, which is the one place the
-   marketing voice allows it. */
 .gt-tagline-primary {
   font-family: var(--mkt-display);
-  font-size: clamp(32px, 4.5vw, 58px);
-  font-weight: 600;
-  letter-spacing: -0.028em;
-  line-height: 1.1;
+  font-size: clamp(24px, 2.7vw, 36px);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
   color: var(--mkt-ink);
-  margin: 0;
-  text-wrap: balance;
+  margin: 0 0 4px 0;
 }
 .gt-tagline-emphasis {
   font-family: var(--mkt-serif);
   font-style: italic;
   font-weight: 400;
-  font-size: 1.04em;
-  line-height: inherit;
+  font-size: clamp(28px, 3.2vw, 44px);
+  line-height: 1.15;
   color: var(--mkt-accent);
   margin: 0;
-  letter-spacing: -0.012em;
+  letter-spacing: -0.01em;
 }
 
 /* ─── Staggered reveal animations ──────────────────────────────────────── */
