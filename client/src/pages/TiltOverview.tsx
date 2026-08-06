@@ -94,8 +94,8 @@ interface TopMover {
   ticker: string;
   name: string;
   price: number;
-  change: number;
-  changePercent: number;
+  change: number | null;
+  changePercent: number | null;
   sector: string;
   marketCapDisplay?: string;
 }
@@ -219,7 +219,13 @@ function TopMoversSection({ topMovers, pulse, isLoading, isError, updatedAt, onR
                 <Skeleton className="h-4 w-16" />
               </div>
             ))
-          : topMovers.length === 0 ? <ErrorCard label="No movers data available" /> : topMovers.filter((m) => m.price != null && m.changePercent != null).map((m) => {
+          : topMovers.length === 0 ? <ErrorCard label="No movers data available" /> : topMovers.filter(
+              // Type predicate, not a bare filter: without it TypeScript keeps
+              // changePercent nullable inside the map and the null-safety here
+              // is unenforced, which is how .toFixed on a null ships.
+              (m): m is TopMover & { price: number; changePercent: number } =>
+                m.price != null && m.changePercent != null,
+            ).map((m) => {
               const isUp = m.changePercent >= 0;
               const sc = SECTOR_COLORS[m.sector] ?? INK.muted;
               return (

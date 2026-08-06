@@ -2,8 +2,10 @@ export interface TopMover {
   ticker: string;
   name: string;
   price: number;
-  change: number;
-  changePercent: number;
+  // Null whenever Yahoo did not serve a live change for this ticker.
+  // Never 0: that would claim flat when the truth is unknown.
+  change: number | null;
+  changePercent: number | null;
   sector: string;
   marketCapDisplay?: string;
 }

@@ -7,7 +7,7 @@ import { apiRequest } from "@/lib/queryClient";
 interface TopMover {
   ticker: string;
   name: string;
-  changePercent: number;
+  changePercent: number | null;
 }
 interface SectorMeta {
   key: string;
@@ -43,8 +43,15 @@ export default function Subscribe() {
   const trackedGW = datacenters
     ? datacenters.filter((d) => d.status !== "announced").reduce((t, d) => t + d.powerMW, 0) / 1000
     : null;
-  const topMover = movers && movers.length > 0 ? movers[0] : null;
-  const moverUp = (topMover?.changePercent ?? 0) >= 0;
+  // Only a mover with a live number is renderable. Guarding here as well as in
+  // /api/top-movers because ?? 0 would paint an unknown move as a green +0.00%,
+  // and .toFixed on the null it hides white-screens this page.
+  const firstMover = movers && movers.length > 0 ? movers[0] : null;
+  const topMover: (TopMover & { changePercent: number }) | null =
+    firstMover && typeof firstMover.changePercent === "number" && Number.isFinite(firstMover.changePercent)
+      ? (firstMover as TopMover & { changePercent: number })
+      : null;
+  const moverUp = topMover != null && topMover.changePercent >= 0;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

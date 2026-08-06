@@ -510,8 +510,14 @@ async function getCachedStockData(timeframe: string): Promise<Record<string, any
           ticker,
           name: r.longName || r.shortName || staticData?.name || ticker,
           price: r.regularMarketPrice,
-          change: r.regularMarketChange ?? 0,
-          changePercent: r.regularMarketChangePercent ?? 0,
+          // Null, never 0. Yahoo can return a quote carrying a price but no
+          // change fields; 0 would claim "flat" when the truth is "unknown".
+          // It also defeats averageLiveChanges downstream, which excludes
+          // nulls but has no way to tell a fabricated 0 from a real one. The
+          // static-fallback branch below already emits null for exactly this
+          // reason; these two branches must agree.
+          change: r.regularMarketChange ?? null,
+          changePercent: r.regularMarketChangePercent ?? null,
           pe: r.trailingPE ?? staticData?.pe ?? null,
           revenueGrowth: fundamentals[ticker]?.revenueGrowth ?? null,
           sparkline: closes,
@@ -2066,7 +2072,14 @@ export async function registerRoutes(
         tickers.forEach((t) => { sectorMap[t] = sector; });
       });
 
-      const allStocks = Object.values(stockData) as any[];
+      // A ticker whose change is unknown is not a "top mover". Excluding it
+      // here keeps the sort honest (Math.abs(null) is 0, so stale rows used to
+      // rank as perfectly flat) and means consumers never receive a mover
+      // without a number to render. With every ticker stale this serves [],
+      // which the UI already treats as "no movers data".
+      const allStocks = (Object.values(stockData) as any[]).filter(
+        (s) => typeof s?.changePercent === "number" && Number.isFinite(s.changePercent),
+      );
       const sorted = allStocks.sort((a, b) => Math.abs(b.changePercent) - Math.abs(a.changePercent));
       const topMovers = sorted.slice(0, 5).map((s) => ({
         ...s,

@@ -8,6 +8,7 @@ import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip as RTooltip
 import { useToast } from "@/hooks/use-toast";
 import { SEMANTIC } from "@/lib/tokens";
 import { axisProps, tooltipContentStyle } from "@/lib/chart-theme";
+import { averageLiveChangesOrNull } from "@/lib/pulse-math";
 
 interface StockInfo {
   ticker: string;
@@ -121,9 +122,10 @@ export default function StockPage() {
   const sectorSlug = SECTOR_SLUG_MAP[data.layerKey] || data.layerKey;
 
   const sectorStocks = stackData?.[data.layerKey] || [];
-  const sectorAvgChange = sectorStocks.length > 0
-    ? sectorStocks.reduce((s, st) => s + (st.changePercent || 0), 0) / sectorStocks.length
-    : null;
+  // Excludes stale tickers rather than counting them as 0% moves. OrNull here
+  // because this surface hides the row entirely when nothing is live, instead
+  // of printing a "+0.00%" that reads as a real flat sector.
+  const sectorAvgChange = averageLiveChangesOrNull(sectorStocks.map((st) => st.changePercent));
   const relatedRows = new Map(sectorStocks.map((s) => [s.ticker, s]));
 
   function handleShare() {

@@ -122,7 +122,7 @@ test("GET /api/stack: throttled tickers expose stale=true and null change/change
   }
 });
 
-test("GET /api/top-movers: stale tickers, if surfaced, must report null changePercent (never +0.00%)", async () => {
+test("GET /api/top-movers: a ticker with no known change is not a mover, so a full throttle returns []", async () => {
   const { url, close } = await startTestServer();
   try {
     const res = await fetch(`${url}/api/top-movers`);
@@ -130,24 +130,24 @@ test("GET /api/top-movers: stale tickers, if surfaced, must report null changePe
     const movers = (await res.json()) as StaleStock[];
     assert.ok(Array.isArray(movers), "expected an array of movers");
 
-    // Under a full Yahoo throttle every mover must be marked stale. A row
-    // claiming `stale: false` here would mean some upstream path silently
-    // fabricated a live-looking value (the exact regression we're guarding).
+    // The route now filters to tickers with a finite changePercent, matching
+    // what /api/export/daily already did. Two reasons this is the right
+    // contract: Math.abs(null) is 0, so stale rows used to sort as perfectly
+    // flat and rank as "top" movers; and consumers received rows with no
+    // number to render, which is how .toFixed on a null white-screened
+    // /subscribe. Asserting emptiness rather than looping keeps this test from
+    // passing vacuously once the filter is in place.
+    assert.equal(
+      movers.length,
+      0,
+      `under full throttle no ticker has a known change, so top-movers must be empty; got ${movers.length}: ${movers.map((m) => m.ticker).join(",")}`,
+    );
+
     for (const m of movers) {
       assert.equal(
-        m.stale,
-        true,
-        `under full throttle, mover ${m.ticker} must be stale; got stale=${m.stale}`,
-      );
-      assert.equal(
-        m.changePercent,
-        null,
-        `stale mover ${m.ticker} must have changePercent: null, got ${m.changePercent}`,
-      );
-      assert.equal(
-        m.change,
-        null,
-        `stale mover ${m.ticker} must have change: null, got ${m.change}`,
+        typeof m.changePercent,
+        "number",
+        `any surfaced mover must carry a real number; ${m.ticker} had ${m.changePercent}`,
       );
     }
 

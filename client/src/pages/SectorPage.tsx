@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft, AlertTriangle, TrendingUp, TrendingDown } from "lucide-react";
+import { averageLiveChanges } from "@/lib/pulse-math";
 
 // The 8 original entries plus the 5 STACK_TICKERS layers (server/routes.ts)
 // that had no SectorPage entry at all: rawMaterialsMining, rawMaterialsNatGas,
@@ -119,9 +120,11 @@ export default function SectorPage() {
   // is not a "top mover" - it stays visible, just deprioritized.
   const sorted = [...stocks].sort((a, b) => (b.changePercent ?? -Infinity) - (a.changePercent ?? -Infinity));
   const withChange = stocks.filter((s): s is typeof s & { changePercent: number } => s.changePercent != null);
-  const avgChange = stocks.length > 0
-    ? stocks.reduce((s, st) => s + (st.changePercent || 0), 0) / stocks.length
-    : 0;
+  // Excludes stale tickers instead of counting them as 0% moves. The old form
+  // was wrong twice over: it coerced null to 0 in the numerator AND divided by
+  // every ticker including the stale ones, so a partial Yahoo throttle pulled
+  // the sector average toward flat.
+  const avgChange = averageLiveChanges(stocks.map((st) => st.changePercent));
   const best = withChange.length > 0 ? withChange.reduce((a, b) => (b.changePercent > a.changePercent ? b : a)) : null;
   const worst = withChange.length > 0 ? withChange.reduce((a, b) => (b.changePercent < a.changePercent ? b : a)) : null;
   const advancing = withChange.filter((s) => s.changePercent >= 0).length;
