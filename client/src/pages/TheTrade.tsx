@@ -32,13 +32,7 @@ import {
 } from "lucide-react";
 import { SrChartTable } from "@/components/Freshness";
 import { BORDER, CATEGORY_COLORS, SERIES } from "@/lib/tokens";
-import {
-  axisProps,
-  gridProps,
-  tooltipContentStyle,
-  tooltipItemStyle,
-  tooltipLabelStyle,
-} from "@/lib/chart-theme";
+import { axisProps, gridProps, tooltipContentStyle, tooltipItemStyle, tooltipLabelStyle, seriesAnimation } from "@/lib/chart-theme";
 
 const BASE_POWER_TWH = 4490;
 const BASE_YEAR = 2025;
@@ -575,10 +569,10 @@ export default function TheTrade({ embedded = false }: { embedded?: boolean; par
                             );
                           }}
                         />
-                        <Bar dataKey="gas"        name="Natural Gas" stackId="a" fill={CATEGORY_COLORS.gas}        radius={[0,0,0,0]} />
-                        <Bar dataKey="nuclear"    name="Nuclear"     stackId="a" fill={CATEGORY_COLORS.nuclear}    radius={[0,0,0,0]} />
-                        <Bar dataKey="renewables" name="Renewables"  stackId="a" fill={CATEGORY_COLORS.renewables} radius={[0,0,0,0]} />
-                        <Bar dataKey="grid"       name="Grid"        stackId="a" fill={CATEGORY_COLORS.grid}       radius={[2,2,0,0]} />
+                        <Bar {...seriesAnimation} dataKey="gas"        name="Natural Gas" stackId="a" fill={CATEGORY_COLORS.gas}        radius={[0,0,0,0]} />
+                        <Bar {...seriesAnimation} dataKey="nuclear"    name="Nuclear"     stackId="a" fill={CATEGORY_COLORS.nuclear}    radius={[0,0,0,0]} />
+                        <Bar {...seriesAnimation} dataKey="renewables" name="Renewables"  stackId="a" fill={CATEGORY_COLORS.renewables} radius={[0,0,0,0]} />
+                        <Bar {...seriesAnimation} dataKey="grid"       name="Grid"        stackId="a" fill={CATEGORY_COLORS.grid}       radius={[2,2,0,0]} />
                       </BarChart>
                     </ResponsiveContainer>
                     <SrChartTable
