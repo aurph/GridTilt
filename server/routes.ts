@@ -50,6 +50,8 @@ import { composeBrief, renderBriefText, type BriefInput } from "./brief";
 import { computeGpuEconomics, TRAINING_PRESETS } from "./gpu-economics";
 import { readFrontierRegistry, summarizeFrontierRegistry } from "./frontier-models";
 import { readInferencePrices, buildInferencePriceView } from "./inference-prices";
+import { computeFreshness, type FileContents } from "./freshness";
+import { DATASET_REGISTRY } from "./freshness-registry";
 import {
   buildBuildoutTweet,
   buildGpuRentalTweet,
@@ -854,10 +856,20 @@ async function scanNewsForBacklogUpdates(news: NewsItem[]): Promise<{ applied: n
     }
   }
 
+  // Two different questions, two different fields.
+  //
+  // lastRefreshed answers "when did a number here last change" and so only
+  // moves on a real change. lastChecked answers "when did anything last look
+  // at this", and must move on every run including a clean one. Conflating
+  // them is why a dataset that is watched daily and correctly unchanged would
+  // still look abandoned, and why nothing could tell that apart from the
+  // scanner never running at all.
+  const today = new Date().toISOString().slice(0, 10);
+  data.lastChecked = today;
   if (applied > 0) {
-    data.lastRefreshed = new Date().toISOString().slice(0, 10);
-    writeFileSync(filePath, JSON.stringify(data, null, 2) + "\n");
+    data.lastRefreshed = today;
   }
+  writeFileSync(filePath, JSON.stringify(data, null, 2) + "\n");
 
   return { applied, flagged, checked };
 }
@@ -1035,7 +1047,14 @@ interface BacklogProject {
   notes?: string;
 }
 interface BacklogDataset {
+  /** When a value in this dataset last changed. */
   lastRefreshed: string;
+  /**
+   * When the news scanner last ran against this dataset, changed or not.
+   * Optional because files written before the scanner started stamping it
+   * will not carry one; freshness falls back to lastRefreshed in that case.
+   */
+  lastChecked?: string;
   headline: {
     trackedProjects: number;
     trackedCapacityGW: number;
@@ -2244,6 +2263,56 @@ export async function registerRoutes(
   app.get("/api/admin/gpu-history", (req: Request, res) => {
     if (!requireAdmin(req, res)) return;
     res.json(readGpuHistory());
+  });
+
+  // ─── Dataset freshness (admin only) ──────────────────────────────────────
+  //
+  // Answers the one question an unattended pipeline cannot answer about
+  // itself: has a refresh mechanism stopped? Both routes are gated. Freshness
+  // is the floor, not a feature, and publishing a "how current are we" page
+  // advertises the bare minimum.
+
+  /** Read every registered dataset off disk. Unreadable files stay absent. */
+  function readRegisteredDatasets(): FileContents {
+    const contents: FileContents = {};
+    for (const spec of DATASET_REGISTRY) {
+      try {
+        const path = join(process.cwd(), "server", "data", spec.file);
+        contents[spec.id] = JSON.parse(readFileSync(path, "utf-8"));
+      } catch {
+        // Leave it out: computeFreshness reports "unknown" rather than
+        // guessing, and a missing file must never read as fresh.
+      }
+    }
+    return contents;
+  }
+
+  app.get("/api/admin/freshness", (req: Request, res) => {
+    if (!requireAdmin(req, res)) return;
+    res.json(computeFreshness(readRegisteredDatasets(), Date.now()));
+  });
+
+  // The deadman. An external pinger (cron-job.org, same account already firing
+  // the daily tweet) hits this with x-admin-key on a schedule and alerts on any
+  // non-2xx. It deliberately lives off the Jetson: a watchdog hosted on the box
+  // it watches dies with it, which is the failure that let the interconnection
+  // queue rot for 77 days.
+  //
+  // Path is /freshness/check and never /health so the platform cannot mistake
+  // a stale-data 503 for an unhealthy instance and start recycling it.
+  app.get("/api/admin/freshness/check", (req: Request, res) => {
+    if (!requireAdmin(req, res)) return;
+    const report = computeFreshness(readRegisteredDatasets(), Date.now());
+    // "aging" is intentionally a 200: one missed run should not page anyone,
+    // or the alert stops meaning anything.
+    res.status(report.healthy ? 200 : 503).json({
+      healthy: report.healthy,
+      stale: report.datasets
+        .filter((d) => d.status === "stale")
+        .map((d) => ({ id: d.id, asOf: d.asOf, detail: d.detail, mechanism: d.mechanism })),
+      aging: report.aging,
+      generatedAt: report.generatedAt,
+    });
   });
 
   app.post("/api/subscribe", subscribeLimiter, async (req: Request, res) => {
