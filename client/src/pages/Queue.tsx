@@ -98,76 +98,32 @@ const CATEGORY_LABELS: Record<string, string> = {
 type SortKey = "capacityMW" | "projectName" | "iso" | "type" | "expectedOnline";
 type SortDir = "asc" | "desc";
 
-// Normalize the API response so the page renders whether the deployed server
-// is on the OLD (aggregates/notableProjects) or NEW (headline/projects) shape.
-// This protects against deploy lag where the server and client are out of sync.
+// /api/queue serves server/data/interconnection-queue.json verbatim, which is
+// the { headline, projects } shape. The older { aggregates, notableProjects }
+// shape was migrated away in 2eae8f4 and no longer exists in the server, the
+// data file, or any writer.
+//
+// The transitional shim that reshaped it is gone. It could not fire anyway:
+// the client bundle is served by the same process (serveStatic in
+// server/index.ts), so a client newer than its own server is not a reachable
+// state. Its fallbacks also hardcoded the very numbers the curated file now
+// owns, so if it ever had fired it would have served silently stale figures.
 function normalizeBacklog(raw: any): BacklogResponse | undefined {
   if (!raw) return undefined;
   if (raw.headline && Array.isArray(raw.projects)) {
     return raw as BacklogResponse;
   }
-  if (raw.aggregates && Array.isArray(raw.notableProjects)) {
-    const a = raw.aggregates;
-    const isoTotal = Array.isArray(a.byIso)
-      ? a.byIso.find((r: any) => r.iso === "PJM")?.gw ?? 258
-      : 258;
-    const projects = (raw.notableProjects as any[]).map((p) => ({
-      id: p.id,
-      projectName: p.projectName,
-      sponsor: p.sponsor,
-      capacityMW: p.capacityMW,
-      type: p.type,
-      iso: p.iso,
-      state: p.state,
-      status: p.status,
-      category: p.capacityMW > 50000 ? "aggregate" : (p.type === "load" ? "load" : "generation"),
-      expectedOnline: p.expectedOnline ?? null,
-      offtaker: p.offtaker ?? null,
-      dcRelevant: !!p.dcRelevant,
-      sources: p.sources,
-      notes: p.notes,
-    }));
-    const nonAgg = projects.filter((p) => p.category !== "aggregate");
-    // The old shape has no source for these headline fields; the literals
-    // below are estimates, so flag them for the "est." marker in the UI.
-    const estimatedHeadline = [
-      "dominionContractedGW",
-      "duke5yrGenAddGW",
-      "metaHyperionGW",
-      "stargateAbileneGW",
-      ...(a.historicalWithdrawalPct == null ? ["historicalWithdrawalPct"] : []),
-    ];
-    return {
-      lastRefreshed: raw.source?.asOf ?? "unknown",
-      headline: {
-        trackedProjects: nonAgg.length,
-        trackedCapacityGW: parseFloat((nonAgg.reduce((s, p) => s + p.capacityMW, 0) / 1000).toFixed(1)),
-        queueOverallGW: a.totalActiveGW ?? 2290,
-        queueOverallProjects: a.totalActiveProjects ?? 10300,
-        medianWaitMonths: a.medianQueueMonths ?? 55,
-        historicalWithdrawalPct: a.historicalWithdrawalPct ?? 77,
-        queueOverallAsOf: raw.source?.asOf ?? "LBNL Queued Up 2025",
-        queueOverallSourceUrl: raw.source?.sourceUrl ?? "https://emp.lbl.gov/queues",
-        ercotLargeLoadGW: a.ercotDetail?.largeLoadQueueGW ?? 230,
-        ercotLargeLoadDataCenterPct: a.ercotDetail?.largeLoadDataCenterPct ?? 72.9,
-        ercotLargeLoadAsOf: a.ercotDetail?.asOf ?? "ERCOT late 2025",
-        pjmReopenedGW: a.pjmDetail?.totalGW ?? isoTotal,
-        pjmReopenedProjects: a.pjmDetail?.totalProjects ?? 811,
-        pjmReopenedAsOf: a.pjmDetail?.asOf ?? "PJM Cycle 1, Apr 2026",
-        dominionContractedGW: 47.1,
-        dominionAsOf: "Q1 2026",
-        duke5yrGenAddGW: 13,
-        metaHyperionGW: 5,
-        stargateAbileneGW: 1.2,
-      },
-      projects: projects as any,
-      estimatedHeadline,
-    };
-  }
   return undefined;
 }
 
-/** Small "est." tag for headline numbers the old-shape fallback filled with hardcoded estimates. */
+/**
+ * Small "est." tag for headline numbers the dataset itself flags as estimates.
+ *
+ * Driven by the optional `estimatedHeadline` field on the response. Nothing
+ * populates it today, so this renders nothing; it is kept because the field is
+ * part of the response type and dropping the tag would mean a future flagged
+ * estimate silently renders as a hard number.
+ */
 function Est({ on }: { on: boolean }) {
   if (!on) return null;
   return <span className="ml-1 text-8 text-estimate align-top">est.</span>;
@@ -426,7 +382,10 @@ export default function Queue({ embedded = false }: { embedded?: boolean; params
         <p className="text-11 text-muted-foreground/60 leading-relaxed px-1">
           Specific projects are verified against SEC filings, utility press releases, FERC dockets, NRC documents, and trade press.
           Aggregate rows roll up entire ISO cycles or fleet positions; toggle "specific only" to filter them out.
-          The full ~{h?.queueOverallProjects?.toLocaleString() ?? "10,300"}-project LBNL dataset is at{" "}
+          {/* No count when the dataset did not load. The old "10,300" fallback
+              printed a real-looking figure sourced from nothing, and it would
+              have kept printing it after the curated number moved on. */}
+          The full{h?.queueOverallProjects != null ? ` ~${h.queueOverallProjects.toLocaleString()}-project` : ""} LBNL dataset is at{" "}
           <a href="https://emp.lbl.gov/queues" target="_blank" rel="noopener noreferrer" className="text-brand hover:text-brand-2">emp.lbl.gov/queues</a>.
         </p>
       </div>
