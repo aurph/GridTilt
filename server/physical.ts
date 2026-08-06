@@ -1,3 +1,4 @@
+import { fetchWithTimeout } from "./fetch-timeout";
 // ─── Physical electricity data ───────────────────────────────────────────
 //
 // The market gauges read equities; this module is the physical side.
@@ -48,7 +49,7 @@ let fredCache: { at: number; payload: ElectricityOutputPayload } | null = null;
 
 export async function getElectricityOutputMonthly(): Promise<ElectricityOutputPayload> {
   if (fredCache && Date.now() - fredCache.at < FRED_CACHE_MS) return fredCache.payload;
-  const res = await fetch(FRED_URL);
+  const res = await fetchWithTimeout(FRED_URL);
   if (!res.ok) throw new Error(`FRED responded ${res.status}`);
   const points = parseFredCsv(await res.text());
   const payload: ElectricityOutputPayload = {
@@ -103,7 +104,7 @@ export async function getHourlyDemandUS48(): Promise<HourlyDemandResult> {
   url.searchParams.set("sort[0][direction]", "desc");
   url.searchParams.set("length", "168"); // last 7 days
 
-  const res = await fetch(url);
+  const res = await fetchWithTimeout(url);
   if (!res.ok) throw new Error(`EIA responded ${res.status}`);
   const body = (await res.json()) as {
     response?: { data?: Array<{ period: string; value: number | string }> };

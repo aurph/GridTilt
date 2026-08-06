@@ -1,4 +1,5 @@
 import { averageLiveChanges } from "./pulse-math";
+import { fetchWithTimeout } from "./fetch-timeout";
 import type { Express, Request, Response } from "express";
 import { type Server } from "http";
 import { readFileSync, writeFileSync, existsSync } from "fs";
@@ -950,7 +951,7 @@ function maybeCheckLbnlEdition(): void {
 // "YYYY Edition" string. If newer than what we have on file, logs a flag.
 async function checkLbnlEdition(): Promise<{ currentEdition: string | null; latestEdition: string | null; newer: boolean }> {
   try {
-    const res = await fetch("https://emp.lbl.gov/queues", {
+    const res = await fetchWithTimeout("https://emp.lbl.gov/queues", {
       headers: { "User-Agent": "GridTilt-Bot/1.0 (gridtilt.com)" },
     });
     if (!res.ok) return { currentEdition: null, latestEdition: null, newer: false };
@@ -1444,7 +1445,7 @@ async function xUploadMedia(pngBuf: Buffer): Promise<string | null> {
     const form = new FormData();
     // Use Blob; X expects raw bytes in the `media` field for simple upload
     form.append("media", new Blob([pngBuf], { type: "image/png" }), "card.png");
-    const res = await fetch(url, {
+    const res = await fetchWithTimeout(url, {
       method: "POST",
       headers: { Authorization: authHeader },
       body: form as any,
@@ -1496,7 +1497,7 @@ async function xPostTweet(text: string, mediaIds?: string[]): Promise<XPostResul
   }
 
   try {
-    const res = await fetch(url, {
+    const res = await fetchWithTimeout(url, {
       method: "POST",
       headers: {
         Authorization: authHeader,
@@ -1544,7 +1545,7 @@ async function xDeleteTweet(id: string): Promise<XDeleteResult> {
   );
 
   try {
-    const res = await fetch(url, {
+    const res = await fetchWithTimeout(url, {
       method: "DELETE",
       headers: { Authorization: authHeader },
     });
@@ -2295,14 +2296,14 @@ export async function registerRoutes(
 
       if (process.env.RESEND_API_KEY) {
         try {
-          const resendRes = await fetch("https://api.resend.com/audiences", {
+          const resendRes = await fetchWithTimeout("https://api.resend.com/audiences", {
             method: "GET",
             headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}` },
           });
           const audiences = await resendRes.json();
           const audienceId = audiences?.data?.[0]?.id;
           if (audienceId) {
-            await fetch(`https://api.resend.com/audiences/${audienceId}/contacts`, {
+            await fetchWithTimeout(`https://api.resend.com/audiences/${audienceId}/contacts`, {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
@@ -2431,7 +2432,7 @@ export async function registerRoutes(
       const previewUrl = `http://localhost:${process.env.PORT || 5000}/api/newsletter/preview`;
       // Preview is admin-gated (SEC-1); forward the server's own key on the
       // internal call so the send path keeps working.
-      const previewRes = await fetch(previewUrl, {
+      const previewRes = await fetchWithTimeout(previewUrl, {
         headers: { "x-admin-key": process.env.ADMIN_API_KEY || "" },
       });
       const htmlTemplate = await previewRes.text();
@@ -2446,7 +2447,7 @@ export async function registerRoutes(
         );
 
         try {
-          const sendRes = await fetch("https://api.resend.com/emails", {
+          const sendRes = await fetchWithTimeout("https://api.resend.com/emails", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -2646,7 +2647,7 @@ export async function registerRoutes(
       if (apiKey) {
         try {
           const url = `https://newsdata.io/api/1/latest?apikey=${apiKey}&q=data+center+OR+nuclear+energy+OR+power+grid+OR+AI+infrastructure+OR+uranium&language=en&category=business,technology`;
-          const resp = await fetch(url);
+          const resp = await fetchWithTimeout(url);
           if (resp.ok) {
             const json = await resp.json() as any;
             const articles = (json.results ?? []) as any[];
