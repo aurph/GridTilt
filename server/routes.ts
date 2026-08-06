@@ -1,3 +1,4 @@
+import { averageLiveChanges } from "./pulse-math";
 import type { Express, Request, Response } from "express";
 import { type Server } from "http";
 import { readFileSync, writeFileSync, existsSync } from "fs";
@@ -2094,15 +2095,9 @@ export async function registerRoutes(
       };
 
       const pulse = Object.entries(STACK_TICKERS).map(([key, tickers]) => {
-        // Exclude stale/null changePercent values so a Yahoo throttle on a few
-        // tickers doesn't pull the sector average toward zero.
-        const changes = tickers
-          .map((t) => stockData[t]?.changePercent)
-          .filter((c): c is number => typeof c === "number" && Number.isFinite(c));
-        const avg = changes.length > 0
-          ? changes.reduce((s, v) => s + v, 0) / changes.length
-          : 0;
-        return { sector: key, label: SECTOR_LABELS[key] ?? key, avgChange: parseFloat(avg.toFixed(2)) };
+        // Stale tickers are excluded, not zeroed; see averageLiveChanges.
+        const avgChange = averageLiveChanges(tickers.map((t) => stockData[t]?.changePercent));
+        return { sector: key, label: SECTOR_LABELS[key] ?? key, avgChange };
       });
 
       res.json(pulse);
@@ -2120,14 +2115,8 @@ export async function registerRoutes(
         const stocks = stage.tickers
           .map((t) => stockData[t])
           .filter(Boolean);
-        // Exclude stale/null changePercent values so a Yahoo throttle on a few
-        // tickers doesn't pull the stage average toward zero.
-        const liveChanges = stocks
-          .map((st) => st.changePercent)
-          .filter((c): c is number => typeof c === "number" && Number.isFinite(c));
-        const avgChange = liveChanges.length > 0
-          ? parseFloat((liveChanges.reduce((s, v) => s + v, 0) / liveChanges.length).toFixed(2))
-          : 0;
+        // Stale tickers are excluded, not zeroed; see averageLiveChanges.
+        const avgChange = averageLiveChanges(stocks.map((st) => st.changePercent));
         return {
           key,
           name: stage.name,
