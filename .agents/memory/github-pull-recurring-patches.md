@@ -15,3 +15,7 @@ After any pull that touches server code, restart the Start application workflow 
 
 ## My Grid error-state wiring
 The user reworks `my-grid.tsx` from their local copy, which predates the error-state fix (fetch failure must render ErrorState + retry, not false "No tracked facilities" / endless skeleton). A pull that touches my-grid.tsx likely clobbers it — re-check `ErrorState` wiring on the facilities and rates queries after every such pull, re-apply if gone (happened 2026-07-27).
+
+## Update 2026-08-06
+- Sector-pulse stale-ticker rule is now factored into `server/pulse-math.ts` (`averageLiveChanges`), shared with supply-chain and unit-locked by `pulse-math.test.ts` — it should no longer regress on merges, but verify the import survives.
+- Conflict-resolution gotcha: `git checkout --ours server/data/*.json && git add -A` blindly stages NON-data conflicts too (a `.gitignore` conflict shipped with markers once). Always list `UU` files first and resolve non-data conflicts by hand before `add -A`.
