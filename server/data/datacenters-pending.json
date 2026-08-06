@@ -131,5 +131,43 @@
     "sourceName": "DCD",
     "discoveredAt": "2026-07-29T11:00:20.473Z",
     "approxCoords": true
+  },
+  {
+    "id": 66,
+    "name": "Amazon Unknown (AWS eyes potential data center developme)",
+    "company": "Amazon",
+    "city": "Unknown",
+    "state": "PA",
+    "lat": 40.59,
+    "lng": -77.209,
+    "powerMW": 4500,
+    "status": "announced",
+    "annualMWh": 33507000,
+    "gridOperator": "Unknown",
+    "openDate": "TBD",
+    "sourceUrl": "https://www.datacenterdynamics.com/en/news/aws-eyes-potential-data-center-development-at-45gw-natural-gas-plant-in-pennsylvania/",
+    "sourceTitle": "AWS eyes potential data center development at 4.5GW natural gas plant in Pennsylvania",
+    "sourceName": "DCD",
+    "discoveredAt": "2026-08-06T15:34:42.401Z",
+    "approxCoords": true
+  },
+  {
+    "id": 67,
+    "name": "OpenAI Unknown (Southern Co contracted large load rises)",
+    "company": "OpenAI",
+    "city": "Unknown",
+    "state": "GA",
+    "lat": 33.04,
+    "lng": -83.643,
+    "powerMW": 17000,
+    "status": "announced",
+    "annualMWh": 126582000,
+    "gridOperator": "Unknown",
+    "openDate": "TBD",
+    "sourceUrl": "https://www.utilitydive.com/news/southern-co-contracted-large-load-data-centers/826919/",
+    "sourceTitle": "Southern Co. contracted large load rises to 17 GW",
+    "sourceName": "Utility Dive",
+    "discoveredAt": "2026-08-06T15:34:42.473Z",
+    "approxCoords": true
   }
 ]
