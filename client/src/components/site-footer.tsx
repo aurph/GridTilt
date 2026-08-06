@@ -66,6 +66,19 @@ export function SiteFooter() {
                   @gridtilt
                 </a>
               </li>
+              {/* Carried up from the marketing footer when the landing stopped
+                  rendering a second one. These were previously reachable only
+                  from "/"; every page has them now. */}
+              <li>
+                <a href="https://github.com/aurph/GridTilt" target="_blank" rel="noopener noreferrer" className="text-[13px] text-muted-foreground no-underline transition-colors hover:text-foreground">
+                  Source on GitHub
+                </a>
+              </li>
+              <li>
+                <a href="mailto:gridtilt1@gmail.com" className="text-[13px] text-muted-foreground no-underline transition-colors hover:text-foreground">
+                  Contact
+                </a>
+              </li>
             </ul>
           </nav>
           <div>
