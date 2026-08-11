@@ -95,6 +95,15 @@ export const tooltipContentStyle: CSSProperties = {
   fontSize: chartTheme.tooltip.fontSize,
   fontFamily: chartTheme.tooltip.fontFamily,
   padding: "8px 10px",
+  // Recharts sizes the tooltip to its content and does not reliably clamp it
+  // to the plot area, so a long label ran clean off a phone screen: 79px off
+  // on Power deals at 375, 9px on Compute Frontier. Capping at half the
+  // viewport means the box fits whichever side of the cursor recharts picks,
+  // and the text wraps instead of the box growing. Above ~570px wide the
+  // 260px cap governs and nothing changes.
+  maxWidth: "min(260px, calc(50vw - 24px))",
+  whiteSpace: "normal",
+  overflowWrap: "anywhere",
 };
 
 export const tooltipLabelStyle: CSSProperties = {
