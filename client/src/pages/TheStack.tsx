@@ -22,13 +22,15 @@ import {
   CartesianGrid,
   Tooltip,
 } from "recharts";
-import { Cpu, Server, Zap, TrendingUp, TrendingDown, Info, Clock, ChevronDown, ChevronRight, ArrowUpDown } from "lucide-react";
+import { Cpu, Server, Zap, TrendingUp, TrendingDown, Info, Clock, ChevronDown, ChevronRight } from "lucide-react";
 import { AsOf, ErrorState } from "@/components/Freshness";
 import { PageHeader, HeaderStat } from "@/components/PageHeader";
 import { BRAND, CATEGORY_COLORS, CHART_CHROME, INK, SEMANTIC } from "@/lib/tokens";
 import { axisProps, gridProps } from "@/lib/chart-theme";
 import { sparklineDomain } from "@/lib/gpu-series";
 import { fetchJson } from "@/lib/queryClient";
+import { SortableTh } from "@/components/sortable-table";
+import { nextSort } from "@/lib/table-sort";
 import {
   buildHeatmapInput,
   heatColor,
@@ -918,6 +920,9 @@ function pctCell(v: number | null): { text: string; className: string } {
   return { text: `${v > 0 ? "+" : ""}${v.toFixed(2)}%`, className: cls };
 }
 
+/** Opens A to Z; every other column is numeric and opens largest-first. */
+const TABLE_TEXT_COLS: TableSortKey[] = ["ticker"];
+
 const TABLE_COLS: Array<{ key: TableSortKey; label: string; align: "left" | "right" }> = [
   { key: "ticker", label: "Ticker", align: "left" },
   { key: "price", label: "Price", align: "right" },
@@ -955,12 +960,12 @@ function StackTable({
   const pct5 = useMemo(() => pctMapOf(data5D, layerKeys), [data5D]); // eslint-disable-line react-hooks/exhaustive-deps
   const pct1m = useMemo(() => pctMapOf(data1M, layerKeys), [data1M]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Same rule every other table uses: flip the active column, otherwise open
+  // the new one at its natural direction (ticker A-Z, numbers largest first).
   const toggleSort = (k: TableSortKey) => {
-    if (sortKey === k) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
-    else {
-      setSortKey(k);
-      setSortDir(k === "ticker" ? "asc" : "desc");
-    }
+    const n = nextSort({ key: sortKey, dir: sortDir }, k, TABLE_TEXT_COLS);
+    setSortKey(n.key);
+    setSortDir(n.dir);
   };
 
   if (isError) {
@@ -977,17 +982,16 @@ function StackTable({
         <thead>
           <tr className="bg-surface-base border-b border-border font-sans text-[11px] text-muted-foreground">
             {TABLE_COLS.map((c) => (
-              <th key={c.key} className={`px-3 py-2 font-medium ${c.align === "right" ? "text-right" : "text-left"}`}>
-                <button
-                  onClick={() => toggleSort(c.key)}
-                  className={`inline-flex items-center gap-1 hover:text-foreground transition-colors ${sortKey === c.key ? "text-brand" : ""}`}
-                  data-testid={`stack-sort-${c.key}`}
-                >
-                  {c.label}
-                  <ArrowUpDown className="h-2.5 w-2.5" style={{ opacity: sortKey === c.key ? 1 : 0.3 }} />
-                  {sortKey === c.key && <span className="text-8">{sortDir === "asc" ? "▲" : "▼"}</span>}
-                </button>
-              </th>
+              <SortableTh
+                key={c.key}
+                label={c.label}
+                align={c.align}
+                active={sortKey === c.key}
+                dir={sortDir}
+                onSort={() => toggleSort(c.key)}
+                className="px-3 py-2"
+                testId={`stack-sort-${c.key}`}
+              />
             ))}
           </tr>
         </thead>
