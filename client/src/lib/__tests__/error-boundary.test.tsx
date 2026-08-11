@@ -1,8 +1,13 @@
 /**
- * The boundary's job is containment plus recovery. Recovery is the part that
- * silently rots: without it a caught error pins the visitor to a dead screen
- * for the rest of the session, because navigating does not remount the
- * boundary. resetOnKeyChange is that rule, tested without a DOM.
+ * The boundary's job is containment plus recovery.
+ *
+ * The tests that matter here replay React's real call order, because testing
+ * resetOnKeyChange on a hand-built state object hid a fatal bug once already:
+ * the reset guard skipped adopting the key during clean renders, so the first
+ * caught error was cleared by the very next getDerivedStateFromProps, the
+ * children re-threw, and React unmounted the whole tree. The boundary became
+ * the blank page it exists to prevent, and a unit test on the pure function
+ * alone still passed.
  */
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
@@ -12,39 +17,90 @@ import { ErrorBoundary, resetOnKeyChange } from "../../components/error-boundary
 
 const err = new Error("boom");
 
-describe("ErrorBoundary reset rule", () => {
-  it("holds the error while the reset key is unchanged", () => {
-    const state = { error: err, key: "/stack" };
-    assert.equal(resetOnKeyChange({ children: null, resetKey: "/stack" }, state), null);
+/** Replay React's sequence: gDSFP before every render, gDSFE on a throw. */
+function simulate(steps: Array<{ resetKey?: unknown; throws?: boolean }>) {
+  let state = { error: null as Error | null, key: undefined as unknown };
+  const rendered: string[] = [];
+  for (const step of steps) {
+    const props = { children: null, resetKey: step.resetKey };
+    const derived = resetOnKeyChange(props, state);
+    if (derived) state = derived;
+    if (step.throws) {
+      state = { ...state, ...ErrorBoundary.getDerivedStateFromError(err) };
+      // React re-renders after catching; gDSFP runs again first.
+      const again = resetOnKeyChange(props, state);
+      if (again) state = again;
+    }
+    rendered.push(state.error ? "error-state" : "children");
+  }
+  return { state, rendered };
+}
+
+describe("ErrorBoundary lifecycle", () => {
+  it("holds the error through the re-render that follows catching it", () => {
+    // The regression: this used to come back "children", loop, and unmount.
+    const { rendered } = simulate([{ resetKey: "/subscribe" }, { resetKey: "/subscribe", throws: true }]);
+    assert.deepEqual(rendered, ["children", "error-state"]);
   });
 
-  it("clears the error when the reset key changes (navigation recovers)", () => {
-    const state = { error: err, key: "/stack" };
-    const next = resetOnKeyChange({ children: null, resetKey: "/power-map" }, state);
-    assert.deepEqual(next, { error: null, key: "/power-map" });
+  it("still shows the error on later renders at the same route", () => {
+    const { rendered } = simulate([
+      { resetKey: "/subscribe" },
+      { resetKey: "/subscribe", throws: true },
+      { resetKey: "/subscribe" },
+      { resetKey: "/subscribe" },
+    ]);
+    assert.deepEqual(rendered, ["children", "error-state", "error-state", "error-state"]);
   });
 
-  it("does nothing when there is no error to clear", () => {
-    const state = { error: null, key: "/stack" };
-    assert.equal(resetOnKeyChange({ children: null, resetKey: "/power-map" }, state), null);
+  it("recovers when the route changes", () => {
+    const { rendered } = simulate([
+      { resetKey: "/subscribe" },
+      { resetKey: "/subscribe", throws: true },
+      { resetKey: "/stack" },
+    ]);
+    assert.deepEqual(rendered, ["children", "error-state", "children"]);
   });
 
-  it("treats an undefined reset key as a real value, not a wildcard", () => {
-    // A boundary with no resetKey must not clear itself on every render.
-    const state = { error: err, key: undefined };
-    assert.equal(resetOnKeyChange({ children: null }, state), null);
+  it("contains a throw on a boundary with no resetKey (chrome)", () => {
+    const { rendered } = simulate([{}, { throws: true }, {}]);
+    assert.deepEqual(rendered, ["children", "error-state", "error-state"]);
+  });
+});
+
+describe("resetOnKeyChange", () => {
+  it("adopts the key on a clean render so the error has something to match", () => {
+    assert.deepEqual(resetOnKeyChange({ children: null, resetKey: "/a" }, { error: null, key: undefined }), {
+      error: null,
+      key: "/a",
+    });
+  });
+
+  it("holds the error while the key is unchanged", () => {
+    assert.equal(resetOnKeyChange({ children: null, resetKey: "/a" }, { error: err, key: "/a" }), null);
+  });
+
+  it("clears the error when the key changes", () => {
+    assert.deepEqual(resetOnKeyChange({ children: null, resetKey: "/b" }, { error: err, key: "/a" }), {
+      error: null,
+      key: "/b",
+    });
   });
 
   it("maps a caught error into error state", () => {
     assert.deepEqual(ErrorBoundary.getDerivedStateFromError(err), { error: err });
   });
+});
 
+describe("ErrorBoundary rendering", () => {
   it("renders children untouched when nothing has thrown", () => {
-    const html = renderToStaticMarkup(
-      <ErrorBoundary label="x">
-        <p>live content</p>
-      </ErrorBoundary>,
+    assert.equal(
+      renderToStaticMarkup(
+        <ErrorBoundary label="x">
+          <p>live content</p>
+        </ErrorBoundary>,
+      ),
+      "<p>live content</p>",
     );
-    assert.equal(html, "<p>live content</p>");
   });
 });

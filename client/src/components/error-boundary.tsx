@@ -29,16 +29,24 @@ interface Props {
 
 interface State {
   error: Error | null;
-  /** mirrors the resetKey the current error was caught under */
+  /** the last resetKey this boundary has seen, error or not */
   key: unknown;
 }
 
 /**
  * Pure state transition, exported so it can be tested without a DOM.
  * React's own getDerivedStateFromProps contract: return null for no change.
+ *
+ * It has to adopt the key on EVERY render, not only while holding an error.
+ * Guarding this on `state.error !== null` looks like a cheap optimisation and
+ * is actually fatal: the key then stays undefined through the clean renders,
+ * so the first caught error is immediately cleared by the very next
+ * getDerivedStateFromProps, the children re-render, throw again, and React
+ * gives up and unmounts the whole tree. The boundary silently becomes the
+ * blank page it exists to prevent.
  */
 export function resetOnKeyChange(props: Props, state: State): State | null {
-  if (state.error !== null && props.resetKey !== state.key) {
+  if (props.resetKey !== state.key) {
     return { error: null, key: props.resetKey };
   }
   return null;
@@ -58,7 +66,6 @@ export class ErrorBoundary extends Component<Props, State> {
   componentDidCatch(error: Error, info: ErrorInfo) {
     // Keep the stack in the console: a contained error must still be findable.
     console.error("[gridtilt] contained render error", error, info.componentStack);
-    this.setState({ key: this.props.resetKey });
   }
 
   render() {
