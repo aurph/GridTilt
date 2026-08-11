@@ -122,8 +122,13 @@ export default function StockPage() {
   const sectorSlug = SECTOR_SLUG_MAP[data.layerKey] || data.layerKey;
 
   const sectorStocks = stackData?.[data.layerKey] || [];
-  const sectorAvgChange = sectorStocks.length > 0
-    ? sectorStocks.reduce((s, st) => s + (st.changePercent || 0), 0) / sectorStocks.length
+  // Live quotes only: a throttled ticker's null is not a 0% move, and zeroing
+  // it pulled the sector average toward flat. Same rule as averageLiveChanges.
+  const sectorLiveChanges = sectorStocks
+    .map((st) => st.changePercent)
+    .filter((c): c is number => typeof c === "number" && Number.isFinite(c));
+  const sectorAvgChange = sectorLiveChanges.length > 0
+    ? sectorLiveChanges.reduce((s, v) => s + v, 0) / sectorLiveChanges.length
     : null;
   const relatedRows = new Map(sectorStocks.map((s) => [s.ticker, s]));
 
