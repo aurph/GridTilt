@@ -384,10 +384,16 @@ html {
   margin-bottom: 16px;
 }
 
+/* The bar wraps, but these two groups did not, so at 375 the right group was
+   one unbreakable 410px row and the network/flow switcher sat entirely past
+   the viewport with no way to scroll to it. min-width:0 lets them shrink
+   below content width; wrap lets the switcher drop to its own line. */
 .sc-topbar-left,
 .sc-topbar-right {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
+  min-width: 0;
   gap: 8px;
 }
 
