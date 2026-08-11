@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertTriangle, Building2, TrendingUp, TrendingDown, Zap } from "lucide-react";
+import { fetchJson } from "@/lib/queryClient";
 
 const OPERATOR_META: Record<string, { name: string; description: string; strategy: string }> = {
   "google": {
@@ -117,7 +118,7 @@ export default function OperatorPage() {
 
   const { data: stackData } = useQuery<StackData>({
     queryKey: ["/api/stack", "1D"],
-    queryFn: () => fetch("/api/stack?timeframe=1D").then((r) => r.json()),
+    queryFn: () => fetchJson<StackData>("/api/stack?timeframe=1D"),
     enabled: !!ticker,
     refetchInterval: 900000,
   });

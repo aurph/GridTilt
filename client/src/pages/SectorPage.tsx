@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft, AlertTriangle, TrendingUp, TrendingDown } from "lucide-react";
+import { fetchJson } from "@/lib/queryClient";
 
 // The 8 original entries plus the 5 STACK_TICKERS layers (server/routes.ts)
 // that had no SectorPage entry at all: rawMaterialsMining, rawMaterialsNatGas,
@@ -96,7 +97,7 @@ export default function SectorPage() {
 
   const { data: stackData, isLoading } = useQuery<StackData>({
     queryKey: ["/api/stack", "1D"],
-    queryFn: () => fetch("/api/stack?timeframe=1D").then((r) => r.json()),
+    queryFn: () => fetchJson<StackData>("/api/stack?timeframe=1D"),
     refetchInterval: 900000,
   });
 

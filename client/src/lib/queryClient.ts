@@ -23,6 +23,22 @@ export async function apiRequest(
   return res;
 }
 
+/**
+ * For endpoints whose URL carries a query string: the default queryFn builds
+ * its URL by joining the queryKey, so ["/api/stack","1D"] would request
+ * /api/stack/1D. Those call sites need an inline queryFn, and every one of
+ * them had quietly dropped the status check that the default queryFn does -
+ * handing the component an error body typed as if it were data.
+ *
+ * Same contract as the default queryFn: a non-2xx is an error, never a value
+ * the UI renders.
+ */
+export async function fetchJson<T>(url: string): Promise<T> {
+  const res = await fetch(url, { credentials: "include" });
+  await throwIfResNotOk(res);
+  return (await res.json()) as T;
+}
+
 type UnauthorizedBehavior = "returnNull" | "throw";
 export const getQueryFn: <T>(options: {
   on401: UnauthorizedBehavior;

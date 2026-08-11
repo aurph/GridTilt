@@ -8,6 +8,7 @@ import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip as RTooltip
 import { useToast } from "@/hooks/use-toast";
 import { SEMANTIC } from "@/lib/tokens";
 import { axisProps, tooltipContentStyle } from "@/lib/chart-theme";
+import { fetchJson } from "@/lib/queryClient";
 
 interface StockInfo {
   ticker: string;
@@ -82,7 +83,7 @@ export default function StockPage() {
   // has loaded this session.
   const { data: stackData } = useQuery<StackData>({
     queryKey: ["/api/stack", "1D"],
-    queryFn: () => fetch("/api/stack?timeframe=1D").then((r) => r.json()),
+    queryFn: () => fetchJson<StackData>("/api/stack?timeframe=1D"),
     refetchInterval: 900000,
   });
 

@@ -28,6 +28,7 @@ import { PageHeader, HeaderStat } from "@/components/PageHeader";
 import { BRAND, CATEGORY_COLORS, CHART_CHROME, INK, SEMANTIC } from "@/lib/tokens";
 import { axisProps, gridProps } from "@/lib/chart-theme";
 import { sparklineDomain } from "@/lib/gpu-series";
+import { fetchJson } from "@/lib/queryClient";
 import {
   buildHeatmapInput,
   heatColor,
@@ -433,7 +434,7 @@ function readStoredView(): ViewMode {
   }
 }
 
-const fetchStack = (tf: string) => () => fetch(`/api/stack?timeframe=${tf}`).then((r) => r.json());
+const fetchStack = (tf: string) => () => fetchJson<StackData>(`/api/stack?timeframe=${tf}`);
 
 export default function TheStack() {
   const [timeframe, setTimeframe] = useState<Timeframe>("1D");
