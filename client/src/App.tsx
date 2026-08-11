@@ -5,25 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { TopNav } from "@/components/top-nav";
 import NotFound from "@/pages/not-found";
-import TheStack from "@/pages/TheStack";
-import PowerMap from "@/pages/PowerMap";
-import MyGrid from "@/pages/my-grid";
-import ComputeFrontier from "@/pages/compute-frontier";
-import ComputeFrontierMethodology from "@/pages/ComputeFrontierMethodology";
-import ComputeFrontierCompare from "@/pages/ComputeFrontierCompare";
-import ComputeFrontierDetail from "@/pages/ComputeFrontierDetail";
-import NeocloudIntel from "@/pages/neocloud-intel";
-import Analyze from "@/pages/Analyze";
-import CatalystTracker from "@/pages/CatalystTracker";
-import StockPage from "@/pages/StockPage";
-import SectorPage from "@/pages/SectorPage";
-import RegionPage from "@/pages/RegionPage";
-import OperatorPage from "@/pages/OperatorPage";
-import BlogIndex from "@/pages/BlogIndex";
-import BlogPost from "@/pages/BlogPost";
-import Subscribe from "@/pages/Subscribe";
-import AdminDatacenters from "@/pages/AdminDatacenters";
-import AdminSocial from "@/pages/AdminSocial";
+import { Skeleton } from "@/components/ui/skeleton";
 import { NewsTicker } from "@/components/NewsTicker";
 import { SiteFooter } from "@/components/site-footer";
 import { ErrorBoundary } from "@/components/error-boundary";
@@ -32,11 +14,32 @@ import { useLocation } from "wouter";
 import { useState, useEffect, lazy, Suspense } from "react";
 import { X, Keyboard } from "lucide-react";
 
-// Lazy-load the marketing landing and the dashboard root so each visitor only
-// pays for the chunks they actually need. Other dashboard pages stay eager —
-// they're only reached after the user has already loaded the dashboard shell.
+// Every route is its own chunk. Importing them eagerly meant the first page
+// a visitor opened downloaded all of them, so reading a blog post pulled
+// leaflet (Power Map), d3 (Supply Chain) and recharts (nine pages) first.
+// NotFound stays eager: it is the fallback, so it must never be the thing
+// that fails to load.
 const Home = lazy(() => import("@/pages/Home"));
 const TiltOverview = lazy(() => import("@/pages/TiltOverview"));
+const TheStack = lazy(() => import("@/pages/TheStack"));
+const PowerMap = lazy(() => import("@/pages/PowerMap"));
+const MyGrid = lazy(() => import("@/pages/my-grid"));
+const ComputeFrontier = lazy(() => import("@/pages/compute-frontier"));
+const ComputeFrontierMethodology = lazy(() => import("@/pages/ComputeFrontierMethodology"));
+const ComputeFrontierCompare = lazy(() => import("@/pages/ComputeFrontierCompare"));
+const ComputeFrontierDetail = lazy(() => import("@/pages/ComputeFrontierDetail"));
+const NeocloudIntel = lazy(() => import("@/pages/neocloud-intel"));
+const Analyze = lazy(() => import("@/pages/Analyze"));
+const CatalystTracker = lazy(() => import("@/pages/CatalystTracker"));
+const StockPage = lazy(() => import("@/pages/StockPage"));
+const SectorPage = lazy(() => import("@/pages/SectorPage"));
+const RegionPage = lazy(() => import("@/pages/RegionPage"));
+const OperatorPage = lazy(() => import("@/pages/OperatorPage"));
+const BlogIndex = lazy(() => import("@/pages/BlogIndex"));
+const BlogPost = lazy(() => import("@/pages/BlogPost"));
+const Subscribe = lazy(() => import("@/pages/Subscribe"));
+const AdminDatacenters = lazy(() => import("@/pages/AdminDatacenters"));
+const AdminSocial = lazy(() => import("@/pages/AdminSocial"));
 
 // Routes that render WITHOUT the dashboard chrome (no sidebar, no header,
 // no news ticker). Currently just the marketing landing at /.
@@ -183,6 +186,39 @@ function HomeLoadingShell() {
   );
 }
 
+/**
+ * Pending state for a route chunk. The fallback used to be null, which was
+ * survivable when every page was already in the main bundle; with routes split
+ * it would be a blank panel on each first visit.
+ *
+ * Shaped like the page it stands in for rather than a grey block: nearly every
+ * dashboard route opens with a PageHeader strip (title, inline stats) over a
+ * stat row and a main panel, so the placeholder holds that geometry and the
+ * real content lands without the layout jumping.
+ */
+function RouteLoading() {
+  return (
+    <div data-testid="route-loading" role="status" aria-live="polite">
+      <span className="sr-only">Loading page</span>
+      <div className="border-b border-border px-4 sm:px-6 py-3">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <Skeleton className="h-4 w-36" />
+          <Skeleton className="h-4 w-20" />
+          <Skeleton className="h-4 w-20" />
+        </div>
+      </div>
+      <div className="px-4 sm:px-6 py-4 space-y-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {[0, 1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-[68px] w-full" />
+          ))}
+        </div>
+        <Skeleton className="h-72 w-full" />
+      </div>
+    </div>
+  );
+}
+
 function App() {
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [location, navigate] = useLocation();
@@ -268,7 +304,7 @@ function App() {
           </ErrorBoundary>
           <main className="flex-1 overflow-auto">
             <ErrorBoundary label="This page failed to render." resetKey={location}>
-              <Suspense fallback={null}>
+              <Suspense fallback={<RouteLoading />}>
                 <Router />
               </Suspense>
             </ErrorBoundary>
