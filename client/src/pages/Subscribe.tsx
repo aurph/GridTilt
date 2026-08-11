@@ -7,7 +7,10 @@ import { apiRequest } from "@/lib/queryClient";
 interface TopMover {
   ticker: string;
   name: string;
-  changePercent: number;
+  // Nullable in practice: /api/top-movers spreads the raw quote record, and a
+  // Yahoo throttle leaves changePercent null on a stale ticker. Typing it as
+  // number is what let .toFixed() through below.
+  changePercent: number | null;
 }
 interface SectorMeta {
   key: string;
@@ -44,7 +47,13 @@ export default function Subscribe() {
     ? datacenters.filter((d) => d.status !== "announced").reduce((t, d) => t + d.powerMW, 0) / 1000
     : null;
   const topMover = movers && movers.length > 0 ? movers[0] : null;
-  const moverUp = (topMover?.changePercent ?? 0) >= 0;
+  // Only a real number has a direction. Coercing null to 0 painted a green
+  // up-arrow on a ticker whose quote never arrived.
+  const moverPct =
+    typeof topMover?.changePercent === "number" && Number.isFinite(topMover.changePercent)
+      ? topMover.changePercent
+      : null;
+  const moverUp = moverPct !== null && moverPct >= 0;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -120,10 +129,16 @@ export default function Subscribe() {
                 )}
                 {topMover && (
                   <div>
-                    <div className={`text-lg font-mono font-bold flex items-center gap-1 ${moverUp ? "text-positive" : "text-negative"}`}>
-                      {moverUp ? <TrendingUp className="h-3.5 w-3.5" /> : <TrendingDown className="h-3.5 w-3.5" />}
-                      ${topMover.ticker} {moverUp ? "+" : ""}{topMover.changePercent.toFixed(2)}%
-                    </div>
+                    {moverPct === null ? (
+                      <div className="text-lg font-mono font-bold text-white/85">
+                        ${topMover.ticker} --
+                      </div>
+                    ) : (
+                      <div className={`text-lg font-mono font-bold flex items-center gap-1 ${moverUp ? "text-positive" : "text-negative"}`}>
+                        {moverUp ? <TrendingUp className="h-3.5 w-3.5" /> : <TrendingDown className="h-3.5 w-3.5" />}
+                        ${topMover.ticker} {moverUp ? "+" : ""}{moverPct.toFixed(2)}%
+                      </div>
+                    )}
                     <div className="text-10 text-white/35">today's biggest mover</div>
                   </div>
                 )}
