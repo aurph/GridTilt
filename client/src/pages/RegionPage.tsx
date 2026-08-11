@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useParams, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
@@ -5,6 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertTriangle, MapPin, Zap } from "lucide-react";
 import { RTO_CONFIG, RTO_SOURCE_NOTE } from "@/data/rto-config";
+import { ErrorState } from "@/components/Freshness";
+import { SortableTh } from "@/components/sortable-table";
+import { nextSort, sortBy, type SortState } from "@/lib/table-sort";
 
 const REGION_META: Record<string, { name: string; fullName: string; states: string; description: string }> = {
   "pjm": {
@@ -58,6 +62,28 @@ interface Datacenter {
   openDate: string;
 }
 
+type FacilitySortKey = "company" | "name" | "location" | "powerMW" | "status";
+
+const FACILITY_COLS: Array<{ key: FacilitySortKey; label: string; align?: "right"; title?: string }> = [
+  { key: "company", label: "Company" },
+  { key: "name", label: "Facility" },
+  { key: "location", label: "Location" },
+  { key: "powerMW", label: "Power", align: "right" },
+  { key: "status", label: "Status", align: "right", title: "Sorts by build progress, not alphabetically" },
+];
+
+/** Columns that read best A to Z on first click; the rest open largest-first. */
+const FACILITY_TEXT_COLS: FacilitySortKey[] = ["company", "name", "location"];
+
+/** Status is a build-progress ramp, so it sorts by progress rather than by name. */
+const STATUS_RANK: Record<string, number> = { operational: 3, construction: 2, announced: 1 };
+
+function facilityCell(d: Datacenter, key: FacilitySortKey): unknown {
+  if (key === "location") return `${d.city}, ${d.state}`;
+  if (key === "status") return STATUS_RANK[d.status] ?? 0;
+  return d[key];
+}
+
 // Mirrors PowerMap.tsx's gridOpToRTO exactly (each page re-declares its own
 // copy per house convention) so a region's facility count and capacity here
 // match what the same RTO filter shows on the Power map.
@@ -92,8 +118,9 @@ const SIGNAL_BADGE: Record<string, string> = {
 export default function RegionPage() {
   const { slug } = useParams<{ slug: string }>();
   const region = slug ? REGION_META[slug] : null;
+  const [sort, setSort] = useState<SortState<FacilitySortKey>>({ key: "powerMW", dir: "desc" });
 
-  const { data: datacenters, isLoading } = useQuery<Datacenter[]>({
+  const { data: datacenters, isLoading, isError, refetch } = useQuery<Datacenter[]>({
     queryKey: ["/api/datacenters"],
   });
 
@@ -113,7 +140,7 @@ export default function RegionPage() {
 
   const all = datacenters ?? [];
   const facilities = all.filter((d) => gridOpToRTO(d.gridOperator) === region.name);
-  const sorted = [...facilities].sort((a, b) => b.powerMW - a.powerMW);
+  const sorted = sortBy(facilities, (d) => facilityCell(d, sort.key), sort.dir, (d) => d.name);
   const trackedMW = facilities.filter((d) => d.status !== "announced").reduce((t, d) => t + d.powerMW, 0);
   const announcedMW = facilities.filter((d) => d.status === "announced").reduce((t, d) => t + d.powerMW, 0);
   const statusCounts = facilities.reduce(
@@ -193,6 +220,9 @@ export default function RegionPage() {
           <div className="space-y-2">
             {[1, 2, 3].map((i) => <Skeleton key={i} className="h-10 w-full" />)}
           </div>
+        ) : isError ? (
+          // A failed fetch must not read as "nothing is being built in this RTO".
+          <ErrorState label="Facility registry failed to load." onRetry={() => refetch()} />
         ) : sorted.length === 0 ? (
           <p className="text-sm text-muted-foreground py-4" data-testid="region-facilities-empty">
             No facilities in the tracked dataset carry this RTO yet.
@@ -202,11 +232,19 @@ export default function RegionPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-10 text-muted-foreground border-b border-border">
-                  <th className="font-medium py-1.5 px-1">Company</th>
-                  <th className="font-medium py-1.5 px-1">Facility</th>
-                  <th className="font-medium py-1.5 px-1">Location</th>
-                  <th className="font-medium py-1.5 px-1 text-right">Power</th>
-                  <th className="font-medium py-1.5 px-1 text-right">Status</th>
+                  {FACILITY_COLS.map((c) => (
+                    <SortableTh
+                      key={c.key}
+                      label={c.label}
+                      title={c.title}
+                      align={c.align ?? "left"}
+                      active={sort.key === c.key}
+                      dir={sort.dir}
+                      onSort={() => setSort((s) => nextSort(s, c.key, FACILITY_TEXT_COLS))}
+                      className="py-1.5 px-1"
+                      testId={`region-sort-${c.key}`}
+                    />
+                  ))}
                 </tr>
               </thead>
               <tbody>

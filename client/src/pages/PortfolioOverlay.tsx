@@ -24,6 +24,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { Info, BarChart3, Search, Loader2, AlertCircle, Plus, Share2, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { BORDER, BRAND, CATEGORY_COLORS, CHART_CHROME, FONT, INK, SEMANTIC, SERIES } from "@/lib/tokens";
+import { chartTheme, seriesMotion } from "@/lib/chart-theme";
 
 interface PortfolioResult {
   ticker: string;
@@ -455,7 +456,16 @@ export default function PortfolioOverlay({ embedded = false }: { embedded?: bool
                 <ResponsiveContainer width="100%" height={300}>
                   <RadarChart data={radarData} outerRadius="65%" margin={{ top: 20, right: 20, bottom: 10, left: 20 }}>
                     <PolarGrid stroke={CHART_CHROME.grid} />
-                    <PolarAngleAxis dataKey="axis" tick={{ fill: CHART_CHROME.tick, fontSize: 12, fontFamily: FONT.mono }} />
+                    {/* Vertex labels are drawn outward from the polygon, so the
+                        longest one ("Infrastructure") ran off the right edge of
+                        the svg at every width - 15px at 1280, 39px at 375. The
+                        page already has a short form for these exact segments;
+                        the tooltip still names the segment in full. */}
+                    <PolarAngleAxis
+                      dataKey="axis"
+                      tickFormatter={(v: string) => SEGMENT_SHORT[v] ?? v}
+                      tick={{ fill: CHART_CHROME.tick, fontSize: chartTheme.label.fontSize, fontFamily: FONT.mono }}
+                    />
                     <PolarRadiusAxis
                       angle={90}
                       domain={[0, 100]}
@@ -463,7 +473,7 @@ export default function PortfolioOverlay({ embedded = false }: { embedded?: bool
                       tickCount={4}
                     />
                     <Tooltip content={<CustomRadarTooltip />} />
-                    <Radar
+                    <Radar {...seriesMotion()}
                       name="Exposure"
                       dataKey="value"
                       stroke={BRAND.secondary}

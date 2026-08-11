@@ -35,6 +35,7 @@ import { BORDER, CATEGORY_COLORS, SERIES } from "@/lib/tokens";
 import {
   axisProps,
   gridProps,
+  seriesMotion,
   tooltipContentStyle,
   tooltipItemStyle,
   tooltipLabelStyle,
@@ -575,10 +576,10 @@ export default function TheTrade({ embedded = false }: { embedded?: boolean; par
                             );
                           }}
                         />
-                        <Bar dataKey="gas"        name="Natural Gas" stackId="a" fill={CATEGORY_COLORS.gas}        radius={[0,0,0,0]} />
-                        <Bar dataKey="nuclear"    name="Nuclear"     stackId="a" fill={CATEGORY_COLORS.nuclear}    radius={[0,0,0,0]} />
-                        <Bar dataKey="renewables" name="Renewables"  stackId="a" fill={CATEGORY_COLORS.renewables} radius={[0,0,0,0]} />
-                        <Bar dataKey="grid"       name="Grid"        stackId="a" fill={CATEGORY_COLORS.grid}       radius={[2,2,0,0]} />
+                        <Bar {...seriesMotion()} dataKey="gas"        name="Natural Gas" stackId="a" fill={CATEGORY_COLORS.gas}        radius={[0,0,0,0]} />
+                        <Bar {...seriesMotion()} dataKey="nuclear"    name="Nuclear"     stackId="a" fill={CATEGORY_COLORS.nuclear}    radius={[0,0,0,0]} />
+                        <Bar {...seriesMotion()} dataKey="renewables" name="Renewables"  stackId="a" fill={CATEGORY_COLORS.renewables} radius={[0,0,0,0]} />
+                        <Bar {...seriesMotion()} dataKey="grid"       name="Grid"        stackId="a" fill={CATEGORY_COLORS.grid}       radius={[2,2,0,0]} />
                       </BarChart>
                     </ResponsiveContainer>
                     <SrChartTable

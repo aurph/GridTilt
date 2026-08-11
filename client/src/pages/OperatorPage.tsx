@@ -1,9 +1,30 @@
+import { useState } from "react";
 import { useParams, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertTriangle, Building2, TrendingUp, TrendingDown, Zap } from "lucide-react";
+import { fetchJson } from "@/lib/queryClient";
+import { ErrorState } from "@/components/Freshness";
+import { SortableTh } from "@/components/sortable-table";
+import { nextSort, sortBy, type SortState } from "@/lib/table-sort";
+
+type FacilitySortKey = "name" | "location" | "gridOperator" | "powerMW" | "status";
+
+const FACILITY_COLS: Array<{ key: FacilitySortKey; label: string; align?: "right"; title?: string }> = [
+  { key: "name", label: "Facility" },
+  { key: "location", label: "Location" },
+  { key: "gridOperator", label: "Grid" },
+  { key: "powerMW", label: "Power", align: "right" },
+  { key: "status", label: "Status", align: "right", title: "Sorts by build progress, not alphabetically" },
+];
+
+/** Columns that read best A to Z on first click; the rest open largest-first. */
+const FACILITY_TEXT_COLS: FacilitySortKey[] = ["name", "location", "gridOperator"];
+
+/** Status is a build-progress ramp, so it sorts by progress rather than by name. */
+const STATUS_RANK: Record<string, number> = { operational: 3, construction: 2, announced: 1 };
 
 const OPERATOR_META: Record<string, { name: string; description: string; strategy: string }> = {
   "google": {
@@ -75,6 +96,13 @@ interface Datacenter {
   openDate: string;
 }
 
+function facilityCell(d: Datacenter, key: FacilitySortKey): unknown {
+  if (key === "location") return `${d.city}, ${d.state}`;
+  if (key === "status") return STATUS_RANK[d.status] ?? 0;
+  if (key === "gridOperator") return gridOpToRTO(d.gridOperator);
+  return d[key];
+}
+
 interface StackRow {
   ticker: string; name: string; price: number; change: number;
   changePercent: number | null; pe: number | null; revenueGrowth: number | null;
@@ -110,14 +138,15 @@ export default function OperatorPage() {
   const operator = slug ? OPERATOR_META[slug] : null;
   const company = slug ? SLUG_TO_COMPANY[slug] : undefined;
   const ticker = slug ? SLUG_TO_TICKER[slug] : undefined;
+  const [sort, setSort] = useState<SortState<FacilitySortKey>>({ key: "powerMW", dir: "desc" });
 
-  const { data: datacenters, isLoading } = useQuery<Datacenter[]>({
+  const { data: datacenters, isLoading, isError, refetch } = useQuery<Datacenter[]>({
     queryKey: ["/api/datacenters"],
   });
 
   const { data: stackData } = useQuery<StackData>({
     queryKey: ["/api/stack", "1D"],
-    queryFn: () => fetch("/api/stack?timeframe=1D").then((r) => r.json()),
+    queryFn: () => fetchJson<StackData>("/api/stack?timeframe=1D"),
     enabled: !!ticker,
     refetchInterval: 900000,
   });
@@ -138,7 +167,7 @@ export default function OperatorPage() {
 
   const all = datacenters ?? [];
   const facilities = all.filter((d) => d.company === company);
-  const sorted = [...facilities].sort((a, b) => b.powerMW - a.powerMW);
+  const sorted = sortBy(facilities, (d) => facilityCell(d, sort.key), sort.dir, (d) => d.name);
   const trackedMW = facilities.filter((d) => d.status !== "announced").reduce((t, d) => t + d.powerMW, 0);
   const announcedMW = facilities.filter((d) => d.status === "announced").reduce((t, d) => t + d.powerMW, 0);
   const statusCounts = facilities.reduce(
@@ -248,6 +277,9 @@ export default function OperatorPage() {
           <div className="space-y-2">
             {[1, 2, 3].map((i) => <Skeleton key={i} className="h-10 w-full" />)}
           </div>
+        ) : isError ? (
+          // A failed fetch must not read as "this operator is building nothing".
+          <ErrorState label="Facility registry failed to load." onRetry={() => refetch()} />
         ) : sorted.length === 0 ? (
           <p className="text-sm text-muted-foreground py-4" data-testid="operator-facilities-empty">
             No facilities for {operator.name} in the tracked dataset yet.
@@ -257,11 +289,19 @@ export default function OperatorPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-10 text-muted-foreground border-b border-border">
-                  <th className="font-medium py-1.5 px-1">Facility</th>
-                  <th className="font-medium py-1.5 px-1">Location</th>
-                  <th className="font-medium py-1.5 px-1">Grid</th>
-                  <th className="font-medium py-1.5 px-1 text-right">Power</th>
-                  <th className="font-medium py-1.5 px-1 text-right">Status</th>
+                  {FACILITY_COLS.map((c) => (
+                    <SortableTh
+                      key={c.key}
+                      label={c.label}
+                      title={c.title}
+                      align={c.align ?? "left"}
+                      active={sort.key === c.key}
+                      dir={sort.dir}
+                      onSort={() => setSort((s) => nextSort(s, c.key, FACILITY_TEXT_COLS))}
+                      className="py-1.5 px-1"
+                      testId={`operator-sort-${c.key}`}
+                    />
+                  ))}
                 </tr>
               </thead>
               <tbody>

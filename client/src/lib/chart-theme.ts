@@ -49,6 +49,25 @@ export const chartTheme = {
   },
 } as const;
 
+/**
+ * Recharts animates series on mount through its own rAF loop, not through CSS,
+ * so the reduced-motion block in index.css never reached it: a visitor who
+ * asked for less motion still got every line, area and bar sweeping in.
+ *
+ * Spread into any series element: <Line {...seriesMotion()} />. It is a plain
+ * call rather than a hook so it can sit in nested chart subcomponents without
+ * restructuring them, and because it is read during render it picks up a
+ * preference change on the next paint.
+ */
+export function prefersReducedMotion(): boolean {
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function") return false;
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+export function seriesMotion(): { isAnimationActive: boolean } {
+  return { isAnimationActive: !prefersReducedMotion() };
+}
+
 /** Spread into Recharts <XAxis>/<YAxis>: {...axisProps} */
 export const axisProps = {
   stroke: chartTheme.axis.stroke,
@@ -76,6 +95,15 @@ export const tooltipContentStyle: CSSProperties = {
   fontSize: chartTheme.tooltip.fontSize,
   fontFamily: chartTheme.tooltip.fontFamily,
   padding: "8px 10px",
+  // Recharts sizes the tooltip to its content and does not reliably clamp it
+  // to the plot area, so a long label ran clean off a phone screen: 79px off
+  // on Power deals at 375, 9px on Compute Frontier. Capping at half the
+  // viewport means the box fits whichever side of the cursor recharts picks,
+  // and the text wraps instead of the box growing. Above ~570px wide the
+  // 260px cap governs and nothing changes.
+  maxWidth: "min(260px, calc(50vw - 24px))",
+  whiteSpace: "normal",
+  overflowWrap: "anywhere",
 };
 
 export const tooltipLabelStyle: CSSProperties = {

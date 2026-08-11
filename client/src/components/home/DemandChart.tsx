@@ -9,6 +9,7 @@ import {
   ReferenceLine,
 } from "recharts";
 import { electricityData, demandAnnotations } from "@/data/electricity-demand";
+import { seriesMotion } from "@/lib/chart-theme";
 
 const HORIZ_PAD = "clamp(24px, 5vw, 96px)";
 const DATA = "#F07800";
@@ -116,10 +117,10 @@ export function DemandChart() {
                 }}
               />
 
-              <Line yAxisId="total" type="monotone" dataKey="demand"      stroke={DATA_MUTED} strokeWidth={1.5} dot={false} connectNulls={false} name="Total" />
-              <Line yAxisId="total" type="monotone" dataKey="projected"   stroke={DATA_MUTED} strokeWidth={1.5} strokeDasharray="5 3" dot={false} connectNulls={false} name="Total proj." />
-              <Line yAxisId="dc"    type="monotone" dataKey="dcDemand"    stroke={DATA}       strokeWidth={2}   dot={false} connectNulls={false} name="Data centers" />
-              <Line yAxisId="dc"    type="monotone" dataKey="dcProjected" stroke={DATA}       strokeWidth={2}   strokeDasharray="5 3" dot={false} connectNulls={false} name="DC proj." />
+              <Line {...seriesMotion()} yAxisId="total" type="monotone" dataKey="demand"      stroke={DATA_MUTED} strokeWidth={1.5} dot={false} connectNulls={false} name="Total" />
+              <Line {...seriesMotion()} yAxisId="total" type="monotone" dataKey="projected"   stroke={DATA_MUTED} strokeWidth={1.5} strokeDasharray="5 3" dot={false} connectNulls={false} name="Total proj." />
+              <Line {...seriesMotion()} yAxisId="dc"    type="monotone" dataKey="dcDemand"    stroke={DATA}       strokeWidth={2}   dot={false} connectNulls={false} name="Data centers" />
+              <Line {...seriesMotion()} yAxisId="dc"    type="monotone" dataKey="dcProjected" stroke={DATA}       strokeWidth={2}   strokeDasharray="5 3" dot={false} connectNulls={false} name="DC proj." />
 
               <ReferenceLine
                 yAxisId="total"

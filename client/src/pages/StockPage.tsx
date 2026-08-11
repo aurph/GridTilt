@@ -7,7 +7,8 @@ import { ArrowLeft, ExternalLink, TrendingUp, TrendingDown, AlertTriangle, Share
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip as RTooltip } from "recharts";
 import { useToast } from "@/hooks/use-toast";
 import { SEMANTIC } from "@/lib/tokens";
-import { axisProps, tooltipContentStyle } from "@/lib/chart-theme";
+import { axisProps, seriesMotion, tooltipContentStyle } from "@/lib/chart-theme";
+import { fetchJson } from "@/lib/queryClient";
 
 interface StockInfo {
   ticker: string;
@@ -82,7 +83,7 @@ export default function StockPage() {
   // has loaded this session.
   const { data: stackData } = useQuery<StackData>({
     queryKey: ["/api/stack", "1D"],
-    queryFn: () => fetch("/api/stack?timeframe=1D").then((r) => r.json()),
+    queryFn: () => fetchJson<StackData>("/api/stack?timeframe=1D"),
     refetchInterval: 900000,
   });
 
@@ -121,8 +122,13 @@ export default function StockPage() {
   const sectorSlug = SECTOR_SLUG_MAP[data.layerKey] || data.layerKey;
 
   const sectorStocks = stackData?.[data.layerKey] || [];
-  const sectorAvgChange = sectorStocks.length > 0
-    ? sectorStocks.reduce((s, st) => s + (st.changePercent || 0), 0) / sectorStocks.length
+  // Live quotes only: a throttled ticker's null is not a 0% move, and zeroing
+  // it pulled the sector average toward flat. Same rule as averageLiveChanges.
+  const sectorLiveChanges = sectorStocks
+    .map((st) => st.changePercent)
+    .filter((c): c is number => typeof c === "number" && Number.isFinite(c));
+  const sectorAvgChange = sectorLiveChanges.length > 0
+    ? sectorLiveChanges.reduce((s, v) => s + v, 0) / sectorLiveChanges.length
     : null;
   const relatedRows = new Map(sectorStocks.map((s) => [s.ticker, s]));
 
@@ -235,7 +241,7 @@ export default function StockPage() {
                     labelStyle={{ display: "none" }}
                     formatter={(val: number) => [`$${val.toFixed(2)}`, "Price"]}
                   />
-                  <Line type="monotone" dataKey="price" stroke={isUp ? SEMANTIC.positiveDeep : SEMANTIC.negativeDeep} strokeWidth={2} dot={false} />
+                  <Line {...seriesMotion()} type="monotone" dataKey="price" stroke={isUp ? SEMANTIC.positiveDeep : SEMANTIC.negativeDeep} strokeWidth={2} dot={false} />
                 </LineChart>
               </ResponsiveContainer>
             </Card>

@@ -25,7 +25,7 @@ import {
 import { ArrowUpDown, Atom } from "lucide-react";
 import { PageHeader, HeaderStat } from "@/components/PageHeader";
 import { BRAND, INK, SURFACE, CATEGORY_COLORS, STATUS_COLORS } from "@/lib/tokens";
-import { axisProps, gridProps } from "@/lib/chart-theme";
+import { axisProps, gridProps, seriesMotion, tooltipContentStyle, tooltipItemStyle, tooltipLabelStyle } from "@/lib/chart-theme";
 
 // ─── Types (mirror /api/clusters and /api/clusters/metrics) ────────────────
 
@@ -281,8 +281,8 @@ export default function ComputeFrontier() {
                     interval={0}
                     tickFormatter={(v: string) => truncateLabel(v, 16)}
                   />
-                  <RTooltip formatter={(v: number, _n, p: any) => [`${v.toLocaleString()} MW`, `${p.payload.count} clusters`]} cursor={{ fill: BRAND.glow }} />
-                  <Bar dataKey="plannedMW" fill={BRAND.primary} radius={[0, 2, 2, 0]} />
+                  <RTooltip formatter={(v: number, _n, p: any) => [`${v.toLocaleString()} MW`, `${p.payload.count} clusters`]} cursor={{ fill: BRAND.glow }} contentStyle={tooltipContentStyle} labelStyle={tooltipLabelStyle} itemStyle={tooltipItemStyle} />
+                  <Bar {...seriesMotion()} dataKey="plannedMW" fill={BRAND.primary} radius={[0, 2, 2, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             ) : <ChartSkeleton />}
@@ -305,8 +305,8 @@ export default function ComputeFrontier() {
                   <CartesianGrid {...gridProps} />
                   <XAxis {...axisProps} dataKey="iso" />
                   <YAxis {...axisProps} tickFormatter={(v) => `${(v / 1000).toFixed(0)}`} />
-                  <RTooltip formatter={(v: number) => [`${v.toLocaleString()} MW`, "planned"]} cursor={{ fill: BRAND.glow }} />
-                  <Bar dataKey="plannedMW" fill={BRAND.primary} radius={[2, 2, 0, 0]} />
+                  <RTooltip formatter={(v: number) => [`${v.toLocaleString()} MW`, "planned"]} cursor={{ fill: BRAND.glow }} contentStyle={tooltipContentStyle} labelStyle={tooltipLabelStyle} itemStyle={tooltipItemStyle} />
+                  <Bar {...seriesMotion()} dataKey="plannedMW" fill={BRAND.primary} radius={[2, 2, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             ) : <ChartSkeleton />}
@@ -329,8 +329,8 @@ export default function ComputeFrontier() {
                   <CartesianGrid {...gridProps} />
                   <XAxis {...axisProps} dataKey="status" />
                   <YAxis {...axisProps} tickFormatter={(v) => `${(v / 1000).toFixed(0)}`} />
-                  <RTooltip formatter={(v: number, _n, p: any) => [`${v.toLocaleString()} MW`, `${p.payload.count} clusters`]} cursor={{ fill: BRAND.glow }} />
-                  <Bar dataKey="plannedMW" radius={[2, 2, 0, 0]}>
+                  <RTooltip formatter={(v: number, _n, p: any) => [`${v.toLocaleString()} MW`, `${p.payload.count} clusters`]} cursor={{ fill: BRAND.glow }} contentStyle={tooltipContentStyle} labelStyle={tooltipLabelStyle} itemStyle={tooltipItemStyle} />
+                  <Bar {...seriesMotion()} dataKey="plannedMW" radius={[2, 2, 0, 0]}>
                     {metrics.byStatus.map((s) => <Cell key={s.status} fill={STATUS_COLOR[s.status] ?? INK.muted} />)}
                   </Bar>
                 </BarChart>
@@ -355,8 +355,8 @@ export default function ComputeFrontier() {
                   <CartesianGrid {...gridProps} />
                   <XAxis {...axisProps} dataKey="year" />
                   <YAxis {...axisProps} />
-                  <RTooltip formatter={(v: number) => [`${v} GW`, "planned online"]} cursor={{ fill: BRAND.glow }} />
-                  <Bar dataKey="gw" radius={[2, 2, 0, 0]}>
+                  <RTooltip formatter={(v: number) => [`${v} GW`, "planned online"]} cursor={{ fill: BRAND.glow }} contentStyle={tooltipContentStyle} labelStyle={tooltipLabelStyle} itemStyle={tooltipItemStyle} />
+                  <Bar {...seriesMotion()} dataKey="gw" radius={[2, 2, 0, 0]}>
                     {timeline.map((t) => <Cell key={t.year} fill={t.year === "n/a" ? INK.faint : BRAND.primary} />)}
                   </Bar>
                 </BarChart>
@@ -381,8 +381,8 @@ export default function ComputeFrontier() {
                   <CartesianGrid {...gridProps} vertical={true} horizontal={false} />
                   <XAxis {...axisProps} type="number" tickFormatter={(v) => `${(v / 1000).toFixed(0)}`} />
                   <YAxis {...axisProps} type="category" dataKey="source" width={80} interval={0} />
-                  <RTooltip formatter={(v: number, _n, p: any) => [`${v.toLocaleString()} MW`, `${p.payload.count} clusters`]} cursor={{ fill: BRAND.glow }} />
-                  <Bar dataKey="plannedMW" radius={[0, 2, 2, 0]}>
+                  <RTooltip formatter={(v: number, _n, p: any) => [`${v.toLocaleString()} MW`, `${p.payload.count} clusters`]} cursor={{ fill: BRAND.glow }} contentStyle={tooltipContentStyle} labelStyle={tooltipLabelStyle} itemStyle={tooltipItemStyle} />
+                  <Bar {...seriesMotion()} dataKey="plannedMW" radius={[0, 2, 2, 0]}>
                     {metrics.byEnergySource.map((e) => <Cell key={e.source} fill={ENERGY_COLOR[e.source] ?? INK.faint} />)}
                   </Bar>
                 </BarChart>

@@ -4,6 +4,8 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft, AlertTriangle, TrendingUp, TrendingDown } from "lucide-react";
+import { fetchJson } from "@/lib/queryClient";
+import { ErrorState } from "@/components/Freshness";
 
 // The 8 original entries plus the 5 STACK_TICKERS layers (server/routes.ts)
 // that had no SectorPage entry at all: rawMaterialsMining, rawMaterialsNatGas,
@@ -94,9 +96,9 @@ export default function SectorPage() {
   const { slug } = useParams<{ slug: string }>();
   const sector = slug ? SECTOR_META[slug] : null;
 
-  const { data: stackData, isLoading } = useQuery<StackData>({
+  const { data: stackData, isLoading, isError, refetch } = useQuery<StackData>({
     queryKey: ["/api/stack", "1D"],
-    queryFn: () => fetch("/api/stack?timeframe=1D").then((r) => r.json()),
+    queryFn: () => fetchJson<StackData>("/api/stack?timeframe=1D"),
     refetchInterval: 900000,
   });
 
@@ -119,9 +121,14 @@ export default function SectorPage() {
   // is not a "top mover" - it stays visible, just deprioritized.
   const sorted = [...stocks].sort((a, b) => (b.changePercent ?? -Infinity) - (a.changePercent ?? -Infinity));
   const withChange = stocks.filter((s): s is typeof s & { changePercent: number } => s.changePercent != null);
-  const avgChange = stocks.length > 0
-    ? stocks.reduce((s, st) => s + (st.changePercent || 0), 0) / stocks.length
-    : 0;
+  // Average the live quotes only. A throttled ticker's null is not a 0% move:
+  // coercing it dragged the sector average toward zero, and with the whole
+  // fetch down it printed a confident "+0.00%" over no data at all.
+  // Same rule as the server's averageLiveChanges, except no live observations
+  // reads as "--" here rather than 0.
+  const avgChange = withChange.length > 0
+    ? withChange.reduce((s, st) => s + st.changePercent, 0) / withChange.length
+    : null;
   const best = withChange.length > 0 ? withChange.reduce((a, b) => (b.changePercent > a.changePercent ? b : a)) : null;
   const worst = withChange.length > 0 ? withChange.reduce((a, b) => (b.changePercent < a.changePercent ? b : a)) : null;
   const advancing = withChange.filter((s) => s.changePercent >= 0).length;
@@ -142,12 +149,26 @@ export default function SectorPage() {
         <p className="text-sm text-muted-foreground max-w-3xl">{sector.description}</p>
       </div>
 
+      {isError ? (
+        // With the quote feed down, every number in this block would be an
+        // invention: a 0.00% average, 0 advancing, 0 declining, no holdings.
+        // Say the feed failed instead. The sector description and the related
+        // sectors below are static, so they stay.
+        <Card className="border-card-border" data-testid="sector-quotes-error">
+          <ErrorState label={`Quotes for ${sector.name} failed to load.`} onRetry={() => refetch()} />
+        </Card>
+      ) : (
+      <>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <Card className="p-4 border-card-border text-center" data-testid="stat-avg-change">
           <p className="text-[11px] text-muted-foreground mb-1">Avg Change</p>
-          <p className={`text-xl font-bold font-mono ${avgChange >= 0 ? "text-positive" : "text-negative"}`}>
-            {avgChange >= 0 ? "+" : ""}{avgChange.toFixed(2)}%
-          </p>
+          {avgChange === null ? (
+            <p className="text-xl font-bold font-mono text-muted-foreground">--</p>
+          ) : (
+            <p className={`text-xl font-bold font-mono ${avgChange >= 0 ? "text-positive" : "text-negative"}`}>
+              {avgChange >= 0 ? "+" : ""}{avgChange.toFixed(2)}%
+            </p>
+          )}
         </Card>
         <Card className="p-4 border-card-border text-center" data-testid="stat-advancing">
           <p className="text-[11px] text-muted-foreground mb-1">Advancing / Declining</p>
@@ -216,6 +237,8 @@ export default function SectorPage() {
           </div>
         )}
       </div>
+      </>
+      )}
 
       <Card className="p-5 border-card-border" data-testid="related-sectors">
         <h2 className="text-[13px] font-semibold text-foreground mb-3">Related Sectors</h2>

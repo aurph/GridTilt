@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Pause, Play } from "lucide-react";
+import { fetchJson } from "@/lib/queryClient";
 
 interface NewsItem {
   headline: string;
@@ -13,7 +14,7 @@ export function NewsTicker() {
   const { data: items } = useQuery<NewsItem[]>({
     queryKey: ["/api/news"],
     staleTime: 30 * 60 * 1000,
-    queryFn: () => fetch("/api/news").then((r) => r.json()),
+    queryFn: () => fetchJson<NewsItem[]>("/api/news"),
   });
   // Pause is real state so touch and keyboard users can stop the marquee,
   // not just mouse hover (Lake 7D/E).
@@ -21,7 +22,9 @@ export function NewsTicker() {
   const [hoverPause, setHoverPause] = useState(false);
   const paused = pinnedPause || hoverPause;
 
-  if (!items || items.length === 0) return null;
+  // Shape guard, not just a length guard: `undefined === 0` is false, so a
+  // non-array payload used to slip past a `.length` check straight into .map().
+  if (!Array.isArray(items) || items.length === 0) return null;
 
   const segments = items.map((h) => ({
     text: `${h.source.toUpperCase()}  ${h.headline}`,
