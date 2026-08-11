@@ -26,6 +26,7 @@ import AdminDatacenters from "@/pages/AdminDatacenters";
 import AdminSocial from "@/pages/AdminSocial";
 import { NewsTicker } from "@/components/NewsTicker";
 import { SiteFooter } from "@/components/site-footer";
+import { ErrorBoundary } from "@/components/error-boundary";
 import { initAnalytics, trackPageview } from "@/lib/analytics";
 import { useLocation } from "wouter";
 import { useState, useEffect, lazy, Suspense } from "react";
@@ -240,9 +241,11 @@ function App() {
     return (
       <QueryClientProvider client={queryClient}>
         <TooltipProvider delayDuration={300}>
-          <Suspense fallback={<HomeLoadingShell />}>
-            <Router />
-          </Suspense>
+          <ErrorBoundary label="This page failed to render." resetKey={location}>
+            <Suspense fallback={<HomeLoadingShell />}>
+              <Router />
+            </Suspense>
+          </ErrorBoundary>
           {showShortcuts && (
             <KeyboardShortcutsModal onClose={() => setShowShortcuts(false)} />
           )}
@@ -258,11 +261,17 @@ function App() {
       <TooltipProvider delayDuration={300}>
         <div className="flex h-screen w-full flex-col bg-background overflow-hidden">
           <TopNav />
-          <NewsTicker />
+          {/* Chrome: if the ticker breaks it drops out, it does not take the
+              page with it and it does not deserve an error panel of its own. */}
+          <ErrorBoundary silent>
+            <NewsTicker />
+          </ErrorBoundary>
           <main className="flex-1 overflow-auto">
-            <Suspense fallback={null}>
-              <Router />
-            </Suspense>
+            <ErrorBoundary label="This page failed to render." resetKey={location}>
+              <Suspense fallback={null}>
+                <Router />
+              </Suspense>
+            </ErrorBoundary>
             <SiteFooter />
           </main>
         </div>
