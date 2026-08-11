@@ -49,6 +49,25 @@ export const chartTheme = {
   },
 } as const;
 
+/**
+ * Recharts animates series on mount through its own rAF loop, not through CSS,
+ * so the reduced-motion block in index.css never reached it: a visitor who
+ * asked for less motion still got every line, area and bar sweeping in.
+ *
+ * Spread into any series element: <Line {...seriesMotion()} />. It is a plain
+ * call rather than a hook so it can sit in nested chart subcomponents without
+ * restructuring them, and because it is read during render it picks up a
+ * preference change on the next paint.
+ */
+export function prefersReducedMotion(): boolean {
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function") return false;
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+export function seriesMotion(): { isAnimationActive: boolean } {
+  return { isAnimationActive: !prefersReducedMotion() };
+}
+
 /** Spread into Recharts <XAxis>/<YAxis>: {...axisProps} */
 export const axisProps = {
   stroke: chartTheme.axis.stroke,

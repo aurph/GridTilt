@@ -7,7 +7,7 @@ import { ArrowLeft, ExternalLink, TrendingUp, TrendingDown, AlertTriangle, Share
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip as RTooltip } from "recharts";
 import { useToast } from "@/hooks/use-toast";
 import { SEMANTIC } from "@/lib/tokens";
-import { axisProps, tooltipContentStyle } from "@/lib/chart-theme";
+import { axisProps, seriesMotion, tooltipContentStyle } from "@/lib/chart-theme";
 import { fetchJson } from "@/lib/queryClient";
 
 interface StockInfo {
@@ -241,7 +241,7 @@ export default function StockPage() {
                     labelStyle={{ display: "none" }}
                     formatter={(val: number) => [`$${val.toFixed(2)}`, "Price"]}
                   />
-                  <Line type="monotone" dataKey="price" stroke={isUp ? SEMANTIC.positiveDeep : SEMANTIC.negativeDeep} strokeWidth={2} dot={false} />
+                  <Line {...seriesMotion()} type="monotone" dataKey="price" stroke={isUp ? SEMANTIC.positiveDeep : SEMANTIC.negativeDeep} strokeWidth={2} dot={false} />
                 </LineChart>
               </ResponsiveContainer>
             </Card>

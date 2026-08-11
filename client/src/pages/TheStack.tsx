@@ -26,7 +26,7 @@ import { Cpu, Server, Zap, TrendingUp, TrendingDown, Info, Clock, ChevronDown, C
 import { AsOf, ErrorState } from "@/components/Freshness";
 import { PageHeader, HeaderStat } from "@/components/PageHeader";
 import { BRAND, CATEGORY_COLORS, CHART_CHROME, INK, SEMANTIC } from "@/lib/tokens";
-import { axisProps, gridProps } from "@/lib/chart-theme";
+import { axisProps, gridProps, seriesMotion } from "@/lib/chart-theme";
 import { sparklineDomain } from "@/lib/gpu-series";
 import { fetchJson } from "@/lib/queryClient";
 import { SortableTh } from "@/components/sortable-table";
@@ -822,7 +822,7 @@ export default function TheStack() {
                     />
                     <Tooltip content={<CustomScatterTooltip />} />
                     {/* Upper confidence band */}
-                    <Scatter
+                    <Scatter {...seriesMotion()}
                       data={regression.upper}
                       fill="none"
                       line={{ stroke: BRAND.secondary, strokeWidth: 1, strokeDasharray: "5 4", strokeOpacity: 0.35 }}
@@ -831,7 +831,7 @@ export default function TheStack() {
                       name="Upper Band"
                     />
                     {/* Lower confidence band */}
-                    <Scatter
+                    <Scatter {...seriesMotion()}
                       data={regression.lower}
                       fill="none"
                       line={{ stroke: BRAND.secondary, strokeWidth: 1, strokeDasharray: "5 4", strokeOpacity: 0.35 }}
@@ -840,7 +840,7 @@ export default function TheStack() {
                       name="Lower Band"
                     />
                     {/* OLS regression line */}
-                    <Scatter
+                    <Scatter {...seriesMotion()}
                       data={regression.line}
                       fill="none"
                       line={{ stroke: BRAND.secondary, strokeWidth: 2, strokeOpacity: 0.85 }}
@@ -849,7 +849,7 @@ export default function TheStack() {
                       name="OLS Fit"
                     />
                     {/* Raw scatter dots */}
-                    <Scatter
+                    <Scatter {...seriesMotion()}
                       data={data?.correlation ?? []}
                       fill={BRAND.secondary}
                       opacity={0.65}

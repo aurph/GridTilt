@@ -24,7 +24,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { Info, BarChart3, Search, Loader2, AlertCircle, Plus, Share2, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { BORDER, BRAND, CATEGORY_COLORS, CHART_CHROME, FONT, INK, SEMANTIC, SERIES } from "@/lib/tokens";
-import { chartTheme } from "@/lib/chart-theme";
+import { chartTheme, seriesMotion } from "@/lib/chart-theme";
 
 interface PortfolioResult {
   ticker: string;
@@ -473,7 +473,7 @@ export default function PortfolioOverlay({ embedded = false }: { embedded?: bool
                       tickCount={4}
                     />
                     <Tooltip content={<CustomRadarTooltip />} />
-                    <Radar
+                    <Radar {...seriesMotion()}
                       name="Exposure"
                       dataKey="value"
                       stroke={BRAND.secondary}
