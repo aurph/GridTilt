@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertTriangle, MapPin, Zap } from "lucide-react";
 import { RTO_CONFIG, RTO_SOURCE_NOTE } from "@/data/rto-config";
+import { ErrorState } from "@/components/Freshness";
 import { SortableTh } from "@/components/sortable-table";
 import { nextSort, sortBy, type SortState } from "@/lib/table-sort";
 
@@ -119,7 +120,7 @@ export default function RegionPage() {
   const region = slug ? REGION_META[slug] : null;
   const [sort, setSort] = useState<SortState<FacilitySortKey>>({ key: "powerMW", dir: "desc" });
 
-  const { data: datacenters, isLoading } = useQuery<Datacenter[]>({
+  const { data: datacenters, isLoading, isError, refetch } = useQuery<Datacenter[]>({
     queryKey: ["/api/datacenters"],
   });
 
@@ -219,6 +220,9 @@ export default function RegionPage() {
           <div className="space-y-2">
             {[1, 2, 3].map((i) => <Skeleton key={i} className="h-10 w-full" />)}
           </div>
+        ) : isError ? (
+          // A failed fetch must not read as "nothing is being built in this RTO".
+          <ErrorState label="Facility registry failed to load." onRetry={() => refetch()} />
         ) : sorted.length === 0 ? (
           <p className="text-sm text-muted-foreground py-4" data-testid="region-facilities-empty">
             No facilities in the tracked dataset carry this RTO yet.

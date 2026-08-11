@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertTriangle, Building2, TrendingUp, TrendingDown, Zap } from "lucide-react";
 import { fetchJson } from "@/lib/queryClient";
+import { ErrorState } from "@/components/Freshness";
 import { SortableTh } from "@/components/sortable-table";
 import { nextSort, sortBy, type SortState } from "@/lib/table-sort";
 
@@ -139,7 +140,7 @@ export default function OperatorPage() {
   const ticker = slug ? SLUG_TO_TICKER[slug] : undefined;
   const [sort, setSort] = useState<SortState<FacilitySortKey>>({ key: "powerMW", dir: "desc" });
 
-  const { data: datacenters, isLoading } = useQuery<Datacenter[]>({
+  const { data: datacenters, isLoading, isError, refetch } = useQuery<Datacenter[]>({
     queryKey: ["/api/datacenters"],
   });
 
@@ -276,6 +277,9 @@ export default function OperatorPage() {
           <div className="space-y-2">
             {[1, 2, 3].map((i) => <Skeleton key={i} className="h-10 w-full" />)}
           </div>
+        ) : isError ? (
+          // A failed fetch must not read as "this operator is building nothing".
+          <ErrorState label="Facility registry failed to load." onRetry={() => refetch()} />
         ) : sorted.length === 0 ? (
           <p className="text-sm text-muted-foreground py-4" data-testid="operator-facilities-empty">
             No facilities for {operator.name} in the tracked dataset yet.

@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Calendar, ArrowRight } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import BriefPage from "@/pages/brief";
+import { ErrorState } from "@/components/Freshness";
 
 interface BlogArticle {
   slug: string;
@@ -16,9 +17,10 @@ interface BlogArticle {
 }
 
 export default function BlogIndex() {
-  const { data: articles, isLoading } = useQuery<BlogArticle[]>({
+  const { data: articles, isLoading, isError, refetch } = useQuery<BlogArticle[]>({
     queryKey: ["/api/blog"],
   });
+  const posts = articles ?? [];
 
   return (
     <div className="flex flex-col h-full overflow-y-auto">
@@ -42,9 +44,17 @@ export default function BlogIndex() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {[1, 2, 3, 4, 5, 6].map((i) => <Skeleton key={i} className="h-44" />)}
             </div>
+          ) : isError ? (
+            // articles?.map left a bare heading over nothing when the fetch
+            // failed, which reads as "we have not written anything".
+            <ErrorState label="The post list failed to load." onRetry={() => refetch()} />
+          ) : posts.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-4" data-testid="blog-archive-empty">
+              No long-form posts published yet.
+            </p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {articles?.map((article) => (
+              {posts.map((article) => (
                 <Link key={article.slug} href={`/blog/${article.slug}`}>
                   <Card
                     className="h-full flex flex-col p-5 border-card-border hover:-translate-y-0.5 hover:shadow-lg transition-all cursor-pointer"
