@@ -158,9 +158,17 @@ const POWER_SUBTITLES: Record<string, string> = {
 };
 
 /**
- * True below Tailwind's `sm` breakpoint (640px). The Leaflet map is
- * desktop-only; below this the page renders an honest placeholder card
- * instead of a broken squeeze, and the map never mounts.
+ * True below Tailwind's `sm` breakpoint (640px).
+ *
+ * The map used to be gated off entirely down here, on the assumption it would
+ * be a broken squeeze. It is not: at 390px the container still gets its 520px
+ * minimum, Leaflet handles touch pan and pinch natively, and the bubbles stay
+ * readable. What actually collided was the wide stats overlay running under the
+ * view toggle, so that overlay is hidden below sm and its numbers are carried by
+ * the summary card above the map instead.
+ *
+ * The flag now decides whether to show that summary card, not whether the map
+ * mounts. The map mounts everywhere.
  */
 function useBelowSm(): boolean {
   const [below, setBelow] = useState<boolean>(
@@ -864,7 +872,7 @@ export default function PowerMap() {
       )}
 
       {tab === "map" && (<>
-      {belowSm ? (
+      {belowSm && (
         /* The Leaflet map is desktop-only. On phones this honest card takes
            its place; the headline numbers, upcoming projects, and operator
            table below stay fully usable. */
@@ -878,7 +886,7 @@ export default function PowerMap() {
             <div className="flex items-start gap-2 mb-3">
               <MonitorSmartphone className="h-3.5 w-3.5 text-muted-foreground/60 mt-0.5 flex-shrink-0" />
               <p className="text-xs text-muted-foreground leading-relaxed">
-                Map view is desktop-only; the data below works here.
+                Pinch to zoom the map, or tap a site for its detail.
               </p>
             </div>
             {dcError ? (
@@ -906,14 +914,15 @@ export default function PowerMap() {
             )}
           </div>
         </div>
-      ) : (
+      )}
+
       <div className="flex-1 flex flex-col">
         <div
           className="flex-1 relative"
           style={{ minHeight: 520 }}
           ref={mapContainerRef}
         >
-          <div className="absolute top-3 left-3 z-[1000] pointer-events-auto" data-testid="stats-overlay">
+          <div className="absolute top-3 left-3 z-[1000] hidden sm:block pointer-events-auto" data-testid="stats-overlay">
             <div className="bg-surface-raised/90 backdrop-blur-md border border-subtle rounded-lg px-4 py-3 shadow-xl">
               <div className="flex items-center gap-2 mb-2">
                 <Zap className="h-3.5 w-3.5 text-brand" />
@@ -1312,7 +1321,6 @@ export default function PowerMap() {
           )}
         </div>
       </div>
-      )}
 
       <div className="border-t border-border px-4 sm:px-6 py-4" data-testid="upcoming-projects-section">
         <div className="flex items-center gap-2 mb-3">
