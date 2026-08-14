@@ -1141,7 +1141,6 @@ export default function TiltOverview() {
           <div className="flex flex-wrap gap-4 mt-3 pt-3 border-t border-border text-xs text-muted-foreground">
             <span className="text-warning/80">* 2022: IRA signed + ChatGPT launch</span>
             <span className="text-warning/80">* 2024: TMI restart + first commercial SMR contract</span>
-            <span className="text-negative/70">--- Grid capacity ceiling</span>
           </div>
         </Card>
 
