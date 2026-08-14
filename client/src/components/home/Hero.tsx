@@ -63,6 +63,24 @@ function shortDate(iso: string | null | undefined): string | null {
   return mon ? `${Number(m[3])} ${mon} ${m[1]}` : null;
 }
 
+/**
+ * Whether the hero stat cards print the date each dataset was last refreshed.
+ *
+ * OFF until the Jetson n8n refresh pipeline is mounted and actually keeping
+ * clusters.json and interconnection-queue.json current. The dates are honest,
+ * but honesty about a number nothing has re-checked since May reads as neglect
+ * to a first-time visitor, and the front door is the wrong place to advertise
+ * that the plumbing is not finished.
+ *
+ * TURN THIS BACK ON the day cluster-refresh runs green on a schedule. The dates
+ * are the whole point of the ledger; a figure with no date is exactly what this
+ * product exists not to publish. This is a delay, not a decision to drop them.
+ *
+ * Nothing else changes when it flips: asOf is still fetched, still parsed, and
+ * still renders "no date" rather than inventing one.
+ */
+const SHOW_REFRESH_DATES = false;
+
 const fadeUp: Variants = {
   hidden: { opacity: 0, y: 12 },
   show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } },
@@ -196,14 +214,16 @@ export function Hero() {
                     {value}
                   </p>
                   {sub && <p className="mt-1 text-[11.5px] text-muted-foreground/80">{sub}</p>}
-                  {/* Two cards per row on a phone leaves ~133px of content
-                      width, and "AS OF 26 JUN 2026" needs ~132px at the desktop
-                      letter-spacing, so it tipped onto a second line and made
-                      every card taller. Tighter tracking below sm keeps it on
-                      one line without shrinking the type. */}
-                  <p className="mt-2 whitespace-nowrap font-mono text-[10.5px] uppercase tracking-[0.06em] text-muted-foreground/70 sm:tracking-[0.14em]">
-                    {asOf ? `as of ${asOf}` : "no date"}
-                  </p>
+                  {SHOW_REFRESH_DATES && (
+                    // Two cards per row on a phone leaves ~133px of content
+                    // width, and "AS OF 26 JUN 2026" needs ~132px at the desktop
+                    // letter-spacing, so it tipped onto a second line and made
+                    // every card taller. Tighter tracking below sm keeps it on
+                    // one line without shrinking the type.
+                    <p className="mt-2 whitespace-nowrap font-mono text-[10.5px] uppercase tracking-[0.06em] text-muted-foreground/70 sm:tracking-[0.14em]">
+                      {asOf ? `as of ${asOf}` : "no date"}
+                    </p>
+                  )}
                 </motion.div>
               </Link>
             ))}
