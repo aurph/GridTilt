@@ -125,15 +125,18 @@ export function Hero() {
 
   return (
     <section
-      className="gt-marketing relative w-full overflow-hidden border-b border-border"
-      style={{ minHeight: "calc(100vh - 88px)" }}
+      // The full-viewport hero is a desktop device. On a phone it forced ~750px
+      // of height around ~400px of content, so the wordmark sat below a screen
+      // of empty space and the stat cards below another one. From sm up the
+      // full-height framing is kept; below it the hero is content-height.
+      className="gt-marketing relative w-full overflow-hidden border-b border-border sm:min-h-[calc(100vh-88px)]"
       data-testid="home-hero"
     >
       <div className="absolute inset-0 z-0 opacity-75" aria-hidden>
         <GridPulse />
       </div>
 
-      <div className="relative z-10 mx-auto flex min-h-[inherit] max-w-[1200px] flex-col items-center justify-center px-6 py-16 text-center">
+      <div className="relative z-10 mx-auto flex min-h-[inherit] max-w-[1200px] flex-col items-center justify-center px-6 py-12 sm:py-16 text-center">
         <Wordmark />
         <motion.div
           initial="hidden"
@@ -193,7 +196,12 @@ export function Hero() {
                     {value}
                   </p>
                   {sub && <p className="mt-1 text-[11.5px] text-muted-foreground/80">{sub}</p>}
-                  <p className="mt-2 font-mono text-[10.5px] uppercase tracking-[0.14em] text-muted-foreground/70">
+                  {/* Two cards per row on a phone leaves ~133px of content
+                      width, and "AS OF 26 JUN 2026" needs ~132px at the desktop
+                      letter-spacing, so it tipped onto a second line and made
+                      every card taller. Tighter tracking below sm keeps it on
+                      one line without shrinking the type. */}
+                  <p className="mt-2 whitespace-nowrap font-mono text-[10.5px] uppercase tracking-[0.06em] text-muted-foreground/70 sm:tracking-[0.14em]">
                     {asOf ? `as of ${asOf}` : "no date"}
                   </p>
                 </motion.div>
