@@ -8,6 +8,7 @@ import { heatColor, heatTextColor } from "@/lib/stack-transforms";
 import { STAGE_LABELS, supplyNodes } from "@/data/supply-chain-config";
 import statesGeoRaw from "@/data/us-states.geo.json";
 import { Skeleton } from "@/components/ui/skeleton";
+import { filterTrackedFacilities } from "@/lib/real-gauges";
 
 /**
  * Module directory: six cards, each carrying a LIVE micro-preview drawn from
@@ -44,7 +45,7 @@ function SectorHeatStrip() {
 }
 
 // -- Preview 2: the real US map (d3 Albers + real facility coordinates) -----
-interface Facility { lat: number; lng: number; status: string; }
+interface Facility { lat: number; lng: number; status: string; powerMW: number; }
 const STATES = statesGeoRaw as unknown as FeatureCollection;
 const CONTINENTAL: FeatureCollection = {
   type: "FeatureCollection",
@@ -59,7 +60,7 @@ function RealUSMap() {
   const { data } = useQuery<Facility[]>({ queryKey: ["/api/datacenters"] });
   const dots = useMemo(() => {
     if (!data) return null;
-    return data.map((f, i) => {
+    return filterTrackedFacilities(data).map((f, i) => {
       const p = PROJECTION([f.lng, f.lat]);
       if (!p) return null;
       return { x: p[0], y: p[1], o: STATUS_OPACITY[f.status] ?? 0.3, i };
@@ -212,16 +213,15 @@ const MODULES: Module[] = [
 ];
 
 /**
- * Live caption for the Power Map card. Shares the /api/datacenters query key
- * with RealUSMap, so react-query serves both from one fetch and the sentence
- * can never disagree with the dots underneath it. Falls back to a claim with
- * no number rather than guessing one while the request is in flight.
+ * Live caption for the Power Map card. Shares the /api/datacenters query key with
+ * RealUSMap and applies the same >= 400 MW floor, so the sentence, the dots and
+ * the Power Map itself report one count. No number while the request is in flight.
  */
 function useFacilityCaption(): string {
   const { data } = useQuery<Facility[]>({ queryKey: ["/api/datacenters"] });
   const suffix = "plotted by operator and grid region.";
   if (!data) return `Tracked facilities, ${suffix}`;
-  return `${data.length} tracked facilities, ${suffix}`;
+  return `${filterTrackedFacilities(data).length} tracked facilities, ${suffix}`;
 }
 
 export function FeaturesShowcase() {
