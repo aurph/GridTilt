@@ -1,0 +1,46 @@
+name: CI
+
+# Runs the checks that previously only ran when someone remembered. The repo's
+# defence against the data-integrity defects fixed in this release is a set of
+# tests, and a test with no trigger is not a defence.
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: [main]
+
+# A newer push to the same branch makes the older run irrelevant.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v5
+
+      # 22 is what Replit runs. Testing on anything else tests a build that
+      # never ships.
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run check
+
+      # Includes facility-filter-consistency, which fails if a surface reads
+      # /api/datacenters without the 400 MW floor.
+      - name: Test
+        run: npm test
+
+      # A green test suite with a broken build still cannot deploy.
+      - name: Build
+        run: npm run build

@@ -9,6 +9,7 @@ import { fetchJson } from "@/lib/queryClient";
 import { ErrorState } from "@/components/Freshness";
 import { SortableTh } from "@/components/sortable-table";
 import { nextSort, sortBy, type SortState } from "@/lib/table-sort";
+import { filterTrackedFacilities } from "@/lib/real-gauges";
 
 type FacilitySortKey = "name" | "location" | "gridOperator" | "powerMW" | "status";
 
@@ -165,7 +166,9 @@ export default function OperatorPage() {
     );
   }
 
-  const all = datacenters ?? [];
+  // Same >= 400 MW floor as the Power map this page drills down from. Unfiltered,
+  // Amazon read 6,570 MW here against 5,920 MW on the map that links to it.
+  const all = filterTrackedFacilities(datacenters ?? []);
   const facilities = all.filter((d) => d.company === company);
   const sorted = sortBy(facilities, (d) => facilityCell(d, sort.key), sort.dir, (d) => d.name);
   const trackedMW = facilities.filter((d) => d.status !== "announced").reduce((t, d) => t + d.powerMW, 0);

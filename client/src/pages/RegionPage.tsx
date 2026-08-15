@@ -9,6 +9,7 @@ import { RTO_CONFIG, RTO_SOURCE_NOTE } from "@/data/rto-config";
 import { ErrorState } from "@/components/Freshness";
 import { SortableTh } from "@/components/sortable-table";
 import { nextSort, sortBy, type SortState } from "@/lib/table-sort";
+import { filterTrackedFacilities } from "@/lib/real-gauges";
 
 const REGION_META: Record<string, { name: string; fullName: string; states: string; description: string }> = {
   "pjm": {
@@ -138,7 +139,8 @@ export default function RegionPage() {
     );
   }
 
-  const all = datacenters ?? [];
+  // Same >= 400 MW floor as the Power map this page drills down from.
+  const all = filterTrackedFacilities(datacenters ?? []);
   const facilities = all.filter((d) => gridOpToRTO(d.gridOperator) === region.name);
   const sorted = sortBy(facilities, (d) => facilityCell(d, sort.key), sort.dir, (d) => d.name);
   const trackedMW = facilities.filter((d) => d.status !== "announced").reduce((t, d) => t + d.powerMW, 0);

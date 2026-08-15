@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { CheckCircle2, Mail, TrendingUp, Map, BarChart3, TrendingDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { apiRequest } from "@/lib/queryClient";
+import { filterTrackedFacilities } from "@/lib/real-gauges";
 
 interface TopMover {
   ticker: string;
@@ -43,8 +44,12 @@ export default function Subscribe() {
   const { data: datacenters } = useQuery<Datacenter[]>({ queryKey: ["/api/datacenters"] });
 
   const equityCount = sectors?.reduce((t, s) => t + s.tickerCount, 0) ?? null;
+  // Same >= 400 MW floor as the Power map and the Overview gauge. Without it this
+  // read 25.1 GW against the gauge's 18.8 GW for the same claim.
   const trackedGW = datacenters
-    ? datacenters.filter((d) => d.status !== "announced").reduce((t, d) => t + d.powerMW, 0) / 1000
+    ? filterTrackedFacilities(datacenters)
+        .filter((d) => d.status !== "announced")
+        .reduce((t, d) => t + d.powerMW, 0) / 1000
     : null;
   const topMover = movers && movers.length > 0 ? movers[0] : null;
   // Only a real number has a direction. Coercing null to 0 painted a green
