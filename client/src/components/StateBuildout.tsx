@@ -10,15 +10,11 @@ import { byState, totalTrackedMW, shareOfTotal, type FacilityLike } from "@/lib/
 import { filterTrackedFacilities } from "@/lib/real-gauges";
 
 /**
- * "Is any of this happening near me?"
+ * Tracked facilities by state.
  *
- * The question behind most consumer interest in data centers, and the one that
- * turns an abstract national story into a local one. Reads the same
- * /api/datacenters payload as the map and the ranking, so all three agree.
- *
- * Only states that actually appear in the tracked set get a chip. Showing all 50
- * would imply we have coverage we do not have, and a run of empty states reads
- * as "nothing is happening there" rather than "we do not track it".
+ * Only states present in the tracked set get a chip. Listing all 50 would imply
+ * coverage that does not exist, and empty states would read as "nothing here"
+ * rather than "not tracked".
  */
 
 type Facility = FacilityLike;
@@ -28,8 +24,6 @@ export function StateBuildout() {
     queryKey: ["/api/datacenters"],
   });
 
-  // The same >=400 MW floor the map above uses, so this section counts the same
-  // sites the page counts.
   const all = useMemo(() => filterTrackedFacilities(data ?? []), [data]);
   const rows = useMemo(() => byState(all), [all]);
   const total = useMemo(() => totalTrackedMW(all), [all]);
@@ -76,8 +70,7 @@ export function StateBuildout() {
         <p className="text-xs text-muted-foreground py-4">No facilities in the tracked set.</p>
       ) : (
         <>
-          {/* Horizontal scroll keeps 28 chips reachable with a thumb rather than
-              wrapping into a wall of text that pushes the answer off screen. */}
+          {/* Horizontal scroll rather than wrapping, so the panel stays on screen. */}
           <div
             className="-mx-4 sm:-mx-6 px-4 sm:px-6 mt-3 flex gap-1.5 overflow-x-auto pb-2 scrollbar-none"
             role="group"
@@ -121,8 +114,7 @@ export function StateBuildout() {
               )}
             </div>
 
-            {/* Running vs building as one bar: the split is the story, since a
-                state's headline number is often mostly not built yet. */}
+            {/* Running and being built as one bar. */}
             {active.totalMW > 0 && (
               <>
                 <div className="mt-3 flex h-2 w-full overflow-hidden rounded-full bg-surface-base" aria-hidden>

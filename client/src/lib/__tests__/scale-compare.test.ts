@@ -1,6 +1,5 @@
-// The homes comparison is the one derived number on the facility ranking, so it
-// is the one most able to overclaim. These tests pin that it stays coarse and
-// that missing data produces no comparison rather than a confident zero.
+// Pins that the homes comparison stays coarse and that missing data yields no
+// comparison rather than zero.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { homesEquivalent, roundToScale, MWH_PER_US_HOME_YEAR } from "../scale-compare";

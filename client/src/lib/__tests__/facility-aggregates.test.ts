@@ -1,6 +1,5 @@
-// These rollups drive three consumer-facing views that all claim to describe the
-// same facility set. The tests pin the two ways that claim could quietly become
-// false: counting unbuilt capacity as running, and treating missing power as zero.
+// Pins the two failure modes: counting unbuilt capacity as running, and treating
+// a missing power rating as zero.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {

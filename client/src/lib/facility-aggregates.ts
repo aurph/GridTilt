@@ -1,16 +1,9 @@
 /**
- * Aggregations over the tracked facility set.
+ * Rollups over the tracked facility set, shared by the Power Map sections.
  *
- * Every consumer-facing rollup on the Power Map reads from here rather than
- * grouping inline, so the state view, the company view and the map can never
- * disagree about what "total tracked power" means.
- *
- * Two rules hold throughout:
- *  - "running" is status === "operational". Everything else is not yet drawing
- *    power, and lumping them together is the single easiest way to overstate
- *    what exists today.
- *  - a facility with no usable powerMW contributes nothing rather than zero, and
- *    is counted separately so a caller can say so instead of silently dropping it.
+ * running = status "operational". Everything else is unbuilt and is never summed
+ * into running. Facilities with no usable powerMW are excluded from totals and
+ * counted in unknownPower.
  */
 
 export interface FacilityLike {
@@ -123,17 +116,13 @@ export interface YearBucket {
   /** Running total from the first tracked year through this one. */
   cumulativeMW: number;
   count: number;
-  /**
-   * True when nothing in this year is running yet, so the whole bar is a target
-   * date rather than a record of something that happened.
-   */
+  /** True when nothing in this year is running: the bar is a target date, not a record. */
   allPlanned: boolean;
 }
 
 /**
- * Year out of a curated opening date. Accepts "2023" and "2026 Q1" and refuses
- * anything else rather than guessing, so a curator typo drops a facility out of
- * the timeline instead of parking it in year 0.
+ * Year from a curated opening date. Accepts "2023" and "2026 Q1"; refuses anything
+ * else, so a typo drops the facility from the timeline instead of landing in year 0.
  */
 export function parseOpenYear(openDate: string | null | undefined): number | null {
   if (typeof openDate !== "string") return null;
@@ -145,11 +134,9 @@ export function parseOpenYear(openDate: string | null | undefined): number | nul
 }
 
 /**
- * Capacity by opening year, contiguous from the first tracked year to the last.
- *
- * Empty years are kept as zero bars rather than skipped: a gap that closes up
- * would compress a quiet stretch and make the buildout look smoother than it is.
- * Facilities with no usable year or power are excluded entirely.
+ * Capacity by opening year, contiguous from first tracked year to last. Empty years
+ * are kept as zero bars; skipping them would compress quiet stretches. Facilities
+ * with no usable year or power are excluded.
  */
 export function byYear(facilities: FacilityLike[]): YearBucket[] {
   const arriving = new Map<number, { mw: number; count: number; running: number }>();

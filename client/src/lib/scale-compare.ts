@@ -1,12 +1,9 @@
 /**
- * Turning megawatt-hours into something a person can picture.
+ * Megawatt-hours expressed as a household comparison.
  *
- * These comparisons exist to answer questions like "is that a lot?" from someone
- * who does not work in power. They are deliberately coarse: the input is a rated
- * annual figure, the divisor is a national average, and the output is a sense of
- * scale rather than a measurement. Rounding is therefore part of the honesty,
- * not a cosmetic choice - printing "730,609 homes" claims a precision that
- * neither the numerator nor the denominator supports.
+ * A rated annual figure over a national average supports a sense of scale, not a
+ * measurement, so results are rounded. "730,609 homes" would claim precision
+ * neither the numerator nor the denominator has.
  */
 
 /**
@@ -16,13 +13,7 @@
  */
 export const MWH_PER_US_HOME_YEAR = 10.791;
 
-/**
- * Round to a precision the underlying numbers can actually carry.
- *
- * Large counts lose their trailing digits entirely; small ones keep more, since
- * "about 900" and "about 1,000" are meaningfully different while "about 730,000"
- * and "about 731,000" are not.
- */
+/** Round coarser as magnitude grows: 730,609 -> 730,000, 417 -> 420. */
 export function roundToScale(n: number): number {
   if (!Number.isFinite(n) || n <= 0) return 0;
   if (n >= 100_000) return Math.round(n / 10_000) * 10_000;

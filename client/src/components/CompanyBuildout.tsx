@@ -8,14 +8,10 @@ import { byCompany, totalTrackedMW, shareOfTotal, type FacilityLike } from "@/li
 import { filterTrackedFacilities } from "@/lib/real-gauges";
 
 /**
- * "Who is actually building all this?"
+ * Tracked facilities by operating company, ranked by power.
  *
- * Names people already recognise, ranked by the power they have committed. The
- * running / being-built split rides on every bar because for several of these
- * companies the headline number is mostly announcement, and a single-length bar
- * would flatter them.
- *
- * Tapping a row opens that company's sites. Same /api/datacenters payload again.
+ * Every bar carries the running / being-built split: for several of these
+ * companies the total is mostly announcement, which a single bar would hide.
  */
 
 type Facility = FacilityLike;
@@ -25,8 +21,6 @@ export function CompanyBuildout() {
     queryKey: ["/api/datacenters"],
   });
 
-  // The same >=400 MW floor the map above uses, so this section counts the same
-  // sites the page counts.
   const all = useMemo(() => filterTrackedFacilities(data ?? []), [data]);
   const rows = useMemo(() => byCompany(all), [all]);
   const total = useMemo(() => totalTrackedMW(all), [all]);
@@ -91,8 +85,7 @@ export function CompanyBuildout() {
                     </span>
 
                     <span className="mt-1.5 flex h-1.5 w-full overflow-hidden rounded-full bg-surface-base" aria-hidden>
-                      {/* Both segments scale against the leader, so bar length
-                          compares across companies and the split compares within one. */}
+                      {/* Both segments scale against the leader. */}
                       <span
                         className="h-full"
                         style={{

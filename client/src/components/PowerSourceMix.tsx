@@ -15,16 +15,11 @@ import {
 } from "@/lib/energy-source";
 
 /**
- * "What actually powers a data center?"
+ * Power sources across the tracked compute clusters.
  *
- * Most coverage implies each site has a power source, usually a dramatic one.
- * The tracked set says otherwise: the large majority simply plug into the same
- * public grid everyone else uses, and the on-site gas and nuclear stories are
- * real but much smaller. That gap is the point of this section.
- *
- * Presented as counts, never as shares. A site routinely draws on more than one
- * source, so these bars overlap and do not sum to the site total. Rendering this
- * as a pie would invent a breakdown the data does not contain.
+ * Counts, not shares. A cluster can list several sources, so the bars overlap and
+ * do not sum to the cluster count; a pie would invent a breakdown the data has not
+ * got. Reads the cluster dataset, which is wider than the mapped facilities.
  */
 
 interface Cluster {

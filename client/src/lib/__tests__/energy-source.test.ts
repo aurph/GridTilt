@@ -1,6 +1,5 @@
-// energySource is curated prose, so this classifier is the seam where a curator's
-// wording change becomes a wrong chart. The strings below are taken verbatim from
-// clusters.json; the overlap tests pin the property the UI must never flatten.
+// Strings are verbatim from clusters.json. energySource is curated prose, so a
+// wording change lands here first.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {

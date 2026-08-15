@@ -1326,9 +1326,7 @@ export default function PowerMap() {
         </div>
       </div>
 
-      {/* Consumer questions, ordered from the one most people ask first. Each
-          reads a payload the page already fetches, so none of them cost a
-          request. */}
+      {/* All five read payloads the page already fetches. */}
       <BiggestDataCenters />
       <StateBuildout />
       <CompanyBuildout />

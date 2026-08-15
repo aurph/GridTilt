@@ -1,14 +1,9 @@
 /**
- * Reading the free-text energySource field on a cluster.
+ * Reads the free-text energySource field on a cluster: "grid + on-site gas",
+ * "nuclear (Susquehanna BTM)", "grid (DTE) + battery".
  *
- * The field is curated prose, not an enum: "grid + on-site gas",
- * "nuclear (Susquehanna BTM)", "grid (DTE) + battery". A site routinely draws on
- * more than one source, which is the single most important property of this data
- * and the easiest one to destroy by accident.
- *
- * Consequence: these tallies OVERLAP and do not sum to the site count. Any UI
- * built on this must present it as "how many sites use X", never as a share of a
- * whole, and never as a pie. A pie chart here would be a fabrication.
+ * A site can list several sources, so these tallies overlap and do not sum to the
+ * site count. Present as "how many sites use X", never as a share or a pie.
  */
 
 export type EnergySource = "nuclear" | "gas" | "solar" | "wind" | "hydro" | "battery" | "grid";
@@ -34,10 +29,7 @@ export const ENERGY_LABELS: Record<EnergySource, string> = {
   hydro: "Hydro",
 };
 
-/**
- * Plain-language note on what each source means for someone who does not work in
- * power. Kept short enough to sit under a bar on a phone.
- */
+/** Plain-language note per source, short enough to sit under a bar on a phone. */
 export const ENERGY_NOTES: Record<EnergySource, string> = {
   grid: "Drawn from the same public network that serves homes and businesses",
   gas: "Burned on site or nearby, usually to avoid waiting for a grid connection",
@@ -48,11 +40,7 @@ export const ENERGY_NOTES: Record<EnergySource, string> = {
   hydro: "Existing dam output, mostly in the Pacific Northwest",
 };
 
-/**
- * Match on the specific term before the generic one. Order matters only for
- * readability here since every pattern is tested independently, but "grid" is
- * deliberately last: it is the fallback word that appears in most strings.
- */
+/** "grid" is last: it is the generic word that appears in most strings. */
 const PATTERNS: Array<[EnergySource, RegExp]> = [
   ["nuclear", /nuclear|\bsmr\b|reactor/i],
   ["gas", /\bgas\b|turbine/i],
@@ -87,13 +75,11 @@ export interface ClusterLike {
 }
 
 /**
- * What a site's power figure is, and what kind of figure it is.
+ * A site's power figure and which field it came from.
  *
- * Rated and planned are not interchangeable: several nuclear-linked sites carry
- * ratedPowerMW 0 with the real number in plannedPowerMW, because the reactor is
- * contracted and not yet built. Printing that as a rated figure would claim
- * capacity that does not exist, and printing the 0 would claim the site is
- * powerless. The basis travels with the number so callers can label it.
+ * Several nuclear-linked sites carry ratedPowerMW 0 with the real number in
+ * plannedPowerMW. The basis travels with the number so callers can label planned
+ * capacity as planned rather than printing it as rated or reading the 0 as zero.
  */
 export function clusterPowerMW(c: ClusterLike): { mw: number; basis: "rated" | "planned" | null } {
   if (typeof c.ratedPowerMW === "number" && Number.isFinite(c.ratedPowerMW) && c.ratedPowerMW > 0) {

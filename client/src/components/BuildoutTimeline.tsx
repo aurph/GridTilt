@@ -8,15 +8,11 @@ import { byYear, parseOpenYear, type FacilityLike } from "@/lib/facility-aggrega
 import { filterTrackedFacilities } from "@/lib/real-gauges";
 
 /**
- * "When does all of this actually arrive?"
+ * Tracked capacity by opening year.
  *
- * The buildout is usually described as a trend, which hides how abrupt it is.
- * Laid out by opening year, the tracked set puts more power on the grid in 2026
- * and 2027 than in the two decades before them combined. That shape is the
- * answer, and it only reads if the quiet years stay on the axis.
- *
- * Everything from 2026 on is a target date rather than a record, and the bars
- * say which is which instead of leaving one ramp that implies equal confidence.
+ * Quiet years stay on the axis as zero bars; dropping them would compress the
+ * gap between the 2010s and 2026-27. Years with nothing running are drawn in
+ * amber and badged as targets, since an announced date is a schedule, not a record.
  */
 
 type Facility = FacilityLike;
@@ -26,13 +22,11 @@ export function BuildoutTimeline() {
     queryKey: ["/api/datacenters"],
   });
 
-  // The same >=400 MW floor the map above uses, so this section counts the same
-  // sites the page counts.
   const all = useMemo(() => filterTrackedFacilities(data ?? []), [data]);
   const years = useMemo(() => byYear(all), [all]);
   const peak = useMemo(() => years.reduce((m, y) => Math.max(m, y.arrivingMW), 0), [years]);
 
-  // Open on the heaviest year, because that is the point of the section.
+  // Default selection: the heaviest year.
   const busiest = useMemo(() => {
     let year: number | null = null;
     let mw = -1;
@@ -81,8 +75,7 @@ export function BuildoutTimeline() {
         </p>
       ) : (
         <>
-          {/* Each year is a full-height button so the tap target is the column,
-              not the bar, which on a phone is only a few pixels wide. */}
+          {/* Full-height buttons: the bar itself is a few pixels wide on a phone. */}
           <div className="mt-3 flex h-24 items-end gap-px" role="group" aria-label="Pick a year">
             {years.map((y) => {
               const selected = y.year === active.year;
@@ -99,8 +92,7 @@ export function BuildoutTimeline() {
                   <span
                     className="w-full rounded-sm transition-opacity"
                     style={{
-                      // A floor of 2px keeps an empty year visible as a baseline
-                      // tick rather than vanishing into the gap.
+                      // 2% floor keeps an empty year visible as a baseline tick.
                       height: `${peak > 0 ? Math.max((y.arrivingMW / peak) * 100, 2) : 2}%`,
                       backgroundColor: y.allPlanned ? BRAND.secondary : BRAND.primary,
                       opacity: selected ? 1 : 0.45,

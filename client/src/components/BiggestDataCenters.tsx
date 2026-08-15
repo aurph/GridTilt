@@ -8,16 +8,11 @@ import { homesEquivalent } from "@/lib/scale-compare";
 import { filterTrackedFacilities } from "@/lib/real-gauges";
 
 /**
- * "What is the biggest data center in America?"
+ * Largest tracked facility, running and being built.
  *
- * A question an ordinary person asks and that this product could not answer on a
- * phone. Everything here is read off the same /api/datacenters payload the map
- * uses, so it costs no extra request and can never disagree with the dots.
- *
- * The running / being-built split is the point, not a detail. The largest sites
- * in the country are not built yet, so a single "biggest" number would be
- * technically sourced and still misleading. Answering both keeps it honest and
- * happens to be the more interesting answer.
+ * Reads the same /api/datacenters payload as the map, filtered to the same
+ * >= 400 MW floor. The largest sites in the country are not built yet, so a single
+ * "biggest" number would be misleading; both are shown.
  */
 
 interface DataCenter {
@@ -45,9 +40,6 @@ export function BiggestDataCenters() {
     queryKey: ["/api/datacenters"],
   });
 
-  // The same >=400 MW floor the map above uses. Reading the raw payload here
-  // described 58 sites while the map counted 33, so the section contradicted the
-  // page it sits on.
   const all = filterTrackedFacilities(data ?? []);
   const pool = all.filter((d) =>
     mode === "running" ? d.status === "operational" : d.status !== "operational",
@@ -101,7 +93,6 @@ export function BiggestDataCenters() {
         </p>
       ) : (
         <>
-          {/* The answer, stated plainly and large enough to read at arm's length. */}
           <div className="rounded-lg border border-brand/25 bg-brand/5 p-4" data-testid="biggest-leader">
             <p className="text-10 font-mono uppercase tracking-[0.12em] text-brand">
               {mode === "running" ? "Largest running today" : "Largest being built"}
@@ -130,8 +121,7 @@ export function BiggestDataCenters() {
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-xs text-foreground">{d.name}</span>
-                  {/* Bar is width-relative to the leader, so the gap between
-                      first and fifth is visible without reading a number. */}
+                  {/* Width relative to the leader. */}
                   <span className="mt-1 block h-1.5 w-full rounded-full bg-surface-base" aria-hidden>
                     <span
                       className="block h-full rounded-full"
