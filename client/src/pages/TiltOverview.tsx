@@ -36,6 +36,7 @@ import {
   latestDemand,
   pctChange,
 } from "@/lib/sector-demand";
+import { bucketFor, buyersForType, asGW, type BucketLite, type DealRowLite } from "@/lib/deal-rollups";
 import { RTO_CONFIG, RTO_SOURCE_NOTE } from "@/data/rto-config";
 import { STAGE_COLORS } from "@/data/catalyst-config";
 import {
@@ -944,6 +945,17 @@ export default function TiltOverview() {
   const tracked = useMemo(() => (trackedFacilities ? computeTrackedPower(trackedFacilities) : null), [trackedFacilities]);
   const buildout = useMemo(() => (trackedFacilities ? buildBuildoutHistory(trackedFacilities) : null), [trackedFacilities]);
   const headroom = useMemo(() => tightestRTO(RTO_CONFIG), []);
+  // The nuclear KPI reads the same payload the Deals page computes from, rather
+  // than restating it by hand. The hand-written version drifted to three
+  // different numbers for one fact.
+  const { data: dealMetrics } = useQuery<{ byType: BucketLite[]; rows: DealRowLite[] }>({
+    queryKey: ["/api/deals/metrics"],
+  });
+  const nuclearDeals = useMemo(() => bucketFor(dealMetrics?.byType, "nuclear"), [dealMetrics]);
+  const topNuclearBuyer = useMemo(
+    () => buyersForType(dealMetrics?.rows, "nuclear")[0] ?? null,
+    [dealMetrics],
+  );
   // Sector card figures. Derived rather than written into the copy, so the
   // sentence cannot drift away from the series charted above it the way the
   // previous "up 15% from the 2022 low" line did.
@@ -1225,7 +1237,21 @@ export default function TiltOverview() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {[
             { label: "DC Share of US Demand", value: "~6.4%", sub: "EIA 2025: ~288 TWh, up from 4.4% in 2023. DOE projects 12%+ by 2028.", color: TOKEN_CATEGORY_COLORS.datacenters },
-            { label: "Nuclear Power Committed", value: "12+ GW", sub: "Big Tech nuclear PPAs as of Q1 2026. Meta 6.6 GW, Microsoft 1.2 GW, Amazon 2.5+ GW.", color: BRAND.secondary },
+            {
+              label: "Nuclear Power Contracted",
+              // Derived from the tracked deals. "Committed" previously mixed
+              // Meta's 6.6 GW RFP, which is a request rather than a contract,
+              // into a total of signed agreements.
+              value: asGW(nuclearDeals?.mw) ? `${asGW(nuclearDeals?.mw)} GW` : "--",
+              sub: nuclearDeals
+                ? `Across ${nuclearDeals.count} tracked nuclear power deals.${
+                    topNuclearBuyer && asGW(topNuclearBuyer.mw)
+                      ? ` Largest buyer ${topNuclearBuyer.buyer} at ${asGW(topNuclearBuyer.mw)} GW.`
+                      : ""
+                  }`
+                : "Deal data unavailable.",
+              color: BRAND.secondary,
+            },
             { label: "Grid Reserve Margins", value: "Tightening", sub: "MISO 13.4%, ERCOT 15.8% per NERC 2026. Capacity warnings through 2028.", color: INK.muted },
           ].map((s) => (
             <Card key={s.label} className="p-4 border-card-border">
