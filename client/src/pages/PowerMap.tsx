@@ -10,6 +10,7 @@ import { AsOf, ErrorState } from "@/components/Freshness";
 import { BiggestDataCenters } from "@/components/BiggestDataCenters";
 import { StateBuildout } from "@/components/StateBuildout";
 import { CompanyBuildout } from "@/components/CompanyBuildout";
+import { BuildoutTimeline } from "@/components/BuildoutTimeline";
 import { PowerSourceMix } from "@/components/PowerSourceMix";
 import {
   Tooltip as UITooltip,
@@ -1332,6 +1333,7 @@ export default function PowerMap() {
       <BiggestDataCenters />
       <StateBuildout />
       <CompanyBuildout />
+      <BuildoutTimeline />
       <PowerSourceMix />
 
       <div className="border-t border-border px-4 sm:px-6 py-4" data-testid="upcoming-projects-section">

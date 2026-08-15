@@ -23,6 +23,8 @@ export interface FacilityLike {
   status: "operational" | "construction" | "announced";
   annualMWh: number;
   gridOperator: string;
+  /** Curated as a year or a year and quarter: "2023", "2026 Q1". */
+  openDate?: string | null;
 }
 
 export interface Rollup {
@@ -112,4 +114,75 @@ export function totalTrackedMW(facilities: FacilityLike[]): number {
 export function shareOfTotal(partMW: number, totalMW: number): number | null {
   if (!Number.isFinite(totalMW) || totalMW <= 0) return null;
   return (partMW / totalMW) * 100;
+}
+
+export interface YearBucket {
+  year: number;
+  /** Power from facilities whose opening date falls in this year. */
+  arrivingMW: number;
+  /** Running total from the first tracked year through this one. */
+  cumulativeMW: number;
+  count: number;
+  /**
+   * True when nothing in this year is running yet, so the whole bar is a target
+   * date rather than a record of something that happened.
+   */
+  allPlanned: boolean;
+}
+
+/**
+ * Year out of a curated opening date. Accepts "2023" and "2026 Q1" and refuses
+ * anything else rather than guessing, so a curator typo drops a facility out of
+ * the timeline instead of parking it in year 0.
+ */
+export function parseOpenYear(openDate: string | null | undefined): number | null {
+  if (typeof openDate !== "string") return null;
+  const m = /^\s*(\d{4})\b/.exec(openDate);
+  if (!m) return null;
+  const year = Number(m[1]);
+  // A tracked facility outside this window is a data error, not a real date.
+  return year >= 1990 && year <= 2100 ? year : null;
+}
+
+/**
+ * Capacity by opening year, contiguous from the first tracked year to the last.
+ *
+ * Empty years are kept as zero bars rather than skipped: a gap that closes up
+ * would compress a quiet stretch and make the buildout look smoother than it is.
+ * Facilities with no usable year or power are excluded entirely.
+ */
+export function byYear(facilities: FacilityLike[]): YearBucket[] {
+  const arriving = new Map<number, { mw: number; count: number; running: number }>();
+  let min = Infinity;
+  let max = -Infinity;
+
+  for (const f of facilities) {
+    const year = parseOpenYear(f.openDate);
+    const mw = usableMW(f);
+    if (year === null || mw === null) continue;
+    const cur = arriving.get(year) ?? { mw: 0, count: 0, running: 0 };
+    cur.mw += mw;
+    cur.count += 1;
+    if (f.status === "operational") cur.running += 1;
+    arriving.set(year, cur);
+    if (year < min) min = year;
+    if (year > max) max = year;
+  }
+
+  if (!Number.isFinite(min)) return [];
+
+  const out: YearBucket[] = [];
+  let cumulative = 0;
+  for (let year = min; year <= max; year += 1) {
+    const b = arriving.get(year) ?? { mw: 0, count: 0, running: 0 };
+    cumulative += b.mw;
+    out.push({
+      year,
+      arrivingMW: b.mw,
+      cumulativeMW: cumulative,
+      count: b.count,
+      allPlanned: b.count > 0 && b.running === 0,
+    });
+  }
+  return out;
 }
