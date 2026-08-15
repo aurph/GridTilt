@@ -27,6 +27,16 @@ import {
   BRAND, CATEGORY_COLORS as TOKEN_CATEGORY_COLORS, CHART_CHROME, DATA_QUALITY, FONT, INK, SEMANTIC, SERIES,
 } from "@/lib/tokens";
 import { axisProps, gridProps, seriesMotion, timeTicks, tooltipContentStyle, tooltipItemStyle, tooltipLabelStyle } from "@/lib/chart-theme";
+import {
+  US_SECTOR_DEMAND,
+  DATA_CENTER_LOAD,
+  sectorTotalTWh,
+  sectorShare,
+  demandTrough,
+  latestDemand,
+  pctChange,
+} from "@/lib/sector-demand";
+import { bucketFor, buyersForType, asGW, type BucketLite, type DealRowLite } from "@/lib/deal-rollups";
 import { RTO_CONFIG, RTO_SOURCE_NOTE } from "@/data/rto-config";
 import { STAGE_COLORS } from "@/data/catalyst-config";
 import {
@@ -48,31 +58,39 @@ function alpha(hex: string, a: number): string {
   return `rgba(${parseInt(hex.slice(1, 3), 16)},${parseInt(hex.slice(3, 5), 16)},${parseInt(hex.slice(5, 7), 16)},${a})`;
 }
 
-const electricityData = [
-  { year: "2010", demand: 3879, dcDemand: 140, projected: null, dcProjected: null },
-  { year: "2011", demand: 3883, dcDemand: 150, projected: null, dcProjected: null },
-  { year: "2012", demand: 3826, dcDemand: 160, projected: null, dcProjected: null },
-  { year: "2013", demand: 3888, dcDemand: 165, projected: null, dcProjected: null },
-  { year: "2014", demand: 3879, dcDemand: 170, projected: null, dcProjected: null },
-  { year: "2015", demand: 3862, dcDemand: 175, projected: null, dcProjected: null },
-  { year: "2016", demand: 3898, dcDemand: 180, projected: null, dcProjected: null },
-  { year: "2017", demand: 3887, dcDemand: 190, projected: null, dcProjected: null },
-  { year: "2018", demand: 3997, dcDemand: 200, projected: null, dcProjected: null },
-  { year: "2019", demand: 3955, dcDemand: 210, projected: null, dcProjected: null },
-  { year: "2020", demand: 3802, dcDemand: 215, projected: null, dcProjected: null },
-  { year: "2021", demand: 3930, dcDemand: 230, projected: null, dcProjected: null },
-  { year: "2022", demand: 4050, dcDemand: 260, projected: null, dcProjected: null },
-  { year: "2023", demand: 4195, dcDemand: 310, projected: null, dcProjected: null },
-  { year: "2024", demand: 4380, dcDemand: 420, projected: null, dcProjected: null },
-  // 2025 carries both series: the single shared point where the projection
-  // line takes over from actuals (double-encoding 2024 too drew the amber
-  // projection on top of a full year of real data).
-  { year: "2025", demand: 4490, dcDemand: 576, projected: 4490, dcProjected: 576 },
-  { year: "2026", demand: null, dcDemand: null, projected: 4890, dcProjected: 800 },
-  { year: "2027", demand: null, dcDemand: null, projected: 5180, dcProjected: 1050 },
-  { year: "2028", demand: null, dcDemand: null, projected: 5490, dcProjected: 1350 },
-  { year: "2029", demand: null, dcDemand: null, projected: 5830, dcProjected: 1700 },
-  { year: "2030", demand: null, dcDemand: null, projected: 6210, dcProjected: 2100 },
+// US total annual electricity demand (TWh), EIA.
+//
+// The data-center series carries ONLY the two figures LBNL actually publishes:
+// 58 TWh in 2014 and 176 TWh in 2023. It previously ran a smooth invented curve
+// from 140 to 576 TWh, which was 2-3x above the reference figures at every point
+// (170 vs 58 in 2014, 310 vs 176 in 2023). Years LBNL does not measure are null,
+// and the chart joins the two anchors with a dashed segment so the gap reads as
+// unmeasured rather than observed.
+//
+// The 2026-2030 rows are gone with the projection they carried. Those were
+// labelled "GridTilt Projection" in the legend and topped out at 2,100 TWh of
+// data-center demand by 2030, roughly 4x the top of LBNL's published 2028 range
+// of 325-580 TWh. Nothing sourced supported them.
+//
+// Source: LBNL, 2024 United States Data Center Energy Usage Report (DOE-funded)
+// https://eta-publications.lbl.gov/sites/default/files/2024-12/lbnl-2024-united-states-data-center-energy-usage-report_1.pdf
+const electricityData: Array<{ year: string; demand: number | null; dcDemand: number | null }> = [
+  { year: "2010", demand: 3879, dcDemand: null },
+  { year: "2011", demand: 3883, dcDemand: null },
+  { year: "2012", demand: 3826, dcDemand: null },
+  { year: "2013", demand: 3888, dcDemand: null },
+  { year: "2014", demand: 3879, dcDemand: 58 },
+  { year: "2015", demand: 3862, dcDemand: null },
+  { year: "2016", demand: 3898, dcDemand: null },
+  { year: "2017", demand: 3887, dcDemand: null },
+  { year: "2018", demand: 3997, dcDemand: null },
+  { year: "2019", demand: 3955, dcDemand: null },
+  { year: "2020", demand: 3802, dcDemand: null },
+  { year: "2021", demand: 3930, dcDemand: null },
+  { year: "2022", demand: 4050, dcDemand: null },
+  { year: "2023", demand: 4195, dcDemand: 176 },
+  { year: "2024", demand: 4380, dcDemand: null },
+  { year: "2025", demand: 4490, dcDemand: null },
 ];
 
 const annotations = [
@@ -131,12 +149,15 @@ function formatDateShort(dateStr: string): string {
   });
 }
 
-const SECTOR_DEMAND = [
-  { sector: "Residential", twh: 1658, yoy: 2.1, color: INK.muted },
-  { sector: "Commercial", twh: 1569, yoy: 2.4, color: SERIES[3] }, // series slot 4
-  { sector: "Industrial", twh: 975, yoy: -3.2, color: INK.secondary },
-  { sector: "Data Centers", twh: 288, yoy: 33.3, color: TOKEN_CATEGORY_COLORS.datacenters },
-];
+/**
+ * Colour per electricity end-use sector. Distinct from the equity SECTOR_COLORS
+ * below. Figures and arithmetic live in @/lib/sector-demand.
+ */
+const DEMAND_SECTOR_COLORS: Record<string, string> = {
+  Residential: INK.muted,
+  Commercial: SERIES[3], // series slot 4
+  Industrial: INK.secondary,
+};
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
@@ -922,6 +943,25 @@ export default function TiltOverview() {
   const tracked = useMemo(() => (trackedFacilities ? computeTrackedPower(trackedFacilities) : null), [trackedFacilities]);
   const buildout = useMemo(() => (trackedFacilities ? buildBuildoutHistory(trackedFacilities) : null), [trackedFacilities]);
   const headroom = useMemo(() => tightestRTO(RTO_CONFIG), []);
+  // Same payload the Deals page computes from. The hand-written version carried
+  // three different numbers for one fact.
+  const { data: dealMetrics } = useQuery<{ byType: BucketLite[]; rows: DealRowLite[] }>({
+    queryKey: ["/api/deals/metrics"],
+  });
+  const nuclearDeals = useMemo(() => bucketFor(dealMetrics?.byType, "nuclear"), [dealMetrics]);
+  const topNuclearBuyer = useMemo(
+    () => buyersForType(dealMetrics?.rows, "nuclear")[0] ?? null,
+    [dealMetrics],
+  );
+  // Derived from electricityData so the copy cannot drift from the chart above,
+  // as the previous "up 15% from the 2022 low" line had.
+  const sectorTotal = useMemo(() => sectorTotalTWh(), []);
+  const trough = useMemo(() => demandTrough(electricityData), []);
+  const latest = useMemo(() => latestDemand(electricityData), []);
+  const troughRise = useMemo(
+    () => (trough && latest ? pctChange(trough.twh, latest.twh) : null),
+    [trough, latest],
+  );
   const headroomRows = useMemo(() => {
     return Object.values(RTO_CONFIG)
       .sort((a, b) => a.reserveMargin - b.reserveMargin)
@@ -1006,20 +1046,27 @@ export default function TiltOverview() {
                   </TooltipContent>
                 </UITooltip>
               </div>
-              <p className="text-xs text-muted-foreground">Historical EIA data (TWh) through 2025. Dashed lines are GridTilt projections (2026-2030), not forecasts. Data center subset on right axis.</p>
+              <p className="text-xs text-muted-foreground">
+                US total electricity demand (TWh), EIA, through 2025. Data-center demand on the right axis
+                shows the two years LBNL measures, 2014 and 2023; the dashed segment between them is not measured.{" "}
+                <a
+                  href="https://eta-publications.lbl.gov/sites/default/files/2024-12/lbnl-2024-united-states-data-center-energy-usage-report_1.pdf"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-brand hover:text-brand-2"
+                >
+                  LBNL 2024 report
+                </a>
+              </p>
             </div>
             <div className="flex flex-wrap items-center gap-4 text-xs">
               <div className="flex items-center gap-1.5">
                 <div className="h-2 w-4 rounded-sm bg-series-1" />
-                <span className="text-muted-foreground">Total Actual</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <div className="h-2 w-4 rounded-sm bg-brand-2" />
-                <span className="text-muted-foreground">GridTilt Projection (2026-2030)</span>
+                <span className="text-muted-foreground">Total demand (EIA)</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <div className="h-2 w-4 rounded-sm" style={{ backgroundColor: TOKEN_CATEGORY_COLORS.datacenters }} />
-                <span className="text-muted-foreground">DC Demand</span>
+                <span className="text-muted-foreground">Data centers (LBNL, measured years)</span>
               </div>
             </div>
           </div>
@@ -1030,14 +1077,6 @@ export default function TiltOverview() {
                 <linearGradient id="demandGrad" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor={SERIES[0]} stopOpacity={0.25} />
                   <stop offset="95%" stopColor={SERIES[0]} stopOpacity={0.02} />
-                </linearGradient>
-                <linearGradient id="projGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={BRAND.secondary} stopOpacity={0.18} />
-                  <stop offset="95%" stopColor={BRAND.secondary} stopOpacity={0.02} />
-                </linearGradient>
-                <linearGradient id="dcGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={TOKEN_CATEGORY_COLORS.datacenters} stopOpacity={0.25} />
-                  <stop offset="95%" stopColor={TOKEN_CATEGORY_COLORS.datacenters} stopOpacity={0.02} />
                 </linearGradient>
               </defs>
               <CartesianGrid {...gridProps} />
@@ -1062,21 +1101,15 @@ export default function TiltOverview() {
                 orientation="right"
                 axisLine={false}
                 tickFormatter={(v) => `${v}`}
-                domain={[0, 2500]}
-                ticks={[0, 800, 1600, 2400]}
+                domain={[0, 200]}
+                ticks={[0, 50, 100, 150, 200]}
                 width={42}
               />
               <Tooltip content={<CustomTooltip />} />
 
-              {/* Grid capacity reference line */}
-              <ReferenceLine
-                yAxisId="total"
-                y={5100}
-                stroke={alpha(SEMANTIC.negativeDeep, 0.35)}
-                strokeDasharray="5 3"
-                // label sits above the line's left end, where the plot is empty until the projection crosses ~2027
-                label={{ value: "Grid Capacity ~5,100 TWh", position: "insideLeft", fill: SEMANTIC.negativeDeep, fontSize: 9, dy: -7 }}
-              />
+              {/* The "Grid Capacity ~5,100 TWh" reference line was removed: no
+                  source, no methodology, and it only ever intersected the
+                  invented projection that has also been removed. */}
 
               {/* Event annotations */}
               {annotations.map((a) => (
@@ -1108,51 +1141,31 @@ export default function TiltOverview() {
                 activeDot={{ r: 4, fill: SERIES[0] }}
                 connectNulls={false}
               />
-              <Area {...seriesMotion()}
-                yAxisId="total"
-                type="monotone"
-                dataKey="projected"
-                name="AI-Era Projection"
-                stroke={BRAND.secondary}
-                strokeWidth={2}
-                strokeDasharray="6 3"
-                fill="url(#projGrad)"
-                dot={false}
-                activeDot={{ r: 4, fill: BRAND.secondary }}
-                connectNulls={false}
-              />
-              <Area {...seriesMotion()}
-                yAxisId="dc"
-                type="monotone"
-                dataKey="dcDemand"
-                name="DC Actual"
-                stroke={TOKEN_CATEGORY_COLORS.datacenters}
-                strokeWidth={1.5}
-                fill="url(#dcGrad)"
-                dot={false}
-                connectNulls={false}
-              />
+              {/* Two measured points, joined dashed. connectNulls draws the
+                  segment across the years LBNL does not publish; the dash and
+                  the visible dots say the endpoints are observed and the line
+                  between them is not. */}
               <Line {...seriesMotion()}
                 yAxisId="dc"
-                type="monotone"
-                dataKey="dcProjected"
-                name="DC Projected"
+                type="linear"
+                dataKey="dcDemand"
+                name="Data centers (LBNL)"
                 stroke={TOKEN_CATEGORY_COLORS.datacenters}
                 strokeWidth={1.5}
                 strokeDasharray="5 3"
-                dot={false}
-                connectNulls={false}
+                dot={{ r: 3, fill: TOKEN_CATEGORY_COLORS.datacenters }}
+                activeDot={{ r: 4, fill: TOKEN_CATEGORY_COLORS.datacenters }}
+                connectNulls={true}
               />
             </ComposedChart>
           </ResponsiveContainer>
           <SrChartTable
-            caption="US electricity demand by year (TWh): EIA actuals through 2025, GridTilt projections 2026-2030"
-            columns={["Year", "Total TWh", "DC TWh", "Projected"]}
+            caption="US electricity demand by year (TWh): EIA totals through 2025, with LBNL-measured data-center demand for 2014 and 2023"
+            columns={["Year", "Total TWh", "Data centers TWh"]}
             rows={electricityData.map((d) => [
               d.year,
               d.demand ?? "—",
-              d.dcDemand ?? d.dcProjected ?? "—",
-              d.projected ?? "—",
+              d.dcDemand ?? "not measured",
             ])}
           />
 
@@ -1160,7 +1173,6 @@ export default function TiltOverview() {
           <div className="flex flex-wrap gap-4 mt-3 pt-3 border-t border-border text-xs text-muted-foreground">
             <span className="text-warning/80">* 2022: IRA signed + ChatGPT launch</span>
             <span className="text-warning/80">* 2024: TMI restart + first commercial SMR contract</span>
-            <span className="text-negative/70">--- Grid capacity ceiling</span>
           </div>
         </Card>
 
@@ -1221,7 +1233,20 @@ export default function TiltOverview() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {[
             { label: "DC Share of US Demand", value: "~6.4%", sub: "EIA 2025: ~288 TWh, up from 4.4% in 2023. DOE projects 12%+ by 2028.", color: TOKEN_CATEGORY_COLORS.datacenters },
-            { label: "Nuclear Power Committed", value: "12+ GW", sub: "Big Tech nuclear PPAs as of Q1 2026. Meta 6.6 GW, Microsoft 1.2 GW, Amazon 2.5+ GW.", color: BRAND.secondary },
+            {
+              label: "Nuclear Power Contracted",
+              // "Committed" previously counted Meta's 6.6 GW RFP, a request
+              // rather than a contract.
+              value: asGW(nuclearDeals?.mw) ? `${asGW(nuclearDeals?.mw)} GW` : "--",
+              sub: nuclearDeals
+                ? `Across ${nuclearDeals.count} tracked nuclear power deals.${
+                    topNuclearBuyer && asGW(topNuclearBuyer.mw)
+                      ? ` Largest buyer ${topNuclearBuyer.buyer} at ${asGW(topNuclearBuyer.mw)} GW.`
+                      : ""
+                  }`
+                : "Deal data unavailable.",
+              color: BRAND.secondary,
+            },
             { label: "Grid Reserve Margins", value: "Tightening", sub: "MISO 13.4%, ERCOT 15.8% per NERC 2026. Capacity warnings through 2028.", color: INK.muted },
           ].map((s) => (
             <Card key={s.label} className="p-4 border-card-border">
@@ -1241,37 +1266,85 @@ export default function TiltOverview() {
                 <Info className="h-3.5 w-3.5 text-muted-foreground" />
               </TooltipTrigger>
               <TooltipContent>
-                <p className="text-xs">Source: EIA Electric Power Monthly (2025). Data centers are the fastest-growing sector at +33% YoY.</p>
+                <p className="text-xs">
+                  Source: EIA Electric Power Monthly (2025). Residential, commercial and industrial
+                  are the end-use sectors and cover all demand between them. Data-center load is
+                  metered inside commercial and industrial, so it is shown as a share of them rather
+                  than added to them.
+                </p>
               </TooltipContent>
             </UITooltip>
           </div>
           <div className="divide-y divide-border">
-            {SECTOR_DEMAND.map((s) => (
-              <div key={s.sector} className="flex items-center gap-4 py-2.5">
-                <div className="w-24 flex-shrink-0">
-                  <p className="text-xs font-medium text-foreground">{s.sector}</p>
-                </div>
-                <div className="flex-1">
-                  <div className="bg-muted/30 rounded-full h-1.5">
+            {/* Bar sits below the label rather than between fixed-width columns,
+                which left it no room on a phone and rendered the sectors as dots. */}
+            {US_SECTOR_DEMAND.map((s) => {
+              const share = sectorShare(s.twh, sectorTotal);
+              return (
+                <div key={s.sector} className="py-2.5">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <p className="text-xs font-medium text-foreground">{s.sector}</p>
+                    <div className="flex shrink-0 items-baseline gap-3">
+                      <p className="text-xs font-mono text-foreground tabular-nums">
+                        {s.twh.toLocaleString()} TWh
+                      </p>
+                      <span
+                        className={`flex items-center gap-0.5 text-xs font-mono font-semibold tabular-nums ${
+                          s.yoy >= 0 ? "text-positive" : "text-negative"
+                        }`}
+                      >
+                        {s.yoy >= 0 ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
+                        {Math.abs(s.yoy)}%
+                      </span>
+                    </div>
+                  </div>
+                  <div className="mt-1.5 bg-muted/30 rounded-full h-1.5">
+                    {/* Scaled to the sum of the sectors shown. */}
                     <div
                       className="h-1.5 rounded-full"
                       style={{
-                        width: `${(s.twh / 4490) * 100}%`,
-                        backgroundColor: s.color,
+                        width: `${share ?? 0}%`,
+                        backgroundColor: DEMAND_SECTOR_COLORS[s.sector] ?? INK.muted,
                       }}
                     />
                   </div>
                 </div>
-                <p className="text-xs font-mono text-foreground w-20 text-right">{s.twh.toLocaleString()} TWh</p>
-                <div className={`flex items-center gap-1 w-16 justify-end text-xs font-mono font-semibold ${s.yoy >= 0 ? "text-positive" : "text-negative"}`}>
-                  {s.yoy >= 0 ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
-                  {Math.abs(s.yoy)}% YoY
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
+
+          {/* Shown below the sectors, not as a fourth row: the load is already
+              counted inside commercial and industrial. */}
+          <div className="mt-3 pt-3 border-t border-border">
+            <div className="flex items-baseline justify-between gap-3">
+              <p className="min-w-0 text-xs font-medium text-foreground">
+                of which data centers
+              </p>
+              <div className="flex shrink-0 items-baseline gap-3">
+                <p
+                  className="text-xs font-mono tabular-nums"
+                  style={{ color: DATA_QUALITY.estimateFlag }}
+                >
+                  ~{DATA_CENTER_LOAD.twh.toLocaleString()} TWh
+                </p>
+                <span className="flex items-center gap-0.5 text-xs font-mono font-semibold tabular-nums text-positive">
+                  <ArrowUp className="h-3 w-3" />
+                  {DATA_CENTER_LOAD.yoy}%
+                </span>
+              </div>
+            </div>
+            <p className="text-[11px] leading-relaxed text-muted-foreground/70 mt-1.5">
+              Estimated, and metered inside {DATA_CENTER_LOAD.containedIn} above rather than added to
+              them. EIA's end-use accounting has no data-center category, so this is a derived
+              figure.
+            </p>
+          </div>
+
           <p className="text-xs text-muted-foreground mt-3 pt-3 border-t border-border">
-            US electricity demand was flat from 2010-2022. By 2025 it reached ~4,490 TWh, up 15% from the 2022 low. Data center load is now +33% YoY.
+            The three end-use sectors total {sectorTotal.toLocaleString()} TWh.
+            {trough && latest && troughRise !== null
+              ? ` US demand was flat through the 2010s, bottomed at ${trough.twh.toLocaleString()} TWh in ${trough.year}, and reached ${latest.twh.toLocaleString()} TWh by ${latest.year}, up ${troughRise.toFixed(0)}%.`
+              : ""}
           </p>
         </Card>
 
