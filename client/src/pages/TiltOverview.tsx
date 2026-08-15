@@ -27,6 +27,15 @@ import {
   BRAND, CATEGORY_COLORS as TOKEN_CATEGORY_COLORS, CHART_CHROME, DATA_QUALITY, FONT, INK, SEMANTIC, SERIES,
 } from "@/lib/tokens";
 import { axisProps, gridProps, seriesMotion, timeTicks, tooltipContentStyle, tooltipItemStyle, tooltipLabelStyle } from "@/lib/chart-theme";
+import {
+  US_SECTOR_DEMAND,
+  DATA_CENTER_LOAD,
+  sectorTotalTWh,
+  sectorShare,
+  demandTrough,
+  latestDemand,
+  pctChange,
+} from "@/lib/sector-demand";
 import { RTO_CONFIG, RTO_SOURCE_NOTE } from "@/data/rto-config";
 import { STAGE_COLORS } from "@/data/catalyst-config";
 import {
@@ -139,12 +148,17 @@ function formatDateShort(dateStr: string): string {
   });
 }
 
-const SECTOR_DEMAND = [
-  { sector: "Residential", twh: 1658, yoy: 2.1, color: INK.muted },
-  { sector: "Commercial", twh: 1569, yoy: 2.4, color: SERIES[3] }, // series slot 4
-  { sector: "Industrial", twh: 975, yoy: -3.2, color: INK.secondary },
-  { sector: "Data Centers", twh: 288, yoy: 33.3, color: TOKEN_CATEGORY_COLORS.datacenters },
-];
+/**
+ * Colour per electricity end-use sector. Named apart from the equity SECTOR_COLORS
+ * below, which is a different meaning of "sector" in the same file. The figures
+ * and the arithmetic live in @/lib/sector-demand, which keeps data-center load
+ * out of the sector total; this map is presentation only.
+ */
+const DEMAND_SECTOR_COLORS: Record<string, string> = {
+  Residential: INK.muted,
+  Commercial: SERIES[3], // series slot 4
+  Industrial: INK.secondary,
+};
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
@@ -930,6 +944,16 @@ export default function TiltOverview() {
   const tracked = useMemo(() => (trackedFacilities ? computeTrackedPower(trackedFacilities) : null), [trackedFacilities]);
   const buildout = useMemo(() => (trackedFacilities ? buildBuildoutHistory(trackedFacilities) : null), [trackedFacilities]);
   const headroom = useMemo(() => tightestRTO(RTO_CONFIG), []);
+  // Sector card figures. Derived rather than written into the copy, so the
+  // sentence cannot drift away from the series charted above it the way the
+  // previous "up 15% from the 2022 low" line did.
+  const sectorTotal = useMemo(() => sectorTotalTWh(), []);
+  const trough = useMemo(() => demandTrough(electricityData), []);
+  const latest = useMemo(() => latestDemand(electricityData), []);
+  const troughRise = useMemo(
+    () => (trough && latest ? pctChange(trough.twh, latest.twh) : null),
+    [trough, latest],
+  );
   const headroomRows = useMemo(() => {
     return Object.values(RTO_CONFIG)
       .sort((a, b) => a.reserveMargin - b.reserveMargin)
@@ -1221,37 +1245,88 @@ export default function TiltOverview() {
                 <Info className="h-3.5 w-3.5 text-muted-foreground" />
               </TooltipTrigger>
               <TooltipContent>
-                <p className="text-xs">Source: EIA Electric Power Monthly (2025). Data centers are the fastest-growing sector at +33% YoY.</p>
+                <p className="text-xs">
+                  Source: EIA Electric Power Monthly (2025). Residential, commercial and industrial
+                  are the end-use sectors and cover all demand between them. Data-center load is
+                  metered inside commercial and industrial, so it is shown as a share of them rather
+                  than added to them.
+                </p>
               </TooltipContent>
             </UITooltip>
           </div>
           <div className="divide-y divide-border">
-            {SECTOR_DEMAND.map((s) => (
-              <div key={s.sector} className="flex items-center gap-4 py-2.5">
-                <div className="w-24 flex-shrink-0">
-                  <p className="text-xs font-medium text-foreground">{s.sector}</p>
-                </div>
-                <div className="flex-1">
-                  <div className="bg-muted/30 rounded-full h-1.5">
+            {/* Label and figures on one line, bar on its own beneath. The bar used
+                to sit between fixed-width columns, which left it no room on a
+                phone and rendered all three sectors as dots. */}
+            {US_SECTOR_DEMAND.map((s) => {
+              const share = sectorShare(s.twh, sectorTotal);
+              return (
+                <div key={s.sector} className="py-2.5">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <p className="text-xs font-medium text-foreground">{s.sector}</p>
+                    <div className="flex shrink-0 items-baseline gap-3">
+                      <p className="text-xs font-mono text-foreground tabular-nums">
+                        {s.twh.toLocaleString()} TWh
+                      </p>
+                      <span
+                        className={`flex items-center gap-0.5 text-xs font-mono font-semibold tabular-nums ${
+                          s.yoy >= 0 ? "text-positive" : "text-negative"
+                        }`}
+                      >
+                        {s.yoy >= 0 ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
+                        {Math.abs(s.yoy)}%
+                      </span>
+                    </div>
+                  </div>
+                  <div className="mt-1.5 bg-muted/30 rounded-full h-1.5">
+                    {/* Scaled to the sum of the sectors shown, so the three bars
+                        are shares of one whole and fill the track between them. */}
                     <div
                       className="h-1.5 rounded-full"
                       style={{
-                        width: `${(s.twh / 4490) * 100}%`,
-                        backgroundColor: s.color,
+                        width: `${share ?? 0}%`,
+                        backgroundColor: DEMAND_SECTOR_COLORS[s.sector] ?? INK.muted,
                       }}
                     />
                   </div>
                 </div>
-                <p className="text-xs font-mono text-foreground w-20 text-right">{s.twh.toLocaleString()} TWh</p>
-                <div className={`flex items-center gap-1 w-16 justify-end text-xs font-mono font-semibold ${s.yoy >= 0 ? "text-positive" : "text-negative"}`}>
-                  {s.yoy >= 0 ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
-                  {Math.abs(s.yoy)}% YoY
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
+
+          {/* Data centers sit inside the sectors above, so they are shown below the
+              total rather than as a fourth row. Listing them as a peer added their
+              load on top of the commercial and industrial load already counting it. */}
+          <div className="mt-3 pt-3 border-t border-border">
+            <div className="flex items-baseline justify-between gap-3">
+              <p className="min-w-0 text-xs font-medium text-foreground">
+                of which data centers
+              </p>
+              <div className="flex shrink-0 items-baseline gap-3">
+                <p
+                  className="text-xs font-mono tabular-nums"
+                  style={{ color: DATA_QUALITY.estimateFlag }}
+                >
+                  ~{DATA_CENTER_LOAD.twh.toLocaleString()} TWh
+                </p>
+                <span className="flex items-center gap-0.5 text-xs font-mono font-semibold tabular-nums text-positive">
+                  <ArrowUp className="h-3 w-3" />
+                  {DATA_CENTER_LOAD.yoy}%
+                </span>
+              </div>
+            </div>
+            <p className="text-[11px] leading-relaxed text-muted-foreground/70 mt-1.5">
+              Estimated, and metered inside {DATA_CENTER_LOAD.containedIn} above rather than added to
+              them. EIA's end-use accounting has no data-center category, so this is a derived
+              figure.
+            </p>
+          </div>
+
           <p className="text-xs text-muted-foreground mt-3 pt-3 border-t border-border">
-            US electricity demand was flat from 2010-2022. By 2025 it reached ~4,490 TWh, up 15% from the 2022 low. Data center load is now +33% YoY.
+            The three end-use sectors total {sectorTotal.toLocaleString()} TWh.
+            {trough && latest && troughRise !== null
+              ? ` US demand was flat through the 2010s, bottomed at ${trough.twh.toLocaleString()} TWh in ${trough.year}, and reached ${latest.twh.toLocaleString()} TWh by ${latest.year}, up ${troughRise.toFixed(0)}%.`
+              : ""}
           </p>
         </Card>
 
