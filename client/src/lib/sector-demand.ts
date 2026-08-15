@@ -25,9 +25,11 @@ export const US_SECTOR_DEMAND: Sector[] = [
  * Data-center load: a slice of the sectors above, not an addition to them.
  *
  * Flagged estimated. EIA's end-use accounting has no data-center category, so
- * this is derived rather than metered. Provenance is not recorded in the repo and
- * the Overview KPI card attributes it to EIA 2025; the two need reconciling
- * against a source.
+ * this is derived rather than metered. Source: LBNL, 2024 United States Data
+ * Center Energy Usage Report (DOE-funded) — 176 TWh measured in 2023, 2028
+ * projected range 325-580 TWh; the 2025 figure sits inside that projection
+ * band. The Overview KPI labels it as an estimate and cites LBNL, never EIA.
+ * https://eta-publications.lbl.gov/sites/default/files/2024-12/lbnl-2024-united-states-data-center-energy-usage-report_1.pdf
  */
 export const DATA_CENTER_LOAD = {
   twh: 288,

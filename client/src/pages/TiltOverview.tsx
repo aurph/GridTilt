@@ -1238,7 +1238,12 @@ export default function TiltOverview() {
         {/* 4-column stat strip */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {[
-            { label: "DC Share of US Demand", value: "~6.4%", sub: "EIA 2025: ~288 TWh, up from 4.4% in 2023. DOE projects 12%+ by 2028.", color: TOKEN_CATEGORY_COLORS.datacenters },
+            // LBNL 2024 report (DOE-funded): 176 TWh measured in 2023 (4.4% of
+            // US demand); 2028 projected range 325-580 TWh (6.7%-12%). The 2025
+            // point is inside LBNL's projection band, not a measurement, and
+            // EIA publishes no data-center category — so it is labelled as the
+            // estimate it is, not attributed to EIA.
+            { label: "DC Share of US Demand", value: "~6.4% (est.)", sub: "LBNL est. ~288 TWh in 2025; 4.4% measured in 2023. LBNL projects 6.7\u201312% by 2028.", color: TOKEN_CATEGORY_COLORS.datacenters },
             {
               label: "Nuclear Power Contracted",
               // "Committed" previously counted Meta's 6.6 GW RFP, a request

@@ -18,7 +18,7 @@ const ROOT = process.cwd();
  * series to opt in.
  */
 test("every animated Recharts series spreads seriesMotion()", () => {
-  const SERIES = ["Bar", "Line", "Area", "Pie", "Radar"];
+  const SERIES = ["Bar", "Line", "Area", "Pie", "Radar", "Scatter", "RadialBar", "Funnel"];
   const files: string[] = [];
   const walk = (dir: string) => {
     for (const entry of readdirSync(dir, { withFileTypes: true })) {
