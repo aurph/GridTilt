@@ -8,6 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AsOf, ErrorState } from "@/components/Freshness";
 import { BiggestDataCenters } from "@/components/BiggestDataCenters";
+import { StateBuildout } from "@/components/StateBuildout";
+import { CompanyBuildout } from "@/components/CompanyBuildout";
+import { PowerSourceMix } from "@/components/PowerSourceMix";
 import {
   Tooltip as UITooltip,
   TooltipContent,
@@ -1323,7 +1326,13 @@ export default function PowerMap() {
         </div>
       </div>
 
+      {/* Consumer questions, ordered from the one most people ask first. Each
+          reads a payload the page already fetches, so none of them cost a
+          request. */}
       <BiggestDataCenters />
+      <StateBuildout />
+      <CompanyBuildout />
+      <PowerSourceMix />
 
       <div className="border-t border-border px-4 sm:px-6 py-4" data-testid="upcoming-projects-section">
         <div className="flex items-center gap-2 mb-3">
