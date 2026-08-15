@@ -5,6 +5,7 @@ import { ErrorState } from "@/components/Freshness";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BRAND } from "@/lib/tokens";
 import { byYear, parseOpenYear, type FacilityLike } from "@/lib/facility-aggregates";
+import { filterTrackedFacilities } from "@/lib/real-gauges";
 
 /**
  * "When does all of this actually arrive?"
@@ -25,7 +26,9 @@ export function BuildoutTimeline() {
     queryKey: ["/api/datacenters"],
   });
 
-  const all = useMemo(() => data ?? [], [data]);
+  // The same >=400 MW floor the map above uses, so this section counts the same
+  // sites the page counts.
+  const all = useMemo(() => filterTrackedFacilities(data ?? []), [data]);
   const years = useMemo(() => byYear(all), [all]);
   const peak = useMemo(() => years.reduce((m, y) => Math.max(m, y.arrivingMW), 0), [years]);
 

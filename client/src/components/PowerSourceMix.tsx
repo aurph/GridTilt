@@ -98,9 +98,9 @@ export function PowerSourceMix() {
         <>
           <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
             Of the{" "}
-            <span className="font-mono text-foreground tabular-nums">{classified}</span> compute
-            sites with a recorded power source, this is how many draw on each. Sites often use more
-            than one, so these do not add up to {classified}.
+            <span className="font-mono text-foreground tabular-nums">{classified}</span> tracked
+            compute clusters with a recorded power source, this is how many draw on each. Sites
+            often use more than one, so these do not add up to {classified}.
           </p>
 
           <ul className="mt-3 space-y-1">
@@ -173,9 +173,11 @@ export function PowerSourceMix() {
           </ul>
 
           <p className="mt-3 text-10 leading-relaxed text-muted-foreground/70">
-            Read from the curated power description on each tracked compute site. A site counts once
-            for every source its description mentions, which is why the counts overlap. Nuclear
-            includes small reactors that are contracted but not yet built.
+            Read from the curated power description on each tracked compute cluster. This is the
+            wider cluster dataset behind Compute Frontier, not the 400 MW and above facilities
+            mapped above, so the counts are larger. A site counts once for every source its
+            description mentions, which is why the counts overlap. Nuclear includes small reactors
+            that are contracted but not yet built.
           </p>
         </>
       )}

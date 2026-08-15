@@ -12,6 +12,7 @@ import { StateBuildout } from "@/components/StateBuildout";
 import { CompanyBuildout } from "@/components/CompanyBuildout";
 import { BuildoutTimeline } from "@/components/BuildoutTimeline";
 import { PowerSourceMix } from "@/components/PowerSourceMix";
+import { MIN_TRACKED_MW, filterTrackedFacilities } from "@/lib/real-gauges";
 import {
   Tooltip as UITooltip,
   TooltipContent,
@@ -47,15 +48,13 @@ interface DataCenter {
   openDate: string;
 }
 
-const MIN_TRACKED_MW = 400;
-
 const DATA_CENTERS_FALLBACK: DataCenter[] = [];
 
 // Honor the threshold advertised in the banner: only track hyperscale-class
-// sites. Smaller historical facilities are filtered out everywhere.
-function filterTracked(list: DataCenter[]): DataCenter[] {
-  return list.filter((d) => d.powerMW >= MIN_TRACKED_MW);
-}
+// sites. Smaller historical facilities are filtered out everywhere. The
+// threshold and the filter come from real-gauges rather than being restated
+// here, so this page and the headline gauges cannot drift apart.
+const filterTracked = filterTrackedFacilities<DataCenter>;
 
 import { RTO_CONFIG, type RTOConfig } from "@/data/rto-config";
 

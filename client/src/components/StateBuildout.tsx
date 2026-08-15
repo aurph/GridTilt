@@ -7,6 +7,7 @@ import { BRAND, INK } from "@/lib/tokens";
 import { STATE_GRID } from "@/data/state-grid";
 import { homesEquivalent } from "@/lib/scale-compare";
 import { byState, totalTrackedMW, shareOfTotal, type FacilityLike } from "@/lib/facility-aggregates";
+import { filterTrackedFacilities } from "@/lib/real-gauges";
 
 /**
  * "Is any of this happening near me?"
@@ -27,7 +28,9 @@ export function StateBuildout() {
     queryKey: ["/api/datacenters"],
   });
 
-  const all = useMemo(() => data ?? [], [data]);
+  // The same >=400 MW floor the map above uses, so this section counts the same
+  // sites the page counts.
+  const all = useMemo(() => filterTrackedFacilities(data ?? []), [data]);
   const rows = useMemo(() => byState(all), [all]);
   const total = useMemo(() => totalTrackedMW(all), [all]);
 

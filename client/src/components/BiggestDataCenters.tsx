@@ -5,6 +5,7 @@ import { ErrorState } from "@/components/Freshness";
 import { Skeleton } from "@/components/ui/skeleton";
 import { STATUS_COLORS } from "@/lib/tokens";
 import { homesEquivalent } from "@/lib/scale-compare";
+import { filterTrackedFacilities } from "@/lib/real-gauges";
 
 /**
  * "What is the biggest data center in America?"
@@ -44,7 +45,10 @@ export function BiggestDataCenters() {
     queryKey: ["/api/datacenters"],
   });
 
-  const all = data ?? [];
+  // The same >=400 MW floor the map above uses. Reading the raw payload here
+  // described 58 sites while the map counted 33, so the section contradicted the
+  // page it sits on.
+  const all = filterTrackedFacilities(data ?? []);
   const pool = all.filter((d) =>
     mode === "running" ? d.status === "operational" : d.status !== "operational",
   );
