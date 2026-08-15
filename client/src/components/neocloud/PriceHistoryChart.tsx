@@ -14,7 +14,7 @@ import { scaleLinear, scaleLog, scaleUtc } from "@visx/scale";
 import { Area, LinePath } from "@visx/shape";
 import { SrChartTable } from "@/components/Freshness";
 import { FONT, INK, SURFACE } from "@/lib/tokens";
-import { seriesMotion, timeTicks } from "@/lib/chart-theme";
+import { timeTicks } from "@/lib/chart-theme";
 import {
   type ChartPoint,
   type ChartSeries,
@@ -300,7 +300,7 @@ function Overlay({
             {clipped.map((item) => (
               <Group key={`bands-${item.model}`} opacity={seriesOpacity(item.model, hovered)}>
                 {buildDispersionRuns(item.clipped).map((run, index) => (
-                  <Area {...seriesMotion()}
+                  <Area
                     key={index}
                     data={run}
                     x={(point) => xScale(point.t)}
@@ -551,7 +551,7 @@ function Panel({
           <line x1={0} x2={innerW} y1={innerH} y2={innerH} stroke={AXIS_FILL} opacity={0.35} />
 
           {buildDispersionRuns(series.clipped).map((run, index) => (
-            <Area {...seriesMotion()}
+            <Area
               key={index}
               data={run}
               x={(point) => xScale(point.t)}
