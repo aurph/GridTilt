@@ -3,6 +3,11 @@
 Importable n8n workflows that keep GridTilt data fresh from the Jetson homelab.
 These run on the self-hosted n8n instance, not inside the app.
 
+> **Nothing here runs until you mount it.** If a flow is never imported, or the
+> Jetson is off, the data silently stops moving. `ops/freshness-monitor.md` is
+> the watchdog that makes that failure loud; it deliberately runs off-Jetson,
+> because a watchdog on the box it watches dies with it.
+
 ## gpu-price-refresh.json
 
 Two independent flows in one workflow file:

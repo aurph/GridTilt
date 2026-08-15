@@ -20,7 +20,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { RTO_CONFIG, RTO_SOURCE_NOTE, type RTOConfig } from "@/data/rto-config";
 import { STATE_GRID, STATE_GRID_SOURCE } from "@/data/state-grid";
 import { BORDER, BRAND, FONT, INK, SEMANTIC, STATUS_COLORS, SURFACE } from "@/lib/tokens";
-import { axisProps, gridProps, tooltipContentStyle, tooltipItemStyle, tooltipLabelStyle } from "@/lib/chart-theme";
+import { axisProps, gridProps, tooltipContentStyle, tooltipItemStyle, tooltipLabelStyle, seriesAnimation } from "@/lib/chart-theme";
 // US state boundaries: US Census cartographic boundary file (public domain),
 // via the widely used us-states GeoJSON distribution.
 import statesGeoRaw from "@/data/us-states.geo.json";
@@ -550,7 +550,7 @@ export default function MyGrid() {
                           labelFormatter={(m: string) => fmtMonth(m)}
                           formatter={(v: number) => [`${v.toFixed(2)}¢/kWh`, "Residential average"]}
                         />
-                        <Line type="monotone" dataKey="centsPerKwh" stroke={BRAND.primary} strokeWidth={2} dot={false} isAnimationActive={false} />
+                        <Line {...seriesAnimation} type="monotone" dataKey="centsPerKwh" stroke={BRAND.primary} strokeWidth={2} dot={false} isAnimationActive={false} />
                       </LineChart>
                     </ResponsiveContainer>
                     <SrChartTable

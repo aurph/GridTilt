@@ -155,13 +155,23 @@ app.use((req, res, next) => {
 
   app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
 
+    // Always log the real error server-side.
     console.error("Internal Server Error:", err);
 
     if (res.headersSent) {
       return next(err);
     }
+
+    // A 5xx means something threw that we did not anticipate, so its message is
+    // whatever the throwing library chose to say: file paths, upstream URLs,
+    // driver internals. In production that goes nowhere near the client. A 4xx
+    // carries a message we wrote deliberately for the caller, so it stands.
+    const isServerError = status >= 500;
+    const message =
+      isServerError && isProduction
+        ? "Internal Server Error"
+        : err.message || "Internal Server Error";
 
     return res.status(status).json({ message });
   });
@@ -180,7 +190,14 @@ app.use((req, res, next) => {
   // Other ports are firewalled. Default to 5000 if not specified.
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
-  const port = parseInt(process.env.PORT || "5000", 10);
+  // A non-numeric PORT used to parse to NaN, and listen(NaN) silently binds a
+  // random free port: the app comes up healthy and is unreachable at the
+  // address anything expects. Fail loudly instead.
+  const rawPort = process.env.PORT ?? "5000";
+  const port = parseInt(rawPort, 10);
+  if (!Number.isInteger(port) || port < 0 || port > 65535) {
+    throw new Error(`PORT must be an integer between 0 and 65535, got ${JSON.stringify(rawPort)}`);
+  }
   httpServer.listen(
     {
       port,

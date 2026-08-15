@@ -1,3 +1,4 @@
+import { fetchWithTimeout } from "./fetch-timeout";
 // ─── Residential electricity rates by state ─────────────────────────────
 //
 // EIA v2 retail-sales: average residential price in cents/kWh, monthly, for
@@ -70,7 +71,7 @@ export async function getRetailRatesByState(): Promise<RetailRatesResult> {
   // 51 jurisdictions x 25 months, with headroom for territories in the feed
   url.searchParams.set("length", "1600");
 
-  const res = await fetch(url);
+  const res = await fetchWithTimeout(url);
   if (!res.ok) throw new Error(`EIA responded ${res.status}`);
   const body = (await res.json()) as { response?: { data?: EiaRetailRow[] } };
   const byState = groupRetailRows(body.response?.data ?? []);

@@ -40,8 +40,8 @@ interface StockData {
   ticker: string;
   name: string;
   price: number;
-  change: number;
-  changePercent: number;
+  change: number | null;
+  changePercent: number | null;
   stale?: boolean;
 }
 
