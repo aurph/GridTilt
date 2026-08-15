@@ -21,7 +21,7 @@ import {
 } from "recharts";
 import { trainingEstimate, trainingSensitivity } from "@/lib/gpu-economics-series";
 import { FONT, INK } from "@/lib/tokens";
-import { seriesAnimation } from "@/lib/chart-theme";
+import { seriesMotion,  } from "@/lib/chart-theme";
 
 interface EconRow {
   model: string;
@@ -237,7 +237,7 @@ export default function GpuEconomics({ embedded = false }: { embedded?: boolean 
                     labelStyle={{ color: "#9ca3af", fontFamily: FONT.mono, fontSize: 10, marginBottom: 4 }}
                     formatter={(value: number) => [`$${Number(value).toFixed(2)} / PFLOP-hr`, "Compute cost"]}
                   />
-                  <Bar {...seriesAnimation} dataKey="usdPerPflopHr" radius={[0, 3, 3, 0]} isAnimationActive={false}>
+                  <Bar {...seriesMotion()} dataKey="usdPerPflopHr" radius={[0, 3, 3, 0]} isAnimationActive={false}>
                     {efficiencyRows.map((row) => (
                       <Cell
                         key={row.model}
@@ -406,7 +406,7 @@ export default function GpuEconomics({ embedded = false }: { embedded?: boolean 
                           formatter={(value: number) => [usdBig(Number(value)), "Modeled cost"]}
                           labelFormatter={(value: number) => `${value}% MFU`}
                         />
-                        <Line {...seriesAnimation}
+                        <Line {...seriesMotion()}
                           type="linear"
                           dataKey="usdCost"
                           stroke={NVIDIA_COLOR}
@@ -633,10 +633,10 @@ function TrajectoryChart({ traj, sources }: { traj?: InfPriceView["trajectory"];
               labelFormatter={(v: number) => `${Math.round(v)}`}
               formatter={(value: number, key: string, item: { payload?: Record<string, string> }) => [`$${value} / M input`, item?.payload?.[key + "Name"] ?? key]}
             />
-            <Line {...seriesAnimation} type="linear" dataKey="flagship" stroke={NVIDIA_COLOR} strokeWidth={2} connectNulls dot={{ r: 3, fill: NVIDIA_COLOR }} isAnimationActive={false}>
+            <Line {...seriesMotion()} type="linear" dataKey="flagship" stroke={NVIDIA_COLOR} strokeWidth={2} connectNulls dot={{ r: 3, fill: NVIDIA_COLOR }} isAnimationActive={false}>
               <LabelList dataKey="flagship" position="top" formatter={(v: number) => (v != null ? fmtTraj(v) : "")} fill="#e5e7eb" fontFamily={FONT.mono} fontSize={9} />
             </Line>
-            <Line {...seriesAnimation} type="linear" dataKey="efficient" stroke={AMBER} strokeWidth={2} strokeDasharray="4 3" connectNulls dot={{ r: 3, fill: AMBER }} isAnimationActive={false}>
+            <Line {...seriesMotion()} type="linear" dataKey="efficient" stroke={AMBER} strokeWidth={2} strokeDasharray="4 3" connectNulls dot={{ r: 3, fill: AMBER }} isAnimationActive={false}>
               <LabelList dataKey="efficient" position="bottom" formatter={(v: number) => (v != null ? fmtTraj(v) : "")} fill={AMBER} fontFamily={FONT.mono} fontSize={9} />
             </Line>
           </LineChart>

@@ -21,7 +21,7 @@ import {
 } from "recharts";
 import { Handshake, ArrowUpDown } from "lucide-react";
 import { BORDER, BRAND, CATEGORY_COLORS, FONT, INK, SERIES, STATUS_COLORS } from "@/lib/tokens";
-import { axisProps, gridProps, tooltipContentStyle, seriesAnimation } from "@/lib/chart-theme";
+import { seriesMotion, axisProps, gridProps, tooltipContentStyle,  } from "@/lib/chart-theme";
 
 interface Bucket { key: string; count: number; mw: number; }
 interface DealRow {
@@ -190,7 +190,7 @@ export default function PowerDeals({ embedded = false }: { embedded?: boolean; p
                   contentStyle={tooltipContentStyle}
                   formatter={(v: number, _n, p: any) => [`${v} GW across ${p.payload.count} deal${p.payload.count === 1 ? "" : "s"}`, p.payload.buyer]}
                 />
-                <Bar {...seriesAnimation} dataKey="gw" fill={BRAND.primary} radius={[0, 3, 3, 0]} isAnimationActive={false}
+                <Bar {...seriesMotion()} dataKey="gw" fill={BRAND.primary} radius={[0, 3, 3, 0]} isAnimationActive={false}
                   label={{ position: "right", formatter: (v: number) => `${v}`, fill: INK.muted, fontSize: 10, fontFamily: FONT.mono }} />
               </BarChart>
             </ResponsiveContainer>

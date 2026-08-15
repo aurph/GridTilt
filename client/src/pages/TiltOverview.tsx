@@ -539,7 +539,7 @@ function BuildoutHistoryCard({
                   connectNulls
                   label={(props: any) => <EndLabel {...props} data={series} field="online" color={BRAND.primary} />}
                 />
-                <Line {...seriesAnimation}
+                <Line {...seriesMotion()}
                   type="stepAfter"
                   dataKey="pipeline"
                   name="pipeline"

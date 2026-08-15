@@ -1,30 +1,14 @@
 // Recharts animates every series by default and never consults
 // prefers-reduced-motion, so charts grew from zero regardless of what the
-// visitor asked their OS for. seriesAnimation is the single switch every
-// animated series spreads; these tests pin the contract.
+// visitor asked their OS for. seriesMotion() is the single switch every
+// animated series spreads (contract tests live in series-motion.test.ts);
+// this file walks the source and requires every series to opt in.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "fs";
 import { join } from "path";
 
 const ROOT = process.cwd();
-const CHART_THEME = join(ROOT, "client", "src", "lib", "chart-theme.ts");
-
-test("seriesAnimation is derived from prefersReducedMotion, not hardcoded", () => {
-  const src = readFileSync(CHART_THEME, "utf-8");
-  assert.match(src, /isAnimationActive:\s*!prefersReducedMotion/, "seriesAnimation must invert the media query");
-  assert.match(src, /prefers-reduced-motion:\s*reduce/, "must query the reduce preference");
-  // Node has no window; the guard is what keeps this importable outside a browser.
-  assert.match(src, /typeof window !== "undefined"/, "must guard window access");
-});
-
-// In a Node test there is no window, so the module-load evaluation must land on
-// "no preference" and leave animation enabled rather than throwing.
-test("chart-theme imports cleanly without a DOM and defaults to animation on", async () => {
-  const mod = await import("../chart-theme");
-  assert.equal(mod.prefersReducedMotion, false, "no window means no stated preference");
-  assert.equal(mod.seriesAnimation.isAnimationActive, true);
-});
 
 /**
  * The real regression risk is a new chart being added without the prop. Recharts
@@ -33,7 +17,7 @@ test("chart-theme imports cleanly without a DOM and defaults to animation on", a
  * looks blank instead of erroring. Walk the source and require every animated
  * series to opt in.
  */
-test("every animated Recharts series spreads seriesAnimation", () => {
+test("every animated Recharts series spreads seriesMotion()", () => {
   const SERIES = ["Bar", "Line", "Area", "Pie", "Radar"];
   const files: string[] = [];
   const walk = (dir: string) => {
@@ -58,7 +42,7 @@ test("every animated Recharts series spreads seriesAnimation", () => {
       // Opening tags of the series itself, never <BarChart>/<LineChart>/etc.
       const re = new RegExp(`<${tag}(?![A-Za-z])[\\s/>][^>]*`, "g");
       for (const m of src.match(re) ?? []) {
-        if (!m.includes("...seriesAnimation")) {
+        if (!m.includes("...seriesMotion()")) {
           offenders.push(`${file.replace(ROOT + "/", "")}: <${tag} ...`);
         }
       }
@@ -68,6 +52,6 @@ test("every animated Recharts series spreads seriesAnimation", () => {
   assert.deepEqual(
     offenders,
     [],
-    `these series animate regardless of prefers-reduced-motion; spread {...seriesAnimation}:\n${offenders.join("\n")}`,
+    `these series animate regardless of prefers-reduced-motion; spread {...seriesMotion()}:\n${offenders.join("\n")}`,
   );
 });

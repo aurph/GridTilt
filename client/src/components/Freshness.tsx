@@ -4,6 +4,7 @@
  * schedule) is visually distinct from "broken" (fetch failed) and from
  * "market closed" (handled per-page where it applies).
  */
+import * as React from "react";
 import { useEffect, useState } from "react";
 import { AlertTriangle, RotateCw } from "lucide-react";
 
