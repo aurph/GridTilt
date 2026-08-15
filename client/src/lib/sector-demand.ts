@@ -24,16 +24,43 @@ export const US_SECTOR_DEMAND: Sector[] = [
 /**
  * Data-center load: a slice of the sectors above, not an addition to them.
  *
- * Flagged estimated. EIA's end-use accounting has no data-center category, so
- * this is derived rather than metered. Provenance is not recorded in the repo and
- * the Overview KPI card attributes it to EIA 2025; the two need reconciling
- * against a source.
+ * 192 TWh in 2024, 4.7% of total US electricity. LBNL, United States Data Center
+ * Energy Usage Report: 2025 Update (LBNL-2001758, June 2026). Excludes crypto
+ * mining, which is out of that report's scope. 2024 is its last historical year.
+ *
+ * Still flagged estimated: LBNL's figure is a bottom-up model over shipment data,
+ * not a metered total, and EIA's end-use accounting has no data-center category
+ * to check it against.
+ *
+ * The previous value, 288 TWh attributed to "EIA 2025", matched no published
+ * source. EIA publishes no such figure and 288 sat far above every estimate for
+ * the period. It also fixed the sector card's arithmetic at 4,490 TWh, which is
+ * how a number with no source survived.
  */
 export const DATA_CENTER_LOAD = {
-  twh: 288,
-  yoy: 33.3,
+  twh: 192,
+  /** The year the figure is for, which is not the sector rows' year. */
+  year: 2024,
+  sharePctOfUS: 4.7,
   estimated: true,
   containedIn: "commercial and industrial",
+  source: "LBNL 2025 Update",
+  sourceUrl: "https://escholarship.org/uc/item/33m6w3x0",
+} as const;
+
+/**
+ * LBNL's Reference Case for 2030: 649 TWh, 11.8% of forecast US electricity,
+ * with a compounded-uncertainty range of 521-843 TWh (9.5-15.3%).
+ *
+ * Supersedes the 2024 Report's 6.7-12.0%-by-2028 range. The site quoted only
+ * that range's top as "12%+ by 2028", which read as a floor rather than a ceiling
+ * and is now two editions out of date.
+ */
+export const DATA_CENTER_2030 = {
+  twh: 649,
+  sharePctOfUS: 11.8,
+  lowPct: 9.5,
+  highPct: 15.3,
 } as const;
 
 /** Sum of the end-use sectors. Never includes data-center load. */
