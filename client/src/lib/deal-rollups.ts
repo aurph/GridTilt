@@ -1,15 +1,11 @@
 /**
- * Reading /api/deals/metrics on surfaces other than the Deals page.
+ * Reads /api/deals/metrics on surfaces other than the Deals page, so deal totals
+ * are quoted from one place.
  *
- * The Overview's nuclear KPI used to be three hardcoded numbers, and all three
- * disagreed with the data the site already served: the headline said 12+ GW, the
- * companies it named summed to 10.3 GW, and computeDealMetrics said 15.5 GW. It
- * also credited Microsoft with 1.2 GW where every other surface, and the queue
- * itself, says 835 MW, and counted Meta's 6.6 GW RFP as committed capacity when
- * an RFP is a request rather than a contract.
- *
- * Anything quoting deal totals outside the Deals page goes through here so there
- * is one number per fact.
+ * The Overview's nuclear KPI was hardcoded and disagreed with the served data
+ * three ways: headline 12+ GW, named companies 10.3 GW, computeDealMetrics
+ * 15.5 GW. It also gave Microsoft 1.2 GW where the queue says 835 MW, and counted
+ * Meta's 6.6 GW RFP, a request rather than a contract, as committed.
  */
 
 export interface BucketLite {
@@ -26,9 +22,8 @@ export interface DealRowLite {
 }
 
 /**
- * The bucket for one generation type, or null when the payload has not arrived
- * or carries no deals of that type. Null rather than a zero bucket, so a caller
- * renders a placeholder instead of claiming zero contracted capacity.
+ * Bucket for one generation type. Null when the payload has not arrived or has no
+ * deals of that type, so callers render a placeholder rather than zero capacity.
  */
 export function bucketFor(
   byType: BucketLite[] | undefined | null,

@@ -1,8 +1,6 @@
-// Regression guard for a live double count: the Overview card listed data
-// centers as a fourth end-use sector, so its 288 TWh was added on top of the
-// commercial and industrial load that already contained it, and the printed
-// total (4,490 TWh) was the result. These tests exist to make that specific
-// mistake fail loudly if anyone reintroduces it.
+// Regression guard: the Overview card listed data centers as a fourth end-use
+// sector, adding 288 TWh on top of the load already containing it and printing
+// 4,490 TWh.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {

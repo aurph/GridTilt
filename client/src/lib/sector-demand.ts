@@ -1,19 +1,10 @@
 /**
- * US electricity demand by end-use sector, and the data-center load that sits
- * inside it.
+ * US electricity demand by end-use sector.
  *
- * The distinction this module exists to enforce: residential, commercial and
- * industrial are the end-use sectors, and they are exhaustive. Data centers are
- * not a fourth one. Their load is metered inside commercial and industrial, so
- * adding a data-center figure to the sector list counts it twice.
- *
- * That is not hypothetical. The Overview card previously listed data centers as
- * a fourth peer row at 288 TWh, and the "total" it printed (4,490 TWh) was the
- * three real sectors (4,202 TWh) plus that 288. The residual between the sector
- * sum and total demand happens to be close to the data-center figure, which is
- * exactly what makes the mistake easy to make and hard to notice.
- *
- * Keep the data-center figure out of any sector total. The tests enforce it.
+ * Residential, commercial and industrial are exhaustive. Data centers are not a
+ * fourth sector; their load is metered inside commercial and industrial, so it
+ * must stay out of any sector total. The Overview card previously added it,
+ * printing 4,490 TWh where the sectors sum to 4,202. Tests enforce the rule.
  */
 
 export interface Sector {
@@ -23,10 +14,7 @@ export interface Sector {
   yoy: number;
 }
 
-/**
- * The three end-use sectors. Source: EIA Electric Power Monthly (2025).
- * Exhaustive by construction: there is no fourth end-use sector to add.
- */
+/** Source: EIA Electric Power Monthly (2025). There is no fourth end-use sector. */
 export const US_SECTOR_DEMAND: Sector[] = [
   { sector: "Residential", twh: 1658, yoy: 2.1 },
   { sector: "Commercial", twh: 1569, yoy: 2.4 },
@@ -34,15 +22,12 @@ export const US_SECTOR_DEMAND: Sector[] = [
 ];
 
 /**
- * Data-center load, which is a slice of the sectors above rather than an
- * addition to them.
+ * Data-center load: a slice of the sectors above, not an addition to them.
  *
- * Flagged estimated on purpose. EIA's end-use accounting has no data-center
- * category to read this off, so whatever its origin it is a derived figure
- * rather than a metered one, and it renders with the estimate treatment so it
- * never reads as measured. The precise provenance of this number is not
- * recorded in the repo; the Overview KPI card attributes it to EIA 2025, which
- * is worth reconciling with a source before either claim hardens.
+ * Flagged estimated. EIA's end-use accounting has no data-center category, so
+ * this is derived rather than metered. Provenance is not recorded in the repo and
+ * the Overview KPI card attributes it to EIA 2025; the two need reconciling
+ * against a source.
  */
 export const DATA_CENTER_LOAD = {
   twh: 288,
@@ -73,10 +58,8 @@ export interface DemandPoint {
 /**
  * Lowest measured year in a demand series, skipping unmeasured years.
  *
- * The card used to claim demand was "up 15% from the 2022 low". In the series on
- * the same page the trough is 2020, and 2022 to 2025 is about +11%, so both the
- * year and the number were wrong. Deriving them means the sentence cannot drift
- * from the data it sits next to.
+ * The card claimed "up 15% from the 2022 low"; the series trough is 2020 and 2022
+ * to 2025 is about +11%. Derived so the copy cannot drift from the series again.
  */
 export function demandTrough(series: DemandPoint[]): { year: string; twh: number } | null {
   let best: { year: string; twh: number } | null = null;

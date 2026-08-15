@@ -150,10 +150,8 @@ function formatDateShort(dateStr: string): string {
 }
 
 /**
- * Colour per electricity end-use sector. Named apart from the equity SECTOR_COLORS
- * below, which is a different meaning of "sector" in the same file. The figures
- * and the arithmetic live in @/lib/sector-demand, which keeps data-center load
- * out of the sector total; this map is presentation only.
+ * Colour per electricity end-use sector. Distinct from the equity SECTOR_COLORS
+ * below. Figures and arithmetic live in @/lib/sector-demand.
  */
 const DEMAND_SECTOR_COLORS: Record<string, string> = {
   Residential: INK.muted,
@@ -945,9 +943,8 @@ export default function TiltOverview() {
   const tracked = useMemo(() => (trackedFacilities ? computeTrackedPower(trackedFacilities) : null), [trackedFacilities]);
   const buildout = useMemo(() => (trackedFacilities ? buildBuildoutHistory(trackedFacilities) : null), [trackedFacilities]);
   const headroom = useMemo(() => tightestRTO(RTO_CONFIG), []);
-  // The nuclear KPI reads the same payload the Deals page computes from, rather
-  // than restating it by hand. The hand-written version drifted to three
-  // different numbers for one fact.
+  // Same payload the Deals page computes from. The hand-written version carried
+  // three different numbers for one fact.
   const { data: dealMetrics } = useQuery<{ byType: BucketLite[]; rows: DealRowLite[] }>({
     queryKey: ["/api/deals/metrics"],
   });
@@ -956,9 +953,8 @@ export default function TiltOverview() {
     () => buyersForType(dealMetrics?.rows, "nuclear")[0] ?? null,
     [dealMetrics],
   );
-  // Sector card figures. Derived rather than written into the copy, so the
-  // sentence cannot drift away from the series charted above it the way the
-  // previous "up 15% from the 2022 low" line did.
+  // Derived from electricityData so the copy cannot drift from the chart above,
+  // as the previous "up 15% from the 2022 low" line had.
   const sectorTotal = useMemo(() => sectorTotalTWh(), []);
   const trough = useMemo(() => demandTrough(electricityData), []);
   const latest = useMemo(() => latestDemand(electricityData), []);
@@ -1239,9 +1235,8 @@ export default function TiltOverview() {
             { label: "DC Share of US Demand", value: "~6.4%", sub: "EIA 2025: ~288 TWh, up from 4.4% in 2023. DOE projects 12%+ by 2028.", color: TOKEN_CATEGORY_COLORS.datacenters },
             {
               label: "Nuclear Power Contracted",
-              // Derived from the tracked deals. "Committed" previously mixed
-              // Meta's 6.6 GW RFP, which is a request rather than a contract,
-              // into a total of signed agreements.
+              // "Committed" previously counted Meta's 6.6 GW RFP, a request
+              // rather than a contract.
               value: asGW(nuclearDeals?.mw) ? `${asGW(nuclearDeals?.mw)} GW` : "--",
               sub: nuclearDeals
                 ? `Across ${nuclearDeals.count} tracked nuclear power deals.${
@@ -1281,9 +1276,8 @@ export default function TiltOverview() {
             </UITooltip>
           </div>
           <div className="divide-y divide-border">
-            {/* Label and figures on one line, bar on its own beneath. The bar used
-                to sit between fixed-width columns, which left it no room on a
-                phone and rendered all three sectors as dots. */}
+            {/* Bar sits below the label rather than between fixed-width columns,
+                which left it no room on a phone and rendered the sectors as dots. */}
             {US_SECTOR_DEMAND.map((s) => {
               const share = sectorShare(s.twh, sectorTotal);
               return (
@@ -1305,8 +1299,7 @@ export default function TiltOverview() {
                     </div>
                   </div>
                   <div className="mt-1.5 bg-muted/30 rounded-full h-1.5">
-                    {/* Scaled to the sum of the sectors shown, so the three bars
-                        are shares of one whole and fill the track between them. */}
+                    {/* Scaled to the sum of the sectors shown. */}
                     <div
                       className="h-1.5 rounded-full"
                       style={{
@@ -1320,9 +1313,8 @@ export default function TiltOverview() {
             })}
           </div>
 
-          {/* Data centers sit inside the sectors above, so they are shown below the
-              total rather than as a fourth row. Listing them as a peer added their
-              load on top of the commercial and industrial load already counting it. */}
+          {/* Shown below the sectors, not as a fourth row: the load is already
+              counted inside commercial and industrial. */}
           <div className="mt-3 pt-3 border-t border-border">
             <div className="flex items-baseline justify-between gap-3">
               <p className="min-w-0 text-xs font-medium text-foreground">

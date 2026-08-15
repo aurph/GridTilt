@@ -1,7 +1,5 @@
-// Guards the second instance of a hardcoded headline drifting from the data the
-// site already serves. The Overview claimed 12+ GW of nuclear, named companies
-// summing to 10.3 GW, and credited Microsoft with 1.2 GW where the queue says
-// 835 MW. Reading the served payload is the fix; these tests pin the reading.
+// Regression guard: the Overview claimed 12+ GW of nuclear, named companies
+// summing to 10.3 GW, and gave Microsoft 1.2 GW where the queue says 835 MW.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { bucketFor, buyersForType, asGW, type DealRowLite } from "../deal-rollups";
