@@ -570,7 +570,7 @@ function BuildoutHistoryCard({
   );
 }
 
-function CatalystCalendarSection() {
+function CatalystCalendarSection({ className = "" }: { className?: string }) {
   const today = new Date();
   const [viewMonth, setViewMonth] = useState(today.getMonth());
   const [viewYear, setViewYear] = useState(today.getFullYear());
@@ -618,7 +618,7 @@ function CatalystCalendarSection() {
   }
 
   return (
-    <Card className="p-5 border-card-border" data-testid="catalyst-calendar">
+    <Card className={`p-5 border-card-border flex flex-col ${className}`} data-testid="catalyst-calendar">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Calendar className="h-3.5 w-3.5 text-brand-2" />
@@ -668,7 +668,9 @@ function CatalystCalendarSection() {
         ))}
       </div>
 
-      <div className="grid grid-cols-7 gap-px">
+      {/* auto-rows-fr lets the week rows share any height the card gains from
+          stretching, so the slack reads as spacing rather than a void. */}
+      <div className="grid grid-cols-7 gap-px flex-1 auto-rows-fr">
         {Array(firstDay).fill(null).map((_, i) => <div key={`empty-${i}`} />)}
         {Array.from({ length: daysInMonth }, (_, i) => {
           const day = i + 1;
@@ -681,7 +683,7 @@ function CatalystCalendarSection() {
           const dayButton = (
             <button
               onClick={() => setSelectedDay(isSelected ? null : dateKey)}
-              className={`relative flex flex-col items-center justify-center h-8 rounded text-xs transition-colors w-full ${
+              className={`relative flex h-full min-h-8 w-full flex-col items-center justify-center rounded text-xs transition-colors ${
                 isSelected ? "bg-brand/20 text-brand-2" :
                 isToday ? "bg-muted/40 text-foreground font-semibold" :
                 "text-muted-foreground hover:bg-muted/20 hover:text-foreground"
@@ -751,8 +753,12 @@ function CatalystCalendarSection() {
         </div>
       )}
 
-      <div className="mt-4 pt-3 border-t border-border">
-        <p className="text-[11px] text-muted-foreground/70 mb-2">Next 5 Upcoming</p>
+      {/* mt-auto pins this to the bottom, so when the card stretches to match the
+          column beside it the slack lands above this list rather than below it. */}
+      <div className="mt-auto pt-4 border-t border-border">
+        <p className="text-[11px] text-muted-foreground/70 mb-2">
+          {isLoading || upcoming.length === 0 ? "Next Upcoming" : `Next ${upcoming.length} Upcoming`}
+        </p>
         <div className="space-y-2">
           {isLoading
             ? Array(5).fill(null).map((_, i) => (
@@ -1031,8 +1037,11 @@ export default function TiltOverview() {
             />
             <BuildoutHistoryCard buildout={buildout} tracked={tracked} isLoading={dcLoading} />
           </div>
-          <div className="lg:col-span-2 space-y-4">
-            <CatalystCalendarSection />
+          {/* The catalyst card absorbs the slack so this column bottoms out level
+              with the taller one. Fixed heights would not: the left column grows
+              with the number of movers, which varies by day. */}
+          <div className="lg:col-span-2 flex flex-col gap-4">
+            <CatalystCalendarSection className="flex-1" />
             <XFollowCard />
           </div>
         </div>
@@ -1053,16 +1062,18 @@ export default function TiltOverview() {
                 </UITooltip>
               </div>
               <p className="text-xs text-muted-foreground">
-                US total electricity demand (TWh), EIA, through 2025. Data-center demand on the right axis
-                shows the two years LBNL measures, 2014 and 2023; the dashed segment between them is not measured.{" "}
+                US total electricity demand (TWh), EIA, through 2025. Data-center demand on the right
+                axis shows only the years LBNL models: 58 TWh in 2014 and 176 TWh in 2023 from the
+                2024 report, and 192 TWh in 2024 from the{" "}
                 <a
-                  href="https://eta-publications.lbl.gov/sites/default/files/2024-12/lbnl-2024-united-states-data-center-energy-usage-report_1.pdf"
+                  href={DATA_CENTER_LOAD.sourceUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-brand hover:text-brand-2"
                 >
-                  LBNL 2024 report
+                  2025 update
                 </a>
+                . Dashed segments span years neither report models.
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-4 text-xs">
@@ -1072,7 +1083,7 @@ export default function TiltOverview() {
               </div>
               <div className="flex items-center gap-1.5">
                 <div className="h-2 w-4 rounded-sm" style={{ backgroundColor: TOKEN_CATEGORY_COLORS.datacenters }} />
-                <span className="text-muted-foreground">Data centers (LBNL, measured years)</span>
+                <span className="text-muted-foreground">Data centers (LBNL, modelled years)</span>
               </div>
             </div>
           </div>
