@@ -1,11 +1,12 @@
 // Regression guard: the Overview card listed data centers as a fourth end-use
-// sector, adding 288 TWh on top of the load already containing it and printing
-// 4,490 TWh.
+// sector, adding its load on top of the sectors already containing it. The
+// figure it added, 288 TWh attributed to EIA, matched no published source.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   US_SECTOR_DEMAND,
   DATA_CENTER_LOAD,
+  DATA_CENTER_2030,
   sectorTotalTWh,
   sectorShare,
   demandTrough,
@@ -34,20 +35,42 @@ test("the sector total excludes data-center load", () => {
   assert.notEqual(
     total,
     4202 + DATA_CENTER_LOAD.twh,
-    "4,490 was the old double-counted figure and must not come back",
+    "the sector sum must never absorb the data-center figure",
+  );
+  assert.notEqual(total, 4490, "4,490 was the old double-counted figure");
+});
+
+test("the data-center figure is the sourced one, not the fabricated 288", () => {
+  // 288 TWh was attributed on the KPI card to "EIA 2025". EIA publishes no such
+  // figure and 288 sat far above every published estimate for the period. It also
+  // happened to make the sector card total 4,490, which is how it survived.
+  assert.notEqual(DATA_CENTER_LOAD.twh, 288, "288 TWh matched no source");
+  assert.equal(DATA_CENTER_LOAD.twh, 192, "LBNL 2025 Update, 2024");
+  assert.equal(DATA_CENTER_LOAD.year, 2024, "not the 2025 the sector rows cover");
+  assert.equal(DATA_CENTER_LOAD.sharePctOfUS, 4.7);
+});
+
+test("the 2030 projection replaces the superseded 12%-by-2028 claim", () => {
+  // The card read "DOE projects 12%+ by 2028", which was the top of the 2024
+  // Report's 6.7-12.0% range quoted as if it were a floor. The 2025 Update
+  // supersedes it with a 2030 horizon.
+  assert.equal(DATA_CENTER_2030.sharePctOfUS, 11.8);
+  assert.equal(DATA_CENTER_2030.twh, 649);
+  assert.ok(
+    DATA_CENTER_2030.lowPct < DATA_CENTER_2030.sharePctOfUS &&
+      DATA_CENTER_2030.sharePctOfUS < DATA_CENTER_2030.highPct,
+    "the reference case must sit inside its own range",
   );
 });
 
-test("adding the data-center figure would reproduce the old wrong total", () => {
-  // Pinned so the relationship is documented rather than rediscovered: the
-  // residual between the sector sum and the total demand figure is close to the
-  // data-center load, which is what made the bug plausible.
-  assert.equal(sectorTotalTWh() + DATA_CENTER_LOAD.twh, 4490);
+test("every published figure carries a source", () => {
+  assert.ok(DATA_CENTER_LOAD.source.length > 0);
+  assert.ok(DATA_CENTER_LOAD.sourceUrl.startsWith("https://"));
 });
 
 test("data-center load is flagged as an estimate, not a measurement", () => {
-  // EIA's end-use accounting has no data-center category to meter this from, so
-  // it is derived however it was arrived at and must render as an estimate.
+  // LBNL's figure is a bottom-up model over shipment data, and EIA's end-use
+  // accounting has no data-center category to check it against.
   assert.equal(DATA_CENTER_LOAD.estimated, true);
 });
 
