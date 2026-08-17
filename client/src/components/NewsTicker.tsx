@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Pause, Play } from "lucide-react";
 import { fetchJson } from "@/lib/queryClient";
+import { SlowLoad } from "@/components/SlowLoad";
 
 interface NewsItem {
   headline: string;
@@ -11,7 +12,7 @@ interface NewsItem {
 }
 
 export function NewsTicker() {
-  const { data: items } = useQuery<NewsItem[]>({
+  const { data: items, isLoading } = useQuery<NewsItem[]>({
     queryKey: ["/api/news"],
     staleTime: 30 * 60 * 1000,
     queryFn: () => fetchJson<NewsItem[]>("/api/news"),
@@ -24,7 +25,29 @@ export function NewsTicker() {
 
   // Shape guard, not just a length guard: `undefined === 0` is false, so a
   // non-array payload used to slip past a `.length` check straight into .map().
-  if (!Array.isArray(items) || items.length === 0) return null;
+  const ready = Array.isArray(items) && items.length > 0;
+
+  // The bar used to be absent until the headlines landed, which on a cold
+  // /api/news is 5s of nothing followed by the page jumping down. Holding the
+  // chrome keeps the layout still and gives the wait somewhere to show.
+  if (isLoading) {
+    return (
+      <div
+        className="flex items-center border-b border-brand/20 bg-brand/5 overflow-hidden flex-shrink-0"
+        style={{ height: "28px" }}
+        data-testid="news-ticker-loading"
+      >
+        <div className="flex-shrink-0 px-3 flex items-center gap-1.5 border-r border-brand/20 h-full bg-brand/10">
+          <span className="text-10 font-bold uppercase tracking-widest text-brand/60">News</span>
+        </div>
+        <div className="flex-1 px-3 overflow-hidden">
+          <SlowLoad active label="Fetching headlines" upstream="the news feeds" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!ready) return null;
 
   const segments = items.map((h) => ({
     text: `${h.source.toUpperCase()}  ${h.headline}`,
