@@ -613,6 +613,17 @@ export default function PowerMap() {
   const [rtoFocus, setRtoFocus]           = useState<string | null>(null);
   const [showAllUpcoming, setShowAllUpcoming] = useState(false);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+
+  // The sheet could only be dismissed by tapping its backdrop, so anyone on a
+  // keyboard was stuck in it. Escape is the expected way out of a modal.
+  useEffect(() => {
+    if (!mobileFiltersOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMobileFiltersOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [mobileFiltersOpen]);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const [tab, setTab] = useToolTabs(POWER_TABS, "map");
@@ -1484,7 +1495,13 @@ export default function PowerMap() {
 
       {mobileFiltersOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
-          <div className="absolute inset-0 bg-black/60" onClick={() => setMobileFiltersOpen(false)} />
+          {/* Tap-outside-to-close for a thumb. Escape covers the keyboard, so
+              this is decoration to a screen reader rather than a control. */}
+          <div
+            className="absolute inset-0 bg-black/60"
+            onClick={() => setMobileFiltersOpen(false)}
+            aria-hidden="true"
+          />
           <div className="absolute bottom-0 left-0 right-0 bg-surface-raised border-t border-subtle rounded-t-xl p-5 max-h-[80vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">

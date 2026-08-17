@@ -78,7 +78,10 @@ function KeyboardShortcutsModal({ onClose }: { onClose: () => void }) {
       className="fixed inset-0 z-[200] flex items-center justify-center"
       data-testid="keyboard-shortcuts-modal"
     >
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      {/* Click-outside-to-close, for a mouse. Keyboard closes with Escape, which
+          the shortcut handler already owns, so this is decoration to a screen
+          reader rather than a control it should announce. */}
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} aria-hidden="true" />
       <div className="relative bg-card border border-card-border rounded-lg p-6 shadow-2xl w-full max-w-sm mx-4">
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-2">
