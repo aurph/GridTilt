@@ -4,7 +4,10 @@ import { type Server } from "http";
 import viteConfig from "../vite.config";
 import fs from "fs";
 import path from "path";
-import { nanoid } from "nanoid";
+// Node's own UUID rather than nanoid: this is a dev-only cache-buster, and
+// nanoid was never declared in package.json. It resolved through vite's own
+// dependency tree, which is also where the advisory against it came from.
+import { randomUUID } from "crypto";
 import { getPageMeta, injectMetaTags } from "./seo";
 
 const viteLogger = createLogger();
@@ -47,7 +50,7 @@ export async function setupVite(server: Server, app: Express) {
       let template = await fs.promises.readFile(clientTemplate, "utf-8");
       template = template.replace(
         `src="/src/main.tsx"`,
-        `src="/src/main.tsx?v=${nanoid()}"`,
+        `src="/src/main.tsx?v=${randomUUID()}"`,
       );
       const pathname = req.originalUrl.split("?")[0] || "/";
       const meta = getPageMeta(pathname);
