@@ -25,6 +25,7 @@ import {
 import { Cpu, Server, Zap, TrendingUp, TrendingDown, Info, Clock, ChevronDown, ChevronRight } from "lucide-react";
 import { AsOf, ErrorState } from "@/components/Freshness";
 import { PageHeader, HeaderStat } from "@/components/PageHeader";
+import { SlowLoad } from "@/components/SlowLoad";
 import { BRAND, CATEGORY_COLORS, CHART_CHROME, INK, SEMANTIC } from "@/lib/tokens";
 import { axisProps, gridProps, seriesMotion } from "@/lib/chart-theme";
 import { sparklineDomain } from "@/lib/gpu-series";
@@ -604,7 +605,14 @@ export default function TheStack() {
             <Badge className="bg-brand-2/15 text-brand-2 border-brand-2/30 text-xs">
               Yahoo Finance{majorityState === "REGULAR" ? " · Live" : ""}
             </Badge>
-            <AsOf updatedAt={dataUpdatedAt} intervalMs={900_000} />
+            {/* One line in the header rather than per layer: the skeletons
+                already say something is coming, and repeating a timer eight
+                times says it eight times. Cold /api/stack is 4.2s. */}
+            {isLoading ? (
+              <SlowLoad active label="Pricing 100 equities" upstream="Yahoo Finance" />
+            ) : (
+              <AsOf updatedAt={dataUpdatedAt} intervalMs={900_000} />
+            )}
           </>
         }
         controls={
