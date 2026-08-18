@@ -48,7 +48,7 @@ import { fractionToPercent, getCachedFundamentals, refreshFundamentalsIfStale } 
 import { computeDealMetrics, type DealProject } from "./deals";
 import { composeBrief, renderBriefText, type BriefInput } from "./brief";
 import { computeGpuEconomics, TRAINING_PRESETS } from "./gpu-economics";
-import { readFrontierRegistry, summarizeFrontierRegistry } from "./frontier-models";
+import { readFrontierRegistry, summarizeFrontierRegistry, type FrontierRegistryResponse } from "./frontier-models";
 import { readInferencePrices, buildInferencePriceView } from "./inference-prices";
 import { computeFreshness, type FileContents } from "./freshness";
 import { DATASET_REGISTRY } from "./freshness-registry";
@@ -4081,7 +4081,11 @@ ${rssItems}
   app.get("/api/frontier-models", (_req, res) => {
     try {
       const registry = readFrontierRegistry();
-      res.json({ ...registry, summary: summarizeFrontierRegistry(registry) });
+      const payload: FrontierRegistryResponse = {
+        ...registry,
+        summary: summarizeFrontierRegistry(registry),
+      };
+      res.json(payload);
     } catch (err) {
       console.error("Frontier model registry error:", err);
       res.status(500).json({ error: "Failed to load frontier model registry" });

@@ -166,7 +166,29 @@ export function readFrontierRegistry(): FrontierRegistry {
   return validateFrontierRegistry(JSON.parse(readFileSync(path, "utf-8")));
 }
 
-export function summarizeFrontierRegistry(registry: FrontierRegistry) {
+/**
+ * Counts derived at request time. Not in frontier-models.json: the file holds
+ * the records, this is computed from them.
+ */
+export interface FrontierSummary {
+  asOf: string;
+  labCount: number;
+  modelCount: number;
+  sourceCount: number;
+  firstReleaseDate: string | null;
+  lastReleaseDate: string | null;
+}
+
+/**
+ * What /api/frontier-models actually returns, which is the file plus the
+ * summary. The client declares this same shape as its own FrontierRegistry,
+ * so the two disagreed on whether `summary` existed until this was named:
+ * server FrontierRegistry models the file, this models the response.
+ * server/__tests__/frontier-type-parity.test.ts fails if they drift again.
+ */
+export type FrontierRegistryResponse = FrontierRegistry & { summary: FrontierSummary };
+
+export function summarizeFrontierRegistry(registry: FrontierRegistry): FrontierSummary {
   const dates = registry.models.map((model) => model.releaseDate).sort();
   return {
     asOf: registry.asOf,
