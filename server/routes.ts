@@ -1983,9 +1983,20 @@ export async function registerRoutes(
   app.use("/api/admin/", adminAuthFailureLimiter);
   app.use("/api/newsletter/", adminAuthFailureLimiter);
 
-  // KPI endpoint - three composite indicators
+  // KPI endpoint - three composite indicators.
+  //
+  // Recorded, not displayed. The Overview shows the measured gauges (tracked
+  // DC power, GPU rental cost, tightest RTO margin) and no client fetches this
+  // route; it exists so the series in index-history.json keeps accumulating.
+  //
+  // Deliberate, decided 2026-08-18: the series is public, has a backtest behind
+  // it (scripts/backtest-indices.ts) and a committed seed, and the constants in
+  // server/indices.ts are marked do-not-touch because changing them splices two
+  // methodologies into one published series. Retiring the route would orphan all
+  // of that to remove something that costs nothing to keep.
+  //
   // Methodology lives in server/indices.ts. Both this route and the daily
-  // tweet cron call the same function so the public dashboard and the social
+  // tweet cron call the same function so the recorded series and the social
   // post can never drift on what "today's numbers" are.
   app.get("/api/kpis", async (_req, res) => {
     const kpis = await computeKpis();

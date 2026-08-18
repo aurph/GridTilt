@@ -182,17 +182,22 @@ Documented, not to fix casually or silently:
 - Fake-data debt CLOSED on feat/live-gpu-prices (2026-07-04): the CCJ/CEG scatter now computes
   from real SRUUF/CCJ/CEG weekly closes (server/uranium-correlation.ts, tested); fetch failure
   serves empty + null r, never invented dots. PR #2's removal approach is obsolete.
-- Security closes from PR #1 (da97234) APPLIED on feat/live-gpu-prices (2026-07-04): SEC-1..5 +
-  auth-boundary tests. PR #1 itself is obsolete once that branch merges. Note: cron-job.org needs
-  a second job POSTing /api/admin/scan-news-now (x-admin-key) to restore automated news scans.
-- PR #2 (feat/real-metrics) proposes retiring the sentiment indices for a sourced scoreboard;
-  main kept the indices (served at /api/kpis, out of the social rotation). Owner decision pending.
-- No CI (no .github/ at all). Tests and tsc run only when someone remembers.
+- PRs #1 and #2 CLOSED 2026-08-18. Their code was already in main (SEC-1..5 and the
+  auth-boundary test via feat/live-gpu-prices; the indices retirement via feat/real-gauges).
+  Their audit docs were salvaged to docs/ARCHITECTURE.md and docs/audit/, marked historical.
+  Still outstanding from that work: cron-job.org needs a job POSTing /api/admin/scan-news-now
+  (x-admin-key) to restore automated news scans. See docs/ or the Desktop cron setup guide.
+- Indices RESOLVED 2026-08-18: retired from the surface, kept as a recorded series. The Overview
+  shows the measured gauges; no client fetches /api/kpis. The route still computes and appends to
+  index-history.json on purpose, because the series is public, has a backtest and a committed
+  seed, and the indices.ts constants are do-not-touch. Rationale sits at the route.
+- CI runs on every push and PR (.github/workflows/ci.yml, Node 22): typecheck, tests, build, a
+  reporting-only slop scan, and `npm audit` which DOES fail the build on a new high advisory.
 - Durability (audit M2): subscribers.json and all machine-written JSON live on autoscale
   ephemeral disk; admin blog CRUD writes git-tracked content/ at runtime. A redeploy can lose
   subscribers and posts. Jetson Postgres is the planned fix.
-- `npm run dev` on macOS: server/index.ts:188 sets reusePort unconditionally, which fails on
-  darwin; the off-darwin conditional is stranded in unmerged PR #1.
+- `npm run dev` on macOS works: reusePort is guarded by `process.platform === "linux"`.
+  Note port 5000 is taken by AirPlay Receiver on macOS; use PORT=5199 or turn AirPlay off.
 - routes.ts is a 3,913-line monolith (70 routes + OAuth client + OG renderer + 3 scanners +
   static data tables).
 - README + replit.md rewritten from code truth (2026-07-04, feat/live-gpu-prices). HANDOFF.md and
