@@ -41,6 +41,9 @@ interface PortfolioResult {
   explanation: string;
 }
 
+/** The radar axes, which are exactly the keys of a result's `sectors`. */
+const RADAR_AXES = ["Compute", "Infrastructure", "Power", "Cooling", "Grid"] as const;
+
 interface RadarDataPoint {
   axis: string;
   value: number;
@@ -202,10 +205,13 @@ export default function PortfolioOverlay({ embedded = false }: { embedded?: bool
     [results],
   );
 
+  // `as const` rather than a string[]: the axis names are the keys of `sectors`,
+  // so indexing is checked and a typo is a compile error instead of a NaN that
+  // reaches the chart.
   const radarData: RadarDataPoint[] = results
-    ? ["Compute", "Infrastructure", "Power", "Cooling", "Grid"].map((axis) => ({
+    ? RADAR_AXES.map((axis) => ({
         axis,
-        value: results.reduce((sum, r) => sum + (r.sectors as any)[axis], 0) / results.length,
+        value: results.reduce((sum, r) => sum + r.sectors[axis], 0) / results.length,
         fullMark: 100,
       }))
     : [];

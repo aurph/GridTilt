@@ -304,6 +304,11 @@ function RTORegions({ viewMode }: { viewMode: ViewMode }) {
         if (cancelled) return;
 
         const topojsonModule = await import("topojson-client");
+        // Left as any on purpose. feature() is generic over topojson's own
+        // Topology type, so removing this means declaring the full nested
+        // GeometryObject shape of the states file just to satisfy the overload.
+        // Tried it: the type is larger than the code it guards and buys nothing,
+        // since the result is handed straight to Leaflet's GeoJSON layer.
         const geoData = topojsonModule.feature(topo, topo.objects.states) as any;
 
         const stateNames: Record<string, string> = {};
