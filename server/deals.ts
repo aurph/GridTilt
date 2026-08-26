@@ -55,13 +55,18 @@ export interface DealMetrics {
   rows: DealRow[]; // sorted by capacityMW desc
 }
 
-/** Fold buyer-name variants to one canonical label. */
+/** Fold buyer-name variants to one canonical label. Buyers that are not
+ *  public fold into two honest buckets so the chart doesn't grow a new
+ *  near-duplicate slot per anonymous deal ("Undisclosed hyperscaler",
+ *  "Unnamed PA datacenter", ...). Rows keep the raw string. */
 export function normalizeOfftaker(raw: string): string {
   const head = raw.split(/[(,+]/)[0].trim();
   if (/^amazon/i.test(head)) return "Amazon (AWS)";
   if (/^microsoft/i.test(head)) return "Microsoft";
   if (/^google/i.test(head)) return "Google";
   if (/^meta/i.test(head)) return "Meta";
+  if (/^(undisclosed|unnamed|two undisclosed)/i.test(head)) return "Undisclosed buyers";
+  if (/^(multiple|hyperscale data centers)/i.test(head)) return "Multiple buyers";
   return head;
 }
 

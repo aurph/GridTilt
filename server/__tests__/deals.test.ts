@@ -22,6 +22,12 @@ test("normalizeOfftaker folds buyer name variants", () => {
   assert.equal(normalizeOfftaker("Google + TVA"), "Google");
   assert.equal(normalizeOfftaker("Meta (VPPA)"), "Meta");
   assert.equal(normalizeOfftaker("Constellation + AES"), "Constellation");
+  // anonymous buyers fold into two buckets instead of one slot per deal
+  assert.equal(normalizeOfftaker("Undisclosed hyperscaler (terms agreed)"), "Undisclosed buyers");
+  assert.equal(normalizeOfftaker("Unnamed PA datacenter"), "Undisclosed buyers");
+  assert.equal(normalizeOfftaker("Two undisclosed data center operators (LOIs)"), "Undisclosed buyers");
+  assert.equal(normalizeOfftaker("Multiple offtakers + state agreements"), "Multiple buyers");
+  assert.equal(normalizeOfftaker("Hyperscale data centers (multiple)"), "Multiple buyers");
 });
 
 test("only power-procurement deals count; DC load is excluded", () => {
