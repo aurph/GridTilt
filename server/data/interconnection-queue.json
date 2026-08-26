@@ -54,7 +54,7 @@
       "state": "MI",
       "status": "active",
       "category": "generation",
-      "expectedOnline": "2026 (no announced restart date)",
+      "expectedOnline": "2026 (no firm date)",
       "offtaker": "Multiple offtakers + state agreements",
       "dcRelevant": true,
       "sources": [
@@ -150,7 +150,7 @@
       "state": "CA",
       "status": "operational",
       "category": "generation",
-      "expectedOnline": "Operating; state-capped at 2030",
+      "expectedOnline": "Through 2030 (state cap)",
       "offtaker": "California grid",
       "dcRelevant": true,
       "sources": [
@@ -657,7 +657,6 @@
       "state": "TX",
       "status": "active",
       "category": "ppa",
-      "expectedOnline": "Multi-site deployment (timeline undisclosed)",
       "offtaker": "Oracle (via VoltaGrid, up to 2.3 GW)",
       "dcRelevant": true,
       "sources": [
@@ -696,8 +695,8 @@
       "state": "MI",
       "status": "active",
       "category": "ppa",
-      "expectedOnline": "Grid connection Dec 2026; full 1.4 GW within ~a year after",
-      "offtaker": "Stargate Saline Township campus (reported: Related Digital for Oracle/OpenAI)",
+      "expectedOnline": "Dec 2026+",
+      "offtaker": "Stargate Saline Township (reported: Related Digital for Oracle/OpenAI; 19-year supply agreement)",
       "dcRelevant": true,
       "sources": [
         "Utility Dive",
@@ -1126,7 +1125,7 @@
       "state": "Multi",
       "status": "active",
       "category": "ppa",
-      "expectedOnline": "First deployments ~2029, through 2044",
+      "expectedOnline": "~2029-2044",
       "offtaker": "Switch (non-binding MPA, up to 12 GW)",
       "dcRelevant": true,
       "sources": [
@@ -1163,7 +1162,7 @@
       "state": "TX",
       "status": "active",
       "category": "ppa",
-      "expectedOnline": "First power 2028, ramping to 2.67 GW",
+      "expectedOnline": "First power 2028",
       "offtaker": "Microsoft (20-year PPA)",
       "dcRelevant": true,
       "sources": [
@@ -1203,7 +1202,7 @@
       "state": "TX",
       "status": "active",
       "category": "ppa",
-      "expectedOnline": "Deliveries late 2027, full by 2032",
+      "expectedOnline": "Late 2027-2032",
       "offtaker": "Amazon Web Services (20-year PPA, up to 1,200 MW)",
       "dcRelevant": true,
       "sources": [
@@ -1223,7 +1222,7 @@
       "state": "AR",
       "status": "active",
       "category": "ppa",
-      "expectedOnline": "Phases 1-2 under construction; full project by 2029",
+      "expectedOnline": "By 2029",
       "offtaker": "Google (PPA, phases 1-2)",
       "dcRelevant": true,
       "sources": [
@@ -1263,7 +1262,7 @@
       "state": "TX",
       "status": "active",
       "category": "ppa",
-      "expectedOnline": "Construction from Q3 2026",
+      "expectedOnline": "Construction Q3 2026",
       "offtaker": "Google (15-year PPA)",
       "dcRelevant": true,
       "sources": [
@@ -1358,7 +1357,7 @@
       "state": "LA",
       "status": "active",
       "category": "ppa",
-      "expectedOnline": "Construction from 2026",
+      "expectedOnline": "Construction 2026",
       "offtaker": "Meta (long-term PPA)",
       "dcRelevant": true,
       "sources": [
@@ -1432,7 +1431,7 @@
       "state": "Multi",
       "status": "active",
       "category": "ppa",
-      "expectedOnline": "Phased; first major site NM",
+      "expectedOnline": "Phased",
       "offtaker": "Oracle (MSA up to 2.8 GW; 1.2 GW initial)",
       "dcRelevant": true,
       "sources": [
@@ -1490,7 +1489,7 @@
       "state": "MO/TX/WV",
       "status": "active",
       "category": "ppa",
-      "expectedOnline": "First COD 2027-2028",
+      "expectedOnline": "2027-2028",
       "offtaker": "Google (three PPAs up to 20 years)",
       "dcRelevant": true,
       "sources": [
@@ -1564,7 +1563,7 @@
       "state": "NM",
       "status": "active",
       "category": "ppa",
-      "expectedOnline": "Full operation by 2030 (two phases)",
+      "expectedOnline": "By 2030",
       "offtaker": "Meta (development/offtake partnership)",
       "dcRelevant": true,
       "sources": [
@@ -1604,7 +1603,7 @@
       "state": "OR",
       "status": "active",
       "category": "ppa",
-      "expectedOnline": "Construction from 2026",
+      "expectedOnline": "Construction 2026",
       "offtaker": "Amazon (owner; acquired out of Chapter 11)",
       "dcRelevant": true,
       "sources": [
@@ -1623,7 +1622,7 @@
       "state": "LA",
       "status": "active",
       "category": "ppa",
-      "expectedOnline": "Franklin Farms 2028; Waterford 5 mid-2029",
+      "expectedOnline": "2028-2029",
       "offtaker": "Meta (15-year electric service agreement)",
       "dcRelevant": true,
       "sources": [

@@ -61,6 +61,10 @@ const TYPE_COLOR: Record<string, string> = {
   hybrid: SERIES[5], // series slot 6
   hydro: CATEGORY_COLORS.hydro,
   geothermal: SERIES[4], // series slot 5
+  utility: SERIES[9], // slate - grid supply, matches the grid=cool convention
+  // fusion (and any future one-off type) deliberately falls through to muted:
+  // the palette is at capacity, so rare types read as "other" and the label
+  // carries identity. Type words wear ink tokens; only the dot is colored.
 };
 const typeColor = (t: string) => TYPE_COLOR[t] ?? INK.muted;
 
@@ -89,14 +93,15 @@ export default function PowerDeals({ embedded = false }: { embedded?: boolean; p
     [data],
   );
 
-  // Signed now vs staged ramp-ups, split on the disclosed online field
-  // ("2029-2032 staged" style entries mark deals that build to a target).
+  // Firm contracts vs labeled frameworks: the registry marks non-binding
+  // scopes in the offtaker terms (master agreements, LOIs, terms-agreed),
+  // so the split reads straight off the disclosed labels.
   const firmness = useMemo(() => {
     if (!data) return null;
-    const stagedMW = data.rows
-      .filter((r) => /staged/i.test(r.online ?? ""))
+    const frameworkMW = data.rows
+      .filter((r) => /non-binding|LOI|MSA|terms agreed|framework/i.test(r.offtakerRaw))
       .reduce((s, r) => s + r.capacityMW, 0);
-    return { stagedMW, signedMW: data.totalContractedMW - stagedMW };
+    return { frameworkMW, firmMW: data.totalContractedMW - frameworkMW };
   }, [data]);
 
   const visibleRows = useMemo(() => {
@@ -130,8 +135,8 @@ export default function PowerDeals({ embedded = false }: { embedded?: boolean; p
     <div className="flex flex-wrap items-start justify-between gap-3 px-1">
       <p className="text-muted-foreground text-xs leading-relaxed max-w-3xl">
         Corporate power procurement for AI: every named deal where a hyperscaler or AI company has contracted
-        generation (a PPA, a reactor restart, an SMR option) to feed its compute. Capacity is the contracted
-        figure; open a row for terms and sources.
+        generation (a PPA, a utility supply agreement, a reactor restart, an SMR framework, an asset acquisition)
+        to feed its compute. Capacity is the contracted figure; open a row for terms and sources.
       </p>
       {asOfChip}
     </div>
@@ -147,7 +152,8 @@ export default function PowerDeals({ embedded = false }: { embedded?: boolean; p
           </div>
           <p className="text-muted-foreground text-sm leading-relaxed">
             Corporate power procurement for AI: every named deal where a hyperscaler or AI company has
-            contracted generation (a PPA, a reactor restart, an SMR option) to feed its compute. The data-center
+            contracted generation (a PPA, a utility supply agreement, a reactor restart, an SMR framework,
+            an asset acquisition) to feed its compute. The data-center
             sites themselves live in <Link href="/compute-frontier" className="text-brand hover:text-brand-2">Compute Frontier</Link>;
             this is the power behind them. Capacity is the contracted figure; open a row for terms and sources.
           </p>
@@ -167,7 +173,7 @@ export default function PowerDeals({ embedded = false }: { embedded?: boolean; p
           <StatTile label="Tracked deals" value={data ? String(data.dealCount) : "—"} loading={isLoading} />
           <StatTile label="Contracted power" value={data ? `${gw(data.totalContractedMW)} GW` : "—"} loading={isLoading} />
           <StatTile label="Top buyer" value={data?.topBuyer ?? "—"} loading={isLoading} />
-          <StatTile label="Signed vs staged" value={firmness ? `${gw(firmness.signedMW)} / ${gw(firmness.stagedMW)} GW` : "—"} loading={isLoading} />
+          <StatTile label="Firm vs frameworks" value={firmness ? `${gw(firmness.firmMW)} / ${gw(firmness.frameworkMW)} GW` : "—"} loading={isLoading} />
         </div>
 
         {/* Contracted power by buyer */}
@@ -222,10 +228,11 @@ export default function PowerDeals({ embedded = false }: { embedded?: boolean; p
                   className="px-2.5 py-1 rounded text-xs border transition-colors"
                   style={{
                     borderColor: on ? typeColor(b.key) : BORDER.subtle,
-                    color: on ? typeColor(b.key) : INK.muted,
+                    color: on ? INK.primary : INK.muted,
                     background: on ? `${typeColor(b.key)}14` : "transparent",
                   }}
                 >
+                  <span className="inline-block h-2 w-2 rounded-full mr-1.5 align-middle" style={{ background: typeColor(b.key) }} />
                   {b.key} · {gw(b.mw)} GW
                 </button>
               );
@@ -263,7 +270,7 @@ export default function PowerDeals({ embedded = false }: { embedded?: boolean; p
                     <span className="col-span-2">
                       <span className="inline-flex items-center gap-1.5">
                         <span className="h-2 w-2 rounded-full flex-shrink-0" style={{ background: typeColor(r.type) }} />
-                        <span style={{ color: typeColor(r.type) }}>{r.type}</span>
+                        <span className="text-muted-foreground">{r.type}</span>
                       </span>
                     </span>
                     <span className="col-span-2 font-mono text-foreground text-right tabular-nums">{gw(r.capacityMW)} GW</span>
@@ -273,7 +280,7 @@ export default function PowerDeals({ embedded = false }: { embedded?: boolean; p
                 <TooltipContent side="top" className="max-w-md p-3">
                   <div className="text-xs font-semibold mb-1 text-foreground">{r.name}</div>
                   <div className="text-11 text-muted-foreground mb-1.5">
-                    <span style={{ color: typeColor(r.type) }}>{r.type}</span> · {gw(r.capacityMW)} GW · {r.sponsor} → {r.offtakerRaw}
+                    <span className="inline-block h-2 w-2 rounded-full mr-1 align-middle" style={{ background: typeColor(r.type) }} />{r.type} · {gw(r.capacityMW)} GW · {r.sponsor} → {r.offtakerRaw}
                     {r.state ? ` · ${r.state}` : ""}{r.iso ? ` (${r.iso})` : ""} · <span style={{ color: STATUS_COLOR[r.status] ?? INK.muted }}>{r.status}</span>
                   </div>
                   {r.notes && <p className="text-11 text-muted-foreground/80 mb-1.5">{r.notes}</p>}
@@ -292,9 +299,10 @@ export default function PowerDeals({ embedded = false }: { embedded?: boolean; p
         </Card>
 
         <p className="text-11 text-muted-foreground/60 leading-relaxed px-1">
-          Deals are corporate power-purchase agreements, reactor restarts, and SMR options with a named AI / hyperscaler
-          offtaker, drawn from GridTilt's curated deal registry. Capacity is the
-          contracted figure as disclosed; staged deals show their full target. Terms and sources are on each row.
+          Deals are corporate power-purchase and utility-supply agreements, reactor restarts, SMR frameworks, and
+          generation-asset acquisitions with an AI / hyperscaler buyer, drawn from GridTilt's curated deal registry.
+          Capacity is the contracted figure as disclosed; non-binding frameworks and options show their labeled
+          ceilings and are split out in the firm-vs-frameworks tile. Terms and sources are on each row.
         </p>
       </div>
     </div>
