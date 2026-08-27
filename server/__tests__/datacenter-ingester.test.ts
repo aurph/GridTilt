@@ -168,6 +168,44 @@ test("approvePending moves entry to approved and removes from pending", async ()
   assert.equal(notFound.ok, false);
 });
 
+test("a scan stamps lastChecked; an approval stamps lastRefreshed", async () => {
+  // The freshness registry reads this sidecar; datacenters.json itself stays
+  // a bare array. Same semantics as the news scanner: checked moves every
+  // run, refreshed only when the approved dataset actually changes.
+  const dir = mkdtempSync(join(tmpdir(), "dc-stamp-"));
+  const approvedPath = join(dir, "datacenters.json");
+  const pendingPath = join(dir, "pending.json");
+  const stampPath = join(dir, "datacenters-freshness.json");
+  writeFileSync(approvedPath, "[]");
+  writeFileSync(pendingPath, JSON.stringify([
+    { id: 5, name: "Test DC", company: "Microsoft", city: "Phoenix", state: "AZ", lat: 33.4, lng: -112.0, powerMW: 800, status: "announced", annualMWh: 1000, gridOperator: "x", openDate: "TBD", sourceUrl: "u", sourceTitle: "t", sourceName: "DCD", discoveredAt: "now", approxCoords: false },
+  ]));
+  writeFileSync(stampPath, JSON.stringify({ lastChecked: "2026-01-01", lastRefreshed: "2026-01-01" }));
+
+  const today = new Date().toISOString().slice(0, 10);
+  await runDatacenterIngestion(
+    { approvedPath, pendingPath, stampPath },
+    async () => ({ items: [] }),
+  );
+  let stamp = JSON.parse(readFileSync(stampPath, "utf-8"));
+  assert.equal(stamp.lastChecked, today, "scan moves lastChecked");
+  assert.equal(stamp.lastRefreshed, "2026-01-01", "empty scan leaves lastRefreshed");
+
+  approvePending(5, { approvedPath, pendingPath, stampPath });
+  stamp = JSON.parse(readFileSync(stampPath, "utf-8"));
+  assert.equal(stamp.lastRefreshed, today, "approval moves lastRefreshed");
+});
+
+test("stamping is a no-op without a stampPath (path-injecting callers)", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "dc-nostamp-"));
+  const approvedPath = join(dir, "datacenters.json");
+  const pendingPath = join(dir, "pending.json");
+  writeFileSync(approvedPath, "[]");
+  writeFileSync(pendingPath, "[]");
+  const r = await runDatacenterIngestion({ approvedPath, pendingPath }, async () => ({ items: [] }));
+  assert.equal(r.scanned, 0); // completed without throwing; nothing stamped
+});
+
 test("rejectPending removes entry", () => {
   const dir = mkdtempSync(join(tmpdir(), "dc-reject-"));
   const approvedPath = join(dir, "datacenters.json");
