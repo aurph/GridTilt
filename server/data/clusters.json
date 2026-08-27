@@ -1,5 +1,5 @@
 {
-  "lastRefreshed": "2026-06-26",
+  "lastRefreshed": "2026-08-27",
   "methodology": "Named AI training and inference superclusters compiled from public announcements (company press releases, Reuters, Tom's Hardware, Data Center Dynamics, SemiAnalysis, utility filings) plus cross-reference to GridTilt's own Power Map registry. Tracked, not exhaustive. Power in MW. 'estimated' lists the field names whose values are GridTilt estimates or announced forward targets not yet realized; sourced values are not listed there. gpuCount is null when the accelerator count is not disclosed; we do not invent one. linkedDeal references a deal id in interconnection-queue.json where a tracked nuclear-for-AI deal applies to the site.",
   "clusters": [
     {
@@ -14,9 +14,9 @@
         "lng": -99.7331
       },
       "gridRegion": "ERCOT",
-      "gpuCount": 450000,
+      "gpuCount": 201600,
       "chipType": "NVIDIA GB200",
-      "ratedPowerMW": 200,
+      "ratedPowerMW": 421,
       "plannedPowerMW": 1200,
       "energySource": "grid + on-site gas",
       "workload": "mixed",
@@ -29,9 +29,11 @@
       "sources": [
         "https://openai.com/index/stargate-advances-with-partnership-with-oracle/",
         "https://www.datacenterdynamics.com/en/news/openai-and-oracle-to-deploy-450000-gb200-gpus-at-stargate-abilene-data-center/",
-        "https://www.cnbc.com/2025/09/23/openai-first-data-center-in-500-billion-stargate-project-up-in-texas.html"
+        "https://www.cnbc.com/2025/09/23/openai-first-data-center-in-500-billion-stargate-project-up-in-texas.html",
+        "https://epoch.ai/data/ai-data-centers/directory/openai-stargate-abilene",
+        "https://www.tomshardware.com/tech-industry/oracle-and-openai-scrap-planned-600mw-abilene-expansion"
       ],
-      "notes": "Crusoe/Lancium-built flagship Stargate campus on a 15-year Oracle lease. First two of eight buildings live Sept 2025; 1.2 GW target by mid-2026. GPT-5.5 was trained here. 450k GB200 is the announced full deployment target."
+      "notes": "Crusoe/Lancium-built flagship Stargate campus on a 15-year Oracle lease. 4 of 8 buildings operational with ~421 MW IT power and ~200k B200/B300-class GPUs live (Epoch, mid-2026); full buildout projected ~Nov 2026 (~843 MW IT / ~400k GPUs). The announced 450k GB200 was the deployment target, not current reality. A planned 600 MW expansion beyond 1.2 GW was scrapped in March 2026. rated = live IT power; planned = 1.2 GW facility power."
     },
     {
       "id": "stargate-milam",
@@ -48,19 +50,19 @@
       "gpuCount": null,
       "chipType": "NVIDIA GB200",
       "ratedPowerMW": 0,
-      "plannedPowerMW": 1500,
+      "plannedPowerMW": 1200,
       "energySource": "grid + on-site gas",
       "workload": "training",
       "linkedDeal": null,
       "onlineDate": "2026",
-      "estimated": [
-        "plannedPowerMW"
-      ],
+      "estimated": [],
       "sources": [
         "https://openai.com/index/five-new-stargate-sites/",
-        "https://www.datacenterfrontier.com/machine-learning/article/55319132/scaling-stargate-openais-five-new-us-data-centers-push-toward-10-gw-ai-infrastructure"
+        "https://www.datacenterfrontier.com/machine-learning/article/55319132/scaling-stargate-openais-five-new-us-data-centers-push-toward-10-gw-ai-infrastructure",
+        "https://openai.com/index/stargate-sb-energy-partnership/",
+        "https://sbenergy.com/openai-and-softbank-group-partner-with-sb-energy/"
       ],
-      "notes": "SoftBank-led Stargate campus; can scale toward ~1.5 GW within 18 months of the Sept 2025 announcement."
+      "notes": "SB Energy builds and operates OpenAI's 1.2 GW Stargate campus in Milam County (announced Jan 2026 with a $1B OpenAI/SoftBank investment into SB Energy); powered by new SB Energy solar + storage, initial facilities entering service from 2026."
     },
     {
       "id": "stargate-lordstown",
@@ -77,7 +79,7 @@
       "gpuCount": null,
       "chipType": "NVIDIA GB200",
       "ratedPowerMW": 0,
-      "plannedPowerMW": 1500,
+      "plannedPowerMW": 300,
       "energySource": "grid + on-site gas",
       "workload": "training",
       "linkedDeal": null,
@@ -87,9 +89,10 @@
       ],
       "sources": [
         "https://openai.com/index/five-new-stargate-sites/",
-        "https://www.datacenterfrontier.com/machine-learning/article/55319132/scaling-stargate-openais-five-new-us-data-centers-push-toward-10-gw-ai-infrastructure"
+        "https://www.datacenterfrontier.com/machine-learning/article/55319132/scaling-stargate-openais-five-new-us-data-centers-push-toward-10-gw-ai-infrastructure",
+        "https://epoch.ai/publications/openai-stargate-where-the-us-sites-stand"
       ],
-      "notes": "Redevelopment of the former GM/Foxconn complex; OpenAI/Oracle/SoftBank. Scales toward ~1.5 GW."
+      "notes": "Redevelopment of the former GM/Foxconn complex (OpenAI/Oracle/SoftBank). Announced as scaling toward ~1.5 GW, but Epoch's April 2026 site assessment puts the actual build under 0.3 GW; we hold the assessed figure as an estimate."
     },
     {
       "id": "stargate-shackelford",
@@ -126,15 +129,15 @@
       "location": {
         "city": "Santa Teresa",
         "state": "NM",
-        "lat": 31.9176,
-        "lng": -106.7118
+        "lat": 31.842,
+        "lng": -106.74
       },
       "gridRegion": "WECC",
       "gpuCount": null,
       "chipType": "NVIDIA GB200",
       "ratedPowerMW": 0,
       "plannedPowerMW": 1000,
-      "energySource": "grid",
+      "energySource": "on-site microgrid (Bloom fuel cells + gas)",
       "workload": "training",
       "linkedDeal": null,
       "onlineDate": "2027",
@@ -143,9 +146,13 @@
       ],
       "sources": [
         "https://openai.com/index/five-new-stargate-sites/",
-        "https://www.datacenterfrontier.com/machine-learning/article/55319132/scaling-stargate-openais-five-new-us-data-centers-push-toward-10-gw-ai-infrastructure"
+        "https://www.datacenterfrontier.com/machine-learning/article/55319132/scaling-stargate-openais-five-new-us-data-centers-push-toward-10-gw-ai-infrastructure",
+        "https://www.stackinfra.com/about/news-press/press-releases/stack-infrastructure-delivers-digital-infrastructure-for-data-center-campus-in-new-mexico/",
+        "https://elpasomatters.org/2025/09/25/stargate-open-ai-oracle-project-jupiter-data-center-dona-ana-new-mexico-el-paso-texas/",
+        "https://www.oracle.com/news/announcement/oracle-borderplex-and-bloom-energy-to-power-project-jupiter-with-fuel-cell-technology-2026-04-27/",
+        "https://oilprice.com/Latest-Energy-News/World-News/Oracles-165-Billion-Data-Center-Plan-Hits-a-Gas-Pipeline-Delay.html"
       ],
-      "notes": "Dona Ana County NM Stargate site (developer STACK Infrastructure), tied to the BorderPlex 'Project Jupiter' build. OpenAI describes it as 'more than a gigawatt'; Epoch AI lists up to ~2.2 GW full build-out. Now reported under construction. We hold the conservative ~1 GW figure as an estimate."
+      "notes": "Stargate NM / Project Jupiter: OpenAI/Oracle campus on ~1,400 acres in Santa Teresa, Dona Ana County, developed by STACK Infrastructure with BorderPlex Digital Assets; OCI 18-year lease, OpenAI primary client. OpenAI describes 'more than a gigawatt'; Epoch lists up to ~2.2 GW full build-out and Bloom fuel cells are contracted up to 2.45 GW under the Oracle MSA - we hold a conservative ~1 GW estimate. Powered behind-the-meter; the Transwestern gas pipeline serving it slipped to Feb 2027. Previously tracked twice (also as a STACK entry); merged Aug 2026."
     },
     {
       "id": "stargate-michigan",
@@ -171,9 +178,10 @@
       "sources": [
         "https://www.prnewswire.com/news-releases/openai-oracle-and-related-digital-announce-stargate-data-center-site-in-michigan-302600302.html",
         "https://www.datacenterdynamics.com/en/news/related-digitals-michigan-1gw-data-center-project-to-serve-openai-oracle/",
-        "https://www.tomshardware.com/tech-industry/artificial-intelligence/openais-stargate-data-center-gets-approval-to-receive-1-4-gigawatts-of-power-in-michigan-some-residents-furious-as-energy-company-is-given-go-ahead-by-regulatory-body-without-hearing-opposition"
+        "https://www.tomshardware.com/tech-industry/artificial-intelligence/openais-stargate-data-center-gets-approval-to-receive-1-4-gigawatts-of-power-in-michigan-some-residents-furious-as-energy-company-is-given-go-ahead-by-regulatory-body-without-hearing-opposition",
+        "https://www.utilitydive.com/news/dte-data-center-deal-transformational-growth-earnings/804231/"
       ],
-      "notes": "OpenAI/Oracle/Related Digital Stargate campus on 250 acres, roughly 1.4 GW supplied by DTE Energy with project-financed battery storage. Construction began in early 2026 after a contested local vote. Part of the 4.5 GW Oracle-OpenAI Stargate expansion."
+      "notes": "OpenAI/Oracle/Related Digital Stargate campus on 250 acres, ~1.4 GW supplied by DTE Energy under a reported 19-year supply agreement (DTE's first large data center deal, Oct 2025); grid connection targeted Dec 2026, full ramp within about a year after. Construction began early 2026 after a contested local vote. Part of the 4.5 GW Oracle-OpenAI Stargate expansion."
     },
     {
       "id": "xai-colossus-memphis",
@@ -201,9 +209,10 @@
       ],
       "sources": [
         "https://www.tomshardware.com/tech-industry/artificial-intelligence/musks-colossus-is-fully-operational-with-200-000-gpus-backed-by-tesla-batteries-phase-2-to-consume-300-mw-enough-to-power-300-000-homes",
-        "https://introl.com/blog/xai-memphis-colossus-100000-gpu-supercomputer-infrastructure"
+        "https://introl.com/blog/xai-memphis-colossus-100000-gpu-supercomputer-infrastructure",
+        "https://wreg.com/news/local/tva-oks-additional-150-mw-of-electricity-for-xai-memphis-data-center/"
       ],
-      "notes": "Built in 122 days; ~150k H100 + 50k H200 + 30k GB200 (~230k). Power has grown past the early 150-250 MW: ~250 MW grid plus 35 on-site gas turbines (~420 MW), so ~500 MW is the better current figure. The wider Memphis complex (Colossus 1+2+a third building) is cited near 2 GW / ~555k GPUs as of early 2026; that aggregate is not attributed here."
+      "notes": "Built in 122 days; ~150k H100 + 50k H200 + 30k GB200 (~230k). TVA-approved grid power is now ~300 MW (second 150 MW tranche approved early 2026) plus on-site gas turbines, so ~500 MW remains the better current figure. Turbine counts have exceeded permitted levels at times and xAI faces Clean Air Act litigation. The wider Memphis complex (Colossus 1+2+a third building) is cited near 2 GW / ~555k GPUs as of early 2026; that aggregate is not attributed here."
     },
     {
       "id": "xai-colossus-2",
@@ -230,9 +239,10 @@
       ],
       "sources": [
         "https://newsletter.semianalysis.com/p/xais-colossus-2-first-gigawatt-datacenter",
-        "https://www.tomshardware.com/tech-industry/artificial-intelligence/musks-colossus-is-fully-operational-with-200-000-gpus-backed-by-tesla-batteries-phase-2-to-consume-300-mw-enough-to-power-300-000-homes"
+        "https://www.tomshardware.com/tech-industry/artificial-intelligence/musks-colossus-is-fully-operational-with-200-000-gpus-backed-by-tesla-batteries-phase-2-to-consume-300-mw-enough-to-power-300-000-homes",
+        "https://www.technology.org/2026/07/15/xai-59-unpermitted-gas-turbines-southaven-colossus-2/"
       ],
-      "notes": "First gigawatt-scale single datacenter; began operations ~Jan 2026 and is ramping (Google/SpaceX agreed to rent capacity here in June 2026). ~350 MW is a grounded current estimate from cooling-capacity analysis vs the ~1 GW launch claim; 41 on-site gas turbines approved Mar 2026 back the path to ~1.2 GW. Compute hall is Memphis (Whitehaven) TN; power generation is Southaven MS."
+      "notes": "First gigawatt-scale single datacenter; began operations ~Jan 2026 and is ramping (Google/SpaceX agreed to rent capacity here in June 2026). ~350 MW is a grounded current estimate from cooling-capacity analysis vs the ~1 GW launch claim; 41 on-site gas turbines approved Mar 2026 back the path to ~1.2 GW (xAI cites a 2 GW ambition). July 2026 records show turbines operating beyond federal permits; NAACP Clean Air Act suit filed April 2026. Compute hall is Memphis (Whitehaven) TN; power generation is Southaven MS."
     },
     {
       "id": "meta-prometheus",
@@ -280,13 +290,15 @@
       "energySource": "gas (Entergy) + grid",
       "workload": "training",
       "linkedDeal": null,
-      "onlineDate": "2027-2030",
+      "onlineDate": "2027-2032",
       "estimated": [],
       "sources": [
         "https://www.datacenterdynamics.com/en/news/meta-to-invest-hundreds-of-billions-of-dollars-into-compute-to-build-superintelligence-with-several-multi-gw-data-center-clusters/",
-        "https://thenextweb.com/news/meta-200-billion-hyperion-data-center-louisiana"
+        "https://thenextweb.com/news/meta-200-billion-hyperion-data-center-louisiana",
+        "https://datacenters.atmeta.com/2026/07/deepening-our-investment-in-richland-parish-louisiana/",
+        "https://thelensnola.org/2026/03/30/meta-triples-order-of-gas-fired-power-plants-for-its-ai-campus-in-louisiana/"
       ],
-      "notes": "Meta's largest campus: up to 5 GW across ~4M sq ft on 2,250 acres. Construction since late 2024 through 2030; ~1.5 GW interim target by end 2027. Powered by 10 Entergy gas plants."
+      "notes": "Meta's largest campus: 5 GW across ~4M sq ft on 2,250 acres; investment lifted above $50B in July 2026. ~1.5 GW interim target by end 2027, ~2 GW by 2030, full 5 GW ~2032. Powered under a 15-year Entergy electric service agreement backed by three approved CCGTs (~2.26 GW, LPSC Aug 2025); seven more plants (~5.3 GW) are requested but pend an LPSC vote (~Nov 2026) and are not counted."
     },
     {
       "id": "meta-pike-county-oh",
@@ -615,20 +627,21 @@
       "gridRegion": "MISO",
       "gpuCount": null,
       "chipType": "NVIDIA GB200",
-      "ratedPowerMW": 0,
+      "ratedPowerMW": 250,
       "plannedPowerMW": 400,
       "energySource": "grid",
       "workload": "mixed",
       "linkedDeal": null,
       "onlineDate": "2026",
       "estimated": [
-        "plannedPowerMW"
+        "ratedPowerMW"
       ],
       "sources": [
         "https://www.datacenterdynamics.com/en/news/applied-digital-signs-250mw-agreement-with-coreweave-for-capacity-at-ellendale-campus-north-dakota/",
-        "https://www.coreweave.com/blog/our-capacity-plans-for-coreweave-data-centers"
+        "https://www.coreweave.com/blog/our-capacity-plans-for-coreweave-data-centers",
+        "https://ir.applieddigital.com/news-events/press-releases"
       ],
-      "notes": "CoreWeave signed a 15-year lease for 250 MW of critical IT load at Applied Digital's Ellendale campus; campus build-out larger. Planned MW estimated."
+      "notes": "CoreWeave leases now total 400 MW of critical IT at Applied Digital's Polaris Forge 1 (Ellendale ND) across three 15-year tranches (~$11B). Building 1 (100 MW) in service ~Q4 2025; building 2 delivered July 1, 2026 (rated 250 MW estimated on that basis); building 3 (150 MW) targets full capacity 2027. Campus engineered to scale to 1 GW."
     },
     {
       "id": "coreweave-mebane",
@@ -1152,7 +1165,7 @@
       "gpuCount": null,
       "chipType": "NVIDIA",
       "ratedPowerMW": 0,
-      "plannedPowerMW": 800,
+      "plannedPowerMW": 1600,
       "energySource": "grid",
       "workload": "mixed",
       "linkedDeal": null,
@@ -1160,9 +1173,10 @@
       "estimated": [],
       "sources": [
         "https://www.convergedigest.com/coreweave-locks-in-800-mw-at-galaxys-helios-campus-in-texas/",
-        "https://www.datacenterdynamics.com/en/news/galaxy-digital-closes-14bn-debt-facility-for-helios-data-center-campus-in-texas/"
+        "https://www.datacenterdynamics.com/en/news/galaxy-digital-closes-14bn-debt-facility-for-helios-data-center-campus-in-texas/",
+        "https://www.prnewswire.com/news-releases/galaxy-completes-ercot-interconnection-studies-and-secures-approval-for-additional-830-megawatts-at-helios-data-center-campus-doubling-total-approved-power-capacity-to-over-1-6-gigawatts-302662509.html"
       ],
-      "notes": "Galaxy Digital's Helios campus in Dickens County TX (former bitcoin-mining site), with 800 MW fully committed to CoreWeave under a 15-year lease (+1.7 GW under study). First power tranche energizing early 2026."
+      "notes": "Galaxy Digital's Helios campus in Dickens County TX (former bitcoin-mining site): ~833 MW committed to CoreWeave under 15-year leases, first tranche energizing from early 2026. A further 830 MW ERCOT approval (Jan 2026) doubled total approved + contracted capacity past 1.6 GW; the new tranche is development runway, not yet leased."
     },
     {
       "id": "iren-sweetwater",
@@ -1216,9 +1230,10 @@
       ],
       "sources": [
         "https://iren.com/data-centers/childress",
-        "https://baxtel.com/data-center/iren-horizon-1"
+        "https://baxtel.com/data-center/iren-horizon-1",
+        "https://www.theblock.co/news/business/2026-08-17-iren-delivers-first-four-ai-cloud-deployments-microsoft-under-9-7-billion-deal-412016"
       ],
-      "notes": "IREN's Childress TX site. The AI portion (Horizon 1-4, direct-to-chip liquid, NVIDIA GB300) is ~200 MW critical IT; Horizon 1 (~50 MW IT) energized Q4 2025 and is live, with H2-4 through H2 2026. The wider 750 MW site is mostly legacy bitcoin and is not counted here."
+      "notes": "IREN's Childress TX site. The AI portion (Horizon 1-4, direct-to-chip liquid, NVIDIA GB300) is ~200 MW critical IT under the $9.7B / 5-year Microsoft contract; Horizon 1 (~50 MW IT) was delivered to and accepted by Microsoft Aug 13, 2026, with H2-4 due through late 2026. The wider 750 MW site is mostly legacy bitcoin and is not counted here."
     },
     {
       "id": "applied-digital-harwood",
@@ -5570,35 +5585,6 @@
       "notes": "QTS-internal 'Project Blue Hole': up to 12M sq ft build-out by ~2035 on land near Early County Airport off Martha Berry Hwy in Blakely, Early County GA; closed-loop cooling. MW not disclosed. Planning phase. Coords approximate the Early County Airport area."
     },
     {
-      "id": "stack-project-jupiter-santa-teresa-nm",
-      "name": "STACK Project Jupiter (Stargate, Santa Teresa)",
-      "operator": "Stack Infrastructure",
-      "status": "construction",
-      "location": {
-        "city": "Santa Teresa",
-        "state": "NM",
-        "lat": 31.842,
-        "lng": -106.74
-      },
-      "gridRegion": "WECC",
-      "gpuCount": null,
-      "chipType": "undisclosed",
-      "ratedPowerMW": 0,
-      "plannedPowerMW": 1000,
-      "energySource": "on-site microgrid",
-      "workload": "training",
-      "linkedDeal": null,
-      "onlineDate": "",
-      "estimated": [
-        "plannedPowerMW"
-      ],
-      "sources": [
-        "https://www.stackinfra.com/about/news-press/press-releases/stack-infrastructure-delivers-digital-infrastructure-for-data-center-campus-in-new-mexico/",
-        "https://elpasomatters.org/2025/09/25/stargate-open-ai-oracle-project-jupiter-data-center-dona-ana-new-mexico-el-paso-texas/"
-      ],
-      "notes": "Stargate (OpenAI/Oracle) AI campus, >1GW, with STACK delivering the digital infrastructure (with BorderPlex Digital Assets). ~1,400 acres in Santa Teresa, Doña Ana County, near Pete Domenici Hwy & NM-136 outside Sunland Park on the US-Mexico border. On-site microgrid; OCI 18-yr lease, OpenAI primary client. Coords near the NM-136 site."
-    },
-    {
       "id": "edgeconnex-cedar-creek-bastrop-tx",
       "name": "EdgeConneX Cedar Creek Campus (AUS)",
       "operator": "EdgeConneX",
@@ -7024,6 +7010,116 @@
         "https://www.gcedc.com/news/article/current/2025/03/10/100123/stream-us-data-centers-investing-6.3-billion-in-genesee-county"
       ],
       "notes": "Stream US Data Centers (with Apollo Global) proposing ~$6.3B AI campus at the STAMP industrial park, Town of Alabama, Genesee County (near Crosby Rd). Expanded 'Project Double Reed' plan = three 100+ ft buildings, 2.2M+ sq ft, 500MW+ load. Public/IDA approvals in progress 2026; faces local opposition. Coords approximate to STAMP park."
+    },
+    {
+      "id": "openai-camellia-effingham-ga",
+      "name": "OpenAI Project Camellia (Effingham County)",
+      "operator": "OpenAI",
+      "status": "announced",
+      "location": {
+        "city": "Rincon",
+        "state": "GA",
+        "lat": 32.296,
+        "lng": -81.235
+      },
+      "gridRegion": "SERC",
+      "gpuCount": null,
+      "chipType": null,
+      "ratedPowerMW": 0,
+      "plannedPowerMW": 3200,
+      "energySource": "grid (Georgia Power 25-year supply agreement; new gas-backed)",
+      "workload": "mixed",
+      "linkedDeal": null,
+      "onlineDate": "2028-2032",
+      "estimated": [],
+      "sources": [
+        "https://www.georgiapower.com/news-hub/press-releases/georgia-power-to-serve-openai-project-in-effingham-county.html",
+        "https://openai.com/index/building-ai-infrastructure-with-the-effingham-county-community/",
+        "https://www.datacenterdynamics.com/en/news/openai-reveals-32gw-data-center-project-in-effingham-county-georgia/"
+      ],
+      "notes": "OpenAI's self-built $20B+ campus on 1,400 acres in the Savannah Gateway Industrial Hub. Georgia Power delivers up to 3.2 GW in phases 2028-2032 under a 25-year agreement with up to 1,000 MW of demand response; OpenAI pays full infrastructure and service costs."
+    },
+    {
+      "id": "microsoft-kilby-pecos-tx",
+      "name": "Microsoft Project Kilby campus (Pecos)",
+      "operator": "Microsoft",
+      "status": "announced",
+      "location": {
+        "city": "Pecos",
+        "state": "TX",
+        "lat": 31.4229,
+        "lng": -103.4932
+      },
+      "gridRegion": "ERCOT",
+      "gpuCount": null,
+      "chipType": null,
+      "ratedPowerMW": 0,
+      "plannedPowerMW": 2000,
+      "energySource": "behind-the-meter gas (Chevron Energy Forge One, 2.67 GW)",
+      "workload": "mixed",
+      "linkedDeal": null,
+      "onlineDate": "2028",
+      "estimated": [],
+      "sources": [
+        "https://www.chevron.com/newsroom/2026/q2/chevron-signs-20-year-power-agreement-with-microsoft-for-west-texas-data-center",
+        "https://www.bloomberg.com/news/articles/2026-06-22/microsoft-chevron-sign-20-year-power-deal-for-texas-data-center",
+        "https://www.datacenterknowledge.com/build-design/chevron-lands-20-year-microsoft-deal-to-power-west-texas-ai-campus"
+      ],
+      "notes": "Microsoft-operated ~2 GW campus near Pecos co-located with Chevron's Project Kilby gas plant (20-year PPA, first power 2028, ramping to 2.67 GW). Chevron FID expected end of 2026; announced June 22, 2026."
+    },
+    {
+      "id": "aws-stack-caddo-bossier-la",
+      "name": "AWS Louisiana campuses (Caddo/Bossier)",
+      "operator": "Amazon (AWS)",
+      "status": "announced",
+      "location": {
+        "city": "Shreveport",
+        "state": "LA",
+        "lat": 32.5252,
+        "lng": -93.6632
+      },
+      "gridRegion": "SPP",
+      "gpuCount": null,
+      "chipType": null,
+      "ratedPowerMW": 0,
+      "plannedPowerMW": 0,
+      "energySource": "grid (SWEPCO; Amazon funds power infrastructure)",
+      "workload": "mixed",
+      "linkedDeal": null,
+      "onlineDate": "",
+      "estimated": [],
+      "sources": [
+        "https://www.aboutamazon.com/news/company-news/amazon-data-center-louisiana-new-jobs",
+        "https://www.datacenterdynamics.com/en/news/amazon-plans-to-spend-12bn-on-louisiana-data-center-campuses-developed-by-stack-infrastructure/"
+      ],
+      "notes": "Multi-campus AWS program in Caddo and Bossier Parishes plus a third Shreveport campus, developed by STACK Infrastructure; announced at $12B (Feb 2026), raised to $18B (Aug 18, 2026). Campus MW undisclosed - no capacity is booked. Amazon committed to fund all power infrastructure with SWEPCO plus up to $400M in water infrastructure."
+    },
+    {
+      "id": "amentum-srs-aiken-sc",
+      "name": "Savannah River Site AI campus (Amentum)",
+      "operator": "Amentum (NNSA lease, in negotiation)",
+      "status": "announced",
+      "location": {
+        "city": "Aiken",
+        "state": "SC",
+        "lat": 33.3435,
+        "lng": -81.7355
+      },
+      "gridRegion": "SERC",
+      "gpuCount": null,
+      "chipType": null,
+      "ratedPowerMW": 0,
+      "plannedPowerMW": 1000,
+      "energySource": "on-site gas, planned transition to advanced nuclear (~2 GW)",
+      "workload": "mixed",
+      "linkedDeal": null,
+      "onlineDate": "",
+      "estimated": [],
+      "sources": [
+        "https://www.energy.gov/nnsa/articles/nnsa-selects-amentum-ai-data-center-and-energy-project-savannah-river-site",
+        "https://www.world-nuclear-news.org/articles/amentum-selected-for-savannah-river-ai-project"
+      ],
+      "notes": "NNSA selected Amentum (July 2026) to negotiate a phased lease for a 1 GW AI data center backed by ~2 GW of on-site generation at the Savannah River Site, gas first with a planned transition to advanced nuclear. Selection stage only - not a final lease."
     }
   ]
 }
