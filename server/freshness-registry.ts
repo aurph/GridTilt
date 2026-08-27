@@ -118,9 +118,11 @@ export const DATASET_REGISTRY: DatasetSpec[] = [
     // "unknown" until the ingester stamps a timestamp.
     id: "datacenters",
     label: "Data center facilities",
-    file: "datacenters.json",
-    read: { kind: "none" },
+    // datacenters.json is a bare array whose consumers expect that shape, so
+    // the ingester stamps a sidecar envelope instead of the data file itself.
+    file: "datacenters-freshness.json",
+    read: { kind: "envelope", fields: ["lastChecked", "lastRefreshed"] },
     expectedMaxAgeHours: 2 * DAY,
-    mechanism: "in-process ingester every 6h (unreliable on Replit autoscale)",
+    mechanism: "in-process ingester every 6h (unreliable on Replit autoscale); stamps datacenters-freshness.json",
   },
 ];
