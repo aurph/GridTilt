@@ -1,4 +1,5 @@
 import { averageLiveChanges } from "./pulse-math";
+import { createSubscriberStore, type Subscriber } from "./subscriber-store";
 import { fetchWithTimeout } from "./fetch-timeout";
 import type { Express, Request, Response } from "express";
 import { type Server } from "http";
@@ -2220,26 +2221,10 @@ export async function registerRoutes(
     }
   });
 
-  const SUBSCRIBERS_FILE = join(process.cwd(), "server", "data", "subscribers.json");
-  interface Subscriber {
-    email: string;
-    subscribedAt: string;
-    intent?: string;
-    context?: string;
-  }
-
-  function loadSubscribers(): Subscriber[] {
-    try {
-      if (existsSync(SUBSCRIBERS_FILE)) {
-        return JSON.parse(readFileSync(SUBSCRIBERS_FILE, "utf8"));
-      }
-    } catch {}
-    return [];
-  }
-
-  function saveSubscribers(subs: Subscriber[]) {
-    writeFileSync(SUBSCRIBERS_FILE, JSON.stringify(subs, null, 2));
-  }
+  // Durable subscriber store (audit M2): Postgres when DATABASE_URL is set,
+  // the legacy JSON file otherwise. Backend picked once at boot; handlers
+  // await the same promise so a slow first connection never races the table.
+  const subscriberStorePromise = createSubscriberStore();
 
   const UNSUB_TOKEN_SECRET: string =
     process.env.UNSUB_TOKEN_SECRET ??
@@ -2338,7 +2323,8 @@ export async function registerRoutes(
         return res.status(400).json({ error: "That doesn't look like an email" });
       }
 
-      const subscribers = loadSubscribers();
+      const subscriberStore = await subscriberStorePromise;
+      const subscribers = await subscriberStore.load();
       const normalizedEmail = email.toLowerCase().trim();
       const trimmedIntent =
         typeof intent === "string" && intent.trim() ? intent.trim().slice(0, 500) : null;
@@ -2361,7 +2347,7 @@ export async function registerRoutes(
           existing.context = trimmedContext;
           mutated = true;
         }
-        if (mutated) saveSubscribers(subscribers);
+        if (mutated) await subscriberStore.save(subscribers);
         return res.json({ message: "You're already on the list", status: "exists" });
       }
 
@@ -2372,7 +2358,7 @@ export async function registerRoutes(
       if (trimmedIntent) record.intent = trimmedIntent;
       if (trimmedContext) record.context = trimmedContext;
       subscribers.push(record);
-      saveSubscribers(subscribers);
+      await subscriberStore.save(subscribers);
 
       if (process.env.RESEND_API_KEY) {
         try {
@@ -2404,17 +2390,18 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/unsubscribe", unsubscribeLimiter, (req, res) => {
+  app.get("/api/unsubscribe", unsubscribeLimiter, async (req, res) => {
     const { token } = req.query;
     if (!token || typeof token !== "string") {
       return res.status(400).send("Invalid unsubscribe link");
     }
 
-    const subscribers = loadSubscribers();
+    const subscriberStore = await subscriberStorePromise;
+    const subscribers = await subscriberStore.load();
     const remaining = subscribers.filter((s) => !safeEqualStr(makeUnsubToken(s.email), token));
 
     if (remaining.length < subscribers.length) {
-      saveSubscribers(remaining);
+      await subscriberStore.save(remaining);
       return res.send(`
         <html><head><title>Unsubscribed</title><style>body{background:#0d0d14;color:#fff;font-family:system-ui;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;}
         .card{text-align:center;padding:2rem;}.check{color:#22c55e;font-size:3rem;}</style></head>
@@ -2504,7 +2491,8 @@ export async function registerRoutes(
     }
 
     try {
-      const subscribers = loadSubscribers();
+      const subscriberStore = await subscriberStorePromise;
+      const subscribers = await subscriberStore.load();
       if (subscribers.length === 0) {
         return res.json({ message: "No subscribers", sent: 0 });
       }
@@ -2563,18 +2551,22 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/admin/subscribers", (req, res) => {
+  app.get("/api/admin/subscribers", async (req, res) => {
     if (!requireAdmin(req, res)) return;
-    const subscribers = loadSubscribers();
-    res.json({ count: subscribers.length, subscribers });
+    const subscriberStore = await subscriberStorePromise;
+    const subscribers = await subscriberStore.load();
+    // storeKind makes a degraded fallback (DATABASE_URL set but Postgres
+    // down -> ephemeral JSON) observable instead of silent.
+    res.json({ count: subscribers.length, storeKind: subscriberStore.kind, subscribers });
   });
 
-  app.delete("/api/admin/subscribers/:email", (req, res) => {
+  app.delete("/api/admin/subscribers/:email", async (req, res) => {
     if (!requireAdmin(req, res)) return;
     const emailToRemove = decodeURIComponent(req.params.email).toLowerCase();
-    const subscribers = loadSubscribers();
+    const subscriberStore = await subscriberStorePromise;
+    const subscribers = await subscriberStore.load();
     const remaining = subscribers.filter((s) => s.email !== emailToRemove);
-    saveSubscribers(remaining);
+    await subscriberStore.save(remaining);
     res.json({ message: "Removed", count: remaining.length });
   });
 
