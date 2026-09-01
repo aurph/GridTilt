@@ -26,6 +26,7 @@ import { ArrowUpDown, Atom } from "lucide-react";
 import { PageHeader, HeaderStat } from "@/components/PageHeader";
 import { BRAND, INK, SURFACE, CATEGORY_COLORS, STATUS_COLORS } from "@/lib/tokens";
 import { axisProps, gridProps, seriesMotion, tooltipContentStyle, tooltipItemStyle, tooltipLabelStyle } from "@/lib/chart-theme";
+import { computeBuildoutReality } from "@/lib/buildout-reality";
 
 // ─── Types (mirror /api/clusters and /api/clusters/metrics) ────────────────
 
@@ -262,6 +263,58 @@ export default function ComputeFrontier() {
           <MetricCard label="Operators" value={metrics ? String(metrics.concentration.operatorCount) : "—"} sub={metrics?.concentration.topOperator ? `top: ${metrics.concentration.topOperator} ${Math.round(metrics.concentration.topOperatorPlannedShare * 100)}%` : ""} />
           <MetricCard label="Nuclear secured" value={ps ? `${gw(ps.securedMW)} GW` : "—"} sub={ps ? `${ps.clustersWithDeal} clusters linked` : ""} />
         </div>
+
+        {/* Buildout reality: how much of the promise is energized today */}
+        {metrics && (() => {
+          const r = computeBuildoutReality(metrics);
+          const seg = [
+            // "growth at live sites" is a lighter step of the operational hue:
+            // same sites, capacity not yet running. Construction and announced
+            // keep their own status-ramp colors.
+            { key: "energized", label: "energized today", mw: r.energizedMW, color: STATUS_COLOR.operational },
+            { key: "growing", label: "growth at live sites", mw: r.growingOnSiteMW, color: `${STATUS_COLOR.operational}66` },
+            { key: "construction", label: "under construction", mw: r.constructionMW, color: STATUS_COLOR.construction },
+            { key: "announced", label: "announced only", mw: r.announcedMW, color: STATUS_COLOR.announced ?? INK.faint },
+          ].filter((s) => s.mw > 0);
+          return (
+            <Card className="border-card-border p-4" data-testid="cf-buildout-reality">
+              <p className="text-sm text-foreground">
+                Of the{" "}
+                <span className="font-mono font-bold tabular-nums">{gw(r.totalPlannedMW)} GW</span> announced
+                across every tracked cluster,{" "}
+                <span className="font-mono font-bold tabular-nums">{gw(r.energizedMW)} GW</span> is energized
+                today — <span className="font-mono font-bold tabular-nums">{(r.energizedShare * 100).toFixed(1)}%</span>.
+              </p>
+              <div className="mt-3 flex h-3 w-full gap-[2px]" role="img"
+                aria-label={`Of ${gw(r.totalPlannedMW)} gigawatts announced, ${gw(r.energizedMW)} energized, ${gw(r.growingOnSiteMW)} growth at live sites, ${gw(r.constructionMW)} under construction, ${gw(r.announcedMW)} announced only`}>
+                {seg.map((s) => (
+                  <div
+                    key={s.key}
+                    className="rounded-[2px]"
+                    style={{ width: `${(s.mw / r.totalPlannedMW) * 100}%`, background: s.color, minWidth: 3 }}
+                  />
+                ))}
+              </div>
+              <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-11 text-muted-foreground">
+                {seg.map((s) => (
+                  <span key={s.key} className="inline-flex items-center gap-1.5">
+                    <span className="h-2 w-2 rounded-full flex-shrink-0" style={{ background: s.color }} />
+                    {s.label} <span className="font-mono tabular-nums text-foreground">{gw(s.mw)} GW</span>
+                  </span>
+                ))}
+              </div>
+              <p className="mt-3 text-11 leading-relaxed text-muted-foreground/70">
+                The unbuilt {gw(r.unbuiltMW)} GW implies very roughly ${(r.unbuiltCapexB / 1000).toFixed(1)}T of
+                capital still to be spent, at{" "}
+                <a href="https://epoch.ai/data/ai-data-centers" target="_blank" rel="noreferrer" className="hover:text-foreground underline decoration-border">
+                  Epoch AI's ~$38B per GW
+                </a>{" "}
+                of IT capacity ($26B compute + $12B construction). Order-of-magnitude context only: tracked MW
+                mixes facility and IT power bases, and announced figures are targets, not commitments.
+              </p>
+            </Card>
+          );
+        })()}
 
         {/* Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3" data-testid="cf-charts">
