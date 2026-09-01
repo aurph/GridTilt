@@ -19,7 +19,7 @@ import { AsOf, ErrorState, SrChartTable } from "@/components/Freshness";
 import { PageHeader } from "@/components/PageHeader";
 import { RTO_CONFIG, RTO_SOURCE_NOTE, type RTOConfig } from "@/data/rto-config";
 import { STATE_GRID, STATE_GRID_SOURCE } from "@/data/state-grid";
-import { BORDER, BRAND, FONT, INK, SEMANTIC, STATUS_COLORS, SURFACE } from "@/lib/tokens";
+import { BORDER, BRAND, CATEGORY_COLORS, FONT, INK, SEMANTIC, STATUS_COLORS, SURFACE } from "@/lib/tokens";
 import { seriesMotion, axisProps, gridProps, tooltipContentStyle, tooltipItemStyle, tooltipLabelStyle,  } from "@/lib/chart-theme";
 // US state boundaries: US Census cartographic boundary file (public domain),
 // via the widely used us-states GeoJSON distribution.
@@ -78,6 +78,49 @@ const AGG_PRESENTATION: Record<string, { label: string; note: string }> = {
 interface QueueResponse {
   projects: QueueProject[];
 }
+
+// ── Live grid snapshot (server proxies each ISO's keyless public feeds) ──
+
+interface LiveFuelSlice {
+  fuel: string;
+  mw: number;
+}
+interface GridLiveSnapshot {
+  rto: string;
+  operator: string;
+  asOf: string;
+  demand: { time: string; mw: number }[];
+  currentDemandMW: number;
+  peakDemandMW: number;
+  fuelMix: LiveFuelSlice[];
+  source: string;
+  sourceUrl: string;
+}
+
+/** States with a keyless live feed today. Everything else joins via EIA
+ *  hourly data once EIA_API_KEY is configured. */
+function liveRtoFor(state: string, region: string | null): "ercot" | "caiso" | "miso" | null {
+  if (state === "TX") return "ercot";
+  if (state === "CA") return "caiso";
+  if (region === "MISO") return "miso";
+  return null;
+}
+
+// Dot colors reuse the sitewide energy vocabulary; unlisted fuels stay muted
+// and every row is labeled, so color never carries identity alone.
+const LIVE_FUEL_COLOR: Record<string, string> = {
+  gas: CATEGORY_COLORS.gas,
+  coal: CATEGORY_COLORS.coal,
+  nuclear: CATEGORY_COLORS.nuclear,
+  wind: CATEGORY_COLORS.wind,
+  solar: CATEGORY_COLORS.solar,
+  hydro: CATEGORY_COLORS.hydro,
+  storage: CATEGORY_COLORS.storage,
+};
+
+const fmtGw = (mw: number) => `${(mw / 1000).toFixed(1)} GW`;
+const fmtFuelMw = (mw: number) =>
+  Math.abs(mw) >= 1000 ? fmtGw(mw) : `${Math.round(mw).toLocaleString()} MW`;
 
 /** Which LBNL queue buckets correspond to a state's mapped region. */
 const QUEUE_ISOS: Record<string, string[]> = {
@@ -268,6 +311,22 @@ export default function MyGrid() {
   const grid = state ? STATE_GRID[state] : null;
   const rto = grid?.region ? RTO_CONFIG[grid.region] : null;
 
+  const liveRto = grid ? liveRtoFor(state, grid.region) : null;
+  const {
+    data: live,
+    isError: liveError,
+    refetch: refetchLive,
+  } = useQuery<GridLiveSnapshot>({
+    queryKey: [`/api/grid-live/${liveRto}`],
+    enabled: !!liveRto,
+    refetchInterval: 5 * 60 * 1000,
+    queryFn: async () => {
+      const res = await fetch(`/api/grid-live/${liveRto}`);
+      if (!res.ok) throw new Error(`grid-live ${res.status}`);
+      return res.json();
+    },
+  });
+
   const localFacilities = useMemo(() => {
     if (!state) return [];
     return facilities
@@ -448,6 +507,101 @@ export default function MyGrid() {
                 {RTO_SOURCE_NOTE} · {STATE_GRID_SOURCE} · queue figures carry their own source and date
               </div>
             </Card>
+
+            {liveRto && (
+              <Card className="border-card-border" data-testid="my-grid-live">
+                <div className="px-4 py-2 border-b border-border text-[13px] font-semibold text-foreground">
+                  Your grid right now
+                </div>
+                {liveError ? (
+                  <ErrorState
+                    label={`The ${grid.operatorLabel} live feed is not answering right now.`}
+                    onRetry={() => refetchLive()}
+                    className="h-[200px]"
+                  />
+                ) : !live ? (
+                  <div className="p-4">
+                    <Skeleton className="h-[200px] w-full" />
+                  </div>
+                ) : (
+                  <div className="p-4 grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div className="lg:col-span-2">
+                      <p className="text-sm text-foreground" data-testid="my-grid-live-headline">
+                        {grid.name} is drawing{" "}
+                        <span className="font-mono font-bold tabular-nums">{fmtGw(live.currentDemandMW)}</span>{" "}
+                        right now · today's peak so far{" "}
+                        <span className="font-mono font-bold tabular-nums">{fmtGw(live.peakDemandMW)}</span>
+                      </p>
+                      <div className="mt-3">
+                        <ResponsiveContainer width="100%" height={180}>
+                          <LineChart data={live.demand} margin={{ left: 4, right: 8, top: 4, bottom: 0 }}>
+                            <CartesianGrid {...gridProps} />
+                            <XAxis
+                              {...axisProps}
+                              dataKey="time"
+                              interval="preserveStartEnd"
+                              minTickGap={48}
+                            />
+                            <YAxis
+                              {...axisProps}
+                              width={44}
+                              domain={["auto", "auto"]}
+                              tickFormatter={(v: number) => `${Math.round(v / 1000)}`}
+                              label={{ value: "GW", position: "insideTopLeft", offset: 8, fill: INK.muted, fontSize: 10 }}
+                            />
+                            <Tooltip
+                              contentStyle={tooltipContentStyle}
+                              itemStyle={tooltipItemStyle}
+                              labelStyle={tooltipLabelStyle}
+                              formatter={(v: number) => [fmtGw(v), "demand"]}
+                            />
+                            <Line
+                              {...seriesMotion()}
+                              type="monotone"
+                              dataKey="mw"
+                              stroke={BRAND.primary}
+                              strokeWidth={2}
+                              dot={false}
+                            />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+                      <SrChartTable
+                        caption={`Today's ${live.operator} demand, hourly sample`}
+                        columns={["Time", "MW"]}
+                        rows={live.demand.filter((_, i) => i % 12 === 0).map((d) => [d.time, d.mw])}
+                      />
+                    </div>
+                    <div data-testid="my-grid-live-fuel">
+                      <CellLabel>What's generating it</CellLabel>
+                      <div className="mt-2 space-y-1.5">
+                        {live.fuelMix.map((f) => (
+                          <div key={f.fuel} className="flex items-center justify-between gap-3 text-xs">
+                            <span className="inline-flex items-center gap-1.5 text-muted-foreground capitalize">
+                              <span
+                                className="h-2 w-2 rounded-full flex-shrink-0"
+                                style={{ background: LIVE_FUEL_COLOR[f.fuel] ?? INK.muted }}
+                              />
+                              {f.fuel}
+                            </span>
+                            <span className="font-mono tabular-nums text-foreground">{fmtFuelMw(f.mw)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {live && !liveError && (
+                  <div className="px-4 py-2 border-t border-border/50 text-10 text-muted-foreground/60">
+                    5-minute data ·{" "}
+                    <a href={live.sourceUrl} target="_blank" rel="noreferrer" className="hover:text-foreground">
+                      {live.source}
+                    </a>{" "}
+                    · updated {live.asOf}
+                  </div>
+                )}
+              </Card>
+            )}
 
             <Card className="border-card-border overflow-hidden" data-testid="my-grid-facilities">
               <div className="px-4 py-2 border-b border-border flex flex-wrap items-center justify-between gap-2">
