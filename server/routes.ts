@@ -1,5 +1,6 @@
 import { averageLiveChanges } from "./pulse-math";
 import { fetchWithTimeout } from "./fetch-timeout";
+import { getGridLive, isLiveRto, LIVE_RTOS } from "./grid-live";
 import type { Express, Request, Response } from "express";
 import { type Server } from "http";
 import { readFileSync, writeFileSync, existsSync } from "fs";
@@ -2205,6 +2206,26 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Backlog endpoint error:", error);
       res.status(500).json({ error: "Failed to load interconnection backlog" });
+    }
+  });
+
+  // Live grid snapshot for My Grid: today's demand curve + current fuel mix
+  // from the ISO's own keyless public feeds (5-minute data), cached 5 min
+  // server-side. Public, read-only. Unsupported regions 404 with the list.
+  app.get("/api/grid-live/:rto", async (req, res) => {
+    const rto = String(req.params.rto).toLowerCase();
+    if (!isLiveRto(rto)) {
+      return res.status(404).json({ error: "No live feed for that region", supported: LIVE_RTOS });
+    }
+    try {
+      res.json(await getGridLive(rto));
+    } catch (error) {
+      console.error(`grid-live ${rto} error:`, error);
+      res.status(503).json({
+        error: "Live feed unavailable right now",
+        rto,
+        detail: String(error).slice(0, 200),
+      });
     }
   });
 
