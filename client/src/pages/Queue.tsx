@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/tooltip";
 import {
   Zap, ArrowUpDown, ExternalLink, Sun, Wind, Atom, Flame, Battery, Cable, Server, Layers,
+  Mountain, UtilityPole, Orbit,
 } from "lucide-react";
 import { CATEGORY_COLORS, INK, SERIES, STATUS_COLORS } from "@/lib/tokens";
 
@@ -19,7 +20,7 @@ interface BacklogProject {
   projectName: string;
   sponsor: string;
   capacityMW: number;
-  type: "nuclear" | "gas" | "solar" | "wind" | "storage" | "hybrid" | "load" | "other";
+  type: "nuclear" | "gas" | "solar" | "wind" | "storage" | "hybrid" | "load" | "geothermal" | "utility" | "fusion" | "other";
   iso: string;
   state: string;
   status: "active" | "withdrawn" | "operational";
@@ -73,6 +74,10 @@ const TYPE_COLORS: Record<string, string> = {
   storage: CATEGORY_COLORS.storage,
   hybrid: SERIES[5], // series slot 6
   load: SERIES[2], // series slot 3 (teal, shared with datacenters - load rows are DC demand)
+  geothermal: SERIES[4], // series slot 5 (matches Power Deals)
+  utility: SERIES[9], // slate (matches Power Deals; grid supply)
+  // fusion falls through to muted: palette is at capacity, rare types read
+  // as "other" and the label carries identity.
   other: INK.muted,
 };
 
@@ -84,6 +89,9 @@ const TYPE_ICONS: Record<string, any> = {
   storage: Battery,
   hybrid: Cable,
   load: Server,
+  geothermal: Mountain,
+  utility: UtilityPole,
+  fusion: Orbit,
   other: Layers,
 };
 
