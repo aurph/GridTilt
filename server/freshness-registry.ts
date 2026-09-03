@@ -70,7 +70,7 @@ export const DATASET_REGISTRY: DatasetSpec[] = [
     file: "interconnection-queue.json",
     read: { kind: "envelope", fields: ["lastChecked", "lastRefreshed"] },
     expectedMaxAgeHours: 7 * DAY,
-    mechanism: "POST /api/admin/scan-news-now, not yet scheduled",
+    mechanism: "POST /api/admin/scan-news-now, daily via GitHub Actions (data-freshness.yml)",
   },
   {
     id: "gpu-rental-prices",

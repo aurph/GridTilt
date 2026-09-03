@@ -1,0 +1,89 @@
+# Data freshness automation.
+#
+# Replaces the never-scheduled cron-job.org jobs that were the root cause of
+# the deals dataset going 97 days stale unnoticed. Three jobs against the
+# production site:
+#
+#   news-scan      daily    POST /api/admin/scan-news-now feeds the deals/queue
+#                           approval pipeline (admin-gated)
+#   recorder-ping  weekdays GET the request-piggybacked recorders so the
+#                           gpu-price and index history series accrue without
+#                           depending on organic traffic (public)
+#   deadman        2x daily GET /api/admin/freshness/check - 503 names the
+#                           stale datasets and FAILS this job, so GitHub's
+#                           built-in workflow-failure email is the alert
+#
+# Design rules carried over from ops/freshness-monitor.md: the watchdog lives
+# OFF the infrastructure it watches (GitHub, not the Jetson or Replit), and it
+# hits /freshness/check, never /health, so Replit cannot mistake a stale-data
+# 503 for an unhealthy instance.
+#
+# Setup: one repository secret, GRIDTILT_ADMIN_KEY, set to the production
+# ADMIN_API_KEY. Until it exists the two admin jobs fail with a message that
+# says exactly that. Note GitHub suspends schedules after ~60 days without
+# repo activity; any commit re-arms them.
+
+name: data-freshness
+
+on:
+  schedule:
+    - cron: "17 11 * * *" # news scan: daily, 11:17 UTC (~7:17am ET)
+    - cron: "17 15 * * 1-5" # recorder ping: weekdays, 15:17 UTC (after 10am ET, the index recorder's gate)
+    - cron: "7 13,21 * * *" # deadman: twice daily
+  workflow_dispatch: {}
+
+permissions:
+  contents: none
+
+env:
+  BASE: https://gridtilt.com
+
+jobs:
+  news-scan:
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '17 11 * * *'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger the news scan
+        env:
+          KEY: ${{ secrets.GRIDTILT_ADMIN_KEY }}
+        run: |
+          if [ -z "$KEY" ]; then
+            echo "::error::GRIDTILT_ADMIN_KEY repository secret is not set. Add it (value = production ADMIN_API_KEY) to activate the scan."
+            exit 1
+          fi
+          curl -sS --fail-with-body --retry 3 --retry-delay 15 --max-time 120 \
+            -X POST -H "x-admin-key: $KEY" "$BASE/api/admin/scan-news-now"
+
+  recorder-ping:
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '17 15 * * 1-5'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping the request-piggybacked recorders
+        run: |
+          curl -sS --fail --retry 3 --retry-delay 15 --max-time 120 -o /dev/null "$BASE/api/gpu-prices/metrics"
+          echo "gpu-prices metrics ok"
+          curl -sS --fail --retry 3 --retry-delay 15 --max-time 120 -o /dev/null "$BASE/api/kpis"
+          echo "kpis ok"
+
+  deadman:
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '7 13,21 * * *'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Freshness deadman check
+        env:
+          KEY: ${{ secrets.GRIDTILT_ADMIN_KEY }}
+        run: |
+          if [ -z "$KEY" ]; then
+            echo "::error::GRIDTILT_ADMIN_KEY repository secret is not set. Add it (value = production ADMIN_API_KEY) to arm the deadman."
+            exit 1
+          fi
+          body=$(mktemp)
+          status=$(curl -sS --retry 3 --retry-delay 15 --max-time 120 \
+            -H "x-admin-key: $KEY" -o "$body" -w "%{http_code}" \
+            "$BASE/api/admin/freshness/check") || status=000
+          echo "HTTP $status"
+          cat "$body"
+          if [ "$status" != "200" ]; then
+            echo "::error::Freshness check failed (HTTP $status) - a refresh mechanism has stopped. Body above names the offenders."
+            exit 1
+          fi
