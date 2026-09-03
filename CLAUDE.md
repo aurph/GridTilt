@@ -193,9 +193,12 @@ Documented, not to fix casually or silently:
   seed, and the indices.ts constants are do-not-touch. Rationale sits at the route.
 - CI runs on every push and PR (.github/workflows/ci.yml, Node 22): typecheck, tests, build, a
   reporting-only slop scan, and `npm audit` which DOES fail the build on a new high advisory.
-- Durability (audit M2): subscribers.json and all machine-written JSON live on autoscale
-  ephemeral disk; admin blog CRUD writes git-tracked content/ at runtime. A redeploy can lose
-  subscribers and posts. Jetson Postgres is the planned fix.
+- Durability (audit M2): subscribers persist to Postgres when DATABASE_URL is set
+  (server/subscriber-store.ts; first boot imports legacy subscribers.json rows, and
+  GET /api/admin/subscribers reports storeKind so a fallback is never silent). Without
+  DATABASE_URL the JSON file still works but is ephemeral on autoscale. Remaining debt:
+  the other machine-written JSON and admin blog CRUD (writes git-tracked content/ at
+  runtime) can still lose data on redeploy.
 - `npm run dev` on macOS works: reusePort is guarded by `process.platform === "linux"`.
   Note port 5000 is taken by AirPlay Receiver on macOS; use PORT=5199 or turn AirPlay off.
 - routes.ts is a 3,913-line monolith (70 routes + OAuth client + OG renderer + 3 scanners +
