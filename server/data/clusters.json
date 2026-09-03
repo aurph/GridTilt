@@ -1,6 +1,6 @@
 {
-  "lastRefreshed": "2026-06-26",
-  "methodology": "Named AI training and inference superclusters compiled from public announcements (company press releases, Reuters, Tom's Hardware, Data Center Dynamics, SemiAnalysis, utility filings) plus cross-reference to GridTilt's own Power Map registry. Tracked, not exhaustive. Power in MW. 'estimated' lists the field names whose values are GridTilt estimates or announced forward targets not yet realized; sourced values are not listed there. gpuCount is null when the accelerator count is not disclosed; we do not invent one. linkedDeal references a deal id in interconnection-queue.json where a tracked nuclear-for-AI deal applies to the site.",
+  "lastRefreshed": "2026-09-01",
+  "methodology": "Named AI training and inference superclusters compiled from public announcements (company press releases, Reuters, Tom's Hardware, Data Center Dynamics, SemiAnalysis, utility filings) plus cross-reference to GridTilt's own Power Map registry. Tracked, not exhaustive. Power in MW. 'estimated' lists the field names whose values are GridTilt estimates or announced forward targets not yet realized; sourced values are not listed there. gpuCount is null when the accelerator count is not disclosed; we do not invent one. linkedDeal references a deal id in interconnection-queue.json where a tracked nuclear-for-AI deal applies to the site. Where Epoch AI’s independent satellite-verified estimates cover a site (epoch.ai/data/ai-data-centers, CC-BY), rated IT power is calibrated to their figures and flagged estimated.",
   "clusters": [
     {
       "id": "stargate-abilene",
@@ -14,9 +14,9 @@
         "lng": -99.7331
       },
       "gridRegion": "ERCOT",
-      "gpuCount": 450000,
+      "gpuCount": 201600,
       "chipType": "NVIDIA GB200",
-      "ratedPowerMW": 200,
+      "ratedPowerMW": 421,
       "plannedPowerMW": 1200,
       "energySource": "grid + on-site gas",
       "workload": "mixed",
@@ -29,9 +29,11 @@
       "sources": [
         "https://openai.com/index/stargate-advances-with-partnership-with-oracle/",
         "https://www.datacenterdynamics.com/en/news/openai-and-oracle-to-deploy-450000-gb200-gpus-at-stargate-abilene-data-center/",
-        "https://www.cnbc.com/2025/09/23/openai-first-data-center-in-500-billion-stargate-project-up-in-texas.html"
+        "https://www.cnbc.com/2025/09/23/openai-first-data-center-in-500-billion-stargate-project-up-in-texas.html",
+        "https://epoch.ai/data/ai-data-centers/directory/openai-stargate-abilene",
+        "https://www.tomshardware.com/tech-industry/oracle-and-openai-scrap-planned-600mw-abilene-expansion"
       ],
-      "notes": "Crusoe/Lancium-built flagship Stargate campus on a 15-year Oracle lease. First two of eight buildings live Sept 2025; 1.2 GW target by mid-2026. GPT-5.5 was trained here. 450k GB200 is the announced full deployment target."
+      "notes": "Crusoe/Lancium-built flagship Stargate campus on a 15-year Oracle lease. 4 of 8 buildings operational with ~421 MW IT power and ~200k B200/B300-class GPUs live (Epoch, mid-2026); full buildout projected ~Nov 2026 (~843 MW IT / ~400k GPUs). The announced 450k GB200 was the deployment target, not current reality. A planned 600 MW expansion beyond 1.2 GW was scrapped in March 2026. rated = live IT power; planned = 1.2 GW facility power."
     },
     {
       "id": "stargate-milam",
@@ -48,19 +50,19 @@
       "gpuCount": null,
       "chipType": "NVIDIA GB200",
       "ratedPowerMW": 0,
-      "plannedPowerMW": 1500,
+      "plannedPowerMW": 1200,
       "energySource": "grid + on-site gas",
       "workload": "training",
       "linkedDeal": null,
       "onlineDate": "2026",
-      "estimated": [
-        "plannedPowerMW"
-      ],
+      "estimated": [],
       "sources": [
         "https://openai.com/index/five-new-stargate-sites/",
-        "https://www.datacenterfrontier.com/machine-learning/article/55319132/scaling-stargate-openais-five-new-us-data-centers-push-toward-10-gw-ai-infrastructure"
+        "https://www.datacenterfrontier.com/machine-learning/article/55319132/scaling-stargate-openais-five-new-us-data-centers-push-toward-10-gw-ai-infrastructure",
+        "https://openai.com/index/stargate-sb-energy-partnership/",
+        "https://sbenergy.com/openai-and-softbank-group-partner-with-sb-energy/"
       ],
-      "notes": "SoftBank-led Stargate campus; can scale toward ~1.5 GW within 18 months of the Sept 2025 announcement."
+      "notes": "SB Energy builds and operates OpenAI's 1.2 GW Stargate campus in Milam County (announced Jan 2026 with a $1B OpenAI/SoftBank investment into SB Energy); powered by new SB Energy solar + storage, initial facilities entering service from 2026."
     },
     {
       "id": "stargate-lordstown",
@@ -77,7 +79,7 @@
       "gpuCount": null,
       "chipType": "NVIDIA GB200",
       "ratedPowerMW": 0,
-      "plannedPowerMW": 1500,
+      "plannedPowerMW": 300,
       "energySource": "grid + on-site gas",
       "workload": "training",
       "linkedDeal": null,
@@ -87,9 +89,10 @@
       ],
       "sources": [
         "https://openai.com/index/five-new-stargate-sites/",
-        "https://www.datacenterfrontier.com/machine-learning/article/55319132/scaling-stargate-openais-five-new-us-data-centers-push-toward-10-gw-ai-infrastructure"
+        "https://www.datacenterfrontier.com/machine-learning/article/55319132/scaling-stargate-openais-five-new-us-data-centers-push-toward-10-gw-ai-infrastructure",
+        "https://epoch.ai/publications/openai-stargate-where-the-us-sites-stand"
       ],
-      "notes": "Redevelopment of the former GM/Foxconn complex; OpenAI/Oracle/SoftBank. Scales toward ~1.5 GW."
+      "notes": "Redevelopment of the former GM/Foxconn complex (OpenAI/Oracle/SoftBank). Announced as scaling toward ~1.5 GW, but Epoch's April 2026 site assessment puts the actual build under 0.3 GW; we hold the assessed figure as an estimate."
     },
     {
       "id": "stargate-shackelford",
@@ -126,15 +129,15 @@
       "location": {
         "city": "Santa Teresa",
         "state": "NM",
-        "lat": 31.9176,
-        "lng": -106.7118
+        "lat": 31.842,
+        "lng": -106.74
       },
       "gridRegion": "WECC",
       "gpuCount": null,
       "chipType": "NVIDIA GB200",
       "ratedPowerMW": 0,
-      "plannedPowerMW": 1000,
-      "energySource": "grid",
+      "plannedPowerMW": 1750,
+      "energySource": "on-site microgrid (Bloom fuel cells + gas)",
       "workload": "training",
       "linkedDeal": null,
       "onlineDate": "2027",
@@ -143,9 +146,14 @@
       ],
       "sources": [
         "https://openai.com/index/five-new-stargate-sites/",
-        "https://www.datacenterfrontier.com/machine-learning/article/55319132/scaling-stargate-openais-five-new-us-data-centers-push-toward-10-gw-ai-infrastructure"
+        "https://www.datacenterfrontier.com/machine-learning/article/55319132/scaling-stargate-openais-five-new-us-data-centers-push-toward-10-gw-ai-infrastructure",
+        "https://www.stackinfra.com/about/news-press/press-releases/stack-infrastructure-delivers-digital-infrastructure-for-data-center-campus-in-new-mexico/",
+        "https://elpasomatters.org/2025/09/25/stargate-open-ai-oracle-project-jupiter-data-center-dona-ana-new-mexico-el-paso-texas/",
+        "https://www.oracle.com/news/announcement/oracle-borderplex-and-bloom-energy-to-power-project-jupiter-with-fuel-cell-technology-2026-04-27/",
+        "https://oilprice.com/Latest-Energy-News/World-News/Oracles-165-Billion-Data-Center-Plan-Hits-a-Gas-Pipeline-Delay.html",
+        "https://epoch.ai/data/ai-data-centers"
       ],
-      "notes": "Dona Ana County NM Stargate site (developer STACK Infrastructure), tied to the BorderPlex 'Project Jupiter' build. OpenAI describes it as 'more than a gigawatt'; Epoch AI lists up to ~2.2 GW full build-out. Now reported under construction. We hold the conservative ~1 GW figure as an estimate."
+      "notes": "Stargate NM / Project Jupiter: OpenAI/Oracle campus on ~1,400 acres in Santa Teresa, Dona Ana County, developed by STACK Infrastructure with BorderPlex Digital Assets; OCI 18-year lease, OpenAI primary client. OpenAI describes 'more than a gigawatt'; Epoch lists up to ~2.2 GW full build-out and Bloom fuel cells are contracted up to 2.45 GW under the Oracle MSA - we hold a conservative ~1 GW estimate. Powered behind-the-meter; the Transwestern gas pipeline serving it slipped to Feb 2027. Previously tracked twice (also as a STACK entry); merged Aug 2026. Epoch tracks the buildout at ~1,750 MW IT (~2,450 MW facility). Rated power calibrated to Epoch AI’s satellite-derived IT-power estimate (CC-BY, Sept 2026)."
     },
     {
       "id": "stargate-michigan",
@@ -171,9 +179,10 @@
       "sources": [
         "https://www.prnewswire.com/news-releases/openai-oracle-and-related-digital-announce-stargate-data-center-site-in-michigan-302600302.html",
         "https://www.datacenterdynamics.com/en/news/related-digitals-michigan-1gw-data-center-project-to-serve-openai-oracle/",
-        "https://www.tomshardware.com/tech-industry/artificial-intelligence/openais-stargate-data-center-gets-approval-to-receive-1-4-gigawatts-of-power-in-michigan-some-residents-furious-as-energy-company-is-given-go-ahead-by-regulatory-body-without-hearing-opposition"
+        "https://www.tomshardware.com/tech-industry/artificial-intelligence/openais-stargate-data-center-gets-approval-to-receive-1-4-gigawatts-of-power-in-michigan-some-residents-furious-as-energy-company-is-given-go-ahead-by-regulatory-body-without-hearing-opposition",
+        "https://www.utilitydive.com/news/dte-data-center-deal-transformational-growth-earnings/804231/"
       ],
-      "notes": "OpenAI/Oracle/Related Digital Stargate campus on 250 acres, roughly 1.4 GW supplied by DTE Energy with project-financed battery storage. Construction began in early 2026 after a contested local vote. Part of the 4.5 GW Oracle-OpenAI Stargate expansion."
+      "notes": "OpenAI/Oracle/Related Digital Stargate campus on 250 acres, ~1.4 GW supplied by DTE Energy under a reported 19-year supply agreement (DTE's first large data center deal, Oct 2025); grid connection targeted Dec 2026, full ramp within about a year after. Construction began early 2026 after a contested local vote. Part of the 4.5 GW Oracle-OpenAI Stargate expansion."
     },
     {
       "id": "xai-colossus-memphis",
@@ -201,9 +210,10 @@
       ],
       "sources": [
         "https://www.tomshardware.com/tech-industry/artificial-intelligence/musks-colossus-is-fully-operational-with-200-000-gpus-backed-by-tesla-batteries-phase-2-to-consume-300-mw-enough-to-power-300-000-homes",
-        "https://introl.com/blog/xai-memphis-colossus-100000-gpu-supercomputer-infrastructure"
+        "https://introl.com/blog/xai-memphis-colossus-100000-gpu-supercomputer-infrastructure",
+        "https://wreg.com/news/local/tva-oks-additional-150-mw-of-electricity-for-xai-memphis-data-center/"
       ],
-      "notes": "Built in 122 days; ~150k H100 + 50k H200 + 30k GB200 (~230k). Power has grown past the early 150-250 MW: ~250 MW grid plus 35 on-site gas turbines (~420 MW), so ~500 MW is the better current figure. The wider Memphis complex (Colossus 1+2+a third building) is cited near 2 GW / ~555k GPUs as of early 2026; that aggregate is not attributed here."
+      "notes": "Built in 122 days; ~150k H100 + 50k H200 + 30k GB200 (~230k). TVA-approved grid power is now ~300 MW (second 150 MW tranche approved early 2026) plus on-site gas turbines, so ~500 MW remains the better current figure. Turbine counts have exceeded permitted levels at times and xAI faces Clean Air Act litigation. The wider Memphis complex (Colossus 1+2+a third building) is cited near 2 GW / ~555k GPUs as of early 2026; that aggregate is not attributed here."
     },
     {
       "id": "xai-colossus-2",
@@ -211,15 +221,15 @@
       "operator": "xAI",
       "status": "operational",
       "location": {
-        "city": "Southaven",
-        "state": "MS",
-        "lat": 34.9889,
-        "lng": -90.0126
+        "city": "Memphis",
+        "state": "TN",
+        "lat": 35.005,
+        "lng": -90.078
       },
       "gridRegion": "SERC",
       "gpuCount": null,
       "chipType": "NVIDIA GB200/GB300",
-      "ratedPowerMW": 350,
+      "ratedPowerMW": 950,
       "plannedPowerMW": 1200,
       "energySource": "on-site gas + grid",
       "workload": "training",
@@ -230,15 +240,17 @@
       ],
       "sources": [
         "https://newsletter.semianalysis.com/p/xais-colossus-2-first-gigawatt-datacenter",
-        "https://www.tomshardware.com/tech-industry/artificial-intelligence/musks-colossus-is-fully-operational-with-200-000-gpus-backed-by-tesla-batteries-phase-2-to-consume-300-mw-enough-to-power-300-000-homes"
+        "https://www.tomshardware.com/tech-industry/artificial-intelligence/musks-colossus-is-fully-operational-with-200-000-gpus-backed-by-tesla-batteries-phase-2-to-consume-300-mw-enough-to-power-300-000-homes",
+        "https://www.technology.org/2026/07/15/xai-59-unpermitted-gas-turbines-southaven-colossus-2/",
+        "https://epoch.ai/data/ai-data-centers"
       ],
-      "notes": "First gigawatt-scale single datacenter; began operations ~Jan 2026 and is ramping (Google/SpaceX agreed to rent capacity here in June 2026). ~350 MW is a grounded current estimate from cooling-capacity analysis vs the ~1 GW launch claim; 41 on-site gas turbines approved Mar 2026 back the path to ~1.2 GW. Compute hall is Memphis (Whitehaven) TN; power generation is Southaven MS."
+      "notes": "First gigawatt-scale single datacenter; began operations ~Jan 2026 and is ramping (Google/SpaceX agreed to rent capacity here in June 2026). ~350 MW is a grounded current estimate from cooling-capacity analysis vs the ~1 GW launch claim; 41 on-site gas turbines approved Mar 2026 back the path to ~1.2 GW (xAI cites a 2 GW ambition). July 2026 records show turbines operating beyond federal permits; NAACP Clean Air Act suit filed April 2026. Compute hall is Memphis (Whitehaven) TN; power generation is Southaven MS. Epoch measures 946 MW IT live (1.11M H100e), tracking toward ~1,531 MW by early 2027; compute hall at 5420 Tulane Rd, Memphis TN, power generation in Southaven MS. Rated power calibrated to Epoch AI’s satellite-derived IT-power estimate (CC-BY, Sept 2026)."
     },
     {
       "id": "meta-prometheus",
       "name": "Meta Prometheus (New Albany)",
       "operator": "Meta",
-      "status": "construction",
+      "status": "operational",
       "location": {
         "city": "New Albany",
         "state": "OH",
@@ -248,18 +260,21 @@
       "gridRegion": "PJM",
       "gpuCount": null,
       "chipType": "NVIDIA H100/GB200",
-      "ratedPowerMW": 0,
+      "ratedPowerMW": 560,
       "plannedPowerMW": 1000,
       "energySource": "on-site gas + grid",
       "workload": "training",
       "linkedDeal": null,
       "onlineDate": "2026",
-      "estimated": [],
+      "estimated": [
+        "ratedPowerMW"
+      ],
       "sources": [
         "https://techcrunch.com/2025/07/14/mark-zuckerberg-says-meta-is-building-a-5gw-ai-data-center",
-        "https://www.datacenterfrontier.com/hyperscale/article/55310441/ownership-and-power-challenges-in-metas-hyperion-and-prometheus-data-centers"
+        "https://www.datacenterfrontier.com/hyperscale/article/55310441/ownership-and-power-challenges-in-metas-hyperion-and-prometheus-data-centers",
+        "https://epoch.ai/data/ai-data-centers"
       ],
-      "notes": "Meta's first ~1 GW supercluster, online 2026. Ohio Power Siting Board approved two 200 MW on-site gas plants targeting Q3 2026."
+      "notes": "Meta's first ~1 GW supercluster, online 2026. Ohio Power Siting Board approved two 200 MW on-site gas plants targeting Q3 2026. First phases live per Epoch’s satellite-verified estimate; build continues. Rated power calibrated to Epoch AI’s satellite-derived IT-power estimate (CC-BY, Sept 2026)."
     },
     {
       "id": "meta-hyperion",
@@ -280,13 +295,15 @@
       "energySource": "gas (Entergy) + grid",
       "workload": "training",
       "linkedDeal": null,
-      "onlineDate": "2027-2030",
+      "onlineDate": "2027-2032",
       "estimated": [],
       "sources": [
         "https://www.datacenterdynamics.com/en/news/meta-to-invest-hundreds-of-billions-of-dollars-into-compute-to-build-superintelligence-with-several-multi-gw-data-center-clusters/",
-        "https://thenextweb.com/news/meta-200-billion-hyperion-data-center-louisiana"
+        "https://thenextweb.com/news/meta-200-billion-hyperion-data-center-louisiana",
+        "https://datacenters.atmeta.com/2026/07/deepening-our-investment-in-richland-parish-louisiana/",
+        "https://thelensnola.org/2026/03/30/meta-triples-order-of-gas-fired-power-plants-for-its-ai-campus-in-louisiana/"
       ],
-      "notes": "Meta's largest campus: up to 5 GW across ~4M sq ft on 2,250 acres. Construction since late 2024 through 2030; ~1.5 GW interim target by end 2027. Powered by 10 Entergy gas plants."
+      "notes": "Meta's largest campus: 5 GW across ~4M sq ft on 2,250 acres; investment lifted above $50B in July 2026. ~1.5 GW interim target by end 2027, ~2 GW by 2030, full 5 GW ~2032. Powered under a 15-year Entergy electric service agreement backed by three approved CCGTs (~2.26 GW, LPSC Aug 2025); seven more plants (~5.3 GW) are requested but pend an LPSC vote (~Nov 2026) and are not counted."
     },
     {
       "id": "meta-pike-county-oh",
@@ -349,30 +366,36 @@
     },
     {
       "id": "microsoft-fairwater-atlanta",
-      "name": "Microsoft Fairwater (Atlanta)",
+      "name": "Microsoft Fairwater Atlanta",
       "operator": "Microsoft",
       "status": "operational",
       "location": {
-        "city": "Atlanta",
+        "city": "Fayetteville",
         "state": "GA",
-        "lat": 33.749,
-        "lng": -84.388
+        "lat": 33.4487,
+        "lng": -84.4549
       },
       "gridRegion": "SERC",
       "gpuCount": null,
       "chipType": "NVIDIA GB200/GB300",
-      "ratedPowerMW": 300,
-      "plannedPowerMW": 300,
+      "ratedPowerMW": 636,
+      "plannedPowerMW": 859,
       "energySource": "grid",
       "workload": "training",
       "linkedDeal": null,
       "onlineDate": "2025",
-      "estimated": [],
+      "estimated": [
+        "plannedPowerMW",
+        "ratedPowerMW"
+      ],
       "sources": [
         "https://www.datacenterdynamics.com/en/news/microsoft-launches-atlanta-fairwater-data-center-two-stories-no-ups-or-gen-sets/",
-        "https://news.microsoft.com/source/features/ai/from-wisconsin-to-atlanta-microsoft-connects-datacenters-to-build-its-first-ai-superfactory/"
+        "https://news.microsoft.com/source/features/ai/from-wisconsin-to-atlanta-microsoft-connects-datacenters-to-build-its-first-ai-superfactory/",
+        "https://www.interconnection.fyi/data-center/project/microsoft-fairwater-atlanta-9f8f329f",
+        "https://www.ajc.com/business/2025/11/microsofts-newest-ai-superfactory-opens-at-sprawling-fayetteville-campus/",
+        "https://epoch.ai/data/ai-data-centers"
       ],
-      "notes": "Two-story GPU building, ~800k sq ft, ~300 MW, 140 kW/rack, GB200/GB300. Part of Microsoft's >2 GW multi-site Fairwater 'AI superfactory'."
+      "notes": "Two-story GPU building, ~800k sq ft, ~300 MW, 140 kW/rack, GB200/GB300. Part of Microsoft's >2 GW multi-site Fairwater 'AI superfactory'. Previously also tracked as a second entry; merged Sept 2026 (Epoch cross-validation exposed the duplicate). Epoch measures 636 MW IT (859 MW facility) as of mid-2026 - well above both prior entries. Rated power calibrated to Epoch AI’s satellite-derived IT-power estimate (CC-BY, Sept 2026)."
     },
     {
       "id": "aws-rainier",
@@ -410,31 +433,35 @@
       "operator": "Amazon (AWS)",
       "status": "construction",
       "location": {
-        "city": "Salem Township",
+        "city": "Berwick",
         "state": "PA",
-        "lat": 41.057,
-        "lng": -76.3488
+        "lat": 41.0903,
+        "lng": -76.1483
       },
       "gridRegion": "PJM",
       "gpuCount": null,
       "chipType": "AWS Trainium2 / NVIDIA",
-      "ratedPowerMW": 0,
+      "ratedPowerMW": 240,
       "plannedPowerMW": 960,
       "energySource": "nuclear (Susquehanna BTM)",
       "workload": "mixed",
       "linkedDeal": "susquehanna-aws",
       "onlineDate": "2026",
-      "estimated": [],
-      "sources": [
-        "https://www.datacenterdynamics.com/en/news/aws-activates-project-rainier-cluster-of-nearly-500000-trainium2-chips/"
+      "estimated": [
+        "ratedPowerMW"
       ],
-      "notes": "AWS campus drawing behind-the-meter power from the Susquehanna nuclear plant under the Talen-AWS agreement. Power tracked as the signed deal susquehanna-aws (up to 1,920 MW)."
+      "sources": [
+        "https://www.datacenterdynamics.com/en/news/aws-activates-project-rainier-cluster-of-nearly-500000-trainium2-chips/",
+        "https://www.datacenterfrontier.com/hyperscale/article/33038288/aws-eyes-960-mw-for-newly-acquired-nuclear-power-data-center-in-pennsylvania",
+        "https://www.datacenterdynamics.com/en/news/aws-acquires-talens-nuclear-data-center-campus-in-pennsylvania/"
+      ],
+      "notes": "AWS campus drawing behind-the-meter power from the Susquehanna nuclear plant under the Talen-AWS agreement. Power tracked as the signed deal susquehanna-aws (up to 1,920 MW). Previously also tracked as a second entry; merged Sept 2026 (Epoch cross-validation exposed the duplicate)."
     },
     {
       "id": "aws-canton-ms",
       "name": "AWS Madison County (Canton)",
       "operator": "Amazon (AWS)",
-      "status": "construction",
+      "status": "operational",
       "location": {
         "city": "Canton",
         "state": "MS",
@@ -444,19 +471,21 @@
       "gridRegion": "MISO",
       "gpuCount": null,
       "chipType": "AWS Trainium2 / NVIDIA",
-      "ratedPowerMW": 0,
+      "ratedPowerMW": 280,
       "plannedPowerMW": 1000,
       "energySource": "grid",
       "workload": "mixed",
       "linkedDeal": null,
       "onlineDate": "2027",
       "estimated": [
-        "plannedPowerMW"
+        "plannedPowerMW",
+        "ratedPowerMW"
       ],
       "sources": [
-        "https://www.aboutamazon.com/news/aws"
+        "https://www.aboutamazon.com/news/aws",
+        "https://epoch.ai/data/ai-data-centers"
       ],
-      "notes": "AWS's large Mississippi AI campus near Canton (Entergy/MISO). Capacity estimated; cross-referenced from GridTilt's Power Map registry."
+      "notes": "AWS's large Mississippi AI campus near Canton (Entergy/MISO). Capacity estimated; cross-referenced from GridTilt's Power Map registry. First phases live per Epoch’s satellite-verified estimate; build continues. Rated power calibrated to Epoch AI’s satellite-derived IT-power estimate (CC-BY, Sept 2026)."
     },
     {
       "id": "google-council-bluffs",
@@ -577,7 +606,7 @@
       "id": "google-pryor-creek-ok",
       "name": "Google Pryor Creek (TPU)",
       "operator": "Google",
-      "status": "construction",
+      "status": "operational",
       "location": {
         "city": "Pryor Creek",
         "state": "OK",
@@ -587,19 +616,21 @@
       "gridRegion": "SPP",
       "gpuCount": null,
       "chipType": "Google TPU",
-      "ratedPowerMW": 0,
+      "ratedPowerMW": 370,
       "plannedPowerMW": 550,
       "energySource": "grid",
       "workload": "mixed",
       "linkedDeal": null,
       "onlineDate": "2026",
       "estimated": [
-        "plannedPowerMW"
+        "plannedPowerMW",
+        "ratedPowerMW"
       ],
       "sources": [
-        "https://www.google.com/about/datacenters/locations/"
+        "https://www.google.com/about/datacenters/locations/",
+        "https://epoch.ai/data/ai-data-centers"
       ],
-      "notes": "Google Oklahoma AI campus (SPP). Capacity estimated; cross-referenced from GridTilt's Power Map registry."
+      "notes": "Google Oklahoma AI campus (SPP). Capacity estimated; cross-referenced from GridTilt's Power Map registry. First phases live per Epoch’s satellite-verified estimate; build continues. Rated power calibrated to Epoch AI’s satellite-derived IT-power estimate (CC-BY, Sept 2026)."
     },
     {
       "id": "coreweave-ellendale",
@@ -615,20 +646,22 @@
       "gridRegion": "MISO",
       "gpuCount": null,
       "chipType": "NVIDIA GB200",
-      "ratedPowerMW": 0,
+      "ratedPowerMW": 70,
       "plannedPowerMW": 400,
       "energySource": "grid",
       "workload": "mixed",
       "linkedDeal": null,
       "onlineDate": "2026",
       "estimated": [
-        "plannedPowerMW"
+        "ratedPowerMW"
       ],
       "sources": [
         "https://www.datacenterdynamics.com/en/news/applied-digital-signs-250mw-agreement-with-coreweave-for-capacity-at-ellendale-campus-north-dakota/",
-        "https://www.coreweave.com/blog/our-capacity-plans-for-coreweave-data-centers"
+        "https://www.coreweave.com/blog/our-capacity-plans-for-coreweave-data-centers",
+        "https://ir.applieddigital.com/news-events/press-releases",
+        "https://epoch.ai/data/ai-data-centers"
       ],
-      "notes": "CoreWeave signed a 15-year lease for 250 MW of critical IT load at Applied Digital's Ellendale campus; campus build-out larger. Planned MW estimated."
+      "notes": "CoreWeave leases now total 400 MW of critical IT at Applied Digital's Polaris Forge 1 (Ellendale ND) across three 15-year tranches (~$11B). Building 1 (100 MW) in service ~Q4 2025; building 2 delivered July 1, 2026 (rated 250 MW estimated on that basis); building 3 (150 MW) targets full capacity 2027. Campus engineered to scale to 1 GW. Epoch measures ~68 MW IT live; \"delivered\" buildings are not yet all energized, so the earlier 250 MW rated estimate was high. Rated power calibrated to Epoch AI’s satellite-derived IT-power estimate (CC-BY, Sept 2026)."
     },
     {
       "id": "coreweave-mebane",
@@ -844,20 +877,21 @@
       "gridRegion": "WECC",
       "gpuCount": null,
       "chipType": "NVIDIA",
-      "ratedPowerMW": 520,
+      "ratedPowerMW": 150,
       "plannedPowerMW": 520,
       "energySource": "grid",
       "workload": "mixed",
       "linkedDeal": null,
       "onlineDate": "2025",
       "estimated": [
-        "ratedPowerMW",
-        "plannedPowerMW"
+        "plannedPowerMW",
+        "ratedPowerMW"
       ],
       "sources": [
-        "https://datacenters.atmeta.com/"
+        "https://datacenters.atmeta.com/",
+        "https://epoch.ai/data/ai-data-centers"
       ],
-      "notes": "Meta Utah campus (Rocky Mountain Power/WECC) expanded for AI. Power estimated; cross-referenced from GridTilt's Power Map registry."
+      "notes": "Meta Utah campus (Rocky Mountain Power/WECC) expanded for AI. Power estimated; cross-referenced from GridTilt's Power Map registry. The prior 520 MW rated figure was full-campus capacity; Epoch measures ~133 MW IT (~179 MW facility) actually live. Rated power calibrated to Epoch AI’s satellite-derived IT-power estimate (CC-BY, Sept 2026)."
     },
     {
       "id": "amazon-northlake-tx",
@@ -918,7 +952,7 @@
     {
       "id": "project-jade-cheyenne",
       "name": "Project Jade (Cheyenne)",
-      "operator": "Tallgrass (DC developer undisclosed)",
+      "operator": "Crusoe + Tallgrass",
       "status": "construction",
       "location": {
         "city": "Cheyenne",
@@ -935,17 +969,21 @@
       "workload": "mixed",
       "linkedDeal": null,
       "onlineDate": "2027",
-      "estimated": [],
+      "estimated": [
+        "plannedPowerMW"
+      ],
       "sources": [
         "https://www.datacenterdynamics.com/en/news/crusoe-pauses-work-on-18gw-cheyenne-wyoming-data-center-at-the-request-of-our-customer/",
-        "https://cowboystatedaily.com/2026/06/11/partner-pulling-out-doesnt-slow-huge-2-7gw-cheyenne-project-jade-data-center/"
+        "https://cowboystatedaily.com/2026/06/11/partner-pulling-out-doesnt-slow-huge-2-7gw-cheyenne-project-jade-data-center/",
+        "https://www.datacenterdynamics.com/en/news/crusoe-gets-go-ahead-for-18gw-data-center-campus-and-power-plant-in-cheyenne-wyoming/",
+        "https://www.crusoe.ai/resources/newsroom/crusoe-and-tallgrass-announce-ai-data-center-in-wyoming"
       ],
-      "notes": "The Cheyenne 'Project Jade' campus (formerly Crusoe + Tallgrass). Crusoe paused and exited development ~April-June 2026 (reportedly after Google, the customer, raised cost/timeline concerns); Tallgrass continues the power side. Grew to 2.7 GW, with headroom toward 10 GW. Data-center developer now undisclosed."
+      "notes": "The Cheyenne 'Project Jade' campus (formerly Crusoe + Tallgrass). Crusoe paused and exited development ~April-June 2026 (reportedly after Google, the customer, raised cost/timeline concerns); Tallgrass continues the power side. Grew to 2.7 GW, with headroom toward 10 GW. Data-center developer now undisclosed. Previously also tracked as a second entry; merged Sept 2026 (Epoch cross-validation exposed the duplicate). Reported scale ranges 1.8-2.7 GW across coverage; the higher figure is held as an estimate."
     },
     {
       "id": "crusoe-goodnight",
-      "name": "Crusoe Goodnight Campus",
-      "operator": "Crusoe",
+      "name": "Goodnight Campus (Crusoe, for Google)",
+      "operator": "Crusoe (for Google)",
       "status": "construction",
       "location": {
         "city": "Claude",
@@ -967,9 +1005,12 @@
       ],
       "sources": [
         "https://www.datacentermap.com/usa/texas/amarillo/crusoe-goodnight-campus/",
-        "https://www.latitudemedia.com/news/how-a-crusoe-google-campus-became-texas-co-location-test-case/"
+        "https://www.latitudemedia.com/news/how-a-crusoe-google-campus-became-texas-co-location-test-case/",
+        "https://abc7amarillo.com/news/local/google-announces-new-data-center-in-armstrong-county-texas-judge-adam-ensey-crusoe-energy-ercot-southwest-power-pool-claude-texas",
+        "https://baxtel.com/data-center/google-goodnight-campus",
+        "https://www.texastribune.org/2025/11/14/texas-google-data-centers-ai/"
       ],
-      "notes": "Crusoe AI campus near Claude TX (Armstrong County), anchor customer Google. ~530 MW phase 1 plus ~500 MW phase 2, powered by ~933 MW of off-grid on-site gas turbines. Capacity is the announced full build-out."
+      "notes": "Crusoe AI campus near Claude TX (Armstrong County), anchor customer Google. ~530 MW phase 1 plus ~500 MW phase 2, powered by ~933 MW of off-grid on-site gas turbines. Capacity is the announced full build-out. Previously also tracked as a second entry; merged Sept 2026 (Epoch cross-validation exposed the duplicate)."
     },
     {
       "id": "crusoe-abilene-microsoft",
@@ -1056,7 +1097,7 @@
       "id": "meta-temple",
       "name": "Meta Temple",
       "operator": "Meta",
-      "status": "construction",
+      "status": "operational",
       "location": {
         "city": "Temple",
         "state": "TX",
@@ -1066,20 +1107,22 @@
       "gridRegion": "ERCOT",
       "gpuCount": null,
       "chipType": "NVIDIA",
-      "ratedPowerMW": 0,
+      "ratedPowerMW": 152,
       "plannedPowerMW": 1000,
       "energySource": "grid (renewable PPAs)",
       "workload": "training",
       "linkedDeal": null,
       "onlineDate": "2027",
       "estimated": [
-        "plannedPowerMW"
+        "plannedPowerMW",
+        "ratedPowerMW"
       ],
       "sources": [
         "https://baxtel.com/data-center/meta-temple-tx",
-        "https://www.templetx.gov/news_detail_T13_R305.php"
+        "https://www.templetx.gov/news_detail_T13_R305.php",
+        "https://epoch.ai/data/ai-data-centers"
       ],
-      "notes": "Meta's Temple TX (Bell County) campus, originally started 2022, paused, then redesigned for AI and resumed; ~1 GW planned, phased late 2026 into 2027, 100% renewable commitment. MW timing is an estimate; accelerator details undisclosed."
+      "notes": "Meta's Temple TX (Bell County) campus, originally started 2022, paused, then redesigned for AI and resumed; ~1 GW planned, phased late 2026 into 2027, 100% renewable commitment. MW timing is an estimate; accelerator details undisclosed. First phases live per Epoch’s satellite-verified estimate; build continues. Rated power calibrated to Epoch AI’s satellite-derived IT-power estimate (CC-BY, Sept 2026)."
     },
     {
       "id": "microsoft-kilby-pecos",
@@ -1104,9 +1147,12 @@
       "estimated": [],
       "sources": [
         "https://www.datacenterdynamics.com/en/news/microsoft-plans-2gw-data-center-campus-in-pecos-texas/",
-        "https://www.chevron.com/newsroom"
+        "https://www.chevron.com/newsroom",
+        "https://www.chevron.com/newsroom/2026/q2/chevron-signs-20-year-power-agreement-with-microsoft-for-west-texas-data-center",
+        "https://www.bloomberg.com/news/articles/2026-06-22/microsoft-chevron-sign-20-year-power-deal-for-texas-data-center",
+        "https://www.datacenterknowledge.com/build-design/chevron-lands-20-year-microsoft-deal-to-power-west-texas-ai-campus"
       ],
-      "notes": "Microsoft's ~2 GW data-center campus in Pecos TX (Reeves County), powered behind-the-meter by a Chevron/Engine No.1 gas plant (up to ~2.67 GW generation; 20-year PPA signed June 2026, FID expected end 2026). The 2 GW here is the disclosed compute target, distinct from generation. First power ~2028."
+      "notes": "Microsoft's ~2 GW data-center campus in Pecos TX (Reeves County), powered behind-the-meter by a Chevron/Engine No.1 gas plant (up to ~2.67 GW generation; 20-year PPA signed June 2026, FID expected end 2026). The 2 GW here is the disclosed compute target, distinct from generation. First power ~2028. Previously also tracked as a second entry; merged Sept 2026 (Epoch cross-validation exposed the duplicate)."
     },
     {
       "id": "nscale-cedarvale",
@@ -1141,7 +1187,7 @@
       "id": "galaxy-helios",
       "name": "Galaxy Helios (Dickens County)",
       "operator": "Galaxy Digital",
-      "status": "construction",
+      "status": "operational",
       "location": {
         "city": "Dickens County",
         "state": "TX",
@@ -1151,18 +1197,22 @@
       "gridRegion": "ERCOT",
       "gpuCount": null,
       "chipType": "NVIDIA",
-      "ratedPowerMW": 0,
-      "plannedPowerMW": 800,
+      "ratedPowerMW": 130,
+      "plannedPowerMW": 1600,
       "energySource": "grid",
       "workload": "mixed",
       "linkedDeal": null,
       "onlineDate": "2026",
-      "estimated": [],
+      "estimated": [
+        "ratedPowerMW"
+      ],
       "sources": [
         "https://www.convergedigest.com/coreweave-locks-in-800-mw-at-galaxys-helios-campus-in-texas/",
-        "https://www.datacenterdynamics.com/en/news/galaxy-digital-closes-14bn-debt-facility-for-helios-data-center-campus-in-texas/"
+        "https://www.datacenterdynamics.com/en/news/galaxy-digital-closes-14bn-debt-facility-for-helios-data-center-campus-in-texas/",
+        "https://www.prnewswire.com/news-releases/galaxy-completes-ercot-interconnection-studies-and-secures-approval-for-additional-830-megawatts-at-helios-data-center-campus-doubling-total-approved-power-capacity-to-over-1-6-gigawatts-302662509.html",
+        "https://epoch.ai/data/ai-data-centers"
       ],
-      "notes": "Galaxy Digital's Helios campus in Dickens County TX (former bitcoin-mining site), with 800 MW fully committed to CoreWeave under a 15-year lease (+1.7 GW under study). First power tranche energizing early 2026."
+      "notes": "Galaxy Digital's Helios campus in Dickens County TX (former bitcoin-mining site): ~833 MW committed to CoreWeave under 15-year leases, first tranche energizing from early 2026. A further 830 MW ERCOT approval (Jan 2026) doubled total approved + contracted capacity past 1.6 GW; the new tranche is development runway, not yet leased. First phases live per Epoch’s satellite-verified estimate; build continues. Rated power calibrated to Epoch AI’s satellite-derived IT-power estimate (CC-BY, Sept 2026)."
     },
     {
       "id": "iren-sweetwater",
@@ -1216,9 +1266,10 @@
       ],
       "sources": [
         "https://iren.com/data-centers/childress",
-        "https://baxtel.com/data-center/iren-horizon-1"
+        "https://baxtel.com/data-center/iren-horizon-1",
+        "https://www.theblock.co/news/business/2026-08-17-iren-delivers-first-four-ai-cloud-deployments-microsoft-under-9-7-billion-deal-412016"
       ],
-      "notes": "IREN's Childress TX site. The AI portion (Horizon 1-4, direct-to-chip liquid, NVIDIA GB300) is ~200 MW critical IT; Horizon 1 (~50 MW IT) energized Q4 2025 and is live, with H2-4 through H2 2026. The wider 750 MW site is mostly legacy bitcoin and is not counted here."
+      "notes": "IREN's Childress TX site. The AI portion (Horizon 1-4, direct-to-chip liquid, NVIDIA GB300) is ~200 MW critical IT under the $9.7B / 5-year Microsoft contract; Horizon 1 (~50 MW IT) was delivered to and accepted by Microsoft Aug 13, 2026, with H2-4 due through late 2026. The wider 750 MW site is mostly legacy bitcoin and is not counted here."
     },
     {
       "id": "applied-digital-harwood",
@@ -1420,7 +1471,7 @@
       "id": "meta-jeffersonville-in",
       "name": "Meta Jeffersonville Data Center (River Ridge)",
       "operator": "Meta",
-      "status": "construction",
+      "status": "operational",
       "location": {
         "city": "Jeffersonville",
         "state": "IN",
@@ -1430,22 +1481,24 @@
       "gridRegion": "MISO",
       "gpuCount": null,
       "chipType": "unknown",
-      "ratedPowerMW": 0,
+      "ratedPowerMW": 178,
       "plannedPowerMW": 400,
       "energySource": "grid (100% renewable matched via PPAs)",
       "workload": "mixed",
       "linkedDeal": null,
       "onlineDate": "2026",
       "estimated": [
+        "onlineDate",
         "plannedPowerMW",
-        "onlineDate"
+        "ratedPowerMW"
       ],
       "sources": [
         "https://www.datacenterdynamics.com/en/news/meta-to-develop-data-center-campus-in-jeffersonville-indiana/",
         "https://www.insideindianabusiness.com/articles/meta-to-build-800m-data-center-add-100-jobs-at-river-ridge",
-        "https://www.datacentermap.com/usa/indiana/jeffersonville/meta-jeffersonville-data-center/"
+        "https://www.datacentermap.com/usa/indiana/jeffersonville/meta-jeffersonville-data-center/",
+        "https://epoch.ai/data/ai-data-centers"
       ],
-      "notes": "Meta's first Indiana campus, announced Jan 2024, ~$800M, ~700,000 sq ft on a 619-acre site in River Ridge Commerce Center near Louisville. Under construction with planned 2026 operations; expansions through 2029. Renewable-matched, LEED Gold. Meta did not disclose MW; third-party tracker (datacentermap) lists ~407 MW, so plannedPowerMW set to ~400 (estimated)."
+      "notes": "Meta's first Indiana campus, announced Jan 2024, ~$800M, ~700,000 sq ft on a 619-acre site in River Ridge Commerce Center near Louisville. Under construction with planned 2026 operations; expansions through 2029. Renewable-matched, LEED Gold. Meta did not disclose MW; third-party tracker (datacentermap) lists ~407 MW, so plannedPowerMW set to ~400 (estimated). First phases live per Epoch’s satellite-verified estimate; build continues. Rated power calibrated to Epoch AI’s satellite-derived IT-power estimate (CC-BY, Sept 2026)."
     },
     {
       "id": "meta-kansas-city-mo",
@@ -1544,7 +1597,7 @@
       "id": "meta-montgomery-al",
       "name": "Meta Montgomery Data Center",
       "operator": "Meta",
-      "status": "construction",
+      "status": "operational",
       "location": {
         "city": "Montgomery",
         "state": "AL",
@@ -1554,22 +1607,24 @@
       "gridRegion": "SERC",
       "gpuCount": null,
       "chipType": "unknown",
-      "ratedPowerMW": 0,
+      "ratedPowerMW": 153,
       "plannedPowerMW": 200,
       "energySource": "grid (100% renewable matched via PPAs)",
       "workload": "training",
       "linkedDeal": null,
       "onlineDate": "2026",
       "estimated": [
+        "onlineDate",
         "plannedPowerMW",
-        "onlineDate"
+        "ratedPowerMW"
       ],
       "sources": [
         "https://alabamanewscenter.com/2025/09/23/meta-to-expand-montgomery-alabama-data-hub-pushing-total-investment-to-1-5-billion/",
         "https://www.datacenterdynamics.com/en/news/meta-to-add-two-more-buildings-to-alabama-campus-in-montgomery/",
-        "https://governor.alabama.gov/newsroom/2024/05/governor-ivey-announces-meta-plans-to-build-800-million-next-generation-data-center-in-montgomery/"
+        "https://governor.alabama.gov/newsroom/2024/05/governor-ivey-announces-meta-plans-to-build-800-million-next-generation-data-center-in-montgomery/",
+        "https://epoch.ai/data/ai-data-centers"
       ],
-      "notes": "Announced May 2024 (~$800M), expanded Sept 2025 to bring total Montgomery investment to $1.5B and campus to 1.3M+ sq ft (two more buildings). AI-optimized, off I-65 across from the Hyundai plant. Expected online end of 2026 (estimated). plannedPowerMW is a GridTilt estimate; MW not disclosed."
+      "notes": "Announced May 2024 (~$800M), expanded Sept 2025 to bring total Montgomery investment to $1.5B and campus to 1.3M+ sq ft (two more buildings). AI-optimized, off I-65 across from the Hyundai plant. Expected online end of 2026 (estimated). plannedPowerMW is a GridTilt estimate; MW not disclosed. First phases live per Epoch’s satellite-verified estimate; build continues. Rated power calibrated to Epoch AI’s satellite-derived IT-power estimate (CC-BY, Sept 2026)."
     },
     {
       "id": "applied-digital-adair-county-ia",
@@ -2745,37 +2800,6 @@
       "notes": "Second Google North Texas data center (announced 2023) in Red Oak, Ellis County, now confirmed operational; sits alongside Google's Midlothian campus. Part of Google's $40B Texas commitment through 2027. ratedPowerMW is a conservative GridTilt estimate (no MW disclosed)."
     },
     {
-      "id": "google-goodnight-armstrong-county-tx",
-      "name": "Google Goodnight Campus (Armstrong County / Crusoe)",
-      "operator": "Google",
-      "status": "construction",
-      "location": {
-        "city": "Claude (Armstrong County)",
-        "state": "TX",
-        "lat": 35.118,
-        "lng": -101.362
-      },
-      "gridRegion": "ERCOT",
-      "gpuCount": null,
-      "chipType": "Google TPU",
-      "ratedPowerMW": 0,
-      "plannedPowerMW": 1000,
-      "energySource": "Texas Panhandle wind (closed-loop cooling), ERCOT grid",
-      "workload": "training",
-      "linkedDeal": null,
-      "onlineDate": "2029",
-      "estimated": [
-        "plannedPowerMW",
-        "onlineDate"
-      ],
-      "sources": [
-        "https://abc7amarillo.com/news/local/google-announces-new-data-center-in-armstrong-county-texas-judge-adam-ensey-crusoe-energy-ercot-southwest-power-pool-claude-texas",
-        "https://baxtel.com/data-center/google-goodnight-campus",
-        "https://www.texastribune.org/2025/11/14/texas-google-data-centers-ai/"
-      ],
-      "notes": "Hyperscale campus on ~1,300 acres near Claude, TX, developed by Crusoe Energy with Google as tenant; construction underway since May 2025, completion ~late 2028/early 2029. Pulls from ERCOT (not the local SPP supply). One of three Texas campuses in Google's $40B build-out. plannedPowerMW is a GridTilt estimate scaled to the 1GW+ co-located complex; the data-center IT load was not separately disclosed."
-    },
-    {
       "id": "google-haskell-county-tx",
       "name": "Google Haskell County Campus (Quantum)",
       "operator": "Google",
@@ -2903,7 +2927,7 @@
       "id": "google-fort-wayne-in",
       "name": "Google Fort Wayne Campus (Project Zodiac)",
       "operator": "Google",
-      "status": "operational",
+      "status": "construction",
       "location": {
         "city": "Fort Wayne",
         "state": "IN",
@@ -2913,22 +2937,23 @@
       "gridRegion": "MISO",
       "gpuCount": null,
       "chipType": "Google TPU",
-      "ratedPowerMW": 150,
+      "ratedPowerMW": 0,
       "plannedPowerMW": 400,
       "energySource": "AEP/Indiana Michigan Power grid",
       "workload": "mixed",
       "linkedDeal": null,
       "onlineDate": "2025-12",
       "estimated": [
-        "ratedPowerMW",
-        "plannedPowerMW"
+        "plannedPowerMW",
+        "ratedPowerMW"
       ],
       "sources": [
         "https://www.datacenterdynamics.com/en/news/googles-2bn-data-center-now-operational-in-fort-wayne-indiana/",
         "https://www.wane.com/top-stories/2-billion-google-data-center-now-operational-in-fort-wayne-outlines-its-plans-for-the-community/",
-        "https://iedc.in.gov/events/news/details/2024/04/26/gov.-holcomb-announces-google-is-building-a-2b-data-center-in-northeast-indiana"
+        "https://iedc.in.gov/events/news/details/2024/04/26/gov.-holcomb-announces-google-is-building-a-2b-data-center-in-northeast-indiana",
+        "https://epoch.ai/data/ai-data-centers"
       ],
-      "notes": "$2B Google campus ('Project Zodiac') near E Tillman/Adams Center Rds, broke ground April 2024, went live Dec 11, 2025; Sept 2025 approval to add five more buildings. Indiana is one of the city-identified states in Google's AI buildout. ratedPowerMW/plannedPowerMW are GridTilt estimates (no MW disclosed)."
+      "notes": "$2B Google campus ('Project Zodiac') near E Tillman/Adams Center Rds, broke ground April 2024, went live Dec 11, 2025; Sept 2025 approval to add five more buildings. Indiana is one of the city-identified states in Google's AI buildout. ratedPowerMW/plannedPowerMW are GridTilt estimates (no MW disclosed). Was marked operational; Epoch shows no live IT load, first buildings 2027-28. Rated power calibrated to Epoch AI’s satellite-derived IT-power estimate (CC-BY, Sept 2026)."
     },
     {
       "id": "google-pine-island-mn",
@@ -3022,37 +3047,6 @@
         "https://columbusconstruction.org/work-underway-on-two-more-google-datacenters-in-ohio/"
       ],
       "notes": "Google campus on a 120-acre site in Rock Mill Industrial Park (Whiley Rd off US-33), Fairfield County; ground broken 2023, first building completed 2024. Distinct from Google's New Albany and Columbus/Lockbourne central-Ohio campuses. ratedPowerMW/plannedPowerMW are GridTilt estimates (no MW disclosed)."
-    },
-    {
-      "id": "microsoft-fairwater-atlanta-ga",
-      "name": "Microsoft Fairwater Atlanta (AI Superfactory)",
-      "operator": "Microsoft",
-      "status": "operational",
-      "location": {
-        "city": "Fayetteville",
-        "state": "GA",
-        "lat": 33.4487,
-        "lng": -84.4549
-      },
-      "gridRegion": "SERC",
-      "gpuCount": null,
-      "chipType": "NVIDIA GB200 / GB300 (NVL72)",
-      "ratedPowerMW": 250,
-      "plannedPowerMW": 250,
-      "energySource": "grid (Southern Company / Georgia Power)",
-      "workload": "training",
-      "linkedDeal": null,
-      "onlineDate": "2025-10",
-      "estimated": [
-        "ratedPowerMW",
-        "plannedPowerMW"
-      ],
-      "sources": [
-        "https://www.datacenterdynamics.com/en/news/microsoft-launches-atlanta-fairwater-data-center-two-stories-no-ups-or-gen-sets/",
-        "https://www.interconnection.fyi/data-center/project/microsoft-fairwater-atlanta-9f8f329f",
-        "https://www.ajc.com/business/2025/11/microsofts-newest-ai-superfactory-opens-at-sprawling-fayetteville-campus/"
-      ],
-      "notes": "Microsoft's second Fairwater AI campus, live October/November 2025 on a 615-acre QTS-developed campus in Fayetteville, Fayette County (south of Atlanta), >1M sq ft, two-story design, 140kW/rack and 1,360kW/row, hundreds of thousands of NVIDIA GB200/GB300 GPUs. No on-site generation/UPS/gensets (relies on grid). Microsoft did not disclose total MW; interconnection.fyi tracker lists 250+ MW (used as conservative estimate). Connected to Wisconsin Fairwater via AI WAN as a distributed superfactory. Distinct from Microsoft's Union City and Palmetto Atlanta-region campuses."
     },
     {
       "id": "microsoft-san-antonio-castroville-tx",
@@ -3202,36 +3196,6 @@
         "https://www.fauquiernow.com/news/data-center-database-where-projects-stand-across-fauquier-county/article_18be50e8-49f6-11ef-95cf-3b45407fea55.html"
       ],
       "notes": "AWS operational data center at the Warrenton Training Center in Fauquier County, part of the US-East-1 (Northern Virginia) AI/cloud cluster (Bedrock/Claude, SageMaker, Trainium/Inferentia). Fauquier has eight further data center proposals plus one expansion in the pipeline. ratedPowerMW/plannedPowerMW are conservative GridTilt estimates; operator MW not disclosed."
-    },
-    {
-      "id": "aws-salem-township-susquehanna-pa",
-      "name": "AWS Salem Township (Susquehanna / Cumulus) Campus",
-      "operator": "Amazon (AWS)",
-      "status": "construction",
-      "location": {
-        "city": "Berwick",
-        "state": "PA",
-        "lat": 41.0903,
-        "lng": -76.1483
-      },
-      "gridRegion": "PJM",
-      "gpuCount": null,
-      "chipType": "AWS Trainium",
-      "ratedPowerMW": 240,
-      "plannedPowerMW": 960,
-      "energySource": "nuclear (Susquehanna Steam Electric Station PPA) + grid",
-      "workload": "mixed",
-      "linkedDeal": null,
-      "onlineDate": "2026",
-      "estimated": [
-        "ratedPowerMW",
-        "onlineDate"
-      ],
-      "sources": [
-        "https://www.datacenterfrontier.com/hyperscale/article/33038288/aws-eyes-960-mw-for-newly-acquired-nuclear-power-data-center-in-pennsylvania",
-        "https://www.datacenterdynamics.com/en/news/aws-acquires-talens-nuclear-data-center-campus-in-pennsylvania/"
-      ],
-      "notes": "1,200-acre nuclear-anchored campus (formerly Cumulus) in Salem Township, Luzerne County, bought from Talen for $650M; co-located with the Susquehanna nuclear plant. AWS data-center compute load up to 960 MW (ramping in 120 MW increments, one-time option to cap at 480 MW); plan for 15 data center buildings over a decade. plannedPowerMW = 960 MW compute load (NOT the ~1.9 GW generation PPA). ratedPowerMW reflects early-phase developed capacity (estimate)."
     },
     {
       "id": "aws-falls-township-bucks-pa",
@@ -3488,22 +3452,23 @@
       "gridRegion": "SERC",
       "gpuCount": null,
       "chipType": "undisclosed",
-      "ratedPowerMW": 300,
+      "ratedPowerMW": 90,
       "plannedPowerMW": 300,
       "energySource": "Renewable (TVA PPAs, 530 MW new renewables in TN)",
       "workload": "mixed",
       "linkedDeal": null,
       "onlineDate": "2024-11",
       "estimated": [
-        "ratedPowerMW",
-        "plannedPowerMW"
+        "plannedPowerMW",
+        "ratedPowerMW"
       ],
       "sources": [
         "https://datacenters.atmeta.com/2024/11/gallatin-we-are-online/",
         "https://www.datacenterdynamics.com/en/news/meta-officially-launches-gallatin-data-center-campus-in-tennessee/",
-        "https://datacenters.atmeta.com/us-locations/"
+        "https://datacenters.atmeta.com/us-locations/",
+        "https://epoch.ai/data/ai-data-centers"
       ],
-      "notes": "North of Nashville. Went live Nov 2024; $1.5B+ total investment, LEED Gold. Reported drawing up to ~300 MW. Meta has also deployed rapid-build 'tent' AI structures in Tennessee near Gallatin in 2026. ratedPowerMW is a sourced approximation of campus draw."
+      "notes": "North of Nashville. Went live Nov 2024; $1.5B+ total investment, LEED Gold. Reported drawing up to ~300 MW. Meta has also deployed rapid-build 'tent' AI structures in Tennessee near Gallatin in 2026. ratedPowerMW is a sourced approximation of campus draw. Rated power calibrated to Epoch AI’s satellite-derived IT-power estimate (CC-BY, Sept 2026)."
     },
     {
       "id": "meta-forest-city-nc",
@@ -3581,22 +3546,23 @@
       "gridRegion": "SPP",
       "gpuCount": null,
       "chipType": "undisclosed",
-      "ratedPowerMW": 250,
+      "ratedPowerMW": 80,
       "plannedPowerMW": 350,
       "energySource": "Wind (100% renewable; Dixon County NE wind)",
       "workload": "mixed",
       "linkedDeal": null,
       "onlineDate": "2019",
       "estimated": [
-        "ratedPowerMW",
-        "plannedPowerMW"
+        "plannedPowerMW",
+        "ratedPowerMW"
       ],
       "sources": [
         "https://datacenters.atmeta.com/asset/sarpy-data-center-info-sheet/",
         "https://datacenters.atmeta.com/us-locations/",
-        "https://www.datacenterdynamics.com/en/news/meta-to-expand-sarpy-data-center-in-nebraska/"
+        "https://www.datacenterdynamics.com/en/news/meta-to-expand-sarpy-data-center-in-nebraska/",
+        "https://epoch.ai/data/ai-data-centers"
       ],
-      "notes": "Spans Papillion and Springfield in Sarpy County. Online 2019; expanding to a nine-building, ~4M sq ft campus, $1.5B+ investment, 100% wind-matched. No official MW disclosed; rated/planned MW are GridTilt estimates for a campus of this scale."
+      "notes": "Spans Papillion and Springfield in Sarpy County. Online 2019; expanding to a nine-building, ~4M sq ft campus, $1.5B+ investment, 100% wind-matched. No official MW disclosed; rated/planned MW are GridTilt estimates for a campus of this scale. Rated power calibrated to Epoch AI’s satellite-derived IT-power estimate (CC-BY, Sept 2026)."
     },
     {
       "id": "meta-kuna-id",
@@ -3633,7 +3599,7 @@
       "id": "meta-rosemount-mn",
       "name": "Meta Rosemount Data Center",
       "operator": "Meta",
-      "status": "construction",
+      "status": "operational",
       "location": {
         "city": "Rosemount",
         "state": "MN",
@@ -3643,28 +3609,30 @@
       "gridRegion": "MISO",
       "gpuCount": null,
       "chipType": "undisclosed",
-      "ratedPowerMW": 0,
+      "ratedPowerMW": 178,
       "plannedPowerMW": 700,
       "energySource": "Renewable (100% renewable; Xcel Energy)",
       "workload": "mixed",
       "linkedDeal": null,
       "onlineDate": "2026",
       "estimated": [
+        "onlineDate",
         "plannedPowerMW",
-        "onlineDate"
+        "ratedPowerMW"
       ],
       "sources": [
         "https://www.datacenterdynamics.com/en/news/meta-to-open-800m-data-center-in-rosemount-minnesota/",
         "https://mn.gov/deed/newscenter/press-releases/?id=1045-614051",
-        "https://datacenters.atmeta.com/us-locations/"
+        "https://datacenters.atmeta.com/us-locations/",
+        "https://epoch.ai/data/ai-data-centers"
       ],
-      "notes": "AI-optimized data center at UMore Park (former WWII gunpowder site), Dakota County. $800M, 715,000 sq ft on 280 acres; Meta's 23rd global data center. Officially stated to require ~700 MW of power; 100% renewable via Xcel Energy. Targeted open 2026."
+      "notes": "AI-optimized data center at UMore Park (former WWII gunpowder site), Dakota County. $800M, 715,000 sq ft on 280 acres; Meta's 23rd global data center. Officially stated to require ~700 MW of power; 100% renewable via Xcel Energy. Targeted open 2026. First phases live per Epoch’s satellite-verified estimate; build continues. Rated power calibrated to Epoch AI’s satellite-derived IT-power estimate (CC-BY, Sept 2026)."
     },
     {
       "id": "meta-cheyenne-wy",
       "name": "Meta Cheyenne Data Center",
       "operator": "Meta",
-      "status": "construction",
+      "status": "operational",
       "location": {
         "city": "Cheyenne",
         "state": "WY",
@@ -3674,22 +3642,24 @@
       "gridRegion": "WECC",
       "gpuCount": null,
       "chipType": "undisclosed",
-      "ratedPowerMW": 0,
+      "ratedPowerMW": 152,
       "plannedPowerMW": 300,
       "energySource": "Renewable incl. wind (Black Hills Energy grid additions)",
       "workload": "mixed",
       "linkedDeal": null,
       "onlineDate": "2027",
       "estimated": [
+        "onlineDate",
         "plannedPowerMW",
-        "onlineDate"
+        "ratedPowerMW"
       ],
       "sources": [
         "https://www.datacenterdynamics.com/en/news/meta-officially-announces-data-center-in-cheyenne-wyoming/",
         "https://cowboystatedaily.com/2024/07/02/meta-formally-announces-massive-800m-715-000-square-foot-cheyenne-data-center/",
-        "https://datacenters.atmeta.com/us-locations/"
+        "https://datacenters.atmeta.com/us-locations/",
+        "https://epoch.ai/data/ai-data-centers"
       ],
-      "notes": "Announced July 2024: $800M+, 715,000 sq ft on a 960-acre site, explicitly optimized for AI workloads. Construction on first building began early 2024; scheduled to open by 2027. Working with Black Hills Energy on new grid resources incl. renewables/wind. plannedPowerMW is a GridTilt estimate for a 715k sq ft AI campus."
+      "notes": "Announced July 2024: $800M+, 715,000 sq ft on a 960-acre site, explicitly optimized for AI workloads. Construction on first building began early 2024; scheduled to open by 2027. Working with Black Hills Energy on new grid resources incl. renewables/wind. plannedPowerMW is a GridTilt estimate for a 715k sq ft AI campus. First phases live per Epoch’s satellite-verified estimate; build continues. Rated power calibrated to Epoch AI’s satellite-derived IT-power estimate (CC-BY, Sept 2026)."
     },
     {
       "id": "meta-huntsville-al",
@@ -3736,22 +3706,23 @@
       "gridRegion": "WECC",
       "gpuCount": null,
       "chipType": "undisclosed",
-      "ratedPowerMW": 280,
+      "ratedPowerMW": 90,
       "plannedPowerMW": 400,
       "energySource": "Solar + wind + BESS (885 MW contracted renewables, 100 MW storage; 150 MW geothermal PPA)",
       "workload": "mixed",
       "linkedDeal": null,
       "onlineDate": "2019",
       "estimated": [
-        "ratedPowerMW",
-        "plannedPowerMW"
+        "plannedPowerMW",
+        "ratedPowerMW"
       ],
       "sources": [
         "https://datacenters.atmeta.com/asset/los-lunas/",
         "https://www.datacenterdynamics.com/en/news/meta-planning-expansion-of-los-lunas-data-center-campus-in-new-mexico/",
-        "https://datacenters.atmeta.com/us-locations/"
+        "https://datacenters.atmeta.com/us-locations/",
+        "https://epoch.ai/data/ai-data-centers"
       ],
-      "notes": "~750-acre desert campus, online from 2019. Seven operational buildings + three under construction; ~3.8M sq ft, each hall ~40 MW draw. ~$3.3B total bet. Backed by 885 MW contracted solar/wind across six NM counties, 100 MW BESS, plus a 150 MW XGS geothermal PPA (by 2030). ratedPowerMW estimated from ~7 halls x 40 MW."
+      "notes": "~750-acre desert campus, online from 2019. Seven operational buildings + three under construction; ~3.8M sq ft, each hall ~40 MW draw. ~$3.3B total bet. Backed by 885 MW contracted solar/wind across six NM counties, 100 MW BESS, plus a 150 MW XGS geothermal PPA (by 2030). ratedPowerMW estimated from ~7 halls x 40 MW. Rated power calibrated to Epoch AI’s satellite-derived IT-power estimate (CC-BY, Sept 2026)."
     },
     {
       "id": "meta-mesa-az",
@@ -3948,7 +3919,7 @@
         "lng": -97.1958
       },
       "gridRegion": "ERCOT",
-      "gpuCount": 16000,
+      "gpuCount": null,
       "chipType": "NVIDIA GPU (CoreWeave for OpenAI)",
       "ratedPowerMW": 190,
       "plannedPowerMW": 260,
@@ -3957,15 +3928,17 @@
       "linkedDeal": null,
       "onlineDate": "2026",
       "estimated": [
-        "ratedPowerMW",
-        "plannedPowerMW"
+        "gpuCount",
+        "plannedPowerMW",
+        "ratedPowerMW"
       ],
       "sources": [
         "https://www.datacenterdynamics.com/en/news/core-scientific-plans-to-upgrade-denton-texas-data-center-for-up-to-61bn/",
         "https://investors.corescientific.com/news-events/press-releases/detail/110/core-scientific-and-coreweave-announce-1-2-billion-expansion-at-denton-tx-site",
-        "https://www.theminermag.com/news/2026-01-14/coreweave-gpu-openai"
+        "https://www.theminermag.com/news/2026-01-14/coreweave-gpu-openai",
+        "https://epoch.ai/data/ai-data-centers"
       ],
-      "notes": "Former Core Scientific bitcoin-mining site at 8171 Jim Christal Rd converted to GPU HPC, leased to CoreWeave (OpenAI workloads). >16,000 GPUs installed by end-Dec 2025. +70MW contracted brings full critical IT load to ~260MW; conservative current rated ~190MW (operational, partial buildout) marked estimated. Up to $6.1B campus plan. Distinct from any existing CoreWeave-owned campus; this is the Core Scientific Denton site."
+      "notes": "Former Core Scientific bitcoin-mining site at 8171 Jim Christal Rd converted to GPU HPC, leased to CoreWeave (OpenAI workloads). >16,000 GPUs installed by end-Dec 2025. +70MW contracted brings full critical IT load to ~260MW; conservative current rated ~190MW (operational, partial buildout) marked estimated. Up to $6.1B campus plan. Distinct from any existing CoreWeave-owned campus; this is the Core Scientific Denton site. Prior 16,000 GPU count was inconsistent with ~262 MW IT; Epoch estimates ~252k H100-equivalents. Count withdrawn pending a source. Rated power calibrated to Epoch AI’s satellite-derived IT-power estimate (CC-BY, Sept 2026)."
     },
     {
       "id": "corescientific-muskogee-ok",
@@ -5570,35 +5543,6 @@
       "notes": "QTS-internal 'Project Blue Hole': up to 12M sq ft build-out by ~2035 on land near Early County Airport off Martha Berry Hwy in Blakely, Early County GA; closed-loop cooling. MW not disclosed. Planning phase. Coords approximate the Early County Airport area."
     },
     {
-      "id": "stack-project-jupiter-santa-teresa-nm",
-      "name": "STACK Project Jupiter (Stargate, Santa Teresa)",
-      "operator": "Stack Infrastructure",
-      "status": "construction",
-      "location": {
-        "city": "Santa Teresa",
-        "state": "NM",
-        "lat": 31.842,
-        "lng": -106.74
-      },
-      "gridRegion": "WECC",
-      "gpuCount": null,
-      "chipType": "undisclosed",
-      "ratedPowerMW": 0,
-      "plannedPowerMW": 1000,
-      "energySource": "on-site microgrid",
-      "workload": "training",
-      "linkedDeal": null,
-      "onlineDate": "",
-      "estimated": [
-        "plannedPowerMW"
-      ],
-      "sources": [
-        "https://www.stackinfra.com/about/news-press/press-releases/stack-infrastructure-delivers-digital-infrastructure-for-data-center-campus-in-new-mexico/",
-        "https://elpasomatters.org/2025/09/25/stargate-open-ai-oracle-project-jupiter-data-center-dona-ana-new-mexico-el-paso-texas/"
-      ],
-      "notes": "Stargate (OpenAI/Oracle) AI campus, >1GW, with STACK delivering the digital infrastructure (with BorderPlex Digital Assets). ~1,400 acres in Santa Teresa, Doña Ana County, near Pete Domenici Hwy & NM-136 outside Sunland Park on the US-Mexico border. On-site microgrid; OCI 18-yr lease, OpenAI primary client. Coords near the NM-136 site."
-    },
-    {
       "id": "edgeconnex-cedar-creek-bastrop-tx",
       "name": "EdgeConneX Cedar Creek Campus (AUS)",
       "operator": "EdgeConneX",
@@ -5786,23 +5730,24 @@
       "gridRegion": "PJM",
       "gpuCount": null,
       "chipType": "Google TPU",
-      "ratedPowerMW": 120,
+      "ratedPowerMW": 453,
       "plannedPowerMW": 300,
       "energySource": "grid (AEP Ohio), with Google clean-energy PPAs",
       "workload": "mixed",
       "linkedDeal": null,
       "onlineDate": "2022",
       "estimated": [
-        "ratedPowerMW",
+        "onlineDate",
         "plannedPowerMW",
-        "onlineDate"
+        "ratedPowerMW"
       ],
       "sources": [
         "https://www.constructiondive.com/news/google-ohio-data-center-campus-expansion-columbus-lancaster-new-albany/692216/",
         "https://www.datacenterdynamics.com/en/news/google-plans-1bn-new-albany-data-center-expansion-acquires-618-acres-for-more-data-centers/",
-        "https://datacenters.google/locations/central-ohio/"
+        "https://datacenters.google/locations/central-ohio/",
+        "https://epoch.ai/data/ai-data-centers"
       ],
-      "notes": "Google's New Albany campus at 1101 Beech Rd SW (~447 acres). Original $600M build broke ground 2019, operational by 2022; a further $1B expansion announced plus 618 acres acquired around Columbus/Lancaster. Supports Google Search, Cloud and AI services. Part of Google's $20B+ cumulative Ohio investment. MW estimated (not officially disclosed)."
+      "notes": "Google's New Albany campus at 1101 Beech Rd SW (~447 acres). Original $600M build broke ground 2019, operational by 2022; a further $1B expansion announced plus 618 acres acquired around Columbus/Lancaster. Supports Google Search, Cloud and AI services. Part of Google's $20B+ cumulative Ohio investment. MW estimated (not officially disclosed). Rated power calibrated to Epoch AI’s satellite-derived IT-power estimate (CC-BY, Sept 2026)."
     },
     {
       "id": "google-eagle-mountain-ut",
@@ -5849,28 +5794,29 @@
       "gridRegion": "SPP",
       "gpuCount": null,
       "chipType": "Google TPU",
-      "ratedPowerMW": 100,
+      "ratedPowerMW": 237,
       "plannedPowerMW": 250,
       "energySource": "grid (OPPD) with Nebraska wind PPAs",
       "workload": "mixed",
       "linkedDeal": null,
       "onlineDate": "2019",
       "estimated": [
-        "ratedPowerMW",
-        "plannedPowerMW"
+        "plannedPowerMW",
+        "ratedPowerMW"
       ],
       "sources": [
         "https://nebraskaexaminer.com/2022/04/21/google-announces-nebraska-growth-plan-that-includes-new-northwest-omaha-data-center/",
         "https://www.google.com/about/datacenters/locations/papillion/",
-        "https://www.datacentermap.com/usa/nebraska/papillion/google-papillion/"
+        "https://www.datacentermap.com/usa/nebraska/papillion/google-papillion/",
+        "https://epoch.ai/data/ai-data-centers"
       ],
-      "notes": "Google's Papillion campus at 14706 Schram Rd, Sarpy County (~275 acres, up to 2.4M sq ft at full build-out), built 2019 for ~$600M and since expanded as part of Google's $1.2B+ Nebraska growth plan. Supports Google Cloud/AI services. Rated and planned MW estimated."
+      "notes": "Google's Papillion campus at 14706 Schram Rd, Sarpy County (~275 acres, up to 2.4M sq ft at full build-out), built 2019 for ~$600M and since expanded as part of Google's $1.2B+ Nebraska growth plan. Supports Google Cloud/AI services. Rated and planned MW estimated. Rated power calibrated to Epoch AI’s satellite-derived IT-power estimate (CC-BY, Sept 2026)."
     },
     {
       "id": "google-lincoln-ne",
       "name": "Google Lincoln Data Center",
       "operator": "Google",
-      "status": "construction",
+      "status": "operational",
       "location": {
         "city": "Lincoln",
         "state": "NE",
@@ -5880,22 +5826,24 @@
       "gridRegion": "SPP",
       "gpuCount": null,
       "chipType": "Google TPU",
-      "ratedPowerMW": 0,
+      "ratedPowerMW": 140,
       "plannedPowerMW": 200,
       "energySource": "grid (LES) with 423 MW dedicated Nebraska wind",
       "workload": "mixed",
       "linkedDeal": null,
       "onlineDate": "2025",
       "estimated": [
+        "onlineDate",
         "plannedPowerMW",
-        "onlineDate"
+        "ratedPowerMW"
       ],
       "sources": [
         "https://www.datacenterdynamics.com/en/news/google-confirms-involvement-in-2-million-sq-ft-data-center-project-in-lincoln-nebraska/",
         "https://nebraskaexaminer.com/2023/08/22/google-confirms-lincolns-600m-data-center-touts-this-years-1-2b-spend-on-ne-infrastructure/",
-        "https://www.1011now.com/2025/05/05/lincoln-google-data-center-expected-be-service-by-fall/"
+        "https://www.1011now.com/2025/05/05/lincoln-google-data-center-expected-be-service-by-fall/",
+        "https://epoch.ai/data/ai-data-centers"
       ],
-      "notes": "$600M, ~2M sq ft data center on ~580 acres near I-80 and N 56th St, Lancaster County; expected in service Fall 2025. Distinct from Papillion/Omaha. Backed by 423 MW of dedicated Nebraska wind; explicitly cited for AI as well as core services. plannedPowerMW estimated (no compute MW officially disclosed)."
+      "notes": "$600M, ~2M sq ft data center on ~580 acres near I-80 and N 56th St, Lancaster County; expected in service Fall 2025. Distinct from Papillion/Omaha. Backed by 423 MW of dedicated Nebraska wind; explicitly cited for AI as well as core services. plannedPowerMW estimated (no compute MW officially disclosed). First phases live per Epoch’s satellite-verified estimate; build continues. Rated power calibrated to Epoch AI’s satellite-derived IT-power estimate (CC-BY, Sept 2026)."
     },
     {
       "id": "google-midlothian-tx",
@@ -6210,7 +6158,7 @@
       "id": "aws-new-albany-beech-miller-oh",
       "name": "AWS New Albany Beech/Miller Campus",
       "operator": "Amazon (AWS)",
-      "status": "construction",
+      "status": "operational",
       "location": {
         "city": "New Albany",
         "state": "OH",
@@ -6220,22 +6168,24 @@
       "gridRegion": "PJM",
       "gpuCount": null,
       "chipType": "undisclosed",
-      "ratedPowerMW": 0,
-      "plannedPowerMW": 0,
+      "ratedPowerMW": 215,
+      "plannedPowerMW": 338,
       "energySource": "grid",
       "workload": "mixed",
       "linkedDeal": null,
       "onlineDate": "2026",
       "estimated": [
+        "onlineDate",
         "plannedPowerMW",
-        "onlineDate"
+        "ratedPowerMW"
       ],
       "sources": [
         "https://www.datacenterdynamics.com/en/news/amazon-plans-five-building-data-center-campus-in-new-albany-ohio/",
         "https://www.datacenterfrontier.com/site-selection/article/33011941/aws-readies-35b-for-5-more-ohio-data-centers-in-booming-columbus-suburb-new-albany",
-        "https://newalbanyohio.org/news/2025/08/amazon-investment-in-new-albany/"
+        "https://newalbanyohio.org/news/2025/08/amazon-investment-in-new-albany/",
+        "https://epoch.ai/data/ai-data-centers"
       ],
-      "notes": "Phase-one five-building AWS campus on 85 of 439 acres along Beech and Miller roads in New Albany (Licking County), 1.25M sq ft, $3.5B investment through 2030 (~$1.7B IT/compute). Two buildings completed and operational by end of 2025, remainder under construction to 2030. Part of AWS's $23.8B Ohio buildout for cloud/AI and ML workloads. Power MW not separately disclosed for this campus; coords approximate to the Beech/Miller tract on the Licking County side. Distinct site from older AWS New Albany Innovation Campus Way facilities."
+      "notes": "Phase-one five-building AWS campus on 85 of 439 acres along Beech and Miller roads in New Albany (Licking County), 1.25M sq ft, $3.5B investment through 2030 (~$1.7B IT/compute). Two buildings completed and operational by end of 2025, remainder under construction to 2030. Part of AWS's $23.8B Ohio buildout for cloud/AI and ML workloads. Power MW not separately disclosed for this campus; coords approximate to the Beech/Miller tract on the Licking County side. Distinct site from older AWS New Albany Innovation Campus Way facilities. First phases live per Epoch’s satellite-verified estimate; build continues. Rated power calibrated to Epoch AI’s satellite-derived IT-power estimate (CC-BY, Sept 2026)."
     },
     {
       "id": "aws-hilliard-scioto-darby-oh",
@@ -6425,7 +6375,7 @@
       "id": "aws-costas-ridgeland-ms",
       "name": "AWS Costas Campus (Ridgeland)",
       "operator": "Amazon (AWS)",
-      "status": "construction",
+      "status": "operational",
       "location": {
         "city": "Ridgeland",
         "state": "MS",
@@ -6435,22 +6385,24 @@
       "gridRegion": "SERC",
       "gpuCount": null,
       "chipType": "undisclosed",
-      "ratedPowerMW": 0,
+      "ratedPowerMW": 230,
       "plannedPowerMW": 650,
       "energySource": "grid",
       "workload": "mixed",
       "linkedDeal": null,
       "onlineDate": "2026",
       "estimated": [
+        "onlineDate",
         "plannedPowerMW",
-        "onlineDate"
+        "ratedPowerMW"
       ],
       "sources": [
         "https://baxtel.com/data-center/amazon-costas-campus",
         "https://www.canton-mississippi.com/aws-plans-10-billion-data-center-investment-in-mississippi-big-boost-for-tech/",
-        "https://aidatacenterindex.com/datacenters/aws-mississippi-ai-data-center.html"
+        "https://aidatacenterindex.com/datacenters/aws-mississippi-ai-data-center.html",
+        "https://epoch.ai/data/ai-data-centers"
       ],
-      "notes": "AWS hyperscale AI campus on the ~786-acre Costas property along the south edge of Madison County, near Highland Colony Parkway and West County Line Road (near Tougaloo College), Ridgeland. Second of AWS's two Madison County sites; combined ~1.3 GW at full build. First data centers nearing completion/operational. Part of $10B initial / $25B statewide MS investment for generative AI. plannedPowerMW ~half of the disclosed 1.3 GW two-site total (GridTilt split estimate). Coords on Highland Colony Pkwy/County Line Rd. Distinct from Madison Mega Site and Vicksburg AWS sites."
+      "notes": "AWS hyperscale AI campus on the ~786-acre Costas property along the south edge of Madison County, near Highland Colony Parkway and West County Line Road (near Tougaloo College), Ridgeland. Second of AWS's two Madison County sites; combined ~1.3 GW at full build. First data centers nearing completion/operational. Part of $10B initial / $25B statewide MS investment for generative AI. plannedPowerMW ~half of the disclosed 1.3 GW two-site total (GridTilt split estimate). Coords on Highland Colony Pkwy/County Line Rd. Distinct from Madison Mega Site and Vicksburg AWS sites. First phases live per Epoch’s satellite-verified estimate; build continues. Rated power calibrated to Epoch AI’s satellite-derived IT-power estimate (CC-BY, Sept 2026)."
     },
     {
       "id": "aws-kline-township-lofty-rd-pa",
@@ -6695,7 +6647,7 @@
       "id": "core-scientific-dalton-ga",
       "name": "Core Scientific Dalton (CoreWeave) Campus",
       "operator": "Core Scientific",
-      "status": "construction",
+      "status": "operational",
       "location": {
         "city": "Dalton",
         "state": "GA",
@@ -6705,27 +6657,29 @@
       "gridRegion": "SERC",
       "gpuCount": null,
       "chipType": "NVIDIA",
-      "ratedPowerMW": 0,
+      "ratedPowerMW": 28,
       "plannedPowerMW": 175,
       "energySource": "grid (SERC)",
       "workload": "mixed",
       "linkedDeal": null,
       "onlineDate": "2026",
       "estimated": [
+        "onlineDate",
         "plannedPowerMW",
-        "onlineDate"
+        "ratedPowerMW"
       ],
       "sources": [
         "https://www.sec.gov/Archives/edgar/data/1839341/000162828025008312/ex991-coreweavepressrelease.htm",
-        "https://baxtel.com/data-center/core-scientific-dalton-4"
+        "https://baxtel.com/data-center/core-scientific-dalton-4",
+        "https://epoch.ai/data/ai-data-centers"
       ],
-      "notes": "Dalton GA campus (~175 MW billable) being converted from crypto to host CoreWeave's NVIDIA GPUs; part of CoreWeave's ~590 MW / multi-site Core Scientific HPC contract. One of Core Scientific's CoreWeave AI sites beyond its two tracked campuses. Coords approximate to Dalton industrial area."
+      "notes": "Dalton GA campus (~175 MW billable) being converted from crypto to host CoreWeave's NVIDIA GPUs; part of CoreWeave's ~590 MW / multi-site Core Scientific HPC contract. One of Core Scientific's CoreWeave AI sites beyond its two tracked campuses. Coords approximate to Dalton industrial area. First phases live per Epoch’s satellite-verified estimate; build continues. Rated power calibrated to Epoch AI’s satellite-derived IT-power estimate (CC-BY, Sept 2026)."
     },
     {
       "id": "core-scientific-marble-nc",
       "name": "Core Scientific Marble (CoreWeave) Campus",
       "operator": "Core Scientific",
-      "status": "construction",
+      "status": "operational",
       "location": {
         "city": "Marble",
         "state": "NC",
@@ -6735,22 +6689,24 @@
       "gridRegion": "SERC",
       "gpuCount": null,
       "chipType": "NVIDIA",
-      "ratedPowerMW": 0,
+      "ratedPowerMW": 65,
       "plannedPowerMW": 65,
       "energySource": "grid (SERC)",
       "workload": "mixed",
       "linkedDeal": null,
       "onlineDate": "2026",
       "estimated": [
+        "onlineDate",
         "plannedPowerMW",
-        "onlineDate"
+        "ratedPowerMW"
       ],
       "sources": [
         "https://www.datacenters.com/core-scientific-marble",
         "https://www.cherokeescout.com/local-newsletter/core-scientific-marble-sold-coreweave",
-        "https://baxtel.com/data-center/core-scientific-marble"
+        "https://baxtel.com/data-center/core-scientific-marble",
+        "https://epoch.ai/data/ai-data-centers"
       ],
-      "notes": "65 MW campus at 155 Palmer Lane, Marble NC (Cherokee County), ~73 acres, being converted from crypto mining to host CoreWeave NVIDIA GPUs for HPC/AI (transferred to CoreWeave in the acquisition). Another Core Scientific/CoreWeave AI site beyond the two tracked campuses."
+      "notes": "65 MW campus at 155 Palmer Lane, Marble NC (Cherokee County), ~73 acres, being converted from crypto mining to host CoreWeave NVIDIA GPUs for HPC/AI (transferred to CoreWeave in the acquisition). Another Core Scientific/CoreWeave AI site beyond the two tracked campuses. First phases live per Epoch’s satellite-verified estimate; build continues. Rated power calibrated to Epoch AI’s satellite-derived IT-power estimate (CC-BY, Sept 2026)."
     },
     {
       "id": "vantage-new-albany-oh1",
@@ -6933,37 +6889,6 @@
       "notes": "$1.2B, 115-acre Phase I campus in Cheyenne Business Parkway with up to 302MW critical IT capacity; CoreWeave anchor tenant on a long-term lease for 88MW. First building ~184,000 sq ft on 36 acres, completion late 2026. Coords approximate to Cheyenne Business Parkway (exact site not published)."
     },
     {
-      "id": "crusoe-tallgrass-project-jade-cheyenne-wy",
-      "name": "Project Jade (Crusoe/Tallgrass)",
-      "operator": "Crusoe",
-      "status": "announced",
-      "location": {
-        "city": "Cheyenne",
-        "state": "WY",
-        "lat": 41.02,
-        "lng": -104.78
-      },
-      "gridRegion": "WECC",
-      "gpuCount": null,
-      "chipType": "NVIDIA GPU",
-      "ratedPowerMW": 0,
-      "plannedPowerMW": 1800,
-      "energySource": "on-site natural gas",
-      "workload": "training",
-      "linkedDeal": null,
-      "onlineDate": "2027",
-      "estimated": [
-        "ratedPowerMW",
-        "plannedPowerMW",
-        "onlineDate"
-      ],
-      "sources": [
-        "https://www.datacenterdynamics.com/en/news/crusoe-gets-go-ahead-for-18gw-data-center-campus-and-power-plant-in-cheyenne-wyoming/",
-        "https://www.crusoe.ai/resources/newsroom/crusoe-and-tallgrass-announce-ai-data-center-in-wyoming"
-      ],
-      "notes": "Gas-powered AI campus ~8 mi south of Cheyenne near Terry Ranch Rd, Laramie County, with Tallgrass building adjacent generation (Cheyenne Power Hub). Initial 1.8GW IT, designed to scale to 10GW; 8 buildings (5 data center). County approved Jan 2026; Crusoe paused development as of June 2026 - status downgraded to announced. plannedPowerMW = compute IT load, not the 2.7GW+ generation figure."
-    },
-    {
       "id": "novva-west-jordan-ut",
       "name": "Novva West Jordan",
       "operator": "Novva Data Centers",
@@ -7024,6 +6949,204 @@
         "https://www.gcedc.com/news/article/current/2025/03/10/100123/stream-us-data-centers-investing-6.3-billion-in-genesee-county"
       ],
       "notes": "Stream US Data Centers (with Apollo Global) proposing ~$6.3B AI campus at the STAMP industrial park, Town of Alabama, Genesee County (near Crosby Rd). Expanded 'Project Double Reed' plan = three 100+ ft buildings, 2.2M+ sq ft, 500MW+ load. Public/IDA approvals in progress 2026; faces local opposition. Coords approximate to STAMP park."
+    },
+    {
+      "id": "openai-camellia-effingham-ga",
+      "name": "OpenAI Project Camellia (Effingham County)",
+      "operator": "OpenAI",
+      "status": "announced",
+      "location": {
+        "city": "Rincon",
+        "state": "GA",
+        "lat": 32.296,
+        "lng": -81.235
+      },
+      "gridRegion": "SERC",
+      "gpuCount": null,
+      "chipType": null,
+      "ratedPowerMW": 0,
+      "plannedPowerMW": 3200,
+      "energySource": "grid (Georgia Power 25-year supply agreement; new gas-backed)",
+      "workload": "mixed",
+      "linkedDeal": null,
+      "onlineDate": "2028-2032",
+      "estimated": [],
+      "sources": [
+        "https://www.georgiapower.com/news-hub/press-releases/georgia-power-to-serve-openai-project-in-effingham-county.html",
+        "https://openai.com/index/building-ai-infrastructure-with-the-effingham-county-community/",
+        "https://www.datacenterdynamics.com/en/news/openai-reveals-32gw-data-center-project-in-effingham-county-georgia/"
+      ],
+      "notes": "OpenAI's self-built $20B+ campus on 1,400 acres in the Savannah Gateway Industrial Hub. Georgia Power delivers up to 3.2 GW in phases 2028-2032 under a 25-year agreement with up to 1,000 MW of demand response; OpenAI pays full infrastructure and service costs."
+    },
+    {
+      "id": "aws-stack-caddo-bossier-la",
+      "name": "AWS Louisiana campuses (Caddo/Bossier)",
+      "operator": "Amazon (AWS)",
+      "status": "announced",
+      "location": {
+        "city": "Shreveport",
+        "state": "LA",
+        "lat": 32.5252,
+        "lng": -93.6632
+      },
+      "gridRegion": "SPP",
+      "gpuCount": null,
+      "chipType": null,
+      "ratedPowerMW": 0,
+      "plannedPowerMW": 0,
+      "energySource": "grid (SWEPCO; Amazon funds power infrastructure)",
+      "workload": "mixed",
+      "linkedDeal": null,
+      "onlineDate": "",
+      "estimated": [],
+      "sources": [
+        "https://www.aboutamazon.com/news/company-news/amazon-data-center-louisiana-new-jobs",
+        "https://www.datacenterdynamics.com/en/news/amazon-plans-to-spend-12bn-on-louisiana-data-center-campuses-developed-by-stack-infrastructure/"
+      ],
+      "notes": "Multi-campus AWS program in Caddo and Bossier Parishes plus a third Shreveport campus, developed by STACK Infrastructure; announced at $12B (Feb 2026), raised to $18B (Aug 18, 2026). Campus MW undisclosed - no capacity is booked. Amazon committed to fund all power infrastructure with SWEPCO plus up to $400M in water infrastructure."
+    },
+    {
+      "id": "amentum-srs-aiken-sc",
+      "name": "Savannah River Site AI campus (Amentum)",
+      "operator": "Amentum (NNSA lease, in negotiation)",
+      "status": "announced",
+      "location": {
+        "city": "Aiken",
+        "state": "SC",
+        "lat": 33.3435,
+        "lng": -81.7355
+      },
+      "gridRegion": "SERC",
+      "gpuCount": null,
+      "chipType": null,
+      "ratedPowerMW": 0,
+      "plannedPowerMW": 1000,
+      "energySource": "on-site gas, planned transition to advanced nuclear (~2 GW)",
+      "workload": "mixed",
+      "linkedDeal": null,
+      "onlineDate": "",
+      "estimated": [],
+      "sources": [
+        "https://www.energy.gov/nnsa/articles/nnsa-selects-amentum-ai-data-center-and-energy-project-savannah-river-site",
+        "https://www.world-nuclear-news.org/articles/amentum-selected-for-savannah-river-ai-project"
+      ],
+      "notes": "NNSA selected Amentum (July 2026) to negotiate a phased lease for a 1 GW AI data center backed by ~2 GW of on-site generation at the Savannah River Site, gas first with a planned transition to advanced nuclear. Selection stage only - not a final lease."
+    },
+    {
+      "id": "google-columbus-oh",
+      "name": "Google Columbus (South High St)",
+      "operator": "Google",
+      "status": "operational",
+      "location": {
+        "city": "Columbus",
+        "state": "OH",
+        "lat": 39.87,
+        "lng": -82.995
+      },
+      "gridRegion": "PJM",
+      "gpuCount": null,
+      "chipType": null,
+      "ratedPowerMW": 303,
+      "plannedPowerMW": 303,
+      "energySource": "grid",
+      "workload": "mixed",
+      "linkedDeal": null,
+      "onlineDate": "2025",
+      "estimated": [
+        "ratedPowerMW",
+        "plannedPowerMW"
+      ],
+      "sources": [
+        "https://epoch.ai/data/ai-data-centers"
+      ],
+      "notes": "Epoch measures ~303 MW IT (~409k H100e) at 5076 S High St. Added via the Sept 2026 Epoch cross-validation (satellite-verified, CC-BY)."
+    },
+    {
+      "id": "google-bristow-va",
+      "name": "Google Bristow",
+      "operator": "Google",
+      "status": "operational",
+      "location": {
+        "city": "Bristow",
+        "state": "VA",
+        "lat": 38.7213,
+        "lng": -77.5536
+      },
+      "gridRegion": "PJM",
+      "gpuCount": null,
+      "chipType": null,
+      "ratedPowerMW": 238,
+      "plannedPowerMW": 238,
+      "energySource": "grid",
+      "workload": "mixed",
+      "linkedDeal": null,
+      "onlineDate": "2025",
+      "estimated": [
+        "ratedPowerMW",
+        "plannedPowerMW"
+      ],
+      "sources": [
+        "https://epoch.ai/data/ai-data-centers"
+      ],
+      "notes": "Epoch measures ~238 MW IT. Added via the Sept 2026 Epoch cross-validation (satellite-verified, CC-BY)."
+    },
+    {
+      "id": "google-omaha-ne",
+      "name": "Google Omaha",
+      "operator": "Google",
+      "status": "operational",
+      "location": {
+        "city": "Omaha",
+        "state": "NE",
+        "lat": 41.2565,
+        "lng": -95.9345
+      },
+      "gridRegion": "SPP",
+      "gpuCount": null,
+      "chipType": null,
+      "ratedPowerMW": 237,
+      "plannedPowerMW": 237,
+      "energySource": "grid",
+      "workload": "mixed",
+      "linkedDeal": null,
+      "onlineDate": "2025",
+      "estimated": [
+        "ratedPowerMW",
+        "plannedPowerMW"
+      ],
+      "sources": [
+        "https://epoch.ai/data/ai-data-centers"
+      ],
+      "notes": "Epoch measures ~237 MW IT. Added via the Sept 2026 Epoch cross-validation (satellite-verified, CC-BY)."
+    },
+    {
+      "id": "google-cedar-rapids-ia",
+      "name": "Google Cedar Rapids",
+      "operator": "Google",
+      "status": "construction",
+      "location": {
+        "city": "Cedar Rapids",
+        "state": "IA",
+        "lat": 41.9779,
+        "lng": -91.6656
+      },
+      "gridRegion": "MISO",
+      "gpuCount": null,
+      "chipType": null,
+      "ratedPowerMW": 0,
+      "plannedPowerMW": 261,
+      "energySource": "grid",
+      "workload": "mixed",
+      "linkedDeal": null,
+      "onlineDate": "2027",
+      "estimated": [
+        "ratedPowerMW",
+        "plannedPowerMW"
+      ],
+      "sources": [
+        "https://epoch.ai/data/ai-data-centers"
+      ],
+      "notes": "Under construction; Epoch projects ~261 MW IT by 2027. Added via the Sept 2026 Epoch cross-validation (satellite-verified, CC-BY)."
     }
   ]
 }
