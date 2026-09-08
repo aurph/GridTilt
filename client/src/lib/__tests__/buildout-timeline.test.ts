@@ -10,6 +10,7 @@ import {
   parseOnlineYear,
   buildTimeline,
   totalsAt,
+  yearlySeries,
   type TimelineClusterInput,
 } from "../buildout-timeline";
 
@@ -70,6 +71,25 @@ test("totalsAt is cumulative and keeps targets as targets after their year passe
   assert.deepEqual(totalsAt(entries, 2024), { liveMW: 100, liveCount: 1, targetMW: 0, targetCount: 0 });
   // 2026: the 2025-target has NOT become live just because the year passed
   assert.deepEqual(totalsAt(entries, 2026), { liveMW: 150, liveCount: 2, targetMW: 900, targetCount: 1 });
+});
+
+test("yearlySeries: continuous years, cumulative areas, live headliner outranks a bigger same-year target", () => {
+  const t = buildTimeline([
+    input({ id: "a", status: "operational", ratedPowerMW: 100, onlineDate: "2024" }),
+    // 2025 is quiet - must still get a flat frame
+    input({ id: "b", status: "operational", ratedPowerMW: 50, onlineDate: "2026" }),
+    input({ id: "c", name: "Big Promise", status: "announced", plannedPowerMW: 900, onlineDate: "2026" }),
+  ]);
+  const s = yearlySeries(t);
+  assert.deepEqual(s.map((f) => f.year), [2024, 2025, 2026]);
+  assert.deepEqual(s.map((f) => [f.liveMW, f.targetMW, f.arrivedMW]), [
+    [100, 0, 100],
+    [100, 0, 0],
+    [150, 900, 50],
+  ]);
+  assert.equal(s[1].headliner, null);
+  // the 50 MW live arrival headlines over the 900 MW promise
+  assert.deepEqual(s[2].headliner, { name: "X", operator: "Op", mw: 50, kind: "live" });
 });
 
 test("the shipped registry animates: most clusters dated, sane year span", () => {

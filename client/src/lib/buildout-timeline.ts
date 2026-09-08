@@ -89,6 +89,46 @@ export interface TimelineTotals {
   targetCount: number;
 }
 
+export interface YearFrame {
+  year: number;
+  liveMW: number; // cumulative running MW through this year
+  targetMW: number; // cumulative announced-target MW through this year
+  arrivedMW: number; // running MW that came online IN this year
+  headliner: { name: string; operator: string; mw: number; kind: "live" | "target" } | null;
+}
+
+/**
+ * One frame per year, continuous from minYear..maxYear (quiet years get a
+ * flat frame - dropping them would compress time). The headliner is the
+ * single biggest arrival of the year, live arrivals outranking same-year
+ * targets: the story each tick tells is what actually showed up.
+ */
+export function yearlySeries(t: BuildoutTimeline): YearFrame[] {
+  const frames: YearFrame[] = [];
+  let liveMW = 0;
+  let targetMW = 0;
+  for (let year = t.minYear; year <= t.maxYear; year++) {
+    const arrivals = t.entries.filter((e) => e.year === year);
+    let arrivedMW = 0;
+    let headliner: YearFrame["headliner"] = null;
+    for (const e of arrivals) {
+      if (e.kind === "live") {
+        liveMW += e.mw;
+        arrivedMW += e.mw;
+      } else {
+        targetMW += e.mw;
+      }
+      const beats =
+        headliner == null ||
+        (e.kind === "live" && headliner.kind === "target") ||
+        (e.kind === headliner.kind && e.mw > headliner.mw);
+      if (beats) headliner = { name: e.name, operator: e.operator, mw: e.mw, kind: e.kind };
+    }
+    frames.push({ year, liveMW, targetMW, arrivedMW, headliner });
+  }
+  return frames;
+}
+
 /** Cumulative state of the buildout as of the end of `year`. */
 export function totalsAt(entries: TimelineEntry[], year: number): TimelineTotals {
   const t: TimelineTotals = { liveMW: 0, liveCount: 0, targetMW: 0, targetCount: 0 };
