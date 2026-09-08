@@ -723,3 +723,22 @@ html {
 .group:hover .feature-preview-img {
   opacity: 1;
 }
+
+/* Buildout timeline: newly-appeared cluster pop (SVG path on the Leaflet
+   pane). Gated to motion-tolerant users; reduced-motion gets the plain
+   discrete appearance. */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes gt-tl-pop {
+    0% {
+      stroke-width: 14;
+      stroke-opacity: 0.85;
+      fill-opacity: 0;
+    }
+    60% {
+      stroke-opacity: 0.35;
+    }
+  }
+  .gt-tl-pop {
+    animation: gt-tl-pop 0.9s ease-out;
+  }
+}

@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { MapContainer, TileLayer, CircleMarker, Tooltip as MapTooltip, ZoomControl } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
+import BuildoutReplay from "@/components/BuildoutReplay";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -448,6 +449,9 @@ export default function ComputeFrontier() {
             )}
           </div>
         </Card>
+
+        {/* The buildout, replayed: press play and watch it arrive */}
+        {clusters && clusters.length > 0 && <BuildoutReplay clusters={clusters} />}
 
         {/* Filters */}
         <div className="flex flex-wrap items-center gap-2 text-xs" data-testid="cf-filters">
