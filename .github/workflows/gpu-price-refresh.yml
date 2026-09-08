@@ -1,0 +1,114 @@
+# Weekly agentic refresh of the GPU rental price index.
+#
+# Claude Code runs headless against ops/prompts/gpu-price-refresh.md,
+# re-researches the 10 tracked accelerators, and may edit exactly one file.
+# A code-enforced gate (scripts/validate-gpu-prices.ts, unit-tested in
+# server/__tests__/gpu-price-validation.test.ts) then decides whether the
+# result is even allowed to become a PR: fixed model set, prices inside
+# their own observed band, >=2 https sources per model, append-only history,
+# no move over 60%. Output is always a PR for human review - this workflow
+# has no path to main.
+#
+# Setup: ONE of these repository secrets -
+#   CLAUDE_CODE_OAUTH_TOKEN  (from `claude setup-token`, uses the Claude
+#                             subscription - preferred)
+#   ANTHROPIC_API_KEY        (metered API billing)
+#
+# Note: PRs opened with the default github.token do not trigger CI runs
+# (GitHub safety rule). The gate + full test suite already ran inside this
+# workflow; CI runs again on merge to main.
+
+name: gpu-price-refresh
+
+on:
+  schedule:
+    - cron: "37 10 * * 1" # Mondays 10:37 UTC (~6:37am ET)
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require a Claude credential
+        env:
+          OAUTH: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          APIKEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ -z "$OAUTH" ] && [ -z "$APIKEY" ]; then
+            echo "::error::Set the CLAUDE_CODE_OAUTH_TOKEN repository secret (run 'claude setup-token' locally) or ANTHROPIC_API_KEY to activate the weekly refresh."
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Research pass (Claude Code, headless)
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: "Follow the instructions in ops/prompts/gpu-price-refresh.md exactly. Edit only server/data/gpu-rental-prices.json."
+          claude_args: |
+            --allowedTools "Read,Edit,Write,WebSearch,WebFetch,Bash(npx tsx scripts/validate-gpu-prices.ts),Bash(git diff:*),Bash(git status)"
+
+      - name: Only the dataset may change
+        run: |
+          extra=$(git status --porcelain | awk '{print $2}' | grep -v '^server/data/gpu-rental-prices.json$' || true)
+          if [ -n "$extra" ]; then
+            echo "::error::Refresh touched files outside the dataset:"
+            echo "$extra"
+            exit 1
+          fi
+
+      - name: Anything to ship?
+        id: diff
+        run: |
+          if git diff --quiet -- server/data/gpu-rental-prices.json; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "No price changes this week."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Validation gate
+        if: steps.diff.outputs.changed == 'true'
+        run: npx tsx scripts/validate-gpu-prices.ts
+
+      - name: Full test suite
+        if: steps.diff.outputs.changed == 'true'
+        run: npm test
+
+      - name: Open the review PR
+        if: steps.diff.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          branch="auto/gpu-price-refresh-$(date -u +%Y-%m-%d)"
+          git config user.name "gridtilt-refresh[bot]"
+          git config user.email "noreply@gridtilt.com"
+          git checkout -b "$branch"
+          git add server/data/gpu-rental-prices.json
+          git commit -m "data: weekly GPU rental price refresh ($(date -u +%Y-%m-%d))
+
+          Agentic research pass over the 10 tracked accelerators; passed the
+          validation gate (fixed model set, band checks, https sources,
+          append-only history, <=60% moves) and the full test suite."
+          git push -u origin "$branch"
+          gh pr create --title "Weekly GPU price refresh $(date -u +%Y-%m-%d)" --body "$(cat <<'EOF'
+          Automated weekly research refresh of \`server/data/gpu-rental-prices.json\`, produced by \`.github/workflows/gpu-price-refresh.yml\` following \`ops/prompts/gpu-price-refresh.md\` (two-pass: research, then adversarial re-check).
+
+          Before this PR existed it passed the code-enforced gate (\`scripts/validate-gpu-prices.ts\`): fixed model set, every price inside its own observed low..high band, >=2 https sources per model, append-only history anchors, no move over 60%. Full test suite green in the workflow run.
+
+          Review = eyeball the diff and the cited sources; merging still requires a human. Note: PRs opened by the workflow token do not auto-trigger CI - the same checks already ran in the workflow (see the run log).
+          EOF
+          )"
