@@ -50,9 +50,23 @@ interface RatePoint {
   centsPerKwh: number;
 }
 
+interface UsagePoint {
+  month: string;
+  avgMonthlyKwh: number;
+  typicalBillUsd: number;
+}
+
 type RetailRates =
   | { configured: false; howTo: string }
-  | { configured: true; unit: string; source: string; sourceUrl: string; byState: Record<string, RatePoint[]> };
+  | {
+      configured: true;
+      unit: string;
+      source: string;
+      sourceUrl: string;
+      byState: Record<string, RatePoint[]>;
+      usageByState?: Record<string, UsagePoint[]>;
+      usageNote?: string;
+    };
 
 interface QueueProject {
   id?: string;
@@ -308,6 +322,36 @@ export default function MyGrid() {
   const yearAgo = series.length >= 13 ? series[series.length - 13] : null;
   const yoy = latest && yearAgo ? ((latest.centsPerKwh - yearAgo.centsPerKwh) / yearAgo.centsPerKwh) * 100 : null;
 
+  // Typical usage and bill, derived server-side from the same EIA dataset.
+  // Absent entirely when the upstream units change; the card then renders
+  // exactly as it did before this existed.
+  const usage = useMemo(() => {
+    if (!rates || !("byState" in rates) || !state) return [];
+    return (rates.usageByState?.[state] ?? []).slice(-24);
+  }, [rates, state]);
+  const latestUsage = usage.length ? usage[usage.length - 1] : null;
+  const usageYearAgo = usage.length >= 13 ? usage[usage.length - 13] : null;
+  const billDelta = latestUsage && usageYearAgo ? latestUsage.typicalBillUsd - usageYearAgo.typicalBillUsd : null;
+  // The US row rides along in EIA's state facet; compare only the same month.
+  const usBill = useMemo(() => {
+    if (!rates || !("byState" in rates) || !latestUsage) return null;
+    const us = rates.usageByState?.US ?? [];
+    const match = us.find((p) => p.month === latestUsage.month);
+    return match ? match.typicalBillUsd : null;
+  }, [rates, latestUsage]);
+
+  // Where the chosen state stands among states with tracked capacity.
+  // Registry-derived, so it works before any API key is configured.
+  const stateRank = useMemo(() => {
+    if (!state) return null;
+    const totals = new Map<string, number>();
+    for (const f of facilities) totals.set(f.state, (totals.get(f.state) ?? 0) + (f.powerMW ?? 0));
+    const mine = totals.get(state);
+    if (!mine) return null;
+    const sorted = Array.from(totals.entries()).sort((a, b) => b[1] - a[1]);
+    return { mw: mine, rank: sorted.findIndex(([code]) => code === state) + 1, of: sorted.length };
+  }, [facilities, state]);
+
   const stateOptions = Object.entries(STATE_GRID).sort((a, b) => a[1].name.localeCompare(b[1].name));
 
   return (
@@ -355,7 +399,7 @@ export default function MyGrid() {
       <PageHeader
         title="My Grid"
         testId="my-grid-header"
-        about="Who runs your state's grid, how much headroom the region has, what is being built there, and what residential power costs. The state choice stays in this browser."
+        about="Who runs your state's grid, what is being built there, and what power costs a typical home. The state choice stays in this browser."
         right={
           <>
             <label className="flex items-center gap-2 text-11 text-muted-foreground">
@@ -453,6 +497,11 @@ export default function MyGrid() {
               <div className="px-4 py-2 border-b border-border flex flex-wrap items-center justify-between gap-2">
                 <span className="text-[13px] font-semibold text-foreground">
                   Being built in {grid.name}
+                  {stateRank && (
+                    <span className="ml-3 font-mono text-11 font-normal tabular-nums text-muted-foreground" data-testid="my-grid-state-rank">
+                      {stateRank.mw >= 1000 ? `${(stateRank.mw / 1000).toFixed(1)} GW` : `${stateRank.mw} MW`} tracked · #{stateRank.rank} of {stateRank.of} states
+                    </span>
+                  )}
                 </span>
                 <Link
                   href="/power-map"
@@ -527,16 +576,42 @@ export default function MyGrid() {
                   <p className="text-xs text-muted-foreground">No EIA series available for {grid.name}.</p>
                 ) : (
                   <>
-                    <div className="mb-4" data-testid="my-grid-rate">
-                      <CellLabel>Residential average, {latest ? fmtMonth(latest.month) : ""}</CellLabel>
-                      <p className="mt-1 font-mono text-2xl font-bold tabular-nums text-foreground">
-                        {latest ? `${latest.centsPerKwh.toFixed(1)}¢/kWh` : "--"}
-                        {yoy != null && (
-                          <span className={`ml-2 align-middle text-xs font-semibold tabular-nums ${yoy >= 0 ? "text-negative" : "text-positive"}`}>
-                            {yoy >= 0 ? "+" : "−"}{Math.abs(yoy).toFixed(1)}% y/y
-                          </span>
-                        )}
-                      </p>
+                    <div className="mb-4 flex flex-wrap gap-x-10 gap-y-3">
+                      <div data-testid="my-grid-rate">
+                        <CellLabel>Residential average, {latest ? fmtMonth(latest.month) : ""}</CellLabel>
+                        <p className="mt-1 font-mono text-2xl font-bold tabular-nums text-foreground">
+                          {latest ? `${latest.centsPerKwh.toFixed(1)}¢/kWh` : "--"}
+                          {yoy != null && (
+                            <span className={`ml-2 align-middle text-xs font-semibold tabular-nums ${yoy >= 0 ? "text-negative" : "text-positive"}`}>
+                              {yoy >= 0 ? "+" : "−"}{Math.abs(yoy).toFixed(1)}% y/y
+                            </span>
+                          )}
+                        </p>
+                      </div>
+                      {latestUsage && (
+                        <div data-testid="my-grid-usage">
+                          <CellLabel>Typical home, {fmtMonth(latestUsage.month)}</CellLabel>
+                          <p className="mt-1 font-mono text-2xl font-bold tabular-nums text-foreground">
+                            {Math.round(latestUsage.avgMonthlyKwh).toLocaleString("en-US")} kWh
+                          </p>
+                        </div>
+                      )}
+                      {latestUsage && (
+                        <div data-testid="my-grid-bill">
+                          <CellLabel>Typical monthly bill</CellLabel>
+                          <p className="mt-1 font-mono text-2xl font-bold tabular-nums text-foreground">
+                            ${latestUsage.typicalBillUsd.toFixed(0)}
+                            {billDelta != null && (
+                              <span className={`ml-2 align-middle text-xs font-semibold tabular-nums ${billDelta >= 0 ? "text-negative" : "text-positive"}`}>
+                                {billDelta >= 0 ? "+" : "−"}${Math.abs(billDelta).toFixed(0)} y/y
+                              </span>
+                            )}
+                          </p>
+                          {usBill != null && (
+                            <p className="mt-1 text-11 text-muted-foreground">US average: ${usBill.toFixed(0)}</p>
+                          )}
+                        </div>
+                      )}
                     </div>
                     <ResponsiveContainer width="100%" height={220}>
                       <LineChart data={series} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
@@ -563,6 +638,7 @@ export default function MyGrid() {
                         {rates.source}
                       </a>
                       {" · "}{rates.unit}
+                      {latestUsage && rates.usageNote ? ` · ${rates.usageNote}` : ""}
                     </p>
                   </>
                 )}
