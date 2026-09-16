@@ -94,7 +94,7 @@ Derived from the code; starred rules confirmed by Jack 2026-07-02.
 |---|---|---|---|---|
 | Yahoo Finance (yahoo-finance2) | none | quotes + sparklines (~100 tickers), earnings dates | 10 min stack, 4 h earnings | per-ticker fallback to STATIC_MARKET_DATA with stale:true, null change (UI shows "--"); indices fall back to static deltas labeled source:"static"; recorders refuse static values |
 | FRED CSV | none | monthly US electric output | 24 h | 502, never faked |
-| EIA v2 | EIA_API_KEY | US48 hourly demand (168 h); residential rates + derived typical usage/bill by state (retail-sales price/sales/customers, units asserted from the rows) | 30 min demand, 24 h rates | 503 + {configured:false, howTo} |
+| EIA v2 | EIA_API_KEY | US48 hourly demand (168 h) | 30 min | 503 + {configured:false, howTo} |
 | NewsData.io | NEWSDATA_API_KEY | news ticker tier 1 | 1 h | falls back to the 8 built-in RSS feeds |
 | RSS (8 news + 4 ingester feeds) | none | news fallback; datacenter discovery | ingester 6 h | items just absent |
 | LBNL Queued Up page | none | new-edition flag only | 24 h throttle | manual XLSX ingest regardless |
