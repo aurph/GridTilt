@@ -7,6 +7,7 @@ import { TopNav } from "@/components/top-nav";
 import NotFound from "@/pages/not-found";
 import { Skeleton } from "@/components/ui/skeleton";
 import { NewsTicker } from "@/components/NewsTicker";
+import { CommandPalette } from "@/components/command-palette";
 import { SiteFooter } from "@/components/site-footer";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { initAnalytics, trackPageview } from "@/lib/analytics";
@@ -69,6 +70,7 @@ const SHORTCUTS = [
   { keys: ["G", "7"], description: "Go to Analyze", path: "/analyze" },
   { keys: ["G", "8"], description: "Go to Research", path: "/blog" },
   { keys: ["G", "9"], description: "Go to My Grid", path: "/my-grid" },
+  { keys: ["⌘", "K"], description: "Search pages, states, tickers, clusters", path: null },
   { keys: ["?"], description: "Show this keyboard shortcuts panel", path: null },
 ];
 
@@ -314,6 +316,7 @@ function App() {
             <SiteFooter />
           </main>
         </div>
+        <CommandPalette />
         {showShortcuts && (
           <KeyboardShortcutsModal onClose={() => setShowShortcuts(false)} />
         )}
