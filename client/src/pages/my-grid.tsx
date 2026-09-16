@@ -16,6 +16,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AsOf, ErrorState, SrChartTable } from "@/components/Freshness";
+import { BuildoutTimeline } from "@/components/BuildoutTimeline";
 import { PageHeader } from "@/components/PageHeader";
 import { RTO_CONFIG, RTO_SOURCE_NOTE, type RTOConfig } from "@/data/rto-config";
 import { STATE_GRID, STATE_GRID_SOURCE } from "@/data/state-grid";
@@ -308,6 +309,18 @@ export default function MyGrid() {
   const yearAgo = series.length >= 13 ? series[series.length - 13] : null;
   const yoy = latest && yearAgo ? ((latest.centsPerKwh - yearAgo.centsPerKwh) / yearAgo.centsPerKwh) * 100 : null;
 
+  // Where the chosen state stands among states with tracked capacity.
+  // Registry-derived, so it works before any API key is configured.
+  const stateRank = useMemo(() => {
+    if (!state) return null;
+    const totals = new Map<string, number>();
+    for (const f of facilities) totals.set(f.state, (totals.get(f.state) ?? 0) + (f.powerMW ?? 0));
+    const mine = totals.get(state);
+    if (!mine) return null;
+    const sorted = Array.from(totals.entries()).sort((a, b) => b[1] - a[1]);
+    return { mw: mine, rank: sorted.findIndex(([code]) => code === state) + 1, of: sorted.length };
+  }, [facilities, state]);
+
   const stateOptions = Object.entries(STATE_GRID).sort((a, b) => a[1].name.localeCompare(b[1].name));
 
   return (
@@ -453,6 +466,11 @@ export default function MyGrid() {
               <div className="px-4 py-2 border-b border-border flex flex-wrap items-center justify-between gap-2">
                 <span className="text-[13px] font-semibold text-foreground">
                   Being built in {grid.name}
+                  {stateRank && (
+                    <span className="ml-3 font-mono text-11 font-normal tabular-nums text-muted-foreground" data-testid="my-grid-state-rank">
+                      {stateRank.mw >= 1000 ? `${(stateRank.mw / 1000).toFixed(1)} GW` : `${stateRank.mw} MW`} tracked · #{stateRank.rank} of {stateRank.of} states
+                    </span>
+                  )}
                 </span>
                 <Link
                   href="/power-map"
@@ -504,6 +522,9 @@ export default function MyGrid() {
                     ))}
                   </div>
                 </div>
+              )}
+              {localFacilities.length > 0 && (
+                <BuildoutTimeline stateCode={state} stateName={grid.name} />
               )}
               <div className="px-4 py-2 border-t border-border/50 text-10 text-muted-foreground/60">
                 GridTilt facility registry · hyperscale campuses of 400 MW and up
