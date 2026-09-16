@@ -17,12 +17,26 @@ import { filterTrackedFacilities } from "@/lib/real-gauges";
 
 type Facility = FacilityLike;
 
-export function BuildoutTimeline() {
+/**
+ * Scoped to one state when stateCode is given (the My Grid card), national
+ * otherwise (the Power Map section). Same query key both ways, so the two
+ * pages share one cached fetch.
+ */
+export function BuildoutTimeline({
+  stateCode,
+  stateName,
+}: {
+  stateCode?: string;
+  stateName?: string;
+} = {}) {
   const { data, isLoading, isError, refetch } = useQuery<Facility[]>({
     queryKey: ["/api/datacenters"],
   });
 
-  const all = useMemo(() => filterTrackedFacilities(data ?? []), [data]);
+  const all = useMemo(() => {
+    const tracked = filterTrackedFacilities(data ?? []);
+    return stateCode ? tracked.filter((f) => f.state === stateCode) : tracked;
+  }, [data, stateCode]);
   const years = useMemo(() => byYear(all), [all]);
   const peak = useMemo(() => years.reduce((m, y) => Math.max(m, y.arrivingMW), 0), [years]);
 
@@ -57,7 +71,9 @@ export function BuildoutTimeline() {
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-1">
         <span className="flex items-center gap-2">
           <CalendarClock className="h-4 w-4 text-brand" />
-          <h2 className="text-sm font-semibold text-foreground">When does it all arrive?</h2>
+          <h2 className="text-sm font-semibold text-foreground">
+            {stateName ? `When does it arrive in ${stateName}?` : "When does it all arrive?"}
+          </h2>
         </span>
         <span className="text-11 text-muted-foreground/70">Tap a year</span>
       </div>
@@ -161,7 +177,8 @@ export function BuildoutTimeline() {
           <p className="mt-3 text-10 leading-relaxed text-muted-foreground/70">
             Grouped by the year each tracked site opened or is expected to. Amber years are targets
             drawn from announced and under-construction schedules, so they move. Cumulative totals
-            cover only the sites GridTilt tracks at 400 MW and above, not all US capacity.
+            cover only the sites GridTilt tracks at 400 MW and above{stateName ? ` in ${stateName}` : ""},
+            not all {stateName ? "capacity there" : "US capacity"}.
           </p>
         </>
       )}
