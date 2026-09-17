@@ -8,7 +8,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { MapContainer, TileLayer, CircleMarker, GeoJSON as GeoJSONLayer, Tooltip as MapTooltip, useMap } from "react-leaflet";
+import { MapContainer, CircleMarker, GeoJSON as GeoJSONLayer, Tooltip as MapTooltip, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import type { Feature, FeatureCollection } from "geojson";
@@ -16,6 +16,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AsOf, ErrorState, SrChartTable } from "@/components/Freshness";
+import { BasemapTiles } from "@/components/BasemapTiles";
 import { PageHeader } from "@/components/PageHeader";
 import { RTO_CONFIG, RTO_SOURCE_NOTE, type RTOConfig } from "@/data/rto-config";
 import { STATE_GRID, STATE_GRID_SOURCE } from "@/data/state-grid";
@@ -153,10 +154,7 @@ function MyGridMap({
           className="h-full w-full"
           style={{ background: SURFACE.base }}
         >
-          <TileLayer
-            url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
-          />
+          <BasemapTiles style="dark_all" />
           {feature && (
             <GeoJSONLayer
               key={stateCode}
