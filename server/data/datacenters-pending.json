@@ -169,5 +169,24 @@
     "sourceName": "Utility Dive",
     "discoveredAt": "2026-08-06T15:34:42.473Z",
     "approxCoords": true
+  },
+  {
+    "id": 68,
+    "name": "Crusoe Unknown (Blue Energy GE Vernova Hitachi advance)",
+    "company": "Crusoe",
+    "city": "Unknown",
+    "state": "TX",
+    "lat": 31.054,
+    "lng": -97.563,
+    "powerMW": 2500,
+    "status": "announced",
+    "annualMWh": 18615000,
+    "gridOperator": "Unknown",
+    "openDate": "TBD",
+    "sourceUrl": "https://www.datacenterdynamics.com/en/news/blue-energy-ge-vernova-hitachi-advance-25gw-gas-plus-nuclear-plant-in-texas-to-power-up-to-15gw-data-center/",
+    "sourceTitle": "Blue Energy, GE Vernova Hitachi advance 2.5GW gas-plus-nuclear plant in Texas, to power up to 1.5GW data center",
+    "sourceName": "DCD",
+    "discoveredAt": "2026-08-17T13:57:14.800Z",
+    "approxCoords": true
   }
 ]
