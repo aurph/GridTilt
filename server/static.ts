@@ -2,6 +2,7 @@ import express, { type Express } from "express";
 import fs from "fs";
 import path from "path";
 import { getPageMeta, injectMetaTags } from "./seo";
+import { injectRuntimeConfig } from "./runtime-config";
 
 export function serveStatic(app: Express) {
   const distPath = path.resolve(__dirname, "public");
@@ -28,6 +29,7 @@ export function serveStatic(app: Express) {
     const pathname = req.originalUrl.split("?")[0] || "/";
     const meta = getPageMeta(pathname);
     html = injectMetaTags(html, meta);
+    html = injectRuntimeConfig(html);
     res
       .set("Content-Type", "text/html")
       .set("X-Robots-Tag", "index, follow")

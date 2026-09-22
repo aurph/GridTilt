@@ -85,6 +85,7 @@ npm start        # serve the built bundle
 | `RESEND_API_KEY` | no | Syncs subscribers to Resend and enables newsletter sends. Without it, signups only persist to local JSON. |
 | `EIA_API_KEY` | no | Free key from [eia.gov/opendata](https://www.eia.gov/opendata/register.php). Enables live US48 hourly demand. |
 | `NEWSDATA_API_KEY` | no | Optional [newsdata.io](https://newsdata.io) key. The 8 RSS feeds work without it. |
+| `CARTO_API` | no | Free [Carto basemap key](https://carto.com/basemaps/apikey) (5M tiles/month). Without it the maps still render, but every tile is stamped "API KEY REQUIRED". Public by nature - restrict it by domain. |
 | `X_API_*` | no | Four X credentials for the weekday auto-poster; it dry-runs and logs locally without them. |
 | `X_POSTING_ENABLED` | no | Kill switch for the auto-poster; defaults off (dry-run). |
 | `DISABLE_DATACENTER_INGESTER` | no | Set to `1` to disable the 6-hour RSS datacenter ingester. |
