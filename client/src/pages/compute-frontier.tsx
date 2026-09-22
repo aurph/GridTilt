@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AsOf, ErrorState, SrChartTable } from "@/components/Freshness";
-import { BasemapTiles } from "@/components/BasemapTiles";
+import { BasemapTiles } from "@/components/basemap-tiles";
 import {
   Tooltip as UITooltip,
   TooltipContent,

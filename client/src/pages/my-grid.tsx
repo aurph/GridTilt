@@ -16,7 +16,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AsOf, ErrorState, SrChartTable } from "@/components/Freshness";
-import { BasemapTiles } from "@/components/BasemapTiles";
+import { BasemapTiles } from "@/components/basemap-tiles";
 import { PageHeader } from "@/components/PageHeader";
 import { RTO_CONFIG, RTO_SOURCE_NOTE, type RTOConfig } from "@/data/rto-config";
 import { STATE_GRID, STATE_GRID_SOURCE } from "@/data/state-grid";
