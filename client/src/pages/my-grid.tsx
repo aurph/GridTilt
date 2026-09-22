@@ -449,6 +449,8 @@ export default function MyGrid() {
               </div>
             </Card>
 
+            <StateNewsCard stateCode={state} stateName={grid.name} />
+
             <Card className="border-card-border overflow-hidden" data-testid="my-grid-facilities">
               <div className="px-4 py-2 border-b border-border flex flex-wrap items-center justify-between gap-2">
                 <span className="text-[13px] font-semibold text-foreground">
@@ -572,5 +574,89 @@ export default function MyGrid() {
         )}
       </div>
     </div>
+  );
+}
+
+// ─── State grid news ───────────────────────────────────────────────────────
+
+interface StateNewsItem {
+  headline: string;
+  source: string;
+  url: string;
+  publishedAt: string;
+}
+
+interface StateNewsPayload {
+  state: string;
+  stateName: string;
+  items: StateNewsItem[];
+  asOf: string;
+  source: string;
+  sourceUrl: string;
+}
+
+/** "3d ago" style age, or empty when the feed gave us nothing to trust. */
+function newsAge(iso: string): string {
+  const then = new Date(iso).getTime();
+  if (Number.isNaN(then)) return "";
+  const hours = Math.floor((Date.now() - then) / 3_600_000);
+  if (hours < 1) return "just now";
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
+}
+
+/**
+ * What is happening on the grid where the reader lives.
+ *
+ * This is the only block on the page with something for all 51 states. The
+ * facility registry floor is 400 MW, so most states have no tracked campus
+ * and every card built on the registry comes up empty for them.
+ */
+function StateNewsCard({ stateCode, stateName }: { stateCode: string; stateName: string }) {
+  const { data, isLoading, isError, refetch } = useQuery<StateNewsPayload>({
+    queryKey: [`/api/state-news/${stateCode}`],
+    enabled: stateCode !== "",
+  });
+
+  return (
+    <Card className="border-card-border" data-testid="my-grid-news">
+      <div className="px-4 py-2 border-b border-border text-[13px] font-semibold text-foreground">
+        In the news · {stateName}
+      </div>
+      {isLoading ? (
+        <div className="p-4 space-y-2" aria-hidden="true">
+          {Array(4).fill(null).map((_, i) => <Skeleton key={i} className="h-7" />)}
+        </div>
+      ) : isError ? (
+        // A failed fetch must not read as "nothing is happening here".
+        <ErrorState label="State news failed to load." onRetry={() => refetch()} />
+      ) : !data || data.items.length === 0 ? (
+        <p className="p-4 text-xs leading-relaxed text-muted-foreground" data-testid="my-grid-no-news">
+          No {stateName} grid stories in the last two weeks.
+        </p>
+      ) : (
+        <div data-testid="my-grid-news-list">
+          {data.items.map((item) => (
+            <a
+              key={item.url}
+              href={item.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block px-4 py-2.5 border-b border-border/30 last:border-0 hover:bg-brand/5 no-underline"
+              data-testid="my-grid-news-item"
+            >
+              <span className="block text-xs leading-snug text-foreground">{item.headline}</span>
+              <span className="mt-0.5 block text-10 text-muted-foreground/70">
+                {item.source}
+                {newsAge(item.publishedAt) ? ` · ${newsAge(item.publishedAt)}` : ""}
+              </span>
+            </a>
+          ))}
+        </div>
+      )}
+      <div className="px-4 py-2 border-t border-border/50 text-10 text-muted-foreground/60">
+        Google News · scoped to {stateName} grid, utility and data center coverage · last 14 days
+      </div>
+    </Card>
   );
 }
