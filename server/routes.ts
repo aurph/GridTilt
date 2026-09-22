@@ -30,6 +30,7 @@ import {
 } from "./indices";
 import { recordDailyIndexValues, readIndexHistory } from "./index-history";
 import { getElectricityOutputMonthly, getHourlyDemandUS48 } from "./physical";
+import { getStateNews } from "./state-news";
 import { getRetailRatesByState } from "./retail-rates";
 import { computeClusterMetrics, type ClusterLite } from "./clusters";
 import { computeGpuIndex } from "./gpu-index";
@@ -2039,6 +2040,20 @@ export async function registerRoutes(
       res.json(result);
     } catch {
       res.status(502).json({ error: "Upstream EIA fetch failed. Try again later." });
+    }
+  });
+
+  // Grid news for one state (server/state-news.ts). Keyless, so there is no
+  // configured:false branch; an unknown state code is a 404 and an upstream
+  // failure is a 502. An empty items list is a legitimate answer for a quiet
+  // state and must never be padded.
+  app.get("/api/state-news/:state", async (req, res) => {
+    try {
+      const result = await getStateNews(req.params.state);
+      if (!result) return res.status(404).json({ error: "Unknown state code." });
+      res.json(result);
+    } catch {
+      res.status(502).json({ error: "Upstream news fetch failed. Try again later." });
     }
   });
 
