@@ -7,7 +7,7 @@ import "leaflet/dist/leaflet.css";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AsOf, ErrorState } from "@/components/Freshness";
-import { BasemapTiles } from "@/components/BasemapTiles";
+import { BasemapTiles } from "@/components/basemap-tiles";
 import { BiggestDataCenters } from "@/components/BiggestDataCenters";
 import { StateBuildout } from "@/components/StateBuildout";
 import { CompanyBuildout } from "@/components/CompanyBuildout";
