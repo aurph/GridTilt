@@ -767,7 +767,7 @@ export default function TheTrade({ embedded = false }: { embedded?: boolean; par
                     <p className="text-[12px] font-semibold text-foreground">Key Sensitivities</p>
                     <div className="space-y-2 text-muted-foreground leading-relaxed">
                       <p><span className="text-foreground font-medium">Nuclear %</span> is the highest-leverage input. Each 10pp increase re-rates CEG, CCJ, and VST scores.</p>
-                      <p><span className="text-foreground font-medium">Capex per MW</span> drives total capital deployed. At 50 GW, the $7M-$12M range = $150B swing.</p>
+                      <p><span className="text-foreground font-medium">Capex per MW</span> drives total capital deployed. At 50 GW, the $7M-$12M range = $250B swing.</p>
                       <p><span className="text-foreground font-medium">LPT per GW</span> (default: 4) is the most uncertain assumption in this model; academic literature ranges from 2 to 6.</p>
                       <p><span className="text-foreground font-medium">AI CAGR</span> is the most volatile input; a 10pp change produces a ~200 TWh swing in 2030 US power demand.</p>
                     </div>
