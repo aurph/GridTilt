@@ -76,8 +76,8 @@ interface ClusterMetrics {
     clustersWithDeal: number;
     plannedMWWithDeal: number;
     totalPlannedMW: number;
-    /** Every linked agreement, any status. */
-    linkedMW: number;
+    /** Linked agreements by status (server/deals.ts subtotalsByStatus). Never added together. */
+    linkedByStatus: Array<{ key: string; count: number; mw: number; undisclosed: number }>;
     /** Reviewed signed agreements only. */
     signedSecuredMW: number;
     deals: PowerSecuredDeal[];
@@ -88,6 +88,17 @@ interface ClusterMetrics {
 // ─── Display helpers ───────────────────────────────────────────────────────
 
 const STATUS_COLOR: Record<string, string> = STATUS_COLORS;
+
+/** How an agreement status reads in a sentence ("2.0 GW signed"). */
+const STATUS_PHRASE: Record<string, string> = {
+  signed: "signed",
+  framework: "under frameworks",
+  option: "under options",
+  preliminary: "in letters of intent",
+  portfolio: "in company-wide totals",
+  "not-ai-offtake": "not contracted to an AI buyer",
+  unreviewed: "not yet reviewed",
+};
 
 const ENERGY_COLOR: Record<string, string> = {
   nuclear: CATEGORY_COLORS.nuclear,
@@ -540,11 +551,15 @@ export default function ComputeFrontier() {
             <p className="text-xs text-muted-foreground leading-relaxed mb-3">
               Of <span className="text-foreground font-mono">{gw(ps.totalPlannedMW)} GW</span> planned across the tracked frontier,{" "}
               <span className="text-foreground font-mono">{gw(ps.plannedMWWithDeal)} GW</span> sits at clusters linked to a tracked
-              nuclear agreement. Those agreements list <span className="text-foreground font-mono">{gw(ps.linkedMW)} GW</span> across
-              every status;{" "}
-              {ps.signedSecuredMW > 0
-                ? <><span className="text-foreground font-mono">{gw(ps.signedSecuredMW)} GW</span> of it is under reviewed, signed agreements.</>
-                : <>none of it has been reviewed as signed yet.</>}{" "}
+              nuclear agreement. By status, those agreements list{" "}
+              {ps.linkedByStatus.map((b, i) => (
+                <span key={b.key}>
+                  {i > 0 && (i === ps.linkedByStatus.length - 1 ? " and " : ", ")}
+                  <span className="text-foreground font-mono">{gw(b.mw)} GW</span> {STATUS_PHRASE[b.key] ?? b.key}
+                  {b.undisclosed > 0 && ` (${b.undisclosed} undisclosed)`}
+                </span>
+              ))}
+              . The statuses are not added together, since a framework's ceiling can include a signed plant.{" "}
               Most clusters run on the grid or on-site gas, not a tracked nuclear agreement.
             </p>
             <div className="space-y-1.5">

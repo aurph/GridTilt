@@ -190,6 +190,23 @@ function bucketBy(rows: DealRow[], keyFn: (r: DealRow) => string): Bucket[] {
     .sort((a, b) => b.mw - a.mw || a.key.localeCompare(b.key));
 }
 
+/**
+ * Subtotals by status for any set of rows, such as the agreements Compute
+ * Frontier links to clusters. Same rules as the deals page: a row nested in
+ * another row of the same status counts once, an undisclosed size is counted
+ * apart instead of as 0, and company-wide aggregates stay out of "signed".
+ * The buckets overlap by design; never add them together.
+ */
+export function subtotalsByStatus(projects: DealProject[]): { byFirmness: Bucket[]; signed: Bucket } {
+  const rows = projects.map((p) => toRow({ ...p, offtaker: p.offtaker ?? "" }));
+  const order: FirmnessKey[] = [...FIRMNESS_VALUES, "unreviewed"];
+  const byFirmness = order
+    .map((k) => sumBucket(k, uniqueWithin(rows.filter((r) => r.firmness === k))))
+    .filter((b) => b.count > 0);
+  const signed = sumBucket("signed", uniqueWithin(rows.filter((r) => r.firmness === "signed" && !r.aggregate)));
+  return { byFirmness, signed };
+}
+
 export function computeDealMetrics(projects: DealProject[]): DealMetrics {
   const rows: DealRow[] = projects
     .filter(isPowerAgreement)

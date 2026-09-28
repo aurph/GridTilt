@@ -12,6 +12,7 @@ import {
   normalizeOfftaker,
   mergeBacklogProjectUpdate,
   parseBacklogProjectRequest,
+  subtotalsByStatus,
   FIRMNESS_VALUES,
   ASSET_VALUES,
   type DealProject,
@@ -313,4 +314,24 @@ test("the admin request rejects bad values with a reason instead of storing them
     assert.equal(r.ok, false);
     assert.match((r as { ok: false; error: string }).error, message);
   }
+});
+
+test("linked agreements are subtotalled per status, nested rows once, undisclosed apart, never summed", () => {
+  const plant = deal({ id: "plant", capacityMW: 50, firmness: "signed", ...REVIEW });
+  const fleet = deal({ id: "fleet", capacityMW: 500, firmness: "framework", includes: ["plant"], ...REVIEW });
+  const signedA = deal({ id: "a", capacityMW: 2000, firmness: "signed", ...REVIEW });
+  const secret = deal({ id: "b", capacityMW: null, firmness: "signed", ...REVIEW });
+  // A signed parent containing a signed child (Susquehanna and its 300 MW tranche).
+  const parent = deal({ id: "parent", capacityMW: 1920, firmness: "signed", includes: ["child"], ...REVIEW });
+  const child = deal({ id: "child", capacityMW: 300, firmness: "signed", ...REVIEW });
+  const t = subtotalsByStatus([plant, fleet, signedA, secret, parent, child]);
+  const by = Object.fromEntries(t.byFirmness.map((b) => [b.key, b]));
+  assert.deepEqual(
+    { mw: by.signed.mw, count: by.signed.count, undisclosed: by.signed.undisclosed },
+    { mw: 50 + 2000 + 1920, count: 4, undisclosed: 1 },
+  );
+  assert.equal(by.framework.mw, 500, "the framework's ceiling stays in its own status");
+  assert.equal(t.signed.mw, 50 + 2000 + 1920);
+  // A row with no buyer, as a generation row can be, does not crash the subtotal.
+  assert.equal(subtotalsByStatus([deal({ id: "gen", offtaker: null })])[`byFirmness`][0].key, "unreviewed");
 });

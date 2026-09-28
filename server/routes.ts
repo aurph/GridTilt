@@ -60,6 +60,7 @@ import {
   effectiveFirmness,
   mergeBacklogProjectUpdate,
   parseBacklogProjectRequest,
+  subtotalsByStatus,
   BACKLOG_TYPES,
   FIRMNESS_VALUES,
   ASSET_VALUES,
@@ -3898,15 +3899,18 @@ ${rssItems}
       byDeal.set(d.id, entry);
     }
     const dealList = Array.from(byDeal.values());
-    const mw = (list: typeof dealList) => list.reduce((a, d) => a + (d.capacityMW ?? 0), 0);
+    // One subtotal per status, with the deals page's rules (nested rows once,
+    // undisclosed sizes apart). It used to add every linked agreement into one
+    // "across every status" figure, a framework's ceiling beside signed deals.
+    const linked = subtotalsByStatus(dealList.map((d) => dealById.get(d.id)!));
     return {
       clustersWithDeal: withDeal.length,
       plannedMWWithDeal: withDeal.reduce((a, c) => a + (c.plannedPowerMW || 0), 0),
       totalPlannedMW: clusters.reduce((a, c) => a + (c.plannedPowerMW || 0), 0),
-      /** Every linked agreement, any status. Not "secured". */
-      linkedMW: mw(dealList),
+      /** Linked agreements by status. Never add these together. */
+      linkedByStatus: linked.byFirmness,
       /** Reviewed signed agreements only. */
-      signedSecuredMW: mw(dealList.filter((d) => d.firmness === "signed")),
+      signedSecuredMW: linked.signed.mw,
       deals: dealList,
     };
   }
