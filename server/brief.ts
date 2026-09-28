@@ -29,13 +29,18 @@ export interface BriefInput {
     cheapestPrice: number;
   };
   grid: { queueGW: number; medianWaitMonths: number; ercotGW: number };
+  /** Signed means reviewed against a primary document. Nothing else is summed. */
   deals: {
-    dealCount: number;
-    contractedGW: number;
-    topBuyer: string | null;
-    topBuyerGW: number;
-    topType: string | null;
-    topTypeGW: number;
+    signedCount: number;
+    signedGW: number;
+    /** Reviewed frameworks, options and letters of intent. Not counted as signed. */
+    pendingCount: number;
+    /** Listed but not yet reviewed. Not counted at all. */
+    unreviewedCount: number;
+    topSignedBuyer: string | null;
+    topSignedBuyerGW: number;
+    topSignedType: string | null;
+    topSignedTypeGW: number;
   };
 }
 
@@ -68,7 +73,7 @@ export function composeBrief(input: BriefInput): Brief {
   const summary =
     `The US AI buildout we track now spans ${c.clusterCount} named compute clusters and ${gw(c.plannedGW)} of planned power ` +
     `across ${c.operatorCount} operators, with ${gw(c.operationalGW)} already live. ` +
-    `${d.dealCount} corporate power deals cover ${gw(d.contractedGW)}, and on-demand GPUs rent for an average of ${usd(g.fleetAvg)}/GPU-hr.`;
+    `${d.signedCount} signed power agreements total ${gw(d.signedGW)}, and on-demand GPUs rent for an average of ${usd(g.fleetAvg)}/GPU-hr.`;
 
   const compute: BriefSection = {
     heading: "Compute",
@@ -97,17 +102,25 @@ export function composeBrief(input: BriefInput): Brief {
   };
 
   const deals: BriefSection = {
-    heading: "Deals",
+    heading: "Power agreements",
     points: [
-      `${d.dealCount} corporate power deals, ${gw(d.contractedGW)} contracted.`,
-      ...(d.topBuyer ? [`${d.topBuyer} is the largest buyer at ${gw(d.topBuyerGW)}.`] : []),
-      ...(d.topType ? [`${d.topType} leads the contracted mix at ${gw(d.topTypeGW)}.`] : []),
+      `${d.signedCount} signed agreements, ${gw(d.signedGW)}.`,
+      ...(d.pendingCount > 0
+        ? [`${d.pendingCount} more are frameworks, options or letters of intent, not counted as signed.`]
+        : []),
+      ...(d.unreviewedCount > 0
+        ? [`${d.unreviewedCount} listed agreements are not yet reviewed and are not counted.`]
+        : []),
+      ...(d.topSignedBuyer ? [`${d.topSignedBuyer} holds the most signed capacity, ${gw(d.topSignedBuyerGW)}.`] : []),
+      ...(d.topSignedType
+        ? [`${d.topSignedType[0].toUpperCase()}${d.topSignedType.slice(1)} leads the signed mix at ${gw(d.topSignedTypeGW)}.`]
+        : []),
     ],
   };
 
   const takeaway =
     `Demand keeps outrunning the grid: ${gw(c.plannedGW)} of planned compute against a ${q.medianWaitMonths}-month interconnection queue, ` +
-    `while ${d.topBuyer ?? "hyperscalers"} and peers lock in their own power.`;
+    `while ${d.topSignedBuyer ?? "hyperscalers"} and peers sign for their own power.`;
 
   return {
     title: `The AI Buildout: week of ${input.asOf}`,

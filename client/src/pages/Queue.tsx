@@ -19,7 +19,8 @@ interface BacklogProject {
   id: string;
   projectName: string;
   sponsor: string;
-  capacityMW: number;
+  /** Null (or 0 in older rows) when the capacity has not been disclosed. */
+  capacityMW: number | null;
   type: "nuclear" | "gas" | "solar" | "wind" | "storage" | "hybrid" | "load" | "geothermal" | "utility" | "fusion" | "other";
   iso: string;
   state: string;
@@ -165,7 +166,7 @@ export default function Queue({ embedded = false }: { embedded?: boolean; params
     });
     rows = rows.sort((a, b) => {
       let cmp = 0;
-      if (sortKey === "capacityMW") cmp = a.capacityMW - b.capacityMW;
+      if (sortKey === "capacityMW") cmp = (a.capacityMW ?? -1) - (b.capacityMW ?? -1);
       else if (sortKey === "projectName") cmp = a.projectName.localeCompare(b.projectName);
       else if (sortKey === "iso") cmp = a.iso.localeCompare(b.iso);
       else if (sortKey === "type") cmp = a.type.localeCompare(b.type);
@@ -218,7 +219,8 @@ export default function Queue({ embedded = false }: { embedded?: boolean; params
                 <span className="text-foreground font-mono">{h.medianWaitMonths} months</span>. ERCOT's large-load queue alone is{" "}
                 <span className="text-foreground font-mono">{h.ercotLargeLoadGW} GW</span>, of which{" "}
                 <span className="text-foreground font-mono">{h.ercotLargeLoadDataCenterPct}%</span> is datacenters.
-                Dominion has <span className="text-foreground font-mono">{h.dominionContractedGW} GW</span><Est on={isEst("dominionContractedGW")} /> already under hyperscaler contract in Virginia alone.
+                Dominion reports <span className="text-foreground font-mono">{h.dominionContractedGW} GW</span><Est on={isEst("dominionContractedGW")} /> of
+                data-center capacity at some stage of contracting in Virginia, from engineering letters to signed service agreements.
               </p>
             ) : isError ? (
               <p className="text-muted-foreground text-sm">The backlog dataset failed to load.</p>
@@ -262,9 +264,10 @@ export default function Queue({ embedded = false }: { embedded?: boolean; params
         {isLoading && <Skeleton className="h-5 w-full max-w-3xl" aria-hidden="true" />}
         {h && (
           <div className="flex flex-wrap items-center gap-x-6 gap-y-1.5 px-1 text-11 font-mono text-muted-foreground" data-testid="summary-strip">
+            {/* No GW total across the named projects: they mix data-center
+                load, generation and power agreements for the same plants,
+                so the megawatts do not add up to anything. */}
             <span><span className="text-foreground">{h.trackedProjects}</span> named projects tracked</span>
-            <span className="text-muted-foreground/30">·</span>
-            <span><span className="text-foreground">{h.trackedCapacityGW.toLocaleString()} GW</span> across those projects</span>
             <span className="text-muted-foreground/30">·</span>
             <span><span className="text-foreground">{h.pjmReopenedGW}</span> GW in PJM's reopened queue</span>
             <span className="text-muted-foreground/30">·</span>
@@ -349,7 +352,7 @@ export default function Queue({ embedded = false }: { embedded?: boolean; params
                         <span className="truncate">{p.type}</span>
                       </span>
                       <span className="col-span-1 font-mono text-foreground text-right tabular-nums">
-                        {p.capacityMW === 0 ? "—" : p.capacityMW.toLocaleString()}
+                        {p.capacityMW == null || p.capacityMW === 0 ? "—" : p.capacityMW.toLocaleString()}
                       </span>
                       <span className="col-span-1 font-mono text-foreground truncate">{p.iso}</span>
                       <span className="col-span-1 font-mono text-muted-foreground truncate">{p.state}</span>

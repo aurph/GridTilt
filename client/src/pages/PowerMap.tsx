@@ -147,17 +147,18 @@ function escapeHtml(str: string): string {
 }
 
 // Power tool tabs (consolidation): one subject, three views — where the AI
-// load sits (map), who contracted the power (deals), what's still waiting
-// on the grid (queue). ?tab= round-trips so each view stays shareable.
+// load sits (map), who agreed to buy the power and how firmly (deals), what's
+// still waiting on the grid (queue). ?tab= round-trips so each view stays
+// shareable; the "deals" id stays so existing links keep working.
 const POWER_TABS = [
   { id: "map", label: "Map" },
-  { id: "deals", label: "Deals" },
+  { id: "deals", label: "Agreements" },
   { id: "queue", label: "Queue" },
 ];
 
 const POWER_SUBTITLES: Record<string, string> = {
   map: "US Datacenter Map",
-  deals: "AI Power Deals",
+  deals: "Power agreements",
   queue: "Interconnection Backlog",
 };
 

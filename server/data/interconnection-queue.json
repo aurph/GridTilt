@@ -1,9 +1,9 @@
 {
-  "lastRefreshed": "2026-08-25",
+  "lastRefreshed": "2026-09-28",
   "lastChecked": "2026-08-25",
   "headline": {
     "trackedProjects": 70,
-    "trackedCapacityGW": 95.1,
+    "trackedCapacityGW": 91.5,
     "queueOverallGW": 2061,
     "queueOverallProjects": 8244,
     "medianWaitMonths": 61,
@@ -33,16 +33,21 @@
       "state": "PA",
       "status": "active",
       "category": "generation",
-      "expectedOnline": "2027-2028",
+      "expectedOnline": "2027 (Constellation target)",
       "offtaker": "Microsoft (20-year PPA)",
       "dcRelevant": true,
       "sources": [
+        "https://www.constellationenergy.com/news/2024/Constellation-to-Launch-Crane-Clean-Energy-Center-Restoring-Jobs-and-Carbon-Free-Power-to-The-Grid.html",
         "Constellation press release",
         "Utility Dive",
         "DCD",
         "WITF"
       ],
-      "notes": "First-ever restart of a previously shut-down US commercial reactor. FERC approved transfer of 760 MW of Eddystone capacity interconnection rights (June 2026); NRC environmental assessment in final public comment (July 2026); fuel delivery on schedule for end of 2026. Restart targeted 2H 2027. DOE backed a $1B loan."
+      "notes": "First-ever restart of a previously shut-down US commercial reactor. FERC approved transfer of 760 MW of Eddystone capacity interconnection rights (June 2026); the NRC has issued its environmental assessment and finding of no significant impact (World Nuclear News, Sept 2026); restart still needs NRC approval; fuel delivery on schedule for end of 2026. Restart targeted 2H 2027. DOE backed a $1B loan.",
+      "firmness": "signed",
+      "firmnessSource": "https://www.constellationenergy.com/news/2024/Constellation-to-Launch-Crane-Clean-Energy-Center-Restoring-Jobs-and-Carbon-Free-Power-to-The-Grid.html",
+      "reviewed": "2026-09-28",
+      "asset": "restart"
     },
     {
       "id": "palisades",
@@ -55,19 +60,24 @@
       "status": "active",
       "category": "generation",
       "expectedOnline": "2026 (no firm date)",
-      "offtaker": "Multiple offtakers + state agreements",
+      "offtaker": "Wolverine Power Cooperative and Hoosier Energy (28-year PPAs)",
       "dcRelevant": true,
       "sources": [
+        "https://www.sec.gov/Archives/edgar/data/0002104277/000119312526301023/d40440ds1.htm",
         "NRC 25-046",
         "Utility Dive",
         "NucNet",
         "ANS Nuclear Newswire"
       ],
-      "notes": "First plant authorized to return to operations after shutdown. Still offline as of Aug 2026: Holtec closed out the last major restart projects in July 2026 and moved to operational readiness, but has not announced a restart date."
+      "notes": "First plant authorized to return to operations after shutdown. Still offline as of Aug 2026: Holtec closed out the last major restart projects in July 2026 and moved to operational readiness, but has not announced a restart date. All of the plant's ~800 MW is contracted under 28-year PPAs with two rural cooperatives, Wolverine (up to two-thirds) and Hoosier (the balance), per Holtec's 2026 S-1; no data-center or AI buyer. Michigan's $300M is a restart grant, not an offtake.",
+      "firmness": "not-ai-offtake",
+      "firmnessSource": "https://www.sec.gov/Archives/edgar/data/0002104277/000119312526301023/d40440ds1.htm",
+      "reviewed": "2026-09-28",
+      "asset": "restart"
     },
     {
       "id": "susquehanna-aws",
-      "projectName": "Susquehanna BTM expansion (Talen-AWS)",
+      "projectName": "Talen-AWS Susquehanna PPA (expanded June 2025)",
       "sponsor": "Talen Energy",
       "capacityMW": 1920,
       "type": "nuclear",
@@ -75,14 +85,22 @@
       "state": "PA",
       "status": "active",
       "category": "ppa",
-      "expectedOnline": "2029-2032 staged",
+      "expectedOnline": "Ramping; full by 2032",
       "offtaker": "Amazon Web Services (17-year, $18B)",
       "dcRelevant": true,
       "sources": [
+        "https://www.sec.gov/Archives/edgar/data/1622536/000162828025030559/a20250611pressreleasebusin.htm",
         "Talen 8-K Jun 2025",
         "World Nuclear News"
       ],
-      "notes": "Original BTM ISA rejected by FERC in Nov 2024. New framework moves 300 MW existing slice to front-of-meter; expansion staged to 1.92 GW by 2032."
+      "notes": "Expanded PPA (June 2025): at full contract quantity, 1,920 MW of nuclear power from Susquehanna to Amazon through 2042 (about $18 billion notional over 17 years), ramping to full volume no later than 2032. It moved to a front-of-the-meter retail arrangement (April 2026), keeping 300 MW behind the meter in the interim; that 300 MW is listed separately and not added twice. FERC had rejected the amended co-location interconnection agreement in November 2024.",
+      "includes": [
+        "talen-aws-frontofmeter"
+      ],
+      "firmness": "signed",
+      "firmnessSource": "https://www.sec.gov/Archives/edgar/data/1622536/000162828025030559/a20250611pressreleasebusin.htm",
+      "reviewed": "2026-09-28",
+      "asset": "existing"
     },
     {
       "id": "clinton-meta",
@@ -95,31 +113,18 @@
       "status": "active",
       "category": "ppa",
       "expectedOnline": "June 2027",
-      "offtaker": "Meta (20-year VPPA, full output)",
+      "offtaker": "Meta (20-year PPA for the plant's output)",
       "dcRelevant": true,
       "sources": [
+        "https://www.constellationenergy.com/news/2025/constellation-meta-sign-20-year-deal-for-clean-reliable-nuclear-energy-in-illinois.html",
         "Foley & Lardner client alert",
         "Data Center Frontier"
       ],
-      "notes": "Meta takes the entire 1.121 GW Clinton output. 30 MW uprate adds incremental capacity. PPA preserves the plant past its prior retirement date."
-    },
-    {
-      "id": "vistra-meta-smr",
-      "projectName": "Vistra-Meta SMR option site",
-      "sponsor": "Vistra",
-      "capacityMW": 300,
-      "type": "nuclear",
-      "iso": "PJM",
-      "state": "OH",
-      "status": "active",
-      "category": "ppa",
-      "expectedOnline": "2030+",
-      "offtaker": "Meta (option agreement, Jan 2026)",
-      "dcRelevant": true,
-      "sources": [
-        "Vistra 8-K Jan 2026"
-      ],
-      "notes": "Option for a new 300 MW SMR at one of Vistra's existing nuclear sites."
+      "notes": "20-year PPA for the output of the operating Clinton plant, 1,121 MW, beginning June 2027. It supports relicensing and continued operation after Illinois' zero-emission credit program ends. The 1,121 MW already includes an uprate of about 30 MW on a plant rated about 1,092 MW net, so most of this is existing output, not new generation.",
+      "firmness": "signed",
+      "firmnessSource": "https://www.constellationenergy.com/news/2025/constellation-meta-sign-20-year-deal-for-clean-reliable-nuclear-energy-in-illinois.html",
+      "reviewed": "2026-09-28",
+      "asset": "mixed"
     },
     {
       "id": "comanche-peak-3",
@@ -150,14 +155,19 @@
       "state": "CA",
       "status": "operational",
       "category": "generation",
-      "expectedOnline": "Through 2030 (state cap)",
+      "expectedOnline": "Unit 1 to Oct 2029, Unit 2 to Oct 2030 (state law)",
       "offtaker": "California grid",
       "dcRelevant": true,
       "sources": [
+        "https://investor.pgecorp.com/news-events/press-releases/press-release-details/2026/U-S--Nuclear-Regulatory-Commission-Approves-License-Renewal-Application-for-Extended-Operations-of-Diablo-Canyon/default.aspx",
         "NRC",
         "CPUC"
       ],
-      "notes": "NRC renewed both units' licenses to 2044/2045 (April 2026), but California law still caps operation at 2030 and Gov. Newsom said in Aug 2026 he will not act to extend it this term. Underpins Silicon Valley datacenter load."
+      "notes": "The NRC renewed both units' licenses to 2044 and 2045 (April 2026), but California law (SB 846) limits operation to Oct 31, 2029 for Unit 1 and Oct 31, 2030 for Unit 2; running longer needs the Legislature. The plant supplies the California grid; no data-center or AI buyer has a contract for its output.",
+      "firmness": "not-ai-offtake",
+      "firmnessSource": "https://investor.pgecorp.com/news-events/press-releases/press-release-details/2026/U-S--Nuclear-Regulatory-Commission-Approves-License-Renewal-Application-for-Extended-Operations-of-Diablo-Canyon/default.aspx",
+      "reviewed": "2026-09-28",
+      "asset": "existing"
     },
     {
       "id": "meta-oklo-pike",
@@ -169,38 +179,50 @@
       "state": "OH",
       "status": "active",
       "category": "ppa",
-      "expectedOnline": "Phase 1 (150 MW) 2028+",
-      "offtaker": "Meta (prepayments + offtake)",
+      "expectedOnline": "First phase as early as 2030; full build 2034",
+      "offtaker": "Meta (prepayment agreement; no binding PPA yet)",
       "dcRelevant": true,
       "sources": [
+        "https://oklo.com/newsroom/oklo-meta-announce-agreement-in-support-of-1-2-gw-nuclear-energy-development-in-southern-ohio",
         "Meta announcement Jan 2026",
         "Oklo investor presentation"
       ],
-      "notes": "16 Aurora Powerhouse reactors x 75 MW each across a 206-acre site. Phase 1 delivers 150 MW. PJM interconnection applications filed (Q2 2026)."
+      "notes": "January 2026 agreement under which Meta can prepay for power and fund fuel and first-phase work for a campus of up to 1.2 GW in Pike County, Ohio. The prepayment is binding; the power purchase is not yet: Oklo's 10-K (filed 2026-03-17) says it has no binding PPA with any customer. First phase targeted as early as 2030. Oklo's 750 MW interconnection request (150 MW nuclear, 300 MW fuel cells, 300 MW gas) was withdrawn from PJM's Cycle 01 on Aug 3, 2026 and Oklo filed a FERC complaint on Aug 28 (Utility Dive).",
+      "upTo": true,
+      "firmness": "framework",
+      "firmnessSource": "https://oklo.com/newsroom/oklo-meta-announce-agreement-in-support-of-1-2-gw-nuclear-energy-development-in-southern-ohio",
+      "reviewed": "2026-09-28",
+      "asset": "new-build"
     },
     {
       "id": "google-kairos-hermes2",
-      "projectName": "Hermes 2 (Kairos Power)",
+      "projectName": "Hermes 2 (Kairos Power, Oak Ridge TN)",
       "sponsor": "Kairos Power",
-      "capacityMW": 500,
+      "capacityMW": 50,
       "type": "nuclear",
       "iso": "SERC",
       "state": "TN",
       "status": "active",
       "category": "ppa",
-      "expectedOnline": "Initial 50 MW by 2030; scale to 500",
-      "offtaker": "Google + TVA",
+      "expectedOnline": "2030",
+      "offtaker": "Google (clean energy attributes through a TVA PPA)",
       "dcRelevant": true,
       "sources": [
+        "https://www.kairospower.com/updates/google-kairos-power-tva-collaborate-to-meet-americas-growing-energy-needs",
         "Google press release Aug 2025",
         "Kairos filings"
       ],
-      "notes": "First corporate SMR PPA. Generation IV molten salt-cooled. Oak Ridge site."
+      "notes": "A PPA between Kairos Power and TVA (August 2025) for up to 50 MW from the Hermes 2 plant in Oak Ridge, TN, delivered to the TVA grid that powers Google's data centers in Tennessee and Alabama; Google procures the plant's clean energy attributes through TVA. Operations are scheduled for 2030. Hermes 2 is the first deployment under the Google-Kairos 500 MW framework, listed separately and not added twice.",
+      "upTo": true,
+      "firmness": "signed",
+      "firmnessSource": "https://www.kairospower.com/updates/google-kairos-power-tva-collaborate-to-meet-americas-growing-energy-needs",
+      "reviewed": "2026-09-28",
+      "asset": "new-build"
     },
     {
       "id": "standard-power-nuscale-pa",
       "projectName": "Standard Power NuScale SMR fleet (PA/OH)",
-      "sponsor": "NuScale + Standard Power",
+      "sponsor": "Standard Power (developer), NuScale (reactor technology)",
       "capacityMW": 1848,
       "type": "nuclear",
       "iso": "PJM",
@@ -208,54 +230,69 @@
       "status": "active",
       "category": "ppa",
       "expectedOnline": "Late 2020s",
-      "offtaker": "Hyperscale data centers (multiple)",
+      "offtaker": "Standard Power's own planned data centers (no buyer named)",
       "dcRelevant": true,
       "sources": [
+        "https://www.sec.gov/Archives/edgar/data/1822966/000182296623000242/a2023-10x06xstandardpowe.htm",
         "NuScale investor materials",
         "NuScale press release",
         "DCD"
       ],
-      "notes": "24 x 77 MWe NuScale modules (1,848 MWe total) across Ohio and Pennsylvania sites with ENTRA1, announced Oct 2023. Little public progress reported since; not mentioned in NuScale's Q2 2026 results."
+      "notes": "An announced development plan, not a signed agreement: Standard Power said in October 2023 that it 'has chosen to work with' NuScale for two SMR sites in Ohio and Pennsylvania (24 x 77 MWe, 1,848 MWe) to power its own planned data centers. No hyperscaler or other buyer is named. NuScale's FY2025 10-K says it has no binding contract with any customer and does not mention Standard Power.",
+      "firmness": "preliminary",
+      "firmnessSource": "https://www.sec.gov/Archives/edgar/data/1822966/000182296623000242/a2023-10x06xstandardpowe.htm",
+      "reviewed": "2026-09-28",
+      "asset": "new-build"
     },
     {
       "id": "ms-brookfield-renewables",
       "projectName": "Microsoft-Brookfield 10.5 GW renewables framework",
       "sponsor": "Brookfield Renewable",
       "capacityMW": 10500,
-      "type": "solar",
+      "type": "hybrid",
       "iso": "Multi",
       "state": "Multi-US/EU",
       "status": "active",
       "category": "ppa",
-      "expectedOnline": "2026-2030 staged",
+      "expectedOnline": "2026-2030",
       "offtaker": "Microsoft",
       "dcRelevant": true,
       "sources": [
+        "https://www.sec.gov/Archives/edgar/data/1533232/000117184324002391/exh_991.htm",
         "Brookfield press May 2024",
         "Microsoft sustainability filings"
       ],
-      "notes": "Largest single corporate renewable PPA disclosed. Multiple individual interconnection requests roll under this umbrella."
+      "notes": "A global renewable energy framework agreement (May 2024), not a PPA: a pathway to deliver over 10.5 GW of new wind, solar and other carbon-free capacity in the US and Europe between 2026 and 2030, contracted project by project. Brookfield calls the 10.5 GW 'the minimum we will contract under the framework', so it is a floor, not a ceiling.",
+      "firmness": "framework",
+      "firmnessSource": "https://www.sec.gov/Archives/edgar/data/1533232/000117184324002391/exh_991.htm",
+      "reviewed": "2026-09-28",
+      "asset": "new-build"
     },
     {
       "id": "google-intersect-power",
-      "projectName": "Google-Intersect Power partnership",
+      "projectName": "Alphabet acquisition of Intersect (developer)",
       "sponsor": "Google + Intersect Power",
-      "capacityMW": 4000,
+      "capacityMW": null,
       "type": "hybrid",
       "iso": "Multi",
       "state": "Multi",
       "status": "active",
       "category": "ppa",
-      "expectedOnline": "2026-2028",
+      "expectedOnline": null,
       "offtaker": "Google",
       "dcRelevant": true,
       "sources": [
+        "https://www.sec.gov/Archives/edgar/data/1652044/000165204426000048/R17.htm",
         "Google press Dec 2024",
         "Reuters",
         "POWER Magazine",
         "Intersect Power press release"
       ],
-      "notes": "Alphabet closed its $4.75B acquisition of Intersect Power in March 2026. Construction began June 2026 on the 1 GW+ Meitner Energy Center in the Texas Panhandle (wind, solar, storage, gas firming co-located with a data center)."
+      "notes": "A completed acquisition, not a PPA: Alphabet closed its purchase of the developer Intersect on March 10, 2026 for $5.9 billion after purchase-price adjustments. Alphabet says the deal includes 'multiple gigawatts of energy and data center projects in development' and gives no capacity total, so none is shown here. Intersect's existing operating assets were excluded.",
+      "firmness": "signed",
+      "firmnessSource": "https://www.sec.gov/Archives/edgar/data/1652044/000165204426000048/R17.htm",
+      "reviewed": "2026-09-28",
+      "asset": "new-build"
     },
     {
       "id": "google-totalenergies-tx",
@@ -267,13 +304,18 @@
       "state": "TX",
       "status": "active",
       "category": "ppa",
-      "expectedOnline": "2026-2027",
+      "expectedOnline": null,
       "offtaker": "Google (15-year PPA each)",
       "dcRelevant": true,
       "sources": [
+        "https://totalenergies.com/system/files/documents/totalenergies_pr-totalenergies-to-provide-1GW-solar-capacity-power-google-s-data-centers-texas-15-years_2026_en.pdf",
         "TotalEnergies 6-K Feb 2026"
       ],
-      "notes": "Wichita 805 MW + Mustang Creek 195 MW. Two 15-year PPAs announced Feb 2026 to serve Google's Texas data center operations."
+      "notes": "Two 15-year PPAs (February 2026) for 1 GW of solar from TotalEnergies' Wichita (805 MWp) and Mustang Creek (195 MWp) sites in Texas, DC ratings, to supply Google's Texas data centers. Construction was scheduled to begin in Q2 2026; no commercial operation date has been stated.",
+      "firmness": "signed",
+      "firmnessSource": "https://totalenergies.com/system/files/documents/totalenergies_pr-totalenergies-to-provide-1GW-solar-capacity-power-google-s-data-centers-texas-15-years_2026_en.pdf",
+      "reviewed": "2026-09-28",
+      "asset": "new-build"
     },
     {
       "id": "stargate-abilene",
@@ -619,14 +661,19 @@
       "status": "active",
       "category": "generation",
       "expectedOnline": "Q1 2029",
-      "offtaker": "Unnamed PA datacenter",
+      "offtaker": "No tenant named (developer's own planned campus)",
       "dcRelevant": true,
       "sources": [
+        "https://www.sec.gov/Archives/edgar/data/78128/000155278125000264/e25298_ex99-2.htm",
         "Utility Dive Jan 2026",
         "Utility Dive Aug 2025",
         "Essential Utilities press"
       ],
-      "notes": "944 MW behind-the-meter combined-cycle gas + battery storage on ~1,400 acres in Greene County, PA, for an unnamed data center; deliberately behind-the-meter to bypass the PJM queue (turbine delivery 2028). Essential Utilities invested $26M for water and gas service."
+      "notes": "A developer's planned behind-the-meter gas plant (combined cycle plus batteries) for its own data-center campus on ~1,400 acres in Greene County, PA, expected operational Q1 2029. No data-center user has been named; Essential Utilities, which invested $26M, lists whether the campus is ever occupied by a user as a risk. Essential gives 944 MW; IEP's own page and county-approval coverage give about 910 MW.",
+      "firmness": "not-ai-offtake",
+      "firmnessSource": "https://www.sec.gov/Archives/edgar/data/78128/000155278125000264/e25298_ex99-2.htm",
+      "reviewed": "2026-09-28",
+      "asset": "new-build"
     },
     {
       "id": "chevron-gevernova-multi",
@@ -653,18 +700,23 @@
       "sponsor": "INNIO Group + VoltaGrid",
       "capacityMW": 2300,
       "type": "gas",
-      "iso": "ERCOT",
-      "state": "TX",
+      "iso": "Undisclosed",
+      "state": "Undisclosed",
       "status": "active",
       "category": "ppa",
-      "offtaker": "Oracle (via VoltaGrid, up to 2.3 GW)",
+      "offtaker": "Oracle (announced collaboration with VoltaGrid; contract terms undisclosed)",
       "dcRelevant": true,
       "sources": [
+        "https://voltagrid.com/wp-content/uploads/VoltaGrid-Press-Release_Oracle_October-15th.pdf",
         "INNIO press",
         "POWER Magazine",
         "DCD"
       ],
-      "notes": "VoltaGrid is deploying up to 2.3 GW of modular gas generation (92 INNIO power packs at 25 MW, the largest order in INNIO's history, Oct 2025) across multiple Texas sites for Oracle Cloud Infrastructure AI data centers, with firm gas via Energy Transfer. Reclassified from anonymous generation to an Oracle offtake."
+      "notes": "VoltaGrid said in October 2025 it 'will deploy 2,300 MW' of on-site gas generation for Oracle Cloud Infrastructure AI data centers, calling it a collaboration; no contract type, term or price has been disclosed, and no sites are named. INNIO's 2.3 GW equipment order (92 power packs of 25 MW) does not name Oracle. Energy Transfer separately reports gas supply agreements with Oracle for three US data centers, two in Texas.",
+      "firmness": "preliminary",
+      "firmnessSource": "https://voltagrid.com/wp-content/uploads/VoltaGrid-Press-Release_Oracle_October-15th.pdf",
+      "reviewed": "2026-09-28",
+      "asset": "new-build"
     },
     {
       "id": "propetro-propwr-midwest",
@@ -672,18 +724,23 @@
       "sponsor": "ProPetro Holding (PROPWR)",
       "capacityMW": 60,
       "type": "gas",
-      "iso": "MISO",
-      "state": "OH",
+      "iso": "Undisclosed",
+      "state": "Undisclosed",
       "status": "operational",
       "category": "ppa",
       "expectedOnline": "2026",
       "offtaker": "Undisclosed hyperscaler",
       "dcRelevant": true,
       "sources": [
+        "https://www.sec.gov/Archives/edgar/data/1680247/000168024725000139/propwrdatacenterannounceme.htm",
         "ProPetro 8-K",
         "ProPetro Q2 2026 earnings"
       ],
-      "notes": "60 MW hybrid gas + battery system live and providing prime power at the Midwest hyperscaler site (Q2 2026); PROPWR total contracted capacity ~350 MW, contract carries expansion provisions."
+      "notes": "ProPetro's PROPWR division signed a long-term contract (October 2025) to supply 60 MW of behind-the-meter power, gas engines plus batteries it owns, to an unnamed hyperscaler's site in 'the Midwest region'; the state is not disclosed. ProPetro's Q2 2026 release says the assets are deployed and operating; it does not say all 60 MW are running. PROPWR's ~350 MW contracted total spans many customers and is not booked here.",
+      "firmness": "signed",
+      "firmnessSource": "https://www.sec.gov/Archives/edgar/data/1680247/000168024725000139/propwrdatacenterannounceme.htm",
+      "reviewed": "2026-09-28",
+      "asset": "new-build"
     },
     {
       "id": "dte-mi-hyperscaler",
@@ -695,15 +752,20 @@
       "state": "MI",
       "status": "active",
       "category": "ppa",
-      "expectedOnline": "Dec 2026+",
-      "offtaker": "Stargate Saline Township (reported: Related Digital for Oracle/OpenAI; 19-year supply agreement)",
+      "expectedOnline": "Ramps over 2-3 years from late 2025",
+      "offtaker": "Green Chile Ventures LLC (reported as an Oracle subsidiary; Related Digital is the developer)",
       "dcRelevant": true,
       "sources": [
+        "https://www.sec.gov/Archives/edgar/data/936340/000093634025000219/exhibit991-093025.htm",
         "Utility Dive",
         "DTE earnings call",
         "Epoch AI"
       ],
-      "notes": "DTE's first large data center supply agreement (Oct 2025, 1.4 GW, reported 19-year term). Michigan reporting and Epoch's site tracking identify the load as the Stargate campus in Saline Township, Washtenaw County. DTE cites ~3 GW more in late-stage negotiations plus 3-4 GW behind that. Counted as a supply deal on the same basis as the OpenAI-Georgia Power agreement; the load side is covered under Stargate additional sites."
+      "notes": "DTE's first data-center supply contract (Q3 2025 release): 1.4 GW of load that 'will ramp up over the next two to three years', served from existing capacity plus new energy storage paid for by the customer. The Michigan PSC approved the special contracts on Dec 18, 2025 (Case U-21990) and names the counterparty as Green Chile Ventures LLC; ENR and Bridge Michigan report it is an Oracle subsidiary building the Saline Township campus with Related Digital. The 19-year term is from press coverage.",
+      "firmness": "signed",
+      "firmnessSource": "https://www.sec.gov/Archives/edgar/data/936340/000093634025000219/exhibit991-093025.htm",
+      "reviewed": "2026-09-28",
+      "asset": "mixed"
     },
     {
       "id": "dominion-va-aggregate",
@@ -913,14 +975,19 @@
       "status": "active",
       "category": "generation",
       "expectedOnline": "End of 2027",
-      "offtaker": "Dominion retail + DC contracts",
+      "offtaker": "Dominion Energy Virginia customers (no data-center contract found)",
       "dcRelevant": true,
       "sources": [
+        "https://www.dominionenergy.com/about/delivering-energy/wind-power-projects/coastal-virginia-offshore-wind",
         "Dominion press",
         "DCD",
         "Utility Dive"
       ],
-      "notes": "81% complete with 450+ MW delivering (Q2 2026); estimated cost rose ~$288M to ~$11.7B and full completion slipped ~6 months to end of 2027."
+      "notes": "81% complete with 450+ MW delivering (Q2 2026); estimated cost rose ~$288M to ~$11.7B and full completion slipped ~6 months to end of 2027.",
+      "firmness": "not-ai-offtake",
+      "firmnessSource": "https://www.dominionenergy.com/about/delivering-energy/wind-power-projects/coastal-virginia-offshore-wind",
+      "reviewed": "2026-09-28",
+      "asset": "new-build"
     },
     {
       "id": "ge-vernova-83gw-backlog",
@@ -986,21 +1053,26 @@
       "capacityMW": 40000,
       "type": "hybrid",
       "iso": "Multi",
-      "state": "Multi",
+      "state": "Global",
       "status": "active",
       "category": "aggregate",
       "expectedOnline": "Phased through ~2031",
       "offtaker": "Microsoft (self)",
       "dcRelevant": true,
       "sources": [
+        "https://blogs.microsoft.com/blog/2026/02/18/a-milestone-achievement-in-our-journey-to-carbon-negative/",
         "S&P Global",
         "Microsoft blog Feb 2026"
       ],
-      "notes": "40 GW of renewable supply contracted since 2020 across 26 countries, 19 GW online, per Microsoft's Feb 2026 carbon-negative update. Largest corporate clean-power buyer."
+      "notes": "Microsoft's company-wide total, not one agreement: 40 GW of renewable supply contracted since 2020 across 26 countries, 95+ utilities and developers and 400+ contracts, 19 GW of it online (Feb 2026). Global, not a US figure. Microsoft's individual agreements listed here are inside or beside it and are never added to it.",
+      "firmness": "portfolio",
+      "firmnessSource": "https://blogs.microsoft.com/blog/2026/02/18/a-milestone-achievement-in-our-journey-to-carbon-negative/",
+      "reviewed": "2026-09-28",
+      "asset": "mixed"
     },
     {
       "id": "talen-aws-frontofmeter",
-      "projectName": "Talen-AWS 300 MW front-of-meter transition",
+      "projectName": "Talen-AWS front-of-meter transition (part of the 1,920 MW PPA)",
       "sponsor": "Talen Energy",
       "capacityMW": 300,
       "type": "nuclear",
@@ -1008,13 +1080,18 @@
       "state": "PA",
       "status": "active",
       "category": "ppa",
-      "expectedOnline": "Spring 2026",
+      "expectedOnline": "Transitioned April 2026",
       "offtaker": "Amazon Web Services",
       "dcRelevant": true,
       "sources": [
+        "https://www.sec.gov/Archives/edgar/data/1622536/000162253626000017/tln-20251231.htm",
         "Utility Dive"
       ],
-      "notes": "Existing 300 MW co-location arrangement shifts to front-of-meter framework after PJM transmission upgrades."
+      "notes": "Not a separate contract: the pre-existing co-located AWS load moved into the single 1,920 MW amended Talen-AWS PPA of June 2025 (listed separately here and not added twice). Talen's FY2025 10-K: the amended PPA was entered 'to expand, and eventually replace, the existing PPA with AWS'; its Q2 2026 10-Q dates the transition to April 2026. The 300 MW figure is Utility Dive's; Talen's filings describe the original PPA as 'up to 960 MW'.",
+      "firmness": "signed",
+      "firmnessSource": "https://www.sec.gov/Archives/edgar/data/1622536/000162253626000017/tln-20251231.htm",
+      "reviewed": "2026-09-28",
+      "asset": "existing"
     },
     {
       "id": "pjm-cifp-fast-track",
@@ -1079,21 +1156,26 @@
     },
     {
       "id": "vistra-meta-existing-fleet",
-      "projectName": "Vistra-Meta existing nuclear PPAs",
+      "projectName": "Vistra-Meta nuclear PPAs (Perry, Davis-Besse, Beaver Valley)",
       "sponsor": "Vistra",
-      "capacityMW": 1500,
+      "capacityMW": 2609,
       "type": "nuclear",
       "iso": "PJM",
-      "state": "Multi",
+      "state": "OH/PA",
       "status": "active",
       "category": "ppa",
-      "expectedOnline": "2026+",
+      "expectedOnline": "Late 2026-2034",
       "offtaker": "Meta",
       "dcRelevant": true,
       "sources": [
+        "https://www.sec.gov/Archives/edgar/data/1692819/000119312526008508/d20785d8k.htm",
         "Vistra 8-K Jan 2026"
       ],
-      "notes": "Multi-site agreement to keep existing PJM nuclear plants serving Meta load. Plus the separate 300 MW SMR option."
+      "notes": "Vistra's January 2026 8-K: 20-year PPAs to supply Meta 2,609 MW, of which 2,176 MW is energy and capacity from the operating Perry (1,268 MW) and Davis-Besse (908 MW) plants and 433 MW is uprates (Perry 213, Davis-Besse 80, Beaver Valley 140) delivered 2031-2034. Delivery of the operating output starts late 2026. No SMR option is part of this agreement.",
+      "firmness": "signed",
+      "firmnessSource": "https://www.sec.gov/Archives/edgar/data/1692819/000119312526008508/d20785d8k.htm",
+      "reviewed": "2026-09-28",
+      "asset": "mixed"
     },
     {
       "id": "oklo-datacenter-lois",
@@ -1105,15 +1187,21 @@
       "state": "Multi",
       "status": "active",
       "category": "ppa",
-      "expectedOnline": "Late 2020s",
+      "expectedOnline": null,
       "offtaker": "Two undisclosed data center operators (LOIs, up to 750 MW)",
       "dcRelevant": true,
       "sources": [
+        "https://oklo.com/newsroom/oklo-secures-partnerships-for-up-to-750-megawatts-of-power-for-u-s-data-centers",
         "Oklo press release Nov 2024",
         "World Nuclear News",
         "DCD"
       ],
-      "notes": "Non-binding letters of intent announced Nov 2024 with two unnamed data center companies, up to 750 MW combined. Counterparties have never been disclosed."
+      "notes": "Letters of intent (November 2024) with two unnamed data-center providers for up to 750 MW combined; no delivery timing stated. No later filing names either counterparty or makes these binding. Earlier versions of this row named Amazon, an Idaho site and a Spring 2026 date; Oklo's release supports none of them.",
+      "upTo": true,
+      "firmness": "preliminary",
+      "firmnessSource": "https://oklo.com/newsroom/oklo-secures-partnerships-for-up-to-750-megawatts-of-power-for-u-s-data-centers",
+      "reviewed": "2026-09-28",
+      "asset": "new-build"
     },
     {
       "id": "oklo-switch-mpa",
@@ -1125,15 +1213,20 @@
       "state": "Multi",
       "status": "active",
       "category": "ppa",
-      "expectedOnline": "~2029-2044",
-      "offtaker": "Switch (non-binding MPA, up to 12 GW)",
+      "expectedOnline": "Through 2044",
+      "offtaker": "Switch (non-binding master power agreement)",
       "dcRelevant": true,
       "sources": [
+        "https://oklo.com/newsroom/news-details/2024/Oklo-and-Switch-Form-Landmark-Strategic-Relationship-to-Deploy-12-Gigawatts-of-Advanced-Nuclear-Power-One-of-the-Largest-Corporate-Clean-Power-Agreements-Ever-Signed/default.aspx",
         "Oklo press release Dec 2024",
         "Utility Dive",
         "Axios"
       ],
-      "notes": "Non-binding master power agreement to deploy up to 12 GW of Aurora powerhouses through 2044; individual binding PPAs expected as project milestones are reached. Took Oklo's order book from 2.1 GW to ~14 GW."
+      "notes": "A non-binding master power agreement (December 2024) to deploy 12 GW of Oklo Aurora powerhouses across the US through 2044, with power to be sold later 'through a series of power purchase agreements'. No binding PPA under it has been disclosed. Utility Dive reported it took Oklo's order book from 2.1 GW to about 14 GW.",
+      "firmness": "preliminary",
+      "firmnessSource": "https://oklo.com/newsroom/news-details/2024/Oklo-and-Switch-Form-Landmark-Strategic-Relationship-to-Deploy-12-Gigawatts-of-Advanced-Nuclear-Power-One-of-the-Largest-Corporate-Clean-Power-Agreements-Ever-Signed/default.aspx",
+      "reviewed": "2026-09-28",
+      "asset": "new-build"
     },
     {
       "id": "meta-aes-solar",
@@ -1145,32 +1238,42 @@
       "state": "TX/KS",
       "status": "active",
       "category": "ppa",
-      "offtaker": "Meta (15-20 year PPAs)",
+      "offtaker": "Meta (long-term PPAs)",
       "dcRelevant": true,
       "sources": [
+        "https://s202.q4cdn.com/986265382/files/doc_news/2025/05/05-20-25-AES-Meta-PR_FINAL.pdf",
         "AES press release May 2025",
         "POWER Magazine"
       ],
-      "notes": "Two long-term PPAs announced May 2025 for 650 MW of solar in Texas and Kansas serving SPP, supporting Meta data centers."
+      "notes": "Two long-term PPAs (May 2025) for 650 MW of solar AES is bringing online in the Southwest Power Pool to support Meta's data centers. The release gives no term, project names, state split or online dates.",
+      "firmness": "signed",
+      "firmnessSource": "https://s202.q4cdn.com/986265382/files/doc_news/2025/05/05-20-25-AES-Meta-PR_FINAL.pdf",
+      "reviewed": "2026-09-28",
+      "asset": "new-build"
     },
     {
       "id": "ms-chevron-kilby",
       "projectName": "Project Kilby (Chevron-Microsoft, Pecos TX)",
-      "sponsor": "Chevron (Energy Forge One) + Engine No. 1",
+      "sponsor": "Energy Forge One (Chevron and Joulent joint venture)",
       "capacityMW": 2670,
       "type": "gas",
       "state": "TX",
       "status": "active",
       "category": "ppa",
-      "expectedOnline": "First power 2028",
+      "expectedOnline": "First power 2028, full 2031",
       "offtaker": "Microsoft (20-year PPA)",
       "dcRelevant": true,
       "sources": [
+        "https://www.sec.gov/Archives/edgar/data/0000093410/000009341026000162/a06302026ex9918-k.htm",
         "Chevron press release June 2026",
         "Bloomberg",
         "Data Center Knowledge"
       ],
-      "notes": "Behind-the-meter gas plant co-located with a Microsoft-operated campus near Pecos. Majority GE Vernova turbines plus Solar Turbines units. Chevron FID expected end of 2026."
+      "notes": "Chevron's Q2 2026 8-K: a 20-year PPA to provide about 2.67 GW of behind-the-meter power to a Microsoft data center in West Texas (Reeves County, per the project site). First power expected 2028 and full capacity 2031. The plant's final investment decision is expected by the end of 2026, subject to remaining conditions.",
+      "firmness": "signed",
+      "firmnessSource": "https://www.sec.gov/Archives/edgar/data/0000093410/000009341026000162/a06302026ex9918-k.htm",
+      "reviewed": "2026-09-28",
+      "asset": "new-build"
     },
     {
       "id": "openai-georgia-camellia",
@@ -1186,11 +1289,15 @@
       "offtaker": "OpenAI (25-year supply agreement)",
       "dcRelevant": true,
       "sources": [
+        "https://www.prnewswire.com/news-releases/georgia-power-to-serve-openai-project-in-effingham-county-302832224.html",
         "Georgia Power press release July 2026",
         "OpenAI announcement",
         "DCD"
       ],
-      "notes": "25-year electric supply agreement for OpenAI's self-built $20B+ Effingham County campus; up to 3.2 GW delivered in phases with up to 1,000 MW of demand response. OpenAI pays full infrastructure and service costs. Georgia Power plans new gas capacity partly to serve it."
+      "notes": "25-year large-load electric service agreement for OpenAI's Effingham County campus: approximately 3,200 MW delivered in phases between 2028 and 2032, with up to 1,000 MW of demand response Georgia Power can call. Georgia Power says the contract 'has been approved as part of the regulatory process' (August 2026). Georgia Power says the demand response lets it invest in fewer new generation resources.",
+      "firmness": "signed",
+      "firmnessSource": "https://www.prnewswire.com/news-releases/georgia-power-to-serve-openai-project-in-effingham-county-302832224.html",
+      "reviewed": "2026-09-28"
     },
     {
       "id": "vistra-aws-comanche-peak",
@@ -1202,15 +1309,21 @@
       "state": "TX",
       "status": "active",
       "category": "ppa",
-      "expectedOnline": "Late 2027-2032",
+      "expectedOnline": "Q4 2027, full by 2032",
       "offtaker": "Amazon Web Services (20-year PPA, up to 1,200 MW)",
       "dcRelevant": true,
       "sources": [
+        "https://www.sec.gov/Archives/edgar/data/1692819/000119312525221774/d43667d8k.htm",
         "Vistra 8-K",
         "World Nuclear News",
         "Utility Dive"
       ],
-      "notes": "Existing Comanche Peak units; option to extend up to 20 more years. Supports Amazon's $5B data center project near the plant. Signed Sept 2025; Amazon confirmed as the customer in 2026."
+      "notes": "20-year PPA (with options to extend up to 20 more years) for 1,200 MW from the operating Comanche Peak plant, signed Sept 29, 2025 with 'a large, investment grade company'; Vistra named AWS as the customer in its Feb 26, 2026 results. Delivery starts Q4 2027 and ramps to full capacity by 2032. Uprate and SMR options are options only and are not in the 1,200 MW.",
+      "upTo": true,
+      "firmness": "signed",
+      "firmnessSource": "https://www.sec.gov/Archives/edgar/data/1692819/000119312525221774/d43667d8k.htm",
+      "reviewed": "2026-09-28",
+      "asset": "existing"
     },
     {
       "id": "google-cypress-steel-river",
@@ -1226,11 +1339,16 @@
       "offtaker": "Google (PPA, phases 1-2)",
       "dcRelevant": true,
       "sources": [
+        "https://cypresscreekenergy.com/news/steel-river-groundbreaking/",
         "Cypress Creek press release July 2026",
         "Google blog",
         "Solar Power World"
       ],
-      "notes": "Largest planned US solar project: 2.5 GWdc solar + 2.9 GWh storage at full build in Wilson, AR. Google contracted the 1.6 GWdc first two phases; groundbreaking July 14, 2026. ~40 miles from Google's West Memphis data center."
+      "notes": "Google has a PPA for the first two phases of Steel River Energy Center in Mississippi County, Arkansas: 1.6 GWdc of solar (a DC rating) and 1.9 GWh of storage. The full three-phase build is 2.5 GWdc and 2.9 GWh by 2029. Google is also an anchor investor. Groundbreaking July 14, 2026. The releases name no data center it serves.",
+      "firmness": "signed",
+      "firmnessSource": "https://cypresscreekenergy.com/news/steel-river-groundbreaking/",
+      "reviewed": "2026-09-28",
+      "asset": "new-build"
     },
     {
       "id": "google-enlight-solstice",
@@ -1246,11 +1364,16 @@
       "offtaker": "Google (15-year PPA)",
       "dcRelevant": true,
       "sources": [
+        "https://www.globenewswire.com/news-release/2026/05/26/3301094/0/en/enlight-signs-200-mw-ac-solar-power-purchase-agreement-with-google-to-support-data-center-operations-in-oklahoma.html",
         "Enlight press release May 2026",
         "DCD",
         "PV Tech"
       ],
-      "notes": "200 MWac (250 MWdc) in LeFlore County with an 800 MWh BESS planned as phase 2; supports Google's Oklahoma data center operations. Enlight's first US commercial PPA."
+      "notes": "200 MWac (250 MWdc) in LeFlore County with an 800 MWh BESS planned as phase 2; supports Google's Oklahoma data center operations. Enlight's first US commercial PPA.",
+      "firmness": "signed",
+      "firmnessSource": "https://www.globenewswire.com/news-release/2026/05/26/3301094/0/en/enlight-signs-200-mw-ac-solar-power-purchase-agreement-with-google-to-support-data-center-operations-in-oklahoma.html",
+      "reviewed": "2026-09-28",
+      "asset": "new-build"
     },
     {
       "id": "google-linea-duffy",
@@ -1266,10 +1389,15 @@
       "offtaker": "Google (15-year PPA)",
       "dcRelevant": true,
       "sources": [
+        "https://www.lineaenergy.com/news-posts/linea-energy-and-google-sign-a-500mw-solar-power-purchase-agreement-in-matagorda-county-texas",
         "Linea Energy press release May 2026",
         "DCD"
       ],
-      "notes": "490 MW solar + 235 MW/470 MWh battery in Matagorda County supporting Google's ERCOT data center operations."
+      "notes": "15-year PPA (May 2026) for 500 MW from the Duffy Solar Project in Matagorda County, Texas, supporting Google's ERCOT data centers. Construction starts Q3 2026; no commercial operation date stated. The co-located 235 MW Duffy battery is a separate project.",
+      "firmness": "signed",
+      "firmnessSource": "https://www.lineaenergy.com/news-posts/linea-energy-and-google-sign-a-500mw-solar-power-purchase-agreement-in-matagorda-county-texas",
+      "reviewed": "2026-09-28",
+      "asset": "new-build"
     },
     {
       "id": "google-rwe-crooked-creek",
@@ -1285,10 +1413,15 @@
       "offtaker": "Google (15-year PPA)",
       "dcRelevant": true,
       "sources": [
+        "https://www.rwe.com/en/press/rwe-americas/2026-08-03-rwe-and-google-sign-ppa-for-oklahoma-solar-project/",
         "RWE press release Aug 2026",
         "Renewables Now"
       ],
-      "notes": "RWE's first Oklahoma solar project, McCurtain County; power delivered into SPP for Google."
+      "notes": "RWE's first Oklahoma solar project, McCurtain County; power delivered into SPP for Google.",
+      "firmness": "signed",
+      "firmnessSource": "https://www.rwe.com/en/press/rwe-americas/2026-08-03-rwe-and-google-sign-ppa-for-oklahoma-solar-project/",
+      "reviewed": "2026-09-28",
+      "asset": "new-build"
     },
     {
       "id": "meta-zelestra-palmera",
@@ -1304,11 +1437,16 @@
       "offtaker": "Meta (PPA)",
       "dcRelevant": true,
       "sources": [
+        "https://sg.finance.yahoo.com/news/zelestra-expands-us-partnership-meta-120000747.html",
         "Zelestra press release June 2026",
         "Utility Dive",
         "DCD"
       ],
-      "notes": "140 MWac (180 MWdc) in Freestone County; expands the Meta-Zelestra portfolio to ~1.4 GWdc across 8 US projects."
+      "notes": "140 MWac (180 MWdc) in Freestone County; expands the Meta-Zelestra portfolio to ~1.4 GWdc across 8 US projects.",
+      "firmness": "signed",
+      "firmnessSource": "https://sg.finance.yahoo.com/news/zelestra-expands-us-partnership-meta-120000747.html",
+      "reviewed": "2026-09-28",
+      "asset": "new-build"
     },
     {
       "id": "meta-rwe-rabbits-foot",
@@ -1323,9 +1461,14 @@
       "offtaker": "Meta (long-term PPA)",
       "dcRelevant": true,
       "sources": [
+        "https://www.rwe.com/en/press/rwe-americas/2026-06-11-meta-expands-partnership-with-rwe/",
         "RWE press release June 2026"
       ],
-      "notes": "298 MWac in Bowie County, NE Texas; fourth RWE-Meta PPA since 2024 (portfolio now 872 MW). Construction began early 2026."
+      "notes": "298 MWac in Bowie County, NE Texas; fourth RWE-Meta PPA since 2024 (portfolio now 872 MW). Construction began early 2026.",
+      "firmness": "signed",
+      "firmnessSource": "https://www.rwe.com/en/press/rwe-americas/2026-06-11-meta-expands-partnership-with-rwe/",
+      "reviewed": "2026-09-28",
+      "asset": "new-build"
     },
     {
       "id": "meta-sabanci-tx",
@@ -1341,11 +1484,16 @@
       "offtaker": "Meta (long-term PPA)",
       "dcRelevant": true,
       "sources": [
+        "https://www.prnewswire.com/news-releases/sabanci-renewables-expands-us-growth-through-long-term-power-purchase-agreement-with-meta-302805655.html",
         "Sabanci press release June 2026",
         "DCD",
         "Solar Power World"
       ],
-      "notes": "Two ERCOT projects totaling 220 MWac / 286 MWdc (Lucky 7 100 MWac, Pepper 120 MWac); Meta takes 100% of output and environmental attributes."
+      "notes": "Two ERCOT projects totaling 220 MWac / 286 MWdc (Lucky 7 100 MWac, Pepper 120 MWac); Meta takes 100% of the environmental attributes (the release does not mention output).",
+      "firmness": "signed",
+      "firmnessSource": "https://www.prnewswire.com/news-releases/sabanci-renewables-expands-us-growth-through-long-term-power-purchase-agreement-with-meta-302805655.html",
+      "reviewed": "2026-09-28",
+      "asset": "new-build"
     },
     {
       "id": "meta-lightsource-mowata",
@@ -1357,14 +1505,19 @@
       "state": "LA",
       "status": "active",
       "category": "ppa",
-      "expectedOnline": "Construction 2026",
+      "expectedOnline": null,
       "offtaker": "Meta (long-term PPA)",
       "dcRelevant": true,
       "sources": [
+        "https://lightsourcebp.com/us/news/lightsource-bp-and-meta-expand-partnership-with-new-power-purchase-agreement-for-mowata-solar-in-louisiana/",
         "Lightsource bp press release July 2026",
         "DCD"
       ],
-      "notes": "150 MWac (172 MWdc), $237M project in Acadia Parish; supports Meta's Louisiana energy expansion."
+      "notes": "150 MWac (172 MWdc), $237M project in Acadia Parish; supports Meta's Louisiana energy expansion. Construction starts in 2026; no commercial operation date has been stated.",
+      "firmness": "signed",
+      "firmnessSource": "https://lightsourcebp.com/us/news/lightsource-bp-and-meta-expand-partnership-with-new-power-purchase-agreement-for-mowata-solar-in-louisiana/",
+      "reviewed": "2026-09-28",
+      "asset": "new-build"
     },
     {
       "id": "ms-avangrid-bluebird",
@@ -1380,28 +1533,39 @@
       "offtaker": "Microsoft (PPA)",
       "dcRelevant": true,
       "sources": [
+        "https://finance.yahoo.com/sectors/energy/articles/avangrid-executes-ppa-microsoft-140-181200998.html",
         "Avangrid press release May 2026",
         "DCD"
       ],
-      "notes": "100 MWac (140 MWdc), $300M project in Klickitat County; fourth US Avangrid-Microsoft project, joint contracted capacity now over 500 MW."
+      "notes": "100 MWac (140 MWdc), $300M project in Klickitat County; fourth US Avangrid-Microsoft project, joint contracted capacity now over 500 MW.",
+      "firmness": "signed",
+      "firmnessSource": "https://finance.yahoo.com/sectors/energy/articles/avangrid-executes-ppa-microsoft-140-181200998.html",
+      "reviewed": "2026-09-28",
+      "asset": "new-build"
     },
     {
       "id": "crusoe-bergen-engines",
-      "projectName": "Crusoe-Bergen Engines power agreement",
+      "projectName": "Crusoe-Bergen Engines gas genset contract",
       "sponsor": "Bergen Engines (Langley Holdings)",
-      "capacityMW": 750,
+      "capacityMW": 438,
       "type": "gas",
       "iso": "Multi",
       "state": "Multi",
       "status": "active",
       "category": "ppa",
-      "offtaker": "Crusoe (438 MW contracted + 310 MW LOI)",
+      "offtaker": "Crusoe (equipment contract, ~438 MW)",
       "dcRelevant": true,
       "sources": [
+        "https://www.langleyholdings.com/news/2026/06/03/bergen-engines-signs-approximately-750mw-u-s-power-agreement-with-crusoe-for-ai-data-centers/",
         "Langley Holdings press release June 2026",
         "Crusoe press release"
       ],
-      "notes": "~750 MW of behind-the-meter medium-speed gas engine capacity for Crusoe's US AI data center fleet: 438 MW firm contract plus a 310 MW letter of intent. Sites not disclosed."
+      "notes": "An equipment purchase for Crusoe's own on-site generation, not a power purchase: a binding contract for about 438 MW of Bergen gas gensets (27 x 12.5 MWe plus 20 x 5 MWe), delivered to several undisclosed Crusoe US data-center sites through 2027. A further 310 MW letter of intent is listed separately.",
+      "expectedOnline": "Engines delivered through 2027",
+      "firmness": "signed",
+      "firmnessSource": "https://www.langleyholdings.com/news/2026/06/03/bergen-engines-signs-approximately-750mw-u-s-power-agreement-with-crusoe-for-ai-data-centers/",
+      "reviewed": "2026-09-28",
+      "asset": "new-build"
     },
     {
       "id": "nrg-hyperscaler-ccgt",
@@ -1416,10 +1580,15 @@
       "offtaker": "Undisclosed hyperscaler (terms agreed, definitive pending)",
       "dcRelevant": true,
       "sources": [
+        "https://www.sec.gov/Archives/edgar/data/0001013871/000101387126000018/nrgq22026ex991.htm",
         "NRG Q2 2026 8-K",
         "Utility Dive"
       ],
-      "notes": "~$3.2B combined-cycle plant, 15-year minimum term with extension options and potential expansion to 2.4 GW. Principal commercial terms agreed (Aug 2026); not yet a signed definitive agreement."
+      "notes": "~$3.2B combined-cycle plant, 15-year minimum term with extension options and potential expansion to 2.4 GW. Principal commercial terms agreed (Aug 2026); not yet a signed definitive agreement.",
+      "firmness": "preliminary",
+      "firmnessSource": "https://www.sec.gov/Archives/edgar/data/0001013871/000101387126000018/nrgq22026ex991.htm",
+      "reviewed": "2026-09-28",
+      "asset": "new-build"
     },
     {
       "id": "oracle-bloom-msa",
@@ -1435,11 +1604,16 @@
       "offtaker": "Oracle (MSA up to 2.8 GW; 1.2 GW initial)",
       "dcRelevant": true,
       "sources": [
+        "https://www.bloomenergy.com/news/bloom-energy-and-oracle-expand-strategic-partnership-to-deploy-up-to-2-8-gw-to-accelerate-ai-infrastructure-build-out/",
         "Bloom Energy press release Apr 2026",
         "Oracle press release",
         "DCD"
       ],
-      "notes": "Master agreement (April 2026) for up to 2.8 GW of gas-fed solid-oxide fuel cells across Oracle projects; 1.2 GW initially contracted (booked here). Project Jupiter (Dona Ana County, NM, up to 2.45 GW) is the first major site; its gas pipeline slipped to Feb 2027. Missed by the prior refresh."
+      "notes": "Under an April 2026 master services agreement Oracle 'intends to procure up to 2.8 GW' of Bloom fuel cells; 'an initial 1.2 GW of capacity has been contracted' (booked here; the remaining ~1.6 GW is an intention, not a contract). The release names no sites. In September 2026 Bloom said Oracle has a contract with Bloom to deliver 2.4 GW for Project Jupiter; how that relates to the 1.2 GW is not stated.",
+      "firmness": "signed",
+      "firmnessSource": "https://www.bloomenergy.com/news/bloom-energy-and-oracle-expand-strategic-partnership-to-deploy-up-to-2-8-gw-to-accelerate-ai-infrastructure-build-out/",
+      "reviewed": "2026-09-28",
+      "asset": "new-build"
     },
     {
       "id": "amentum-srs-ai",
@@ -1474,10 +1648,15 @@
       "offtaker": "Meta (11 PPAs + 2 storage agreements)",
       "dcRelevant": true,
       "sources": [
+        "https://www.investor.nexteraenergy.com/news-and-events/news-releases/2025/12-08-2025-123107665",
         "NextEra press release Dec 2025",
         "Energy-Storage.News"
       ],
-      "notes": "~2.5 GW across 13 signed agreements (Dec 2025): up to 2.1 GW solar from nine projects in ERCOT/SPP/MISO plus 190 MW solar + 168 MW battery storage in New Mexico. Builds on ~500 MW of operating NextEra projects Meta already contracts."
+      "notes": "About 2.5 GW across 13 signed agreements announced together (December 2025): 11 PPAs and 2 energy storage agreements, including 2.1 GW of solar from nine projects and 190 MW of solar plus 168 MW of storage in New Mexico through PNM's Rate 36B tariff. Scheduled online 2026-2028. Builds on nearly 500 MW of operating NextEra projects Meta already buys from, not included here.",
+      "firmness": "signed",
+      "firmnessSource": "https://www.investor.nexteraenergy.com/news-and-events/news-releases/2025/12-08-2025-123107665",
+      "reviewed": "2026-09-28",
+      "asset": "new-build"
     },
     {
       "id": "google-clearway-portfolio",
@@ -1493,10 +1672,15 @@
       "offtaker": "Google (three PPAs up to 20 years)",
       "dcRelevant": true,
       "sources": [
+        "https://www.globenewswire.com/news-release/2026/01/15/3219382/0/en/Clearway-Signs-Portfolio-of-Power-Purchase-Agreements-with-Google-Totaling-Nearly-1-2-GW-Across-Three-States.html",
         "Clearway press release Jan 2026",
         "DCD"
       ],
-      "notes": "1.17 GW of wind and solar across Missouri, Texas, and West Virginia serving Google data centers in SPP, ERCOT, and PJM; over $2.4B investment. Brings the partnership to 1.24 GW with an existing WV PPA."
+      "notes": "Three executed PPAs totaling 1.17 GW, listed as one row: Goat Mountain Repower (Texas wind, 15 years, a repower of an operating wind farm), Catamount (West Virginia wind, 20 years) and Swan Solar (Missouri, 20 years). First sites expected online 2027 and 2028.",
+      "firmness": "signed",
+      "firmnessSource": "https://www.globenewswire.com/news-release/2026/01/15/3219382/0/en/Clearway-Signs-Portfolio-of-Power-Purchase-Agreements-with-Google-Totaling-Nearly-1-2-GW-Across-Three-States.html",
+      "reviewed": "2026-09-28",
+      "asset": "mixed"
     },
     {
       "id": "invenergy-meta-791",
@@ -1512,10 +1696,15 @@
       "offtaker": "Meta (clean energy agreements)",
       "dcRelevant": true,
       "sources": [
+        "https://www.prnewswire.com/news-releases/invenergy-to-provide-meta-with-nearly-800-mw-supporting-data-center-operations-302492175.html",
         "Invenergy press release June 2025",
         "EnergyTech"
       ],
-      "notes": "Seaway Wind TX 196 MW, Yellow Wood Solar OH 300 MW, Pleasant Prairie Solar OH 140 MW, Decoy Solar AR 155 MW; energy to local grids with Meta taking the clean-energy credits. Invenergy puts the full Meta partnership at 1,800 MW including earlier tranches."
+      "notes": "Four signed clean energy agreements (June 2025), three solar and one wind: Yellow Wood Solar OH 300 MW, Pleasant Prairie Solar OH 140 MW, Decoy Solar AR 155 MW and Seaway Wind TX 196 MW. The electricity goes to the local grids and Meta receives the clean energy credits; the release does not call them PPAs. Invenergy puts the full Meta partnership at 1,800 MW including an earlier tranche not listed here.",
+      "firmness": "signed",
+      "firmnessSource": "https://www.prnewswire.com/news-releases/invenergy-to-provide-meta-with-nearly-800-mw-supporting-data-center-operations-302492175.html",
+      "reviewed": "2026-09-28",
+      "asset": "new-build"
     },
     {
       "id": "amazon-zanskar-geothermal",
@@ -1531,10 +1720,15 @@
       "offtaker": "Amazon (via NV Energy, 20-year PPA)",
       "dcRelevant": true,
       "sources": [
+        "https://zanskargeothermal.substack.com/p/zanskar-inks-100-mw-power-purchase",
         "Zanskar announcement May 2026",
         "Power Engineering"
       ],
-      "notes": "20-year, 100 MW PPA with NV Energy through 2050 over a portfolio of Zanskar-built geothermal projects serving Amazon's Reno-area data centers; Amazon covers all costs. Contingent on PUCN approval of NV Energy's 2026 IRP. Amazon's first data center geothermal."
+      "notes": "Zanskar signed a 20-year, 100 MW PPA with NV Energy (through 2050) over a portfolio of Zanskar geothermal projects; Amazon ties the 100 MW to its Reno-area data centers. It takes effect when the Public Utilities Commission of Nevada approves NV Energy's 2026 resource plan, still pending as of 2026-09-28.",
+      "firmness": "signed",
+      "firmnessSource": "https://zanskargeothermal.substack.com/p/zanskar-inks-100-mw-power-purchase",
+      "reviewed": "2026-09-28",
+      "asset": "new-build"
     },
     {
       "id": "amazon-primergy-nv",
@@ -1549,9 +1743,15 @@
       "offtaker": "Amazon (via NV Energy)",
       "dcRelevant": true,
       "sources": [
+        "https://www.nvenergy.com/publish/content/dam/nvenergy/brochures_arch/about-nvenergy/rates-regulatory/recent-regulatory-filings/2026-irp/NPC-SPPC-Volume-17.pdf",
         "Power Engineering May 2026"
       ],
-      "notes": "600 MW solar plus 600 MW battery storage announced alongside the Zanskar geothermal PPA for the same Reno-area data center load; Amazon covers costs so they are not passed to Nevada ratepayers."
+      "notes": "Two 20-year PPAs dated May 4, 2026 between NV Energy and Primergy's project companies, filed in NV Energy's 2026 resource plan: Hot Pot (350 MW solar plus 350 MW / 1,400 MWh storage, target Oct 31, 2029) and Iron Point (250 MW solar plus 250 MW / 1,000 MWh storage, target Dec 31, 2029). They serve Amazon's Reno-area load through a large-load service agreement the PPAs describe as 'to be entered into', and they take effect only with Nevada PUC approval and that agreement in force.",
+      "expectedOnline": "Oct-Dec 2029 (target)",
+      "firmness": "signed",
+      "firmnessSource": "https://www.nvenergy.com/publish/content/dam/nvenergy/brochures_arch/about-nvenergy/rates-regulatory/recent-regulatory-filings/2026-irp/NPC-SPPC-Volume-17.pdf",
+      "reviewed": "2026-09-28",
+      "asset": "new-build"
     },
     {
       "id": "meta-xgs-geothermal",
@@ -1564,14 +1764,19 @@
       "status": "active",
       "category": "ppa",
       "expectedOnline": "By 2030",
-      "offtaker": "Meta (development/offtake partnership)",
+      "offtaker": "Meta (development agreement; no PPA published)",
       "dcRelevant": true,
       "sources": [
+        "https://www.xgsenergy.com/xgs-energy-and-meta-to-partner-on-150-mw-advanced-geothermal-project/",
         "NM Governor's office June 2025",
         "Utility Dive",
         "POWER Magazine"
       ],
-      "notes": "150 MW closed-loop, water-independent geothermal delivered to the PNM grid for Meta's New Mexico data center operations; ~$1B investment. Exact PPA terms undisclosed, so booked as a signed partnership rather than a firm PPA."
+      "notes": "XGS and Meta announced 'an agreement to support development' of a 150 MW, two-phase geothermal project in New Mexico on the PNM grid (June 2025), both phases projected operational by 2030. No PPA or offtake terms have been published; in March 2026 XGS still called it a planned project. The ~$1B figure was attributed to the Governor in press coverage, not in XGS's release.",
+      "firmness": "preliminary",
+      "firmnessSource": "https://www.xgsenergy.com/xgs-energy-and-meta-to-partner-on-150-mw-advanced-geothermal-project/",
+      "reviewed": "2026-09-28",
+      "asset": "new-build"
     },
     {
       "id": "google-broadwing-ccs",
@@ -1583,15 +1788,20 @@
       "state": "IL",
       "status": "active",
       "category": "ppa",
-      "expectedOnline": "Power by end of 2029; capture early 2030",
+      "expectedOnline": "Early 2030",
       "offtaker": "Google (offtake for most of the plant's output)",
       "dcRelevant": true,
       "sources": [
+        "https://blog.google/company-news/outreach-and-initiatives/sustainability/first-carbon-capture-storage-project/",
         "Google blog Oct 2025",
         "Business Wire",
         "DCD"
       ],
-      "notes": "First corporate offtake agreement for a CCS-equipped gas plant: 400+ MW at ADM's Decatur complex with ~90% of CO2 stored in ADM's Class VI wells. Google's exact contracted share undisclosed; 400 MW is plant capacity."
+      "notes": "Google agreed (October 2025) to buy most of the power from Broadwing, a planned gas plant of over 400 MW with carbon capture at ADM's Decatur, IL complex; Google's contracted share is not stated, and 400 MW is plant capacity. Commercial operation targeted for early 2030. Final investment decision was expected in Q2 2026; no source confirms it closed.",
+      "firmness": "signed",
+      "firmnessSource": "https://blog.google/company-news/outreach-and-initiatives/sustainability/first-carbon-capture-storage-project/",
+      "reviewed": "2026-09-28",
+      "asset": "new-build"
     },
     {
       "id": "amazon-sunstone-acquisition",
@@ -1603,34 +1813,45 @@
       "state": "OR",
       "status": "active",
       "category": "ppa",
-      "expectedOnline": "Construction 2026",
+      "expectedOnline": "Construction must start by Nov 2027",
       "offtaker": "Amazon (owner; acquired out of Chapter 11)",
       "dcRelevant": true,
       "sources": [
+        "https://www.oregon.gov/energy/facilities/Council%20Meetings/2026-06-26-EFSC-Item-C-Staff-Report-Sunstone-Solar-Project-Amendment-1-Attachment-1-RFA1.pdf",
         "pv magazine Jan 2026",
         "Energy-Storage.News"
       ],
-      "notes": "Amazon bought the shovel-ready 1.2 GW Sunstone solar + co-located storage project in Morrow County from bankrupt Pine Gate Renewables for $83M; court-approved Jan 2026. An asset acquisition rather than a PPA."
+      "notes": "An asset acquisition, not a PPA: Amazon's Oregon Solar 1, LLC bought the shovel-ready Sunstone solar and storage project (permitted up to 1,200 MW, Morrow County) out of Pine Gate Renewables' Chapter 11; the sale closed Feb 27, 2026 and Oregon's siting council approved the permit transfer on June 26, 2026. The permit requires construction to start by Nov 18, 2027.",
+      "upTo": true,
+      "firmness": "signed",
+      "firmnessSource": "https://www.oregon.gov/energy/facilities/Council%20Meetings/2026-06-26-EFSC-Item-C-Staff-Report-Sunstone-Solar-Project-Amendment-1-Attachment-1-RFA1.pdf",
+      "reviewed": "2026-09-28",
+      "asset": "new-build"
     },
     {
       "id": "meta-entergy-hyperion",
       "projectName": "Entergy-Meta electric service agreement (LA)",
       "sponsor": "Entergy Louisiana",
-      "capacityMW": 2260,
+      "capacityMW": 2262,
       "type": "gas",
       "iso": "MISO",
       "state": "LA",
       "status": "active",
       "category": "ppa",
       "expectedOnline": "2028-2029",
-      "offtaker": "Meta (15-year electric service agreement)",
+      "offtaker": "Meta (via Laidley LLC; 15-year electric service agreement)",
       "dcRelevant": true,
       "sources": [
+        "https://lpscpubvalence.lpsc.louisiana.gov/portal/PSC/ViewFile?fileId=nDWn/juc2+A%3D",
         "LPSC docket U-37425",
         "DCD",
         "The Lens NOLA"
       ],
-      "notes": "LPSC approved 4-1 on Aug 20, 2025: three new CCGTs for the Hyperion campus (Franklin Farms 1 and 2 ~778 MW each, Waterford 5 820 MW, ~$3.2B). ESA runs Dec 2026-Nov 2041 with 5-year auto-renewals; Meta pays via a single-customer tariff sized to recover the full revenue requirement. A seven-plant expansion (to ~7.5 GW total gas) is pending LPSC approval and is not booked here."
+      "notes": "Entergy Louisiana entered a 15-year electric service agreement (up to three 5-year extensions) with Laidley LLC, a Meta subsidiary, for the Hyperion campus. The LPSC voted 4-1 on Aug 20, 2025 to certify three new gas plants totaling 2,262 MW nominal, two in Richland Parish expected late 2028; it certified the plants, not the service agreement, and treats them as system resources for all Entergy Louisiana customers. A larger expansion pending at the LPSC is not booked here.",
+      "firmness": "signed",
+      "firmnessSource": "https://lpscpubvalence.lpsc.louisiana.gov/portal/PSC/ViewFile?fileId=nDWn/juc2+A%3D",
+      "reviewed": "2026-09-28",
+      "asset": "new-build"
     },
     {
       "id": "google-cfs-fusion",
@@ -1646,10 +1867,63 @@
       "offtaker": "Google (PPA)",
       "dcRelevant": true,
       "sources": [
+        "https://www.prnewswire.com/news-releases/google-and-commonwealth-fusion-systems-sign-strategic-partnership-agreement-to-commercialize-fusion-energy-302494208.html",
         "Reuters June 2025",
         "CNN"
       ],
-      "notes": "First direct corporate PPA for fusion power: 200 MW from CFS's first commercial ARC plant in Chesterfield County, roughly half its planned output; announced June 30, 2025 alongside a Google equity investment. Pre-construction and technology-contingent."
+      "notes": "Google calls it the largest direct corporate offtake agreement for fusion energy. Conditional on CFS's SPARC reaching net energy (Q>1); the ARC plant does not exist yet: 200 MW from CFS's first commercial ARC plant in Chesterfield County, roughly half its planned output; announced June 30, 2025 alongside a Google equity investment. Pre-construction and technology-contingent.",
+      "firmness": "signed",
+      "firmnessSource": "https://www.prnewswire.com/news-releases/google-and-commonwealth-fusion-systems-sign-strategic-partnership-agreement-to-commercialize-fusion-energy-302494208.html",
+      "reviewed": "2026-09-28",
+      "asset": "new-build"
+    },
+    {
+      "id": "crusoe-bergen-loi",
+      "projectName": "Crusoe-Bergen Engines letter of intent (additional gensets)",
+      "sponsor": "Bergen Engines (Langley Holdings)",
+      "capacityMW": 310,
+      "type": "gas",
+      "iso": "Multi",
+      "state": "Multi",
+      "status": "active",
+      "category": "ppa",
+      "expectedOnline": null,
+      "offtaker": "Crusoe (letter of intent)",
+      "dcRelevant": true,
+      "sources": [
+        "https://www.langleyholdings.com/news/2026/06/03/bergen-engines-signs-approximately-750mw-u-s-power-agreement-with-crusoe-for-ai-data-centers/"
+      ],
+      "notes": "A 310 MW letter of intent for additional units of the same Bergen genset platforms, announced with the ~438 MW binding contract in June 2026.",
+      "firmness": "preliminary",
+      "firmnessSource": "https://www.langleyholdings.com/news/2026/06/03/bergen-engines-signs-approximately-750mw-u-s-power-agreement-with-crusoe-for-ai-data-centers/",
+      "reviewed": "2026-09-28",
+      "asset": "new-build"
+    },
+    {
+      "id": "google-kairos-fleet",
+      "projectName": "Google-Kairos master plant development agreement (fleet)",
+      "sponsor": "Kairos Power",
+      "capacityMW": 500,
+      "type": "nuclear",
+      "iso": "Multi",
+      "state": "Multi",
+      "status": "active",
+      "category": "aggregate",
+      "expectedOnline": "First plant by 2030; 500 MW by 2035",
+      "offtaker": "Google (project PPAs to follow)",
+      "dcRelevant": true,
+      "sources": [
+        "https://www.kairospower.com/updates/google-and-kairos-power-partner-to-deploy-500-mw-of-clean-electricity-generation"
+      ],
+      "notes": "A Master Plant Development Agreement (October 2024) for a US fleet of Kairos advanced reactors totaling 500 MW by 2035, with energy to be sold to Google under project PPAs still to come. Hermes 2 (50 MW, via TVA) is the first deployment and is inside this 500 MW.",
+      "upTo": true,
+      "includes": [
+        "google-kairos-hermes2"
+      ],
+      "firmness": "framework",
+      "firmnessSource": "https://www.kairospower.com/updates/google-and-kairos-power-partner-to-deploy-500-mw-of-clean-electricity-generation",
+      "reviewed": "2026-09-28",
+      "asset": "new-build"
     }
   ]
 }

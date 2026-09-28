@@ -45,7 +45,14 @@ import { fetchLivePrices, type GpuSweepSummary } from "./gpu-live";
 import { getUraniumCorrelation } from "./uranium-correlation";
 import { renderWeeklyEmail, weeklyDateLabel } from "./weekly-digest";
 import { fractionToPercent, getCachedFundamentals, refreshFundamentalsIfStale } from "./fundamentals";
-import { computeDealMetrics, type DealProject } from "./deals";
+import {
+  computeDealMetrics,
+  effectiveFirmness,
+  mergeBacklogProjectUpdate,
+  FIRMNESS_VALUES,
+  ASSET_VALUES,
+  type DealProject,
+} from "./deals";
 import { composeBrief, renderBriefText, type BriefInput } from "./brief";
 import { computeGpuEconomics, TRAINING_PRESETS } from "./gpu-economics";
 import { readFrontierRegistry, summarizeFrontierRegistry, type FrontierRegistryResponse } from "./frontier-models";
@@ -1030,21 +1037,32 @@ function isNewsRelevant(headline: string): boolean {
 
 // ─── Interconnection queue dataset shape (LBNL Queued Up + curated) ────────
 
+const BACKLOG_TYPES = [
+  "nuclear", "gas", "solar", "wind", "storage", "hybrid", "load", "other",
+  "geothermal", "utility", "fusion", "hydro",
+] as const;
 interface BacklogProject {
   id: string;
   projectName: string;
   sponsor: string;
   capacityMW: number;
-  type: "nuclear" | "gas" | "solar" | "wind" | "storage" | "hybrid" | "load" | "other";
+  type: (typeof BACKLOG_TYPES)[number];
   iso: string;
   state: string;
   status: "active" | "withdrawn" | "operational";
   category: "generation" | "load" | "ppa" | "aggregate" | "regulatory";
-  expectedOnline: string | null;
+  expectedOnline?: string | null;
   offtaker?: string | null;
   dcRelevant: boolean;
   sources?: string[];
   notes?: string;
+  // Agreement review fields; see server/deals.ts.
+  firmness?: DealProject["firmness"];
+  firmnessSource?: string;
+  reviewed?: string;
+  asset?: DealProject["asset"];
+  includes?: string[];
+  upTo?: boolean;
 }
 interface BacklogDataset {
   /** When a value in this dataset last changed. */
@@ -1251,7 +1269,9 @@ export async function ogCardForTemplate(template: string): Promise<OgCard> {
       const bars: Bar[] = [
         { label: "PJM reopened cycle", value: h.pjmReopenedGW, display: gw(h.pjmReopenedGW) },
         { label: "ERCOT large-load", value: h.ercotLargeLoadGW, display: gw(h.ercotLargeLoadGW), hot: true },
-        { label: "Dominion contracted", value: h.dominionContractedGW, display: gw(h.dominionContractedGW) },
+        // Dominion counts engineering and construction letters as well as signed
+        // service agreements in this figure, so it is not "contracted" power.
+        { label: "Dominion DC, all stages", value: h.dominionContractedGW, display: gw(h.dominionContractedGW) },
       ].filter((b) => typeof b.value === "number" && b.value > 0);
       return {
         title: "the grid is the bottleneck",
@@ -1344,7 +1364,9 @@ export async function ogCardForTemplate(template: string): Promise<OgCard> {
       const h = data.headline;
       return {
         title: "us interconnection backlog",
-        subtitle: `tracking ${h.trackedProjects} named projects · ${h.trackedCapacityGW} GW`,
+        // No GW total: the named projects mix data-center load, generation and
+        // power agreements for the same plants, so their MW do not add up.
+        subtitle: `tracking ${h.trackedProjects} named projects`,
         stats: [
           { label: "Total queue (GW)", value: h.queueOverallGW.toLocaleString() },
           { label: "Median wait", value: `${h.medianWaitMonths} mo` },
@@ -3515,9 +3537,8 @@ Preferred-Languages: en
     if (typeof b.capacityMW !== "number") {
       return res.status(400).json({ error: "capacityMW must be a number" });
     }
-    const validTypes = ["nuclear", "gas", "solar", "wind", "storage", "hybrid", "load", "other"];
-    if (!validTypes.includes(b.type)) {
-      return res.status(400).json({ error: `type must be one of: ${validTypes.join(", ")}` });
+    if (!(BACKLOG_TYPES as readonly string[]).includes(b.type)) {
+      return res.status(400).json({ error: `type must be one of: ${BACKLOG_TYPES.join(", ")}` });
     }
     const validCategories = ["generation", "load", "ppa", "aggregate", "regulatory"];
     if (!validCategories.includes(b.category)) {
@@ -3528,11 +3549,41 @@ Preferred-Languages: en
     if (!validStatuses.includes(status)) {
       return res.status(400).json({ error: `status must be one of: ${validStatuses.join(", ")}` });
     }
+    // Agreement review fields are optional, but a status must arrive with the
+    // document that establishes it and the date it was checked.
+    const review: Partial<BacklogProject> = {};
+    if (b.firmness !== undefined) {
+      if (!(FIRMNESS_VALUES as readonly string[]).includes(b.firmness)) {
+        return res.status(400).json({ error: `firmness must be one of: ${FIRMNESS_VALUES.join(", ")}` });
+      }
+      if (typeof b.firmnessSource !== "string" || !b.firmnessSource.startsWith("https://")) {
+        return res.status(400).json({ error: "firmness needs firmnessSource, an https URL of the document that establishes it" });
+      }
+      if (typeof b.reviewed !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(b.reviewed)) {
+        return res.status(400).json({ error: "firmness needs reviewed, the YYYY-MM-DD it was checked" });
+      }
+      review.firmness = b.firmness;
+      review.firmnessSource = b.firmnessSource;
+      review.reviewed = b.reviewed;
+    }
+    if (b.asset !== undefined) {
+      if (!(ASSET_VALUES as readonly string[]).includes(b.asset)) {
+        return res.status(400).json({ error: `asset must be one of: ${ASSET_VALUES.join(", ")}` });
+      }
+      review.asset = b.asset;
+    }
+    if (b.includes !== undefined) {
+      if (!Array.isArray(b.includes) || !b.includes.every((x: unknown) => typeof x === "string")) {
+        return res.status(400).json({ error: "includes must be an array of project ids" });
+      }
+      review.includes = b.includes;
+    }
+    if (b.upTo !== undefined) review.upTo = b.upTo === true;
 
     try {
       const data = loadBacklog();
       const id = (b.id && typeof b.id === "string") ? b.id : slugify(b.projectName);
-      const project: BacklogProject = {
+      const incoming: BacklogProject = {
         id,
         projectName: b.projectName,
         sponsor: b.sponsor,
@@ -3542,15 +3593,23 @@ Preferred-Languages: en
         state: b.state,
         status,
         category: b.category,
-        expectedOnline: b.expectedOnline ?? null,
-        offtaker: b.offtaker ?? null,
+        // Omitted optional fields stay undefined so an update keeps the stored value.
+        expectedOnline: b.expectedOnline,
+        offtaker: b.offtaker,
         dcRelevant: b.dcRelevant === true,
         sources: Array.isArray(b.sources) ? b.sources : undefined,
         notes: typeof b.notes === "string" ? b.notes : undefined,
+        ...review,
       };
 
       const idx = data.projects.findIndex((p) => p.id === id);
       const action = idx >= 0 ? "updated" : "added";
+      // An update merges instead of replacing, so fields this route does not
+      // know about survive, and a review lapses if its checked facts change.
+      const project = mergeBacklogProjectUpdate(
+        idx >= 0 ? (data.projects[idx] as DealProject) : undefined,
+        incoming as DealProject,
+      ) as BacklogProject;
       if (idx >= 0) data.projects[idx] = project;
       else data.projects.push(project);
 
@@ -3877,20 +3936,21 @@ ${rssItems}
     return JSON.parse(readFileSync(CLUSTERS_FILE, "utf-8"));
   }
 
-  // For each cluster with a linkedDeal, join to the tracked nuclear deal so the
-  // page can compare planned compute power against the nuclear power secured.
-  // Firmness is optional (older datasets omit it); we default to "tracked".
+  // For each cluster with a linkedDeal, join to the tracked agreement so the
+  // page can compare planned compute power against the power agreements behind
+  // it. "Secured" means a reviewed, signed agreement; a letter of intent or an
+  // unreviewed row is listed with its status but never counted as secured.
   function computePowerSecured(clusters: any[]) {
-    let deals: any[] = [];
+    let deals: DealProject[] = [];
     try {
       const queuePath = join(process.cwd(), "server", "data", "interconnection-queue.json");
-      deals = (JSON.parse(readFileSync(queuePath, "utf-8")).projects as any[]) ?? [];
+      deals = (JSON.parse(readFileSync(queuePath, "utf-8")).projects as DealProject[]) ?? [];
     } catch {
       /* deals are optional; the cluster list still renders without them */
     }
-    const dealById = new Map<string, any>(deals.map((d): [string, any] => [d.id, d]));
+    const dealById = new Map<string, DealProject>(deals.map((d): [string, DealProject] => [d.id, d]));
     const withDeal = clusters.filter((c) => c.linkedDeal);
-    const byDeal = new Map<string, { id: string; projectName: string; capacityMW: number; firmness: string; clusterIds: string[] }>();
+    const byDeal = new Map<string, { id: string; projectName: string; capacityMW: number | null; firmness: string; clusterIds: string[] }>();
     for (const c of withDeal) {
       const d = dealById.get(c.linkedDeal);
       if (!d) continue;
@@ -3898,20 +3958,23 @@ ${rssItems}
         byDeal.get(d.id) ?? {
           id: d.id,
           projectName: d.projectName,
-          capacityMW: d.capacityMW ?? 0,
-          firmness: d.firmness ?? "tracked",
+          capacityMW: typeof d.capacityMW === "number" ? d.capacityMW : null,
+          firmness: effectiveFirmness(d),
           clusterIds: [] as string[],
         };
       entry.clusterIds.push(c.id);
       byDeal.set(d.id, entry);
     }
     const dealList = Array.from(byDeal.values());
+    const mw = (list: typeof dealList) => list.reduce((a, d) => a + (d.capacityMW ?? 0), 0);
     return {
       clustersWithDeal: withDeal.length,
       plannedMWWithDeal: withDeal.reduce((a, c) => a + (c.plannedPowerMW || 0), 0),
       totalPlannedMW: clusters.reduce((a, c) => a + (c.plannedPowerMW || 0), 0),
-      securedMW: dealList.reduce((a, d) => a + d.capacityMW, 0),
-      signedSecuredMW: dealList.filter((d) => d.firmness === "signed").reduce((a, d) => a + d.capacityMW, 0),
+      /** Every linked agreement, any status. Not "secured". */
+      linkedMW: mw(dealList),
+      /** Reviewed signed agreements only. */
+      signedSecuredMW: mw(dealList.filter((d) => d.firmness === "signed")),
       deals: dealList,
     };
   }
@@ -4144,12 +4207,16 @@ ${rssItems}
       },
       grid: { queueGW: qh.queueOverallGW, medianWaitMonths: qh.medianWaitMonths, ercotGW: qh.ercotLargeLoadGW },
       deals: {
-        dealCount: dm.dealCount,
-        contractedGW: +(dm.totalContractedMW / 1000).toFixed(1),
-        topBuyer: dm.topBuyer,
-        topBuyerGW: +((dm.byOfftaker[0]?.mw ?? 0) / 1000).toFixed(1),
-        topType: dm.byType[0]?.key ?? null,
-        topTypeGW: +((dm.byType[0]?.mw ?? 0) / 1000).toFixed(1),
+        signedCount: dm.signed.count,
+        signedGW: +(dm.signed.mw / 1000).toFixed(1),
+        pendingCount: dm.byFirmness
+          .filter((b) => b.key === "framework" || b.key === "option" || b.key === "preliminary")
+          .reduce((s, b) => s + b.count, 0),
+        unreviewedCount: dm.byFirmness.find((b) => b.key === "unreviewed")?.count ?? 0,
+        topSignedBuyer: dm.topSignedBuyer,
+        topSignedBuyerGW: +((dm.signedByBuyer[0]?.mw ?? 0) / 1000).toFixed(1),
+        topSignedType: dm.signedByType[0]?.key ?? null,
+        topSignedTypeGW: +((dm.signedByType[0]?.mw ?? 0) / 1000).toFixed(1),
       },
     };
     return input;

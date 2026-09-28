@@ -20,8 +20,8 @@ interface Brief {
 const SECTION_LINK: Record<string, string> = {
   Compute: "/compute-frontier",
   GPUs: "/neocloud-intel",
-  "Power & grid": "/queue",
-  Deals: "/power-deals",
+  "Power & grid": "/power-map?tab=queue",
+  "Power agreements": "/power-map?tab=deals",
 };
 
 // `params` keeps the signature compatible with wouter's RouteComponentProps:

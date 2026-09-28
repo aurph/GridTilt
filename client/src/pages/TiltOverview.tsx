@@ -39,7 +39,7 @@ import {
   pctChange,
 } from "@/lib/sector-demand";
 import { electricityData, DATA_CENTER_ANCHORS, US_END_USE_SOURCE } from "@/data/electricity-demand";
-import { bucketFor, buyersForType, asGW, type BucketLite, type DealRowLite } from "@/lib/deal-rollups";
+import { bucketFor, signedBuyersForType, asGW, type BucketLite, type DealRowLite } from "@/lib/deal-rollups";
 import { RTO_CONFIG, RTO_SOURCE_NOTE } from "@/data/rto-config";
 import { STAGE_COLORS } from "@/data/catalyst-config";
 import {
@@ -928,12 +928,12 @@ export default function TiltOverview() {
   const headroom = useMemo(() => tightestRTO(RTO_CONFIG), []);
   // Same payload the Deals page computes from. The hand-written version carried
   // three different numbers for one fact.
-  const { data: dealMetrics } = useQuery<{ byType: BucketLite[]; rows: DealRowLite[] }>({
+  const { data: dealMetrics } = useQuery<{ signedByType: BucketLite[]; rows: DealRowLite[] }>({
     queryKey: ["/api/deals/metrics"],
   });
-  const nuclearDeals = useMemo(() => bucketFor(dealMetrics?.byType, "nuclear"), [dealMetrics]);
+  const nuclearDeals = useMemo(() => bucketFor(dealMetrics?.signedByType, "nuclear"), [dealMetrics]);
   const topNuclearBuyer = useMemo(
-    () => buyersForType(dealMetrics?.rows, "nuclear")[0] ?? null,
+    () => signedBuyersForType(dealMetrics?.rows, "nuclear")[0] ?? null,
     [dealMetrics],
   );
   // Derived from electricityData so the copy cannot drift from the chart above,
@@ -1204,17 +1204,19 @@ export default function TiltOverview() {
               color: TOKEN_CATEGORY_COLORS.datacenters,
             },
             {
-              label: "Nuclear Power Contracted",
-              // "Committed" previously counted Meta's 6.6 GW RFP, a request
-              // rather than a contract.
+              label: "Signed Nuclear Agreements",
+              // "Committed" once counted Meta's 6.6 GW RFP, and "Contracted"
+              // counted letters of intent and unreviewed rows. Signed only now.
               value: asGW(nuclearDeals?.mw) ? `${asGW(nuclearDeals?.mw)} GW` : "--",
               sub: nuclearDeals
-                ? `Across ${nuclearDeals.count} tracked nuclear power deals.${
+                ? `${nuclearDeals.count} signed nuclear agreements, reviewed against the companies' releases.${
                     topNuclearBuyer && asGW(topNuclearBuyer.mw)
                       ? ` Largest buyer ${topNuclearBuyer.buyer} at ${asGW(topNuclearBuyer.mw)} GW.`
                       : ""
                   }`
-                : "Deal data unavailable.",
+                : dealMetrics
+                  ? "No nuclear agreement has been reviewed as signed yet."
+                  : "Agreement data unavailable.",
               color: BRAND.secondary,
             },
             { label: "Grid Reserve Margins", value: "Tightening", sub: "MISO 13.4%, ERCOT 15.8% per NERC 2026. Capacity warnings through 2028.", color: INK.muted },

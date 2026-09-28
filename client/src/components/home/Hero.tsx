@@ -21,8 +21,9 @@ interface ClusterMetrics {
   lastRefreshed: string | null;
 }
 interface DealMetrics {
-  dealCount: number;
-  totalContractedMW: number;
+  rowCount: number;
+  /** Reviewed, signed agreements only; see server/deals.ts. */
+  signed: { count: number; mw: number };
   lastRefreshed: string | null;
 }
 interface GpuMetrics {
@@ -102,7 +103,7 @@ export function Hero() {
   const { data: gpu } = useQuery<GpuMetrics>({ queryKey: ["/api/gpu-prices/metrics"] });
 
   const opGw = useCountUp(clusters ? clusters.operationalMW / 1000 : null);
-  const dealGw = useCountUp(deals ? deals.totalContractedMW / 1000 : null);
+  const dealGw = useCountUp(deals?.signed ? deals.signed.mw / 1000 : null);
   const gpuHr = useCountUp(gpu ? gpu.fleetAvg : null, 2);
   const clusterCount = useCountUp(clusters ? clusters.clusterCount : null, 0);
 
@@ -116,12 +117,14 @@ export function Hero() {
       href: "/compute-frontier",
     },
     {
+      // Signed agreements only. It read "Contracted power deals" over a sum
+      // that included letters of intent, frameworks and a company-wide total.
       icon: Handshake,
-      label: "Contracted power deals",
+      label: "Signed power agreements",
       value: dealGw ? `${dealGw} GW` : "--",
-      sub: deals ? `${deals.dealCount} corporate deals` : undefined,
+      sub: deals?.signed ? `${deals.signed.count} signed of ${deals.rowCount} listed` : undefined,
       asOf: shortDate(deals?.lastRefreshed),
-      href: "/power-deals",
+      href: "/power-map?tab=deals",
     },
     {
       icon: Cpu,

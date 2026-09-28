@@ -53,7 +53,7 @@ interface OperatorBucket { operator: string; count: number; ratedMW: number; pla
 interface IsoBucket { iso: string; count: number; ratedMW: number; plannedMW: number; }
 interface StatusBucket { status: string; count: number; ratedMW: number; plannedMW: number; }
 interface EnergyBucket { source: string; count: number; ratedMW: number; plannedMW: number; }
-interface PowerSecuredDeal { id: string; projectName: string; capacityMW: number; firmness: string; clusterIds: string[]; }
+interface PowerSecuredDeal { id: string; projectName: string; capacityMW: number | null; firmness: string; clusterIds: string[]; }
 interface ClusterMetrics {
   clusterCount: number;
   operationalCount: number;
@@ -76,7 +76,9 @@ interface ClusterMetrics {
     clustersWithDeal: number;
     plannedMWWithDeal: number;
     totalPlannedMW: number;
-    securedMW: number;
+    /** Every linked agreement, any status. */
+    linkedMW: number;
+    /** Reviewed signed agreements only. */
     signedSecuredMW: number;
     deals: PowerSecuredDeal[];
   };
@@ -260,7 +262,7 @@ export default function ComputeFrontier() {
           <MetricCard label="Planned power" value={metrics ? `${gw(metrics.totalPlannedMW)} GW` : "—"} sub="full announced build-out" accent />
           <MetricCard label="Tracked GPUs" value={metrics ? gpuCell(metrics.totalGpus) : "—"} sub={metrics ? `across ${metrics.clustersWithGpuData} disclosing` : ""} />
           <MetricCard label="Operators" value={metrics ? String(metrics.concentration.operatorCount) : "—"} sub={metrics?.concentration.topOperator ? `top: ${metrics.concentration.topOperator} ${Math.round(metrics.concentration.topOperatorPlannedShare * 100)}%` : ""} />
-          <MetricCard label="Nuclear secured" value={ps ? `${gw(ps.securedMW)} GW` : "—"} sub={ps ? `${ps.clustersWithDeal} clusters linked` : ""} />
+          <MetricCard label="Signed nuclear, linked" value={ps ? `${gw(ps.signedSecuredMW)} GW` : "—"} sub={ps ? `${ps.clustersWithDeal} clusters linked` : ""} />
         </div>
 
         {/* Charts */}
@@ -531,20 +533,26 @@ export default function ComputeFrontier() {
           <Card className="border-card-border p-4" data-testid="cf-power-secured">
             <div className="flex items-center gap-2 mb-2">
               <Atom className="h-4 w-4 text-brand" />
-              <span className="text-[13px] font-semibold text-foreground">Power needed vs power secured</span>
+              <span className="text-[13px] font-semibold text-foreground">Power needed vs linked power agreements</span>
             </div>
             <p className="text-xs text-muted-foreground leading-relaxed mb-3">
               Of <span className="text-foreground font-mono">{gw(ps.totalPlannedMW)} GW</span> planned across the tracked frontier,{" "}
-              <span className="text-foreground font-mono">{gw(ps.plannedMWWithDeal)} GW</span> sits at clusters tied to a tracked
-              nuclear-for-AI deal, backed by <span className="text-foreground font-mono">{gw(ps.securedMW)} GW</span> of linked nuclear capacity
-              {ps.signedSecuredMW > 0 ? <> ({gw(ps.signedSecuredMW)} GW of it under signed contracts)</> : null}.
-              Most clusters run on the grid or on-site gas, not a tracked nuclear deal.
+              <span className="text-foreground font-mono">{gw(ps.plannedMWWithDeal)} GW</span> sits at clusters linked to a tracked
+              nuclear agreement. Those agreements list <span className="text-foreground font-mono">{gw(ps.linkedMW)} GW</span> across
+              every status;{" "}
+              {ps.signedSecuredMW > 0
+                ? <><span className="text-foreground font-mono">{gw(ps.signedSecuredMW)} GW</span> of it is under reviewed, signed agreements.</>
+                : <>none of it has been reviewed as signed yet.</>}{" "}
+              Most clusters run on the grid or on-site gas, not a tracked nuclear agreement.
             </p>
             <div className="space-y-1.5">
               {ps.deals.map((d) => (
                 <div key={d.id} className="flex items-center justify-between text-11 border-t border-border/30 pt-1.5">
                   <span className="text-foreground">{d.projectName}</span>
-                  <span className="font-mono tabular-nums text-muted-foreground">{d.capacityMW.toLocaleString()} MW · {d.firmness} · {d.clusterIds.join(", ")}</span>
+                  <span className="font-mono tabular-nums text-muted-foreground">
+                    {d.capacityMW === null ? "undisclosed" : `${d.capacityMW.toLocaleString()} MW`} ·{" "}
+                    {d.firmness === "unreviewed" ? "not reviewed" : d.firmness} · {d.clusterIds.join(", ")}
+                  </span>
                 </div>
               ))}
             </div>

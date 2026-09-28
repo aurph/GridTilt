@@ -65,11 +65,12 @@ export default function ComputeFrontierMethodology() {
 
         <Section title="Power needed versus power secured">
           <p>
-            Where a cluster's power is served by a nuclear-for-AI deal GridTilt already tracks, the cluster links to that
-            deal by its id, and the deal's contracted capacity is rolled up against the planned compute power. Firmness
-            (signed versus proposed) is shown where the deal carries it. Most clusters run on the grid or on-site gas and
-            carry no nuclear link, which the data states plainly rather than implying coverage that does not exist. Linked
-            deals point to the <Link href="/queue" className="text-brand hover:text-brand-2">Backlog</Link> page.
+            Where a cluster's power is served by a nuclear agreement GridTilt already tracks, the cluster links to that
+            agreement by its id, and the agreement's capacity is set against the planned compute power. Each agreement
+            carries its status (signed, framework, option, letter of intent, or not yet reviewed); only reviewed, signed
+            agreements count as secured. Most clusters run on the grid or on-site gas and carry no nuclear link, which the
+            data states plainly rather than implying coverage that does not exist. Linked agreements are listed on the{" "}
+            <Link href="/power-map?tab=deals" className="text-brand hover:text-brand-2">Power agreements</Link> tab.
           </p>
         </Section>
 
