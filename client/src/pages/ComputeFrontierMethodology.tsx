@@ -57,8 +57,8 @@ export default function ComputeFrontierMethodology() {
           <p>The headline metrics are deterministic functions of the dataset, unit-tested in the repo:</p>
           <ul className="list-disc pl-5 space-y-1">
             <li><span className="text-foreground">Operational power</span> sums the rated MW of clusters whose status is operational. <span className="text-foreground">Planned power</span> sums plannedPowerMW across all clusters.</li>
-            <li><span className="text-foreground">Tracked GPUs</span> sums disclosed accelerator counts only, and reports how many clusters contributed.</li>
-            <li><span className="text-foreground">GPUs per MW</span> divides total disclosed GPUs by the rated MW of only the clusters that disclosed GPUs, so a GPU-less cluster cannot dilute the ratio. It is null when no cluster discloses both.</li>
+            <li><span className="text-foreground">Tracked accelerators</span> sums disclosed accelerator counts only (NVIDIA and AMD GPUs and AWS Trainium chips, which are not GPUs), and reports how many clusters contributed.</li>
+            <li><span className="text-foreground">Accelerators per MW</span> divides total disclosed accelerators by the rated MW of only the clusters that disclosed a count, so a cluster without one cannot dilute the ratio. It is null when no cluster discloses both.</li>
             <li><span className="text-foreground">Concentration</span> is the Herfindahl index of operator shares of planned MW (1.0 means one operator owns the whole buildout, lower means more distributed), plus the leading operator and its share. This is the "who controls the frontier" measure.</li>
           </ul>
         </Section>

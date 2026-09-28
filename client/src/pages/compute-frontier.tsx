@@ -260,7 +260,9 @@ export default function ComputeFrontier() {
           <MetricCard label="Tracked clusters" value={metrics ? String(metrics.clusterCount) : "—"} sub={metrics ? `${metrics.operationalCount} live · ${metrics.constructionCount} building` : ""} />
           <MetricCard label="Operational power" value={metrics ? `${gw(metrics.operationalMW)} GW` : "—"} sub={metrics ? `of ${gw(metrics.totalRatedMW)} GW rated today` : ""} />
           <MetricCard label="Planned power" value={metrics ? `${gw(metrics.totalPlannedMW)} GW` : "—"} sub="full announced build-out" accent />
-          <MetricCard label="Tracked GPUs" value={metrics ? gpuCell(metrics.totalGpus) : "—"} sub={metrics ? `across ${metrics.clustersWithGpuData} disclosing` : ""} />
+          {/* Accelerators, not GPUs: the total includes AWS Trainium chips
+              (Project Rainier's 500,000), which are not GPUs. */}
+          <MetricCard label="Tracked accelerators" value={metrics ? gpuCell(metrics.totalGpus) : "—"} sub={metrics ? `GPUs and Trainium, ${metrics.clustersWithGpuData} clusters disclosing` : ""} />
           <MetricCard label="Operators" value={metrics ? String(metrics.concentration.operatorCount) : "—"} sub={metrics?.concentration.topOperator ? `top: ${metrics.concentration.topOperator} ${Math.round(metrics.concentration.topOperatorPlannedShare * 100)}%` : ""} />
           <MetricCard label="Signed nuclear, linked" value={ps ? `${gw(ps.signedSecuredMW)} GW` : "—"} sub={ps ? `${ps.clustersWithDeal} clusters linked` : ""} />
         </div>
