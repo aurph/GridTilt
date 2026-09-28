@@ -157,8 +157,8 @@ function PortfolioPentagon() {
           {SEGMENTS[i]}
         </text>
       ))}
-      <text x="180" y="52" textAnchor="middle" fill="#8a8a85" fontSize="9.5">Enter a ticker</text>
-      <text x="180" y="66" textAnchor="middle" fill="#5c5c58" fontSize="8">to score exposure</text>
+      <text x="180" y="52" textAnchor="middle" fill="#8a8a85" fontSize="9.5">Enter tickers</text>
+      <text x="180" y="66" textAnchor="middle" fill="#5c5c58" fontSize="8">to compare sectors</text>
     </svg>
   );
 }
@@ -204,8 +204,8 @@ const MODULES: Module[] = [
   { number: "02", name: "Power Map", caption: "", cta: "Open the map", route: "/power-map", preview: RealUSMap },
   { number: "03", name: "Supply Chain Flow", caption: "Where the buildout can get stuck, mapped to the companies exposed.", cta: "Trace the chain", route: "/stack?view=flow", preview: SupplyChainMini },
   { number: "04", name: "Catalyst Tracker", caption: "Earnings dates, rule changes, and policy votes. One calendar.", cta: "See what's next", route: "/catalysts", preview: CatalystRows },
-  { number: "05", name: "Analyze: Portfolio", caption: "Type a ticker. See how exposed it is to the power story.", cta: "Score a ticker", route: "/analyze?tab=portfolio", preview: PortfolioPentagon },
-  { number: "06", name: "Analyze: Scenario", caption: "Pick how fast demand grows. See what it does to the grid by 2030.", cta: "Run a scenario", route: "/analyze?tab=scenario", preview: DemandSparkline },
+  { number: "05", name: "Analyze: Baskets", caption: "Compare how GridTilt classifies a set of tickers across five sectors.", cta: "Compare tickers", route: "/analyze?tab=portfolio", preview: PortfolioPentagon },
+  { number: "06", name: "Analyze: Scenario", caption: "Set your own growth and build assumptions and see the 2030 arithmetic.", cta: "Run a scenario", route: "/analyze?tab=scenario", preview: DemandSparkline },
 ];
 
 /**
