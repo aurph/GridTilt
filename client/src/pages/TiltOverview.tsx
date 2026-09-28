@@ -29,6 +29,7 @@ import {
 import { axisProps, gridProps, seriesMotion, timeTicks, tooltipContentStyle, tooltipItemStyle, tooltipLabelStyle } from "@/lib/chart-theme";
 import {
   US_SECTOR_DEMAND,
+  US_SECTOR_SOURCE,
   DATA_CENTER_LOAD,
   DATA_CENTER_2030,
   sectorTotalTWh,
@@ -1229,17 +1230,18 @@ export default function TiltOverview() {
         {/* Sector demand breakdown */}
         <Card className="p-5 border-card-border">
           <div className="flex items-center gap-2 mb-4">
-            <h2 className="text-[13px] font-semibold text-foreground">2025 US Electricity Demand by Sector</h2>
+            <h2 className="text-[13px] font-semibold text-foreground">
+              {US_SECTOR_SOURCE.year} US Retail Electricity Sales by Sector
+            </h2>
             <UITooltip>
               <TooltipTrigger>
                 <Info className="h-3.5 w-3.5 text-muted-foreground" />
               </TooltipTrigger>
               <TooltipContent>
                 <p className="text-xs">
-                  Source: EIA Electric Power Monthly (2025). Residential, commercial and industrial
-                  are the end-use sectors and cover all demand between them. Data-center load is
-                  metered inside commercial and industrial, so it is shown as a share of them rather
-                  than added to them.
+                  {US_SECTOR_SOURCE.label}. Retail sales only: electricity generated and used on
+                  site is not a sale. Data-center load is billed inside commercial and industrial,
+                  so it is shown as a share of them rather than added to them.
                 </p>
               </TooltipContent>
             </UITooltip>
@@ -1255,7 +1257,7 @@ export default function TiltOverview() {
                     <p className="text-xs font-medium text-foreground">{s.sector}</p>
                     <div className="flex shrink-0 items-baseline gap-3">
                       <p className="text-xs font-mono text-foreground tabular-nums">
-                        {s.twh.toLocaleString()} TWh
+                        {Math.round(s.twh).toLocaleString()} TWh
                       </p>
                       <span
                         className={`flex items-center gap-0.5 text-xs font-mono font-semibold tabular-nums ${
@@ -1317,9 +1319,18 @@ export default function TiltOverview() {
           </div>
 
           <p className="text-xs text-muted-foreground mt-3 pt-3 border-t border-border">
-            The three end-use sectors total {sectorTotal.toLocaleString()} TWh.
+            Retail sales total {Math.round(sectorTotal).toLocaleString()} TWh (
+            <a
+              href={US_SECTOR_SOURCE.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-brand hover:text-brand-2"
+            >
+              {US_SECTOR_SOURCE.label}
+            </a>
+            ).
             {trough && latest && troughRise !== null
-              ? ` US demand was flat through the 2010s, bottomed at ${trough.twh.toLocaleString()} TWh in ${trough.year}, and reached ${latest.twh.toLocaleString()} TWh by ${latest.year}, up ${troughRise.toFixed(0)}%.`
+              ? ` End use, which adds electricity generated and used on site, was ${latest.twh.toLocaleString()} TWh in ${latest.year}, ${troughRise.toFixed(0)}% above its ${trough.year} low of ${trough.twh.toLocaleString()} TWh.`
               : ""}
           </p>
         </Card>
