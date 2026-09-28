@@ -40,9 +40,8 @@ import {
   tooltipItemStyle,
   tooltipLabelStyle,
 } from "@/lib/chart-theme";
+import { DEMAND_ANCHOR, FLEET_PUE, LBNL_2030_RANGE, SCENARIO_YEARS, perScenarioYear, scenarioUse } from "@/lib/scenario-model";
 
-const BASE_POWER_TWH = 4490;
-const BASE_YEAR = 2025;
 const US_LPT_CAPACITY = 60;
 
 type PresetName = "Conservative" | "Base" | "Aggressive" | "Custom";
@@ -91,7 +90,7 @@ const PRESET_RAMPS: Record<Exclude<PresetName, "Custom">, number[]> = {
 // ramp" in the chart footnote.
 const CUSTOM_RAMP_WEIGHTS = [0.05, 0.10, 0.15, 0.20, 0.25, 0.25];
 
-const YEARS = ["2025", "2026", "2027", "2028", "2029", "2030"];
+const YEARS = SCENARIO_YEARS.map(String);
 
 // Segment colors: compute/power from CATEGORY_COLORS; Infrastructure has no
 // token category, so it takes series slot 3 (teal, shared with datacenters).
@@ -203,23 +202,18 @@ export default function TheTrade({ embedded = false }: { embedded?: boolean; par
 
   const outputs = useMemo(() => {
     const totalCapexB = inputs.newCapacityGW * inputs.capexPerMW;
-    const annualLPT = (inputs.newCapacityGW * inputs.lptPerGW) / 5;
+    // Spread over the six timeline years, the same years the buildout chart
+    // spreads the capacity over. It divided by 5.
+    const annualLPT = perScenarioYear(inputs.newCapacityGW * inputs.lptPerGW);
     const nuclearGW = inputs.newCapacityGW * inputs.nuclearPct / 100;
     const gasGW = inputs.newCapacityGW * inputs.gasPct / 100;
     const renewablesGW = inputs.newCapacityGW * inputs.renewablesPct / 100;
     const gridGW = inputs.newCapacityGW * inputs.gridPurchasePct / 100;
     const lptRatio = annualLPT / US_LPT_CAPACITY;
 
-    const demandYears = YEARS.map((year) => {
-      const yearsOut = parseInt(year) - BASE_YEAR;
-      const compounded = Math.pow(1 + inputs.aiCagrPct / 100, yearsOut);
-      const aiDemand = BASE_POWER_TWH * 0.045 * compounded * inputs.pue;
-      return {
-        year,
-        totalDemand: Math.round(BASE_POWER_TWH + aiDemand),
-        aiDemand: Math.round(aiDemand),
-      };
-    });
+    // aiCagrPct is the growth of data-center computing load; see scenario-model.ts.
+    const use2030 = scenarioUse(2030, inputs.aiCagrPct, inputs.pue);
+    const fasterGrowthTwh = scenarioUse(2030, inputs.aiCagrPct + 10, inputs.pue).dataCenterTwh - use2030.dataCenterTwh;
 
     return {
       totalCapexB,
@@ -229,10 +223,8 @@ export default function TheTrade({ embedded = false }: { embedded?: boolean; par
       renewablesGW,
       gridGW,
       lptRatio,
-      demandIn2030: demandYears[demandYears.length - 1]?.totalDemand ?? 0,
-      aiShareIn2030: demandYears[demandYears.length - 1]
-        ? (demandYears[demandYears.length - 1].aiDemand / demandYears[demandYears.length - 1].totalDemand * 100)
-        : 0,
+      use2030,
+      fasterGrowthTwh,
     };
   }, [inputs]);
 
@@ -458,41 +450,41 @@ export default function TheTrade({ embedded = false }: { embedded?: boolean; par
             <Card className="p-4 border-card-border space-y-4">
               <div className="flex items-center gap-2">
                 <Cpu className="h-3.5 w-3.5 text-brand-2" />
-                <p className="text-xs font-semibold text-foreground">AI Demand Model</p>
+                <p className="text-xs font-semibold text-foreground">Data center demand</p>
                 <UITooltip>
                   <TooltipTrigger>
                     <Info className="h-3 w-3 text-muted-foreground/60" />
                   </TooltipTrigger>
                   <TooltipContent className="max-w-xs">
-                    <p className="text-xs">CAGR = annual growth rate of AI compute demand. PUE = Power Usage Effectiveness (overhead multiplier on compute load).</p>
+                    <p className="text-xs">Starts from LBNL's {DEMAND_ANCHOR.dataCenterTwh} TWh of US data-center use in {DEMAND_ANCHOR.year}. Divided by its {FLEET_PUE[2024]} average PUE, that is the computing load; the load grows at your rate and is multiplied by your 2030 PUE.</p>
                   </TooltipContent>
                 </UITooltip>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <NumField
-                  label="AI Workload CAGR"
+                  label="Computing load growth"
                   unit="%/yr"
                   value={inputs.aiCagrPct}
                   min={5} max={60} step={1}
                   testId="input-ai-cagr"
                   onChange={(v) => setField("aiCagrPct", v)}
-                  hint="Annual growth in AI compute demand, compounded to 2030"
+                  hint="Yearly growth in data-center IT load, 2024 to 2030"
                 />
                 <NumField
-                  label="Avg Data Center PUE"
+                  label="Fleet PUE in 2030"
                   unit="x"
                   value={inputs.pue}
                   min={1.0} max={1.8} step={0.05}
                   testId="input-pue"
                   onChange={(v) => setField("pue", v)}
-                  hint="Power Usage Effectiveness (1.0 = lossless; 1.3 = industry norm)"
+                  hint={`LBNL: ${FLEET_PUE[2024]} in 2024, ${FLEET_PUE.projected2030} projected for 2030`}
                 />
               </div>
               <div className="grid grid-cols-3 gap-3">
                 {[
-                  { label: "2030 AI Grid Share", value: `${outputs.aiShareIn2030.toFixed(1)}%`, color: "text-brand-2" },
-                  { label: "2030 US Demand", value: `${(outputs.demandIn2030 / 1000).toFixed(1)}k TWh`, color: "text-foreground" },
-                  { label: "Annual DC Pace", value: `${(inputs.newCapacityGW / 5).toFixed(1)} GW/yr`, color: "text-foreground" },
+                  { label: "2030 data centers", value: `${Math.round(outputs.use2030.dataCenterTwh)} TWh`, color: "text-brand-2" },
+                  { label: "Share of US use", value: `${outputs.use2030.dataCenterSharePct.toFixed(1)}%`, color: "text-foreground" },
+                  { label: "New capacity a year", value: `${perScenarioYear(inputs.newCapacityGW).toFixed(1)} GW`, color: "text-foreground" },
                 ].map((s) => (
                   <div key={s.label} className="rounded-md p-2.5 bg-muted/30 border border-border text-center">
                     <p className="text-10 text-muted-foreground mb-1 leading-tight">{s.label}</p>
@@ -500,6 +492,10 @@ export default function TheTrade({ embedded = false }: { embedded?: boolean; par
                   </div>
                 ))}
               </div>
+              <p className="text-10 text-muted-foreground/70 leading-relaxed" data-testid="scenario-demand-context">
+                US use in 2030: {Math.round(outputs.use2030.totalTwh).toLocaleString()} TWh. LBNL's 2030 range for data centers is{" "}
+                {LBNL_2030_RANGE.low} to {LBNL_2030_RANGE.high} TWh ({LBNL_2030_RANGE.reference} in its reference case).
+              </p>
             </Card>
           </div>
 
@@ -511,7 +507,7 @@ export default function TheTrade({ embedded = false }: { embedded?: boolean; par
                   not only inside the collapsed methodology panel. */}
               <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed" data-testid="scenario-assumptions">
                 From your assumptions: {inputs.newCapacityGW} GW of new capacity by 2030, ${inputs.capexPerMW}M per MW,{" "}
-                {inputs.nuclearPct}% nuclear, {inputs.aiCagrPct}% a year AI demand growth, PUE {inputs.pue.toFixed(2)}.
+                {inputs.nuclearPct}% nuclear, {inputs.aiCagrPct}% a year computing load growth, 2030 PUE {inputs.pue.toFixed(2)}.
                 A scenario, not a forecast or financial advice.
               </p>
             </div>
@@ -767,15 +763,19 @@ export default function TheTrade({ embedded = false }: { embedded?: boolean; par
                       </div>
                       <div>
                         <p className="text-10 font-medium text-foreground/80 mb-0.5">Annual LPT Demand</p>
-                        <p className="leading-relaxed">Total GW × LPTs per GW / 5 years. Default 4 LPTs/GW sourced from DOE interconnection studies. Compare against {US_LPT_CAPACITY} units/year domestic manufacturing capacity.</p>
+                        <p className="leading-relaxed">Total GW × LPTs per GW ÷ 6 years (2025 through 2030). Default 4 LPTs/GW sourced from DOE interconnection studies. Compare against {US_LPT_CAPACITY} units/year domestic manufacturing capacity.</p>
                       </div>
                       <div>
                         <p className="text-10 font-medium text-foreground/80 mb-0.5">Generation Breakdown</p>
                         <p className="leading-relaxed">New Capacity (GW) × Supply Mix %. Annual ramp × mix applied year-by-year in the chart.</p>
                       </div>
                       <div>
-                        <p className="text-10 font-medium text-foreground/80 mb-0.5">AI Demand (TWh)</p>
-                        <p className="leading-relaxed">Base Grid (4,490 TWh) × AI share (4.5% 2025E) × (1 + CAGR)^years × PUE. Compounded annually from 2025 baseline.</p>
+                        <p className="text-10 font-medium text-foreground/80 mb-0.5">Data-center use in 2030 (TWh)</p>
+                        <p className="leading-relaxed">
+                          ({DEMAND_ANCHOR.dataCenterTwh} TWh ÷ {FLEET_PUE[2024]}) × (1 + growth)^{2030 - DEMAND_ANCHOR.year} × your 2030 PUE. LBNL's {DEMAND_ANCHOR.year} use divided by its
+                          average PUE that year is the computing load. US use is data centers plus everything else held at its {DEMAND_ANCHOR.year} level
+                          ({(DEMAND_ANCHOR.usTwh - DEMAND_ANCHOR.dataCenterTwh).toLocaleString()} TWh, EIA). New capacity and demand growth are separate inputs; the calculator does not reconcile them.
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -787,7 +787,7 @@ export default function TheTrade({ embedded = false }: { embedded?: boolean; par
                       <p><span className="text-foreground font-medium">Nuclear %</span> moves the illustrative scores of CEG, CCJ, and VST.</p>
                       <p><span className="text-foreground font-medium">Capex per MW</span> drives total capital deployed. At 50 GW, the $7M-$12M range = $250B swing.</p>
                       <p><span className="text-foreground font-medium">LPT per GW</span> (default: 4) is the most uncertain assumption in this model; academic literature ranges from 2 to 6.</p>
-                      <p><span className="text-foreground font-medium">AI CAGR</span> is the most volatile input; a 10pp change produces a ~200 TWh swing in 2030 US power demand.</p>
+                      <p><span className="text-foreground font-medium">Computing load growth</span>: at your settings, 10 points faster growth adds {Math.round(outputs.fasterGrowthTwh).toLocaleString()} TWh of data-center use in 2030.</p>
                     </div>
                     <div className="mt-3 p-3 rounded bg-muted/20 border border-border/60 text-muted-foreground/70 leading-relaxed">
                       All assumptions are adjustable. This is a scenario tool, not a forecast or financial advice.
