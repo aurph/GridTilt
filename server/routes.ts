@@ -13,6 +13,7 @@ import {
   loadPending as loadPendingDatacenters,
   approvePending as approvePendingDatacenter,
   rejectPending as rejectPendingDatacenter,
+  stampFreshness as stampDatacenterFreshness,
 } from "./datacenter-ingester";
 import {
   BASE_URL,
@@ -2979,6 +2980,9 @@ export async function registerRoutes(
 
   function saveDatacenters(list: Datacenter[]): void {
     writeFileSync(datacentersPath, JSON.stringify(list, null, 2) + "\n", "utf-8");
+    // An admin add or delete changes the approved dataset, same as an ingester
+    // approval, so it moves lastRefreshed in the freshness sidecar too.
+    stampDatacenterFreshness("lastRefreshed");
   }
 
   function validateDatacenter(body: any): { ok: true; value: Omit<Datacenter, "id"> } | { ok: false; error: string } {

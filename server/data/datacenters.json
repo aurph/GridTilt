@@ -756,20 +756,6 @@
     "openDate": "2027 Q1"
   },
   {
-    "id": 55,
-    "name": "Google Skagit County WA",
-    "company": "Google",
-    "city": "Mount Vernon",
-    "state": "WA",
-    "lat": 48.4201,
-    "lng": -122.3344,
-    "powerMW": 500,
-    "status": "announced",
-    "annualMWh": 4380000,
-    "gridOperator": "PSE/BPA/WECC",
-    "openDate": "2027 Q3"
-  },
-  {
     "id": 56,
     "name": "Microsoft Caledonia WI",
     "company": "Microsoft",
