@@ -59,6 +59,8 @@ import {
   computeDealMetrics,
   effectiveFirmness,
   mergeBacklogProjectUpdate,
+  parseBacklogProjectRequest,
+  BACKLOG_TYPES,
   FIRMNESS_VALUES,
   ASSET_VALUES,
   type DealProject,
@@ -1016,15 +1018,12 @@ function isNewsRelevant(headline: string): boolean {
 
 // ─── Interconnection queue dataset shape (LBNL Queued Up + curated) ────────
 
-const BACKLOG_TYPES = [
-  "nuclear", "gas", "solar", "wind", "storage", "hybrid", "load", "other",
-  "geothermal", "utility", "fusion", "hydro",
-] as const;
 interface BacklogProject {
   id: string;
   projectName: string;
   sponsor: string;
-  capacityMW: number;
+  /** Null when the parties have not disclosed it. */
+  capacityMW: number | null;
   type: (typeof BACKLOG_TYPES)[number];
   iso: string;
   state: string;
@@ -3517,94 +3516,30 @@ Preferred-Languages: en
   }
 
   // POST /api/admin/add-backlog-project
-  // Body: { projectName, sponsor, capacityMW, type, iso, state, category,
-  //         expectedOnline?, offtaker?, dcRelevant?, status?, sources?, notes? }
+  // Body: { projectName, sponsor, capacityMW (number, or null if undisclosed),
+  //         type, iso, state, category, expectedOnline?, offtaker?, dcRelevant?,
+  //         status?, sources?, notes?, firmness?, firmnessSource?, reviewed?,
+  //         asset?, includes?, upTo? }
   // Behavior: appends a new project, or updates an existing one if `id` is
-  // supplied and matches. Returns the saved project + new project count.
+  // supplied and matches. On an update, fields the body leaves out keep their
+  // stored values (parseBacklogProjectRequest + mergeBacklogProjectUpdate in
+  // server/deals.ts). Returns the saved project + new project count.
   app.post("/api/admin/add-backlog-project", (req, res) => {
     if (!requireAdmin(req, res)) return;
     const b = req.body || {};
-    const required = ["projectName", "sponsor", "capacityMW", "type", "iso", "state", "category"];
-    for (const k of required) {
-      if (b[k] === undefined || b[k] === null || b[k] === "") {
-        return res.status(400).json({ error: `missing required field: ${k}` });
-      }
-    }
-    if (typeof b.capacityMW !== "number") {
-      return res.status(400).json({ error: "capacityMW must be a number" });
-    }
-    if (!(BACKLOG_TYPES as readonly string[]).includes(b.type)) {
-      return res.status(400).json({ error: `type must be one of: ${BACKLOG_TYPES.join(", ")}` });
-    }
-    const validCategories = ["generation", "load", "ppa", "aggregate", "regulatory"];
-    if (!validCategories.includes(b.category)) {
-      return res.status(400).json({ error: `category must be one of: ${validCategories.join(", ")}` });
-    }
-    const validStatuses = ["active", "withdrawn", "operational"];
-    const status = b.status ?? "active";
-    if (!validStatuses.includes(status)) {
-      return res.status(400).json({ error: `status must be one of: ${validStatuses.join(", ")}` });
-    }
-    // Agreement review fields are optional, but a status must arrive with the
-    // document that establishes it and the date it was checked.
-    const review: Partial<BacklogProject> = {};
-    if (b.firmness !== undefined) {
-      if (!(FIRMNESS_VALUES as readonly string[]).includes(b.firmness)) {
-        return res.status(400).json({ error: `firmness must be one of: ${FIRMNESS_VALUES.join(", ")}` });
-      }
-      if (typeof b.firmnessSource !== "string" || !b.firmnessSource.startsWith("https://")) {
-        return res.status(400).json({ error: "firmness needs firmnessSource, an https URL of the document that establishes it" });
-      }
-      if (typeof b.reviewed !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(b.reviewed)) {
-        return res.status(400).json({ error: "firmness needs reviewed, the YYYY-MM-DD it was checked" });
-      }
-      review.firmness = b.firmness;
-      review.firmnessSource = b.firmnessSource;
-      review.reviewed = b.reviewed;
-    }
-    if (b.asset !== undefined) {
-      if (!(ASSET_VALUES as readonly string[]).includes(b.asset)) {
-        return res.status(400).json({ error: `asset must be one of: ${ASSET_VALUES.join(", ")}` });
-      }
-      review.asset = b.asset;
-    }
-    if (b.includes !== undefined) {
-      if (!Array.isArray(b.includes) || !b.includes.every((x: unknown) => typeof x === "string")) {
-        return res.status(400).json({ error: "includes must be an array of project ids" });
-      }
-      review.includes = b.includes;
-    }
-    if (b.upTo !== undefined) review.upTo = b.upTo === true;
-
     try {
       const data = loadBacklog();
-      const id = (b.id && typeof b.id === "string") ? b.id : slugify(b.projectName);
-      const incoming: BacklogProject = {
-        id,
-        projectName: b.projectName,
-        sponsor: b.sponsor,
-        capacityMW: b.capacityMW,
-        type: b.type,
-        iso: b.iso,
-        state: b.state,
-        status,
-        category: b.category,
-        // Omitted optional fields stay undefined so an update keeps the stored value.
-        expectedOnline: b.expectedOnline,
-        offtaker: b.offtaker,
-        dcRelevant: b.dcRelevant === true,
-        sources: Array.isArray(b.sources) ? b.sources : undefined,
-        notes: typeof b.notes === "string" ? b.notes : undefined,
-        ...review,
-      };
-
+      const id = typeof b.id === "string" && b.id ? b.id : slugify(String(b.projectName ?? ""));
       const idx = data.projects.findIndex((p) => p.id === id);
+      const parsed = parseBacklogProjectRequest(b, id, idx < 0);
+      if (!parsed.ok) return res.status(400).json({ error: parsed.error });
+      const incoming = parsed.project;
       const action = idx >= 0 ? "updated" : "added";
       // An update merges instead of replacing, so fields this route does not
       // know about survive, and a review lapses if its checked facts change.
       const project = mergeBacklogProjectUpdate(
         idx >= 0 ? (data.projects[idx] as DealProject) : undefined,
-        incoming as DealProject,
+        incoming,
       ) as BacklogProject;
       if (idx >= 0) data.projects[idx] = project;
       else data.projects.push(project);

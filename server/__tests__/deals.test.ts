@@ -11,6 +11,7 @@ import {
   computeDealMetrics,
   normalizeOfftaker,
   mergeBacklogProjectUpdate,
+  parseBacklogProjectRequest,
   FIRMNESS_VALUES,
   ASSET_VALUES,
   type DealProject,
@@ -236,4 +237,80 @@ test("the shipped registry yields well-formed agreement rows", () => {
     .reduce((s, r) => s + (r.capacityMW ?? 0), 0);
   assert.equal(m.signed.mw, expected, "the signed subtotal is the unique signed rows, nothing else");
   assert.equal(m.signedByBuyer.reduce((s, b) => s + b.mw, 0), m.signed.mw);
+});
+
+test("a row's first review is kept even when the same request corrects a fact", () => {
+  const unreviewed = deal({ id: "first", capacityMW: 500 });
+  const reviewed = mergeBacklogProjectUpdate(unreviewed, {
+    ...unreviewed,
+    capacityMW: 600,
+    firmness: "signed",
+    ...REVIEW,
+  });
+  assert.equal(reviewed.capacityMW, 600);
+  assert.equal(reviewed.firmness, "signed", "it was dropped because no stored review existed to be older");
+  assert.equal(reviewed.reviewed, REVIEW.reviewed);
+});
+
+test("a same-day correction is two requests: the fact change voids the review, then the review lands", () => {
+  const existing = deal({ id: "same-day", firmness: "signed", ...REVIEW });
+  const factFixed = mergeBacklogProjectUpdate(existing, { ...existing, capacityMW: 150 });
+  assert.equal(factFixed.firmness, undefined);
+  const rereviewed = mergeBacklogProjectUpdate(factFixed, { ...factFixed, firmness: "signed", ...REVIEW });
+  assert.equal(rereviewed.firmness, "signed");
+  assert.equal(rereviewed.capacityMW, 150);
+});
+
+const BODY = {
+  projectName: "Plant A",
+  sponsor: "Seller",
+  capacityMW: 100,
+  type: "nuclear",
+  iso: "PJM",
+  state: "PA",
+  category: "ppa",
+};
+
+test("the admin request accepts an undisclosed size as null instead of forcing a number", () => {
+  const r = parseBacklogProjectRequest({ ...BODY, capacityMW: null }, "a", false);
+  assert.ok(r.ok);
+  assert.equal(r.ok && r.project.capacityMW, null);
+  for (const bad of ["100", -5, Number.NaN, undefined]) {
+    const x = parseBacklogProjectRequest({ ...BODY, capacityMW: bad }, "a", false);
+    assert.equal(x.ok, false, String(bad));
+  }
+});
+
+test("an update that leaves out status and dcRelevant keeps the stored values", () => {
+  const stored = deal({ id: "keep", status: "operational", dcRelevant: true });
+  const r = parseBacklogProjectRequest({ ...BODY, notes: "notes-only edit" }, "keep", false);
+  assert.ok(r.ok);
+  assert.equal(r.ok && r.project.status, undefined);
+  assert.equal(r.ok && r.project.dcRelevant, undefined);
+  const merged = mergeBacklogProjectUpdate(stored, (r as { ok: true; project: DealProject }).project);
+  assert.equal(merged.status, "operational", "it was reset to active");
+  assert.equal(merged.dcRelevant, true, "it was reset to false");
+});
+
+test("a new row still starts active and not data-center relevant unless the request says so", () => {
+  const r = parseBacklogProjectRequest(BODY, "new", true);
+  assert.ok(r.ok);
+  assert.equal(r.ok && r.project.status, "active");
+  assert.equal(r.ok && r.project.dcRelevant, false);
+});
+
+test("the admin request rejects bad values with a reason instead of storing them", () => {
+  const cases: Array<[Record<string, unknown>, RegExp]> = [
+    [{ ...BODY, status: "paused" }, /status must be one of/],
+    [{ ...BODY, type: "coal" }, /type must be one of/],
+    [{ ...BODY, dcRelevant: "yes" }, /dcRelevant/],
+    [{ ...BODY, firmness: "signed" }, /firmnessSource/],
+    [{ ...BODY, firmness: "signed", firmnessSource: "https://a.example", reviewed: "Sept 28" }, /reviewed/],
+    [{ ...BODY, sponsor: "" }, /sponsor/],
+  ];
+  for (const [body, message] of cases) {
+    const r = parseBacklogProjectRequest(body, "x", true);
+    assert.equal(r.ok, false);
+    assert.match((r as { ok: false; error: string }).error, message);
+  }
 });

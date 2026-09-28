@@ -229,8 +229,10 @@ const REVIEWED_FACTS = ["capacityMW", "offtaker", "sponsor", "type"] as const;
  * The admin "add or update project" write. It used to replace a stored project
  * with a fixed field list, which silently dropped every other field. Now it
  * keeps fields the request does not mention, and keeps a review only while the
- * facts it was checked against are unchanged, unless the request carries a
- * newer review of its own.
+ * facts it was checked against are unchanged, unless the request carries its
+ * own review: the row's first, or one dated after the stored review. A request
+ * that echoes the stored review date with a changed fact loses the review, so
+ * a same-day correction is two requests: the fact, then the review.
  */
 export function mergeBacklogProjectUpdate(existing: DealProject | undefined, incoming: DealProject): DealProject {
   // A field the request left out arrives as undefined; it must not erase the stored value.
@@ -240,9 +242,117 @@ export function mergeBacklogProjectUpdate(existing: DealProject | undefined, inc
   if (!existing) return { ...given };
   const merged: DealProject = { ...existing, ...given };
   const factsChanged = REVIEWED_FACTS.some((k) => (existing[k] ?? null) !== (merged[k] ?? null));
-  const newerReview = !!incoming.reviewed && !!existing.reviewed && incoming.reviewed > existing.reviewed;
-  if (factsChanged && !newerReview) {
+  const reviewedNow = !!incoming.reviewed && (!existing.reviewed || incoming.reviewed > existing.reviewed);
+  if (factsChanged && !reviewedNow) {
     for (const k of REVIEW_FIELDS) delete merged[k];
   }
   return merged;
+}
+
+export const BACKLOG_TYPES = [
+  "nuclear", "gas", "solar", "wind", "storage", "hybrid", "load", "other",
+  "geothermal", "utility", "fusion", "hydro",
+] as const;
+export const BACKLOG_CATEGORIES = ["generation", "load", "ppa", "aggregate", "regulatory"] as const;
+export const BACKLOG_STATUSES = ["active", "withdrawn", "operational"] as const;
+
+const REQUIRED_TEXT = ["projectName", "sponsor", "iso", "state"] as const;
+
+/**
+ * Validates the admin add-or-update body for one row. A field the request
+ * leaves out comes back undefined, so mergeBacklogProjectUpdate keeps the
+ * stored value; only a new row gets status "active" and dcRelevant false.
+ * capacityMW must be sent, as a number or as null when it is undisclosed.
+ */
+export function parseBacklogProjectRequest(
+  body: unknown,
+  id: string,
+  isNew: boolean,
+): { ok: true; project: DealProject } | { ok: false; error: string } {
+  if (typeof body !== "object" || body === null) return { ok: false, error: "body must be a JSON object" };
+  const b = body as Record<string, unknown>;
+  for (const k of REQUIRED_TEXT) {
+    if (typeof b[k] !== "string" || (b[k] as string).trim() === "") {
+      return { ok: false, error: `missing required field: ${k}` };
+    }
+  }
+  if (!("capacityMW" in b) || b.capacityMW === undefined) {
+    return { ok: false, error: "missing required field: capacityMW (a number, or null when undisclosed)" };
+  }
+  if (b.capacityMW !== null && (typeof b.capacityMW !== "number" || !Number.isFinite(b.capacityMW) || b.capacityMW < 0)) {
+    return { ok: false, error: "capacityMW must be a non-negative number, or null when undisclosed" };
+  }
+  if (!(BACKLOG_TYPES as readonly unknown[]).includes(b.type)) {
+    return { ok: false, error: `type must be one of: ${BACKLOG_TYPES.join(", ")}` };
+  }
+  if (!(BACKLOG_CATEGORIES as readonly unknown[]).includes(b.category)) {
+    return { ok: false, error: `category must be one of: ${BACKLOG_CATEGORIES.join(", ")}` };
+  }
+  if (b.status !== undefined && !(BACKLOG_STATUSES as readonly unknown[]).includes(b.status)) {
+    return { ok: false, error: `status must be one of: ${BACKLOG_STATUSES.join(", ")}` };
+  }
+  if (b.dcRelevant !== undefined && typeof b.dcRelevant !== "boolean") {
+    return { ok: false, error: "dcRelevant must be true or false" };
+  }
+  for (const k of ["expectedOnline", "offtaker"] as const) {
+    if (b[k] !== undefined && b[k] !== null && typeof b[k] !== "string") {
+      return { ok: false, error: `${k} must be a string or null` };
+    }
+  }
+  if (b.sources !== undefined && (!Array.isArray(b.sources) || !b.sources.every((x) => typeof x === "string"))) {
+    return { ok: false, error: "sources must be an array of URLs" };
+  }
+  if (b.notes !== undefined && typeof b.notes !== "string") return { ok: false, error: "notes must be a string" };
+
+  // Review fields are optional, but a status must arrive with the document
+  // that establishes it and the date it was checked.
+  const review: Partial<DealProject> = {};
+  if (b.firmness !== undefined) {
+    if (!(FIRMNESS_VALUES as readonly unknown[]).includes(b.firmness)) {
+      return { ok: false, error: `firmness must be one of: ${FIRMNESS_VALUES.join(", ")}` };
+    }
+    if (typeof b.firmnessSource !== "string" || !b.firmnessSource.startsWith("https://")) {
+      return { ok: false, error: "firmness needs firmnessSource, an https URL of the document that establishes it" };
+    }
+    if (typeof b.reviewed !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(b.reviewed)) {
+      return { ok: false, error: "firmness needs reviewed, the YYYY-MM-DD it was checked" };
+    }
+    review.firmness = b.firmness as Firmness;
+    review.firmnessSource = b.firmnessSource;
+    review.reviewed = b.reviewed;
+  }
+  if (b.asset !== undefined) {
+    if (!(ASSET_VALUES as readonly unknown[]).includes(b.asset)) {
+      return { ok: false, error: `asset must be one of: ${ASSET_VALUES.join(", ")}` };
+    }
+    review.asset = b.asset as AssetBasis;
+  }
+  if (b.includes !== undefined) {
+    if (!Array.isArray(b.includes) || !b.includes.every((x) => typeof x === "string")) {
+      return { ok: false, error: "includes must be an array of project ids" };
+    }
+    review.includes = b.includes as string[];
+  }
+  if (b.upTo !== undefined) review.upTo = b.upTo === true;
+
+  return {
+    ok: true,
+    project: {
+      id,
+      projectName: b.projectName as string,
+      sponsor: b.sponsor as string,
+      capacityMW: b.capacityMW as number | null,
+      type: b.type as string,
+      iso: b.iso as string,
+      state: b.state as string,
+      category: b.category as string,
+      status: (b.status as string | undefined) ?? (isNew ? "active" : undefined),
+      dcRelevant: (b.dcRelevant as boolean | undefined) ?? (isNew ? false : undefined),
+      expectedOnline: b.expectedOnline as string | null | undefined,
+      offtaker: b.offtaker as string | null | undefined,
+      sources: b.sources as string[] | undefined,
+      notes: b.notes as string | undefined,
+      ...review,
+    },
+  };
 }
