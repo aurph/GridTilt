@@ -86,6 +86,20 @@ export function catalystDateLabel(c: CatalystRecord): string {
   return c.dateKind === "estimated" ? `around ${text}` : text;
 }
 
+/**
+ * A short label for a date that is not one exact, confirmed day: "Oct 2026" for
+ * a month window, "around Oct 15" for an estimate. Null for an exact confirmed
+ * day, which callers format themselves (a weekday, "in 3 days"). A month
+ * window printed as its first day ("Thu, Oct 1") claimed a date nobody set.
+ */
+export function catalystShortLabel(c: CatalystRecord): string | null {
+  if (windowEnd(c.date) === null) return "date not set";
+  const [y, m, d] = c.date.split("-").map(Number);
+  const around = c.dateKind === "estimated" ? "around " : "";
+  if (!d) return `${around}${MONTH_NAMES[m - 1]} ${y}`;
+  return around ? `${around}${MONTH_NAMES[m - 1]} ${d}` : null;
+}
+
 /** Upcoming catalysts, earliest first; optionally one ticker's, or only those starting by a horizon day. */
 export function upcomingCatalysts(
   list: CatalystRecord[],

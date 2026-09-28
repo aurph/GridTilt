@@ -29,7 +29,7 @@ interface StockInfo {
     stale?: boolean;
   } | null;
   relatedTickers: string[];
-  relatedCatalysts: Array<{ id: number; date: string; title: string; category: string; thesisImpact: string }>;
+  relatedCatalysts: Array<{ id: number; date: string; dateLabel?: string; title: string; category: string; thesisImpact: string }>;
 }
 
 // All 13 STACK_TICKERS layers (server/routes.ts) get a human label + a
@@ -259,7 +259,7 @@ export default function StockPage() {
               <div className="space-y-3">
                 {data.relatedCatalysts.map((c) => (
                   <div key={c.id} className="flex items-start gap-3 text-sm">
-                    <Badge className="text-10 font-mono bg-muted/40 text-muted-foreground flex-shrink-0">{c.date}</Badge>
+                    <Badge className="text-10 font-mono bg-muted/40 text-muted-foreground flex-shrink-0">{c.dateLabel ?? c.date}</Badge>
                     <div>
                       <p className="font-medium text-foreground">{c.title}</p>
                       <p className="text-xs text-muted-foreground mt-0.5">{c.thesisImpact.slice(0, 150)}...</p>

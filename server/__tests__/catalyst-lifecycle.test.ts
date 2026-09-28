@@ -14,6 +14,7 @@ import {
   upcomingCatalysts,
   catalystSortDate,
   catalystDateLabel,
+  catalystShortLabel,
   type CatalystRecord,
 } from "../catalyst-lifecycle";
 
@@ -96,4 +97,12 @@ test("the shipped calendar lists no LBNL edition as expected after it was publis
   for (const x of list) {
     assert.notEqual(catalystPhase(x, TODAY), "undated", `catalyst ${x.id} has an unusable date`);
   }
+});
+
+test("only an exact, confirmed day is left to the caller to format", () => {
+  assert.equal(catalystShortLabel(c({ id: 1, date: "2026-10-05" })), null);
+  assert.equal(catalystShortLabel(c({ id: 2, date: "2026-10" })), "Oct 2026");
+  assert.equal(catalystShortLabel(c({ id: 3, date: "2026-10", dateKind: "estimated" })), "around Oct 2026");
+  assert.equal(catalystShortLabel(c({ id: 4, date: "2026-10-15", dateKind: "estimated" })), "around Oct 15");
+  assert.equal(catalystShortLabel(c({ id: 5, date: "soon" })), "date not set");
 });

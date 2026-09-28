@@ -201,6 +201,8 @@ export interface CatalystLite {
   date: string;
   title: string; // curated case, KEPT as written (tickers/acronyms stay caps)
   tier1?: boolean;
+  /** For a month window or an estimate ("Oct 2026", "around Oct 15"); replaces the weekday date. */
+  label?: string;
 }
 
 export function buildCatalystTweet(upcoming: CatalystLite[]): string {
@@ -223,7 +225,7 @@ export function buildCatalystTweet(upcoming: CatalystLite[]): string {
       month: "short",
       day: "numeric",
     });
-    return `${d}: ${c.title}`;
+    return `${c.label ?? d}: ${c.title}`;
   });
 
   const tier1 = upcoming.find((c) => c.tier1);

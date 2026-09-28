@@ -115,3 +115,14 @@ test("ensureTweetLength keeps the first line and lands under 280", () => {
   assert.ok(out.length <= 280);
   assert.ok(out.startsWith("headline"));
 });
+
+test("catalysts: a month window prints as the month, not as its first day", () => {
+  const t = buildCatalystTweet([
+    { date: "2026-10-01", title: "FERC large-load interconnection rule", label: "Oct 2026" },
+    { date: "2026-10-02", title: "MU earnings" },
+  ]);
+  assert.ok(t.includes("Oct 2026: FERC large-load interconnection rule"));
+  assert.ok(!t.includes("Thu, Oct 1"), "no invented day for a month-level date");
+  assert.ok(t.includes("Fri, Oct 2: MU earnings"));
+  within280(t);
+});

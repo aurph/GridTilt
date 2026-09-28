@@ -52,6 +52,7 @@ import {
   catalystPhase,
   catalystSortDate,
   catalystDateLabel,
+  catalystShortLabel,
   upcomingCatalysts,
   type CatalystRecord,
 } from "./catalyst-lifecycle";
@@ -1850,6 +1851,7 @@ async function composeCatalystPreviewTweet(): Promise<string> {
     const catalysts = JSON.parse(readFileSync(filePath, "utf-8")) as CatalystRecord[];
     manual = upcomingCatalysts(catalysts, todayStr, { through: endStr }).map((c) => ({
       date: catalystSortDate(c),
+      label: catalystShortLabel(c) ?? undefined,
       title: c.title,
       tier1: Array.isArray(c.tickers) && c.tickers.some((t: string) => TIER1_EARNINGS.has(t)),
     }));
@@ -2784,6 +2786,9 @@ export async function registerRoutes(
         title: c.title,
         description: c.thesisImpact || '',
         dateLabel: catalystDateLabel(c),
+        // Month windows and estimates show their label; only an exact confirmed
+        // day gets "Today", "In 3d" or a weekday.
+        exactDay: catalystShortLabel(c) === null,
         dateKind: c.dateKind ?? null,
         sortDate: catalystSortDate(c),
         affectedTickers: c.tickers || [],
@@ -2913,6 +2918,7 @@ export async function registerRoutes(
       title: c.title,
       description: c.description,
       dateLabel: c.dateLabel,
+      exactDay: c.exactDay,
       affectedTickers: c.affectedTickers,
       affectedSectors: c.affectedSectors,
     }));
@@ -3787,7 +3793,9 @@ ${rssItems}
       // lifecycle filter as the calendar; unfiltered, they listed events
       // months in the past.
       const list = JSON.parse(readFileSync(catalystsPath, "utf-8")) as CatalystRecord[];
-      relatedCatalysts = upcomingCatalysts(list, easternDate(new Date()), { ticker }).slice(0, 5);
+      relatedCatalysts = upcomingCatalysts(list, easternDate(new Date()), { ticker })
+        .slice(0, 5)
+        .map((c) => ({ ...c, dateLabel: catalystDateLabel(c) }));
     } catch {}
 
     const score = computeThesisScore(companyInfo);

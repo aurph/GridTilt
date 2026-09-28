@@ -39,6 +39,8 @@ interface CatalystItem {
   title: string;
   description: string;
   dateLabel: string;
+  /** False for a month window or an estimate: show dateLabel, not a countdown. */
+  exactDay?: boolean;
   affectedTickers: string[];
   affectedSectors: string[];
 }
@@ -279,8 +281,13 @@ function UpcomingTimeline({ items }: { items: MergedItem[] }) {
   const [showPast, setShowPast] = useState(false);
   const [, navigate] = useLocation();
 
-  const upcoming = items.filter((i) => daysUntil(i.sortDate) >= 0).slice(0, 20);
-  const past = items.filter((i) => daysUntil(i.sortDate) < 0).slice(-10).reverse();
+  // The server sends only catalysts that are still upcoming by its rule (a
+  // month window stays upcoming until the month ends), so they are never
+  // re-dated here; counting days from a window's first day moved an October
+  // event into "past" on October 1.
+  const isUpcoming = (i: MergedItem) => i.type === "catalyst" || daysUntil(i.sortDate) >= 0;
+  const upcoming = items.filter(isUpcoming).slice(0, 20);
+  const past = items.filter((i) => !isUpcoming(i)).slice(-10).reverse();
 
   return (
     <div data-testid="upcoming-timeline">
@@ -301,7 +308,8 @@ function UpcomingTimeline({ items }: { items: MergedItem[] }) {
           const days = daysUntil(item.sortDate);
           let timeLabel = `${formatDateShort(item.sortDate)}`;
           let timeLabelColor: string = INK.muted;
-          if (days === 0) { timeLabel = "Today"; timeLabelColor = BRAND.primary; }
+          if (item.type === "catalyst" && item.exactDay === false) { timeLabel = item.dateLabel; }
+          else if (days === 0) { timeLabel = "Today"; timeLabelColor = BRAND.primary; }
           else if (days === 1) { timeLabel = "Tomorrow"; timeLabelColor = BRAND.secondary; }
           else if (days <= 7) { timeLabel = `In ${days}d`; timeLabelColor = INK.muted; }
 
