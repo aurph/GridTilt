@@ -239,17 +239,17 @@
   },
   {
     "id": 18,
-    "name": "Stargate Abilene (OpenAI Ph.1)",
+    "name": "Stargate Abilene (OpenAI / Oracle)",
     "company": "OpenAI",
     "city": "Abilene",
     "state": "TX",
-    "lat": 32.4487,
-    "lng": -99.7331,
-    "powerMW": 800,
+    "lat": 32.5029,
+    "lng": -99.7834,
+    "powerMW": 1200,
     "status": "construction",
-    "annualMWh": 7008000,
+    "annualMWh": 8935200,
     "gridOperator": "ERCOT",
-    "openDate": "2026 Q2"
+    "openDate": "2025, full build end of 2026"
   },
   {
     "id": 19,
@@ -348,20 +348,6 @@
     "annualMWh": 1314000,
     "gridOperator": "TVA/SERC",
     "openDate": "2023"
-  },
-  {
-    "id": 26,
-    "name": "Stargate Abilene Phase 2",
-    "company": "OpenAI",
-    "city": "Abilene",
-    "state": "TX",
-    "lat": 32.46,
-    "lng": -99.71,
-    "powerMW": 500,
-    "status": "announced",
-    "annualMWh": 4380000,
-    "gridOperator": "ERCOT",
-    "openDate": "2027 Q1"
   },
   {
     "id": 27,
@@ -782,19 +768,5 @@
     "annualMWh": 6263400,
     "gridOperator": "MISO",
     "openDate": "2027 Q2"
-  },
-  {
-    "id": 58,
-    "name": "Crusoe Abilene Phase 2",
-    "company": "Crusoe",
-    "city": "Abilene",
-    "state": "TX",
-    "lat": 32.44,
-    "lng": -99.74,
-    "powerMW": 1200,
-    "status": "construction",
-    "annualMWh": 10512000,
-    "gridOperator": "ERCOT",
-    "openDate": "2026 Q4"
   }
 ]

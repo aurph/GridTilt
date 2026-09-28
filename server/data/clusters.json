@@ -6,34 +6,134 @@
       "id": "stargate-abilene",
       "name": "Stargate Abilene (OpenAI/Oracle)",
       "operator": "OpenAI / Oracle",
-      "status": "construction",
+      "status": "operational",
       "location": {
         "city": "Abilene",
         "state": "TX",
-        "lat": 32.4487,
-        "lng": -99.7331
+        "lat": 32.5029,
+        "lng": -99.7834
       },
       "gridRegion": "ERCOT",
-      "gpuCount": 201600,
+      "gpuCount": null,
       "chipType": "NVIDIA GB200",
-      "ratedPowerMW": 421,
+      "ratedPowerMW": 618,
       "plannedPowerMW": 1200,
-      "energySource": "grid + on-site gas",
+      "energySource": "grid (on-site gas turbines for backup)",
       "workload": "mixed",
       "linkedDeal": null,
       "onlineDate": "2025",
-      "estimated": [
-        "ratedPowerMW",
-        "gpuCount"
-      ],
+      "estimated": [],
       "sources": [
+        "https://www.fool.com/earnings/call-transcripts/2026/09/11/oracle-orcl-q1-2027-earnings-call-transcript/",
+        "https://arrington.house.gov/UploadedFiles/FINAL_Oracle_OAI_Data_Center_Fact_Sheet_092225b.pdf",
+        "https://www.crusoe.ai/resources/newsroom/crusoe-expands-ai-data-center-campus-in-abilene-to-1-2-gigawatts",
         "https://openai.com/index/stargate-advances-with-partnership-with-oracle/",
-        "https://www.datacenterdynamics.com/en/news/openai-and-oracle-to-deploy-450000-gb200-gpus-at-stargate-abilene-data-center/",
-        "https://www.cnbc.com/2025/09/23/openai-first-data-center-in-500-billion-stargate-project-up-in-texas.html",
-        "https://epoch.ai/data/ai-data-centers/directory/openai-stargate-abilene",
-        "https://www.tomshardware.com/tech-industry/oracle-and-openai-scrap-planned-600mw-abilene-expansion"
+        "https://www.crusoe.ai/resources/newsroom/crusoe-announces-new-900-mw-ai-factory-campus-in-abilene-texas-to-support-microsoft-ai-infrastructure",
+        "https://epoch.ai/data/ai-data-centers/directory/openai-stargate-abilene"
       ],
-      "notes": "Crusoe/Lancium-built flagship Stargate campus on a 15-year Oracle lease. 4 of 8 buildings operational with ~421 MW IT power and ~200k B200/B300-class GPUs live (Epoch, mid-2026); full buildout projected ~Nov 2026 (~843 MW IT / ~400k GPUs). The announced 450k GB200 was the deployment target, not current reality. A planned 600 MW expansion beyond 1.2 GW was scrapped in March 2026. rated = live IT power; planned = 1.2 GW facility power."
+      "notes": "Stargate I. Oracle runs the campus as cloud capacity for OpenAI; Crusoe designs, builds and operates the eight buildings. On Sept 10, 2026 Oracle said 6 of 8 buildings, 618 MW and 75% of total capacity, had been delivered; the rest is due by the end of 2026. Rated is that delivered figure (Oracle does not say whether it is IT or facility power); planned is the 1.2 GW grid interconnection. The two use different bases, so rated divided by planned is not delivery progress; Oracle's own figure is 75%. GPU target: more than 450,000 GB200; no cumulative installed count has been disclosed. The on-site gas turbines are backup. A potential 600 MW expansion announced in September 2025 was dropped in March 2026. Crusoe's adjacent 900 MW campus for Microsoft is a separate site.",
+      "reviewed": "2026-09-28",
+      "evidence": [
+        {
+          "field": "status",
+          "value": "6 of 8 buildings delivered to the customer; the rest due by the end of 2026",
+          "kind": "operating",
+          "asOf": "2026-09-10",
+          "source": "Oracle Q1 FY2027 earnings call (Clay Magouyrk)",
+          "url": "https://www.fool.com/earnings/call-transcripts/2026/09/11/oracle-orcl-q1-2027-earnings-call-transcript/",
+          "published": "2026-09-10",
+          "primary": true
+        },
+        {
+          "field": "ratedPowerMW",
+          "value": "618 MW delivered, 75% of total capacity",
+          "basis": "not stated; 75% implies about 824 MW in total, near Epoch's 843 MW IT full-build estimate",
+          "kind": "operating",
+          "asOf": "2026-09-10",
+          "source": "Oracle Q1 FY2027 earnings call",
+          "url": "https://www.fool.com/earnings/call-transcripts/2026/09/11/oracle-orcl-q1-2027-earnings-call-transcript/",
+          "published": "2026-09-10",
+          "primary": true
+        },
+        {
+          "field": "plannedPowerMW",
+          "value": "1.2 GW grid interconnection across 8 buildings",
+          "basis": "facility (grid interconnection)",
+          "kind": "target",
+          "source": "Crusoe",
+          "url": "https://www.crusoe.ai/resources/newsroom/crusoe-expands-ai-data-center-campus-in-abilene-to-1-2-gigawatts",
+          "published": "2025-03-18",
+          "primary": true
+        },
+        {
+          "field": "gpuCount",
+          "value": "More than 450,000 NVIDIA GB200 when fully provisioned; no cumulative installed count disclosed",
+          "kind": "target",
+          "source": "Oracle AI World keynote",
+          "url": "https://www.investing.com/news/transcripts/oracle-at-ai-world-2025-leading-ai-innovation-93CH-4288592",
+          "published": "2025-10-14",
+          "primary": true
+        },
+        {
+          "field": "gpuCount",
+          "value": "131,000 GPUs delivered at Abilene in Oracle's fiscal Q1 2027",
+          "kind": "operating",
+          "asOf": "2026-09-10",
+          "source": "Oracle Q1 FY2027 earnings call",
+          "url": "https://www.fool.com/earnings/call-transcripts/2026/09/11/oracle-orcl-q1-2027-earnings-call-transcript/",
+          "published": "2026-09-10",
+          "primary": true
+        },
+        {
+          "field": "operator",
+          "value": "Oracle runs it as Oracle Cloud Infrastructure capacity for OpenAI; Crusoe builds and operates the buildings",
+          "source": "Oracle fact sheet",
+          "url": "https://arrington.house.gov/UploadedFiles/FINAL_Oracle_OAI_Data_Center_Fact_Sheet_092225b.pdf",
+          "published": "2025-09-23",
+          "primary": true
+        },
+        {
+          "field": "location",
+          "value": "Lancium Clean Campus, Abilene, Taylor County, Texas (map point approximate)",
+          "source": "Development Corporation of Abilene",
+          "url": "https://developabilene.com/2024/11/19/the-development-corporation-of-abilene-city-of-abilene-and-taylor-county-announce-expanded-development-within-lanciums-clean-campus-through-crusoes-998000-square-foot-data-center/",
+          "published": "2024-11-19",
+          "primary": true
+        },
+        {
+          "field": "energySource",
+          "value": "Connected directly to the ERCOT grid; on-site GE Vernova gas turbines serve as backup",
+          "source": "Oracle fact sheet",
+          "url": "https://arrington.house.gov/UploadedFiles/FINAL_Oracle_OAI_Data_Center_Fact_Sheet_092225b.pdf",
+          "published": "2025-09-23",
+          "primary": true
+        },
+        {
+          "field": "onlineDate",
+          "value": "Parts of the campus running by July 22, 2025",
+          "kind": "operating",
+          "source": "OpenAI",
+          "url": "https://openai.com/index/stargate-advances-with-partnership-with-oracle/",
+          "published": "2025-07-22",
+          "primary": true
+        },
+        {
+          "field": "notes",
+          "value": "A potential 600 MW expansion was dropped; OpenAI put that capacity at other sites",
+          "source": "Sachin Katti, OpenAI",
+          "url": "https://x.com/sk7037/status/2030053574429102362",
+          "published": "2026-03-06",
+          "primary": true
+        },
+        {
+          "field": "scope",
+          "value": "Crusoe's adjacent 900 MW campus for Microsoft is separate (crusoe-abilene-microsoft), not a phase of this one",
+          "source": "Crusoe",
+          "url": "https://www.crusoe.ai/resources/newsroom/crusoe-announces-new-900-mw-ai-factory-campus-in-abilene-texas-to-support-microsoft-ai-infrastructure",
+          "published": "2026-03-27",
+          "primary": true
+        }
+      ]
     },
     {
       "id": "stargate-milam",

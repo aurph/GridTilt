@@ -90,7 +90,12 @@ const STATUS_ORDER = ["operational", "construction", "announced"];
  *  deliberate: behind-the-meter gas, nuclear, and hydro are the salient story,
  *  so they win over a plain "grid" mention when both appear. */
 function bucketEnergySource(s?: string): string {
-  const t = (s ?? "").toLowerCase();
+  // A qualifier describing gas as backup, temporary or still under evaluation
+  // is not the campus's supply: drop that clause before bucketing, so a grid
+  // campus with backup turbines stays grid.
+  const t = (s ?? "")
+    .toLowerCase()
+    .replace(/[^;()+]*\b(backup|temporary|under evaluation)\b[^;()+]*/g, " ");
   if (/nuclear|smr|reactor/.test(t)) return "nuclear";
   if (/gas/.test(t)) return "on-site gas";
   if (/hydro/.test(t)) return "hydro";

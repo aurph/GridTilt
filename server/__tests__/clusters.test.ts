@@ -214,6 +214,63 @@ test("byEnergySource buckets the fuel mix, gas/nuclear/hydro winning over grid, 
   assert.equal(m.byEnergySource[0].source, "nuclear"); // 200 MW planned, sorted first
 });
 
+test("backup, temporary or under-evaluation gas does not make a grid campus a gas campus", () => {
+  // Abilene draws on the ERCOT grid; Oracle and Crusoe describe its on-site
+  // turbines as backup. It used to bucket as on-site gas.
+  const row = (id: string, energySource: string): ClusterLite => ({
+    id, operator: "X", status: "operational", gridRegion: "ERCOT", gpuCount: null,
+    ratedPowerMW: 10, plannedPowerMW: 10, linkedDeal: null, energySource,
+  });
+  const m = computeClusterMetrics([
+    row("backup", "grid (on-site gas turbines for backup)"),
+    row("temporary", "grid (NV Energy) with planned temporary on-site natural gas generation"),
+    row("evaluation", "grid (ERCOT); natural gas behind-the-meter under evaluation"),
+    row("real-gas", "grid + on-site gas"),
+  ]);
+  const get = (s: string) => m.byEnergySource.find((x) => x.source === s)?.count ?? 0;
+  assert.equal(get("grid"), 3);
+  assert.equal(get("on-site gas"), 1, "gas that actually supplies the campus still counts");
+});
+
+// ── Field-level evidence (the reviewed pilot) ─────────────────────────────
+
+type Evidence = { field: string; value: string; url: string; published: string; basis?: string; kind?: string };
+const shipped = JSON.parse(
+  readFileSync(join(process.cwd(), "server", "data", "clusters.json"), "utf-8"),
+).clusters as Array<Record<string, unknown> & { id: string; evidence?: Evidence[]; reviewed?: string }>;
+
+test("every evidence entry names its document and date", () => {
+  for (const c of shipped) {
+    for (const e of c.evidence ?? []) {
+      assert.ok(e.field && e.value, `${c.id} evidence needs a field and a value`);
+      assert.ok(e.url.startsWith("https://"), `${c.id} ${e.field} needs an https source`);
+      assert.ok(/^\d{4}-\d{2}-\d{2}$/.test(e.published), `${c.id} ${e.field} needs a publication date`);
+    }
+    if (c.evidence) assert.ok(/^\d{4}-\d{2}-\d{2}$/.test(c.reviewed ?? ""), `${c.id} evidence needs a review date`);
+  }
+});
+
+test("a reviewed cluster cites every material field", () => {
+  const MATERIAL = ["status", "ratedPowerMW", "plannedPowerMW", "gpuCount", "operator", "location", "energySource", "onlineDate"];
+  const reviewed = shipped.filter((c) => c.reviewed);
+  assert.ok(reviewed.some((c) => c.id === "stargate-abilene"), "the Abilene pilot is reviewed");
+  for (const c of reviewed) {
+    const cited = new Set((c.evidence ?? []).map((e) => e.field));
+    for (const f of MATERIAL) assert.ok(cited.has(f), `${c.id} has no evidence for ${f}`);
+  }
+});
+
+test("the Abilene pilot keeps its live figure and its target on declared bases", () => {
+  const c = shipped.find((x) => x.id === "stargate-abilene")!;
+  const ev = (f: string) => (c.evidence ?? []).filter((e) => e.field === f);
+  assert.equal(c.ratedPowerMW, 618, "Oracle, Sept 10 2026: 618 MW delivered");
+  assert.equal(c.plannedPowerMW, 1200, "the 1.2 GW grid interconnection");
+  assert.match(ev("plannedPowerMW")[0].basis ?? "", /facility/);
+  assert.match(ev("ratedPowerMW")[0].basis ?? "", /not stated/);
+  assert.equal(c.gpuCount, null, "no cumulative installed count has been disclosed");
+  assert.ok(ev("gpuCount").some((e) => e.kind === "target"), "the 450,000 target is kept as a target");
+});
+
 test("every cluster linkedDeal resolves to a tracked deal id in the queue", () => {
   // Locks the spec promise that a linkedDeal always points at a real tracked
   // nuclear-for-AI deal, so the power-needed-vs-secured join can never dangle.

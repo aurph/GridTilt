@@ -61,6 +61,7 @@ const PROTECTED_ROUTES: Array<[string, string]> = [
   ["GET", "/api/admin/social-log"],
   ["DELETE", "/api/admin/tweet/123"],
   ["POST", "/api/admin/datacenters"],
+  ["PUT", "/api/admin/datacenters/1"],
   ["DELETE", "/api/admin/datacenters/1"],
   ["GET", "/api/admin/datacenters/pending"],
   ["POST", "/api/admin/datacenters/ingest"],

@@ -27,6 +27,16 @@ test("a planned SMR counts as nuclear", () => {
   ]);
 });
 
+test("gas held as backup, temporary or under evaluation is not a supply source", () => {
+  assert.deepEqual(classifyEnergySource("grid (on-site gas turbines for backup)"), ["grid"]);
+  assert.deepEqual(
+    classifyEnergySource("grid (NV Energy) with planned temporary on-site natural gas generation"),
+    ["grid"],
+  );
+  assert.deepEqual(classifyEnergySource("grid (ERCOT); natural gas behind-the-meter under evaluation"), ["grid"]);
+  assert.deepEqual(classifyEnergySource("grid + on-site gas"), ["gas", "grid"]);
+});
+
 test("three sources in one string all survive", () => {
   assert.deepEqual(classifyEnergySource("on-site gas + grid + battery"), [
     "gas",

@@ -3043,6 +3043,22 @@ export async function registerRoutes(
     res.status(201).json(created);
   });
 
+  // Correct a facility in place. Delete-and-re-add changed the id, and ids
+  // are what map cards, links and evidence records point at.
+  app.put("/api/admin/datacenters/:id", (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    const id = parseInt(req.params.id, 10);
+    if (!Number.isFinite(id)) return res.status(400).json({ error: "Invalid id" });
+    const parsed = validateDatacenter(req.body);
+    if (!parsed.ok) return res.status(400).json({ error: parsed.error });
+    const list = loadDatacenters();
+    const idx = list.findIndex((d) => d.id === id);
+    if (idx < 0) return res.status(404).json({ error: "Not found" });
+    list[idx] = { id, ...parsed.value };
+    saveDatacenters(list);
+    res.json(list[idx]);
+  });
+
   app.delete("/api/admin/datacenters/:id", (req, res) => {
     if (!requireAdmin(req, res)) return;
     const id = parseInt(req.params.id, 10);
