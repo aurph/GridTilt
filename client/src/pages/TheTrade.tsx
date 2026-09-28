@@ -42,7 +42,11 @@ import {
 } from "@/lib/chart-theme";
 import { DEMAND_ANCHOR, FLEET_PUE, LBNL_2030_RANGE, SCENARIO_YEARS, perScenarioYear, scenarioUse } from "@/lib/scenario-model";
 
-const US_LPT_CAPACITY = 60;
+// DOE, Electric Grid Supply Chain Review (Feb 2022), from 2019 data: 137 large
+// power transformers (100 MVA and up) built in the US, 617 imported, and an
+// estimated capacity of about 343 a year. It read 60, credited to a DOE study
+// that does not exist.
+const US_LPT_CAPACITY = 343;
 
 type PresetName = "Conservative" | "Base" | "Aggressive" | "Custom";
 
@@ -249,12 +253,6 @@ export default function TheTrade({ embedded = false }: { embedded?: boolean; par
       );
   }, [inputs.nuclearPct, inputs.aiCagrPct]);
 
-  const lptColor = outputs.lptRatio < 0.5
-    ? "text-positive"
-    : outputs.lptRatio < 1.0
-    ? "text-warning"
-    : "text-negative";
-
   const presetButtons: { key: PresetName; label: string }[] = [
     { key: "Conservative", label: "Conservative" },
     { key: "Base", label: "Base Case" },
@@ -336,13 +334,13 @@ export default function TheTrade({ embedded = false }: { embedded?: boolean; par
                   hint="Total new AI data center capacity added 2025-2030"
                 />
                 <NumField
-                  label="Avg Capex per MW"
+                  label="Facility cost per MW"
                   unit="$M / MW"
                   value={inputs.capexPerMW}
                   min={1} max={20} step={0.5}
                   testId="input-capex-per-mw"
                   onChange={(v) => setField("capexPerMW", v)}
-                  hint="All-in construction cost per MW of DC capacity"
+                  hint="Construction cost, excluding servers and chips"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -353,14 +351,14 @@ export default function TheTrade({ embedded = false }: { embedded?: boolean; par
                   min={1} max={10} step={0.5}
                   testId="input-lpt-per-gw"
                   onChange={(v) => setField("lptPerGW", v)}
-                  hint="Large power transformers needed per GW of new capacity"
+                  hint="Placeholder: no published figure for data-center load"
                 />
                 <div className="space-y-1">
-                  <span className="text-xs text-muted-foreground">Grid Interconnect Timeline</span>
+                  <span className="text-xs text-muted-foreground">Assumed interconnection wait</span>
                   <div className="h-8 flex items-center px-3 rounded-md border border-border/60 bg-muted/20 text-sm font-mono text-foreground">
                     {inputs.interconnectYears}
                   </div>
-                  <p className="text-10 text-muted-foreground/50">Avg queue-to-energize lead time</p>
+                  <p className="text-10 text-muted-foreground/50">Set by the preset, not measured</p>
                 </div>
               </div>
             </Card>
@@ -506,7 +504,7 @@ export default function TheTrade({ embedded = false }: { embedded?: boolean; par
               {/* The assumptions and the caveat sit with the numbers they produce,
                   not only inside the collapsed methodology panel. */}
               <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed" data-testid="scenario-assumptions">
-                From your assumptions: {inputs.newCapacityGW} GW of new capacity by 2030, ${inputs.capexPerMW}M per MW,{" "}
+                From your assumptions: {inputs.newCapacityGW} GW of new capacity by 2030, ${inputs.capexPerMW}M per MW of facility cost,{" "}
                 {inputs.nuclearPct}% nuclear, {inputs.aiCagrPct}% a year computing load growth, 2030 PUE {inputs.pue.toFixed(2)}.
                 A scenario, not a forecast or financial advice.
               </p>
@@ -515,16 +513,16 @@ export default function TheTrade({ embedded = false }: { embedded?: boolean; par
             {/* 4 KPI output cards */}
             <div className="grid grid-cols-2 gap-3">
               <Card className="p-3.5 border-card-border" data-testid="output-total-capex">
-                <p className="text-[11px] text-muted-foreground mb-1">Total Capex</p>
+                <p className="text-[11px] text-muted-foreground mb-1">Facility capex</p>
                 <p className="text-2xl font-bold font-mono text-brand-2">${outputs.totalCapexB.toFixed(0)}B</p>
                 <p className="text-10 text-muted-foreground/60 mt-0.5">{inputs.newCapacityGW} GW × ${inputs.capexPerMW}M/MW</p>
               </Card>
 
               <Card className={`p-3.5 border-card-border`} data-testid="output-lpt-demand">
                 <p className="text-[11px] text-muted-foreground mb-1">Annual LPTs Needed</p>
-                <p className={`text-2xl font-bold font-mono ${lptColor}`}>{outputs.annualLPT.toFixed(0)}/yr</p>
+                <p className="text-2xl font-bold font-mono text-brand-2">{outputs.annualLPT.toFixed(0)}/yr</p>
                 <p className="text-10 text-muted-foreground/60 mt-0.5">
-                  vs. {US_LPT_CAPACITY} domestic · {(outputs.lptRatio * 100).toFixed(0)}% of US capacity
+                  {(outputs.lptRatio * 100).toFixed(0)}% of the ~{US_LPT_CAPACITY} a year DOE estimates US plants can build
                 </p>
               </Card>
 
@@ -544,9 +542,9 @@ export default function TheTrade({ embedded = false }: { embedded?: boolean; par
               </Card>
 
               <Card className="p-3.5 border-card-border" data-testid="output-interconnect">
-                <p className="text-[11px] text-muted-foreground mb-1">Grid Interconnect</p>
+                <p className="text-[11px] text-muted-foreground mb-1">Interconnection wait (assumed)</p>
                 <p className="text-lg font-bold font-mono text-foreground leading-snug mt-0.5">{inputs.interconnectYears}</p>
-                <p className="text-10 text-muted-foreground/60 mt-1">Avg queue-to-energize lead time</p>
+                <p className="text-10 text-muted-foreground/60 mt-1">LBNL: generators built in 2025 waited a median 61 months</p>
               </Card>
             </div>
 
@@ -717,7 +715,7 @@ export default function TheTrade({ embedded = false }: { embedded?: boolean; par
                   <div className="flex items-center gap-2">
                     <Info className="h-3.5 w-3.5 text-muted-foreground" />
                     <span className="text-[13px] font-semibold text-foreground">Methodology</span>
-                    <span className="text-10 text-muted-foreground/50">Sources (IEA, EIA, DOE, McKinsey, hyperscaler earnings calls), formulas, and key sensitivities</span>
+                    <span className="text-10 text-muted-foreground/50">Sources, formulas, and what moves the numbers</span>
                   </div>
                   <ChevronDown
                     className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${methodologyOpen ? "rotate-180" : ""}`}
@@ -729,26 +727,34 @@ export default function TheTrade({ embedded = false }: { embedded?: boolean; par
                   {/* Sources */}
                   <div className="space-y-3">
                     <p className="text-[12px] font-semibold text-foreground">Sources</p>
+                    {/* Each line names the document, its date and what it measures. The
+                        list used to credit numbers to sources that did not publish them:
+                        4,490 TWh and 6.4% to AEO2025, 60 transformers a year to a DOE
+                        study that does not exist, $7-12M per MW to hyperscaler calls. */}
                     <ul className="space-y-2 text-muted-foreground leading-relaxed">
                       <li className="flex gap-2">
-                        <span className="text-brand-2 font-medium flex-shrink-0">IEA</span>
-                        <span>Electricity 2025: AI data centers projected at 400-1,000 TWh global consumption by 2026</span>
-                      </li>
-                      <li className="flex gap-2">
                         <span className="text-brand-2 font-medium flex-shrink-0">EIA</span>
-                        <span>Annual Energy Outlook 2025: US baseline consumption ~4,490 TWh (2025E); data centers = 6.4% of US load</span>
+                        <span>Monthly Energy Review, Table 7.1: US electricity end use was 4,110 TWh in 2024 (4,195 in 2025). <a href="https://www.eia.gov/totalenergy/data/browser/?tbl=T07.01" className="underline decoration-dotted underline-offset-2 hover:text-foreground" target="_blank" rel="noopener noreferrer">Table</a></span>
                       </li>
                       <li className="flex gap-2">
-                        <span className="text-brand-2 font-medium flex-shrink-0">McKinsey</span>
-                        <span>$5.2T global AI infrastructure investment projection through 2030 (2024 Global Technology Report)</span>
+                        <span className="text-brand-2 font-medium flex-shrink-0">LBNL</span>
+                        <span>Data center energy report, 2025 Update (June 2026): 192 TWh in 2024, 4.7% of US use; average PUE 1.45; 521 to 843 TWh in 2030. <a href="https://escholarship.org/uc/item/33m6w3x0" className="underline decoration-dotted underline-offset-2 hover:text-foreground" target="_blank" rel="noopener noreferrer">Report</a></span>
                       </li>
                       <li className="flex gap-2">
                         <span className="text-brand-2 font-medium flex-shrink-0">DOE</span>
-                        <span>Transformer Supply Chain Study 2023: US domestic large power transformer (LPT) manufacturing capacity ~60 units/year</span>
+                        <span>Electric Grid Supply Chain Review (Feb 2022): in 2019, 137 large power transformers (100 MVA and up) were built in the US and 617 imported; capacity about 343 a year. <a href="https://www.energy.gov/sites/default/files/2022-02/Electric%20Grid%20Supply%20Chain%20Report%20-%20Final.pdf" className="underline decoration-dotted underline-offset-2 hover:text-foreground" target="_blank" rel="noopener noreferrer">Report</a></span>
                       </li>
                       <li className="flex gap-2">
-                        <span className="text-brand-2 font-medium flex-shrink-0">Hyperscalers</span>
-                        <span>2024-2025 earnings calls: all-in capex guidance of $7-12M/MW for hyperscale AI data centers (AWS, Google, Microsoft, Meta)</span>
+                        <span className="text-brand-2 font-medium flex-shrink-0">Cost</span>
+                        <span>Construction cost per MW, excluding servers and chips: JLL global average $10.7M in 2025; Cushman &amp; Wakefield $17.6M for new US and Canada builds (2026 guide). <a href="https://www.jll.com/content/dam/jllcom/en/global/documents/reports/research-reports/26-research-global-data-center-outlook-new.pdf" className="underline decoration-dotted underline-offset-2 hover:text-foreground" target="_blank" rel="noopener noreferrer">JLL</a> <a href="https://ir.cushmanwakefield.com/news/press-release-details/2026/Cushman--Wakefield-Releases-2026-Data-Center-Development-Cost-Guide-Citing-21-Rise-in-Per-MW-Construction-Costs/default.aspx" className="underline decoration-dotted underline-offset-2 hover:text-foreground" target="_blank" rel="noopener noreferrer">C&amp;W</a></span>
+                      </li>
+                      <li className="flex gap-2">
+                        <span className="text-brand-2 font-medium flex-shrink-0">Queue</span>
+                        <span>LBNL Queued Up (2026 edition): generators and storage built in 2025 took a median 61 months from interconnection request to operation. Data-center load queues are not covered. <a href="https://eta-publications.lbl.gov/sites/default/files/2026-06/queued_up_2026_edition.pdf" className="underline decoration-dotted underline-offset-2 hover:text-foreground" target="_blank" rel="noopener noreferrer">Report</a></span>
+                      </li>
+                      <li className="flex gap-2">
+                        <span className="text-brand-2 font-medium flex-shrink-0">Context</span>
+                        <span>IEA, Energy and AI (Apr 2025): data centers worldwide used about 415 TWh in 2024, about 945 TWh in 2030 in its base case. McKinsey (Apr 2025): $5.2 trillion of AI data-center capex worldwide by 2030 in its middle scenario, about 60% of it chips and hardware, so not comparable with facility capex here. <a href="https://www.iea.org/reports/energy-and-ai" className="underline decoration-dotted underline-offset-2 hover:text-foreground" target="_blank" rel="noopener noreferrer">IEA</a> <a href="https://www.mckinsey.com/industries/technology-media-and-telecommunications/our-insights/the-cost-of-compute-a-7-trillion-dollar-race-to-scale-data-centers" className="underline decoration-dotted underline-offset-2 hover:text-foreground" target="_blank" rel="noopener noreferrer">McKinsey</a></span>
                       </li>
                     </ul>
                   </div>
@@ -758,12 +764,12 @@ export default function TheTrade({ embedded = false }: { embedded?: boolean; par
                     <p className="text-[12px] font-semibold text-foreground">Formulas</p>
                     <div className="space-y-3 text-muted-foreground">
                       <div>
-                        <p className="text-10 font-medium text-foreground/80 mb-0.5">Total Capex ($B)</p>
+                        <p className="text-10 font-medium text-foreground/80 mb-0.5">Facility capex ($B)</p>
                         <p className="leading-relaxed">GW × 1,000 (MW/GW) × Capex ($/MW in millions) / 1,000 = GW × Capex/MW. Example: 50 GW × $9M/MW = $450B.</p>
                       </div>
                       <div>
                         <p className="text-10 font-medium text-foreground/80 mb-0.5">Annual LPT Demand</p>
-                        <p className="leading-relaxed">Total GW × LPTs per GW ÷ 6 years (2025 through 2030). Default 4 LPTs/GW sourced from DOE interconnection studies. Compare against {US_LPT_CAPACITY} units/year domestic manufacturing capacity.</p>
+                        <p className="leading-relaxed">Total GW × LPTs per GW ÷ 6 years (2025 through 2030). The default of 4 per GW is a GridTilt placeholder; no published figure for data-center load was found. Compared with DOE's estimate of US capacity, about {US_LPT_CAPACITY} a year (2019 data).</p>
                       </div>
                       <div>
                         <p className="text-10 font-medium text-foreground/80 mb-0.5">Generation Breakdown</p>
@@ -785,8 +791,8 @@ export default function TheTrade({ embedded = false }: { embedded?: boolean; par
                     <p className="text-[12px] font-semibold text-foreground">Key Sensitivities</p>
                     <div className="space-y-2 text-muted-foreground leading-relaxed">
                       <p><span className="text-foreground font-medium">Nuclear %</span> moves the illustrative scores of CEG, CCJ, and VST.</p>
-                      <p><span className="text-foreground font-medium">Capex per MW</span> drives total capital deployed. At 50 GW, the $7M-$12M range = $250B swing.</p>
-                      <p><span className="text-foreground font-medium">LPT per GW</span> (default: 4) is the most uncertain assumption in this model; academic literature ranges from 2 to 6.</p>
+                      <p><span className="text-foreground font-medium">Facility cost per MW</span>: at {inputs.newCapacityGW} GW, each $1M per MW adds ${inputs.newCapacityGW}B.</p>
+                      <p><span className="text-foreground font-medium">LPTs per GW</span> (default 4) has no published basis for data-center load. For comparison, NLR estimates 1 (nuclear) to 10 (solar) step-up transformers per GW of new generation.</p>
                       <p><span className="text-foreground font-medium">Computing load growth</span>: at your settings, 10 points faster growth adds {Math.round(outputs.fasterGrowthTwh).toLocaleString()} TWh of data-center use in 2030.</p>
                     </div>
                     <div className="mt-3 p-3 rounded bg-muted/20 border border-border/60 text-muted-foreground/70 leading-relaxed">
