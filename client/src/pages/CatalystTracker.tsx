@@ -419,6 +419,11 @@ function ThesisCatalysts({ catalysts }: { catalysts: CatalystItem[] }) {
       </div>
 
       <div className="space-y-3">
+        {catalysts.length === 0 && (
+          <p className="text-xs text-muted-foreground" data-testid="catalysts-none-upcoming">
+            No dated policy, grid or industry events ahead.
+          </p>
+        )}
         {catalysts.map((c) => {
           const catColor = catalystCategoryColors[c.category] || INK.muted;
           return (

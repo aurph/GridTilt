@@ -47,6 +47,14 @@ import { getUraniumCorrelation } from "./uranium-correlation";
 import { renderWeeklyEmail, weeklyDateLabel } from "./weekly-digest";
 import { fractionToPercent, getCachedFundamentals, refreshFundamentalsIfStale } from "./fundamentals";
 import {
+  easternDate,
+  catalystPhase,
+  catalystSortDate,
+  catalystDateLabel,
+  upcomingCatalysts,
+  type CatalystRecord,
+} from "./catalyst-lifecycle";
+import {
   computeDealMetrics,
   effectiveFirmness,
   mergeBacklogProjectUpdate,
@@ -1848,10 +1856,10 @@ async function composeCatalystPreviewTweet(): Promise<string> {
   // The dashboard's calendar merges live earnings dates with the curated
   // policy catalysts; the tweet previews the SAME merged week, otherwise it
   // says "quiet docket" while the calendar shows earnings (the old bug).
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const todayStr = today.toISOString().split("T")[0];
-  const endStr = new Date(today.getTime() + 7 * 86400000).toISOString().split("T")[0];
+  // Eastern calendar days, the same convention the calendar uses.
+  const now = new Date();
+  const todayStr = easternDate(now);
+  const endStr = easternDate(new Date(now.getTime() + 7 * 86400000));
 
   // Earnings side: module-scope cache, refreshed by the dispatch handlers
   // right before this composer runs (refreshEarningsCache is route-scoped).
@@ -1869,14 +1877,12 @@ async function composeCatalystPreviewTweet(): Promise<string> {
   let manual: { date: string; title: string; tier1: boolean }[] = [];
   try {
     const filePath = join(process.cwd(), "server", "data", "catalysts.json");
-    const catalysts = JSON.parse(readFileSync(filePath, "utf-8")) as any[];
-    manual = catalysts
-      .filter((c) => typeof c.date === "string" && c.date >= todayStr && c.date <= endStr)
-      .map((c) => ({
-        date: c.date,
-        title: c.title,
-        tier1: Array.isArray(c.tickers) && c.tickers.some((t: string) => TIER1_EARNINGS.has(t)),
-      }));
+    const catalysts = JSON.parse(readFileSync(filePath, "utf-8")) as CatalystRecord[];
+    manual = upcomingCatalysts(catalysts, todayStr, { through: endStr }).map((c) => ({
+      date: catalystSortDate(c),
+      title: c.title,
+      tier1: Array.isArray(c.tickers) && c.tickers.some((t: string) => TIER1_EARNINGS.has(t)),
+    }));
   } catch {
     // curated file is optional; earnings alone still make a post
   }
@@ -2803,20 +2809,20 @@ export async function registerRoutes(
   function loadManualCatalysts(): any[] {
     try {
       const filePath = join(process.cwd(), "server", "data", "catalysts.json");
-      const raw = readFileSync(filePath, "utf-8");
-      const todayStr = new Date().toISOString().split('T')[0];
-      return JSON.parse(raw)
-        .filter((c: any) => typeof c.date === "string" && c.date >= todayStr)
-        .map((c: any) => ({
-          id: c.id?.toString() ?? c.title,
-          category: c.category,
-          title: c.title,
-          description: c.thesisImpact || '',
-          dateLabel: new Date(c.date + "T12:00:00").toLocaleDateString("en-US", { month: "short", year: "numeric" }),
-          sortDate: c.date,
-          affectedTickers: c.tickers || [],
-          affectedSectors: [],
-        }));
+      const list = JSON.parse(readFileSync(filePath, "utf-8")) as CatalystRecord[];
+      // Upcoming by the Eastern calendar day; past, completed and undated
+      // events never reach the calendar.
+      return upcomingCatalysts(list, easternDate(new Date())).map((c) => ({
+        id: c.id?.toString() ?? c.title,
+        category: c.category,
+        title: c.title,
+        description: c.thesisImpact || '',
+        dateLabel: catalystDateLabel(c),
+        dateKind: c.dateKind ?? null,
+        sortDate: catalystSortDate(c),
+        affectedTickers: c.tickers || [],
+        affectedSectors: [],
+      }));
     } catch {
       return [];
     }
@@ -2871,7 +2877,9 @@ export async function registerRoutes(
   };
 
   function getEarningsData() {
-    const todayStr = new Date().toISOString().split('T')[0];
+    // Same Eastern calendar day as the curated catalysts (the UTC date turned
+    // over at 8 pm Eastern and dropped same-day reports early).
+    const todayStr = easternDate(new Date());
 
     // Single source of truth: Yahoo Finance calendarEvents. No date seeds.
     if (!earningsCache?.items) return [];
@@ -3109,11 +3117,13 @@ export async function registerRoutes(
   app.get("/api/catalysts", (_req, res) => {
     try {
       const filePath = join(process.cwd(), "server", "data", "catalysts.json");
-      const raw = readFileSync(filePath, "utf-8");
-      const catalysts = JSON.parse(raw);
-      const sorted = catalysts.sort((a: any, b: any) =>
-        new Date(a.date).getTime() - new Date(b.date).getTime()
-      );
+      const catalysts = JSON.parse(readFileSync(filePath, "utf-8")) as CatalystRecord[];
+      // The full record, history included, with each entry's phase so no
+      // consumer can mistake a past or undated event for an upcoming one.
+      const today = easternDate(new Date());
+      const sorted = catalysts
+        .map((c) => ({ ...c, phase: catalystPhase(c, today) }))
+        .sort((a, b) => catalystSortDate(a).localeCompare(catalystSortDate(b)));
       res.json(sorted);
     } catch (error) {
       console.error("Catalysts read error:", error);
@@ -3871,10 +3881,11 @@ ${rssItems}
     const catalystsPath = join(process.cwd(), "server", "data", "catalysts.json");
     let relatedCatalysts: any[] = [];
     try {
-      const raw = readFileSync(catalystsPath, "utf-8");
-      relatedCatalysts = JSON.parse(raw)
-        .filter((c: any) => c.tickers?.includes(ticker))
-        .slice(0, 5);
+      // The page titles these "Upcoming Catalysts", so they pass the same
+      // lifecycle filter as the calendar; unfiltered, they listed events
+      // months in the past.
+      const list = JSON.parse(readFileSync(catalystsPath, "utf-8")) as CatalystRecord[];
+      relatedCatalysts = upcomingCatalysts(list, easternDate(new Date()), { ticker }).slice(0, 5);
     } catch {}
 
     const score = computeThesisScore(companyInfo);
