@@ -170,8 +170,11 @@ daily X post). routes.ts only gathers data; ogCardForTemplate returns an OgCard.
   test in the same commit, on purpose.
 - News scanner regexes + sanity ranges (routes.ts ~659-741, ~866-871): they auto-write curated
   data files; widening a range turns headline noise into data corruption.
-- Deal firmness field: zero "signed" entries today is deliberate (signedSecuredMW stays 0 until
-  curated). Do not invent classifications.
+- Deal firmness (server/deals.ts): every agreement row was reviewed against primary documents on
+  2026-09-28 (signed / framework / option / preliminary / portfolio / not-ai-offtake). A status
+  counts only with firmnessSource (https) and a reviewed date; the admin route rejects firmness
+  without both, and a changed fact voids the review. Subtotals are per status and never added
+  across statuses. Do not invent classifications or infer one from a headline.
 - attached_assets/previews/*.svg: live code assets imported via @assets. The rest of
   attached_assets is design-source archive.
 
