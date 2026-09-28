@@ -92,9 +92,11 @@ const STATUS_ORDER = ["operational", "construction", "announced"];
 function bucketEnergySource(s?: string): string {
   // A qualifier describing gas as backup, temporary or still under evaluation
   // is not the campus's supply: drop that clause before bucketing, so a grid
-  // campus with backup turbines stays grid.
+  // campus with backup turbines stays grid. "with" starts a new clause, so in
+  // "natural gas with battery backup" only the battery is dropped.
   const t = (s ?? "")
     .toLowerCase()
+    .replace(/\bwith\b/g, ";")
     .replace(/[^;()+]*\b(backup|temporary|under evaluation)\b[^;()+]*/g, " ");
   if (/nuclear|smr|reactor/.test(t)) return "nuclear";
   if (/gas/.test(t)) return "on-site gas";

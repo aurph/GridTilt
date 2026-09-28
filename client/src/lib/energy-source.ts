@@ -58,8 +58,11 @@ const PATTERNS: Array<[EnergySource, RegExp]> = [
 export function classifyEnergySource(text: string | null | undefined): EnergySource[] {
   if (typeof text !== "string" || !text.trim()) return [];
   // A clause that calls a source backup, temporary or still under evaluation
-  // does not supply the site (same rule as server/clusters.ts).
-  const supply = text.replace(/[^;()+]*\b(backup|temporary|under evaluation)\b[^;()+]*/gi, " ");
+  // does not supply the site (same rule as server/clusters.ts, including "with"
+  // as a clause break: "natural gas with battery backup" keeps the gas).
+  const supply = text
+    .replace(/\bwith\b/gi, ";")
+    .replace(/[^;()+]*\b(backup|temporary|under evaluation)\b[^;()+]*/gi, " ");
   return PATTERNS.filter(([, re]) => re.test(supply)).map(([source]) => source);
 }
 

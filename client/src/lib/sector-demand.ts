@@ -109,8 +109,8 @@ export interface DemandPoint {
 /**
  * Lowest measured year in a demand series, skipping unmeasured years.
  *
- * The card claimed "up 15% from the 2022 low"; the series trough is 2020 and 2022
- * to 2025 is about +11%. Derived so the copy cannot drift from the series again.
+ * The card claimed "up 15% from the 2022 low"; the measured trough is 2012 in the
+ * end-use series. Derived so the copy cannot drift from the series again.
  */
 export function demandTrough(series: DemandPoint[]): { year: string; twh: number } | null {
   let best: { year: string; twh: number } | null = null;

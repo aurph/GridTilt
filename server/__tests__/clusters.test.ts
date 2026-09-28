@@ -226,10 +226,11 @@ test("backup, temporary or under-evaluation gas does not make a grid campus a ga
     row("temporary", "grid (NV Energy) with planned temporary on-site natural gas generation"),
     row("evaluation", "grid (ERCOT); natural gas behind-the-meter under evaluation"),
     row("real-gas", "grid + on-site gas"),
+    row("battery-backup", "natural gas with battery backup"),
   ]);
   const get = (s: string) => m.byEnergySource.find((x) => x.source === s)?.count ?? 0;
   assert.equal(get("grid"), 3);
-  assert.equal(get("on-site gas"), 1, "gas that actually supplies the campus still counts");
+  assert.equal(get("on-site gas"), 2, "gas that actually supplies the campus still counts, even beside a battery backup");
 });
 
 // ── Field-level evidence (the reviewed pilot) ─────────────────────────────

@@ -35,6 +35,8 @@ test("gas held as backup, temporary or under evaluation is not a supply source",
   );
   assert.deepEqual(classifyEnergySource("grid (ERCOT); natural gas behind-the-meter under evaluation"), ["grid"]);
   assert.deepEqual(classifyEnergySource("grid + on-site gas"), ["gas", "grid"]);
+  // The backup here is the battery, not the gas.
+  assert.deepEqual(classifyEnergySource("natural gas with battery backup"), ["gas"]);
 });
 
 test("three sources in one string all survive", () => {
