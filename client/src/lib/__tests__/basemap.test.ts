@@ -119,8 +119,9 @@ describe("basemapTileLayerProps", () => {
 });
 
 describe("attribution", () => {
-  it("still credits OSM and CARTO, which the free tier requires", () => {
+  it("credits OpenStreetMap contributors and CARTO in the words CARTO's terms ask for", () => {
     assert.ok(CARTO_ATTRIBUTION.includes("openstreetmap.org/copyright"));
+    assert.ok(CARTO_ATTRIBUTION.includes("OpenStreetMap</a> contributors"));
     assert.ok(CARTO_ATTRIBUTION.includes("carto.com/attributions"));
   });
 });

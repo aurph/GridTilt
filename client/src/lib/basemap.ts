@@ -3,18 +3,24 @@
  *
  * Carto began watermarking anonymous tiles ("API KEY REQUIRED") in Aug 2026.
  * The request still returns HTTP 200 with a valid PNG, so there is no error
- * to catch - an unkeyed map simply renders defaced tiles.
+ * to catch: an unkeyed map simply renders defaced tiles. A key CARTO does not
+ * accept gets the same watermark.
  *
  * The key is injected into index.html by server/runtime-config.ts, which
- * reads the CARTO_API environment variable. It is readable by anyone using
- * the site; that is inherent to a browser-side basemap. Scope it by domain
- * in the Carto dashboard rather than treating it as a secret.
+ * reads the CARTO_API environment variable and withholds a key CARTO rejected.
+ * With no key in the page, components/basemap-tiles.tsx draws state outlines
+ * instead of tiles. The key is readable by anyone using the site; that is
+ * inherent to a browser-side basemap.
  */
 
 export type CartoStyle = "dark_nolabels" | "dark_all" | "light_nolabels" | "light_all";
 
+/** CARTO's terms: "(c) OpenStreetMap contributors, (c) CARTO" on every map, free tiers included. */
 export const CARTO_ATTRIBUTION =
-  '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>';
+  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/attributions">CARTO</a>';
+
+/** Shown in place of the CARTO credit when the map draws state outlines instead of tiles. */
+export const OUTLINE_ATTRIBUTION = "Base map unavailable. State outlines: US Census";
 
 /**
  * Kept in sync with server/runtime-config.ts. A meta tag rather than an

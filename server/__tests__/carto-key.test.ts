@@ -1,0 +1,80 @@
+/**
+ * CARTO returns HTTP 200 and the same watermark PNG for a missing key and for
+ * a key it does not accept, so a wrong key looks exactly like a working one
+ * unless something fetches tiles and compares them. These tests pin how the
+ * check reads CARTO's answers, without touching the network.
+ */
+import { describe, it } from "node:test";
+import assert from "node:assert/strict";
+import { probeCartoKey, PROBE_TILE_URLS } from "../carto-key";
+
+interface FakeResponse {
+  status?: number;
+  etag?: string | null;
+  body?: string;
+}
+
+/** A fetch that answers each probe tile in order and records the URLs asked for. */
+function fakeFetch(answers: FakeResponse[] | Error) {
+  const urls: string[] = [];
+  let i = 0;
+  const impl = async (url: string) => {
+    urls.push(url);
+    if (answers instanceof Error) throw answers;
+    const a = answers[i++ % answers.length];
+    const status = a.status ?? 200;
+    return {
+      ok: status >= 200 && status < 300,
+      status,
+      headers: { get: (name: string) => (name.toLowerCase() === "etag" ? (a.etag ?? null) : null) },
+      arrayBuffer: async () => new TextEncoder().encode(a.body ?? "").buffer as ArrayBuffer,
+    };
+  };
+  return { impl, urls };
+}
+
+describe("probeCartoKey", () => {
+  it("accepts a key when two different places come back as different tiles", async () => {
+    const f = fakeFetch([
+      { etag: '"a1"', body: "west" },
+      { etag: '"b2"', body: "east" },
+    ]);
+    assert.equal(await probeCartoKey("good", f.impl), "accepted");
+  });
+
+  it("rejects a key when CARTO labels the tile a watermark", async () => {
+    const f = fakeFetch([
+      { etag: '"wm-da89c20e77c1-dark"', body: "stamp" },
+      { etag: '"wm-da89c20e77c1-dark"', body: "stamp" },
+    ]);
+    assert.equal(await probeCartoKey("bad", f.impl), "rejected");
+  });
+
+  it("rejects a key when two different places come back byte-identical, whatever the ETag", async () => {
+    const f = fakeFetch([
+      { etag: '"x"', body: "same" },
+      { etag: '"y"', body: "same" },
+    ]);
+    assert.equal(await probeCartoKey("bad", f.impl), "rejected");
+  });
+
+  it("treats 401 and 403 as a rejected key", async () => {
+    assert.equal(await probeCartoKey("k", fakeFetch([{ status: 401 }]).impl), "rejected");
+    assert.equal(await probeCartoKey("k", fakeFetch([{ status: 403 }]).impl), "rejected");
+  });
+
+  it("says unreachable, not rejected, when CARTO errors or cannot be reached", async () => {
+    assert.equal(await probeCartoKey("k", fakeFetch([{ status: 503 }]).impl), "unreachable");
+    assert.equal(await probeCartoKey("k", fakeFetch(new Error("ECONNRESET")).impl), "unreachable");
+  });
+
+  it("asks for two different tiles, keyed with `key=` and URL-encoded", async () => {
+    const f = fakeFetch([{ body: "a" }, { body: "b" }]);
+    await probeCartoKey("a&b", f.impl);
+    assert.equal(new Set(f.urls).size, 2);
+    assert.deepEqual(
+      f.urls,
+      PROBE_TILE_URLS.map((u) => `${u}?key=a%26b`),
+    );
+  });
+});

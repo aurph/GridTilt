@@ -7,10 +7,12 @@
  * no-cache) keeps the Replit secret named CARTO_API and avoids a rebuild
  * when the key is rotated.
  *
- * This key is public by nature - it is visible in network requests on any
- * browser map. Restrict it by domain in the Carto dashboard rather than
- * treating it as a secret.
+ * This key is public by nature: it is visible in network requests on any
+ * browser map. Without a key CARTO accepts, the maps draw state outlines
+ * (components/basemap-tiles.tsx) instead of CARTO's watermarked tiles.
  */
+
+import { probeCartoKey, type CartoKeyStatus } from "./carto-key";
 
 export interface RuntimeConfig {
   cartoApiKey: string | null;
@@ -42,7 +44,7 @@ export function readCartoApiKey(env: NodeJS.ProcessEnv = process.env): string | 
     if (!warnedMissing && env.NODE_ENV !== "test") {
       warnedMissing = true;
       console.warn(
-        "[carto] CARTO_API is not set - basemap tiles will render with Carto's 'API KEY REQUIRED' watermark.",
+        "[carto] CARTO_API is not set; maps draw state outlines instead of CARTO tiles.",
       );
     }
     return null;
@@ -53,7 +55,7 @@ export function readCartoApiKey(env: NodeJS.ProcessEnv = process.env): string | 
     if (!warnedMalformed && env.NODE_ENV !== "test") {
       warnedMalformed = true;
       console.warn(
-        "[carto] CARTO_API looks malformed (whitespace or control characters) - ignoring it.",
+        "[carto] CARTO_API looks malformed (whitespace or control characters); ignoring it, so maps draw state outlines.",
       );
     }
     return null;
@@ -62,8 +64,44 @@ export function readCartoApiKey(env: NodeJS.ProcessEnv = process.env): string | 
   return key;
 }
 
-export function buildRuntimeConfig(env: NodeJS.ProcessEnv = process.env): RuntimeConfig {
-  return { cartoApiKey: readCartoApiKey(env) };
+/**
+ * What CARTO last said about the key (see carto-key.ts). A key CARTO rejected
+ * is withheld from the page, so the maps draw state outlines instead of tiles
+ * stamped "API KEY REQUIRED". Unchecked and unreachable keep the key: the
+ * check has not said no, and a network blip should not strip the basemap.
+ */
+let keyStatus: CartoKeyStatus = "unchecked";
+
+export function buildRuntimeConfig(
+  env: NodeJS.ProcessEnv = process.env,
+  status: CartoKeyStatus = keyStatus,
+): RuntimeConfig {
+  const key = readCartoApiKey(env);
+  return { cartoApiKey: key && status !== "rejected" ? key : null };
+}
+
+const RECHECK_MS = 12 * 60 * 60 * 1000;
+
+/**
+ * Checks the key once at boot and every 12 hours, so a key that stops working
+ * takes the maps to outlines instead of watermarks, and a key that starts
+ * working brings the tiles back, without a redeploy. Off in tests.
+ */
+export function startCartoKeyCheck(env: NodeJS.ProcessEnv = process.env): void {
+  const key = readCartoApiKey(env);
+  if (!key || env.NODE_ENV === "test") return;
+  const run = async () => {
+    const next = await probeCartoKey(key);
+    if (next !== keyStatus) {
+      if (next === "accepted") console.log("[carto] CARTO accepted CARTO_API; maps use its tiles.");
+      else if (next === "rejected")
+        console.warn("[carto] CARTO rejected CARTO_API (tiles come back watermarked). Maps show state outlines until it works.");
+      else console.warn("[carto] Could not reach CARTO to check CARTO_API; keeping the key.");
+    }
+    keyStatus = next;
+  };
+  void run();
+  setInterval(run, RECHECK_MS).unref();
 }
 
 /** The meta element the client reads the key from. */
@@ -90,13 +128,14 @@ function escapeAttribute(value: string): string {
  * such directive, needs no nonce or hash, costs no extra request, and is in
  * the DOM before the app module (which is deferred) ever runs.
  *
- * The tag is omitted entirely when no key is configured.
+ * The tag is omitted entirely when no key is configured or CARTO rejected it.
  */
 export function injectRuntimeConfig(
   html: string,
   env: NodeJS.ProcessEnv = process.env,
+  status: CartoKeyStatus = keyStatus,
 ): string {
-  const { cartoApiKey } = buildRuntimeConfig(env);
+  const { cartoApiKey } = buildRuntimeConfig(env, status);
   if (!cartoApiKey) return html;
   if (!html.includes("</head>")) return html;
   const tag = `<meta name="${CARTO_KEY_META_NAME}" content="${escapeAttribute(cartoApiKey)}" />`;
@@ -107,4 +146,5 @@ export function injectRuntimeConfig(
 export function resetRuntimeConfigWarnings(): void {
   warnedMissing = false;
   warnedMalformed = false;
+  keyStatus = "unchecked";
 }
