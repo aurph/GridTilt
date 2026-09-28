@@ -80,9 +80,14 @@ Derived from the code; starred rules confirmed by Jack 2026-07-02.
   source, native unit, evaluation setting, and exact comparability key. Never connect or rank
   results that only share a benchmark name.
 - Env: process.env direct. Required: UNSUB_TOKEN_SECRET (boot throws), ADMIN_API_KEY (admin 503s
-  without). Optional: RESEND_API_KEY, EIA_API_KEY, NEWSDATA_API_KEY, X_API_KEY, X_API_SECRET,
-  X_ACCESS_TOKEN, X_ACCESS_TOKEN_SECRET, X_POSTING_ENABLED, DISABLE_DATACENTER_INGESTER
-  (last two missing from .env.example).
+  without). Optional: RESEND_API_KEY, EIA_API_KEY, NEWSDATA_API_KEY, CARTO_API, X_API_KEY,
+  X_API_SECRET, X_ACCESS_TOKEN, X_ACCESS_TOKEN_SECRET, X_POSTING_ENABLED,
+  DISABLE_DATACENTER_INGESTER (last two missing from .env.example).
+- CARTO_API is the one env var that reaches the browser. server/runtime-config.ts injects it into
+  index.html as a meta tag on every request; client/src/lib/basemap.ts reads it back. NOT a VITE_
+  build var (rotating would need a rebuild) and NOT an inline script (prod CSP is script-src
+  'self', which drops it silently while curl still shows correct HTML). Every map takes its tiles
+  from components/basemap-tiles.tsx; never hand-write a cartocdn URL.
 - Admin auth: x-admin-key header, timingSafeEqual; covers /api/admin/*, /api/newsletter/send,
   /api/export/daily.
 - Commits: imperative subject prefixed by area ("Social: ...", "docs: ..."). NO Co-Authored-By
@@ -97,6 +102,7 @@ Derived from the code; starred rules confirmed by Jack 2026-07-02.
 | EIA v2 | EIA_API_KEY | US48 hourly demand (168 h) | 30 min | 503 + {configured:false, howTo} |
 | NewsData.io | NEWSDATA_API_KEY | news ticker tier 1 | 1 h | falls back to the 8 built-in RSS feeds |
 | RSS (8 news + 4 ingester feeds) | none | news fallback; datacenter discovery | ingester 6 h | items just absent |
+| Carto basemaps | CARTO_API | raster tiles for all three Leaflet maps | browser/CDN, 180 d | tiles still load, watermarked "API KEY REQUIRED" (HTTP 200, never an error) |
 | LBNL Queued Up page | none | new-edition flag only | 24 h throttle | manual XLSX ingest regardless |
 | Resend | RESEND_API_KEY | audience sync, newsletter send | on demand | subscribe still saves locally; send 400s |
 | X API (OAuth 1.0a) | 4 creds + X_POSTING_ENABLED=true | weekday 8:30 ET post | external cron | dry-run, logged to social-log.json |

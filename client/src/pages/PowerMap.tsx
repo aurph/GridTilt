@@ -1,12 +1,13 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { MapContainer, TileLayer, ZoomControl, useMap, useMapEvents } from "react-leaflet";
+import { MapContainer, ZoomControl, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AsOf, ErrorState } from "@/components/Freshness";
+import { BasemapTiles } from "@/components/basemap-tiles";
 import { BiggestDataCenters } from "@/components/BiggestDataCenters";
 import { StateBuildout } from "@/components/StateBuildout";
 import { CompanyBuildout } from "@/components/CompanyBuildout";
@@ -1221,12 +1222,7 @@ export default function PowerMap() {
             style={{ width: "100%", height: "100%", minHeight: 520, background: SURFACE.base }}
             className="rounded-none"
           >
-            <TileLayer
-              url="https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png"
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
-              subdomains="abcd"
-              maxZoom={19}
-            />
+            <BasemapTiles maxZoom={19} />
             <RTORegions viewMode={viewMode} />
             <FacilityMarkers
               viewMode={viewMode}
