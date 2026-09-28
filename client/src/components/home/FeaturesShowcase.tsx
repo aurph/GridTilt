@@ -9,6 +9,7 @@ import { STAGE_LABELS, supplyNodes } from "@/data/supply-chain-config";
 import statesGeoRaw from "@/data/us-states.geo.json";
 import { Skeleton } from "@/components/ui/skeleton";
 import { filterTrackedFacilities } from "@/lib/real-gauges";
+import { electricityData } from "@/data/electricity-demand";
 
 /**
  * Module directory: six cards, each carrying a LIVE micro-preview drawn from
@@ -162,34 +163,29 @@ function PortfolioPentagon() {
   );
 }
 
-// -- Preview 6: the real US demand curve (EIA actuals + projections) --------
-// Real US electricity demand, TWh. EIA actuals 2010-2025; GridTilt
-// projections 2026-2030. Same series the Overview demand chart uses.
-const DEMAND: { year: number; actual: number | null; proj: number | null }[] = [
-  { year: 2010, actual: 3879, proj: null }, { year: 2012, actual: 3826, proj: null },
-  { year: 2014, actual: 3879, proj: null }, { year: 2016, actual: 3898, proj: null },
-  { year: 2018, actual: 3997, proj: null }, { year: 2020, actual: 3802, proj: null },
-  { year: 2022, actual: 4050, proj: null }, { year: 2024, actual: 4380, proj: null },
-  { year: 2025, actual: 4490, proj: 4490 }, { year: 2027, actual: null, proj: 5180 },
-  { year: 2030, actual: null, proj: 6210 },
-];
+// -- Preview 6: the measured US demand curve ---------------------------------
+// The same EIA series as the landing and Overview charts. It used to end in a
+// dashed "2030 proj." line to 6,210 TWh that no source supported.
+const DEMAND = electricityData
+  .filter((d): d is typeof d & { demand: number } => d.demand !== null)
+  .map((d) => ({ year: Number(d.year), twh: d.demand }));
 function DemandSparkline() {
   const W = 260, H = 96, PAD = 6;
+  if (DEMAND.length < 2) return <PreviewSkeleton />;
   const xs = DEMAND.map((d) => d.year);
   const minX = Math.min(...xs), maxX = Math.max(...xs);
-  const allV = DEMAND.flatMap((d) => [d.actual, d.proj].filter((v): v is number => v != null));
-  const minV = Math.min(...allV), maxV = Math.max(...allV);
+  const vs = DEMAND.map((d) => d.twh);
+  const minV = Math.min(...vs), maxV = Math.max(...vs);
   const px = (y: number) => PAD + ((y - minX) / (maxX - minX)) * (W - 2 * PAD);
   const py = (v: number) => H - PAD - ((v - minV) / (maxV - minV)) * (H - 2 * PAD);
-  const actualPts = DEMAND.filter((d) => d.actual != null).map((d) => `${px(d.year)},${py(d.actual!)}`).join(" ");
-  const projPts = DEMAND.filter((d) => d.proj != null).map((d) => `${px(d.year)},${py(d.proj!)}`).join(" ");
+  const pts = DEMAND.map((d) => `${px(d.year)},${py(d.twh)}`).join(" ");
+  const last = DEMAND[DEMAND.length - 1];
   return (
     <svg viewBox={`0 0 ${W} ${H}`} className="h-full w-full" data-testid="preview-demand" aria-hidden>
-      <polyline points={actualPts} fill="none" stroke="#8a8a85" strokeWidth="1.5" />
-      <polyline points={projPts} fill="none" stroke="#F07800" strokeWidth="1.5" strokeDasharray="4 3" />
-      <circle cx={px(2030)} cy={py(6210)} r="2.5" fill="#F07800" />
-      <text x={px(2010)} y={H - 1} fill="#5c5c58" fontSize="8">2010</text>
-      <text x={px(2030)} y={H - 1} textAnchor="end" fill="#8a8a85" fontSize="8">2030 proj.</text>
+      <polyline points={pts} fill="none" stroke="#8a8a85" strokeWidth="1.5" />
+      <circle cx={px(last.year)} cy={py(last.twh)} r="2.5" fill="#F07800" />
+      <text x={px(minX)} y={H - 1} fill="#5c5c58" fontSize="8">{minX}</text>
+      <text x={px(maxX)} y={H - 1} textAnchor="end" fill="#8a8a85" fontSize="8">{maxX}</text>
     </svg>
   );
 }
