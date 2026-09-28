@@ -56,6 +56,13 @@ test("an all-unknown basket has no score rather than zero exposure", () => {
   assert.ok(b.results.every((r) => !r.covered));
 });
 
+test("results keep the order entered, not a ranking by score", () => {
+  // The Analyze page lists cards in this order. Sorted by score, the list read
+  // as a ranking of companies, which the editorial classification is not.
+  const b = scoreBasket(["CEG", "ZZZZ", "NVDA"], DB);
+  assert.deepEqual(b.results.map((r) => r.ticker), ["CEG", "ZZZZ", "NVDA"]);
+});
+
 test("case and whitespace variants are one ticker, not double weight", () => {
   const n = normalizeTickerInput(["NVDA", " nvda ", "Nvda", "CEG"]);
   assert.deepEqual(n, { ok: true, tickers: ["NVDA", "CEG"] });

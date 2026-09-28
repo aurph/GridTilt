@@ -3215,8 +3215,8 @@ Preferred-Languages: en
         const companyInfo = COMPANY_DATABASE[ticker.toUpperCase()];
         card = pageCard(
           companyInfo ? `${companyInfo.name} ($${ticker.toUpperCase()})` : `$${ticker.toUpperCase()}`,
-          companyInfo ? `${companyInfo.primarySegment} Sector` : "AI Power Thesis Analysis",
-          [{ label: "Sector", value: companyInfo?.primarySegment || "Unknown" }],
+          companyInfo ? `${companyInfo.primarySegment} Sector` : "Not in GridTilt's sector classifications",
+          [{ label: "Sector", value: companyInfo?.primarySegment || "Not covered" }],
         );
       } else if (page === "stack") {
         card = pageCard("60+ AI Power Stocks", "Live Data Across 8 Sectors", await liveIndicesStats());
@@ -3233,7 +3233,7 @@ Preferred-Languages: en
       } else if (page === "trade") {
         card = pageCard("AI Power Scenario Calculator", "Model demand, capex, and LPT requirements through 2030", await liveIndicesStats());
       } else if (page === "portfolio") {
-        card = pageCard("AI Power Thesis Score", "Rate any portfolio against the AI power buildout", await liveIndicesStats());
+        card = pageCard("Illustrative basket", "Compare editorial sector classifications", await liveIndicesStats());
       } else if (page === "catalysts") {
         card = pageCard("Catalyst Calendar", "Earnings, policy, and regulatory events for AI power", await liveIndicesStats());
       } else if (page === "blog" && name) {

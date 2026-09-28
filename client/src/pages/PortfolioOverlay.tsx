@@ -23,7 +23,7 @@ import {
 import { apiRequest } from "@/lib/queryClient";
 import { Info, BarChart3, Search, Loader2, AlertCircle, Plus, Share2, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { BORDER, BRAND, CATEGORY_COLORS, CHART_CHROME, FONT, INK, SEMANTIC, SERIES } from "@/lib/tokens";
+import { BORDER, BRAND, CATEGORY_COLORS, CHART_CHROME, FONT, INK, SERIES } from "@/lib/tokens";
 import { chartTheme, seriesMotion } from "@/lib/chart-theme";
 
 // Payload of POST /api/portfolio-score (server/portfolio-score.ts). A ticker the
@@ -69,6 +69,10 @@ function parseTickers(value: string): string[] {
   return Array.from(new Set(value.split(/[,\s]+/).map((t) => t.trim().toUpperCase()).filter(Boolean)));
 }
 
+/** What the tool is and is not. Shown under the heading in both layouts. */
+const BASKET_NOTE =
+  "Equal-weight comparison of editorial sector classifications. It does not measure your invested dollars, risk, or suitability.";
+
 /** The radar axes, which are exactly the keys of a result's `sectors`. */
 const RADAR_AXES = ["Compute", "Infrastructure", "Power", "Cooling", "Grid"] as const;
 
@@ -83,7 +87,7 @@ interface RadarDataPoint {
 const STACK_EXAMPLE_TICKERS = ["NVDA", "CEG", "VRT", "CCJ", "EQIX", "PWR"];
 
 const EXAMPLE_PORTFOLIOS = [
-  { label: "AI Bull", tickers: "NVDA, CEG, EQIX, AMD, CCJ" },
+  { label: "Compute and power", tickers: "NVDA, CEG, EQIX, AMD, CCJ" },
   { label: "Tech Giant", tickers: "MSFT, GOOGL, AMZN, META, AAPL" },
   { label: "Utility Mix", tickers: "NEE, CEG, VST, ETR, XLU" },
 ];
@@ -121,7 +125,9 @@ const CustomRadarTooltip = ({ active, payload }: any) => {
 };
 
 function ScoreRing({ score }: { score: number }) {
-  const color = score >= 70 ? SEMANTIC.positive : score >= 40 ? SEMANTIC.warning : INK.faint;
+  // One color for every score: a green-amber-gray ramp read as a verdict on
+  // the company, and the score is an editorial classification, not a rating.
+  const color = BRAND.secondary;
   return (
     <div className="relative flex h-14 w-14 items-center justify-center flex-shrink-0">
       <svg viewBox="0 0 56 56" className="absolute inset-0 h-full w-full -rotate-90">
@@ -222,13 +228,13 @@ export default function PortfolioOverlay({ embedded = false }: { embedded?: bool
 
   // Covered tickers only. An uncovered ticker has no score and no sectors, so it
   // cannot enter an average or the radar; it is listed separately instead.
-  // Sorted on a copy: sorting state in place would mutate it during render.
+  // Kept in the order entered: sorted by score, the cards read as a ranking, and
+  // the score is an editorial classification, not a verdict on the company.
   const covered = useMemo(
     () =>
       response
         ? response.results
             .filter((r): r is CoveredResult => r.covered)
-            .sort((a, b) => b.score - a.score)
         : null,
     [response],
   );
@@ -283,11 +289,11 @@ export default function PortfolioOverlay({ embedded = false }: { embedded?: bool
       <TooltipTrigger>
         <Badge className="bg-brand-2/15 text-brand-2 border-brand-2/30 cursor-help">
           <Info className="h-3 w-3 mr-1" />
-          Scoring Methodology
+          How scores work
         </Badge>
       </TooltipTrigger>
       <TooltipContent className="max-w-xs">
-        <p className="text-xs leading-relaxed">Weighted composite: Compute 30%, Infrastructure 25%, Power 25%, Cooling 10%, Grid 10%. Above 70 = direct revenue exposure. 40-70 = meaningful indirect exposure.</p>
+        <p className="text-xs leading-relaxed">Each score weights GridTilt's editorial sector classifications: compute 30%, infrastructure 25%, power 25%, cooling 10%, grid 10%. Stock pages weight the same classifications 25/25/20/15/15 and the scenario calculator uses its own 0-10 scale, so the numbers differ by design.</p>
       </TooltipContent>
     </UITooltip>
   );
@@ -297,7 +303,7 @@ export default function PortfolioOverlay({ embedded = false }: { embedded?: bool
   const intro = embedded ? (
     <div className="flex flex-wrap items-start justify-between gap-3 px-1">
       <p className="text-muted-foreground text-xs leading-relaxed max-w-3xl">
-        Measure portfolio concentration across five AI power supply chain segments: compute, infrastructure, power, cooling, and grid.
+        {BASKET_NOTE}
       </p>
       {methodologyBadge}
     </div>
@@ -305,9 +311,9 @@ export default function PortfolioOverlay({ embedded = false }: { embedded?: bool
     <div className="border-b border-border px-6 py-6">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold text-foreground tracking-tight">Portfolio Overlay</h1>
+          <h1 className="text-2xl font-bold text-foreground tracking-tight">Illustrative basket</h1>
           <p className="text-muted-foreground text-sm mt-1">
-            Measure portfolio concentration across five AI power supply chain segments: compute, infrastructure, power, cooling, and grid.
+            {BASKET_NOTE}
           </p>
         </div>
         {methodologyBadge}
@@ -322,7 +328,7 @@ export default function PortfolioOverlay({ embedded = false }: { embedded?: bool
       <div className={embedded ? "flex-1 space-y-6 mt-3" : "flex-1 p-6 space-y-6"}>
         {/* Input section */}
         <Card className="p-5 border-card-border">
-          <label className="text-sm font-medium text-foreground mb-3 block">Enter Your Tickers</label>
+          <label className="text-sm font-medium text-foreground mb-3 block">Tickers to compare</label>
           <div className="flex flex-col sm:flex-row gap-2">
             <Input
               value={inputValue}
@@ -335,7 +341,7 @@ export default function PortfolioOverlay({ embedded = false }: { embedded?: bool
             <div className="flex gap-2">
               <Button onClick={handleSubmit} disabled={isPending || !inputValue.trim()} className="flex-1 sm:flex-none" data-testid="button-score-portfolio">
                 {isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Search className="h-4 w-4 mr-2" />}
-                Score Portfolio
+                Compare sector exposure
               </Button>
               <Button
                 variant="secondary"
@@ -363,7 +369,7 @@ export default function PortfolioOverlay({ embedded = false }: { embedded?: bool
           )}
 
           <div className="mt-4">
-            <p className="text-xs text-muted-foreground mb-2">Example portfolios:</p>
+            <p className="text-xs text-muted-foreground mb-2">Example baskets:</p>
             <div className="flex flex-wrap gap-2">
               {EXAMPLE_PORTFOLIOS.map((ex) => (
                 <Button
@@ -435,7 +441,7 @@ export default function PortfolioOverlay({ embedded = false }: { embedded?: bool
                 </h2>
                 {avgScore !== null && (
                   <div className="text-right">
-                    <p className="text-xs text-muted-foreground">Portfolio Avg</p>
+                    <p className="text-xs text-muted-foreground">Basket average</p>
                     <p className="text-lg font-bold font-mono text-brand-2">{avgScore}<span className="text-sm text-muted-foreground">/100</span></p>
                   </div>
                 )}
@@ -500,13 +506,13 @@ export default function PortfolioOverlay({ embedded = false }: { embedded?: bool
             <div className="space-y-4">
               <div>
                 <div className="flex items-center gap-2 mb-1">
-                  <h2 className="text-[13px] font-semibold text-foreground">Portfolio Exposure Radar</h2>
+                  <h2 className="text-[13px] font-semibold text-foreground">Basket sector radar</h2>
                   <UITooltip>
                     <TooltipTrigger>
                       <Info className="h-3.5 w-3.5 text-muted-foreground" />
                     </TooltipTrigger>
                     <TooltipContent className="max-w-xs">
-                      <p className="text-xs">Average exposure per segment. Balanced = multi-segment coverage. Concentrated = stronger directional bet.</p>
+                      <p className="text-xs">Equal-weight average of the covered tickers' sector classifications.</p>
                     </TooltipContent>
                   </UITooltip>
                 </div>
@@ -548,9 +554,9 @@ export default function PortfolioOverlay({ embedded = false }: { embedded?: bool
                 <div className="flex items-start gap-2">
                   <BarChart3 className="h-4 w-4 text-brand-2 mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="text-xs font-semibold text-foreground mb-1">Score interpretation</p>
+                    <p className="text-xs font-semibold text-foreground mb-1">Score scale</p>
                     <p className="text-xs text-muted-foreground leading-relaxed">
-                      0-100 scale. Above 70 = direct revenue exposure. 40-70 = meaningful indirect exposure. Below 40 = minimal positioning.
+                      0 to 100, from GridTilt's editorial classification of each business by segment. It is not revenue, returns or suitability.
                     </p>
                   </div>
                 </div>
@@ -567,7 +573,7 @@ export default function PortfolioOverlay({ embedded = false }: { embedded?: bool
                       <Info className="h-3.5 w-3.5 text-muted-foreground" />
                     </TooltipTrigger>
                     <TooltipContent className="max-w-xs">
-                      <p className="text-xs">Portfolio-average exposure per segment, plus how many holdings are primarily classified into each.</p>
+                      <p className="text-xs">Basket average per segment, plus how many tickers are classified primarily into each.</p>
                     </TooltipContent>
                   </UITooltip>
                 </div>

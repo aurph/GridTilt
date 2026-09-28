@@ -65,8 +65,8 @@ const STATIC_PAGES: Record<string, { title: string; description: string; slug: s
     slug: "compute-frontier/compare",
   },
   "/analyze": {
-    title: "Analyze - Portfolio Exposure and Buildout Scenarios | GridTilt",
-    description: "Score any portfolio for AI power exposure, and model buildout scenarios across demand growth, generation mix, and grid variables.",
+    title: "Analyze - Illustrative Baskets and Buildout Scenarios | GridTilt",
+    description: "Compare the editorial sector classifications of a basket of tickers, and model buildout scenarios across demand growth, generation mix, and grid variables.",
     slug: "analyze",
   },
   "/neocloud-intel": {
@@ -289,8 +289,8 @@ export function getPageMeta(pathname: string): PageMeta {
   if (stockMatch) {
     const ticker = stockMatch[1].toUpperCase();
     return {
-      title: `$${ticker} \u2014 AI Power Thesis Analysis | GridTilt`,
-      description: `${ticker} analysis for the AI power infrastructure thesis. Live price, thesis score, sector context. Track ${ticker} on GridTilt.`,
+      title: `$${ticker} - AI Power Sector Classification | GridTilt`,
+      description: `${ticker} on GridTilt: live price, editorial sector classification and sector context.`,
       canonical: `${BASE_URL}/stock/${ticker}`,
       ogImage: `${BASE_URL}/api/og?ticker=${ticker}`,
       ogType: "website",
@@ -298,8 +298,8 @@ export function getPageMeta(pathname: string): PageMeta {
         {
           "@context": "https://schema.org",
           "@type": "FinancialProduct",
-          "name": `${ticker} \u2014 AI Power Thesis Analysis`,
-          "description": `Live price data, thesis alignment score, and sector analysis for ${ticker} on GridTilt`,
+          "name": `${ticker} - AI Power Sector Classification`,
+          "description": `Live price data, editorial sector classification, and sector context for ${ticker} on GridTilt`,
           "url": `${BASE_URL}/stock/${ticker}`,
           "provider": { "@type": "Organization", "name": "GridTilt" },
         },

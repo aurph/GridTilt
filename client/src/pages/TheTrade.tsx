@@ -102,19 +102,22 @@ const SEGMENT_COLORS: Record<string, string> = {
 };
 
 const TOP_COMPANIES = [
-  { ticker: "NVDA", name: "NVIDIA Corporation",    segment: "Compute",        thesisScore: 9.5, rationale: "GPU monopoly, >80% AI accelerator share",       color: SEGMENT_COLORS.Compute },
-  { ticker: "EQIX", name: "Equinix Inc",           segment: "Infrastructure", thesisScore: 9.0, rationale: "100% DC revenue, highest power density growth",   color: SEGMENT_COLORS.Infrastructure },
-  { ticker: "VRT",  name: "Vertiv Holdings",       segment: "Infrastructure", thesisScore: 8.8, rationale: "Critical thermal mgmt for every AI data center",   color: SEGMENT_COLORS.Infrastructure },
-  { ticker: "CEG",  name: "Constellation Energy",  segment: "Power",          thesisScore: 8.2, rationale: "Largest nuclear utility + first AI baseload PPA",  color: SEGMENT_COLORS.Power },
-  { ticker: "CCJ",  name: "Cameco Corporation",    segment: "Power",          thesisScore: 7.5, rationale: "Pure uranium miner, highest spot price beta",      color: SEGMENT_COLORS.Power },
-  { ticker: "TSM",  name: "Taiwan Semiconductor",  segment: "Compute",        thesisScore: 7.2, rationale: "Manufactures all advanced AI chips",               color: SEGMENT_COLORS.Compute },
-  { ticker: "VST",  name: "Vistra Corp",           segment: "Power",          thesisScore: 7.0, rationale: "Merchant power, direct power price beneficiary",   color: SEGMENT_COLORS.Power },
-  { ticker: "AMD",  name: "Advanced Micro Devices",segment: "Compute",        thesisScore: 6.0, rationale: "GPU inference competition, DC revenue +122% YoY",  color: SEGMENT_COLORS.Compute },
+  { ticker: "NVDA", name: "NVIDIA Corporation",    segment: "Compute",        thesisScore: 9.5, rationale: "GPUs, AI accelerators and networking",          color: SEGMENT_COLORS.Compute },
+  { ticker: "EQIX", name: "Equinix Inc",           segment: "Infrastructure", thesisScore: 9.0, rationale: "Colocation data center REIT",                   color: SEGMENT_COLORS.Infrastructure },
+  { ticker: "VRT",  name: "Vertiv Holdings",       segment: "Infrastructure", thesisScore: 8.8, rationale: "Power and cooling equipment for data centers",  color: SEGMENT_COLORS.Infrastructure },
+  { ticker: "CEG",  name: "Constellation Energy",  segment: "Power",          thesisScore: 8.2, rationale: "Nuclear and gas generation",                   color: SEGMENT_COLORS.Power },
+  { ticker: "CCJ",  name: "Cameco Corporation",    segment: "Power",          thesisScore: 7.5, rationale: "Uranium mining and fuel services",              color: SEGMENT_COLORS.Power },
+  { ticker: "TSM",  name: "Taiwan Semiconductor",  segment: "Compute",        thesisScore: 7.2, rationale: "Contract chip manufacturing",                   color: SEGMENT_COLORS.Compute },
+  { ticker: "VST",  name: "Vistra Corp",           segment: "Power",          thesisScore: 7.0, rationale: "Merchant power generation",                     color: SEGMENT_COLORS.Power },
+  { ticker: "AMD",  name: "Advanced Micro Devices",segment: "Compute",        thesisScore: 6.0, rationale: "GPUs and data center CPUs",                     color: SEGMENT_COLORS.Compute },
 ];
 
 const segmentIcons: Record<string, React.ElementType> = {
   Compute: Cpu, Infrastructure: Server, Power: Zap,
 };
+
+/** Fixed display order for the sensitivities list. */
+const SEGMENT_ORDER = ["Compute", "Infrastructure", "Power"];
 
 function NumField({
   label, value, unit, min, max, step = 1, onChange, hint, testId,
@@ -233,7 +236,10 @@ export default function TheTrade({ embedded = false }: { embedded?: boolean; par
     };
   }, [inputs]);
 
-  const rankedCompanies = useMemo(() => {
+  // Same arithmetic as before. The list is no longer sorted by the result:
+  // an editorial score moved by two sliders is not a ranking with a method
+  // behind it, so the order is fixed (segment, then ticker).
+  const companySensitivities = useMemo(() => {
     return [...TOP_COMPANIES]
       .map((c) => {
         const bump =
@@ -245,7 +251,10 @@ export default function TheTrade({ embedded = false }: { embedded?: boolean; par
         const adjusted = Math.min(10.0, c.thesisScore + bump);
         return { ...c, adjusted, delta: bump };
       })
-      .sort((a, b) => b.adjusted - a.adjusted);
+      .sort(
+        (a, b) =>
+          SEGMENT_ORDER.indexOf(a.segment) - SEGMENT_ORDER.indexOf(b.segment) || a.ticker.localeCompare(b.ticker),
+      );
   }, [inputs.nuclearPct, inputs.aiCagrPct]);
 
   const lptColor = outputs.lptRatio < 0.5
@@ -290,20 +299,18 @@ export default function TheTrade({ embedded = false }: { embedded?: boolean; par
 
   // Embedded mode (Analyze tool, scenario tab): the host page owns the hero,
   // so render a slim intro (description + presets) instead of the full header.
+  // The presets are GridTilt's own assumptions, not a published projection.
+  const introText = "Illustrative 2030 scenario. Change the assumptions below.";
   const intro = embedded ? (
     <div className="px-1">
-      <p className="text-muted-foreground text-xs leading-relaxed max-w-3xl">
-        50 GW of new AI datacenter capacity is projected by 2030. Model capex, grid interconnect timelines, and power supply mix under different assumptions.
-      </p>
+      <p className="text-muted-foreground text-xs leading-relaxed max-w-3xl" data-testid="scenario-intro">{introText}</p>
       {presetSelector}
     </div>
   ) : (
     <div className="border-b border-border px-6 py-5">
       <div>
         <h1 className="text-2xl font-bold text-foreground tracking-tight">Scenario Calculator</h1>
-        <p className="text-muted-foreground text-sm mt-1 max-w-xl">
-          50 GW of new AI datacenter capacity is projected by 2030. Model capex, grid interconnect timelines, and power supply mix under different assumptions.
-        </p>
+        <p className="text-muted-foreground text-sm mt-1 max-w-xl" data-testid="scenario-intro">{introText}</p>
       </div>
       {presetSelector}
     </div>
@@ -498,7 +505,16 @@ export default function TheTrade({ embedded = false }: { embedded?: boolean; par
 
           {/* ---- RIGHT: OUTPUTS ---- */}
           <div className="space-y-5">
-            <h2 className="text-[13px] font-semibold text-foreground">Scenario Outputs</h2>
+            <div>
+              <h2 className="text-[13px] font-semibold text-foreground">Scenario Outputs</h2>
+              {/* The assumptions and the caveat sit with the numbers they produce,
+                  not only inside the collapsed methodology panel. */}
+              <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed" data-testid="scenario-assumptions">
+                From your assumptions: {inputs.newCapacityGW} GW of new capacity by 2030, ${inputs.capexPerMW}M per MW,{" "}
+                {inputs.nuclearPct}% nuclear, {inputs.aiCagrPct}% a year AI demand growth, PUE {inputs.pue.toFixed(2)}.
+                A scenario, not a forecast or financial advice.
+              </p>
+            </div>
 
             {/* 4 KPI output cards */}
             <div className="grid grid-cols-2 gap-3">
@@ -614,16 +630,20 @@ export default function TheTrade({ embedded = false }: { embedded?: boolean; par
               </Card>
             </div>
 
-            {/* Company rankings */}
+            {/* Company sensitivities (not a ranking) */}
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <h2 className="text-[13px] font-semibold text-foreground">Scenario-Adjusted Positions</h2>
+                <h2 className="text-[13px] font-semibold text-foreground">Illustrative company sensitivities</h2>
                 <UITooltip>
                   <TooltipTrigger>
                     <Info className="h-3.5 w-3.5 text-muted-foreground/60" />
                   </TooltipTrigger>
                   <TooltipContent className="max-w-xs">
-                    <p className="text-xs">Thesis leverage scores (0-10) adjusted by your scenario inputs. Higher nuclear % boosts Power names; higher CAGR boosts Compute. Not financial advice.</p>
+                    <p className="text-xs">
+                      GridTilt's editorial 0-10 score for each business, moved by two inputs: a higher nuclear share
+                      raises power names, faster AI demand growth raises compute and infrastructure names. This scale
+                      is separate from the 0-100 sector scores on Analyze and the stock pages. Not a forecast of returns.
+                    </p>
                   </TooltipContent>
                 </UITooltip>
               </div>
@@ -634,21 +654,19 @@ export default function TheTrade({ embedded = false }: { embedded?: boolean; par
                   </div>
                 ) : (
                 <>
-                <div className="grid grid-cols-[1.5rem_1fr_auto_auto] gap-x-3 px-3 py-2 border-b border-border bg-muted/20">
-                  <span className="text-[11px] text-muted-foreground">#</span>
-                  <span className="text-[11px] text-muted-foreground">Position</span>
+                <div className="grid grid-cols-[1fr_auto_auto] gap-x-3 px-3 py-2 border-b border-border bg-muted/20">
+                  <span className="text-[11px] text-muted-foreground">Company</span>
                   <span className="text-[11px] text-muted-foreground text-right">Score</span>
-                  <span className="text-[11px] text-muted-foreground text-right w-12">Delta</span>
+                  <span className="text-[11px] text-muted-foreground text-right w-12">Change</span>
                 </div>
-                {rankedCompanies.map((company, index) => {
+                {companySensitivities.map((company) => {
                   const SegIcon = segmentIcons[company.segment] ?? DollarSign;
                   return (
                     <div
                       key={company.ticker}
-                      className="grid grid-cols-[1.5rem_1fr_auto_auto] gap-x-3 items-center px-3 py-2.5 border-b border-border/50 last:border-0 hover:bg-muted/10 transition-colors"
+                      className="grid grid-cols-[1fr_auto_auto] gap-x-3 items-center px-3 py-2.5 border-b border-border/50 last:border-0 hover:bg-muted/10 transition-colors"
                       data-testid={`trade-company-${company.ticker}`}
                     >
-                      <span className="text-xs font-mono text-muted-foreground/60">{index + 1}</span>
                       <div className="min-w-0">
                         <div className="flex items-center gap-2 mb-0.5">
                           <span className="font-bold text-sm text-foreground font-mono">{company.ticker}</span>
@@ -766,13 +784,13 @@ export default function TheTrade({ embedded = false }: { embedded?: boolean; par
                   <div className="space-y-3">
                     <p className="text-[12px] font-semibold text-foreground">Key Sensitivities</p>
                     <div className="space-y-2 text-muted-foreground leading-relaxed">
-                      <p><span className="text-foreground font-medium">Nuclear %</span> is the highest-leverage input. Each 10pp increase re-rates CEG, CCJ, and VST scores.</p>
+                      <p><span className="text-foreground font-medium">Nuclear %</span> moves the illustrative scores of CEG, CCJ, and VST.</p>
                       <p><span className="text-foreground font-medium">Capex per MW</span> drives total capital deployed. At 50 GW, the $7M-$12M range = $250B swing.</p>
                       <p><span className="text-foreground font-medium">LPT per GW</span> (default: 4) is the most uncertain assumption in this model; academic literature ranges from 2 to 6.</p>
                       <p><span className="text-foreground font-medium">AI CAGR</span> is the most volatile input; a 10pp change produces a ~200 TWh swing in 2030 US power demand.</p>
                     </div>
                     <div className="mt-3 p-3 rounded bg-muted/20 border border-border/60 text-muted-foreground/70 leading-relaxed">
-                      All assumptions are adjustable. GridTilt provides the framework; you provide the thesis. This is a scenario analysis tool, not financial advice.
+                      All assumptions are adjustable. This is a scenario tool, not a forecast or financial advice.
                     </div>
                   </div>
                 </div>

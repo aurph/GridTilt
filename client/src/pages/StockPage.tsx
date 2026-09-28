@@ -134,7 +134,7 @@ export default function StockPage() {
 
   function handleShare() {
     const url = `https://gridtilt.com/stock/${data!.ticker}`;
-    const text = `${data!.name} ($${data!.ticker}) scores ${data!.thesisScore}/100 on the AI power thesis. ${data!.primarySegment} sector. See the full analysis on @gridtilt: ${url}`;
+    const text = `${data!.name} ($${data!.ticker}) on GridTilt: ${data!.primarySegment} in its editorial sector classification. ${url}`;
     navigator.clipboard.writeText(text).then(() => {
       toast({ title: "Copied to clipboard", description: "Share text copied" });
     });
@@ -187,7 +187,7 @@ export default function StockPage() {
             <Share2 className="h-3 w-3" /> Share
           </button>
           <a
-            href={`https://x.com/intent/tweet?text=${encodeURIComponent(`$${data.ticker} scores ${data.thesisScore}/100 on the AI power thesis. ${data.primarySegment} sector.`)}&url=${encodeURIComponent(`https://gridtilt.com/stock/${data.ticker}`)}`}
+            href={`https://x.com/intent/tweet?text=${encodeURIComponent(`$${data.ticker} on GridTilt: ${data.primarySegment} in its editorial sector classification.`)}&url=${encodeURIComponent(`https://gridtilt.com/stock/${data.ticker}`)}`}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border border-border hover:bg-muted/50 transition-colors"
@@ -201,10 +201,16 @@ export default function StockPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
           <Card className="p-5 border-card-border" data-testid="thesis-score-card">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-[13px] font-semibold text-foreground">Thesis Alignment Score</h2>
+            <div className="flex items-center justify-between mb-1">
+              <h2 className="text-[13px] font-semibold text-foreground">Editorial sector classification</h2>
               <span className="text-3xl font-bold font-mono text-brand-2" data-testid="thesis-score">{data.thesisScore}/100</span>
             </div>
+            {/* Three GridTilt surfaces score companies on three scales; this says
+                which one this is instead of letting them look like one number. */}
+            <p className="text-[11px] text-muted-foreground/70 mb-4" data-testid="score-scale-note">
+              Weights compute 25%, infrastructure 25%, power 20%, cooling 15%, grid 15%. Analyze weights the same
+              classifications differently, so its number for this company can differ. Not a rating or a recommendation.
+            </p>
             <p className="text-sm text-muted-foreground mb-4">{data.explanation}</p>
             <div className="grid grid-cols-5 gap-3">
               {Object.entries(data.sectors).map(([key, val]) => (
