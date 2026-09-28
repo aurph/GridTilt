@@ -4144,6 +4144,7 @@ ${rssItems}
       grid: { queueGW: qh.queueOverallGW, medianWaitMonths: qh.medianWaitMonths, ercotGW: qh.ercotLargeLoadGW },
       deals: {
         signedCount: dm.signed.count,
+        signedUndisclosed: dm.signed.undisclosed,
         signedGW: +(dm.signed.mw / 1000).toFixed(1),
         pendingCount: dm.byFirmness
           .filter((b) => b.key === "framework" || b.key === "option" || b.key === "preliminary")

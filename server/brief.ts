@@ -32,6 +32,8 @@ export interface BriefInput {
   /** Signed means reviewed against a primary document. Nothing else is summed. */
   deals: {
     signedCount: number;
+    /** Signed agreements with no disclosed size: counted, not in signedGW. */
+    signedUndisclosed: number;
     signedGW: number;
     /** Reviewed frameworks, options and letters of intent. Not counted as signed. */
     pendingCount: number;
@@ -69,11 +71,18 @@ function moverPhrase(model: string, changePct: number): string {
 
 export function composeBrief(input: BriefInput): Brief {
   const { compute: c, gpu: g, grid: q, deals: d } = input;
+  // An undisclosed size is counted but adds nothing to the GW, so the sentence
+  // names how many agreements the total covers.
+  const sized = d.signedCount - d.signedUndisclosed;
+  const signedTotal =
+    d.signedUndisclosed > 0
+      ? `${d.signedCount} signed power agreements; the ${sized} with a disclosed size total ${gw(d.signedGW)}`
+      : `${d.signedCount} signed power agreements total ${gw(d.signedGW)}`;
 
   const summary =
     `The US AI buildout we track now spans ${c.clusterCount} named compute clusters and ${gw(c.plannedGW)} of planned power ` +
     `across ${c.operatorCount} operators, with ${gw(c.operationalGW)} already live. ` +
-    `${d.signedCount} signed power agreements total ${gw(d.signedGW)}, and on-demand GPUs rent for an average of ${usd(g.fleetAvg)}/GPU-hr.`;
+    `${signedTotal}, and on-demand GPUs rent for an average of ${usd(g.fleetAvg)}/GPU-hr.`;
 
   const compute: BriefSection = {
     heading: "Compute",
@@ -104,7 +113,9 @@ export function composeBrief(input: BriefInput): Brief {
   const deals: BriefSection = {
     heading: "Power agreements",
     points: [
-      `${d.signedCount} signed agreements, ${gw(d.signedGW)}.`,
+      d.signedUndisclosed > 0
+        ? `${d.signedCount} signed agreements, ${gw(d.signedGW)} across the ${sized} with a disclosed size.`
+        : `${d.signedCount} signed agreements, ${gw(d.signedGW)}.`,
       ...(d.pendingCount > 0
         ? [`${d.pendingCount} more are frameworks, options or letters of intent, not counted as signed.`]
         : []),

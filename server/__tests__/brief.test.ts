@@ -12,11 +12,12 @@ const INPUT: BriefInput = {
   grid: { queueGW: 2290, medianWaitMonths: 55, ercotGW: 230 },
   deals: {
     signedCount: 14,
+    signedUndisclosed: 0,
     signedGW: 12.4,
     pendingCount: 6,
     unreviewedCount: 3,
     topSignedBuyer: "Microsoft",
-    topSignedBuyerGW: 46,
+    topSignedBuyerGW: 4.6,
     topSignedType: "nuclear",
     topSignedTypeGW: 7.2,
   },
@@ -39,7 +40,7 @@ test("section points read from the live numbers", () => {
   assert.ok(flat.includes("Meta Hyperion") && flat.includes("5 GW"));
   assert.ok(/MI325X down 39%|MI325X down 38/.test(flat)); // biggest mover, rounded
   assert.ok(flat.includes("2,290 GW")); // comma-grouped queue
-  assert.ok(flat.includes("Microsoft") && flat.includes("46 GW"));
+  assert.ok(flat.includes("Microsoft") && flat.includes("4.6 GW"));
 });
 
 test("only signed agreements are totalled; the rest are named as not counted", () => {
@@ -64,4 +65,11 @@ test("plaintext render has the title, bullets, and a takeaway, no markdown heade
   assert.ok(txt.includes("Compute") && txt.includes("- ")); // bulleted points
   assert.ok(txt.includes(b.takeaway));
   assert.ok(!txt.includes("#"), "no markdown header glyphs");
+});
+
+test("a signed total that leaves out an undisclosed size says how many agreements it covers", () => {
+  const b = composeBrief({ ...INPUT, deals: { ...INPUT.deals, signedCount: 33, signedUndisclosed: 1, signedGW: 30.9 } });
+  assert.ok(b.summary.includes("33 signed power agreements; the 32 with a disclosed size total 30.9 GW"), b.summary);
+  const flat = b.sections.flatMap((s) => s.points).join(" | ");
+  assert.ok(flat.includes("33 signed agreements, 30.9 GW across the 32 with a disclosed size."), flat);
 });

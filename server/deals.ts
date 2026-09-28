@@ -85,6 +85,8 @@ export interface Bucket {
   /** Sum of disclosed MW. Rows with undisclosed capacity add to `undisclosed`, not to this. */
   mw: number;
   undisclosed: number;
+  /** The part of `mw` stated as a ceiling ("up to"), not a contracted quantity. */
+  upToMW: number;
 }
 
 export interface DealMetrics {
@@ -170,11 +172,14 @@ function uniqueWithin(rows: DealRow[]): DealRow[] {
 }
 
 function sumBucket(key: string, rows: DealRow[]): Bucket {
-  const b: Bucket = { key, count: 0, mw: 0, undisclosed: 0 };
+  const b: Bucket = { key, count: 0, mw: 0, undisclosed: 0, upToMW: 0 };
   for (const r of rows) {
     b.count++;
     if (r.capacityMW === null) b.undisclosed++;
-    else b.mw += r.capacityMW;
+    else {
+      b.mw += r.capacityMW;
+      if (r.upTo) b.upToMW += r.capacityMW;
+    }
   }
   return b;
 }

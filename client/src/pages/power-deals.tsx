@@ -19,7 +19,7 @@ import { seriesMotion, axisProps, gridProps, tooltipContentStyle } from "@/lib/c
 
 // Payload of /api/deals/metrics (server/deals.ts). Every figure is scoped to one
 // agreement status; nothing here adds statuses together.
-interface Bucket { key: string; count: number; mw: number; undisclosed: number; }
+interface Bucket { key: string; count: number; mw: number; undisclosed: number; upToMW?: number; }
 type FirmnessKey = "signed" | "framework" | "option" | "preliminary" | "portfolio" | "unreviewed";
 interface DealRow {
   id: string;
@@ -115,10 +115,17 @@ export default function PowerDeals({ embedded = false }: { embedded?: boolean; p
   const [open, setOpen] = useState<string | null>(null);
 
   const rows = data?.rows ?? [];
+  // A row inside another listed row (a plant inside its framework, a tranche
+  // inside its PPA): shown, labeled, and counted once in the parent.
+  const parentOf = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const r of rows) for (const id of r.includes) m.set(id, r.name);
+    return m;
+  }, [rows]);
   const bucket = (k: FirmnessKey) => data?.byFirmness.find((b) => b.key === k) ?? null;
 
   const byBuyer = useMemo(
-    () => (data?.signedByBuyer ?? []).map((b) => ({ buyer: b.key, gw: +(b.mw / 1000).toFixed(1), count: b.count })),
+    () => (data?.signedByBuyer ?? []).map((b) => ({ buyer: b.key, gw: +(b.mw / 1000).toFixed(1), count: b.count, undisclosed: b.undisclosed })),
     [data],
   );
 
@@ -157,8 +164,8 @@ export default function PowerDeals({ embedded = false }: { embedded?: boolean; p
 
   const introText =
     "Power agreements between AI or hyperscale buyers and generators: PPAs, utility supply agreements, " +
-    "reactor restarts, frameworks and letters of intent. Each row says how binding it is. Only signed " +
-    "agreements are totalled.";
+    "reactor restarts, frameworks and letters of intent. Each row says how binding it is. Each status " +
+    "is totalled on its own; the totals are never added together.";
 
   // Embedded mode (Power tool, Deals tab): the host page owns the hero, so
   // render a slim intro row instead of the full-page header.
@@ -203,7 +210,7 @@ export default function PowerDeals({ embedded = false }: { embedded?: boolean; p
           <StatTile
             label="Signed"
             value={signed ? `${gw(signed.mw)} GW` : "—"}
-            sub={signed ? `${signed.count} agreement${signed.count === 1 ? "" : "s"}${signed.undisclosed ? `, ${signed.undisclosed} size undisclosed` : ""}` : undefined}
+            sub={signed ? `${signed.count} agreement${signed.count === 1 ? "" : "s"}${signed.undisclosed ? `, ${signed.undisclosed} size undisclosed` : ""}${signed.upToMW ? `, ${gw(signed.upToMW)} GW of it "up to"` : ""}` : undefined}
             loading={isLoading}
           />
           {/* Stated amounts, not ceilings: a framework can be a floor ("over
@@ -211,13 +218,13 @@ export default function PowerDeals({ embedded = false }: { embedded?: boolean; p
           <StatTile
             label="Frameworks and options"
             value={data ? (frameworkCount ? `${gw(frameworkMW)} GW` : "none") : "—"}
-            sub={data && frameworkCount ? `${frameworkCount} agreement${frameworkCount === 1 ? "" : "s"}, as stated, not signed` : undefined}
+            sub={data && frameworkCount ? `${frameworkCount} agreement${frameworkCount === 1 ? "" : "s"}, as stated, not counted as signed` : undefined}
             loading={isLoading}
           />
           <StatTile
             label="LOIs and non-binding"
             value={data ? (prelim ? `${gw(prelim.mw)} GW` : "none") : "—"}
-            sub={prelim ? `${prelim.count} agreement${prelim.count === 1 ? "" : "s"}, as stated, not signed` : undefined}
+            sub={prelim ? `${prelim.count} agreement${prelim.count === 1 ? "" : "s"}, as stated, non-binding` : undefined}
             loading={isLoading}
           />
           <StatTile
@@ -249,7 +256,12 @@ export default function PowerDeals({ embedded = false }: { embedded?: boolean; p
                 <RTooltip
                   cursor={{ fill: BORDER.subtle }}
                   contentStyle={tooltipContentStyle}
-                  formatter={(v: number, _n, p: any) => [`${v} GW across ${p.payload.count} signed agreement${p.payload.count === 1 ? "" : "s"}`, p.payload.buyer]}
+                  formatter={(v: number, _n, p: any) => {
+                    // An undisclosed size is counted but adds nothing to the GW.
+                    const sized = p.payload.count - p.payload.undisclosed;
+                    const more = p.payload.undisclosed ? `, plus ${p.payload.undisclosed} of undisclosed size` : "";
+                    return [`${v} GW across ${sized} signed agreement${sized === 1 ? "" : "s"}${more}`, p.payload.buyer];
+                  }}
                 />
                 <Bar {...seriesMotion()} dataKey="gw" fill={BRAND.primary} radius={[0, 3, 3, 0]} isAnimationActive={false}
                   label={{ position: "right", formatter: (v: number) => `${v}`, fill: INK.muted, fontSize: 10, fontFamily: FONT.mono }} />
@@ -347,7 +359,10 @@ export default function PowerDeals({ embedded = false }: { embedded?: boolean; p
                     </span>
                     <span className="col-span-2 inline-flex items-center gap-1.5 min-w-0" data-testid={`deal-status-${r.id}`}>
                       <StatusDot color={f.dot} hollow={f.hollow} />
-                      <span className="truncate" style={{ color: r.firmness === "unreviewed" ? INK.muted : INK.secondary }}>{f.label}</span>
+                      <span className="truncate" style={{ color: r.firmness === "unreviewed" ? INK.muted : INK.secondary }}>
+                        {f.label}
+                        {parentOf.get(r.id) && <span className="text-muted-foreground/60"> · part of another row</span>}
+                      </span>
                     </span>
                     <span className="col-span-2 font-mono text-foreground text-right tabular-nums">{capacityText(r)}</span>
                     <span className="col-span-2 inline-flex items-center justify-end gap-1 font-mono text-muted-foreground tabular-nums text-11 min-w-0">
@@ -383,8 +398,11 @@ export default function PowerDeals({ embedded = false }: { embedded?: boolean; p
                           </>
                         )}
                       </div>
-                      {r.aggregate && <div>A company-wide total. The agreements inside it are listed separately and are not added to it.</div>}
-                      {r.includes.length > 0 && !r.aggregate && (
+                      {r.firmness === "portfolio" && <div>A company-wide total. The agreements inside it are listed separately and are not added to it.</div>}
+                      {parentOf.get(r.id) && (
+                        <div>Part of {parentOf.get(r.id)}: its MW is counted once, in that row.</div>
+                      )}
+                      {r.includes.length > 0 && r.firmness !== "portfolio" && (
                         <div>Includes {r.includes.map((id) => rows.find((x) => x.id === id)?.name ?? id).join(", ")}, listed separately and not added twice.</div>
                       )}
                       {r.notes && <p className="text-muted-foreground/80">{r.notes}</p>}
