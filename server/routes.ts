@@ -46,6 +46,7 @@ import { fetchLivePrices, type GpuSweepSummary } from "./gpu-live";
 import { getUraniumCorrelation } from "./uranium-correlation";
 import { renderWeeklyEmail, weeklyDateLabel } from "./weekly-digest";
 import { fractionToPercent, getCachedFundamentals, refreshFundamentalsIfStale } from "./fundamentals";
+import { normalizeTickerInput, scoreBasket } from "./portfolio-score";
 import {
   easternDate,
   catalystPhase,
@@ -212,37 +213,6 @@ const COMPANY_DATABASE: Record<string, {
   ANET: { name: "Arista Networks Inc", primarySegment: "Compute", sectors: { Compute: 40, Infrastructure: 30, Power: 5, Cooling: 8, Grid: 5 }, explanation: "DC networking switches and software. Dominates cloud provider network deployments." },
   MRVL: { name: "Marvell Technology Inc", primarySegment: "Compute", sectors: { Compute: 65, Infrastructure: 18, Power: 5, Cooling: 8, Grid: 5 }, explanation: "Custom AI accelerator and DC networking silicon. Electro-optics for hyperscaler infrastructure." },
 };
-
-function scorePortfolioTicker(ticker: string) {
-  const known = COMPANY_DATABASE[ticker.toUpperCase()];
-  if (known) {
-    const sectors = known.sectors;
-    const score = Math.round(
-      sectors.Compute * 0.3 +
-      sectors.Infrastructure * 0.25 +
-      sectors.Power * 0.25 +
-      sectors.Cooling * 0.1 +
-      sectors.Grid * 0.1
-    );
-    return {
-      ticker: ticker.toUpperCase(),
-      name: known.name,
-      score: Math.min(score, 100),
-      sectors,
-      primarySegment: known.primarySegment,
-      explanation: known.explanation,
-    };
-  }
-
-  return {
-    ticker: ticker.toUpperCase(),
-    name: `${ticker.toUpperCase()} (Unknown)`,
-    score: 8,
-    sectors: { Compute: 10, Infrastructure: 5, Power: 5, Cooling: 5, Grid: 5 },
-    primarySegment: "Other",
-    explanation: "No direct AI power infrastructure exposure identified. May have indirect benefits from broader technology adoption.",
-  };
-}
 
 // Yahoo chart() options keyed to the requested timeframe.
 // Returns intraday for 1D, hourly for 5D, daily for 1M.
@@ -2725,18 +2695,14 @@ export async function registerRoutes(
   });
 
   // Portfolio scoring endpoint
+  // Editorial sector classifications for a list of tickers. A ticker the
+  // registry does not classify comes back uncovered, with no score; the mean
+  // covers classified tickers only. Malformed input is a 400, not a 500.
   app.post("/api/portfolio-score", async (req, res) => {
+    const input = normalizeTickerInput(req.body?.tickers);
+    if (!input.ok) return res.status(400).json({ error: input.error });
     try {
-      const { tickers } = req.body;
-      if (!Array.isArray(tickers) || tickers.length === 0) {
-        return res.status(400).json({ error: "tickers must be a non-empty array" });
-      }
-
-      const results = tickers.slice(0, 15).map((ticker: string) =>
-        scorePortfolioTicker(ticker.trim().toUpperCase())
-      );
-
-      res.json({ results });
+      res.json(scoreBasket(input.tickers, COMPANY_DATABASE));
     } catch (error) {
       console.error("Portfolio score error:", error);
       res.status(500).json({ error: "Failed to score portfolio" });

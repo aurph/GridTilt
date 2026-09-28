@@ -26,8 +26,11 @@ import { useToast } from "@/hooks/use-toast";
 import { BORDER, BRAND, CATEGORY_COLORS, CHART_CHROME, FONT, INK, SEMANTIC, SERIES } from "@/lib/tokens";
 import { chartTheme, seriesMotion } from "@/lib/chart-theme";
 
-interface PortfolioResult {
+// Payload of POST /api/portfolio-score (server/portfolio-score.ts). A ticker the
+// registry does not classify comes back uncovered: no score, no sectors.
+interface CoveredResult {
   ticker: string;
+  covered: true;
   name: string;
   score: number;
   sectors: {
@@ -39,6 +42,31 @@ interface PortfolioResult {
   };
   primarySegment: string;
   explanation: string;
+}
+type PortfolioResult = CoveredResult | { ticker: string; covered: false };
+interface PortfolioResponse {
+  results: PortfolioResult[];
+  summary: { requested: number; covered: number; meanScore: number | null };
+}
+
+/** The server's validation message, not the raw "400: {json}" the request helper throws. */
+function readableError(err: unknown): string {
+  const msg = err instanceof Error ? err.message : String(err);
+  const m = /^\d{3}: ([\s\S]*)$/.exec(msg);
+  if (m) {
+    try {
+      const body = JSON.parse(m[1]);
+      if (typeof body?.error === "string") return body.error;
+    } catch {
+      /* not JSON; fall through */
+    }
+  }
+  return "Could not score these tickers.";
+}
+
+/** Split, trim, uppercase and de-duplicate, so "NVDA, nvda" is one ticker. */
+function parseTickers(value: string): string[] {
+  return Array.from(new Set(value.split(/[,\s]+/).map((t) => t.trim().toUpperCase()).filter(Boolean)));
 }
 
 /** The radar axes, which are exactly the keys of a result's `sectors`. */
@@ -117,7 +145,7 @@ function ScoreRing({ score }: { score: number }) {
 // <Route component={...}>; only `embedded` is meaningful.
 export default function PortfolioOverlay({ embedded = false }: { embedded?: boolean; params?: unknown }) {
   const [inputValue, setInputValue] = useState("");
-  const [results, setResults] = useState<PortfolioResult[] | null>(null);
+  const [response, setResponse] = useState<PortfolioResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   // True only for the auto-loaded default example, never for a user-entered
@@ -126,16 +154,16 @@ export default function PortfolioOverlay({ embedded = false }: { embedded?: bool
   const { toast } = useToast();
 
   const { mutate, isPending } = useMutation({
-    mutationFn: async (tickers: string[]) => {
+    mutationFn: async (tickers: string[]): Promise<PortfolioResponse> => {
       const res = await apiRequest("POST", "/api/portfolio-score", { tickers });
       return res.json();
     },
     onSuccess: (data) => {
-      setResults(data.results);
+      setResponse(data);
       setError(null);
     },
-    onError: (err: any) => {
-      setError(err.message ?? "Failed to score portfolio");
+    onError: (err: unknown) => {
+      setError(readableError(err));
     },
   });
 
@@ -147,7 +175,7 @@ export default function PortfolioOverlay({ embedded = false }: { embedded?: bool
     if (tickerParam) {
       const decoded = decodeURIComponent(tickerParam);
       setInputValue(decoded);
-      const tickers = decoded.split(",").map((t) => t.trim().toUpperCase()).filter(Boolean);
+      const tickers = parseTickers(decoded);
       if (tickers.length > 0 && tickers.length <= 15) {
         mutate(tickers);
         return;
@@ -155,16 +183,12 @@ export default function PortfolioOverlay({ embedded = false }: { embedded?: bool
     }
     setInputValue(DEFAULT_EXAMPLE.tickers);
     setIsDefaultExample(true);
-    const tickers = DEFAULT_EXAMPLE.tickers.split(",").map((t) => t.trim().toUpperCase()).filter(Boolean);
-    mutate(tickers);
+    mutate(parseTickers(DEFAULT_EXAMPLE.tickers));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleSubmit = () => {
-    const tickers = inputValue
-      .split(/[,\s]+/)
-      .map((t) => t.trim().toUpperCase())
-      .filter(Boolean);
+    const tickers = parseTickers(inputValue);
     if (tickers.length === 0) return;
     if (tickers.length > 15) {
       setError("Maximum 15 tickers at once");
@@ -181,10 +205,7 @@ export default function PortfolioOverlay({ embedded = false }: { embedded?: bool
   };
 
   const handleShare = async () => {
-    const tickers = inputValue
-      .split(/[,\s]+/)
-      .map((t) => t.trim().toUpperCase())
-      .filter(Boolean);
+    const tickers = parseTickers(inputValue);
     if (tickers.length === 0) return;
     const encoded = encodeURIComponent(tickers.join(","));
     const sharePath = embedded ? window.location.pathname : "/portfolio";
@@ -199,42 +220,55 @@ export default function PortfolioOverlay({ embedded = false }: { embedded?: bool
     }
   };
 
-  // Sort a copy: sorting `results` in place would mutate React state during render.
-  const sortedResults = useMemo(
-    () => (results ? [...results].sort((a, b) => b.score - a.score) : null),
-    [results],
+  // Covered tickers only. An uncovered ticker has no score and no sectors, so it
+  // cannot enter an average or the radar; it is listed separately instead.
+  // Sorted on a copy: sorting state in place would mutate it during render.
+  const covered = useMemo(
+    () =>
+      response
+        ? response.results
+            .filter((r): r is CoveredResult => r.covered)
+            .sort((a, b) => b.score - a.score)
+        : null,
+    [response],
+  );
+  const uncovered = useMemo(
+    () => (response ? response.results.filter((r) => !r.covered).map((r) => r.ticker) : []),
+    [response],
   );
 
   // `as const` rather than a string[]: the axis names are the keys of `sectors`,
   // so indexing is checked and a typo is a compile error instead of a NaN that
   // reaches the chart.
-  const radarData: RadarDataPoint[] = results
-    ? RADAR_AXES.map((axis) => ({
-        axis,
-        value: results.reduce((sum, r) => sum + r.sectors[axis], 0) / results.length,
-        fullMark: 100,
-      }))
-    : [];
+  const radarData: RadarDataPoint[] = useMemo(
+    () =>
+      covered && covered.length > 0
+        ? RADAR_AXES.map((axis) => ({
+            axis,
+            value: covered.reduce((sum, r) => sum + r.sectors[axis], 0) / covered.length,
+            fullMark: 100,
+          }))
+        : [],
+    [covered],
+  );
 
   const sortedSegments = useMemo(
     () => [...radarData].sort((a, b) => b.value - a.value),
     [radarData],
   );
 
-  // How many holdings are primarily classified into each segment - a
+  // How many covered holdings are primarily classified into each segment - a
   // different cut on the same real results, not a duplicate of the radar.
   const segmentMix = useMemo(() => {
-    if (!results) return [] as [string, number][];
+    if (!covered) return [] as [string, number][];
     const counts: Record<string, number> = {};
-    results.forEach((r) => {
+    covered.forEach((r) => {
       counts[r.primarySegment] = (counts[r.primarySegment] ?? 0) + 1;
     });
     return Object.entries(counts).sort((a, b) => b[1] - a[1]);
-  }, [results]);
+  }, [covered]);
 
-  const avgScore = results
-    ? Math.round(results.reduce((s, r) => s + r.score, 0) / results.length)
-    : null;
+  const avgScore = response?.summary.meanScore ?? null;
 
   const addTicker = (t: string) => {
     setInputValue((v) => {
@@ -382,13 +416,22 @@ export default function PortfolioOverlay({ embedded = false }: { embedded?: bool
           </div>
         )}
 
-        {sortedResults && !isPending && (
+        {response && covered && !isPending && covered.length === 0 && (
+          <Card className="p-6 border-card-border text-center" data-testid="portfolio-not-covered">
+            <p className="text-sm font-semibold text-foreground">Not covered</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              GridTilt does not classify {uncovered.join(", ")}, so there is no score to show.
+            </p>
+          </Card>
+        )}
+
+        {response && covered && !isPending && covered.length > 0 && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Stock list */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <h2 className="text-[13px] font-semibold text-foreground">
-                  {sortedResults.length} Holdings Scored
+                <h2 className="text-[13px] font-semibold text-foreground" data-testid="portfolio-coverage">
+                  {covered.length} of {response.summary.requested} covered
                 </h2>
                 {avgScore !== null && (
                   <div className="text-right">
@@ -398,7 +441,17 @@ export default function PortfolioOverlay({ embedded = false }: { embedded?: bool
                 )}
               </div>
 
-              {sortedResults.map((r) => (
+              {uncovered.length > 0 && (
+                <Card className="p-3 border-card-border bg-muted/10" data-testid="portfolio-uncovered">
+                  <p className="text-xs text-muted-foreground">
+                    <span className="text-foreground font-medium">Not covered: </span>
+                    <span className="font-mono">{uncovered.join(", ")}</span>. Not in GridTilt's classifications, so
+                    left out of the average and the radar.
+                  </p>
+                </Card>
+              )}
+
+              {covered.map((r) => (
                   <Card key={r.ticker} className="p-4 border-card-border" data-testid={`portfolio-card-${r.ticker}`}>
                     <div className="flex items-center gap-3">
                       <ScoreRing score={r.score} />
@@ -558,7 +611,7 @@ export default function PortfolioOverlay({ embedded = false }: { embedded?: bool
           </div>
         )}
 
-        {!results && !isPending && error && (
+        {!response && !isPending && error && (
           <Card className="p-6 border-card-border text-center" data-testid="portfolio-load-error">
             <AlertCircle className="h-6 w-6 text-negative/70 mx-auto mb-2" />
             <p className="text-sm text-muted-foreground">Could not score the portfolio. Enter tickers above and try again.</p>
