@@ -5,7 +5,8 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertTriangle, MapPin, Zap } from "lucide-react";
-import { RTO_CONFIG, RTO_SOURCE_NOTE } from "@/data/rto-config";
+import { NERC_LTRA } from "@/data/nerc-reserve-margins";
+import { areasForRegion, regionMarginText, regionRisk, regionRiskText } from "@/lib/reserve-margins";
 import { ErrorState } from "@/components/Freshness";
 import { SortableTh } from "@/components/sortable-table";
 import { nextSort, sortBy, type SortState } from "@/lib/table-sort";
@@ -109,11 +110,12 @@ const STATUS_BADGE: Record<Datacenter["status"], { label: string; className: str
   announced: { label: "Announced", className: "bg-muted text-muted-foreground" },
 };
 
-const SIGNAL_BADGE: Record<string, string> = {
-  Critical: "bg-negative-deep/15 text-negative border-negative-deep/30",
+/** NERC's 2026 risk levels; a region whose areas differ gets the neutral style. */
+const RISK_BADGE: Record<string, string> = {
+  High: "bg-negative-deep/15 text-negative border-negative-deep/30",
   Elevated: "bg-warning/15 text-warning border-warning/30",
-  Moderate: "bg-positive-deep/15 text-positive border-positive-deep/30",
-  Low: "bg-positive-deep/15 text-positive border-positive-deep/30",
+  Normal: "bg-positive-deep/15 text-positive border-positive-deep/30",
+  mixed: "bg-muted/30 text-muted-foreground border-border",
 };
 
 export default function RegionPage() {
@@ -149,7 +151,7 @@ export default function RegionPage() {
     (acc, d) => ({ ...acc, [d.status]: (acc[d.status] ?? 0) + 1 }),
     {} as Record<string, number>,
   );
-  const rtoConfig = RTO_CONFIG[region.name];
+  const nercAreas = areasForRegion(region.name);
 
   const regionCounts: Record<string, number> = {};
   for (const d of all) {
@@ -192,21 +194,27 @@ export default function RegionPage() {
           )}
         </Card>
         <Card className="p-4 border-card-border" data-testid="stat-reserve-margin">
-          <p className="text-[11px] text-muted-foreground mb-1">Reserve Margin</p>
-          <p className="text-xl font-bold font-mono text-foreground">
-            {rtoConfig ? `${rtoConfig.reserveMargin.toFixed(1)}%` : "N/A"}
-          </p>
-        </Card>
-        <Card className="p-4 border-card-border" data-testid="stat-ai-signal">
-          <p className="text-[11px] text-muted-foreground mb-1">AI Load Signal</p>
-          {rtoConfig ? (
-            <Badge className={`font-mono ${SIGNAL_BADGE[rtoConfig.aiSignal] ?? ""}`}>{rtoConfig.aiSignal}</Badge>
+          <p className="text-[11px] text-muted-foreground mb-1">Reserve margin, summer 2026</p>
+          {nercAreas.length === 1 ? (
+            <p className="text-xl font-bold font-mono text-foreground">
+              {nercAreas[0].margin.toFixed(1)}%
+              <span className="ml-1.5 text-11 font-sans font-normal text-muted-foreground">reference {nercAreas[0].reference}%</span>
+            </p>
           ) : (
-            <p className="text-xl font-bold font-mono text-foreground">N/A</p>
+            // SERC, WECC and NPCC are reported only by sub-area.
+            <p className="text-xs text-muted-foreground leading-snug">{regionMarginText(region.name)}</p>
           )}
         </Card>
+        <Card className="p-4 border-card-border" data-testid="stat-nerc-risk">
+          <p className="text-[11px] text-muted-foreground mb-1">NERC risk, 2026</p>
+          <Badge className={RISK_BADGE[regionRisk(region.name) ?? "mixed"]}>{regionRiskText(region.name)}</Badge>
+        </Card>
       </div>
-      <p className="text-9 text-muted-foreground/50 -mt-4">Reserve margin and AI load signal: {RTO_SOURCE_NOTE}.</p>
+      <p className="text-9 text-muted-foreground/50 -mt-4">
+        Reserve margin and risk:{" "}
+        <a href={NERC_LTRA.url} target="_blank" rel="noopener noreferrer" className="underline decoration-dotted underline-offset-2">{NERC_LTRA.label}</a>.
+        NERC rates each area against its own reference margin.
+      </p>
 
       <Card className="p-5 border-card-border" data-testid="region-facilities">
         <div className="flex items-baseline justify-between gap-3 mb-3 flex-wrap">

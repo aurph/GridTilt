@@ -10,7 +10,6 @@ import {
   filterTrackedFacilities,
   fmtGW,
   parseOpenDate,
-  tightestRTO,
   type FacilityLite,
 } from "../real-gauges";
 
@@ -143,23 +142,5 @@ describe("buildBuildoutHistory", () => {
     assert.deepEqual(h.online, []);
     assert.deepEqual(h.pipeline, []);
     assert.equal(h.undatedCount, 0);
-  });
-});
-
-describe("tightestRTO", () => {
-  it("picks the minimum reserve margin", () => {
-    const t = tightestRTO({
-      ERCOT: { label: "ERCOT", reserveMargin: 15.8, aiSignal: "Critical" },
-      MISO: { label: "MISO", reserveMargin: 13.4, aiSignal: "Critical" },
-      SPP: { label: "SPP", reserveMargin: 27.8, aiSignal: "Low" },
-    });
-    assert.ok(t);
-    assert.equal(t.rto, "MISO");
-    assert.equal(t.reserveMarginPct, 13.4);
-  });
-  it("skips non-finite margins; null on empty", () => {
-    const t = tightestRTO({ X: { label: "X", reserveMargin: NaN, aiSignal: "Low" } });
-    assert.equal(t, null);
-    assert.equal(tightestRTO({}), null);
   });
 });

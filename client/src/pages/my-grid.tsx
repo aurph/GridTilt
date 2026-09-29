@@ -17,7 +17,8 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AsOf, ErrorState, SrChartTable } from "@/components/Freshness";
 import { PageHeader } from "@/components/PageHeader";
-import { RTO_CONFIG, RTO_SOURCE_NOTE, type RTOConfig } from "@/data/rto-config";
+import { NERC_LTRA, STATE_NERC_NOTE, type NercRisk } from "@/data/nerc-reserve-margins";
+import { areaForState, areasForRegion, cushion } from "@/lib/reserve-margins";
 import { STATE_GRID, STATE_GRID_SOURCE } from "@/data/state-grid";
 import { BORDER, BRAND, FONT, INK, SEMANTIC, STATUS_COLORS, SURFACE } from "@/lib/tokens";
 import { seriesMotion, axisProps, gridProps, tooltipContentStyle, tooltipItemStyle, tooltipLabelStyle,  } from "@/lib/chart-theme";
@@ -90,12 +91,11 @@ const QUEUE_ISOS: Record<string, string[]> = {
   NPCC: ["NYISO", "ISO-NE"],
 };
 
-/** Same stress ramp the Power map uses: SEMANTIC state colors, one truth. */
-const SIGNAL_COLOR: Record<RTOConfig["aiSignal"], string> = {
-  Critical: SEMANTIC.negativeDeep,
+/** NERC's own 2026 risk levels, same colors as the Power map's risk view. */
+const RISK_COLOR: Record<NercRisk, string> = {
+  High: SEMANTIC.negativeDeep,
   Elevated: SEMANTIC.warning,
-  Moderate: SEMANTIC.positiveDeep,
-  Low: SEMANTIC.positive,
+  Normal: SEMANTIC.positive,
 };
 
 const STATUS_LABEL: Record<string, string> = {
@@ -266,7 +266,10 @@ export default function MyGrid() {
   });
 
   const grid = state ? STATE_GRID[state] : null;
-  const rto = grid?.region ? RTO_CONFIG[grid.region] : null;
+  // Reliability geography (NERC's assessment area) is not the same map as the
+  // market operator above it; SERC, WECC and NPCC are reported by sub-area.
+  const nercArea = state ? areaForState(state) : null;
+  const regionAreas = grid?.region ? areasForRegion(grid.region) : [];
 
   const localFacilities = useMemo(() => {
     if (!state) return [];
@@ -395,57 +398,66 @@ export default function MyGrid() {
                   <p className="mt-1 text-base font-semibold text-foreground leading-snug">{grid.operatorLabel}</p>
                   {grid.note && <p className="mt-1.5 text-11 leading-snug text-muted-foreground">{grid.note}</p>}
                 </div>
-                {rto ? (
-                  <>
-                    <div data-testid="my-grid-margin">
-                      <CellLabel>Projected reserve margin</CellLabel>
-                      <p className="mt-1 font-mono text-2xl font-bold tabular-nums text-foreground">
-                        {rto.reserveMargin.toFixed(1)}%
-                        <span
-                          className="ml-2 align-middle text-xs font-semibold font-sans"
-                          style={{ color: SIGNAL_COLOR[rto.aiSignal] }}
-                        >
-                          {rto.aiSignal}
-                        </span>
-                      </p>
-                      <p className="mt-1.5 text-11 leading-snug text-muted-foreground">
-                        Headroom between expected peak demand and supply
-                      </p>
-                    </div>
-                    {regionQueue ? (
-                      <div data-testid="my-grid-queue">
-                        <CellLabel>{regionQueue.label}</CellLabel>
-                        <p className="mt-1 font-mono text-2xl font-bold tabular-nums text-foreground">
-                          {(regionQueue.mw / 1000).toFixed(1)} GW
-                        </p>
-                        <p className="mt-1.5 text-11 leading-snug text-muted-foreground">{regionQueue.note}</p>
-                      </div>
-                    ) : (
-                      <div>
-                        <CellLabel>Regional queue</CellLabel>
-                        <p className="mt-1.5 text-11 leading-snug text-muted-foreground">
-                          No aggregate tracked for this region yet.
-                        </p>
-                      </div>
-                    )}
-                    <div>
-                      <CellLabel>What the signal means</CellLabel>
-                      <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground max-w-[36ch]">
-                        NERC's reference level is about 15%. Regions under it face constrained
-                        interconnection for large new loads.
-                      </p>
-                    </div>
-                  </>
+                {nercArea ? (
+                  <div data-testid="my-grid-margin">
+                    <CellLabel>Reserve margin, {nercArea.season}</CellLabel>
+                    <p className="mt-1 font-mono text-2xl font-bold tabular-nums text-foreground">
+                      {nercArea.margin.toFixed(1)}%
+                      <span className="ml-2 align-middle text-xs font-semibold font-sans" style={{ color: RISK_COLOR[nercArea.risk] }}>
+                        NERC: {nercArea.risk.toLowerCase()} risk
+                      </span>
+                    </p>
+                    <p className="mt-1.5 text-11 leading-snug text-muted-foreground">
+                      NERC area {nercArea.key}. Reference level {nercArea.reference}%
+                      {nercArea.referenceDefault ? " (NERC's default; the area sets none)" : ""}, so{" "}
+                      {cushion(nercArea).toFixed(1)} points above it.{nercArea.outlook ? ` Later years: ${nercArea.outlook}.` : ""}
+                      {STATE_NERC_NOTE[state] ? ` ${STATE_NERC_NOTE[state]}` : ""}
+                    </p>
+                  </div>
+                ) : regionAreas.length > 1 ? (
+                  <div data-testid="my-grid-margin">
+                    <CellLabel>Reserve margin</CellLabel>
+                    <p className="mt-1.5 text-11 leading-snug text-muted-foreground">
+                      NERC reports {grid.region} by sub-area ({regionAreas.map((a) => `${a.label} ${a.margin.toFixed(1)}%`).join(", ")}),
+                      and {grid.name} is not assigned to one of them here.
+                    </p>
+                  </div>
                 ) : (
-                  <div className="md:col-span-1 lg:col-span-3">
-                    <p className="text-xs leading-relaxed text-muted-foreground max-w-[48ch]">
-                      {grid.note ?? "No regional reliability assessment applies here."}
+                  <div data-testid="my-grid-margin">
+                    <CellLabel>Reserve margin</CellLabel>
+                    <p className="mt-1.5 text-11 leading-snug text-muted-foreground">
+                      No NERC assessment area covers {grid.name}'s grid.
                     </p>
                   </div>
                 )}
+                {regionQueue ? (
+                  <div data-testid="my-grid-queue">
+                    <CellLabel>{regionQueue.label}</CellLabel>
+                    <p className="mt-1 font-mono text-2xl font-bold tabular-nums text-foreground">
+                      {(regionQueue.mw / 1000).toFixed(1)} GW
+                    </p>
+                    <p className="mt-1.5 text-11 leading-snug text-muted-foreground">{regionQueue.note}</p>
+                  </div>
+                ) : (
+                  <div>
+                    <CellLabel>Regional queue</CellLabel>
+                    <p className="mt-1.5 text-11 leading-snug text-muted-foreground">
+                      No aggregate tracked for this region yet.
+                    </p>
+                  </div>
+                )}
+                <div>
+                  <CellLabel>How NERC reads it</CellLabel>
+                  <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground max-w-[36ch]">
+                    NERC compares each area's margin with that area's own reference level (7.8% to 20.3%
+                    across areas) and weighs extreme weather and fuel limits. A lower margin alone is not a
+                    higher risk.
+                  </p>
+                </div>
               </div>
               <div className="px-4 py-2 border-t border-border/50 text-10 text-muted-foreground/60">
-                {RTO_SOURCE_NOTE} · {STATE_GRID_SOURCE} · queue figures carry their own source and date
+                <a href={NERC_LTRA.url} target="_blank" rel="noopener noreferrer" className="underline decoration-dotted underline-offset-2 hover:text-foreground">{NERC_LTRA.short}</a>{" "}
+                · {STATE_GRID_SOURCE} · queue figures carry their own source and date
               </div>
             </Card>
 

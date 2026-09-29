@@ -23,7 +23,7 @@ const INPUT: WeeklyDigestInput = {
   constructionGW: 14.6,
   fleetAvg: 4.31,
   fleetAvg1yChange: -14.2,
-  tightestRTO: { label: "MISO", marginPct: 13.4 },
+  tightestRTO: { label: "MISO", marginPct: 11.0, referencePct: 8.1 },
   dateLabel: "Week of June 28 - July 4, 2026",
   siteUrl: "https://gridtilt.com",
 };
@@ -43,8 +43,8 @@ describe("renderWeeklyEmail", () => {
     assert.ok(html.includes("+14.6 GW building"));
     assert.ok(html.includes("$4.31/hr"));
     assert.ok(html.includes("-14.2% 1Y"));
-    assert.ok(html.includes("13.4%"));
-    assert.ok(html.includes("MISO reserve margin"));
+    assert.ok(html.includes("11.0%"));
+    assert.ok(html.includes("MISO reserve margin, NERC reference 8.1%"));
   });
 
   it("keeps the per-recipient personalization hook exactly once", () => {

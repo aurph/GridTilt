@@ -2470,7 +2470,10 @@ export async function registerRoutes(
         constructionGW,
         fleetAvg: gi.fleetAvg || null,
         fleetAvg1yChange: gi.fleetAvg1yChange,
-        tightestRTO: { label: "MISO", marginPct: 13.4 }, // NERC LTRA 2025; mirror of client data/rto-config
+        // NERC 2025 LTRA, summer 2026: the area with the smallest cushion above its
+        // own reference. Mirror of client/src/data/nerc-reserve-margins.ts; it said
+        // MISO 13.4%, a figure no NERC report contains.
+        tightestRTO: { label: "MISO", marginPct: 11.0, referencePct: 8.1 },
         dateLabel: weeklyDateLabel(new Date()),
         siteUrl: BASE_URL,
       });

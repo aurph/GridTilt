@@ -56,19 +56,31 @@ const DATA_CENTERS_FALLBACK: DataCenter[] = [];
 // here, so this page and the headline gauges cannot drift apart.
 const filterTracked = filterTrackedFacilities<DataCenter>;
 
-import { RTO_CONFIG, type RTOConfig } from "@/data/rto-config";
+import { NERC_LTRA, type NercRisk } from "@/data/nerc-reserve-margins";
+import { STATE_GRID } from "@/data/state-grid";
+import { areaForState, areasForRegion, regionMarginText, regionRisk, regionRiskText } from "@/lib/reserve-margins";
 
 /**
- * ONE stress ramp for the whole page: region fills (stress view), the map
- * legend, marker colors in stress view, and the table badges all read from
- * this SEMANTIC mapping. Nothing else may color a stress level.
+ * ONE ramp for the risk view: region fills, the legend, marker colors and the
+ * table all read NERC's own 2026 risk levels through this mapping. It used to
+ * color a GridTilt "AI load signal" that contradicted NERC's ratings.
  */
-const STRESS_COLOR: Record<RTOConfig["aiSignal"], string> = {
-  Critical: SEMANTIC.negativeDeep,
+const RISK_COLOR: Record<NercRisk | "unassigned", string> = {
+  High: SEMANTIC.negativeDeep,
   Elevated: SEMANTIC.warning,
-  Moderate: SEMANTIC.positiveDeep,
-  Low:      SEMANTIC.positive,
+  Normal: SEMANTIC.positive,
+  unassigned: INK.faint,
 };
+
+/** A state's NERC risk: its own area's, else its region's when every area agrees. */
+function riskForState(code: string | undefined, region: string): NercRisk | null {
+  const a = code ? areaForState(code) : null;
+  return a ? a.risk : regionRisk(region);
+}
+
+const STATE_CODE_BY_NAME: Record<string, string> = Object.fromEntries(
+  Object.entries(STATE_GRID).map(([code, s]) => [s.name, code]),
+);
 
 function gridOpToRTO(op: string): string {
   const o = op.toLowerCase();
@@ -202,8 +214,8 @@ function pinColor(status: DataCenter["status"]): string {
 }
 
 function stressColorForRTO(dc: DataCenter): string {
-  const cfg = RTO_CONFIG[gridOpToRTO(dc.gridOperator)];
-  return cfg ? STRESS_COLOR[cfg.aiSignal] : SEMANTIC.positiveDeep;
+  const risk = riskForState(dc.state, gridOpToRTO(dc.gridOperator));
+  return RISK_COLOR[risk ?? "unassigned"];
 }
 
 /**
@@ -333,10 +345,10 @@ function RTORegions({ viewMode }: { viewMode: ViewMode }) {
             if (!rto) {
               return { fillColor: INK.primary, fillOpacity: 0.02, color: BORDER.subtle, weight: 0.5 };
             }
-            const cfg = RTO_CONFIG[rto];
+            const risk = riskForState(STATE_CODE_BY_NAME[stateName], rto);
             const fillColor = isDC
               ? (RTO_MUTED_COLORS[rto] || INK.muted)
-              : (cfg ? STRESS_COLOR[cfg.aiSignal] : SEMANTIC.positiveDeep);
+              : RISK_COLOR[risk ?? "unassigned"];
             const fillOpacity = isDC ? 0.08 : 0.22;
             return {
               fillColor,
@@ -998,7 +1010,7 @@ export default function PowerMap() {
                 onClick={() => setViewMode("stress")}
                 data-testid="toggle-grid-stress"
               >
-                Grid Stress
+                NERC Risk
               </button>
             </div>
 
@@ -1193,20 +1205,21 @@ export default function PowerMap() {
                 </div>
               ) : (
                 <>
-                  <p className="text-10 text-white/40 mb-1.5">Grid stress</p>
+                  <p className="text-10 text-white/40 mb-1.5">NERC risk, 2026</p>
                   <div className="space-y-1 text-10 text-white/60">
                     {([
-                      ["Critical", "<16%"],
-                      ["Elevated", "16-18%"],
-                      ["Moderate", "18-25%"],
-                      ["Low", ">25%"],
-                    ] as const).map(([sig, range]) => (
-                      <div key={sig} className="flex items-center gap-1.5">
-                        <span className="h-2 w-4 rounded-sm" style={{ backgroundColor: alpha(STRESS_COLOR[sig], 0.6) }} />
-                        {sig} ({range})
+                      ["High", "High"],
+                      ["Elevated", "Elevated"],
+                      ["Normal", "Normal"],
+                      ["unassigned", "Mixed or not assigned"],
+                    ] as const).map(([key, label]) => (
+                      <div key={key} className="flex items-center gap-1.5">
+                        <span className="h-2 w-4 rounded-sm" style={{ backgroundColor: alpha(RISK_COLOR[key], 0.6) }} />
+                        {label}
                       </div>
                     ))}
                   </div>
+                  <p className="mt-1.5 text-9 text-white/35 max-w-[180px] leading-snug">{NERC_LTRA.short}. NERC rates each area against its own reference margin.</p>
                 </>
               )}
             </div>
@@ -1417,7 +1430,13 @@ export default function PowerMap() {
         <div className="flex items-center gap-2 mb-3">
           <Network className="h-4 w-4 text-muted-foreground" />
           <h2 className="text-[13px] font-semibold text-foreground">Grid Operator Load Analysis</h2>
-          <span className="text-10 text-muted-foreground/50">Reserve margins: NERC LTRA 2025 (2026 projections)</span>
+          <span className="text-10 text-muted-foreground/50">
+            Reserve margins and risk:{" "}
+            <a href={NERC_LTRA.url} target="_blank" rel="noopener noreferrer" className="underline decoration-dotted underline-offset-2 hover:text-foreground">
+              {NERC_LTRA.short}
+            </a>
+            , summer 2026
+          </span>
           {rtoFocus ? (
             <button
               onClick={() => setRtoFocus(null)}
@@ -1442,15 +1461,15 @@ export default function PowerMap() {
               <tr className="border-b border-border/60 font-sans">
                 <th className="text-left text-muted-foreground/60 font-normal pb-2 pr-6">RTO / ISO</th>
                 <th className="text-right text-muted-foreground/60 font-normal pb-2 pr-6">Tracked AI Load</th>
-                <th className="text-right text-muted-foreground/60 font-normal pb-2 pr-6">Reserve Margin</th>
-                <th className="text-left text-muted-foreground/60 font-normal pb-2">AI Load Signal</th>
+                <th className="text-right text-muted-foreground/60 font-normal pb-2 pr-6">Reserve margin (reference)</th>
+                <th className="text-left text-muted-foreground/60 font-normal pb-2">NERC risk, 2026</th>
               </tr>
             </thead>
             <tbody>
               {(["ERCOT", "MISO", "PJM", "SERC", "WECC", "SPP", "NPCC"] as const).map((rto) => {
-                const cfg = RTO_CONFIG[rto];
+                const areas = areasForRegion(rto);
                 const loadMW = rtoLoadMW[rto] ?? 0;
-                const sColor = STRESS_COLOR[cfg.aiSignal];
+                const sColor = RISK_COLOR[regionRisk(rto) ?? "unassigned"];
                 const active = rtoFocus === rto;
                 return (
                   <tr
@@ -1469,26 +1488,19 @@ export default function PowerMap() {
                     <td className="py-2 pr-6 text-right text-foreground">
                       {dcLoading ? <Skeleton className="h-3 w-16 ml-auto inline-block" aria-hidden="true" /> : dcError ? "—" : `${loadMW.toLocaleString()} MW`}
                     </td>
-                    <td className="py-2 pr-6">
-                      <div className="flex items-center justify-end gap-2">
-                        <span style={{ color: sColor }}>{cfg.reserveMargin}%</span>
-                        <div className="h-1.5 w-16 rounded-full overflow-hidden flex-shrink-0" style={{ backgroundColor: "rgba(255,255,255,0.06)" }}>
-                          <div
-                            className="h-full rounded-full"
-                            style={{
-                              width: `${Math.min(100, (cfg.reserveMargin / 30) * 100)}%`,
-                              backgroundColor: sColor,
-                            }}
-                          />
-                        </div>
-                      </div>
+                    <td className="py-2 pr-6 text-right text-foreground">
+                      {/* One area: its margin and reference. SERC, WECC and NPCC are
+                          reported only by sub-area, so they show the span, never one number. */}
+                      {areas.length === 1
+                        ? <>{areas[0].margin.toFixed(1)}% <span className="text-muted-foreground/60">({areas[0].reference}%)</span></>
+                        : <span className="text-muted-foreground font-sans">{regionMarginText(rto)}</span>}
                     </td>
                     <td className="py-2">
                       <Badge
-                        className="text-10 border-transparent whitespace-nowrap"
+                        className="text-10 border-transparent whitespace-nowrap font-sans"
                         style={{ backgroundColor: alpha(sColor, 0.15), color: sColor }}
                       >
-                        {cfg.aiSignal}
+                        {regionRiskText(rto)}
                       </Badge>
                     </td>
                   </tr>

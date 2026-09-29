@@ -40,10 +40,11 @@ import {
 } from "@/lib/sector-demand";
 import { electricityData, DATA_CENTER_ANCHORS, US_END_USE_SOURCE } from "@/data/electricity-demand";
 import { bucketFor, signedBuyersForType, asGW, type BucketLite, type DealRowLite } from "@/lib/deal-rollups";
-import { RTO_CONFIG, RTO_SOURCE_NOTE } from "@/data/rto-config";
+import { NERC_LTRA } from "@/data/nerc-reserve-margins";
+import { byCushion, cushion, tightestArea } from "@/lib/reserve-margins";
 import { STAGE_COLORS } from "@/data/catalyst-config";
 import {
-  buildBuildoutHistory, computeTrackedPower, filterTrackedFacilities, fmtGW, tightestRTO,
+  buildBuildoutHistory, computeTrackedPower, filterTrackedFacilities, fmtGW,
   type BuildoutHistory, type FacilityLite, type TrackedPower,
 } from "@/lib/real-gauges";
 import { fmtDate } from "@/lib/gpu-series";
@@ -931,7 +932,7 @@ export default function TiltOverview() {
   const trackedFacilities = useMemo(() => (facilities ? filterTrackedFacilities(facilities) : null), [facilities]);
   const tracked = useMemo(() => (trackedFacilities ? computeTrackedPower(trackedFacilities) : null), [trackedFacilities]);
   const buildout = useMemo(() => (trackedFacilities ? buildBuildoutHistory(trackedFacilities) : null), [trackedFacilities]);
-  const headroom = useMemo(() => tightestRTO(RTO_CONFIG), []);
+  const headroom = useMemo(() => tightestArea(), []);
   // Same payload the Deals page computes from. The hand-written version carried
   // three different numbers for one fact.
   const { data: dealMetrics } = useQuery<{ signedByType: BucketLite[]; rows: DealRowLite[] }>({
@@ -951,12 +952,14 @@ export default function TiltOverview() {
     () => (trough && latest ? pctChange(trough.twh, latest.twh) : null),
     [trough, latest],
   );
-  const headroomRows = useMemo(() => {
-    return Object.values(RTO_CONFIG)
-      .sort((a, b) => a.reserveMargin - b.reserveMargin)
-      .slice(0, 3)
-      .map((r) => ({ label: r.label, value: `${r.reserveMargin.toFixed(1)}% · ${r.aiSignal}` }));
-  }, []);
+  // Next-smallest cushions after the headline, each with its own reference.
+  const headroomRows = useMemo(
+    () =>
+      byCushion()
+        .slice(1, 4)
+        .map((a) => ({ label: a.label, value: `${a.margin.toFixed(1)}% vs ${a.reference}% · NERC ${a.risk.toLowerCase()}` })),
+    [],
+  );
   const gpuTopRows = useMemo(() => {
     const rows = [...(gpuData?.rows ?? [])].sort((a, b) => b.current - a.current);
     return [
@@ -1185,11 +1188,11 @@ export default function TiltOverview() {
             <RealGaugeCard
               icon={AlertTriangle}
               title="Grid Headroom"
-              value={headroom ? `${headroom.reserveMarginPct.toFixed(1)}%` : null}
-              delta={headroom ? `${headroom.label} · tightest RTO` : null}
-              deltaColor={headroom ? SEMANTIC.negative : undefined}
-              subtitle="Lowest reserve margin among AI-load RTOs"
-              methodology={`Projected reserve margins from ${RTO_SOURCE_NOTE}. The headline shows the tightest region. NERC's reference margin level is roughly 15%; regions below it face constrained interconnection for large new loads.`}
+              value={headroom ? `${headroom.margin.toFixed(1)}%` : null}
+              delta={headroom ? `${headroom.label} · ${cushion(headroom).toFixed(1)} pts above its ${headroom.reference}% reference` : null}
+              deltaColor={undefined}
+              subtitle="Smallest cushion above NERC's reference margin, summer 2026"
+              methodology={`Anticipated reserve margins for summer 2026 from the ${NERC_LTRA.label}. NERC judges each area against its own reference margin level (7.8% to 20.3% across areas), so the headline is the area with the smallest cushion above its own level, not the lowest raw margin. NERC's risk ratings also weigh extreme weather and fuel limits, so a smaller cushion is not by itself a higher risk.`}
               isLoading={false}
               rows={headroomRows}
               href="/power-map"

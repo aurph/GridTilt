@@ -1,6 +1,7 @@
 /**
- * State -> primary grid operator, for the My Grid page. Keys into
- * RTO_CONFIG where a NERC-assessed region applies. This is a deliberate
+ * State -> primary grid operator, for the My Grid page. `region` is one of
+ * the site's seven map regions (REGION_AREAS in nerc-reserve-margins.ts maps
+ * each to NERC assessment areas). This is a deliberate
  * simplification: several states sit in more than one market, and the
  * split is stated in `note` rather than hidden. Alaska and Hawaii run
  * their own interconnections and carry no regional key.
@@ -14,7 +15,7 @@
 
 export interface StateGrid {
   name: string;
-  /** key into RTO_CONFIG, or null when no assessed region applies */
+  /** one of the seven map regions, or null when no assessed region applies */
   region: string | null;
   /** what a resident would call it, when the region key is coarse */
   operatorLabel: string;
