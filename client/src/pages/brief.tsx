@@ -163,8 +163,8 @@ export default function BriefPage({ embedded = false }: { embedded?: boolean; pa
             </div>
             <p className="text-muted-foreground text-sm leading-relaxed">
               One synthesized read on the state of the AI power buildout, generated from every GridTilt module:
-              compute clusters, GPU rental prices, the grid queue, and corporate power deals. Every figure is live and
-              sourced in its module. Copy it for a newsletter or a thread.
+              compute clusters, GPU rental prices, the grid queue, and power agreements. Each figure is computed from
+              its module's data, and the sources are on those pages. Copy it for a newsletter or a thread.
             </p>
           </div>
           {copyButton}

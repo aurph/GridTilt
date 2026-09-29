@@ -203,7 +203,7 @@ function PreviewSkeleton() {
 
 interface Module { number: string; name: string; caption: string; cta: string; route: string; preview: () => JSX.Element; }
 const MODULES: Module[] = [
-  { number: "01", name: "Equity Heatmap", caption: "One hundred public companies behind the buildout, priced live.", cta: "Open the heatmap", route: "/stack", preview: SectorHeatStrip },
+  { number: "01", name: "Equity Heatmap", caption: "Public companies behind the buildout, priced live.", cta: "Open the heatmap", route: "/stack", preview: SectorHeatStrip },
   // Caption is filled in from /api/datacenters at render; see facilityCaption.
   // A hardcoded count cannot survive here: the datacenter ingester appends new
   // facilities every 6 hours, which is how this card came to claim 33 while the
@@ -233,10 +233,10 @@ export function FeaturesShowcase() {
     <section className="border-b border-border bg-background" data-testid="home-features">
       <div className="mx-auto max-w-[1200px] px-6 py-16 sm:py-20">
         <h2 className="text-[28px] font-bold leading-tight tracking-tight text-foreground sm:text-[36px]">
-          Six places to start.
+          Research tools
         </h2>
         <p className="mt-3 max-w-[46ch] text-[15px] leading-relaxed text-muted-foreground">
-          Each shows a different slice of the buildout, live. Pick the one closest to what you already follow.
+          Markets, maps, calendars and calculators for following the buildout in more depth.
         </p>
         <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {MODULES.map((m) => {

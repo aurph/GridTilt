@@ -594,7 +594,7 @@ export default function TheStack() {
       <PageHeader
         title="Equity Heatmap"
         testId="stack-header"
-        about="100+ equities across 13 layers of the AI power supply chain, with intraday prices from Yahoo Finance. Cards, table, heatmap, and supply-chain flow views."
+        about="Public companies across the layers of the AI power supply chain, with intraday prices from Yahoo Finance. Cards, table, heatmap, and supply-chain flow views."
         stats={<HeaderStat label="Equities" value="100" valueClass="text-foreground" />}
         right={
           <>

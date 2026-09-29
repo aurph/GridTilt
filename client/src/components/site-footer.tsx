@@ -19,7 +19,7 @@ const SECTIONS: [string, string][] = [
 
 const DATA: [string, string][] = [
   ["Methodology", "/compute-frontier/methodology"],
-  ["The weekly brief", "/subscribe"],
+  ["The brief", "/subscribe"],
 ];
 
 export function SiteFooter() {
@@ -35,8 +35,7 @@ export function SiteFooter() {
               </span>
             </Link>
             <p className="mt-2 max-w-[30ch] text-[12.5px] leading-relaxed text-muted-foreground">
-              The AI power buildout, tracked with sourced numbers. Data centers, generation,
-              transmission, and the companies behind them.
+              Power projects, grid conditions, and the companies behind them.
             </p>
           </div>
           <nav aria-label="Sections">
@@ -84,8 +83,8 @@ export function SiteFooter() {
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/70">Sources</p>
             <p className="mt-2.5 text-[12.5px] leading-relaxed text-muted-foreground">
-              Yahoo Finance, EIA, FRED, NERC, LBNL, and public filings. Every figure carries its
-              source and date on the page.
+              Yahoo Finance, EIA, FRED, NERC, LBNL, and public filings. Each page links the
+              sources for its data.
             </p>
           </div>
         </div>

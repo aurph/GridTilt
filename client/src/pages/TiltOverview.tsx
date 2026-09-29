@@ -832,7 +832,7 @@ const FEATURE_SLIDES = [
   {
     icon: Layers,
     title: "Equities",
-    description: "60+ equities across 8 supply chain layers. Compute, nuclear, uranium, power hardware, utilities, construction, and more.",
+    description: "Public companies across the supply chain: compute, nuclear, uranium, power hardware, utilities, construction, and more.",
     href: "/stack",
     accent: BRAND.primary,
     preview: stackPreview,
@@ -840,7 +840,7 @@ const FEATURE_SLIDES = [
   {
     icon: Link2,
     title: "Supply Chain Flow",
-    description: "Interactive network of 21 nodes and 44 real supply relationships, staged from raw materials to end-use compute. Lives inside Equities.",
+    description: "Interactive network of supply relationships, staged from raw materials to end-use compute. Lives inside Equities.",
     href: "/stack?view=flow",
     accent: BRAND.secondary,
     preview: supplyChainPreview,
@@ -864,7 +864,7 @@ const FEATURE_SLIDES = [
   {
     icon: CalendarDays,
     title: "Catalyst Tracker",
-    description: "Live earnings calendar with 80+ tickers from Yahoo Finance, plus thesis catalysts. Never miss a market-moving event.",
+    description: "Earnings dates from Yahoo Finance, plus dated policy and grid events.",
     href: "/catalysts",
     accent: DATA_QUALITY.estimateFlag,
     preview: catalystPreview,

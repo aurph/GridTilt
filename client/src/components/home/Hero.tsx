@@ -7,11 +7,11 @@ import { Wordmark } from "./Wordmark";
 import { GridPulse } from "./grid-pulse";
 import { MarketTape } from "./market-tape";
 
-// The wordmark leads and the tagline stays as shipped; the hero's job here is
-// to prove the numbers under it are real. Every figure carries the date its
-// dataset was last refreshed, read from the same API that serves the figure.
-// Nothing is hardcoded, and a stat with no refresh date says so rather than
-// borrowing today's.
+// The wordmark leads, then one statement of purpose and the state-first
+// journey. Each stat is read from the API that serves it; nothing is
+// hardcoded. Refresh dates are fetched but hidden until the refresh pipeline
+// runs (SHOW_REFRESH_DATES below), and a stat with no date would say so rather
+// than borrow today's.
 
 interface ClusterMetrics {
   clusterCount: number;
@@ -169,23 +169,23 @@ export function Hero() {
             Energy infrastructure, in plain sight.
           </motion.p>
           <motion.p variants={fadeUp} className="mx-auto mt-3 max-w-[54ch] text-[14px] leading-[1.65] text-muted-foreground sm:text-[15px]">
-            Data centers are rewriting the American power grid. GridTilt maps who is building,
-            where the electricity comes from, and what it means for the bill you pay.
+            GridTilt shows what is being built on your power grid, who is behind it, and what is
+            known about the cost.
           </motion.p>
           <motion.div variants={fadeUp} className="mt-8 flex flex-wrap items-center justify-center gap-4">
             <Link
-              href="/overview"
+              href="/my-grid"
               className="rounded bg-brand px-6 py-3 text-[14px] font-semibold text-black no-underline transition-opacity hover:opacity-90"
-              data-testid="hero-cta-dashboard"
+              data-testid="hero-cta-state"
             >
-              Open the dashboard
+              Choose your state
             </Link>
             <Link
               href="/power-map"
               className="rounded border border-border bg-card/60 px-6 py-3 text-[14px] font-semibold text-foreground no-underline transition-colors hover:border-brand/50"
-              data-testid="hero-cta-map"
+              data-testid="hero-cta-projects"
             >
-              Explore the map
+              Explore projects
             </Link>
           </motion.div>
 

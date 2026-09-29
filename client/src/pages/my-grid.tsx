@@ -464,7 +464,7 @@ export default function MyGrid() {
             <Card className="border-card-border overflow-hidden" data-testid="my-grid-facilities">
               <div className="px-4 py-2 border-b border-border flex flex-wrap items-center justify-between gap-2">
                 <span className="text-[13px] font-semibold text-foreground">
-                  Being built in {grid.name}
+                  Tracked facilities in {grid.name}
                 </span>
                 <Link
                   href="/power-map"

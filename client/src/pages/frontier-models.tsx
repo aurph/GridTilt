@@ -126,7 +126,7 @@ export default function FrontierModels({ embedded = false }: { embedded?: boolea
             <span className="h-1.5 w-1.5 rounded-full bg-brand shadow-[0_0_10px_rgba(240,120,0,0.75)]" />
             <span className="text-[11px] font-medium text-brand">Frontier relay</span>
           </div>
-          <h2 className="text-xl font-semibold tracking-tight text-foreground">The model race, without the fake master score</h2>
+          <h2 className="text-xl font-semibold tracking-tight text-foreground">Model releases</h2>
           <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
             Every major lab on one release clock. Switch to a capability lens to compare only the same benchmark, version, and evaluation setup. A point disappears when the evidence is not like-for-like.
           </p>
