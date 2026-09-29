@@ -33,6 +33,7 @@
       ],
       "notes": "Stargate I. Oracle runs the campus as cloud capacity for OpenAI; Crusoe designs, builds and operates the eight buildings. On Sept 10, 2026 Oracle said 6 of 8 buildings, 618 MW and 75% of total capacity, had been delivered; the rest is due by the end of 2026. Rated is that delivered figure (Oracle does not say whether it is IT or facility power); planned is the 1.2 GW grid interconnection. The two use different bases, so rated divided by planned is not delivery progress; Oracle's own figure is 75%. GPU target: more than 450,000 GB200; no cumulative installed count has been disclosed. The on-site gas turbines are backup. A potential 600 MW expansion announced in September 2025 was dropped in March 2026. Crusoe's adjacent 900 MW campus for Microsoft is a separate site.",
       "reviewed": "2026-09-28",
+      "mapFacilityIds": [18],
       "evidence": [
         {
           "field": "status",

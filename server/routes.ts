@@ -32,7 +32,7 @@ import {
 import { recordDailyIndexValues, readIndexHistory } from "./index-history";
 import { getElectricityOutputMonthly, getHourlyDemandUS48 } from "./physical";
 import { getRetailRatesByState } from "./retail-rates";
-import { computeClusterMetrics, type ClusterLite } from "./clusters";
+import { computeClusterMetrics, type ClusterLite, facilityClusterLinks } from "./clusters";
 import { computeGpuIndex } from "./gpu-index";
 import {
   hasTodayLiveSnapshot,
@@ -3002,7 +3002,15 @@ export async function registerRoutes(
   }
 
   app.get("/api/datacenters", (_req, res) => {
-    res.json(loadDatacenters());
+    // A reviewed facility links to its sourced cluster record. Joined per
+    // response; datacenters.json itself is machine-written and not edited.
+    let links = new Map<number, string>();
+    try {
+      links = facilityClusterLinks(readClusterRoot().clusters ?? []);
+    } catch {
+      /* no links is fine; the facilities still render */
+    }
+    res.json(loadDatacenters().map((d) => (links.has(d.id) ? { ...d, clusterId: links.get(d.id) } : d)));
   });
 
   app.post("/api/admin/datacenters", (req, res) => {

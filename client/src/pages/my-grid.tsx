@@ -45,6 +45,8 @@ interface Facility {
   lng: number;
   powerMW: number | null;
   status: string;
+  /** Set when a reviewed cluster record is this facility. */
+  clusterId?: string;
 }
 
 interface RatePoint {
@@ -204,6 +206,8 @@ function MyGridMap({
                   <span className="text-11 font-mono">
                     {f.name} · {f.company}
                     {f.powerMW ? ` · ${f.powerMW} MW` : ""} · {STATUS_LABEL[f.status] ?? f.status}
+                    {/* A neighbor says where it is; it is not counted in the chosen state. */}
+                    {!inState && ` · ${f.state}, neighboring state`}
                   </span>
                 </MapTooltip>
               </CircleMarker>
@@ -571,7 +575,15 @@ export default function MyGrid() {
                         className="grid grid-cols-12 gap-2 px-4 py-2.5 border-b border-border/30 last:border-0 text-xs hover:bg-brand/5"
                         data-testid={`my-grid-facility-row-${f.id}`}
                       >
-                        <span className="col-span-4 font-medium text-foreground truncate">{f.name}</span>
+                        <span className="col-span-4 font-medium text-foreground truncate">
+                          {f.clusterId ? (
+                            <Link href={`/compute-frontier/${f.clusterId}`} className="text-foreground hover:text-brand underline decoration-dotted underline-offset-2" data-testid={`my-grid-facility-record-${f.id}`}>
+                              {f.name}
+                            </Link>
+                          ) : (
+                            f.name
+                          )}
+                        </span>
                         <span className="col-span-3 text-muted-foreground truncate">{f.company}</span>
                         <span className="col-span-2 text-muted-foreground truncate">{f.city}</span>
                         <span className="col-span-1 font-mono text-foreground text-right tabular-nums">

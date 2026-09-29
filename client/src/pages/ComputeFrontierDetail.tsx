@@ -1,12 +1,13 @@
-import { type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { useRoute, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Atom, ExternalLink } from "lucide-react";
+import { ArrowLeft, Atom, Check, Copy, ExternalLink } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { STATUS_COLORS } from "@/lib/tokens";
+import { FIELD_LABEL, buildCitation, permalink, type EvidenceEntry } from "@/lib/citation";
 
 interface Cluster {
   id: string;
@@ -26,6 +27,9 @@ interface Cluster {
   estimated: string[];
   sources: string[];
   notes?: string;
+  /** YYYY-MM-DD the record was reviewed field by field; absent when it has not been. */
+  reviewed?: string;
+  evidence?: EvidenceEntry[];
 }
 
 const STATUS_COLOR: Record<string, string> = STATUS_COLORS;
@@ -65,6 +69,9 @@ export default function ComputeFrontierDetail() {
               </Badge>
               <span className="text-xs text-muted-foreground">{cluster.operator}</span>
               <span className="text-xs text-muted-foreground">{cluster.location.city}, {cluster.location.state}</span>
+              <span className="text-xs text-muted-foreground" data-testid="cfd-reviewed">
+                {cluster.reviewed ? `Reviewed ${cluster.reviewed}` : "Not yet reviewed field by field"}
+              </span>
             </>
           ) : undefined
         }
@@ -122,6 +129,53 @@ export default function ComputeFrontierDetail() {
               )}
             </Card>
 
+            {cluster.evidence && cluster.evidence.length > 0 && (
+              <Card className="border-card-border p-4" data-testid="cfd-evidence">
+                <div className="text-[13px] font-semibold text-foreground mb-1">Evidence, field by field</div>
+                <p className="text-11 text-muted-foreground mb-3">
+                  Each material figure with the document that states it, that document's date, and what it measures.
+                  Reviewed {cluster.reviewed}.
+                </p>
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[560px] text-xs">
+                    <thead>
+                      <tr className="text-left text-muted-foreground/70 border-b border-border">
+                        <th className="py-1.5 pr-3 font-normal">Field</th>
+                        <th className="py-1.5 pr-3 font-normal">What the source says</th>
+                        <th className="py-1.5 pr-3 font-normal">Source</th>
+                        <th className="py-1.5 font-normal">Published</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {cluster.evidence.map((e, i) => (
+                        <tr key={i} className="border-b border-border/30 align-top" data-testid={`cfd-evidence-${e.field}`}>
+                          <td className="py-2 pr-3 text-muted-foreground whitespace-nowrap">{FIELD_LABEL[e.field] ?? e.field}</td>
+                          <td className="py-2 pr-3 text-foreground">
+                            {e.value}
+                            {(e.kind || e.basis) && (
+                              <span className="block text-10 text-muted-foreground mt-0.5">
+                                {[e.kind === "target" ? "target, not yet delivered" : e.kind === "operating" ? "delivered or operating" : null,
+                                  e.basis ? `basis: ${e.basis}` : null].filter(Boolean).join("; ")}
+                              </span>
+                            )}
+                          </td>
+                          <td className="py-2 pr-3">
+                            <a href={e.url} target="_blank" rel="noopener noreferrer" className="text-brand hover:text-brand-2 inline-flex items-center gap-1">
+                              {e.source} <ExternalLink className="h-3 w-3 flex-shrink-0" />
+                            </a>
+                            {e.primary === false && <span className="block text-10 text-muted-foreground">secondary source</span>}
+                          </td>
+                          <td className="py-2 font-mono tabular-nums text-muted-foreground whitespace-nowrap">{e.published}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </Card>
+            )}
+
+            <CiteRecord cluster={cluster} />
+
             <Card className="border-card-border p-4" data-testid="cfd-sources">
               <div className="text-[13px] font-semibold text-foreground mb-2">Sources</div>
               <ul className="space-y-1">
@@ -144,5 +198,67 @@ export default function ComputeFrontierDetail() {
         ) : null}
       </div>
     </div>
+  );
+}
+
+/**
+ * Permalink plus a citation to copy. "Copied" appears only after the
+ * clipboard write succeeds; if it fails or is unavailable, the text is shown
+ * for manual selection instead.
+ */
+function CiteRecord({ cluster }: { cluster: Cluster }) {
+  const [state, setState] = useState<"idle" | "copied" | "manual">("idle");
+  const citation = buildCitation(cluster);
+  const link = permalink(cluster.id);
+
+  async function copy() {
+    if (!citation) return;
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error("clipboard unavailable");
+      await navigator.clipboard.writeText(citation);
+      setState("copied");
+    } catch {
+      setState("manual");
+    }
+  }
+
+  return (
+    <Card className="border-card-border p-4 space-y-2" data-testid="cfd-cite">
+      <div className="text-[13px] font-semibold text-foreground">Cite this record</div>
+      <p className="text-xs text-muted-foreground break-all">
+        Permalink:{" "}
+        <a href={link} className="text-brand hover:text-brand-2" data-testid="cfd-permalink">{link}</a>
+      </p>
+      {citation ? (
+        <>
+          <button
+            type="button"
+            onClick={copy}
+            className="inline-flex items-center gap-1.5 rounded border border-border px-2.5 py-1 text-xs text-foreground hover:bg-muted/40"
+            data-testid="cfd-copy-citation"
+          >
+            {state === "copied" ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+            {state === "copied" ? "Copied" : "Copy citation"}
+          </button>
+          <span className="sr-only" role="status" aria-live="polite">{state === "copied" ? "Citation copied" : ""}</span>
+          {state === "manual" && (
+            <textarea
+              readOnly
+              value={citation}
+              onFocus={(e) => e.currentTarget.select()}
+              aria-label="Citation text to copy"
+              className="w-full rounded border border-border bg-surface-base p-2 text-xs text-foreground"
+              rows={4}
+              data-testid="cfd-citation-manual"
+            />
+          )}
+        </>
+      ) : (
+        <p className="text-xs text-muted-foreground" data-testid="cfd-citation-unreviewed">
+          This record has not been reviewed field by field, so there is no checked claim to cite yet. Its listed
+          sources are below.
+        </p>
+      )}
+    </Card>
   );
 }
