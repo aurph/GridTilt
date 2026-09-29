@@ -5,9 +5,9 @@
  * the facility list, and residential rates. State choice persists locally;
  * nothing leaves the browser.
  */
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "wouter";
+import { Link, useLocation, useSearch } from "wouter";
 import { MapContainer, TileLayer, CircleMarker, GeoJSON as GeoJSONLayer, Tooltip as MapTooltip, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -20,6 +20,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { NERC_LTRA, STATE_NERC_NOTE, type NercRisk } from "@/data/nerc-reserve-margins";
 import { areaForState, areasForRegion, cushion } from "@/lib/reserve-margins";
 import { STATE_GRID, STATE_GRID_SOURCE } from "@/data/state-grid";
+import { readSavedState, resolveState, stateSearch, writeSavedState } from "@/lib/state-selection";
 import { BORDER, BRAND, FONT, INK, SEMANTIC, STATUS_COLORS, SURFACE } from "@/lib/tokens";
 import { seriesMotion, axisProps, gridProps, tooltipContentStyle, tooltipItemStyle, tooltipLabelStyle,  } from "@/lib/chart-theme";
 // US state boundaries: US Census cartographic boundary file (public domain),
@@ -143,7 +144,7 @@ function MyGridMap({
 
   return (
     <Card className="my-grid-map border-card-border overflow-hidden" data-testid="my-grid-map">
-      <div className="h-[440px] w-full isolate z-0">
+      <div className="h-[300px] sm:h-[440px] w-full isolate z-0">
         <MapContainer
           center={[38.5, -96]}
           zoom={4}
@@ -210,24 +211,35 @@ function CellLabel({ children }: { children: React.ReactNode }) {
   return <p className="text-[11px] text-muted-foreground">{children}</p>;
 }
 
+/** localStorage, or null where reading it throws (blocked storage, some privacy modes). */
+function safeStorage(): Storage | null {
+  try {
+    return typeof window !== "undefined" ? window.localStorage : null;
+  } catch {
+    return null;
+  }
+}
+
+const isCovered = (code: string) => Boolean(STATE_GRID[code]);
+
 export default function MyGrid() {
-  const [state, setState] = useState<string>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      return saved && STATE_GRID[saved] ? saved : "";
-    } catch {
-      return "";
-    }
-  });
+  // The address is the record of the choice (/my-grid?state=MD), so a shared
+  // link opens the same state without the sender's browser storage. See
+  // lib/state-selection.ts for the precedence rules.
+  const search = useSearch();
+  const [, navigate] = useLocation();
+  const resolution = useMemo(() => resolveState(search, readSavedState(safeStorage(), STORAGE_KEY), isCovered), [search]);
+  const state = resolution.code;
+
+  // Canonical address: an uppercase code, and a remembered state written into
+  // the URL, replacing the entry so back and forward land on explicit states.
+  useEffect(() => {
+    if (resolution.replaceSearch !== null) navigate(`/my-grid${resolution.replaceSearch}`, { replace: true });
+  }, [resolution.replaceSearch, navigate]);
 
   function chooseState(code: string) {
-    setState(code);
-    try {
-      if (code) localStorage.setItem(STORAGE_KEY, code);
-      else localStorage.removeItem(STORAGE_KEY);
-    } catch {
-      /* storage blocked; selection still works for the session */
-    }
+    writeSavedState(safeStorage(), STORAGE_KEY, code);
+    navigate(`/my-grid${stateSearch(code, search)}`);
   }
 
   const {
@@ -313,6 +325,16 @@ export default function MyGrid() {
 
   const stateOptions = Object.entries(STATE_GRID).sort((a, b) => a[1].name.localeCompare(b[1].name));
 
+  // One map, placed after the state's summary (or the chooser), never above it.
+  const mapBlock = (
+    <>
+      <MyGridMap stateCode={state} stateName={grid?.name ?? null} facilities={facilities} />
+      <p className="text-10 text-muted-foreground/60 px-1">
+        GridTilt facility registry · hyperscale campuses of 400 MW and up · boundaries from US Census cartographic files
+      </p>
+    </>
+  );
+
   return (
     <div className="flex flex-col h-full overflow-y-auto">
       {/* Dark leaflet chrome for this page's map, scoped under .my-grid-map */}
@@ -358,7 +380,7 @@ export default function MyGrid() {
       <PageHeader
         title="My Grid"
         testId="my-grid-header"
-        about="Who runs your state's grid, how much headroom the region has, what is being built there, and what residential power costs. The state choice stays in this browser."
+        about="Who runs your state's grid, how much headroom its region has, what is being built there, and what residential power costs. The state is part of the page address, so a shared link opens the same state."
         right={
           <>
             <label className="flex items-center gap-2 text-11 text-muted-foreground">
@@ -381,10 +403,36 @@ export default function MyGrid() {
       />
 
       <div className="flex-1 w-full max-w-[1200px] mx-auto p-4 sm:p-6 space-y-4">
-        <MyGridMap stateCode={state} stateName={grid?.name ?? null} facilities={facilities} />
-        <p className="text-10 text-muted-foreground/60 px-1">
-          GridTilt facility registry · hyperscale campuses of 400 MW and up · boundaries from US Census cartographic files
-        </p>
+        {resolution.invalid !== null && (
+          <p role="status" className="rounded border border-warning/30 bg-warning/10 px-3 py-2 text-xs text-foreground" data-testid="my-grid-invalid-state">
+            "{resolution.invalid}" is not a state code this page covers. Choose a state instead.
+          </p>
+        )}
+
+        {!grid && (
+          <>
+            {/* The answer comes before the map: with no state chosen, the chooser. */}
+            <Card className="border-card-border p-4 flex flex-wrap items-center justify-between gap-3" data-testid="my-grid-chooser">
+              <p className="text-sm text-muted-foreground max-w-[52ch]">
+                Choose a state to see its grid operator, its NERC reliability area and reserve margin, tracked
+                data center projects, and residential electricity prices.
+              </p>
+              <select
+                value=""
+                onChange={(e) => chooseState(e.target.value)}
+                className="rounded border border-subtle bg-surface-base px-2 py-1.5 text-sm text-foreground"
+                aria-label="Choose a state"
+                data-testid="my-grid-state-prompt"
+              >
+                <option value="">Choose a state</option>
+                {stateOptions.map(([code, s]) => (
+                  <option key={code} value={code}>{s.name}</option>
+                ))}
+              </select>
+            </Card>
+            {mapBlock}
+          </>
+        )}
 
         {grid && (
           <>
@@ -460,6 +508,8 @@ export default function MyGrid() {
                 · {STATE_GRID_SOURCE} · queue figures carry their own source and date
               </div>
             </Card>
+
+            {mapBlock}
 
             <Card className="border-card-border overflow-hidden" data-testid="my-grid-facilities">
               <div className="px-4 py-2 border-b border-border flex flex-wrap items-center justify-between gap-2">
