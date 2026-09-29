@@ -13,7 +13,7 @@ export interface PaletteEntry {
   /** Secondary text: company name, operator and state, section. */
   hint?: string;
   category: PaletteCategory;
-  /** Navigation target. State entries also persist the state choice. */
+  /** Navigation target: the final route, never a redirect alias. */
   href: string;
   /** Extra matchable text that is not worth showing. */
   keywords?: string;
@@ -35,12 +35,12 @@ export const PAGE_ENTRIES: PaletteEntry[] = [
   { id: "page-my-grid", label: "My Grid", hint: "your state", category: "page", href: "/my-grid", keywords: "state operator rates" },
   { id: "page-compute", label: "Compute Frontier", hint: "supercluster tracker", category: "page", href: "/compute-frontier", keywords: "clusters gpu superclusters" },
   { id: "page-gpu", label: "GPU Prices", hint: "rental index", category: "page", href: "/neocloud-intel", keywords: "neocloud rental h100 economics" },
-  { id: "page-analyze", label: "Analyze", hint: "portfolio and scenarios", category: "page", href: "/analyze", keywords: "portfolio scenario calculator" },
+  { id: "page-analyze", label: "Analyze", hint: "baskets and scenarios", category: "page", href: "/analyze", keywords: "portfolio basket scenario calculator" },
   { id: "page-catalysts", label: "Catalysts", hint: "earnings and policy", category: "page", href: "/catalysts", keywords: "earnings calendar events" },
   { id: "page-research", label: "Research", hint: "analysis and the Brief", category: "page", href: "/blog", keywords: "blog articles brief" },
-  { id: "page-queue", label: "Backlog", hint: "interconnection queue", category: "page", href: "/queue", keywords: "interconnection queue lbnl" },
-  { id: "page-deals", label: "AI Power Deals", category: "page", href: "/power-deals", keywords: "nuclear ppa deals" },
-  { id: "page-supply-chain", label: "Supply Chain", hint: "force graph", category: "page", href: "/supply-chain", keywords: "graph flow stages" },
+  { id: "page-queue", label: "Interconnection queue", hint: "Power Map tab", category: "page", href: "/power-map?tab=queue", keywords: "backlog interconnection queue lbnl" },
+  { id: "page-deals", label: "Power agreements", hint: "Power Map tab", category: "page", href: "/power-map?tab=deals", keywords: "deals nuclear ppa agreements" },
+  { id: "page-supply-chain", label: "Supply Chain", hint: "flow view in Equities", category: "page", href: "/stack?view=flow", keywords: "graph flow stages" },
 ];
 
 export interface StateLike {
@@ -53,7 +53,8 @@ export function stateEntries(states: Record<string, StateLike>): PaletteEntry[] 
     label: s.name,
     hint: "My Grid",
     category: "state" as const,
-    href: "/my-grid",
+    // The shareable state address (lib/state-selection.ts); My Grid remembers it itself.
+    href: `/my-grid?state=${code}`,
     keywords: code,
   }));
 }

@@ -62,11 +62,12 @@ export function TopNav() {
           onClick={() => window.dispatchEvent(new Event("gt-open-palette"))}
           aria-label="Search"
           title={"Search (⌘K)"}
-          className="mr-4 hidden md:flex shrink-0 items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors"
+          className="mr-3 md:mr-4 flex shrink-0 items-center gap-1.5 rounded p-1.5 md:p-0 text-muted-foreground hover:text-foreground transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
           data-testid="top-nav-search"
         >
+          {/* Visible on phones too: without it search needed a desktop shortcut. */}
           <Search className="h-4 w-4" aria-hidden />
-          <kbd className="rounded border border-border px-1 py-0.5 font-mono text-10 leading-none">{"⌘K"}</kbd>
+          <kbd className="hidden md:inline rounded border border-border px-1 py-0.5 font-mono text-10 leading-none">{"⌘K"}</kbd>
         </button>
         <Link
           href="/subscribe"

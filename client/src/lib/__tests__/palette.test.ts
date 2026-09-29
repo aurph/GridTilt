@@ -66,4 +66,26 @@ describe("stateEntries", () => {
     const out = rankEntries(entries, "tx");
     assert.equal(out[0]?.id, "state-TX");
   });
+
+  it("opens the shareable state address, not a remembered choice", () => {
+    const md = stateEntries(STATE_GRID).find((e) => e.id === "state-MD");
+    assert.equal(md?.href, "/my-grid?state=MD");
+  });
+});
+
+describe("page entries", () => {
+  it("go straight to final routes, never to a redirect alias", () => {
+    // Redirects in App.tsx: each of these only forwards somewhere else.
+    const aliases = ["/power-deals", "/queue", "/supply-chain", "/brief", "/trade", "/portfolio", "/gpu-economics"];
+    for (const e of PAGE_ENTRIES) {
+      const path = e.href.split("?")[0];
+      assert.ok(!aliases.includes(path), `${e.label} points at the alias ${e.href}`);
+    }
+  });
+
+  it("name the agreements page the way the site does", () => {
+    const deals = PAGE_ENTRIES.find((e) => e.id === "page-deals");
+    assert.equal(deals?.label, "Power agreements");
+    assert.equal(deals?.href, "/power-map?tab=deals");
+  });
 });

@@ -35,8 +35,6 @@ const CATEGORY_TAG: Record<PaletteEntry["category"], string> = {
   research: "research",
 };
 
-const MY_GRID_STATE_KEY = "gt-my-grid-state";
-
 export function CommandPalette() {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -44,6 +42,8 @@ export function CommandPalette() {
   const [, navigate] = useLocation();
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
+  // Where focus was before opening, so closing returns the reader there.
+  const returnFocusRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -63,10 +63,16 @@ export function CommandPalette() {
 
   useEffect(() => {
     if (open) {
+      returnFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
       setQuery("");
       setActive(0);
       // The input mounts with the panel; focus it once it exists.
       requestAnimationFrame(() => inputRef.current?.focus());
+    } else if (returnFocusRef.current) {
+      const back = returnFocusRef.current;
+      returnFocusRef.current = null;
+      // After a navigation the old trigger may be gone; focus only what is still on the page.
+      if (back.isConnected) back.focus();
     }
   }, [open]);
 
@@ -103,15 +109,6 @@ export function CommandPalette() {
   }, [activeEntry]);
 
   function go(entry: PaletteEntry) {
-    if (entry.category === "state") {
-      // Same key the My Grid page reads on mount; selection failing to
-      // persist still lands the user on the page.
-      try {
-        localStorage.setItem(MY_GRID_STATE_KEY, entry.id.replace("state-", ""));
-      } catch {
-        /* storage blocked */
-      }
-    }
     setOpen(false);
     navigate(entry.href);
   }
@@ -146,6 +143,10 @@ export function CommandPalette() {
               if (e.key === "Escape") {
                 e.preventDefault();
                 setOpen(false);
+              } else if (e.key === "Tab") {
+                // The input is the dialog's only control; Tab must not leave
+                // the modal for the page behind it.
+                e.preventDefault();
               } else if (e.key === "ArrowDown") {
                 e.preventDefault();
                 setActive((a) => Math.min(a + 1, results.length - 1));
