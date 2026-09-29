@@ -2032,7 +2032,8 @@ export async function registerRoutes(
   });
   // Residential retail rates by state (server/retail-rates.ts). Same honest
   // degradation contract: 503 + configured:false when keyless, 502 on
-  // upstream failure, never fabricated.
+  // upstream failure with nothing cached, never fabricated. A failed refresh
+  // with earlier data serves that data marked stale, with its retrieval time.
   app.get("/api/physical/retail-rates", async (_req, res) => {
     try {
       const result = await getRetailRatesByState();

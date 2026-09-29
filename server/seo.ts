@@ -35,8 +35,8 @@ const STATIC_PAGES: Record<string, { title: string; description: string; slug: s
     slug: "power-map",
   },
   "/my-grid": {
-    title: "My Grid \u2014 Your State's Grid Operator, Buildout, and Rates \u2014 GridTilt",
-    description: "Pick a state to see its grid operator, projected reserve margin, the AI datacenter buildout in and around it, the regional interconnection queue, and residential electricity rates from the EIA.",
+    title: "My Grid: Your State's Grid Operator, Projects and Rates | GridTilt",
+    description: "Pick a state to see its grid operator, its NERC reliability area and reserve margin, tracked data center projects, the regional interconnection queue, and residential electricity rates from EIA.",
     slug: "my-grid",
   },
   "/catalysts": {

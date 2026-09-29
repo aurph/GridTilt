@@ -54,7 +54,25 @@ interface RatePoint {
 
 type RetailRates =
   | { configured: false; howTo: string }
-  | { configured: true; unit: string; source: string; sourceUrl: string; byState: Record<string, RatePoint[]> };
+  | {
+      configured: true;
+      unit: string;
+      source: string;
+      sourceUrl: string;
+      /** When GridTilt fetched it from EIA; not a data date. */
+      retrievedAt?: string;
+      /** Newest month anywhere in the response; a state can lag it. */
+      newestMonth?: string | null;
+      /** The latest refresh failed; this is the previous good fetch. */
+      stale?: boolean;
+      byState: Record<string, RatePoint[]>;
+    };
+
+/** EIA's own table of average residential prices by state, for readers when the feed is down. */
+const EIA_STATE_PRICES_URL = "https://www.eia.gov/electricity/monthly/epm_table_grapher.php?t=epmt_5_6_a";
+
+/** Maryland PSC page on how the supply part of a bill is priced (Standard Offer Service). Checked 2026-09-29. */
+const MD_PSC_SUPPLY_URL = "https://www.psc.state.md.us/electricity/standard-offer-service/";
 
 interface QueueProject {
   id?: string;
@@ -578,15 +596,11 @@ export default function MyGrid() {
               </div>
               <div className="p-4">
                 {ratesError ? (
-                  <ErrorState label="Rate data failed to load." onRetry={() => refetchRates()} />
+                  <RatesUnavailable onRetry={() => refetchRates()} />
                 ) : !rates ? (
                   <Skeleton className="h-40 w-full" aria-hidden="true" />
-                ) : !("byState" in rates) ? (
-                  <p className="text-xs leading-relaxed text-muted-foreground max-w-[60ch]" data-testid="my-grid-rates-unconfigured">
-                    Rate data connects soon; nothing is shown in its place.
-                  </p>
-                ) : series.length === 0 ? (
-                  <p className="text-xs text-muted-foreground">No EIA series available for {grid.name}.</p>
+                ) : !("byState" in rates) || series.length === 0 ? (
+                  <RatesUnavailable />
                 ) : (
                   <>
                     <div className="mb-4" data-testid="my-grid-rate">
@@ -620,11 +634,35 @@ export default function MyGrid() {
                       columns={["Month", "Cents per kWh"]}
                       rows={series.map((p) => [p.month, p.centsPerKwh.toFixed(2)])}
                     />
-                    <p className="mt-3 text-10 text-muted-foreground/60">
+                    {latest && rates.newestMonth && latest.month < rates.newestMonth && (
+                      <p className="mt-2 text-11 text-muted-foreground" data-testid="my-grid-rates-lag">
+                        EIA's newest month is {fmtMonth(rates.newestMonth)}; {grid.name}'s latest is {fmtMonth(latest.month)}.
+                      </p>
+                    )}
+                    {rates.stale && (
+                      <p className="mt-2 text-11 text-warning" data-testid="my-grid-rates-stale">
+                        The latest refresh from EIA failed; these figures were retrieved
+                        {rates.retrievedAt ? ` ${new Date(rates.retrievedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}` : " earlier"}.
+                      </p>
+                    )}
+                    <p className="mt-3 text-11 text-muted-foreground" data-testid="my-grid-rates-context">
+                      State averages give context. Your utility, usage and tariff determine your bill.
+                      {state === "MD" && (
+                        <>
+                          {" "}
+                          <a href={MD_PSC_SUPPLY_URL} target="_blank" rel="noopener noreferrer" className="text-brand hover:text-brand-2">
+                            Maryland PSC on how supply is priced
+                          </a>
+                          .
+                        </>
+                      )}
+                    </p>
+                    <p className="mt-2 text-10 text-muted-foreground/60">
                       <a href={rates.sourceUrl} target="_blank" rel="noopener noreferrer" className="text-brand hover:text-brand-2">
                         {rates.source}
                       </a>
                       {" · "}{rates.unit}
+                      {rates.retrievedAt && ` · retrieved ${new Date(rates.retrievedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`}
                     </p>
                   </>
                 )}
@@ -633,6 +671,30 @@ export default function MyGrid() {
           </>
         )}
       </div>
+    </div>
+  );
+}
+
+/** Shown when no state-average rate can be given: no key, a failed request, or no series for the state. */
+function RatesUnavailable({ onRetry }: { onRetry?: () => void }) {
+  return (
+    <div className="space-y-2" data-testid="my-grid-rates-unavailable">
+      <p className="text-xs leading-relaxed text-muted-foreground max-w-[60ch]">
+        State-average rates are unavailable. Your utility's supply and delivery charges may differ.
+      </p>
+      <p className="text-11 text-muted-foreground">
+        <a href={EIA_STATE_PRICES_URL} target="_blank" rel="noopener noreferrer" className="text-brand hover:text-brand-2">
+          EIA's table of average residential prices by state
+        </a>
+        {onRetry && (
+          <>
+            {" · "}
+            <button type="button" onClick={onRetry} className="text-brand hover:text-brand-2 underline-offset-2 hover:underline">
+              Try again
+            </button>
+          </>
+        )}
+      </p>
     </div>
   );
 }
