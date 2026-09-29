@@ -67,14 +67,18 @@ export interface StateNewsItem {
   headline: string;
   source: string;
   url: string;
-  publishedAt: string;
+  /** The publisher's date, or null when the feed gave none. Never the fetch time. */
+  publishedAt: string | null;
 }
 
 export interface StateNewsPayload {
   state: string;
   stateName: string;
   items: StateNewsItem[];
-  asOf: string;
+  /** When GridTilt fetched the feed. Not an article date. */
+  retrievedAt: string;
+  /** The latest refresh failed; these are the previous headlines. */
+  stale: boolean;
   source: string;
   sourceUrl: string;
 }
@@ -200,14 +204,19 @@ export function buildStateNewsItems(
     // markup naming the publisher, not the story.
     if (!isStateNewsRelevant(headline)) continue;
     if (!isPlausiblyLocal(headline, stateName)) continue;
+    // The original article is the point; an item with no web link to it is dropped.
+    const url = [item.link, item.guid].find((u) => typeof u === "string" && /^https?:\/\//i.test(u));
+    if (!url) continue;
     const key = headline.slice(0, 60).toLowerCase();
     if (seen.has(key)) continue;
     seen.add(key);
+    // A missing date stays missing: the fetch time is not when the story ran.
+    const dated = item.isoDate ?? item.pubDate ?? null;
     items.push({
       headline,
       source: source ?? "Google News",
-      url: item.link ?? item.guid ?? "#",
-      publishedAt: item.isoDate ?? item.pubDate ?? new Date(now).toISOString(),
+      url,
+      publishedAt: dated && !Number.isNaN(new Date(dated).getTime()) ? dated : null,
       namesState: statesMentioned(headline).includes(stateName),
     });
   }
@@ -217,8 +226,8 @@ export function buildStateNewsItems(
   // orders within each tier.
   items.sort((a, b) => {
     if (a.namesState !== b.namesState) return a.namesState ? -1 : 1;
-    const at = new Date(a.publishedAt).getTime();
-    const bt = new Date(b.publishedAt).getTime();
+    const at = a.publishedAt ? new Date(a.publishedAt).getTime() : Number.NaN;
+    const bt = b.publishedAt ? new Date(b.publishedAt).getTime() : Number.NaN;
     if (Number.isNaN(at) && Number.isNaN(bt)) return 0;
     if (Number.isNaN(at)) return 1; // undated sinks rather than leading
     if (Number.isNaN(bt)) return -1;
@@ -233,28 +242,53 @@ const cache = new Map<string, { at: number; payload: StateNewsPayload }>();
 /** Test seam: the module-level cache would otherwise leak between cases. */
 export function clearStateNewsCache(): void {
   cache.clear();
+  lastFailure.clear();
 }
 
-export async function getStateNews(stateCode: string): Promise<StateNewsPayload | null> {
+/** After a failed refresh, serve the stale copy this long before asking again. */
+const RETRY_AFTER_FAILURE_MS = 10 * 60 * 1000;
+const lastFailure = new Map<string, number>();
+
+async function fetchGoogleNews(url: string): Promise<RawFeedItem[]> {
+  const parser = new RSSParser({ timeout: FEED_TIMEOUT_MS });
+  const feed = await parser.parseURL(url);
+  return (feed.items ?? []) as RawFeedItem[];
+}
+
+export async function getStateNews(
+  stateCode: string,
+  opts: { fetchFeed?: (url: string) => Promise<RawFeedItem[]>; now?: () => number } = {},
+): Promise<StateNewsPayload | null> {
   const code = stateCode?.toUpperCase?.() ?? "";
   const stateName = STATE_NAMES[code];
   if (!stateName) return null;
+  const now = opts.now ?? Date.now;
+  const fetchFeed = opts.fetchFeed ?? fetchGoogleNews;
 
   const hit = cache.get(code);
-  if (hit && Date.now() - hit.at < CACHE_TTL_MS) return hit.payload;
+  if (hit && now() - hit.at < CACHE_TTL_MS) return hit.payload;
+  const failedAt = lastFailure.get(code);
+  if (hit && failedAt !== undefined && now() - failedAt < RETRY_AFTER_FAILURE_MS) return { ...hit.payload, stale: true };
 
-  const url = stateNewsUrl(code)!;
-  const parser = new RSSParser({ timeout: FEED_TIMEOUT_MS });
-  const feed = await parser.parseURL(url);
-
-  const payload: StateNewsPayload = {
-    state: code,
-    stateName,
-    items: buildStateNewsItems((feed.items ?? []) as RawFeedItem[], stateName),
-    asOf: new Date().toISOString(),
-    source: "Google News",
-    sourceUrl: "https://news.google.com/",
-  };
-  cache.set(code, { at: Date.now(), payload });
-  return payload;
+  try {
+    const raw = await fetchFeed(stateNewsUrl(code)!);
+    const payload: StateNewsPayload = {
+      state: code,
+      stateName,
+      items: buildStateNewsItems(raw, stateName, now()),
+      retrievedAt: new Date(now()).toISOString(),
+      stale: false,
+      source: "Google News",
+      sourceUrl: "https://news.google.com/",
+    };
+    cache.set(code, { at: now(), payload });
+    lastFailure.delete(code);
+    return payload;
+  } catch (error) {
+    lastFailure.set(code, now());
+    // A failed refresh keeps the previous headlines, labeled with when they
+    // were retrieved; with nothing cached the route reports the failure.
+    if (hit) return { ...hit.payload, stale: true };
+    throw error;
+  }
 }

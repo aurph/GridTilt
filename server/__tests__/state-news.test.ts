@@ -16,8 +16,7 @@ import {
   splitHeadlineSource,
   stateNewsUrl,
   statesMentioned,
-  type RawFeedItem,
-} from "../state-news";
+  type RawFeedItem, getStateNews, clearStateNewsCache } from "../state-news";
 
 describe("stateNewsUrl", () => {
   it("builds a query naming the state and the recency window", () => {
@@ -228,13 +227,47 @@ describe("buildStateNewsItems", () => {
     assert.deepEqual(buildStateNewsItems(undefined as unknown as RawFeedItem[], "Ohio"), []);
   });
 
-  it("falls back to the guid when an item carries no link", () => {
-    const out = buildStateNewsItems([{ title: "Grid story - S", guid: "urn:x" }], "Ohio");
-    assert.equal(out[0].url, "urn:x");
+  it("uses the guid only when it is a web link, and drops an item with no link to the article", () => {
+    assert.deepEqual(buildStateNewsItems([{ title: "Grid story - S", guid: "urn:x" }], "Ohio"), []);
+    const out = buildStateNewsItems([{ title: "Grid story - S", guid: "https://example.com/g" }], "Ohio");
+    assert.equal(out[0].url, "https://example.com/g");
+  });
+
+  it("leaves a missing or unreadable publication date empty instead of using the fetch time", () => {
+    const out = buildStateNewsItems([item("Undated Ohio grid story - A"), item("Bad-date Ohio grid story - B", { isoDate: "not-a-date" })], "Ohio");
+    assert.deepEqual(out.map((i) => i.publishedAt), [null, null]);
   });
 
   it("does not leak the internal ranking flag into the payload", () => {
     const out = buildStateNewsItems([item("Ohio grid story - S")], "Ohio");
     assert.deepEqual(Object.keys(out[0]).sort(), ["headline", "publishedAt", "source", "url"]);
+  });
+});
+
+describe("getStateNews: retrieval time and failures", () => {
+  const feed = async () => [item("Ohio utility rate case filed - A", { isoDate: "2026-09-20T00:00:00Z" })];
+
+  it("dates the fetch, separately from the stories", async () => {
+    clearStateNewsCache();
+    const r = await getStateNews("OH", { fetchFeed: feed, now: () => Date.UTC(2026, 8, 29) });
+    assert.equal(r?.retrievedAt, "2026-09-29T00:00:00.000Z");
+    assert.equal(r?.stale, false);
+    assert.equal(r?.items[0].publishedAt, "2026-09-20T00:00:00Z");
+  });
+
+  it("a failed refresh keeps the previous headlines, labeled stale with their retrieval time", async () => {
+    clearStateNewsCache();
+    let t = Date.UTC(2026, 8, 29);
+    await getStateNews("OH", { fetchFeed: feed, now: () => t });
+    t += 2 * 60 * 60 * 1000;
+    const r = await getStateNews("OH", { fetchFeed: async () => { throw new Error("upstream down"); }, now: () => t });
+    assert.equal(r?.stale, true);
+    assert.equal(r?.retrievedAt, "2026-09-29T00:00:00.000Z");
+    assert.equal(r?.items.length, 1);
+  });
+
+  it("with nothing cached, a failure is an error for the route to report", async () => {
+    clearStateNewsCache();
+    await assert.rejects(getStateNews("OH", { fetchFeed: async () => { throw new Error("malformed feed"); }, now: () => 1 }));
   });
 });

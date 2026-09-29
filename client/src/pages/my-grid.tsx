@@ -533,8 +533,6 @@ export default function MyGrid() {
 
             {mapBlock}
 
-            <StateNewsCard stateCode={state} stateName={grid.name} />
-
             <Card className="border-card-border overflow-hidden" data-testid="my-grid-facilities">
               <div className="px-4 py-2 border-b border-border flex flex-wrap items-center justify-between gap-2">
                 <span className="text-[13px] font-semibold text-foreground">
@@ -682,6 +680,9 @@ export default function MyGrid() {
                 )}
               </div>
             </Card>
+
+            {/* Headlines come after the state's own facts and rates, never in their place. */}
+            <StateNewsCard stateCode={state} stateName={grid.name} />
           </>
         )}
       </div>
@@ -719,22 +720,26 @@ interface StateNewsItem {
   headline: string;
   source: string;
   url: string;
-  publishedAt: string;
+  /** The publisher's date, or null when the feed gave none. */
+  publishedAt: string | null;
 }
 
 interface StateNewsPayload {
   state: string;
   stateName: string;
   items: StateNewsItem[];
-  asOf: string;
+  /** When GridTilt fetched the feed; not an article date. */
+  retrievedAt: string;
+  /** The latest refresh failed; these are the previous headlines. */
+  stale: boolean;
   source: string;
   sourceUrl: string;
 }
 
-/** "3d ago" style age, or empty when the feed gave us nothing to trust. */
-function newsAge(iso: string): string {
-  const then = new Date(iso).getTime();
-  if (Number.isNaN(then)) return "";
+/** "3d ago" style age, or "date not given" when the feed gave none to trust. */
+function newsAge(iso: string | null): string {
+  const then = iso ? new Date(iso).getTime() : Number.NaN;
+  if (Number.isNaN(then)) return "date not given";
   const hours = Math.floor((Date.now() - then) / 3_600_000);
   if (hours < 1) return "just now";
   if (hours < 24) return `${hours}h ago`;
@@ -768,7 +773,7 @@ function StateNewsCard({ stateCode, stateName }: { stateCode: string; stateName:
         <ErrorState label="State news failed to load." onRetry={() => refetch()} />
       ) : !data || data.items.length === 0 ? (
         <p className="p-4 text-xs leading-relaxed text-muted-foreground" data-testid="my-grid-no-news">
-          No {stateName} grid stories in the last two weeks.
+          Google News returned no {stateName} grid, utility or data center headlines from the last two weeks.
         </p>
       ) : (
         <div data-testid="my-grid-news-list">
@@ -783,15 +788,20 @@ function StateNewsCard({ stateCode, stateName }: { stateCode: string; stateName:
             >
               <span className="block text-xs leading-snug text-foreground">{item.headline}</span>
               <span className="mt-0.5 block text-10 text-muted-foreground/70">
-                {item.source}
-                {newsAge(item.publishedAt) ? ` · ${newsAge(item.publishedAt)}` : ""}
+                {item.source} · {newsAge(item.publishedAt)}
               </span>
             </a>
           ))}
         </div>
       )}
+      {data?.stale && (
+        <p className="px-4 pt-2 text-11 text-warning" data-testid="my-grid-news-stale">
+          Could not refresh; these headlines were retrieved {new Date(data.retrievedAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}.
+        </p>
+      )}
       <div className="px-4 py-2 border-t border-border/50 text-10 text-muted-foreground/60">
-        Google News · scoped to {stateName} grid, utility and data center coverage · last 14 days
+        Publishers' headlines from Google News, matched to {stateName} by keywords over the last 14 days. GridTilt has not
+        checked them, and some may be regional or national. A headline is not a verified project or bill status.
       </div>
     </Card>
   );
