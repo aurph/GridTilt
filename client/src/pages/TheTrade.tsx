@@ -491,7 +491,8 @@ export default function TheTrade({ embedded = false }: { embedded?: boolean; par
                 ))}
               </div>
               <p className="text-10 text-muted-foreground/70 leading-relaxed" data-testid="scenario-demand-context">
-                US use in 2030: {Math.round(outputs.use2030.totalTwh).toLocaleString()} TWh. LBNL's 2030 range for data centers is{" "}
+                US use in 2030: {Math.round(outputs.use2030.totalTwh).toLocaleString()} TWh, with everything besides data centers held
+                at its {DEMAND_ANCHOR.year} level. LBNL's 2030 range for data centers is{" "}
                 {LBNL_2030_RANGE.low} to {LBNL_2030_RANGE.high} TWh ({LBNL_2030_RANGE.reference} in its reference case).
               </p>
             </Card>
@@ -544,7 +545,7 @@ export default function TheTrade({ embedded = false }: { embedded?: boolean; par
               <Card className="p-3.5 border-card-border" data-testid="output-interconnect">
                 <p className="text-[11px] text-muted-foreground mb-1">Interconnection wait (assumed)</p>
                 <p className="text-lg font-bold font-mono text-foreground leading-snug mt-0.5">{inputs.interconnectYears}</p>
-                <p className="text-10 text-muted-foreground/60 mt-1">LBNL: generators built in 2025 waited a median 61 months</p>
+                <p className="text-10 text-muted-foreground/60 mt-1">LBNL: generators and storage built in 2025 waited a median 61 months</p>
               </Card>
             </div>
 
@@ -635,7 +636,7 @@ export default function TheTrade({ embedded = false }: { embedded?: boolean; par
                   <TooltipContent className="max-w-xs">
                     <p className="text-xs">
                       GridTilt's editorial 0-10 score for each business, moved by two inputs: a higher nuclear share
-                      raises power names, faster AI demand growth raises compute and infrastructure names. This scale
+                      raises power names, faster computing load growth raises compute and infrastructure names. This scale
                       is separate from the 0-100 sector scores on Analyze and the stock pages. Not a forecast of returns.
                     </p>
                   </TooltipContent>
@@ -780,7 +781,7 @@ export default function TheTrade({ embedded = false }: { embedded?: boolean; par
                         <p className="leading-relaxed">
                           ({DEMAND_ANCHOR.dataCenterTwh} TWh ÷ {FLEET_PUE[2024]}) × (1 + growth)^{2030 - DEMAND_ANCHOR.year} × your 2030 PUE. LBNL's {DEMAND_ANCHOR.year} use divided by its
                           average PUE that year is the computing load. US use is data centers plus everything else held at its {DEMAND_ANCHOR.year} level
-                          ({(DEMAND_ANCHOR.usTwh - DEMAND_ANCHOR.dataCenterTwh).toLocaleString()} TWh, EIA). New capacity and demand growth are separate inputs; the calculator does not reconcile them.
+                          ({(DEMAND_ANCHOR.usTwh - DEMAND_ANCHOR.dataCenterTwh).toLocaleString()} TWh: EIA's {DEMAND_ANCHOR.usTwh.toLocaleString()} less LBNL's {DEMAND_ANCHOR.dataCenterTwh}). New capacity and demand growth are separate inputs; the calculator does not reconcile them.
                         </p>
                       </div>
                     </div>
@@ -792,7 +793,8 @@ export default function TheTrade({ embedded = false }: { embedded?: boolean; par
                     <div className="space-y-2 text-muted-foreground leading-relaxed">
                       <p><span className="text-foreground font-medium">Nuclear %</span> moves the illustrative scores of CEG, CCJ, and VST.</p>
                       <p><span className="text-foreground font-medium">Facility cost per MW</span>: at {inputs.newCapacityGW} GW, each $1M per MW adds ${inputs.newCapacityGW}B.</p>
-                      <p><span className="text-foreground font-medium">LPTs per GW</span> (default 4) has no published basis for data-center load. For comparison, NLR estimates 1 (nuclear) to 10 (solar) step-up transformers per GW of new generation.</p>
+                      <p><span className="text-foreground font-medium">LPTs per GW</span> (default 4) has no published basis for data-center load. For comparison, NLR's January 2026 transmission supply-chain study (Table 16) estimates 1 (nuclear) to 10 (solar) step-up transformers per GW of new generation.{" "}
+                        <a href="https://docs.nlr.gov/docs/fy26osti/97167.pdf" className="underline decoration-dotted underline-offset-2 hover:text-foreground" target="_blank" rel="noopener noreferrer">Study</a></p>
                       <p><span className="text-foreground font-medium">Computing load growth</span>: at your settings, 10 points faster growth adds {Math.round(outputs.fasterGrowthTwh).toLocaleString()} TWh of data-center use in 2030.</p>
                     </div>
                     <div className="mt-3 p-3 rounded bg-muted/20 border border-border/60 text-muted-foreground/70 leading-relaxed">
