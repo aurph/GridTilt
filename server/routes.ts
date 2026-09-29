@@ -3248,9 +3248,9 @@ Preferred-Languages: en
       } else if (page === "blog" && name) {
         card = pageCard(name, "GridTilt Analysis", await liveIndicesStats());
       } else if (page === "blog") {
-        card = pageCard("GridTilt Analysis", "Research on the AI power infrastructure thesis", await liveIndicesStats());
+        card = pageCard("GridTilt Research", "Power projects, grid conditions and the companies behind the buildout", await liveIndicesStats());
       } else if (page === "subscribe") {
-        card = pageCard("Get the Tilt", "Weekly AI power market intel, in your inbox", await liveIndicesStats());
+        card = pageCard("The GridTilt brief", "Power projects and grid changes, by email", await liveIndicesStats());
       } else if (page === "sector" && name) {
         card = pageCard(`${name} Sector`, "AI Power Infrastructure Stocks", await liveIndicesStats());
       } else if (page === "region" && name) {
