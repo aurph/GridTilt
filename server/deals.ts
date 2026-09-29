@@ -278,7 +278,9 @@ export const BACKLOG_TYPES = [
 export const BACKLOG_CATEGORIES = ["generation", "load", "ppa", "aggregate", "regulatory"] as const;
 export const BACKLOG_STATUSES = ["active", "withdrawn", "operational"] as const;
 
-const REQUIRED_TEXT = ["projectName", "sponsor", "iso", "state"] as const;
+const REQUIRED_TEXT = ["projectName", "sponsor"] as const;
+/** A new row needs a place; an update may leave it out (three shipped rows have none). */
+const REQUIRED_TEXT_NEW = ["iso", "state"] as const;
 
 /**
  * Validates the admin add-or-update body for one row. A field the request
@@ -295,6 +297,13 @@ export function parseBacklogProjectRequest(
   const b = body as Record<string, unknown>;
   for (const k of REQUIRED_TEXT) {
     if (typeof b[k] !== "string" || (b[k] as string).trim() === "") {
+      return { ok: false, error: `missing required field: ${k}` };
+    }
+  }
+  for (const k of REQUIRED_TEXT_NEW) {
+    const v = b[k];
+    if (v === undefined && !isNew) continue;
+    if (typeof v !== "string" || v.trim() === "") {
       return { ok: false, error: `missing required field: ${k}` };
     }
   }
@@ -365,8 +374,8 @@ export function parseBacklogProjectRequest(
       sponsor: b.sponsor as string,
       capacityMW: b.capacityMW as number | null,
       type: b.type as string,
-      iso: b.iso as string,
-      state: b.state as string,
+      iso: b.iso as string | undefined,
+      state: b.state as string | undefined,
       category: b.category as string,
       status: (b.status as string | undefined) ?? (isNew ? "active" : undefined),
       dcRelevant: (b.dcRelevant as boolean | undefined) ?? (isNew ? false : undefined),

@@ -335,3 +335,16 @@ test("linked agreements are subtotalled per status, nested rows once, undisclose
   // A row with no buyer, as a generation row can be, does not crash the subtotal.
   assert.equal(subtotalsByStatus([deal({ id: "gen", offtaker: null })])[`byFirmness`][0].key, "unreviewed");
 });
+
+test("an update may leave out iso and state; a new row may not", () => {
+  const { iso: _iso, state: _state, ...placeless } = BODY;
+  const update = parseBacklogProjectRequest(placeless, "x", false);
+  assert.ok(update.ok);
+  assert.equal(update.ok && update.project.iso, undefined);
+  const stored = deal({ id: "x", iso: "PJM", state: "PA" });
+  const merged = mergeBacklogProjectUpdate(stored, (update as { ok: true; project: DealProject }).project);
+  assert.equal(merged.iso, "PJM");
+  const created = parseBacklogProjectRequest(placeless, "x", true);
+  assert.equal(created.ok, false);
+  assert.match((created as { ok: false; error: string }).error, /iso/);
+});

@@ -115,11 +115,18 @@ export default function PowerDeals({ embedded = false }: { embedded?: boolean; p
   const [open, setOpen] = useState<string | null>(null);
 
   const rows = data?.rows ?? [];
-  // A row inside another listed row (a plant inside its framework, a tranche
-  // inside its PPA): shown, labeled, and counted once in the parent.
+  // A row inside another listed row of the same status (a tranche inside its
+  // PPA): shown, labeled, and counted once, in the parent. A signed plant inside
+  // a framework is not marked: statuses are totalled separately, so its MW is in
+  // the signed total and the framework's ceiling both, by design.
   const parentOf = useMemo(() => {
     const m = new Map<string, string>();
-    for (const r of rows) for (const id of r.includes) m.set(id, r.name);
+    for (const r of rows) {
+      for (const id of r.includes) {
+        const child = rows.find((x) => x.id === id);
+        if (child && child.firmness === r.firmness) m.set(id, r.name);
+      }
+    }
     return m;
   }, [rows]);
   const bucket = (k: FirmnessKey) => data?.byFirmness.find((b) => b.key === k) ?? null;

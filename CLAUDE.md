@@ -173,7 +173,8 @@ daily X post). routes.ts only gathers data; ogCardForTemplate returns an OgCard.
 - Deal firmness (server/deals.ts): every agreement row was reviewed against primary documents on
   2026-09-28 (signed / framework / option / preliminary / portfolio / not-ai-offtake). A status
   counts only with firmnessSource (https) and a reviewed date; the admin route rejects firmness
-  without both, and a changed fact voids the review. Subtotals are per status and never added
+  without both, and a changed fact voids the review unless the same request carries the row's
+  first review or a newer one. Subtotals are per status and never added
   across statuses. Do not invent classifications or infer one from a headline.
 - attached_assets/previews/*.svg: live code assets imported via @assets. The rest of
   attached_assets is design-source archive.
