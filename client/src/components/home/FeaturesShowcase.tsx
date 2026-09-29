@@ -112,7 +112,11 @@ function SupplyChainMini() {
 }
 
 // -- Preview 4: the real next catalysts (/api/catalysts/all) ----------------
-interface CatalystItem { id: string; date: string; sortDate: string; ticker?: string; company?: string; title?: string; type: string; }
+interface CatalystItem {
+  id: string; date: string; sortDate: string; ticker?: string; company?: string; title?: string; type: string;
+  /** Month windows and estimates carry a label instead of a day (see server catalyst-lifecycle.ts). */
+  dateLabel?: string; exactDay?: boolean;
+}
 function fmtDay(d: string): string {
   return new Date(`${d.slice(0, 10)}T12:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
@@ -121,14 +125,17 @@ function CatalystRows() {
   if (!data) return <PreviewSkeleton />;
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const next = [...data.items]
-    .filter((c) => new Date(`${c.sortDate.slice(0, 10)}T12:00:00`) >= today)
+    // Catalysts arrive already filtered to upcoming by the server's rule.
+    .filter((c) => c.type === "catalyst" || new Date(`${c.sortDate.slice(0, 10)}T12:00:00`) >= today)
     .sort((a, b) => a.sortDate.localeCompare(b.sortDate))
     .slice(0, 4);
   return (
     <div className="flex h-full flex-col justify-center gap-1.5" data-testid="preview-catalysts">
       {next.map((c) => (
         <div key={c.id} className="flex items-center gap-2.5">
-          <span className="w-11 shrink-0 font-mono text-[10px] tabular-nums text-brand">{fmtDay(c.sortDate)}</span>
+          <span className="w-11 shrink-0 font-mono text-[10px] tabular-nums text-brand">
+            {c.type === "catalyst" && c.exactDay === false && c.dateLabel ? c.dateLabel : fmtDay(c.sortDate)}
+          </span>
           <span className="truncate text-[11px] text-foreground">
             {c.ticker ? <span className="font-semibold">{c.ticker}</span> : null}{" "}
             <span className="text-muted-foreground">{c.type === "earnings" ? "earnings" : c.title}</span>

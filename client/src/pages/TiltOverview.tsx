@@ -568,8 +568,10 @@ function CatalystCalendarSection({ className = "" }: { className?: string }) {
   const selectedDateKey = selectedDay;
   const selectedItems = selectedDateKey ? (itemsByDate[selectedDateKey] ?? []) : [];
 
+  // The server sends only catalysts still upcoming by its rule (a month window
+  // stays live until the month ends); only earnings are dated here.
   const upcoming = items
-    .filter((c) => daysUntil(c.sortDate) >= 0)
+    .filter((c) => c.type === "catalyst" || daysUntil(c.sortDate) >= 0)
     .slice(0, 5);
 
   function getItemColor(item: MergedCatalystItem): string {
@@ -744,7 +746,9 @@ function CatalystCalendarSection({ className = "" }: { className?: string }) {
                 return (
                   <div key={item.id} className="flex items-center gap-2" data-testid={`upcoming-catalyst-${item.id}`}>
                     <span className="text-10 font-mono text-muted-foreground w-8 flex-shrink-0">
-                      {days === 0 ? "TODAY" : `${days}d`}
+                      {item.type === "catalyst" && item.exactDay === false
+                        ? item.dateLabel
+                        : days <= 0 ? "TODAY" : `${days}d`}
                     </span>
                     <div className="h-1 w-1 rounded-full flex-shrink-0" style={{ backgroundColor: cc }} />
                     <span className="text-xs text-foreground truncate flex-1 min-w-0">{getItemLabel(item)}</span>
@@ -803,6 +807,8 @@ interface MergedCatalystItem {
   title?: string;
   description?: string;
   dateLabel?: string;
+  /** False for a month window or an estimate: show dateLabel, not a countdown. */
+  exactDay?: boolean;
   affectedTickers?: string[];
   affectedSectors?: string[];
 }

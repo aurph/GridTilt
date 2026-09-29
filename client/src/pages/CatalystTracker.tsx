@@ -309,7 +309,8 @@ function UpcomingTimeline({ items }: { items: MergedItem[] }) {
           let timeLabel = `${formatDateShort(item.sortDate)}`;
           let timeLabelColor: string = INK.muted;
           if (item.type === "catalyst" && item.exactDay === false) { timeLabel = item.dateLabel; }
-          else if (days === 0) { timeLabel = "Today"; timeLabelColor = BRAND.primary; }
+          // A reader ahead of Eastern time can see an event dated today ET as -1 day.
+          else if (days <= 0) { timeLabel = "Today"; timeLabelColor = BRAND.primary; }
           else if (days === 1) { timeLabel = "Tomorrow"; timeLabelColor = BRAND.secondary; }
           else if (days <= 7) { timeLabel = `In ${days}d`; timeLabelColor = INK.muted; }
 
