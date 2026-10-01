@@ -92,14 +92,14 @@ export function startCartoKeyCheck(env: NodeJS.ProcessEnv = process.env): void {
   const key = readCartoApiKey(env);
   if (!key || env.NODE_ENV === "test") return;
   const run = async () => {
-    const next = await probeCartoKey(key, undefined, undefined, siteReferer(env));
+    const next = await probeCartoKey(key);
     if (next !== keyStatus) {
       if (next === "accepted") console.log("[carto] CARTO accepted CARTO_API; maps use its tiles.");
       else if (next === "rejected")
         console.warn("[carto] CARTO rejected CARTO_API (tiles come back watermarked). Maps show state outlines until it works.");
       else if (next === "refused")
         console.warn(
-          `[carto] CARTO refused CARTO_API for ${new URL(siteReferer(env)).hostname} (HTTP 403). Add that host to the key's website list in CARTO. Maps show state outlines until it works.`,
+          `[carto] CARTO refused CARTO_API for ${new URL(siteReferer()).hostname} (HTTP 403). Add that host to the key's website list in CARTO. Maps show state outlines until it works.`,
         );
       else console.warn("[carto] Could not reach CARTO to check CARTO_API; keeping the key.");
     }

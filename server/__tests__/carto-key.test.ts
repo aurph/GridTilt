@@ -91,8 +91,16 @@ describe("probeCartoKey", () => {
 
 describe("siteReferer", () => {
   it("is the production origin in production and localhost elsewhere", () => {
-    assert.equal(siteReferer({ NODE_ENV: "production" }), "https://gridtilt.com/");
-    assert.equal(siteReferer({ NODE_ENV: "development" }), "http://localhost/");
-    assert.equal(siteReferer({}), "http://localhost/");
+    assert.equal(siteReferer("production"), "https://gridtilt.com/");
+    assert.equal(siteReferer("development"), "http://localhost/");
+    assert.equal(siteReferer(undefined), "http://localhost/");
+  });
+
+  it("defaults to the literal process.env.NODE_ENV, which the production build replaces", async () => {
+    // The deployment runs `node dist/index.cjs` with no NODE_ENV at runtime;
+    // only a literal process.env.NODE_ENV is rewritten by the build's define.
+    const { readFileSync } = await import("node:fs");
+    const src = readFileSync(new URL("../carto-key.ts", import.meta.url), "utf8");
+    assert.match(src, /siteReferer\(nodeEnv: string \| undefined = process\.env\.NODE_ENV\)/);
   });
 });

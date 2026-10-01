@@ -26,9 +26,15 @@ export type CartoKeyStatus = "unchecked" | "accepted" | "rejected" | "refused" |
  * The origin a browser on the site sends as Referer: production is
  * gridtilt.com (no www; that name has no DNS record), development is
  * localhost. CARTO matches the host only, without scheme or port.
+ *
+ * The default reads the literal `process.env.NODE_ENV` on purpose, like
+ * server/index.ts: the production bundle has that expression replaced at
+ * build time (script/build.ts), and the deployment runs `node dist/index.cjs`
+ * with no NODE_ENV set at runtime. Reading NODE_ENV off a passed-in env object
+ * would see undefined in production and send localhost.
  */
-export function siteReferer(env: NodeJS.ProcessEnv = process.env): string {
-  return env.NODE_ENV === "production" ? "https://gridtilt.com/" : "http://localhost/";
+export function siteReferer(nodeEnv: string | undefined = process.env.NODE_ENV): string {
+  return nodeEnv === "production" ? "https://gridtilt.com/" : "http://localhost/";
 }
 
 /** Central US at zoom 4 (x=3 and x=4, y=6): both land, visibly different. */
