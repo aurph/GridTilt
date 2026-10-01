@@ -89,6 +89,10 @@ test("baked projection matches d3-geo across the continental US", async () => {
 test("formatAsOf renders a card-ready date or null", () => {
   assert.equal(formatAsOf("2026-06-26"), "26 JUN 2026");
   assert.equal(formatAsOf("2026-01-05T12:00:00Z"), "5 JAN 2026");
+  // Month precision stays month precision; it is never padded to a day.
+  assert.equal(formatAsOf("2026-01"), "JAN 2026");
+  assert.equal(formatAsOf("2026-13"), null);
+  assert.equal(formatAsOf("202601"), null);
   assert.equal(formatAsOf(null), null);
   assert.equal(formatAsOf(""), null);
   assert.equal(formatAsOf("not a date"), null);
@@ -161,6 +165,29 @@ test("long stat values step down in size so they cannot collide with the visual"
   assert.equal(sizeOf("235"), 44);
   assert.ok(sizeOf("OpenAI / Oracle") < sizeOf("235"), "long values must shrink");
   assert.ok(sizeOf("A very long operator name") < sizeOf("OpenAI / Oracle"), "longer still must shrink further");
+});
+
+test("stats on one card share a size, so no value outweighs its neighbor", () => {
+  const sizes = (stats: OgCard["stats"]): number[] => {
+    const out: number[] = [];
+    const walk = (n: any) => {
+      if (n && typeof n === "object") {
+        if (stats.some((s) => s.value === n.props?.children) && n.props?.style?.fontSize) out.push(parseFloat(n.props.style.fontSize));
+        const kids = n.props?.children;
+        for (const k of Array.isArray(kids) ? kids : [kids]) walk(k);
+      }
+    };
+    walk(buildCardTree({ ...sample, stats }));
+    return out;
+  };
+  const beforeAfter = sizes([
+    { label: "Before", value: "13.4%" },
+    { label: "Now", value: "11.0%, against NERC's 8.1% reference" },
+  ]);
+  assert.equal(beforeAfter.length, 2);
+  assert.equal(beforeAfter[0], beforeAfter[1], "the corrected value is never smaller than the old one");
+  assert.equal(beforeAfter[0], 21);
+  assert.deepEqual(sizes([{ label: "A", value: "29.7%" }, { label: "B", value: "18.6%" }]), [44, 44]);
 });
 
 test("all four visual kinds build without throwing", () => {

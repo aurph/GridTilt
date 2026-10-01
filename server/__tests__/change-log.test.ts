@@ -51,6 +51,16 @@ describe("change log", () => {
     assert.match(validateChangeLog([{ ...checked, checked: undefined }]).join(), /says what was checked/);
   });
 
+  it("holds a short form to short values and a gridtilt.com page", () => {
+    const short = { label: "Example rated power", before: "100 MW", after: "120 MW", source: "Operator filing", url: "https://gridtilt.com/compute-frontier/example" };
+    assert.deepEqual(validateChangeLog([{ ...GOOD, short }]), []);
+    assert.match(validateChangeLog([{ ...GOOD, short: { ...short, source: "" } }]).join(), /short\.source/);
+    assert.match(validateChangeLog([{ ...GOOD, short: { ...short, after: "x".repeat(81) } }]).join(), /short\.after/);
+    assert.match(validateChangeLog([{ ...GOOD, short: { ...short, url: "https://example.com/page" } }]).join(), /gridtilt\.com page/);
+    // The id check still runs when a short form is present.
+    assert.match(validateChangeLog([{ ...GOOD, reviewed: "2026-10-02", short }]).join(), /starts with the reviewed date/);
+  });
+
   it("lists the newest review first", () => {
     const older = { ...GOOD, id: "2026-09-01-older", reviewed: "2026-09-01" };
     assert.deepEqual(sortChanges([older, GOOD]).map((c) => c.id), ["2026-10-01-example-fix", "2026-09-01-older"]);

@@ -312,12 +312,16 @@ export function buildCardTree(card: OgCard): Node {
   // for long values ("OpenAI / Oracle") so the stats row cannot run into the
   // visual on the right.
   const statSize = (value: string) => (value.length <= 7 ? 44 : value.length <= 11 ? 34 : value.length <= 16 ? 26 : 21);
+  // One size for every stat on a card, the size its longest value needs: a
+  // short value printed larger beside a long one reads as the more important
+  // number (an old "13.4%" would outweigh the corrected figure next to it).
+  const sharedSize = Math.min(44, ...card.stats.map((s) => statSize(s.value)));
 
   const stat = (s: OgStat) =>
     box({ flexDirection: "column", gap: "7px" }, [
       text(s.label, { fontSize: "13px", color: MUTED, textTransform: "uppercase", letterSpacing: "2.5px" }),
       text(s.value, {
-        fontSize: `${statSize(s.value)}px`,
+        fontSize: `${sharedSize}px`,
         fontFamily: "JetBrains Mono",
         fontWeight: 700,
         color: AMBER,
@@ -413,13 +417,16 @@ export async function renderOgPng(card: OgCard): Promise<Buffer> {
   return Buffer.from(resvg.render().asPng());
 }
 
-/** "2026-06-26" -> "26 JUN 2026". Returns null for missing/unparseable input. */
+/**
+ * A date as precise as it is: "2026-06-26" -> "26 JUN 2026", "2026-01" ->
+ * "JAN 2026". Returns null for missing or unparseable input.
+ */
 export function formatAsOf(iso: string | null | undefined): string | null {
   if (!iso) return null;
-  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
+  const m = /^(\d{4})-(\d{2})(?:-(\d{2}))?(?!\d)/.exec(iso);
   if (!m) return null;
   const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
   const mon = months[Number(m[2]) - 1];
   if (!mon) return null;
-  return `${Number(m[3])} ${mon} ${m[1]}`;
+  return m[3] ? `${Number(m[3])} ${mon} ${m[1]}` : `${mon} ${m[1]}`;
 }

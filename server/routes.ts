@@ -76,15 +76,32 @@ import { readInferencePrices, buildInferencePriceView } from "./inference-prices
 import { computeFreshness, renderFreshnessAlert, type FileContents, type ReviewRecord } from "./freshness";
 import { DATASET_REGISTRY } from "./freshness-registry";
 import {
-  buildBuildoutTweet,
-  buildGpuRentalTweet,
-  buildClusterSpotlightTweet,
-  buildGridBacklogTweet,
-  buildPowerMixTweet,
+  buildBuildoutPost,
+  buildGpuObservedPost,
+  buildProjectPost,
+  buildQueuePost,
+  buildChangePost,
   buildTopMoversTweet,
   buildCatalystTweet,
   ensureTweetLength,
+  type PostResult,
 } from "./social-format";
+import {
+  buildoutCard,
+  buildoutInputFrom,
+  changeCard,
+  changeInputFrom,
+  gpuCard,
+  gpuObservedInputFrom,
+  latestChange,
+  projectCard,
+  projectInputFrom,
+  queueCard,
+  queueInputFrom,
+  stateCard,
+  weeklyProject,
+  type ClusterRoot,
+} from "./social-data";
 
 interface SupplyChainStage {
   name: string;
@@ -389,6 +406,8 @@ async function getCachedStockData(timeframe: string): Promise<Record<string, any
           marketCap: r.marketCap ?? null,
           marketState: r.marketState ?? null,
           previousClose: r.regularMarketPreviousClose ?? null,
+          // When Yahoo's quote was taken; dates the top-movers card.
+          marketTime: r.regularMarketTime instanceof Date ? r.regularMarketTime.toISOString() : null,
         };
       }
     });
@@ -412,6 +431,7 @@ async function getCachedStockData(timeframe: string): Promise<Record<string, any
           marketCap: null,
           marketState: null,
           previousClose: null,
+          marketTime: null,
         };
       }
     }
@@ -947,297 +967,202 @@ type QueueDataset = BacklogDataset;
 
 // ─── OG image renderer (shared by /api/og and the X media upload path) ─────
 //
-// Layout, fonts and the map projection live in server/og-card.ts. This file
-// only gathers the data each template shows. Every card must carry an asOf
-// and a source line; see the header of og-card.ts for why.
+// Layout, fonts and the map projection live in server/og-card.ts; what each
+// card says lives in server/social-data.ts. This file reads the data files and
+// picks the card. Every card carries an asOf and a source line, and a card
+// without a data date prints "AS OF —" rather than today's date.
 
-import type { OgStat, OgCard, MapDot, Bar } from "./og-card.js";
+import type { OgStat, OgCard } from "./og-card.js";
 import { renderOgPng, formatAsOf } from "./og-card.js";
 
-/** Provenance strings. Keep these specific and true; they are a public claim. */
-const SOURCE_CLUSTERS = "company filings, utility records, trade press";
-const SOURCE_QUEUE = "LBNL Queued Up + public ISO interconnection queues";
-const SOURCE_GPU = "neocloud and marketplace on-demand list prices";
-const SOURCE_MARKET = "Yahoo Finance daily closes";
+const DATA_DIR = join(process.cwd(), "server", "data");
+const readDataJson = (file: string): any => JSON.parse(readFileSync(join(DATA_DIR, file), "utf-8"));
 
-/** Reads clusters.json once and reports how many entries carry a source. */
-function clusterSourceLine(clusters: Array<{ sources?: unknown[] }>): string {
-  const sourced = clusters.filter((c) => Array.isArray(c.sources) && c.sources.length > 0).length;
-  return `${sourced}/${clusters.length} entries sourced · ${SOURCE_CLUSTERS}`;
+/** The freshness registry's limit for a dataset in whole days: past it, the T22 monitor calls the data stale. */
+function registryMaxAgeDays(id: string, fallbackDays: number): number {
+  const hours = DATASET_REGISTRY.find((d) => d.id === id)?.expectedMaxAgeHours;
+  return typeof hours === "number" && hours > 0 ? Math.max(1, Math.round(hours / 24)) : fallbackDays;
 }
 
+/** The GPU Prices page serves a live price at most this many days old (servedGpuModels). */
+const GPU_SERVED_MAX_AGE_DAYS = 2;
+
 /**
- * Page OG images (link previews for /stack, /blog, ...). These are page
- * furniture rather than a dataset claim, but they still show live numbers, so
- * they carry the same as-of and source line as everything else. Defaults to
- * today plus the market source; pass `source` when the stats come from a
- * curated dataset instead.
+ * A page's link-preview card. A page without one dated dataset behind it
+ * carries no stats and prints "AS OF —"; the source line says where the
+ * page's content comes from.
  */
-function pageCard(
-  title: string,
-  subtitle: string,
-  stats: OgStat[],
-  opts: { source?: string; visual?: OgCard["visual"] } = {},
-): OgCard {
+function pageCard(title: string, subtitle: string, source: string, opts: { stats?: OgStat[]; asOf?: string | null } = {}): OgCard {
+  return { title, subtitle, stats: opts.stats ?? [], asOf: opts.asOf ?? null, source, visual: { kind: "none" } };
+}
+
+/** Share-card parameters: a cluster or change id, or a two-letter state code. */
+export interface CardParams {
+  id?: string;
+  state?: string;
+  /** Eastern YYYY-MM-DD; defaults to now. Picks the Wednesday project. */
+  today?: string;
+}
+
+/** Live quotes with a daily change, biggest absolute move first. Static fallbacks are never movers. */
+async function liveMovers(n: number): Promise<Array<{ ticker: string; changePercent: number; marketTime: string | null }>> {
+  const sd = await getCachedStockData("1D");
+  return (Object.values(sd) as any[])
+    .filter((s) => s && !s.stale && typeof s.changePercent === "number")
+    .sort((a, b) => Math.abs(b.changePercent) - Math.abs(a.changePercent))
+    .slice(0, n)
+    .map((s) => ({ ticker: s.ticker, changePercent: s.changePercent, marketTime: s.marketTime ?? null }));
+}
+
+const signedPct = (n: number) => `${n >= 0 ? "+" : ""}${n.toFixed(2)}%`;
+
+async function topMoversCard(): Promise<OgCard> {
+  const movers = await liveMovers(3);
+  const latest = movers.reduce<string | null>((d, s) => (s.marketTime && (!d || s.marketTime > d) ? s.marketTime : d), null);
   return {
-    title,
-    subtitle,
-    stats,
-    asOf: formatAsOf(new Date().toISOString().slice(0, 10)),
-    source: opts.source ?? SOURCE_MARKET,
-    visual: opts.visual ?? { kind: "none" },
+    title: "Today's biggest moves",
+    subtitle: movers.length
+      ? "AI power infrastructure stocks GridTilt follows, by absolute daily change"
+      : "No live quote with a daily change is available right now.",
+    stats: movers.map((s) => ({ label: `$${s.ticker}`, value: signedPct(s.changePercent) })),
+    asOf: latest ? formatAsOf(easternDate(new Date(latest))) : null,
+    source: "Yahoo Finance quotes",
+    visual: movers.length
+      ? {
+          kind: "bars",
+          bars: movers.map((s) => ({ label: `$${s.ticker}`, value: Math.abs(s.changePercent), display: signedPct(s.changePercent), hot: s.changePercent >= 0 })),
+        }
+      : { kind: "none" },
   };
 }
 
-function clusterDots(clusters: Array<any>): MapDot[] {
-  return clusters
-    .filter((c) => typeof c?.location?.lat === "number" && typeof c?.location?.lng === "number")
-    .map((c) => ({ lat: c.location.lat, lng: c.location.lng, mw: c.plannedPowerMW, status: c.status }));
+function catalystCard(today: string): OgCard {
+  const upcoming = catalystWeek(today);
+  const earningsLoaded = Boolean(earningsCache?.items?.length);
+  return {
+    title: "This week's catalysts",
+    subtitle: !earningsLoaded
+      ? `Earnings dates did not load; curated dates only. ${upcoming.length ? upcoming.slice(0, 3).map((c) => `${c.label ?? catalystDayLabel(c.date)}: ${c.title}`).join(" · ") : ""}`.trim()
+      : upcoming.length
+      ? upcoming
+          .slice(0, 3)
+          .map((c) => `${c.label ?? catalystDayLabel(c.date)}: ${c.title}`)
+          .join(" · ")
+      : "No dated event on the calendar in the next 7 days.",
+    stats: [],
+    asOf: null,
+    source: "GridTilt catalyst calendar: company, agency and market dates",
+    visual: { kind: "none" },
+  };
 }
 
-async function liveIndicesStats(): Promise<OgStat[]> {
-  try {
-    const k = await computeKpis();
-    return [
-      { label: "AI Demand", value: k.aiPowerIndex.toFixed(0) },
-      { label: "Nuclear (NPI)", value: k.npiValue.toFixed(0) },
-      { label: "Grid Stress", value: k.gridStress.toFixed(0) },
-    ];
-  } catch {
-    return [
-      { label: "AI Demand", value: "—" },
-      { label: "Nuclear (NPI)", value: "—" },
-      { label: "Grid Stress", value: "—" },
-    ];
+/**
+ * The card for a template, or null when the template is unknown or names
+ * nothing (an id or state that does not exist). Exported for
+ * scripts/preview-cards.ts; routes are the only other caller.
+ */
+export async function ogCardForTemplate(template: string, params: CardParams = {}): Promise<OgCard | null> {
+  const today = params.today ?? easternDate(new Date());
+  switch (template) {
+    case "buildout":
+      return buildoutCard(readDataJson("clusters.json"));
+    case "gpu_rental":
+      return gpuCard(readGpuHistory(), readDataJson("gpu-rental-prices.json"), today, GPU_SERVED_MAX_AGE_DAYS);
+    case "cluster_spotlight": {
+      const root = readDataJson("clusters.json") as ClusterRoot;
+      const c = weeklyProject(root.clusters ?? [], today);
+      return c ? projectCard(c, root) : null;
+    }
+    case "project_status": {
+      const root = readDataJson("clusters.json") as ClusterRoot;
+      const c = (root.clusters ?? []).find((x) => x.id === params.id);
+      return c ? projectCard(c, root) : null;
+    }
+    case "grid_backlog":
+    case "queue_update":
+      return queueCard((readDataJson("interconnection-queue.json") as BacklogDataset).headline);
+    case "documented_change": {
+      const c = latestChange((readDataJson("change-log.json").changes ?? []) as ChangeRecord[]);
+      return c ? changeCard(c) : null;
+    }
+    case "correction": {
+      const c = ((readDataJson("change-log.json").changes ?? []) as ChangeRecord[]).find((x) => x.id === params.id);
+      return c ? changeCard(c) : null;
+    }
+    case "state_fact":
+      return params.state ? stateCard(params.state) : null;
+    case "top_movers":
+      return topMoversCard();
+    case "catalyst_preview":
+      return catalystCard(today);
+    default:
+      return null;
   }
 }
 
-// Per-template OG card content. Pulled from the same data sources the tweet
-// composers use, so the card and the tweet text stay in sync.
-/** Exported for tests and scripts/preview-cards.mjs; routes are the only caller. */
-export async function ogCardForTemplate(template: string): Promise<OgCard> {
-  // ── Daily rotation cards (real data, matched to the tweet copy) ──
-  if (template === "buildout") {
-    const root = JSON.parse(readFileSync(join(process.cwd(), "server", "data", "clusters.json"), "utf-8"));
-    const clusters = (root.clusters ?? []) as Array<any>;
-    const m = computeClusterMetrics(clusters as ClusterLite[]);
-    return {
-      title: "the AI buildout, tracked",
-      subtitle: "every US compute cluster we count carries a public source",
-      stats: [
-        { label: "Clusters", value: String(m.clusterCount) },
-        { label: "Planned", value: `${Math.round(m.totalPlannedMW / 1000)} GW` },
-        { label: "Operators", value: String(m.concentration.operatorCount) },
-      ],
-      asOf: formatAsOf(root.lastRefreshed),
-      source: clusterSourceLine(clusters),
-      visual: { kind: "map", dots: clusterDots(clusters), legend: true },
-    };
-  }
-  if (template === "gpu_rental") {
-    const root = JSON.parse(readFileSync(join(process.cwd(), "server", "data", "gpu-rental-prices.json"), "utf-8"));
-    const g = computeGpuIndex(root.models ?? [], new Date().toISOString().slice(0, 10));
-    const by = Object.fromEntries(g.rows.map((r) => [r.model, r]));
-    const px = (n?: number) => (n == null ? "n/a" : Number.isInteger(n) ? `$${n}` : `$${n.toFixed(2)}`);
-    // Price ladder across every model we track, most expensive first.
-    const ladder = g.rows
-      .filter((r) => typeof r.current === "number" && r.current > 0)
-      .sort((a, b) => (b.current as number) - (a.current as number))
-      .slice(0, 6);
-    return {
-      title: "GPU rental prices",
-      subtitle: "on-demand, blended $/GPU-hr across neoclouds and marketplaces",
-      stats: [
-        { label: "H100", value: px(by.H100?.current) },
-        { label: "H200", value: px(by.H200?.current) },
-        { label: "GB200", value: px(by.GB200?.current) },
-      ],
-      asOf: formatAsOf(root.lastRefreshed),
-      source: SOURCE_GPU,
-      visual: {
-        kind: "columns",
-        columns: ladder.map((r) => ({
-          label: r.model,
-          value: r.current as number,
-          display: px(r.current as number),
-        })),
-      },
-    };
-  }
-  if (template === "cluster_spotlight") {
-    const root = JSON.parse(readFileSync(join(process.cwd(), "server", "data", "clusters.json"), "utf-8"));
-    const clusters = (root.clusters ?? []) as Array<any>;
-    const eligible = clusters
-      .filter((c) => (c.plannedPowerMW ?? 0) >= 500 && c.name)
-      .sort((a, b) => (b.plannedPowerMW ?? 0) - (a.plannedPowerMW ?? 0));
-    if (eligible.length) {
-      const c = eligible[Math.floor(Date.now() / (7 * 86_400_000)) % eligible.length];
-      const name = String(c.name).replace(/\s*\([^)]*\)\s*$/, "").trim();
-      const city = c.location?.city as string | undefined;
-      const state = c.location?.state as string | undefined;
-      const loc = city && state ? (name.includes(city) ? state : `${city}, ${state}`) : (state ?? c.gridRegion ?? "");
-      const g = (c.plannedPowerMW ?? 0) / 1000;
-      return {
-        title: name,
-        subtitle: loc ? `${loc} · AI compute cluster` : "AI compute cluster",
-        stats: [
-          { label: "Planned", value: `${Number.isInteger(g) ? g : g.toFixed(1)} GW` },
-          { label: "Operator", value: (c.operator as string) ?? "n/a" },
-          { label: "Region", value: (c.gridRegion as string) ?? state ?? "n/a" },
-        ],
-        asOf: formatAsOf(root.lastRefreshed),
-        source: clusterSourceLine(clusters),
-        visual: {
-          kind: "map",
-          dots: clusterDots(clusters).map((d) => ({
-            ...d,
-            highlight: d.lat === c.location?.lat && d.lng === c.location?.lng,
-          })),
-        },
-      };
-    }
-    return {
-      title: "Compute Frontier",
-      subtitle: "AI superclusters by GPUs and power",
-      stats: await computeFrontierOgStats(),
-      asOf: formatAsOf(root.lastRefreshed),
-      source: clusterSourceLine(clusters),
-      visual: { kind: "map", dots: clusterDots(clusters), legend: true },
-    };
-  }
-  if (template === "grid_backlog") {
-    try {
-      const data = JSON.parse(readFileSync(join(process.cwd(), "server", "data", "interconnection-queue.json"), "utf-8")) as BacklogDataset;
-      const h = data.headline;
-      const gw = (n: number) => `${n.toLocaleString("en-US")} GW`;
-      // The 2,290 GW national total is already the lead stat; including it here
-      // would flatten every regional bar into a sliver. Bars show the breakdown.
-      const bars: Bar[] = [
-        { label: "PJM reopened cycle", value: h.pjmReopenedGW, display: gw(h.pjmReopenedGW) },
-        { label: "ERCOT large-load", value: h.ercotLargeLoadGW, display: gw(h.ercotLargeLoadGW), hot: true },
-        // Dominion counts engineering and construction letters as well as signed
-        // service agreements in this figure, so it is not "contracted" power.
-        { label: "Dominion DC, all stages", value: h.dominionContractedGW, display: gw(h.dominionContractedGW) },
-      ].filter((b) => typeof b.value === "number" && b.value > 0);
-      return {
-        title: "the grid is the bottleneck",
-        subtitle: "power waiting to connect, by queue",
-        stats: [
-          { label: "Total queue", value: gw(h.queueOverallGW) },
-          { label: "Median wait", value: `${h.medianWaitMonths} mo` },
-          { label: "Withdrawn", value: `${h.historicalWithdrawalPct}%` },
-        ],
-        asOf: formatAsOf(data.lastRefreshed),
-        source: SOURCE_QUEUE,
-        visual: { kind: "bars", bars },
-      };
-    } catch {
-      return {
-        title: "the grid is the bottleneck",
-        subtitle: "US interconnection backlog",
-        stats: [],
-        asOf: null,
-        source: SOURCE_QUEUE,
-        visual: { kind: "none" },
-      };
-    }
-  }
-  if (template === "power_mix") {
-    const root = JSON.parse(readFileSync(join(process.cwd(), "server", "data", "clusters.json"), "utf-8"));
-    const clusters = (root.clusters ?? []) as Array<any>;
-    const m = computeClusterMetrics(clusters as ClusterLite[]);
-    const ranked = m.byEnergySource.filter((b) => b.plannedMW > 0).slice(0, 5);
-    return {
-      title: "how the buildout gets power",
-      subtitle: "planned AI compute capacity by energy source",
-      stats: m.byEnergySource.slice(0, 3).map((b) => ({ label: b.source, value: `${Math.round(b.plannedMW / 1000)} GW` })),
-      asOf: formatAsOf(root.lastRefreshed),
-      source: clusterSourceLine(clusters),
-      visual: {
-        kind: "bars",
-        bars: ranked.map((b, i) => ({
-          label: b.source,
-          value: b.plannedMW,
-          display: `${Math.round(b.plannedMW / 1000)} GW`,
-          hot: i === 0,
-        })),
-      },
-    };
-  }
-  if (template === "tilt_status") {
-    return pageCard("today's market gauges", "ai demand · nuclear · grid stress", await liveIndicesStats());
-  }
-  if (template === "top_movers") {
-    const sd = await getCachedStockData("1D");
-    const movers = (Object.values(sd) as any[])
-      .filter((s) => s && typeof s.changePercent === "number")
-      .sort((a, b) => Math.abs(b.changePercent) - Math.abs(a.changePercent))
-      .slice(0, 3);
+/**
+ * Link-preview cards for pages (the og:image URLs seo.ts writes). Pages
+ * backed by one dated dataset reuse that dataset's card; the rest name the
+ * page and its source and carry no numbers.
+ */
+export function pageOgCard(page: string, ticker?: string, name?: string): OgCard {
+  const classification = "GridTilt sector classifications";
+  if (ticker) {
+    const t = ticker.toUpperCase();
+    const info = COMPANY_DATABASE[t];
     return pageCard(
-      "today's biggest moves",
-      "ai infrastructure equities",
-      movers.map((s) => ({ label: `$${s.ticker}`, value: `${s.changePercent >= 0 ? "+" : ""}${s.changePercent.toFixed(2)}%` })),
-      {
-        visual: {
-          kind: "bars",
-          bars: movers.map((s) => ({
-            label: `$${s.ticker}`,
-            value: Math.abs(s.changePercent),
-            display: `${s.changePercent >= 0 ? "+" : ""}${s.changePercent.toFixed(2)}%`,
-            hot: s.changePercent >= 0,
-          })),
-        },
-      },
+      info ? `${info.name} ($${t})` : `$${t}`,
+      info ? `${info.primarySegment}, in GridTilt's sector classifications` : "Not in GridTilt's sector classifications",
+      `${classification}; quotes from Yahoo Finance`,
     );
   }
-  if (template === "npi_update") {
-    const k = await computeKpis();
-    return pageCard(
-      "nuclear power index",
-      `${k.npiValue.toFixed(0)} (baseline 100, jan 2024)`,
-      [
-        { label: "VST", value: `${k.constituents.vstPerf >= 1 ? "+" : ""}${((k.constituents.vstPerf - 1) * 100).toFixed(0)}%` },
-        { label: "CEG", value: `${k.constituents.cegPerf >= 1 ? "+" : ""}${((k.constituents.cegPerf - 1) * 100).toFixed(0)}%` },
-        { label: "CCJ", value: `${k.constituents.ccjPerf >= 1 ? "+" : ""}${((k.constituents.ccjPerf - 1) * 100).toFixed(0)}%` },
-      ],
-    );
-  }
-  if (template === "queue_update") {
-    try {
-      const filePath = join(process.cwd(), "server", "data", "interconnection-queue.json");
-      const raw = readFileSync(filePath, "utf-8");
-      const data = JSON.parse(raw) as BacklogDataset;
-      const h = data.headline;
-      return {
-        title: "us interconnection backlog",
-        // No GW total: the named projects mix data-center load, generation and
-        // power agreements for the same plants, so their MW do not add up.
-        subtitle: `tracking ${h.trackedProjects} named projects`,
-        stats: [
-          { label: "Total queue (GW)", value: h.queueOverallGW.toLocaleString() },
-          { label: "Median wait", value: `${h.medianWaitMonths} mo` },
-          { label: "Withdrawal", value: `${h.historicalWithdrawalPct}%` },
-        ],
-        asOf: formatAsOf(data.lastRefreshed),
-        source: SOURCE_QUEUE,
-        visual: { kind: "none" },
-      };
-    } catch {
-      return {
-        title: "us interconnection backlog",
-        subtitle: "every named power project we can verify",
-        stats: [],
-        asOf: null,
-        source: SOURCE_QUEUE,
-        visual: { kind: "none" },
-      };
+  switch (page) {
+    case "stack":
+      return pageCard("AI power stocks", "Public companies across the AI power stack, grouped by GridTilt", `${classification}; quotes from Yahoo Finance`);
+    case "power-map":
+      return pageCard("US AI data center map", "Tracked campuses of 400 MW and up, by operator, grid region and capacity", "GridTilt facility registry");
+    case "compute-frontier": {
+      const root = readDataJson("clusters.json") as ClusterRoot;
+      const c = name ? (root.clusters ?? []).find((x) => x.name === name) : undefined;
+      return c ? projectCard(c, root) : buildoutCard(root);
     }
+    case "supply-chain":
+      return pageCard("AI power supply chain", "The stages from chips to substations, and the companies in each", "GridTilt supply chain map");
+    case "queue":
+      return queueCard((readDataJson("interconnection-queue.json") as BacklogDataset).headline);
+    case "trade":
+      return pageCard("AI power scenario", "Change the assumptions and see the electricity demand they imply", "Assumptions and their sources are listed on the page");
+    case "portfolio":
+      return pageCard("Illustrative basket", "Compare a basket against GridTilt's sector classifications", classification);
+    case "catalysts":
+      return pageCard("Catalyst calendar", "Earnings, policy and regulatory dates for AI power", "GridTilt catalyst calendar: company, agency and market dates");
+    case "blog": {
+      if (!name) return pageCard("GridTilt research", "Power projects, grid conditions and the companies behind the buildout", "GridTilt research");
+      let date: string | null = null;
+      try {
+        const articles = JSON.parse(readFileSync(join(process.cwd(), "content", "blog", "articles.json"), "utf-8")) as Array<{ title?: string; date?: string }>;
+        date = articles.find((a) => a.title === name)?.date ?? null;
+      } catch {
+        // no date is shown rather than a guessed one
+      }
+      return pageCard(name, "GridTilt research", "GridTilt research", { asOf: formatAsOf(date) });
+    }
+    case "subscribe":
+      return pageCard("The GridTilt brief", "Power projects and grid changes, by email", "GridTilt");
+    case "sector":
+      if (name) return pageCard(`${name} sector`, "AI power infrastructure stocks, grouped by GridTilt", classification);
+      break;
+    case "region":
+      if (name) return pageCard(`${name} grid region`, "Tracked AI data center campuses in the region", "GridTilt facility registry");
+      break;
+    case "operator":
+      if (name) return pageCard(`${name} AI data centers`, "Tracked campuses and their capacity", "GridTilt facility registry");
+      break;
   }
-  if (template === "catalyst_preview") {
-    return pageCard("this week's catalysts", "earnings · regulatory · policy", await liveIndicesStats());
-  }
-  // Fallback
-  return pageCard("gridtilt", "ai power infrastructure", await liveIndicesStats());
+  // home, and anything unrecognized: the tracked buildout, dated.
+  const root = readDataJson("clusters.json") as ClusterRoot;
+  const card = buildoutCard(root);
+  return { ...card, title: "GridTilt", subtitle: "Equities, infrastructure, and power data for the AI power economy." };
 }
 
 // ─── X (Twitter) OAuth 1.0a posting client ──────────────────────────────────
@@ -1459,6 +1384,8 @@ interface SocialLogEntry {
   dryRun?: boolean;
   template?: string;
   trigger?: "cron" | "manual";
+  /** Why the day's post was not made (stale or unsupported data, or no change). */
+  skipped?: string;
 }
 
 function appendSocialLog(entry: SocialLogEntry): void {
@@ -1597,10 +1524,11 @@ function deriveTiltStatus(k: KpiResult): "elevated" | "tracking baseline" | "eas
   return "tracking baseline";
 }
 
-// ─── Tweet composers ───────────────────────────────────────────────────────
-// All copy is built by pure, unit-tested formatters in server/social-format.ts
-// (voice rules documented there). These wrappers only gather live data, so
-// the exact text the cron ships is locked by tests instead of vibes.
+// ─── Post composers ─────────────────────────────────────────────────────────
+// Copy is built by the pure, unit-tested builders in server/social-format.ts
+// from inputs derived in server/social-data.ts; these wrappers only read the
+// files and the clock. Each returns a post or the reason the day is skipped,
+// and the card for the same template draws on the same rows.
 
 // Map every tracked ticker back to a short sector label for inline tagging.
 const SECTOR_TAG: Record<string, string> = (() => {
@@ -1626,184 +1554,134 @@ const SECTOR_TAG: Record<string, string> = (() => {
   return m;
 })();
 
-// Strip parenthetical vendor names from an energySource string and normalize.
-// "gas (Entergy) + grid" -> "gas + grid".
-function cleanEnergy(s?: string): string {
-  return (s ?? "").replace(/\s*\([^)]*\)/g, "").replace(/\s+/g, " ").trim().toLowerCase();
+/** Day of the week (0 Sunday) for an Eastern YYYY-MM-DD. */
+function weekdayOf(day: string): number {
+  return new Date(`${day}T12:00:00Z`).getUTCDay();
 }
 
-async function composeBuildoutTweet(): Promise<string> {
-  const root = JSON.parse(readFileSync(join(process.cwd(), "server", "data", "clusters.json"), "utf-8"));
-  const m = computeClusterMetrics((root.clusters ?? []) as ClusterLite[]);
-  return buildBuildoutTweet({
-    clusterCount: m.clusterCount,
-    plannedGW: Math.round(m.totalPlannedMW / 1000),
-    operationalGW: Math.round(m.operationalMW / 1000),
-    operatorCount: m.concentration.operatorCount,
-  });
+function composeBuildoutPost(today: string): PostResult {
+  return buildBuildoutPost(buildoutInputFrom(readDataJson("clusters.json"), today, registryMaxAgeDays("clusters", 2)));
 }
 
-async function composeGpuRentalTweet(): Promise<string> {
-  const root = JSON.parse(readFileSync(join(process.cwd(), "server", "data", "gpu-rental-prices.json"), "utf-8"));
-  const today = new Date().toISOString().slice(0, 10);
-  const g = computeGpuIndex(root.models ?? [], today);
-  const byModel = Object.fromEntries(g.rows.map((r) => [r.model, r]));
-  // Biggest 1Y mover (by absolute change) among models with a 1Y figure.
-  const mover = g.rows
-    .filter((r) => r.changes.y1 != null)
-    .sort((a, b) => Math.abs(b.changes.y1 as number) - Math.abs(a.changes.y1 as number))[0];
-  return buildGpuRentalTweet({
-    h100: byModel.H100?.current ?? 0,
-    h200: byModel.H200?.current ?? 0,
-    gb200: byModel.GB200?.current ?? 0,
-    moverModel: mover?.model ?? "A100",
-    moverChangePct: (mover?.changes.y1 as number) ?? 0,
-  });
+function composeGpuRentalPost(today: string): PostResult {
+  return buildGpuObservedPost(gpuObservedInputFrom(readGpuHistory(), today, GPU_SERVED_MAX_AGE_DAYS));
 }
 
-async function composeTopMoversTweet(): Promise<string> {
-  const stockData = await getCachedStockData("1D");
-  const movers = (Object.values(stockData) as any[])
-    .filter((s) => s && typeof s.changePercent === "number")
-    .sort((a, b) => Math.abs(b.changePercent) - Math.abs(a.changePercent))
-    .slice(0, 4)
-    .map((s) => ({ ticker: s.ticker, changePercent: s.changePercent, tag: SECTOR_TAG[s.ticker] }));
-  return buildTopMoversTweet(movers);
+function composeProjectPost(today: string): PostResult {
+  const root = readDataJson("clusters.json") as ClusterRoot;
+  const c = weeklyProject(root.clusters ?? [], today);
+  if (!c) return { ok: false, skip: "no cluster has a name and 500 MW or more planned" };
+  return buildProjectPost(projectInputFrom(c, root.lastRefreshed ?? null, today, registryMaxAgeDays("clusters", 2)));
 }
 
-async function composeGridBacklogTweet(): Promise<string> {
-  try {
-    const filePath = join(process.cwd(), "server", "data", "interconnection-queue.json");
-    const data = JSON.parse(readFileSync(filePath, "utf-8")) as BacklogDataset;
-    const h = data.headline;
-    return buildGridBacklogTweet(h ? {
-      queueOverallGW: h.queueOverallGW,
-      medianWaitMonths: h.medianWaitMonths,
-      ercotLargeLoadGW: h.ercotLargeLoadGW,
-      ercotLargeLoadDataCenterPct: h.ercotLargeLoadDataCenterPct,
-    } : null);
-  } catch {
-    return buildGridBacklogTweet(null);
-  }
+function composeQueuePost(today: string): PostResult {
+  const data = readDataJson("interconnection-queue.json") as BacklogDataset;
+  return buildQueuePost(queueInputFrom(data.headline), Number(today.slice(0, 4)));
+}
+
+function composeChangePost(today: string): PostResult {
+  const changes = (readDataJson("change-log.json").changes ?? []) as ChangeRecord[];
+  return buildChangePost(changeInputFrom(latestChange(changes)), today);
+}
+
+async function composeTopMoversPost(): Promise<PostResult> {
+  const movers = (await liveMovers(4)).map((s) => ({ ticker: s.ticker, changePercent: s.changePercent, tag: SECTOR_TAG[s.ticker] }));
+  if (movers.length === 0) return { ok: false, skip: "no live quote with a daily change is available" };
+  return { ok: true, text: ensureTweetLength(buildTopMoversTweet(movers)) };
 }
 
 const TIER1_EARNINGS = new Set(["NVDA", "MSFT", "GOOGL", "META", "AMZN", "TSM", "AMD", "AAPL"]);
 
-async function composeCatalystPreviewTweet(): Promise<string> {
-  // The dashboard's calendar merges live earnings dates with the curated
-  // policy catalysts; the tweet previews the SAME merged week, otherwise it
-  // says "quiet docket" while the calendar shows earnings (the old bug).
-  // Eastern calendar days, the same convention the calendar uses.
-  const now = new Date();
-  const todayStr = easternDate(now);
-  const endStr = easternDate(new Date(now.getTime() + 7 * 86400000));
+/** "Mon, Oct 5" for a YYYY-MM-DD, anchored at noon so the weekday matches the date. */
+function catalystDayLabel(date: string): string {
+  const iso = date.length === 10 ? `${date}T12:00:00` : date;
+  return new Date(iso).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+}
+
+/**
+ * The next seven Eastern days of the calendar: live earnings dates merged
+ * with the curated policy catalysts, the same merge the Catalyst page shows.
+ */
+function catalystWeek(today: string): Array<{ date: string; title: string; tier1: boolean; label?: string }> {
+  const endStr = new Date(Date.parse(`${today}T12:00:00Z`) + 7 * 86_400_000).toISOString().slice(0, 10);
 
   // Earnings side: module-scope cache, refreshed by the dispatch handlers
-  // right before this composer runs (refreshEarningsCache is route-scoped).
+  // right before this runs (refreshEarningsCache is route-scoped).
   const seen = new Set<string>();
   const earnings: { date: string; title: string; tier1: boolean }[] = [];
   for (const item of earningsCache?.items ?? []) {
     const ticker = item.tickers?.[0];
     if (!ticker || seen.has(ticker)) continue;
-    if (!item.date || item.date < todayStr || item.date > endStr) continue;
+    if (!item.date || item.date < today || item.date > endStr) continue;
     seen.add(ticker);
     earnings.push({ date: item.date, title: `${ticker} earnings`, tier1: TIER1_EARNINGS.has(ticker) });
   }
 
   // Curated policy/catalyst side.
-  let manual: { date: string; title: string; tier1: boolean }[] = [];
+  let manual: { date: string; title: string; tier1: boolean; label?: string }[] = [];
   try {
-    const filePath = join(process.cwd(), "server", "data", "catalysts.json");
-    const catalysts = JSON.parse(readFileSync(filePath, "utf-8")) as CatalystRecord[];
-    manual = upcomingCatalysts(catalysts, todayStr, { through: endStr }).map((c) => ({
+    const catalysts = readDataJson("catalysts.json") as CatalystRecord[];
+    manual = upcomingCatalysts(catalysts, today, { through: endStr }).map((c) => ({
       date: catalystSortDate(c),
       label: catalystShortLabel(c) ?? undefined,
       title: c.title,
       tier1: Array.isArray(c.tickers) && c.tickers.some((t: string) => TIER1_EARNINGS.has(t)),
     }));
   } catch {
-    // curated file is optional; earnings alone still make a post
+    // curated file is optional; earnings alone still make a list
   }
 
-  const upcoming = [...earnings, ...manual].sort((a, b) => (a.date < b.date ? -1 : 1)).slice(0, 4);
-  return buildCatalystTweet(upcoming);
+  return [...earnings, ...manual].sort((a, b) => (a.date < b.date ? -1 : 1)).slice(0, 4);
 }
 
-// Pick a different real cluster each week (deterministic by week) among sizable
-// clusters with a known name, so the Wednesday spotlight stays fresh.
-async function composeClusterSpotlightTweet(): Promise<string> {
-  const root = JSON.parse(readFileSync(join(process.cwd(), "server", "data", "clusters.json"), "utf-8"));
-  const clusters = (root.clusters ?? []) as Array<any>;
-  const m = computeClusterMetrics(clusters as ClusterLite[]);
-  const eligible = clusters
-    .filter((c) => (c.plannedPowerMW ?? 0) >= 500 && c.name)
-    .sort((a, b) => (b.plannedPowerMW ?? 0) - (a.plannedPowerMW ?? 0));
-  if (eligible.length === 0) return composeBuildoutTweet();
-
-  const weekIdx = Math.floor(Date.now() / (7 * 86_400_000));
-  const c = eligible[weekIdx % eligible.length];
-  const name = String(c.name).replace(/\s*\([^)]*\)\s*$/, "").trim();
-  const city = c.location?.city as string | undefined;
-  const state = c.location?.state as string | undefined;
-  // Avoid "Stargate Milam County, Milam County, TX" when the name already
-  // carries the place: if the name includes the city, show just the state.
-  let loc = "";
-  if (city && state) loc = name.includes(city) ? state : `${city}, ${state}`;
-  else if (state) loc = state;
-  else loc = (c.gridRegion as string) ?? "";
-  return buildClusterSpotlightTweet({
-    name,
-    plannedGW: (c.plannedPowerMW ?? 0) / 1000,
-    location: loc,
-    energy: cleanEnergy(c.energySource),
-    clusterCount: m.clusterCount,
-  });
+function composeCatalystPreviewPost(today: string): PostResult {
+  // Without earnings dates the week is incomplete, and the tail line ("no
+  // tier-1 earnings on the docket") would be a claim nothing supports.
+  if (!earningsCache?.items?.length) return { ok: false, skip: "earnings dates did not load, so the week's calendar would be incomplete" };
+  const upcoming = catalystWeek(today);
+  // An empty week is not posted: the calendar is curated, so "nothing
+  // scheduled" would claim a completeness it cannot promise.
+  if (upcoming.length === 0) return { ok: false, skip: "no dated event on the calendar in the next 7 days" };
+  return { ok: true, text: ensureTweetLength(buildCatalystTweet(upcoming)) };
 }
 
-async function composePowerMixTweet(): Promise<string> {
-  const root = JSON.parse(readFileSync(join(process.cwd(), "server", "data", "clusters.json"), "utf-8"));
-  const m = computeClusterMetrics((root.clusters ?? []) as ClusterLite[]);
-  const top = m.byEnergySource[0];
-  const next = m.byEnergySource[1];
-  return buildPowerMixTweet({
-    topSource: top?.source ?? "grid",
-    topGW: Math.round((top?.plannedMW ?? 0) / 1000),
-    nextSource: next?.source ?? "on-site gas",
-    nextGW: Math.round((next?.plannedMW ?? 0) / 1000),
-    linkedDealCount: m.linkedDealCount,
-  });
-}
+type Composer = (today: string) => PostResult | Promise<PostResult>;
 
-// OG-card stats for the Compute Frontier pages (clusters, planned + operational GW).
-async function computeFrontierOgStats(): Promise<Array<{ label: string; value: string }>> {
-  try {
-    const root = JSON.parse(readFileSync(join(process.cwd(), "server", "data", "clusters.json"), "utf-8"));
-    const m = computeClusterMetrics((root.clusters ?? []) as ClusterLite[]);
-    return [
-      { label: "Clusters", value: String(m.clusterCount) },
-      { label: "Planned", value: `${(m.totalPlannedMW / 1000).toFixed(1)} GW` },
-      { label: "Operational", value: `${(m.operationalMW / 1000).toFixed(1)} GW` },
-    ];
-  } catch {
-    return [];
-  }
-}
-
-const ROTATING_TEMPLATES: Record<number, { name: string; compose: () => Promise<string> }> = {
-  1: { name: "buildout",          compose: composeBuildoutTweet },         // Mon
-  2: { name: "gpu_rental",        compose: composeGpuRentalTweet },        // Tue
-  3: { name: "cluster_spotlight", compose: composeClusterSpotlightTweet }, // Wed
-  4: { name: "grid_backlog",      compose: composeGridBacklogTweet },      // Thu
-  5: { name: "power_mix",         compose: composePowerMixTweet },         // Fri
+const ROTATING_TEMPLATES: Record<number, { name: string; compose: Composer }> = {
+  1: { name: "buildout",          compose: composeBuildoutPost },  // Mon
+  2: { name: "gpu_rental",        compose: composeGpuRentalPost }, // Tue
+  3: { name: "cluster_spotlight", compose: composeProjectPost },   // Wed
+  4: { name: "grid_backlog",      compose: composeQueuePost },     // Thu
+  5: { name: "documented_change", compose: composeChangePost },    // Fri
 };
 
 // On-demand templates: composable via /api/social/generate for a dry run, but
 // deliberately NOT in the Mon-Fri auto-posting rotation above. These pull live
 // market/earnings data and are kept for manual use.
-const ON_DEMAND_TEMPLATES: Record<string, () => Promise<string>> = {
-  top_movers: composeTopMoversTweet,
-  catalyst_preview: composeCatalystPreviewTweet,
+const ON_DEMAND_TEMPLATES: Record<string, Composer> = {
+  top_movers: composeTopMoversPost,
+  catalyst_preview: composeCatalystPreviewPost,
 };
+
+/**
+ * The reason to skip a post whose text matches the last one X accepted for
+ * the same template: nothing changed, so nothing is posted (and X refuses
+ * exact duplicates anyway). Dry runs are never compared.
+ */
+function unchangedSinceLastPost(template: string, text: string): string | null {
+  try {
+    if (!existsSync(SOCIAL_LOG_FILE)) return null;
+    const log = JSON.parse(readFileSync(SOCIAL_LOG_FILE, "utf-8")) as SocialLogEntry[];
+    for (let i = log.length - 1; i >= 0; i--) {
+      const e = log[i];
+      if (e.template !== template || e.trigger !== "cron" || !e.ok || e.dryRun || e.skipped || !e.text) continue;
+      return e.text === text ? `unchanged since the post on ${e.timestamp.slice(0, 10)}` : null;
+    }
+  } catch {
+    // an unreadable log is no reason to skip
+  }
+  return null;
+}
 
 export async function registerRoutes(
   httpServer: Server,
@@ -2990,56 +2868,24 @@ Preferred-Languages: en
   });
 
   // ─── SEO: Dynamic OG Image Generation ──────────────────────────────────
+  // ?template= renders a post or share card (state_fact needs &state=XX;
+  // project_status and correction need &id=); unknown templates and ids are
+  // a 404, never a stand-in card. Without a template it is a page preview.
   app.get("/api/og", async (req, res) => {
     try {
-      const page = (req.query.page as string) || "home";
-      const ticker = req.query.ticker as string | undefined;
-      const name = req.query.name as string | undefined;
-      const template = req.query.template as string | undefined;
-
-      let card: OgCard;
+      const q = (k: string) => (typeof req.query[k] === "string" ? (req.query[k] as string) : undefined);
+      const template = q("template");
+      let card: OgCard | null;
       if (template) {
-        card = await ogCardForTemplate(template);
-      } else if (ticker) {
-        const companyInfo = COMPANY_DATABASE[ticker.toUpperCase()];
-        card = pageCard(
-          companyInfo ? `${companyInfo.name} ($${ticker.toUpperCase()})` : `$${ticker.toUpperCase()}`,
-          companyInfo ? `${companyInfo.primarySegment} Sector` : "Not in GridTilt's sector classifications",
-          [{ label: "Sector", value: companyInfo?.primarySegment || "Not covered" }],
-        );
-      } else if (page === "stack") {
-        card = pageCard("60+ AI Power Stocks", "Live Data Across 8 Sectors", await liveIndicesStats());
-      } else if (page === "power-map") {
-        card = pageCard("US AI Data Center Map", "Filter by operator, region, and capacity (\u2265 400 MW)", await liveIndicesStats());
-      } else if (page === "compute-frontier" && name) {
-        card = pageCard(name, "AI Supercluster \u00b7 GridTilt", await computeFrontierOgStats());
-      } else if (page === "compute-frontier") {
-        card = pageCard("Compute Frontier", "AI superclusters by GPUs and power", await computeFrontierOgStats());
-      } else if (page === "supply-chain") {
-        card = pageCard("AI Power Supply Chain", "5 systems, 20 sub-systems, silicon to substation", await liveIndicesStats());
-      } else if (page === "queue") {
-        card = await ogCardForTemplate("queue_update");
-      } else if (page === "trade") {
-        card = pageCard("AI Power Scenario Calculator", "Model demand, capex, and LPT requirements through 2030", await liveIndicesStats());
-      } else if (page === "portfolio") {
-        card = pageCard("Illustrative basket", "Compare editorial sector classifications", await liveIndicesStats());
-      } else if (page === "catalysts") {
-        card = pageCard("Catalyst Calendar", "Earnings, policy, and regulatory events for AI power", await liveIndicesStats());
-      } else if (page === "blog" && name) {
-        card = pageCard(name, "GridTilt Analysis", await liveIndicesStats());
-      } else if (page === "blog") {
-        card = pageCard("GridTilt Research", "Power projects, grid conditions and the companies behind the buildout", await liveIndicesStats());
-      } else if (page === "subscribe") {
-        card = pageCard("The GridTilt brief", "Power projects and grid changes, by email", await liveIndicesStats());
-      } else if (page === "sector" && name) {
-        card = pageCard(`${name} Sector`, "AI Power Infrastructure Stocks", await liveIndicesStats());
-      } else if (page === "region" && name) {
-        card = pageCard(`${name} Grid Region`, "AI Data Center Locations", await liveIndicesStats());
-      } else if (page === "operator" && name) {
-        card = pageCard(`${name} AI Data Centers`, "Locations and Capacity", await liveIndicesStats());
+        const id = q("id");
+        const state = q("state")?.toUpperCase();
+        card = await ogCardForTemplate(template, {
+          id: id && /^[a-z0-9-]{1,100}$/.test(id) ? id : undefined,
+          state: state && /^[A-Z]{2}$/.test(state) ? state : undefined,
+        });
+        if (!card) return res.status(404).json({ error: "No card for that template" });
       } else {
-        // home (default)
-        card = pageCard("The grid is tilting.", "AI power infrastructure dashboard", await liveIndicesStats());
+        card = pageOgCard(q("page") || "home", q("ticker"), q("name"));
       }
 
       const png = await renderOgPng(card);
@@ -3122,18 +2968,19 @@ Preferred-Languages: en
     }
   });
 
-  // Compose a tweet from a named template without posting. Use this to preview
-  // copy before scheduling. Returns the text + the template that was picked.
+  // Compose a post from a named template without posting. Use this to preview
+  // copy before scheduling. Returns the text, or the reason the template would
+  // skip today.
   app.post("/api/social/generate", async (req, res) => {
     if (!requireAdmin(req, res)) return; // SEC-2: was public
     const { template } = req.body || {};
-    const dayIdx = new Date().getDay();
+    const today = easternDate(new Date());
     const onDemand = template && ON_DEMAND_TEMPLATES[template]
-      ? { name: template, compose: ON_DEMAND_TEMPLATES[template] }
+      ? { name: template as string, compose: ON_DEMAND_TEMPLATES[template] }
       : undefined;
     const picked = template
       ? (Object.values(ROTATING_TEMPLATES).find((t) => t.name === template) ?? onDemand)
-      : ROTATING_TEMPLATES[dayIdx];
+      : ROTATING_TEMPLATES[weekdayOf(today)];
     if (!picked) {
       return res.status(400).json({
         error: "Unknown template",
@@ -3147,38 +2994,55 @@ Preferred-Languages: en
       // The catalyst composer reads the module-scope earnings cache;
       // refresh it here because refreshEarningsCache is route-scoped.
       if (picked.name === "catalyst_preview") await refreshEarningsCache().catch(() => {});
-      const text = ensureTweetLength(await picked.compose());
-      res.json({ template: picked.name, text, length: text.length });
+      const result = await picked.compose(today);
+      if (!result.ok) return res.json({ template: picked.name, skipped: true, reason: result.skip });
+      res.json({ template: picked.name, text: result.text, length: result.text.length });
     } catch (error: any) {
       console.error("Social generate error:", error);
       res.status(500).json({ error: error?.message ?? "compose failed" });
     }
   });
 
-  // Cron-triggered daily tweet. Picks template by day of week, composes from
-  // live data, posts to X. Logs every attempt (success or dry-run) to
-  // server/data/social-log.json so we can audit what shipped.
+  // Cron-triggered daily post. Picks the template by Eastern day of week and
+  // composes from GridTilt's own data. A template with stale or unsupported
+  // data skips the day with its reason, and an unchanged post is not repeated.
+  // Every attempt (post, dry run or skip) is logged to server/data/social-log.json.
   app.post("/api/admin/cron/daily-tweet", async (req, res) => {
     if (!requireAdmin(req, res)) return;
-    const dayIdx = new Date().getDay();
+    const today = easternDate(new Date());
+    const dayIdx = weekdayOf(today);
     const picked = ROTATING_TEMPLATES[dayIdx];
     if (!picked) {
       return res.json({ skipped: true, reason: "no template for weekend", dayIdx });
     }
     try {
-      // Same cache pre-refresh as /api/social/generate (see note there).
-      if (picked.name === "catalyst_preview") await refreshEarningsCache().catch(() => {});
-      const text = ensureTweetLength(await picked.compose());
+      const composed = await picked.compose(today);
+      const reason = composed.ok ? unchangedSinceLastPost(picked.name, composed.text) : composed.skip;
+      if (!composed.ok || reason) {
+        appendSocialLog({
+          timestamp: new Date().toISOString(),
+          platform: "twitter",
+          text: "",
+          ok: true,
+          skipped: reason ?? "skipped",
+          template: picked.name,
+          trigger: "cron",
+        });
+        return res.json({ template: picked.name, skipped: true, reason });
+      }
+      const text = composed.text;
 
-      // Render the template's matching OG image and attach it. If the upload
-      // fails (X throttling, OAuth issue), still post the text — the link card
-      // will fall back to the page's og:image meta.
+      // Render the template's matching card and attach it. If the upload
+      // fails (X throttling, OAuth issue), still post the text; the link card
+      // falls back to the page's og:image meta.
       let mediaIds: string[] | undefined;
       try {
-        const card = await ogCardForTemplate(picked.name);
-        const png = await renderOgPng(card);
-        const mediaId = await xUploadMedia(png);
-        if (mediaId) mediaIds = [mediaId];
+        const card = await ogCardForTemplate(picked.name, { today });
+        if (card) {
+          const png = await renderOgPng(card);
+          const mediaId = await xUploadMedia(png);
+          if (mediaId) mediaIds = [mediaId];
+        }
       } catch (mediaErr: any) {
         console.error("OG media upload skipped:", mediaErr?.message);
       }
@@ -3225,9 +3089,11 @@ Preferred-Languages: en
     if (template && typeof template === "string") {
       try {
         const card = await ogCardForTemplate(template);
-        const png = await renderOgPng(card);
-        const mediaId = await xUploadMedia(png);
-        if (mediaId) mediaIds = [mediaId];
+        if (card) {
+          const png = await renderOgPng(card);
+          const mediaId = await xUploadMedia(png);
+          if (mediaId) mediaIds = [mediaId];
+        }
       } catch (mediaErr: any) {
         console.error("OG media upload skipped:", mediaErr?.message);
       }

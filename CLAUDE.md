@@ -77,7 +77,7 @@ Derived from the code; starred rules confirmed by Jack 2026-07-02.
   marketing only. The landing has its own scoped tokens (.gt-marketing, client/src/styles/anchor.css).
 - Server layout: every route lives in server/routes.ts; math and fetching live in small pure
   modules routes call (indices.ts, clusters.ts, deals.ts, gpu-index.ts, gpu-economics.ts,
-  gpu-history.ts, brief.ts, physical.ts, social-format.ts, og-card.ts). New module = pure module + thin
+  gpu-history.ts, brief.ts, physical.ts, social-format.ts, social-data.ts, og-card.ts). New module = pure module + thin
   route + test. server/physical.ts is the house template: constant URL, in-memory TTL cache,
   typed honest degradation ({configured:false} when keyless, 502 on failure), never fabricate.
 - Frontier model data is public at `/api/frontier-models`. Benchmark records require a cited
@@ -125,9 +125,13 @@ Schedulers (no node-cron anywhere):
   FRESHNESS_SCHEDULES_ENABLED is "true" (secret GRIDTILT_ADMIN_KEY). The repo is public, so its
   logs print status codes and dataset ids only. ops/freshness-monitor.md explains the statuses,
   the review sidecar and which writes land on the instance (lost on redeploy).
-- External cron-job.org: POST /api/admin/cron/daily-tweet weekdays 8:30 ET. Rotation: Mon
-  buildout, Tue gpu_rental, Wed cluster_spotlight, Thu grid_backlog, Fri power_mix. Kill switch
-  X_POSTING_ENABLED defaults OFF.
+- External cron-job.org: POST /api/admin/cron/daily-tweet weekdays 8:30 ET. Rotation (Eastern
+  day): Mon buildout (clusters by status), Tue gpu_rental (observed medians), Wed
+  cluster_spotlight (one project, weekly by id), Thu grid_backlog (LBNL national total), Fri
+  documented_change (newest change-log entry with a `short` form, reviewed in the last 7 days).
+  A day whose data is stale per the freshness registry, unreviewed or unsupported is skipped
+  and the reason is logged (`skipped` in social-log.json); an unchanged post is not repeated.
+  Kill switch X_POSTING_ENABLED defaults OFF.
 - External n8n (Jetson homelab): weekly GPU reprice (rewrites gpu-rental-prices.json through a
   validation gate, commits to main) + daily GET /api/gpu-prices/metrics ping.
 - Request-piggybacked daily recorders: /api/kpis appends index-history.json (live data, weekdays,
@@ -151,7 +155,12 @@ server/data custody (the fragility map):
 ## 4b. Social / OG cards
 
 server/og-card.ts owns the layout, fonts and map for every card (/api/og and the
-daily X post). routes.ts only gathers data; ogCardForTemplate returns an OgCard.
+daily X post). server/social-data.ts decides what each card and post says from the
+data files; routes.ts reads the files. ogCardForTemplate returns an OgCard, or null
+for an unknown template or id (a 404, never a stand-in card). Share cards:
+`/api/og?template=state_fact&state=MD`, `template=project_status&id=<cluster id>`,
+`template=correction&id=<change-log id>`. The state card reads server/state-facts.ts,
+a copy of the client's state and NERC tables kept equal by a parity test.
 
 - Every card MUST carry `asOf` and `source`. They are required fields, not
   optional decoration: the product claim is "tracked with sourced numbers", so a
@@ -171,8 +180,8 @@ daily X post). routes.ts only gathers data; ogCardForTemplate returns an OgCard.
   coordinates with plain arithmetic and never imports d3-geo, which is ESM-only
   and would throw ERR_REQUIRE_ESM from the CJS bundle on older Node. d3-geo is a
   devDependency used only by that script and the parity test.
-- `npx tsx scripts/preview-cards.ts` renders every template to .card-preview/
-  for eyeballing. It posts nothing.
+- `npx tsx scripts/preview-cards.ts` renders every template, share variant and a few
+  page cards to .card-preview/ for eyeballing. It posts nothing.
 - client/src/data/us-states.geo.json is the source geometry. The copy that
   shipped on the elevate branch had Virginia's outer ring wound backwards, which
   d3 reads as "the whole sphere minus Virginia". geoAlbersUsa's clipping hid it;

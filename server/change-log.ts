@@ -26,6 +26,11 @@ export interface ChangeRecord {
   reviewed: string;
   scope: string;
   rationale: string;
+  /**
+   * Short display values for a post or a share card, and the page where the
+   * change shows. Optional: a change without one is not posted or carded.
+   */
+  short?: { label: string; before: string; after: string; source: string; url: string };
 }
 
 const ID = /^\d{4}-\d{2}-\d{2}-[a-z0-9-]{3,80}$/;
@@ -62,6 +67,20 @@ export function validateChangeLog(changes: unknown): string[] {
     if (typeof c.sourceDate !== "string" || !SOURCE_DATE.test(c.sourceDate)) errors.push(`${at}: sourceDate must be YYYY, YYYY-MM or YYYY-MM-DD`);
     if (typeof c.reviewed !== "string" || !DAY.test(c.reviewed)) errors.push(`${at}: reviewed must be YYYY-MM-DD`);
     else if (typeof c.id === "string" && ID.test(c.id) && !c.id.startsWith(c.reviewed)) errors.push(`${at}: id starts with the reviewed date`);
+    if (c.short !== undefined) {
+      const sh = (c.short ?? {}) as Record<string, unknown>;
+      for (const k of ["label", "before", "after", "source"]) {
+        if (typeof sh[k] !== "string" || !(sh[k] as string).trim() || (sh[k] as string).length > 80) {
+          errors.push(`${at}: short.${k} must be 1 to 80 characters`);
+        }
+      }
+      try {
+        const u = new URL(String(sh.url));
+        if (u.protocol !== "https:" || u.hostname !== "gridtilt.com") errors.push(`${at}: short.url must be a gridtilt.com page`);
+      } catch {
+        errors.push(`${at}: short.url is not a URL`);
+      }
+    }
   });
   return errors;
 }
