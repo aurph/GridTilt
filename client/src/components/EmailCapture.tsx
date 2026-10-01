@@ -2,11 +2,12 @@ import { useState, useEffect, useRef } from "react";
 import { Mail, CheckCircle2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { apiRequest } from "@/lib/queryClient";
+import { signupErrorMessage, signupResult } from "@/lib/signup";
 import { BORDER, BRAND, FONT, INK, SURFACE } from "@/lib/tokens";
 
 interface ExtraField {
   // Constrained to body keys /api/subscribe knows how to persist. Adding a
-  // new option here requires a parallel change in server/routes.ts (the
+  // new option here requires a parallel change in server/subscriber-routes.ts (the
   // handler destructures only `email`, `intent`, `context`); otherwise the
   // user's answer is silently dropped on the server.
   name: "intent";
@@ -40,7 +41,8 @@ export function EmailCapture({
 }: EmailCaptureProps) {
   const [email, setEmail] = useState("");
   const [extraValue, setExtraValue] = useState("");
-  const [status, setStatus] = useState<"idle" | "loading" | "success" | "exists" | "error">("idle");
+  const [status, setStatus] = useState<"idle" | "loading" | "success" | "exists" | "suppressed" | "error">("idle");
+  const [message, setMessage] = useState("");
   const [dismissed, setDismissed] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -53,13 +55,19 @@ export function EmailCapture({
       if (extraField && extraValue.trim()) body[extraField.name] = extraValue.trim();
       if (context) body.context = context;
       const res = await apiRequest("POST", "/api/subscribe", body);
-      const data = await res.json();
-      setStatus(data.status === "exists" ? "exists" : "success");
-      if (data.status !== "exists") {
+      const result = signupResult(await res.json());
+      if (result.kind === "subscribed") {
+        setStatus("success");
         setEmail("");
         setExtraValue("");
+      } else if (result.kind === "exists") {
+        setStatus("exists");
+      } else {
+        setMessage(result.message);
+        setStatus(result.kind === "suppressed" ? "suppressed" : "error");
       }
-    } catch {
+    } catch (err) {
+      setMessage(signupErrorMessage(err));
       setStatus("error");
     }
   }
@@ -245,6 +253,7 @@ export function EmailCapture({
         </form>
         {status === "error" && (
           <p
+            role="status"
             style={{
               fontFamily: FONT.sans,
               fontSize: 12,
@@ -252,7 +261,20 @@ export function EmailCapture({
               marginTop: 12,
             }}
           >
-            Something went wrong. Try again.
+            {message || "Something went wrong. Try again."}
+          </p>
+        )}
+        {status === "suppressed" && (
+          <p
+            role="status"
+            style={{
+              fontFamily: FONT.sans,
+              fontSize: 12,
+              color: INK.muted,
+              marginTop: 12,
+            }}
+          >
+            {message}
           </p>
         )}
         {status === "exists" && (
@@ -316,8 +338,9 @@ export function EmailCapture({
             {status === "loading" ? "..." : "Subscribe"}
           </Button>
         </form>
-        {status === "error" && <p className="text-xs text-negative mt-2">Something went wrong, try again</p>}
+        {status === "error" && <p className="text-xs text-negative mt-2" role="status">{message || "Something went wrong, try again"}</p>}
         {status === "exists" && <p className="text-xs text-brand-2 mt-2">You're already on the list</p>}
+        {status === "suppressed" && <p className="text-xs text-white/60 mt-2" role="status">{message}</p>}
       </div>
     );
   }
@@ -355,8 +378,9 @@ export function EmailCapture({
             {status === "loading" ? "..." : "Subscribe"}
           </Button>
         </form>
-        {status === "error" && <p className="text-xs text-negative mt-2">Something went wrong, try again</p>}
+        {status === "error" && <p className="text-xs text-negative mt-2" role="status">{message || "Something went wrong, try again"}</p>}
         {status === "exists" && <p className="text-xs text-brand-2 mt-2">You're already on the list</p>}
+        {status === "suppressed" && <p className="text-xs text-white/60 mt-2" role="status">{message}</p>}
       </div>
     </div>
   );

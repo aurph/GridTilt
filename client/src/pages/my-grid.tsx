@@ -29,6 +29,7 @@ import {
   resolveState,
   writeSavedState,
 } from "@/lib/state-selection";
+import { trackEvent } from "@/lib/analytics";
 import { BORDER, BRAND, FONT, INK, SEMANTIC, STATUS_COLORS, SURFACE } from "@/lib/tokens";
 import { seriesMotion, axisProps, gridProps, tooltipContentStyle, tooltipItemStyle, tooltipLabelStyle,  } from "@/lib/chart-theme";
 // US state boundaries: US Census cartographic boundary file (public domain),
@@ -254,8 +255,11 @@ export default function MyGrid() {
     if (resolution.replaceSearch !== null) navigate(`/my-grid${resolution.replaceSearch}`, { replace: true });
   }, [resolution.replaceSearch, navigate]);
 
-  function chooseState(code: string) {
+  // A deliberate choice counts as state_selected; a state restored from the
+  // address or from memory does not.
+  function chooseState(code: string, surface: "header" | "chooser") {
     writeSavedState(browserStorage(), MY_GRID_STATE_KEY, code);
+    if (code) trackEvent({ name: "state_selected", state: code, surface });
     const next = choiceNavigation(search, state, code);
     navigate(`/my-grid${next.search}`, { replace: next.replace });
   }
@@ -343,6 +347,20 @@ export default function MyGrid() {
 
   const stateOptions = Object.entries(STATE_GRID).sort((a, b) => a[1].name.localeCompare(b[1].name));
 
+  // Counted once per state view, when the facilities have loaded and the rates
+  // have either arrived or failed: an unavailable rate still counts as context.
+  const ratesSettled = Boolean(rates) || ratesError;
+  useEffect(() => {
+    if (!state || facilitiesLoading || !ratesSettled) return;
+    const ratesAvailable = Boolean(rates && "byState" in rates && series.length > 0);
+    let dataAgeDays: number | null = null;
+    if (ratesAvailable && latest) {
+      const then = new Date(`${latest.month}-15T12:00:00Z`).getTime();
+      dataAgeDays = Number.isFinite(then) ? Math.floor((Date.now() - then) / 86_400_000) : null;
+    }
+    trackEvent({ name: "state_context_ready", state, ratesAvailable, records: localFacilities.length, dataAgeDays });
+  }, [state, facilitiesLoading, ratesSettled, rates, series.length, latest, localFacilities.length]);
+
   // One map, placed after the state's summary (or the chooser), never above it.
   const mapBlock = (
     <>
@@ -405,7 +423,7 @@ export default function MyGrid() {
               State
               <select
                 value={state}
-                onChange={(e) => chooseState(e.target.value)}
+                onChange={(e) => chooseState(e.target.value, "header")}
                 className="rounded border border-subtle bg-surface-base px-2 py-1.5 text-xs text-foreground"
                 data-testid="my-grid-state"
               >
@@ -437,7 +455,7 @@ export default function MyGrid() {
               </p>
               <select
                 value=""
-                onChange={(e) => chooseState(e.target.value)}
+                onChange={(e) => chooseState(e.target.value, "chooser")}
                 className="rounded border border-subtle bg-surface-base px-2 py-1.5 text-sm text-foreground"
                 aria-label="Choose a state"
                 data-testid="my-grid-state-prompt"

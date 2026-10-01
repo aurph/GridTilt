@@ -16,6 +16,7 @@ import {
 import { STATE_GRID } from "@/data/state-grid";
 import { MY_GRID_STATE_KEY, browserStorage, writeSavedState } from "@/lib/state-selection";
 import { supplyNodes } from "@/data/supply-chain-config";
+import { trackEvent } from "@/lib/analytics";
 
 /**
  * Quick-open (Cmd+K / Ctrl+K): search what already exists and go there.
@@ -129,9 +130,14 @@ export function CommandPalette() {
 
   function go(entry: PaletteEntry) {
     setOpen(false);
-    // A state picked here is the reader's own choice, so My Grid remembers it
-    // like a pick from its own selector. A shared link is not remembered.
-    if (entry.stateCode) writeSavedState(browserStorage(), MY_GRID_STATE_KEY, entry.stateCode);
+    if (entry.stateCode) {
+      // A state picked here is the reader's own choice, so My Grid remembers it
+      // like a pick from its own selector (a shared link is not remembered),
+      // and it counts as state_selected. Only the choice is counted, never what
+      // was typed.
+      writeSavedState(browserStorage(), MY_GRID_STATE_KEY, entry.stateCode);
+      trackEvent({ name: "state_selected", state: entry.stateCode, surface: "search" });
+    }
     navigate(entry.href);
   }
 

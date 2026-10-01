@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useRoute, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
@@ -8,6 +8,16 @@ import { ArrowLeft, Atom, Check, Copy, ExternalLink } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { STATUS_COLORS } from "@/lib/tokens";
 import { FIELD_LABEL, buildCitation, permalink, type EvidenceEntry } from "@/lib/citation";
+import { previousPage, trackEvent } from "@/lib/analytics";
+
+/** Where the reader came from, as a bounded entry surface. */
+function entrySurface(): "map" | "my-grid" | "internal" | "direct" {
+  const prior = previousPage();
+  if (!prior) return "direct";
+  if (prior.startsWith("/power-map")) return "map";
+  if (prior.startsWith("/my-grid")) return "my-grid";
+  return "internal";
+}
 
 interface Cluster {
   id: string;
@@ -55,6 +65,12 @@ export default function ComputeFrontierDetail() {
     queryKey: ["/api/clusters", id ?? ""],
     enabled: !!id,
   });
+
+  // A named project detail is on screen.
+  useEffect(() => {
+    if (!cluster) return;
+    trackEvent({ name: "project_opened", entity: cluster.id, state: cluster.location.state, status: cluster.status, surface: entrySurface() });
+  }, [cluster]);
 
   return (
     <div className="flex flex-col h-full overflow-y-auto">
@@ -165,7 +181,13 @@ export default function ComputeFrontierDetail() {
                             )}
                           </td>
                           <td className="py-2 pr-3">
-                            <a href={e.url} target="_blank" rel="noopener noreferrer" className="text-brand hover:text-brand-2 inline-flex items-center gap-1">
+                            <a
+                              href={e.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-brand hover:text-brand-2 inline-flex items-center gap-1"
+                              onClick={() => trackEvent({ name: "source_opened", entity: cluster.id, claim: e.field, url: e.url })}
+                            >
                               {e.source} <ExternalLink className="h-3 w-3 flex-shrink-0" />
                             </a>
                             {e.primary === false && <span className="block text-10 text-muted-foreground">secondary source</span>}
@@ -186,7 +208,13 @@ export default function ComputeFrontierDetail() {
               <ul className="space-y-1">
                 {cluster.sources.map((s, i) => (
                   <li key={i}>
-                    <a href={s} target="_blank" rel="noopener noreferrer" className="text-xs text-brand hover:text-brand-2 inline-flex items-center gap-1 break-all">
+                    <a
+                      href={s}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-brand hover:text-brand-2 inline-flex items-center gap-1 break-all"
+                      onClick={() => trackEvent({ name: "source_opened", entity: cluster.id, claim: "sources", url: s })}
+                    >
                       {s} <ExternalLink className="h-3 w-3 flex-shrink-0" />
                     </a>
                   </li>

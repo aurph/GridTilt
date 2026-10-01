@@ -49,8 +49,10 @@ The G-chord list is maintained twice in App.tsx (display ~67-83, handler ~250-25
 - Tests: Node's built-in runner. `npm test` = server/__tests__ + client/src/lib/__tests__ (300 tests). No component/DOM tests.
 - Scripts: `dev` (tsx), `build` (script/build.ts: vite client + esbuild server to dist/index.cjs),
   `start`, `check` (tsc), `test`, `backtest:indices`.
-- Persistence: JSON in server/data/ plus content/blog/articles.json. There is NO database,
-  NO Drizzle, NO shared/ dir, NO server/storage.ts (README still claims these; it is wrong).
+- Persistence: JSON in server/data/ plus content/blog/articles.json, except subscribers: Postgres
+  via DATABASE_URL (server/subscriber-store.ts, raw `pg`, no ORM). Production without DATABASE_URL
+  answers signups 503; the JSON file is development/test only. NO Drizzle, NO shared/ dir, NO
+  server/storage.ts.
 
 ## 3. Conventions
 
@@ -80,7 +82,8 @@ Derived from the code; starred rules confirmed by Jack 2026-07-02.
   source, native unit, evaluation setting, and exact comparability key. Never connect or rank
   results that only share a benchmark name.
 - Env: process.env direct. Required: UNSUB_TOKEN_SECRET (boot throws), ADMIN_API_KEY (admin 503s
-  without). Optional: RESEND_API_KEY, EIA_API_KEY, NEWSDATA_API_KEY, CARTO_API, X_API_KEY,
+  without). Optional: DATABASE_URL (subscribers; required in production for signups),
+  RESEND_API_KEY, EIA_API_KEY, NEWSDATA_API_KEY, CARTO_API, X_API_KEY,
   X_API_SECRET, X_ACCESS_TOKEN, X_ACCESS_TOKEN_SECRET, X_POSTING_ENABLED,
   DISABLE_DATACENTER_INGESTER (last two missing from .env.example).
 - CARTO_API is the one env var that reaches the browser. server/runtime-config.ts injects it into
@@ -104,7 +107,7 @@ Derived from the code; starred rules confirmed by Jack 2026-07-02.
 | RSS (8 news + 4 ingester feeds) | none | news fallback; datacenter discovery | ingester 6 h | items just absent |
 | Carto basemaps | CARTO_API | raster tiles for all three Leaflet maps | browser/CDN, 180 d | tiles still load, watermarked "API KEY REQUIRED" (HTTP 200, never an error) |
 | LBNL Queued Up page | none | new-edition flag only | 24 h throttle | manual XLSX ingest regardless |
-| Resend | RESEND_API_KEY | audience sync, newsletter send | on demand | subscribe still saves locally; send 400s |
+| Resend | RESEND_API_KEY | audience sync, newsletter send | on demand | signups are still stored (Postgres); send 400s |
 | X API (OAuth 1.0a) | 4 creds + X_POSTING_ENABLED=true | weekday 8:30 ET post | external cron | dry-run, logged to social-log.json |
 
 Schedulers (no node-cron anywhere):
@@ -122,8 +125,10 @@ server/data custody (the fragility map):
   frontier-models.json,
   hyperscaler-capex.json, content/blog/articles.json (admin blog CRUD can also write it; see debt).
 - Machine-written, never hand-edit: datacenters.json, datacenters-pending.json, index-history.json,
-  gpu-price-history.json, market-constants.json, social-log.json, subscribers.json,
-  backlog-auto-updates.json.
+  gpu-price-history.json, market-constants.json, social-log.json, backlog-auto-updates.json.
+  subscribers.json is the development store only (ignored by version control; personal data);
+  production subscribers live in Postgres, and a legacy list is imported only with
+  scripts/subscribers.ts.
 - Shared custody, be careful: interconnection-queue.json (curated projects; news scanner and
   admin routes write into it). gpu-rental-prices.json is rewritten weekly by n8n; schema changes
   break the unattended refresh.
@@ -203,9 +208,15 @@ Documented, not to fix casually or silently:
   seed, and the indices.ts constants are do-not-touch. Rationale sits at the route.
 - CI runs on every push and PR (.github/workflows/ci.yml, Node 22): typecheck, tests, build, a
   reporting-only slop scan, and `npm audit` which DOES fail the build on a new high advisory.
-- Durability (audit M2): subscribers.json and all machine-written JSON live on autoscale
-  ephemeral disk; admin blog CRUD writes git-tracked content/ at runtime. A redeploy can lose
-  subscribers and posts. Jetson Postgres is the planned fix.
+- Durability (audit M2): subscribers moved to Postgres (T17: one row per address with a state,
+  suppressions kept as email hashes, explicit one-time imports, backup/restore in
+  scripts/subscribers.ts, runbook docs/runbooks/subscriber-storage.md). The other machine-written
+  JSON still lives on autoscale ephemeral disk, and admin blog CRUD writes tracked content/ at
+  runtime; a redeploy can lose those.
+- Production detection: the deployment runs `node dist/index.cjs` with NO NODE_ENV at runtime.
+  Only the literal `process.env.NODE_ENV` is replaced at build time (script/build.ts define), so
+  code that must know it is in production reads that literal (server/index.ts, chooseStore's
+  caller, siteReferer), never NODE_ENV off a passed-in env object.
 - `npm run dev` on macOS works: reusePort is guarded by `process.platform === "linux"`.
   Note port 5000 is taken by AirPlay Receiver on macOS; use PORT=5199 or turn AirPlay off.
 - routes.ts is a 3,913-line monolith (70 routes + OAuth client + OG renderer + 3 scanners +

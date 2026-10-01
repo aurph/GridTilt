@@ -82,7 +82,8 @@ npm start        # serve the built bundle
 |---|---|---|
 | `UNSUB_TOKEN_SECRET` | yes | HMAC key for unsubscribe tokens. `openssl rand -hex 32`. |
 | `ADMIN_API_KEY` | yes | Guards `/api/admin/*`, newsletter send, and daily export. `openssl rand -hex 32`. |
-| `RESEND_API_KEY` | no | Syncs subscribers to Resend and enables newsletter sends. Without it, signups only persist to local JSON. |
+| `DATABASE_URL` | production | Postgres for subscribers (a GridTilt-only Neon database). Without it, production answers signups "unavailable"; development uses an ignored local file. See `docs/runbooks/subscriber-storage.md`. |
+| `RESEND_API_KEY` | no | Syncs subscribers to Resend and enables newsletter sends. Without it, signups are still stored but nothing is sent. |
 | `EIA_API_KEY` | no | Free key from [eia.gov/opendata](https://www.eia.gov/opendata/register.php). Enables live US48 hourly demand. |
 | `NEWSDATA_API_KEY` | no | Optional [newsdata.io](https://newsdata.io) key. The 8 RSS feeds work without it. |
 | `CARTO_API` | no | Free [Carto basemap key](https://carto.com/basemaps/apikey) (5M tiles/month). Without it the maps still render, but every tile is stamped "API KEY REQUIRED". Public by nature - restrict it by domain. |
