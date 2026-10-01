@@ -12,7 +12,7 @@ const SECTIONS: { label: string; href: string; match: (p: string) => boolean }[]
   { label: "Overview", href: "/overview", match: (p) => p === "/overview" },
   { label: "Equities", href: "/stack", match: (p) => p === "/stack" || p === "/supply-chain" },
   { label: "Power", href: "/power-map", match: (p) => p.startsWith("/power") || p === "/queue" },
-  { label: "My Grid", href: "/my-grid", match: (p) => p === "/my-grid" },
+  { label: "My Grid", href: "/my-grid", match: (p) => p === "/my-grid" || p.startsWith("/state/") },
   { label: "Compute", href: "/compute-frontier", match: (p) => p.startsWith("/compute-frontier") },
   { label: "GPU Prices", href: "/neocloud-intel", match: (p) => p === "/neocloud-intel" || p === "/gpu-economics" },
   { label: "Analyze", href: "/analyze", match: (p) => p === "/analyze" || p === "/trade" || p === "/portfolio" },

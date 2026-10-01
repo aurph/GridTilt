@@ -40,6 +40,23 @@ const ADMIN_PAGES = new Set(["/admin/datacenters", "/admin/social"]);
  * An address that names nothing GridTilt has: a real 404, not the home page's
  * metadata on a 200 (which search engines read as a duplicate home page).
  */
+/**
+ * A page whose data could not be read or checked: a 503 with noindex, so a
+ * crawler retries later instead of dropping the address as missing.
+ */
+export function unavailableMeta(): PageMeta {
+  return {
+    title: "Temporarily unavailable | GridTilt",
+    description: "This page's data could not be loaded. Try again shortly.",
+    canonical: null,
+    ogImage: `${BASE_URL}/api/og?page=home`,
+    ogType: "website",
+    jsonLd: [],
+    status: 503,
+    robots: "noindex",
+  };
+}
+
 export function notFoundMeta(): PageMeta {
   return {
     title: "Not found | GridTilt",
@@ -558,8 +575,10 @@ export function getPageMeta(pathname: string): PageMeta {
   // /my-grid?state=XX stays the tool, with /my-grid as its canonical.
   const stateMatch = pathname.match(/^\/state\/([a-z][a-z-]{1,40})$/);
   if (stateMatch) {
-    const page = loadStatePage(stateMatch[1]);
-    if (!page) return notFoundMeta();
+    const result = loadStatePage(stateMatch[1]);
+    if (result.kind === "absent") return notFoundMeta();
+    if (result.kind === "unavailable") return unavailableMeta();
+    const page = result.page;
     return {
       title: stateTitle(page),
       description: stateDescription(page),

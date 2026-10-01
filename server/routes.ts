@@ -1981,21 +1981,24 @@ export async function registerRoutes(
     }
   });
 
-  // Corrections and documented changes to published facts (server/change-log.ts).
-  // A log that fails validation is not served: a wrong correction notice is
-  // worse than none.
   // ─── State pages (T25 pilot; server/state-page.ts) ───────────────────
   app.get("/api/state-pages", (_req, res) => {
     res.json(loadStatePageSlugs());
   });
 
+  // 404 when no page is published under the slug; 503 when the data behind a
+  // page could not be read or checked (a fault, not an absence).
   app.get("/api/state-pages/:slug", (req, res) => {
     const slug = String(req.params.slug ?? "");
-    const page = /^[a-z][a-z-]{1,40}$/.test(slug) ? loadStatePage(slug, easternDate(new Date())) : null;
-    if (!page) return res.status(404).json({ error: "No state page at this address" });
-    res.json(page);
+    const result = /^[a-z][a-z-]{1,40}$/.test(slug) ? loadStatePage(slug, easternDate(new Date())) : { kind: "absent" as const };
+    if (result.kind === "unavailable") return res.status(503).set("Retry-After", "300").json({ error: "This state page's data is unavailable right now" });
+    if (result.kind === "absent") return res.status(404).json({ error: "No state page at this address" });
+    res.json(result.page);
   });
 
+  // Corrections and documented changes to published facts (server/change-log.ts).
+  // A log that fails validation is not served: a wrong correction notice is
+  // worse than none.
   app.get("/api/changes", (_req, res) => {
     try {
       const root = JSON.parse(readFileSync(join(process.cwd(), "server", "data", "change-log.json"), "utf-8"));

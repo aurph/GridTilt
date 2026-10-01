@@ -30,6 +30,7 @@ import {
   writeSavedState,
 } from "@/lib/state-selection";
 import { trackEvent } from "@/lib/analytics";
+import { yearOnYearChange } from "@/lib/rates";
 import { BORDER, BRAND, FONT, INK, SEMANTIC, STATUS_COLORS, SURFACE } from "@/lib/tokens";
 import { seriesMotion, axisProps, gridProps, tooltipContentStyle, tooltipItemStyle, tooltipLabelStyle,  } from "@/lib/chart-theme";
 // US state boundaries: US Census cartographic boundary file (public domain),
@@ -345,8 +346,8 @@ export default function MyGrid() {
   }, [rates, state]);
 
   const latest = series.length ? series[series.length - 1] : null;
-  const yearAgo = series.length >= 13 ? series[series.length - 13] : null;
-  const yoy = latest && yearAgo ? ((latest.centsPerKwh - yearAgo.centsPerKwh) / yearAgo.centsPerKwh) * 100 : null;
+  // The same month a year earlier, found by month; null when EIA skipped it.
+  const yoy = yearOnYearChange(series);
 
   const stateOptions = Object.entries(STATE_GRID).sort((a, b) => a[1].name.localeCompare(b[1].name));
 

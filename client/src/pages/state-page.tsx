@@ -1,9 +1,10 @@
 /**
  * A state's page (/state/:slug): its grid operator and NERC outlook, recent
- * public decisions with their documents, the next public dates, the projects
- * GridTilt records there, and what the data cannot say about a bill. The
- * server writes the same record into the HTML and serves it as JSON, so the
- * two cannot differ. The interactive view of the state stays in My Grid.
+ * public decisions with their documents, where things stood on dated status
+ * records, the next public dates, the projects GridTilt records there, and
+ * what the data cannot say about a bill. The server writes the same record
+ * into the HTML and serves it as JSON, so the two cannot differ. The
+ * interactive view of the state stays in My Grid.
  */
 import type { ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -12,8 +13,10 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/Freshness";
 import { PageHeader } from "@/components/PageHeader";
+import { monthsBefore, yearOnYearChange } from "@/lib/rates";
 
 interface StateDocument {
+  kind?: "decision" | "status";
   date: string;
   jurisdiction: string;
   title: string;
@@ -24,6 +27,7 @@ interface StateDocument {
 
 interface StateNextDate {
   date: string;
+  through?: string;
   what: string;
   source: string;
   url: string;
@@ -37,6 +41,7 @@ interface StateProject {
   plannedMW: number | null;
   plannedEstimated: boolean;
   city: string | null;
+  reviewed: string | null;
   url: string;
 }
 
@@ -63,8 +68,9 @@ interface StatePageData {
   registry: { floorMW: number; tracked: number };
   projects: StateProject[];
   documents: StateDocument[];
+  statusRecords: StateDocument[];
   nextDates: StateNextDate[];
-  billSource: { source: string; url: string };
+  bill: { explanation: string; source: string; url: string };
   reviewed: string;
   canonical: string;
   myGridUrl: string;
@@ -77,7 +83,17 @@ interface RatePoint {
 
 type RetailRates =
   | { configured: false; howTo: string }
-  | { configured: true; unit: string; source: string; sourceUrl: string; stale?: boolean; byState: Record<string, RatePoint[]> };
+  | {
+      configured: true;
+      unit: string;
+      source: string;
+      sourceUrl: string;
+      /** When GridTilt fetched it from EIA; not a data date. */
+      retrievedAt?: string;
+      /** The latest refresh failed; this is the previous good fetch. */
+      stale?: boolean;
+      byState: Record<string, RatePoint[]>;
+    };
 
 /** EIA's own table of average prices by state, for when the feed is unavailable. */
 const EIA_STATE_PRICES_URL = "https://www.eia.gov/electricity/monthly/epm_table_grapher.php?t=epmt_5_6_a";
@@ -95,10 +111,21 @@ function longDate(day: string): string {
   return MONTHS[m - 1] ? `${MONTHS[m - 1]} ${d}, ${y}` : day;
 }
 
+/** "May 11 to 21, 2027" for a span in one month, else both dates in full. */
+function dateSpan(from: string, through?: string): string {
+  if (!through || through === from) return longDate(from);
+  const [fy, fm, fd] = from.split("-").map(Number);
+  const [ty, tm, td] = through.split("-").map(Number);
+  if (fy === ty && fm === tm && MONTHS[fm - 1]) return `${MONTHS[fm - 1]} ${fd} to ${td}, ${fy}`;
+  return `${longDate(from)} to ${longDate(through)}`;
+}
+
 function monthLabel(month: string): string {
   const [y, m] = month.split("-").map(Number);
   return MONTHS[m - 1] ? `${MONTHS[m - 1]} ${y}` : month;
 }
+
+const shortDay = (iso: string) => new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 
 export default function StatePage() {
   const { slug } = useParams<{ slug: string }>();
@@ -107,7 +134,11 @@ export default function StatePage() {
   });
   const notFound = isError && /^404/.test(String((error as Error)?.message ?? ""));
 
-  const { data: rates, isError: ratesError } = useQuery<RetailRates>({
+  const {
+    data: rates,
+    isError: ratesError,
+    refetch: refetchRates,
+  } = useQuery<RetailRates>({
     queryKey: ["/api/physical/retail-rates"],
     // 503 is an honest "not configured" payload, not a failure.
     queryFn: async () => {
@@ -122,31 +153,28 @@ export default function StatePage() {
   if (notFound) {
     return (
       <div className="p-6 text-sm text-muted-foreground" data-testid="state-page-missing">
-        There is no state page at this address yet. Every state is in{" "}
-        <Link href="/my-grid" className="text-brand hover:text-brand-2">My Grid</Link>.
+        There is no state page at this address. Every state is in{" "}
+        <Link href="/my-grid" className="text-brand hover:text-brand-2" data-testid="state-page-missing-my-grid">My Grid</Link>.
       </div>
     );
   }
 
-  const series = data && rates && "byState" in rates ? rates.byState[data.code] ?? [] : [];
+  const configured = rates && "byState" in rates ? rates : null;
+  const series = data && configured ? configured.byState[data.code] ?? [] : [];
   const latest = series.length ? series[series.length - 1] : null;
-  const yearAgo = series.length >= 13 ? series[series.length - 13] : null;
-  const yoy = latest && yearAgo ? ((latest.centsPerKwh - yearAgo.centsPerKwh) / yearAgo.centsPerKwh) * 100 : null;
+  const yoy = yearOnYearChange(series);
 
   return (
     <div className="flex flex-col h-full overflow-y-auto">
       <PageHeader
         title={data ? `${data.name}'s grid` : "State"}
         testId="state-page-header"
-        about="One state's grid operator and reliability outlook, recent public decisions with their documents, the next public dates, and the projects GridTilt records there. Each item carries its date and source."
+        about="One state's grid operator and reliability outlook, recent public decisions with their documents, where things stood on dated status records, the next public dates, and the projects GridTilt records there. Decisions and dates carry their documents and the day GridTilt checked them; project figures come from Compute Frontier records, each with its own sources."
         right={
           data ? (
-            <span className="flex items-center gap-3 text-11 text-muted-foreground">
-              <span data-testid="state-page-reviewed">Reviewed {longDate(data.reviewed)}</span>
-              <Link href={`/my-grid?state=${data.code}`} className="text-brand hover:text-brand-2" data-testid="state-page-my-grid">
-                Open in My Grid →
-              </Link>
-            </span>
+            <Link href={`/my-grid?state=${data.code}`} className="text-11 text-brand hover:text-brand-2" data-testid="state-page-my-grid">
+              Open in My Grid →
+            </Link>
           ) : undefined
         }
       />
@@ -179,7 +207,7 @@ export default function StatePage() {
                 )}
                 {data.nercNote && <p className="text-11 text-muted-foreground">{data.nercNote}</p>}
                 <p className="text-10 text-muted-foreground/70">
-                  <a href={data.nercSource.url} target="_blank" rel="noopener noreferrer" className="underline decoration-dotted underline-offset-2 hover:text-foreground">
+                  <a href={data.nercSource.url} target="_blank" rel="noopener noreferrer" className="underline decoration-dotted underline-offset-2 hover:text-foreground" data-testid="state-page-nerc-source">
                     {data.nercSource.label}
                   </a>
                 </p>
@@ -187,26 +215,22 @@ export default function StatePage() {
             </Card>
 
             <Card className="border-card-border" data-testid="state-page-documents">
-              <SectionTitle>Recent public decisions</SectionTitle>
+              <SectionTitle right={<span data-testid="state-page-reviewed">Checked against the documents {longDate(data.reviewed)}</span>}>
+                Recent public decisions
+              </SectionTitle>
               {data.documents.length === 0 ? (
-                <p className="p-4 text-xs text-muted-foreground">None recorded yet.</p>
+                <p className="p-4 text-xs text-muted-foreground">None recorded.</p>
               ) : (
-                <ul className="divide-y divide-border/50">
-                  {data.documents.map((d) => (
-                    <li key={`${d.date}-${d.title}`} className="p-4 space-y-1">
-                      <p className="text-11 text-muted-foreground">
-                        {longDate(d.date)} · {d.jurisdiction}
-                      </p>
-                      <p className="text-sm font-semibold text-foreground">{d.title}</p>
-                      <p className="text-xs leading-relaxed text-muted-foreground">{d.summary}</p>
-                      <a href={d.url} target="_blank" rel="noopener noreferrer" className="text-11 text-brand hover:text-brand-2">
-                        {d.source}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
+                <DocumentList docs={data.documents} prefix="" testId="state-page-document" />
               )}
             </Card>
+
+            {data.statusRecords.length > 0 && (
+              <Card className="border-card-border" data-testid="state-page-status-records">
+                <SectionTitle>Where things stood</SectionTitle>
+                <DocumentList docs={data.statusRecords} prefix="As of " testId="state-page-status-record" />
+              </Card>
+            )}
 
             <Card className="border-card-border" data-testid="state-page-dates">
               <SectionTitle>Next public dates</SectionTitle>
@@ -214,12 +238,12 @@ export default function StatePage() {
                 <p className="p-4 text-xs text-muted-foreground">None recorded.</p>
               ) : (
                 <ul className="divide-y divide-border/50">
-                  {data.nextDates.map((n) => (
+                  {data.nextDates.map((n, i) => (
                     <li key={`${n.date}-${n.what}`} className="p-4 flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-4">
-                      <span className="font-mono text-xs text-foreground sm:w-40 shrink-0">{longDate(n.date)}</span>
+                      <span className="font-mono text-xs text-foreground sm:w-44 shrink-0">{dateSpan(n.date, n.through)}</span>
                       <span className="text-xs text-muted-foreground">
                         {n.what}.{" "}
-                        <a href={n.url} target="_blank" rel="noopener noreferrer" className="text-brand hover:text-brand-2">
+                        <a href={n.url} target="_blank" rel="noopener noreferrer" className="text-brand hover:text-brand-2" data-testid={`state-page-date-source-${i}`}>
                           {n.source}
                         </a>
                       </span>
@@ -231,6 +255,10 @@ export default function StatePage() {
 
             <Card className="border-card-border" data-testid="state-page-projects">
               <SectionTitle>Data center projects GridTilt records here</SectionTitle>
+              <p className="px-4 pt-3 text-11 leading-relaxed text-muted-foreground">
+                From Compute Frontier records, each with its own sources. <span className="text-estimate">est.</span> marks a GridTilt
+                estimate or an announced target not yet realized.
+              </p>
               {data.projects.length === 0 ? (
                 <p className="p-4 text-xs text-muted-foreground">None recorded.</p>
               ) : (
@@ -238,16 +266,21 @@ export default function StatePage() {
                   {data.projects.map((p) => (
                     <li key={p.id} className="p-4 flex flex-wrap items-baseline justify-between gap-2">
                       <span className="text-sm">
-                        <Link href={`/compute-frontier/${p.id}`} className="text-foreground hover:text-brand underline decoration-dotted underline-offset-2">
+                        <Link
+                          href={`/compute-frontier/${p.id}`}
+                          className="text-foreground hover:text-brand underline decoration-dotted underline-offset-2"
+                          data-testid={`state-page-project-${p.id}`}
+                        >
                           {p.name}
                         </Link>
                         <span className="text-xs text-muted-foreground">
-                          {" "}· {p.operator}{p.city ? `, ${p.city}` : ""} · {STATUS_WORDS[p.status] ?? p.status}
+                          {" "}· {p.operator}{p.city ? `, ${p.city}` : ""} · {STATUS_WORDS[p.status] ?? p.status} ·{" "}
+                          {p.reviewed ? `reviewed field by field ${longDate(p.reviewed)}` : "not yet reviewed field by field"}
                         </span>
                       </span>
                       {p.plannedMW != null && (
                         <span className="font-mono text-xs text-foreground tabular-nums">
-                          {p.plannedMW.toLocaleString("en-US")} MW planned{p.plannedEstimated && <span className="ml-1 text-8 text-estimate">est.</span>}
+                          {p.plannedMW.toLocaleString("en-US")} MW planned{p.plannedEstimated && <span className="ml-1 text-10 text-estimate">est.</span>}
                         </span>
                       )}
                     </li>
@@ -263,32 +296,57 @@ export default function StatePage() {
             <Card className="border-card-border" data-testid="state-page-bill">
               <SectionTitle>Electricity prices, and what they cannot tell you about a bill</SectionTitle>
               <div className="p-4 space-y-2 text-xs leading-relaxed text-muted-foreground">
-                {latest ? (
-                  <p data-testid="state-page-rate">
-                    Residential average, {monthLabel(latest.month)}:{" "}
-                    <span className="font-mono text-sm text-foreground">{latest.centsPerKwh.toFixed(1)}¢/kWh</span>
-                    {yoy != null && ` (${yoy >= 0 ? "+" : "−"}${Math.abs(yoy).toFixed(1)}% from a year earlier)`}.
-                    {rates && "byState" in rates && rates.stale ? " The latest refresh from EIA failed; this is the previous figure." : ""}
-                  </p>
-                ) : (
+                {latest && configured ? (
+                  <div data-testid="state-page-rate">
+                    <p>
+                      Residential average, {monthLabel(latest.month)}:{" "}
+                      <span className="font-mono text-sm text-foreground">{latest.centsPerKwh.toFixed(1)}¢/kWh</span>
+                      {yoy != null && ` (${yoy >= 0 ? "+" : "−"}${Math.abs(yoy).toFixed(1)}% from ${monthLabel(monthsBefore(latest.month, 12))})`}.
+                    </p>
+                    {configured.stale && (
+                      <p className="mt-1 text-warning" data-testid="state-page-rate-stale">
+                        The latest refresh from EIA failed; these figures were retrieved{configured.retrievedAt ? ` ${shortDay(configured.retrievedAt)}` : " earlier"}.
+                      </p>
+                    )}
+                    <p className="mt-1 text-10 text-muted-foreground/70">
+                      <a href={configured.sourceUrl} target="_blank" rel="noopener noreferrer" className="text-brand hover:text-brand-2" data-testid="state-page-rate-source">
+                        {configured.source}
+                      </a>
+                      {" · "}
+                      {configured.unit}
+                      {configured.retrievedAt && ` · retrieved ${shortDay(configured.retrievedAt)}`}
+                    </p>
+                  </div>
+                ) : ratesError ? (
                   <p data-testid="state-page-rate-unavailable">
-                    {ratesError || (rates && !("byState" in rates)) || (rates && series.length === 0)
-                      ? "EIA's price feed is not available here right now."
-                      : "Loading EIA's prices."}{" "}
-                    EIA publishes the averages by state in{" "}
-                    <a href={EIA_STATE_PRICES_URL} target="_blank" rel="noopener noreferrer" className="text-brand hover:text-brand-2">
+                    EIA's prices failed to load.{" "}
+                    <button type="button" onClick={() => refetchRates()} className="text-brand hover:text-brand-2 underline" data-testid="state-page-rate-retry">
+                      Try again
+                    </button>
+                    , or see EIA's averages by state in{" "}
+                    <a href={EIA_STATE_PRICES_URL} target="_blank" rel="noopener noreferrer" className="text-brand hover:text-brand-2" data-testid="state-page-eia-table">
                       Electric Power Monthly, Table 5.6.A
                     </a>
                     .
                   </p>
+                ) : rates ? (
+                  <p data-testid="state-page-rate-unavailable">
+                    EIA's price feed is not available here right now. EIA publishes the averages by state in{" "}
+                    <a href={EIA_STATE_PRICES_URL} target="_blank" rel="noopener noreferrer" className="text-brand hover:text-brand-2" data-testid="state-page-eia-table">
+                      Electric Power Monthly, Table 5.6.A
+                    </a>
+                    .
+                  </p>
+                ) : (
+                  <Skeleton className="h-5 w-64" aria-hidden="true" />
                 )}
                 <p>
-                  A bill has a delivery part, set by the state's utility regulator in rate cases, and a supply part bought on the market (
-                  <a href={data.billSource.url} target="_blank" rel="noopener noreferrer" className="text-brand hover:text-brand-2">
-                    {data.billSource.source}
+                  {data.bill.explanation} (
+                  <a href={data.bill.url} target="_blank" rel="noopener noreferrer" className="text-brand hover:text-brand-2" data-testid="state-page-bill-source">
+                    {data.bill.source}
                   </a>
-                  ). A statewide average blends every utility and customer, and nothing on this page shows how much any project or power line
-                  added to a household's bill.
+                  ). A statewide residential average blends every utility's residential customers, and nothing on this page shows how much
+                  any project or power line added to a household's bill.
                 </p>
               </div>
             </Card>
@@ -299,6 +357,31 @@ export default function StatePage() {
   );
 }
 
-function SectionTitle({ children }: { children: ReactNode }) {
-  return <div className="px-4 py-2 border-b border-border text-[13px] font-semibold text-foreground">{children}</div>;
+function SectionTitle({ children, right }: { children: ReactNode; right?: ReactNode }) {
+  return (
+    <div className="px-4 py-2 border-b border-border flex flex-wrap items-baseline justify-between gap-2">
+      <span className="text-[13px] font-semibold text-foreground">{children}</span>
+      {right && <span className="text-11 text-muted-foreground">{right}</span>}
+    </div>
+  );
+}
+
+function DocumentList({ docs, prefix, testId }: { docs: StateDocument[]; prefix: string; testId: string }) {
+  return (
+    <ul className="divide-y divide-border/50">
+      {docs.map((d, i) => (
+        <li key={`${d.date}-${d.title}`} className="p-4 space-y-1">
+          <p className="text-11 text-muted-foreground">
+            {prefix}
+            {longDate(d.date)} · {d.jurisdiction}
+          </p>
+          <p className="text-sm font-semibold text-foreground">{d.title}</p>
+          <p className="text-xs leading-relaxed text-muted-foreground">{d.summary}</p>
+          <a href={d.url} target="_blank" rel="noopener noreferrer" className="text-11 text-brand hover:text-brand-2" data-testid={`${testId}-${i}`}>
+            {d.source}
+          </a>
+        </li>
+      ))}
+    </ul>
+  );
 }

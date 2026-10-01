@@ -11,7 +11,7 @@ around them. Tagline: "Equities, infrastructure, and power data for the AI power
 economy." Live at gridtilt.com. Built and directed by Jack Schwartz (aurph). Audience:
 the citizen-investor researching the AI power economy, not fund analysts or day traders.
 
-14 sidebar modules, 27 routes (wouter, client/src/App.tsx):
+14 sidebar modules, 29 routes (wouter, client/src/App.tsx; the table below predates the top nav):
 
 | Module | Route | Key |
 |---|---|---|

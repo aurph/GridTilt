@@ -6,7 +6,7 @@
 // and the page's metadata. Grid facts come from the server copy of My Grid's
 // tables (state-facts.ts); projects come from the Compute Frontier records and
 // the 400 MW facility registry; documents and dates are hand-curated in
-// server/data/state-pages.json with the day they were last reviewed.
+// server/data/state-pages.json with the day they were checked.
 //
 // The interactive tool stays at /my-grid?state=XX, whose canonical is
 // /my-grid; the state page is the one indexable address for the state.
@@ -17,12 +17,21 @@ import { STATES, STATE_NERC_NOTE, NERC_LTRA, REGION_AREAS, NERC_AREAS, areaForSt
 
 const SITE = "https://gridtilt.com";
 
+/** EIA's own table of average prices by state. */
+export const EIA_STATE_PRICES_URL = "https://www.eia.gov/electricity/monthly/epm_table_grapher.php?t=epmt_5_6_a";
+
 export interface StateDocument {
-  /** YYYY-MM-DD, the document's own date. */
+  /**
+   * "decision": something an authority decided or ordered on that date.
+   * "status": a snapshot of where things stood on that date (a map, a list),
+   * which decides nothing on it. Defaults to "decision".
+   */
+  kind?: "decision" | "status";
+  /** YYYY-MM-DD: the document's own date (for a status record, its as-of date). */
   date: string;
   jurisdiction: string;
   title: string;
-  /** What the document says, in plain words, and nothing it does not. */
+  /** What the document says, in its own terms and tense, and nothing it does not. */
   summary: string;
   source: string;
   url: string;
@@ -30,6 +39,8 @@ export interface StateDocument {
 
 export interface StateNextDate {
   date: string;
+  /** Last day, for an event that runs over several days. */
+  through?: string;
   what: string;
   source: string;
   url: string;
@@ -37,11 +48,12 @@ export interface StateNextDate {
 
 export interface CuratedState {
   code: string;
+  /** The state's name in lowercase words: "maryland", "new-york". */
   slug: string;
-  /** YYYY-MM-DD: every document and date was checked against its source that day. */
+  /** YYYY-MM-DD: every document, date and the bill source were checked that day. */
   reviewed: string;
-  /** The state's own consumer explanation of what is on a bill. */
-  billSource: { source: string; url: string };
+  /** What is on a bill, as the state's own consumer source explains it. */
+  bill: { explanation: string; source: string; url: string };
   documents: StateDocument[];
   nextDates: StateNextDate[];
 }
@@ -56,9 +68,11 @@ export interface StateProject {
   operator: string;
   status: string;
   plannedMW: number | null;
-  /** The planned figure is a GridTilt estimate or an announced target. */
+  /** The planned figure is a GridTilt estimate or an announced target not yet realized. */
   plannedEstimated: boolean;
   city: string | null;
+  /** The record's field-by-field review date, or null when it has none. */
+  reviewed: string | null;
   url: string;
 }
 
@@ -76,9 +90,13 @@ export interface StatePageData {
   nercSource: { label: string; url: string };
   registry: { floorMW: number; tracked: number };
   projects: StateProject[];
+  /** Decisions, newest first. */
   documents: StateDocument[];
+  /** Status snapshots, newest first. */
+  statusRecords: StateDocument[];
   nextDates: StateNextDate[];
-  billSource: { source: string; url: string };
+  bill: { explanation: string; source: string; url: string };
+  /** The day the curated rows (documents, dates, bill source) were checked. */
   reviewed: string;
   canonical: string;
   myGridUrl: string;
@@ -87,11 +105,25 @@ export interface StatePageData {
 /** The facility registry's floor, the same filter My Grid applies. */
 export const REGISTRY_FLOOR_MW = 400;
 
-const DAY = /^\d{4}-\d{2}-\d{2}$/;
 const SLUG = /^[a-z][a-z-]{1,40}$/;
 
-/** Every problem with the curated file; empty when it is valid. */
-export function validateStatePages(raw: unknown): string[] {
+/** A real calendar day written YYYY-MM-DD. */
+function isDay(v: unknown): v is string {
+  if (typeof v !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(v)) return false;
+  const t = Date.parse(`${v}T00:00:00Z`);
+  return Number.isFinite(t) && new Date(t).toISOString().slice(0, 10) === v;
+}
+
+/** "Maryland" -> "maryland", "District of Columbia" -> "district-of-columbia". */
+export function slugForState(name: string): string {
+  return name.toLowerCase().replace(/[^a-z]+/g, "-").replace(/^-|-$/g, "");
+}
+
+/**
+ * Every problem with the curated file; empty when it is valid. With `today`,
+ * a review dated after it is an error too.
+ */
+export function validateStatePages(raw: unknown, today?: string): string[] {
   const errors: string[] = [];
   const states = (raw as { states?: unknown })?.states;
   if (!Array.isArray(states)) return ["states must be a list"];
@@ -107,19 +139,25 @@ export function validateStatePages(raw: unknown): string[] {
   const text = (v: unknown) => typeof v === "string" && v.trim().length > 0;
   states.forEach((s: any, i) => {
     const at = `states[${i}]${typeof s?.code === "string" ? ` (${s.code})` : ""}`;
-    if (!STATES[s?.code]) errors.push(`${at}: code is not a state My Grid covers`);
+    const known = STATES[s?.code];
+    if (!known) errors.push(`${at}: code is not a state My Grid covers`);
     else if (codes.has(s.code)) errors.push(`${at}: duplicate code`);
     else codes.add(s.code);
     if (typeof s?.slug !== "string" || !SLUG.test(s.slug)) errors.push(`${at}: slug must be lowercase words`);
+    else if (known && s.slug !== slugForState(known.name)) errors.push(`${at}: slug must be "${slugForState(known.name)}", the state's name`);
     else if (slugs.has(s.slug)) errors.push(`${at}: duplicate slug`);
     else slugs.add(s.slug);
-    if (typeof s?.reviewed !== "string" || !DAY.test(s.reviewed)) errors.push(`${at}: reviewed must be YYYY-MM-DD`);
-    if (!text(s?.billSource?.source) || !https(s?.billSource?.url)) errors.push(`${at}: billSource needs a source and an https url`);
+    if (!isDay(s?.reviewed)) errors.push(`${at}: reviewed must be a real YYYY-MM-DD day`);
+    else if (today && s.reviewed > today) errors.push(`${at}: reviewed is after today`);
+    if (!text(s?.bill?.explanation) || !text(s?.bill?.source) || !https(s?.bill?.url)) {
+      errors.push(`${at}: bill needs an explanation, a source and an https url`);
+    }
     if (!Array.isArray(s?.documents)) errors.push(`${at}: documents must be a list`);
     else
       s.documents.forEach((d: any, j: number) => {
         const where = `${at}.documents[${j}]`;
-        if (typeof d?.date !== "string" || !DAY.test(d.date)) errors.push(`${where}: date must be YYYY-MM-DD`);
+        if (d?.kind !== undefined && d.kind !== "decision" && d.kind !== "status") errors.push(`${where}: kind must be decision or status`);
+        if (!isDay(d?.date)) errors.push(`${where}: date must be a real YYYY-MM-DD day`);
         else if (typeof s.reviewed === "string" && d.date > s.reviewed) errors.push(`${where}: dated after the review`);
         for (const k of ["jurisdiction", "title", "summary", "source"]) if (!text(d?.[k])) errors.push(`${where}: ${k} is required`);
         if (!https(d?.url)) errors.push(`${where}: url must be https`);
@@ -128,7 +166,8 @@ export function validateStatePages(raw: unknown): string[] {
     else
       s.nextDates.forEach((d: any, j: number) => {
         const where = `${at}.nextDates[${j}]`;
-        if (typeof d?.date !== "string" || !DAY.test(d.date)) errors.push(`${where}: date must be YYYY-MM-DD`);
+        if (!isDay(d?.date)) errors.push(`${where}: date must be a real YYYY-MM-DD day`);
+        if (d?.through !== undefined && (!isDay(d.through) || (isDay(d?.date) && d.through < d.date))) errors.push(`${where}: through must be a real day on or after date`);
         for (const k of ["what", "source"]) if (!text(d?.[k])) errors.push(`${where}: ${k} is required`);
         if (!https(d?.url)) errors.push(`${where}: url must be https`);
       });
@@ -150,12 +189,15 @@ export interface StatePageInput {
     status: string;
     plannedPowerMW?: number | null;
     estimated?: string[];
+    reviewed?: string;
     location?: { state?: string; city?: string };
   }>;
   facilities: Array<{ state: string; powerMW: number | null }>;
-  /** Eastern YYYY-MM-DD; dates before it drop out of "next dates". */
+  /** Eastern YYYY-MM-DD; events over before it drop out of "next dates". */
   today: string;
 }
+
+const newestFirst = (a: StateDocument, b: StateDocument) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0);
 
 export function composeStatePage(slug: string, input: StatePageInput): StatePageData | null {
   const curated = input.curated.states.find((s) => s.slug === slug);
@@ -175,6 +217,7 @@ export function composeStatePage(slug: string, input: StatePageInput): StatePage
       plannedMW: typeof c.plannedPowerMW === "number" && c.plannedPowerMW > 0 ? c.plannedPowerMW : null,
       plannedEstimated: (c.estimated ?? []).includes("plannedPowerMW"),
       city: c.location?.city ?? null,
+      reviewed: isDay(c.reviewed) ? c.reviewed : null,
       url: `${SITE}/compute-frontier/${c.id}`,
     }))
     .sort((a, b) => (b.plannedMW ?? 0) - (a.plannedMW ?? 0) || a.id.localeCompare(b.id));
@@ -210,9 +253,13 @@ export function composeStatePage(slug: string, input: StatePageInput): StatePage
       tracked: input.facilities.filter((f) => f.state === code && (f.powerMW ?? 0) >= REGISTRY_FLOOR_MW).length,
     },
     projects,
-    documents: [...curated.documents].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0)),
-    nextDates: curated.nextDates.filter((d) => d.date >= input.today).sort((a, b) => (a.date < b.date ? -1 : 1)),
-    billSource: curated.billSource,
+    documents: curated.documents.filter((d) => (d.kind ?? "decision") === "decision").sort(newestFirst),
+    statusRecords: curated.documents.filter((d) => d.kind === "status").sort(newestFirst),
+    // An event stays listed through its last day.
+    nextDates: curated.nextDates
+      .filter((d) => (d.through ?? d.date) >= input.today)
+      .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0)),
+    bill: curated.bill,
     reviewed: curated.reviewed,
     canonical: `${SITE}/state/${slug}`,
     myGridUrl: `${SITE}/my-grid?state=${code}`,
@@ -225,6 +272,15 @@ const MONTHS = ["January", "February", "March", "April", "May", "June", "July", 
 export function longDate(day: string): string {
   const [y, m, d] = day.split("-").map(Number);
   return MONTHS[m - 1] ? `${MONTHS[m - 1]} ${d}, ${y}` : day;
+}
+
+/** "May 11 to 21, 2027" for a span in one month, else both dates in full. */
+export function dateSpan(from: string, through?: string): string {
+  if (!through || through === from) return longDate(from);
+  const [fy, fm, fd] = from.split("-").map(Number);
+  const [ty, tm, td] = through.split("-").map(Number);
+  if (fy === ty && fm === tm && MONTHS[fm - 1]) return `${MONTHS[fm - 1]} ${fd} to ${td}, ${fy}`;
+  return `${longDate(from)} to ${longDate(through)}`;
 }
 
 function esc(v: string): string {
@@ -258,7 +314,7 @@ export function renderStateHtml(d: StatePageData): string {
   const out: string[] = [];
   out.push(`<main data-prerender="state-page">`);
   out.push(`<h1>${esc(d.name)}'s grid</h1>`);
-  out.push(p(`Reviewed ${esc(longDate(d.reviewed))}. ${a(d.myGridUrl, `Open ${d.name} in My Grid`)}.`));
+  out.push(p(a(d.myGridUrl, `Open ${d.name} in My Grid`)));
 
   out.push(`<h2>Grid operator and reliability</h2>`);
   out.push(p(`${esc(d.operatorLabel)}.${d.operatorNote ? ` ${esc(d.operatorNote)}` : ""}`));
@@ -275,7 +331,8 @@ export function renderStateHtml(d: StatePageData): string {
   out.push(p(`Source: ${a(d.nercSource.url, d.nercSource.label)}.`));
 
   out.push(`<h2>Recent public decisions</h2>`);
-  if (d.documents.length === 0) out.push(p("None recorded yet."));
+  out.push(p(`Each checked against its document on ${esc(longDate(d.reviewed))}.`));
+  if (d.documents.length === 0) out.push(p("None recorded."));
   else {
     out.push(`<ul>`);
     for (const doc of d.documents) {
@@ -284,21 +341,32 @@ export function renderStateHtml(d: StatePageData): string {
     out.push(`</ul>`);
   }
 
+  if (d.statusRecords.length) {
+    out.push(`<h2>Where things stood</h2>`);
+    out.push(`<ul>`);
+    for (const doc of d.statusRecords) {
+      out.push(`<li><strong>As of ${esc(longDate(doc.date))}, ${esc(doc.jurisdiction)}: ${esc(doc.title)}.</strong> ${esc(doc.summary)} ${a(doc.url, doc.source)}</li>`);
+    }
+    out.push(`</ul>`);
+  }
+
   out.push(`<h2>Next public dates</h2>`);
   if (d.nextDates.length === 0) out.push(p("None recorded."));
   else {
     out.push(`<ul>`);
-    for (const n of d.nextDates) out.push(`<li>${esc(longDate(n.date))}: ${esc(n.what)}. ${a(n.url, n.source)}</li>`);
+    for (const n of d.nextDates) out.push(`<li>${esc(dateSpan(n.date, n.through))}: ${esc(n.what)}. ${a(n.url, n.source)}</li>`);
     out.push(`</ul>`);
   }
 
   out.push(`<h2>Data center projects GridTilt records here</h2>`);
-  if (d.projects.length === 0) out.push(p(`None recorded. GridTilt's records are not a complete list of the state's data centers.`));
+  out.push(p("From Compute Frontier records, each with its own sources. An estimate marks a GridTilt estimate or an announced target not yet realized."));
+  if (d.projects.length === 0) out.push(p(`None recorded.`));
   else {
     out.push(`<ul>`);
     for (const pr of d.projects) {
-      const mw = pr.plannedMW ? `, ${pr.plannedMW.toLocaleString("en-US")} MW planned${pr.plannedEstimated ? " (estimate)" : ""}` : "";
-      out.push(`<li>${a(pr.url, pr.name)}: ${esc(pr.operator)}${pr.city ? `, ${esc(pr.city)}` : ""}; ${esc(STATUS_WORDS[pr.status] ?? pr.status)}${mw}.</li>`);
+      const mw = pr.plannedMW ? `, ${pr.plannedMW.toLocaleString("en-US")} MW planned${pr.plannedEstimated ? " (estimate or announced target)" : ""}` : "";
+      const review = pr.reviewed ? `reviewed field by field ${esc(longDate(pr.reviewed))}` : "not yet reviewed field by field";
+      out.push(`<li>${a(pr.url, pr.name)}: ${esc(pr.operator)}${pr.city ? `, ${esc(pr.city)}` : ""}; ${esc(STATUS_WORDS[pr.status] ?? pr.status)}${mw}; ${review}.</li>`);
     }
     out.push(`</ul>`);
   }
@@ -311,7 +379,7 @@ export function renderStateHtml(d: StatePageData): string {
   out.push(`<h2>What this page cannot tell you about a bill</h2>`);
   out.push(
     p(
-      `A bill has a delivery part, set by the state's utility regulator in rate cases, and a supply part bought on the market (${a(d.billSource.url, d.billSource.source)}). A statewide average price blends every utility and customer, and nothing on this page shows how much any project or power line added to a household's bill. EIA publishes average prices by state: ${a("https://www.eia.gov/electricity/monthly/epm_table_grapher.php?t=epmt_5_6_a", "Electric Power Monthly, Table 5.6.A")}.`,
+      `${esc(d.bill.explanation)} (${a(d.bill.url, d.bill.source)}). A statewide residential average blends every utility's residential customers, and nothing on this page shows how much any project or power line added to a household's bill. EIA publishes the averages by state: ${a(EIA_STATE_PRICES_URL, "Electric Power Monthly, Table 5.6.A")}.`,
     ),
   );
   out.push(`</main>`);
@@ -332,10 +400,10 @@ export function easternToday(now: Date = new Date()): string {
  * file publishes no state page rather than a half-checked one; the errors go
  * to the log, and server/__tests__/state-page.test.ts fails on them first.
  */
-function readCurated(): CuratedStates | null {
+function readCurated(today: string): CuratedStates | null {
   try {
     const raw = readData("state-pages.json");
-    const errors = validateStatePages(raw);
+    const errors = validateStatePages(raw, today);
     if (errors.length) {
       console.error(`state-pages.json is invalid; no state page is published: ${errors.join("; ")}`);
       return null;
@@ -348,36 +416,56 @@ function readCurated(): CuratedStates | null {
 }
 
 /** The published pages, for the sitemap and My Grid's link. */
-export function loadStatePageSlugs(): Array<{ slug: string; code: string; reviewed: string }> {
-  const curated = readCurated();
+export function loadStatePageSlugs(today: string = easternToday()): Array<{ slug: string; code: string; reviewed: string }> {
+  const curated = readCurated(today);
   return curated ? statePageSlugs(curated) : [];
 }
 
-/** The composed page for a slug, or null when no page is published under it. */
-export function loadStatePage(slug: string, today: string = easternToday()): StatePageData | null {
-  const curated = readCurated();
-  if (!curated || !curated.states.some((s) => s.slug === slug)) return null;
+/**
+ * "page" when the slug is published and composed; "absent" when the curated
+ * file is sound and does not publish it (a 404); "unavailable" when the data
+ * could not be read or checked (a 503: a fault, not an absence, so a crawler
+ * retries instead of dropping the page).
+ */
+export type StatePageResult = { kind: "page"; page: StatePageData } | { kind: "absent" } | { kind: "unavailable" };
+
+export function loadStatePage(slug: string, today: string = easternToday()): StatePageResult {
+  const curated = readCurated(today);
+  if (!curated) return { kind: "unavailable" };
+  if (!curated.states.some((s) => s.slug === slug)) return { kind: "absent" };
   try {
-    return composeStatePage(slug, {
+    const page = composeStatePage(slug, {
       curated,
       clusters: readData("clusters.json").clusters ?? [],
       facilities: readData("datacenters.json"),
       today,
     });
+    return page ? { kind: "page", page } : { kind: "absent" };
   } catch (e) {
     console.error("state page could not be composed:", (e as Error)?.message);
-    return null;
+    return { kind: "unavailable" };
   }
+}
+
+/** The address's slug when it has the shape of a state page address. */
+export function stateSlugFromPath(pathname: string): string | null {
+  const m = /^\/state\/([a-z][a-z-]{1,40})$/.exec(pathname);
+  return m ? m[1] : null;
 }
 
 /** The page's facts as HTML for an address, when the address is a published state page. */
 export function statePagePrerender(pathname: string, today: string = easternToday()): string | null {
-  const m = /^\/state\/([a-z][a-z-]{1,40})$/.exec(pathname);
-  const page = m ? loadStatePage(m[1], today) : null;
-  return page ? renderStateHtml(page) : null;
+  const slug = stateSlugFromPath(pathname);
+  const result = slug ? loadStatePage(slug, today) : null;
+  return result?.kind === "page" ? renderStateHtml(result.page) : null;
 }
 
-/** Writes the rendered facts into the shell's empty #root. Returns the html unchanged when there is no empty root. */
+/**
+ * Writes the rendered facts into the shell's empty #root. Returns the html
+ * unchanged when there is no empty root. The replacement is a function, so
+ * "$&", "$'" and "$$" in the text are written as text, not expanded.
+ */
 export function injectStateHtml(html: string, body: string): string {
-  return html.includes(`<div id="root"></div>`) ? html.replace(`<div id="root"></div>`, `<div id="root">${body}</div>`) : html;
+  const root = `<div id="root"></div>`;
+  return html.includes(root) ? html.replace(root, () => `<div id="root">${body}</div>`) : html;
 }
