@@ -98,11 +98,11 @@ interface QueueProject {
  * states them (name, count, and as-of are facts from the row's sources).
  */
 const AGG_PRESENTATION: Record<string, { label: string; note: string }> = {
-  "pjm-transition-cycle-1": { label: "In the PJM queue", note: "811 active projects · PJM, Apr 2026" },
-  "ercot-large-load": { label: "Large loads waiting in ERCOT", note: "72.9% data centers · ERCOT, late 2025" },
-  "miso-active-queue": { label: "In the MISO queue", note: "910 active projects · MISO" },
-  "caiso-active-queue": { label: "In the CAISO queue", note: "largest single-ISO queue · LBNL 2025" },
-  "noniso-west": { label: "Queued in the non-ISO West", note: "largest US queue volume · LBNL 2025" },
+  "pjm-transition-cycle-1": { label: "Submitted to PJM's Cycle 1", note: "811 projects · PJM, Apr 2026" },
+  "ercot-large-load": { label: "Large loads waiting in ERCOT", note: "about 90% data centers · ERCOT, as of Jun 2026" },
+  "miso-active-queue": { label: "In the MISO queue", note: "910 active projects · MISO, Dec 2025" },
+  "caiso-active-queue": { label: "In the CAISO queue", note: "432 active projects · LBNL, end of 2025" },
+  "noniso-west": { label: "Queued in the non-ISO West", note: "1,603 active projects, the largest US queue · LBNL, end of 2025" },
 };
 
 interface QueueResponse {

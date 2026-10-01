@@ -40,7 +40,7 @@ import {
 } from "@/lib/sector-demand";
 import { electricityData, DATA_CENTER_ANCHORS, US_END_USE_SOURCE } from "@/data/electricity-demand";
 import { bucketFor, signedBuyersForType, asGW, type BucketLite, type DealRowLite } from "@/lib/deal-rollups";
-import { NERC_LTRA } from "@/data/nerc-reserve-margins";
+import { NERC_AREAS, NERC_LTRA } from "@/data/nerc-reserve-margins";
 import { byCushion, cushion, tightestArea } from "@/lib/reserve-margins";
 import { STAGE_COLORS } from "@/data/catalyst-config";
 import {
@@ -933,6 +933,9 @@ export default function TiltOverview() {
   const tracked = useMemo(() => (trackedFacilities ? computeTrackedPower(trackedFacilities) : null), [trackedFacilities]);
   const buildout = useMemo(() => (trackedFacilities ? buildBuildoutHistory(trackedFacilities) : null), [trackedFacilities]);
   const headroom = useMemo(() => tightestArea(), []);
+  // NERC's own 2026 risk ratings, from the same reviewed table as the
+  // headroom gauge, so the stat strip cannot contradict it.
+  const raisedRisk = useMemo(() => Object.values(NERC_AREAS).filter((a) => a.risk !== "Normal"), []);
   // Same payload the Deals page computes from. The hand-written version carried
   // three different numbers for one fact.
   const { data: dealMetrics } = useQuery<{ signedByType: BucketLite[]; rows: DealRowLite[] }>({
@@ -1228,7 +1231,14 @@ export default function TiltOverview() {
                   : "Agreement data unavailable.",
               color: BRAND.secondary,
             },
-            { label: "Grid Reserve Margins", value: "Tightening", sub: "MISO 13.4%, ERCOT 15.8% per NERC 2026. Capacity warnings through 2028.", color: INK.muted },
+            {
+              label: "NERC Risk Ratings, 2026",
+              value: `${raisedRisk.length} of ${Object.keys(NERC_AREAS).length} areas`,
+              sub: raisedRisk.length
+                ? `Rated ${raisedRisk.some((a) => a.risk === "High") ? "elevated or high" : "elevated"}: ${raisedRisk.map((a) => a.label).join(", ")}. ${NERC_LTRA.short}.`
+                : `No area rated above normal. ${NERC_LTRA.short}.`,
+              color: INK.muted,
+            },
           ].map((s) => (
             <Card key={s.label} className="p-4 border-card-border">
               <p className="text-xs text-muted-foreground mb-2">{s.label}</p>

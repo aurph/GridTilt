@@ -26,11 +26,29 @@ export interface ChangeRecord {
   reviewed: string;
   scope: string;
   rationale: string;
+  /**
+   * Short display values for a post or a share card, and the page where the
+   * change shows. Optional: a change without one is not posted or carded.
+   */
+  short?: { label: string; before: string; after: string; source: string; url: string; why?: string };
 }
 
 const ID = /^\d{4}-\d{2}-\d{2}-[a-z0-9-]{3,80}$/;
-const SOURCE_DATE = /^\d{4}(-\d{2}(-\d{2})?)?$/;
-const DAY = /^\d{4}-\d{2}-\d{2}$/;
+const SOURCE_DATE = /^\d{4}(-(0[1-9]|1[0-2])(-\d{2})?)?$/;
+
+/** A real calendar day written YYYY-MM-DD ("2026-13-01" and "2026-02-30" are not). */
+function isDay(v: unknown): v is string {
+  if (typeof v !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(v)) return false;
+  const t = Date.parse(`${v}T00:00:00Z`);
+  return Number.isFinite(t) && new Date(t).toISOString().slice(0, 10) === v;
+}
+
+/**
+ * Short-form limits. Before and after sit side by side on the correction card
+ * in one row that cannot wrap; 40 characters each is what fits (og-card.ts
+ * cardFits). The label is the card's title, which wraps; the source ends the post.
+ */
+const SHORT_MAX: Record<string, number> = { label: 80, before: 40, after: 40, source: 60 };
 const KINDS: ChangeKind[] = ["correction", "update", "checked-no-change"];
 
 /** Every problem with the log; empty when it is valid. */
@@ -59,9 +77,29 @@ export function validateChangeLog(changes: unknown): string[] {
     } catch {
       errors.push(`${at}: sourceUrl is not a URL`);
     }
-    if (typeof c.sourceDate !== "string" || !SOURCE_DATE.test(c.sourceDate)) errors.push(`${at}: sourceDate must be YYYY, YYYY-MM or YYYY-MM-DD`);
-    if (typeof c.reviewed !== "string" || !DAY.test(c.reviewed)) errors.push(`${at}: reviewed must be YYYY-MM-DD`);
+    if (typeof c.sourceDate !== "string" || !SOURCE_DATE.test(c.sourceDate) || (c.sourceDate.length === 10 && !isDay(c.sourceDate))) {
+      errors.push(`${at}: sourceDate must be YYYY, YYYY-MM or YYYY-MM-DD`);
+    }
+    if (!isDay(c.reviewed)) errors.push(`${at}: reviewed must be YYYY-MM-DD`);
     else if (typeof c.id === "string" && ID.test(c.id) && !c.id.startsWith(c.reviewed)) errors.push(`${at}: id starts with the reviewed date`);
+    if (c.short !== undefined) {
+      const sh = (c.short ?? {}) as Record<string, unknown>;
+      for (const [k, max] of Object.entries(SHORT_MAX)) {
+        if (typeof sh[k] !== "string" || !(sh[k] as string).trim() || (sh[k] as string).length > max) {
+          errors.push(`${at}: short.${k} must be 1 to ${max} characters`);
+        }
+      }
+      // why: the card's reason when the entry's rationale covers more than the short form shows.
+      if (sh.why !== undefined && (typeof sh.why !== "string" || !sh.why.trim() || sh.why.length > 160)) {
+        errors.push(`${at}: short.why must be 1 to 160 characters`);
+      }
+      try {
+        const u = new URL(String(sh.url));
+        if (u.protocol !== "https:" || u.hostname !== "gridtilt.com") errors.push(`${at}: short.url must be a gridtilt.com page`);
+      } catch {
+        errors.push(`${at}: short.url is not a URL`);
+      }
+    }
   });
   return errors;
 }

@@ -17,17 +17,22 @@ interface YahooLike {
   quote: (...args: unknown[]) => Promise<unknown>;
   chart: (...args: unknown[]) => Promise<unknown>;
   search?: (...args: unknown[]) => Promise<unknown>;
+  quoteSummary: (...args: unknown[]) => Promise<unknown>;
 }
 const yahooModule = await import("yahoo-finance2");
 const YahooFinanceClass = (yahooModule as unknown as { default: new () => YahooLike }).default;
 const proto = YahooFinanceClass.prototype as YahooLike;
 const originalQuote = proto.quote;
 const originalChart = proto.chart;
+const originalSummary = proto.quoteSummary;
 proto.quote = () => Promise.reject(new Error("offline"));
 proto.chart = () => Promise.reject(new Error("offline"));
+// quoteSummary feeds the earnings calendar registerRoutes refreshes at startup.
+proto.quoteSummary = () => Promise.reject(new Error("offline"));
 after(() => {
   proto.quote = originalQuote;
   proto.chart = originalChart;
+  proto.quoteSummary = originalSummary;
 });
 
 const { registerRoutes } = await import("../routes");

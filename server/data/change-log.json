@@ -13,7 +13,8 @@
       "sourceDate": "2026-01",
       "reviewed": "2026-09-29",
       "scope": "Overview grid headroom gauge, Power Map grid view, My Grid region card, region pages, weekly email",
-      "rationale": "None of the old figures matched NERC's assessment, and the single 15% reference and the AI signal were not NERC's."
+      "rationale": "None of the old figures matched NERC's assessment, and the single 15% reference and the AI signal were not NERC's.",
+      "short": {"label": "MISO's summer 2026 reserve margin", "before": "13.4%", "after": "11.0%, against NERC's 8.1% reference", "source": "NERC 2025 LTRA", "url": "https://gridtilt.com/overview", "why": "The old figure did not match NERC's assessment, and GridTilt read it against a 15% line NERC does not use for MISO."}
     },
     {
       "id": "2026-09-28-lbnl-queued-up-calendar",
@@ -27,7 +28,8 @@
       "sourceDate": "2026-05",
       "reviewed": "2026-09-28",
       "scope": "Catalyst calendar, Overview and landing previews",
-      "rationale": "The calendar listed an edition LBNL had already published as an upcoming December event."
+      "rationale": "The calendar listed an edition LBNL had already published as an upcoming December event.",
+      "short": {"label": "the date of LBNL's 2026 Queued Up report", "before": "expected Dec 15, 2026", "after": "published May 2026", "source": "LBNL Queued Up 2026", "url": "https://gridtilt.com/catalysts"}
     },
     {
       "id": "2026-09-28-stargate-abilene-rated-power",
@@ -41,7 +43,8 @@
       "sourceDate": "2026-09-10",
       "reviewed": "2026-09-28",
       "scope": "Compute Frontier record, cluster totals",
-      "rationale": "The estimate was replaced by the operator's own disclosed figure."
+      "rationale": "The estimate was replaced by the operator's own disclosed figure.",
+      "short": {"label": "Stargate Abilene's delivered power", "before": "200 MW (a GridTilt estimate)", "after": "618 MW, per Oracle", "source": "Oracle Q1 FY2027 earnings call", "url": "https://gridtilt.com/compute-frontier/stargate-abilene"}
     },
     {
       "id": "2026-09-28-data-center-electricity-use",
@@ -55,7 +58,8 @@
       "sourceDate": "2026-06-18",
       "reviewed": "2026-09-28",
       "scope": "Site search descriptions and FAQ, Analyze scenario baseline",
-      "rationale": "The old figure matched no published estimate; the scenario now starts from LBNL's."
+      "rationale": "The old figure matched no published estimate; the scenario now starts from LBNL's.",
+      "short": {"label": "US data center electricity use", "before": "about 288 TWh a year, 6.4%", "after": "192 TWh in 2024, 4.7%, per LBNL", "source": "LBNL 2025 data center energy report update", "url": "https://gridtilt.com/analyze?tab=scenario"}
     }
   ]
 }

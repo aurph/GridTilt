@@ -272,6 +272,13 @@ const HOME_FAQS = [
   { question: "How often does the data change?", answer: "Stock prices update through the trading day. Project, agreement and grid data change when their sources publish new figures." },
 ];
 
+/** True when an og:image name belongs to a sector, region or operator page seo.ts publishes. */
+export function ogNameKnown(kind: "sector" | "region" | "operator", name: string): boolean {
+  if (kind === "sector") return Object.values(SECTOR_SLUGS).some((s) => s.name === name);
+  if (kind === "region") return Object.values(REGION_SLUGS).some((r) => r.name === name);
+  return Object.values(OPERATOR_SLUGS).some((n) => n === name);
+}
+
 export function getPageMeta(pathname: string): PageMeta {
   // Reached only where the server's 301 did not run (the dev server's own
   // routing); describe the destination, never a separate page.
