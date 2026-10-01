@@ -1,14 +1,55 @@
 import type { Request } from "express";
 import { readFileSync } from "fs";
 import { join } from "path";
+import { COMPANY_DATABASE, knownTicker } from "./company-registry";
 
 export interface PageMeta {
   title: string;
   description: string;
-  canonical: string;
+  /** Null for a page that must not claim a canonical address (a 404, an admin page). */
+  canonical: string | null;
   ogImage: string;
   ogType: string;
   jsonLd: object[];
+  /** HTTP status for the HTML response; 200 when absent. */
+  status?: number;
+  /** robots meta and X-Robots-Tag; "index, follow" when absent. */
+  robots?: string;
+}
+
+/**
+ * Client routes that only forward somewhere else (client/src/App.tsx). The
+ * server answers them with one 301 to the final address, so a crawler never
+ * indexes an alias or follows two hops.
+ */
+export const ALIAS_REDIRECTS: Record<string, string> = {
+  "/gpu-economics": "/neocloud-intel?tab=economics",
+  "/power-deals": "/power-map?tab=deals",
+  "/brief": "/blog",
+  "/supply-chain": "/stack?view=flow",
+  "/trade": "/analyze?tab=scenario",
+  "/portfolio": "/analyze?tab=portfolio",
+  "/queue": "/power-map?tab=queue",
+};
+
+/** Admin screens: served, never indexed. */
+const ADMIN_PAGES = new Set(["/admin/datacenters", "/admin/social"]);
+
+/**
+ * An address that names nothing GridTilt has: a real 404, not the home page's
+ * metadata on a 200 (which search engines read as a duplicate home page).
+ */
+export function notFoundMeta(): PageMeta {
+  return {
+    title: "Not found | GridTilt",
+    description: "There is no page at this address on GridTilt.",
+    canonical: null,
+    ogImage: `${BASE_URL}/api/og?page=home`,
+    ogType: "website",
+    jsonLd: [],
+    status: 404,
+    robots: "noindex",
+  };
 }
 
 const BASE_URL = "https://gridtilt.com";
@@ -82,14 +123,19 @@ const STATIC_PAGES: Record<string, { title: string; description: string; slug: s
 };
 
 const SECTOR_SLUGS: Record<string, { name: string; description: string }> = {
-  "nuclear-power": { name: "Nuclear Power", description: "Track nuclear power generation stocks tied to the AI infrastructure buildout. Live prices, thesis analysis, and sector performance." },
-  "uranium": { name: "Uranium & Fuel Cycle", description: "Track uranium mining and nuclear fuel cycle stocks. Live prices, supply dynamics, and AI power demand impact." },
-  "compute": { name: "Compute", description: "Track GPU, semiconductor, and cloud compute stocks driving AI infrastructure. Live prices and thesis analysis." },
-  "power-hardware": { name: "Power Hardware", description: "Track electrical equipment and power hardware stocks supplying AI data center infrastructure." },
-  "utilities": { name: "Utilities", description: "Track regulated and merchant utilities positioned for AI data center power demand growth." },
-  "data-center-reits": { name: "Data Center REITs", description: "Track data center REIT stocks hosting AI compute infrastructure. Live prices and capacity data." },
-  "construction-epc": { name: "Construction & EPC", description: "Track construction and engineering firms building AI data center and grid infrastructure." },
-  "etf-benchmarks": { name: "ETF Benchmarks", description: "Track ETFs and index funds benchmarking the AI power infrastructure thesis sectors." },
+  "nuclear-power": { name: "Nuclear Power", description: "Nuclear power generators tied to the AI infrastructure buildout: live prices, GridTilt's sector classification and sector context." },
+  "uranium": { name: "Uranium & Fuel Cycle", description: "Uranium miners and nuclear fuel cycle companies: live prices, GridTilt's sector classification and sector context." },
+  "compute": { name: "Compute", description: "GPU, semiconductor and cloud compute companies behind AI infrastructure: live prices and sector context." },
+  "power-hardware": { name: "Power Hardware", description: "Electrical equipment and power hardware suppliers to AI data centers: live prices and sector context." },
+  "utilities": { name: "Utilities", description: "Regulated and merchant utilities serving AI data center power demand: live prices and sector context." },
+  "data-center-reits": { name: "Data Center REITs", description: "Data center REITs hosting AI compute infrastructure: live prices and sector context." },
+  "construction-epc": { name: "Construction & EPC", description: "Construction and engineering firms building data center and grid infrastructure: live prices and sector context." },
+  "etf-benchmarks": { name: "ETF Benchmarks", description: "Funds that benchmark the AI power infrastructure sectors: live prices and sector context." },
+  "raw-materials-mining": { name: "Raw Materials & Mining", description: "Copper, steel and rare earth producers behind the physical buildout: live prices and sector context." },
+  "natural-gas": { name: "Natural Gas", description: "Natural gas producers and exporters supplying power generation for data centers: live prices and sector context." },
+  "renewable-generation": { name: "Renewable Generation", description: "Solar and wind suppliers and developers signing power agreements with large buyers: live prices and sector context." },
+  "transmission-grid-hardware": { name: "Transmission & Grid Hardware", description: "Wire, cable and grid equipment makers connecting new load to the grid: live prices and sector context." },
+  "crypto-ai-hosting": { name: "Crypto & AI Hosting", description: "Bitcoin miners and hosts converting power capacity to AI compute: live prices and sector context." },
 };
 
 const REGION_SLUGS: Record<string, { name: string; description: string }> = {
@@ -227,6 +273,23 @@ const HOME_FAQS = [
 ];
 
 export function getPageMeta(pathname: string): PageMeta {
+  // Reached only where the server's 301 did not run (the dev server's own
+  // routing); describe the destination, never a separate page.
+  const alias = ALIAS_REDIRECTS[pathname];
+  if (alias) return getPageMeta(alias.split("?")[0]);
+
+  if (ADMIN_PAGES.has(pathname)) {
+    return {
+      title: "Admin | GridTilt",
+      description: "GridTilt administration.",
+      canonical: null,
+      ogImage: `${BASE_URL}/api/og?page=home`,
+      ogType: "website",
+      jsonLd: [],
+      robots: "noindex, nofollow",
+    };
+  }
+
   const staticPage = STATIC_PAGES[pathname];
   if (staticPage) {
     const jsonLd: object[] = [];
@@ -287,23 +350,29 @@ export function getPageMeta(pathname: string): PageMeta {
     };
   }
 
-  const stockMatch = pathname.match(/^\/stock\/([A-Z]+)$/i);
+  const stockMatch = pathname.match(/^\/stock\/([A-Z.]+)$/i);
   if (stockMatch) {
     const ticker = stockMatch[1].toUpperCase();
+    // The same registry the stock API answers from: no entry, no page.
+    if (!knownTicker(ticker)) return notFoundMeta();
+    const company = (COMPANY_DATABASE as Record<string, { name: string; primarySegment: string }>)[ticker];
+    const isFund = company.primarySegment === "ETF" || /\bETF\b/.test(company.name);
     return {
-      title: `$${ticker} - AI Power Sector Classification | GridTilt`,
-      description: `${ticker} on GridTilt: live price, editorial sector classification and sector context.`,
+      title: `${ticker}: ${company.name}, AI power sector classification | GridTilt`,
+      description: `${company.name} (${ticker}) on GridTilt: live price, editorial sector classification and sector context.`,
       canonical: `${BASE_URL}/stock/${ticker}`,
       ogImage: `${BASE_URL}/api/og?ticker=${ticker}`,
       ogType: "website",
       jsonLd: [
         {
+          // A page about the company (or fund), not a product GridTilt offers.
           "@context": "https://schema.org",
-          "@type": "FinancialProduct",
-          "name": `${ticker} - AI Power Sector Classification`,
-          "description": `Live price data, editorial sector classification, and sector context for ${ticker} on GridTilt`,
+          "@type": "WebPage",
+          "name": `${ticker}: ${company.name}`,
           "url": `${BASE_URL}/stock/${ticker}`,
-          "provider": { "@type": "Organization", "name": "GridTilt" },
+          "about": isFund
+            ? { "@type": "Thing", "name": company.name, "identifier": ticker }
+            : { "@type": "Corporation", "name": company.name, "tickerSymbol": ticker },
         },
         breadcrumbJsonLd([
           { name: "GridTilt", url: BASE_URL },
@@ -332,6 +401,7 @@ export function getPageMeta(pathname: string): PageMeta {
         ])],
       };
     }
+    return notFoundMeta();
   }
 
   const regionMatch = pathname.match(/^\/region\/([a-z]+)$/);
@@ -340,7 +410,7 @@ export function getPageMeta(pathname: string): PageMeta {
     const region = REGION_SLUGS[slug];
     if (region) {
       return {
-        title: `${region.name} Grid Region \u2014 AI Data Center Locations | GridTilt`,
+        title: `${region.name} Grid Region: AI Data Center Locations | GridTilt`,
         description: region.description,
         canonical: `${BASE_URL}/region/${slug}`,
         ogImage: `${BASE_URL}/api/og?page=region&name=${encodeURIComponent(region.name)}`,
@@ -352,6 +422,7 @@ export function getPageMeta(pathname: string): PageMeta {
         ])],
       };
     }
+    return notFoundMeta();
   }
 
   const operatorMatch = pathname.match(/^\/operator\/([a-z]+)$/);
@@ -360,7 +431,7 @@ export function getPageMeta(pathname: string): PageMeta {
     const name = OPERATOR_SLUGS[slug];
     if (name) {
       return {
-        title: `${name} AI Data Centers \u2014 Locations and Capacity | GridTilt`,
+        title: `${name} AI Data Centers: Locations and Capacity | GridTilt`,
         description: `${name} AI data center facilities tracked on GridTilt. Map, capacity data, and grid analysis.`,
         canonical: `${BASE_URL}/operator/${slug}`,
         ogImage: `${BASE_URL}/api/og?page=operator&name=${encodeURIComponent(name)}`,
@@ -372,28 +443,24 @@ export function getPageMeta(pathname: string): PageMeta {
         ])],
       };
     }
+    return notFoundMeta();
   }
 
   const blogMatch = pathname.match(/^\/blog\/([a-z0-9-]+)$/);
   if (blogMatch) {
     const slug = blogMatch[1];
-    let articleTitle = slug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-    let articleDescription = "Analysis and research on the AI power infrastructure thesis from GridTilt.";
-    let articleDate = "";
-    let articleKeywords: string[] = [];
-
+    let article: any = null;
     try {
       const blogPath = join(process.cwd(), "content", "blog", "articles.json");
-      const raw = readFileSync(blogPath, "utf-8");
-      const articles = JSON.parse(raw);
-      const article = articles.find((a: any) => a.slug === slug);
-      if (article) {
-        articleTitle = article.title;
-        articleDescription = article.description;
-        articleDate = article.date;
-        articleKeywords = article.keywords || [];
-      }
+      const articles = JSON.parse(readFileSync(blogPath, "utf-8"));
+      article = articles.find((a: any) => a.slug === slug) ?? null;
     } catch {}
+    // No article, no page: a title made up from the slug was a soft 404.
+    if (!article) return notFoundMeta();
+    const articleTitle: string = article.title;
+    const articleDescription: string = article.description;
+    const articleDate: string = article.date ?? "";
+    const articleKeywords: string[] = article.keywords || [];
 
     const jsonLd: object[] = [
       {
@@ -430,7 +497,19 @@ export function getPageMeta(pathname: string): PageMeta {
     const cluster = loadClustersForSeo().find((c: any) => c.id === slug);
     if (cluster) {
       const loc = `${cluster.location?.city}, ${cluster.location?.state}`;
-      const desc = `${cluster.name}: ${cluster.operator}, ${cluster.status}, ${Number(cluster.plannedPowerMW).toLocaleString()} MW planned in ${cluster.gridRegion} (${loc}). Chips: ${cluster.chipType}.`.slice(0, 300);
+      // The status in words, so a planned site is never described as running.
+      const statusWords: Record<string, string> = { operational: "operating", construction: "under construction", planned: "planned", announced: "announced" };
+      const status = statusWords[cluster.status] ?? String(cluster.status ?? "status not recorded");
+      const planned = Number(cluster.plannedPowerMW);
+      const desc = [
+        `${cluster.name}: ${cluster.operator}, ${status}`,
+        Number.isFinite(planned) && planned > 0 ? `${planned.toLocaleString("en-US")} MW planned in ${cluster.gridRegion} (${loc})` : `in ${cluster.gridRegion} (${loc})`,
+        cluster.chipType ? `Chips: ${cluster.chipType}` : null,
+      ]
+        .filter(Boolean)
+        .join(". ")
+        .concat(".")
+        .slice(0, 300);
       return {
         title: `${cluster.name} · AI Supercluster · GridTilt`,
         description: desc,
@@ -464,28 +543,23 @@ export function getPageMeta(pathname: string): PageMeta {
         ],
       };
     }
+    return notFoundMeta();
   }
 
-  return {
-    title: "GridTilt: Power projects, grid conditions, electricity costs",
-    description: "GridTilt shows what is being built on your power grid, who is behind it, and what is known about the cost.",
-    canonical: BASE_URL,
-    ogImage: `${BASE_URL}/api/og?page=home`,
-    ogType: "website",
-    jsonLd: [],
-  };
+  // Nothing above matched: no page lives here.
+  return notFoundMeta();
 }
 
 export function injectMetaTags(html: string, meta: PageMeta): string {
   const metaTags = `
     <title>${escapeHtml(meta.title)}</title>
     <meta name="description" content="${escapeHtml(meta.description)}" />
-    <link rel="canonical" href="${meta.canonical}" />
-    <meta name="robots" content="index, follow" />
+    ${meta.canonical ? `<link rel="canonical" href="${meta.canonical}" />` : ""}
+    <meta name="robots" content="${escapeHtml(meta.robots ?? "index, follow")}" />
     <meta property="og:title" content="${escapeHtml(meta.title)}" />
     <meta property="og:description" content="${escapeHtml(meta.description)}" />
     <meta property="og:image" content="${meta.ogImage}" />
-    <meta property="og:url" content="${meta.canonical}" />
+    ${meta.canonical ? `<meta property="og:url" content="${meta.canonical}" />` : ""}
     <meta property="og:type" content="${meta.ogType}" />
     <meta property="og:site_name" content="GridTilt" />
     <meta name="twitter:card" content="summary_large_image" />
@@ -513,9 +587,48 @@ function escapeHtml(str: string): string {
   return str.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-export const SITEMAP_STATIC_PAGES = Object.keys(STATIC_PAGES);
-export const SITEMAP_SECTOR_SLUGS = Object.keys(SECTOR_SLUGS);
-export const SITEMAP_REGION_SLUGS = Object.keys(REGION_SLUGS);
-export const SITEMAP_OPERATOR_SLUGS = Object.keys(OPERATOR_SLUGS);
-export const SITEMAP_CLUSTER_SLUGS: string[] = loadClustersForSeo().map((c: any) => c.id);
+export interface SitemapInput {
+  /** Tickers with a stock page (the company registry). */
+  tickers: string[];
+  clusters: Array<{ id: string; reviewed?: string | null }>;
+  articles: Array<{ slug: string; date?: string | null; updated?: string | null }>;
+}
+
+const DAY = /^\d{4}-\d{2}-\d{2}$/;
+
+function xmlEscape(v: string): string {
+  return v.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+/**
+ * The sitemap lists only addresses that resolve to a page, with a lastmod
+ * only where GridTilt knows a substantive change date: an article's date or
+ * update, a project record's review. Fetching, building or deploying is not a
+ * content change, so nothing is stamped with today's date, and the same
+ * content gives the same sitemap tomorrow.
+ */
+export function buildSitemap(input: SitemapInput): string {
+  const urls: Array<{ loc: string; lastmod?: string }> = [];
+  for (const p of Object.keys(STATIC_PAGES)) urls.push({ loc: `${BASE_URL}${p === "/" ? "" : p}` });
+  for (const t of Array.from(new Set(input.tickers.map((x) => x.toUpperCase()))).filter(knownTicker).sort()) {
+    urls.push({ loc: `${BASE_URL}/stock/${t}` });
+  }
+  for (const slug of Object.keys(SECTOR_SLUGS)) urls.push({ loc: `${BASE_URL}/sector/${slug}` });
+  for (const slug of Object.keys(REGION_SLUGS)) urls.push({ loc: `${BASE_URL}/region/${slug}` });
+  for (const slug of Object.keys(OPERATOR_SLUGS)) urls.push({ loc: `${BASE_URL}/operator/${slug}` });
+  for (const c of input.clusters) {
+    if (!/^[a-z0-9-]+$/.test(c.id)) continue;
+    urls.push({ loc: `${BASE_URL}/compute-frontier/${c.id}`, ...(c.reviewed && DAY.test(c.reviewed) ? { lastmod: c.reviewed } : {}) });
+  }
+  for (const a of input.articles) {
+    if (!/^[a-z0-9-]+$/.test(a.slug)) continue;
+    const changed = [a.updated, a.date].find((d): d is string => typeof d === "string" && DAY.test(d));
+    urls.push({ loc: `${BASE_URL}/blog/${a.slug}`, ...(changed ? { lastmod: changed } : {}) });
+  }
+  const body = urls
+    .map((u) => `  <url>\n    <loc>${xmlEscape(u.loc)}</loc>${u.lastmod ? `\n    <lastmod>${u.lastmod}</lastmod>` : ""}\n  </url>`)
+    .join("\n");
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${body}\n</urlset>\n`;
+}
+
 export { BASE_URL, SECTOR_SLUGS, REGION_SLUGS, OPERATOR_SLUGS };

@@ -104,16 +104,22 @@ export function CommandPalette() {
     queryKey: ["/api/blog"],
     enabled: open,
   });
+  // Tickers that have a stock page; none are offered until this arrives.
+  const { data: stockTickers } = useQuery<{ tickers: string[] }>({
+    queryKey: ["/api/stock-tickers"],
+    enabled: open,
+  });
+  const withPage = useMemo(() => new Set(stockTickers?.tickers ?? []), [stockTickers]);
 
   const entries = useMemo(
     () => [
       ...PAGE_ENTRIES,
       ...stateEntries(STATE_GRID),
-      ...stockEntries(supplyNodes),
+      ...stockEntries(supplyNodes, withPage),
       ...clusterEntries(clusters ?? []),
       ...researchEntries(articles ?? []),
     ],
-    [clusters, articles],
+    [clusters, articles, withPage],
   );
 
   const results = useMemo(() => rankEntries(entries, query), [entries, query]);

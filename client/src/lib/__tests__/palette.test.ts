@@ -57,6 +57,15 @@ describe("stockEntries", () => {
     assert.equal(tickers.length, new Set(tickers).size);
     assert.ok(tickers.includes("SMR"));
   });
+
+  it("offers only tickers that have a stock page when the server's list is given", () => {
+    // USA Rare Earth is in the supply-chain config but has no stock page.
+    const all = stockEntries(supplyNodes).map((e) => e.label);
+    assert.ok(all.includes("USAR"));
+    const withPage = stockEntries(supplyNodes, new Set(["SMR", "CEG"])).map((e) => e.label);
+    assert.deepEqual(withPage.sort(), ["CEG", "SMR"]);
+    assert.deepEqual(stockEntries(supplyNodes, new Set()), [], "nothing before the list arrives");
+  });
 });
 
 describe("stateEntries", () => {

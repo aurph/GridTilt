@@ -68,13 +68,19 @@ export interface SupplyNodeLike {
   companies: { ticker: string; name: string }[];
 }
 
-/** Tickers from the supply-chain config, first node's name wins on repeats. */
-export function stockEntries(nodes: SupplyNodeLike[]): PaletteEntry[] {
+/**
+ * Tickers from the supply-chain config, first node's name wins on repeats.
+ * With `withPage` (the server's /api/stock-tickers), only tickers that have a
+ * stock page: the config also lists companies GridTilt does not classify, and
+ * a result that opens "not tracked" is a broken promise.
+ */
+export function stockEntries(nodes: SupplyNodeLike[], withPage?: ReadonlySet<string>): PaletteEntry[] {
   const seen = new Set<string>();
   const out: PaletteEntry[] = [];
   for (const node of nodes) {
     for (const c of node.companies) {
       if (seen.has(c.ticker)) continue;
+      if (withPage && !withPage.has(c.ticker)) continue;
       seen.add(c.ticker);
       out.push({
         id: `stock-${c.ticker}`,
