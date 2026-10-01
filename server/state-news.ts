@@ -61,7 +61,19 @@ const RELEVANT = [
   "rate case", "rate hike", "rate increase", "ratepayer", "public service commission",
   "public utility commission", "puc", "psc", "energy bill", "power bill",
   "moratorium", "kilowatt", "outage", "peak demand", "capacity market",
+  "hydroelectric", "hydropower",
 ];
+
+/**
+ * Every term must start a word ("electric" still covers "electrical"), and
+ * the short ones must be whole words: as substrings, "puc" matched "puck",
+ * "psc" matched "upscale", and "grid" matched "gridlock" and "gridiron".
+ */
+const WHOLE_WORD = new Set(["grid", "puc", "psc"]);
+const RELEVANT_PATTERNS = RELEVANT.map((term) => {
+  const body = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/ /g, "\\s+");
+  return WHOLE_WORD.has(term) ? new RegExp(`\\b${body}s?\\b`, "i") : new RegExp(`\\b${body}`, "i");
+});
 
 export interface StateNewsItem {
   headline: string;
@@ -114,8 +126,7 @@ export function stateNewsUrl(stateCode: string): string | null {
 
 /** Exported for tests: does this headline carry any grid signal at all? */
 export function isStateNewsRelevant(text: string): boolean {
-  const haystack = text.toLowerCase();
-  return RELEVANT.some((term) => haystack.includes(term));
+  return RELEVANT_PATTERNS.some((pattern) => pattern.test(text));
 }
 
 /**
@@ -125,19 +136,41 @@ export function isStateNewsRelevant(text: string): boolean {
 const NAMES_LONGEST_FIRST = Object.values(STATE_NAMES).sort((a, b) => b.length - a.length);
 
 /**
+ * Place names that contain a state name but mean somewhere else, rewritten
+ * before matching. "Kansas City" spans Missouri and Kansas, so it names both;
+ * the other "<State> City" towns name the state they are in. A "<State>
+ * County" (there are Washington, Delaware, Ohio, Indiana, Iowa, Texas and
+ * Nevada counties in other states) and the multi-state Tennessee Valley
+ * Authority name no state.
+ */
+const STATE_NAME_ALTERNATION = NAMES_LONGEST_FIRST.join("|");
+const PLACE_REWRITES: Array<[RegExp, string]> = [
+  [/Washington,?\s*,?\s*D\.?\s*C\.?/gi, " "],
+  [/\bKansas City\b/gi, " Missouri Kansas "],
+  [/\bMichigan City\b/gi, " Indiana "],
+  [/\bNevada City\b/gi, " California "],
+  [/\bArkansas City\b/gi, " Kansas "],
+  [/\bVirginia City\b/gi, " Nevada "],
+  [/\bTennessee Valley Authority\b/gi, " "],
+  [new RegExp(`\\b(?:${STATE_NAME_ALTERNATION}) County\\b`, "gi"), " "],
+];
+
+/**
  * Exported for tests: which states a headline actually names.
  *
  * Matched spans are blanked as they are found, so a longer name cannot be
- * double counted by the shorter one nested inside it. "Washington" is
- * skipped when it is really Washington DC, which is how most federal policy
- * headlines read and would otherwise be filed under Washington state.
+ * double counted by the shorter one nested inside it. Washington DC is how
+ * most federal policy headlines read, and a bare "Washington" is as often the
+ * federal government as the state, so Washington counts only as "Washington
+ * state".
  */
 export function statesMentioned(text: string): string[] {
   let haystack = ` ${text} `;
-  haystack = haystack.replace(/Washington,?\s*,?\s*D\.?\s*C\.?/gi, " ");
+  for (const [pattern, replacement] of PLACE_REWRITES) haystack = haystack.replace(pattern, replacement);
   const found: string[] = [];
   for (const name of NAMES_LONGEST_FIRST) {
-    const pattern = new RegExp(`(^|[^A-Za-z])${name}([^A-Za-z]|$)`, "i");
+    const spelled = name === "Washington" ? "Washington\\s+state" : name;
+    const pattern = new RegExp(`(^|[^A-Za-z])${spelled}([^A-Za-z]|$)`, "i");
     if (pattern.test(haystack)) {
       found.push(name);
       haystack = haystack.replace(new RegExp(name, "gi"), " ");

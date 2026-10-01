@@ -80,6 +80,24 @@ describe("isStateNewsRelevant", () => {
     for (const t of drop) assert.equal(isStateNewsRelevant(t), false, `kept: ${t}`);
   });
 
+  it("does not match a short term inside another word", () => {
+    const drop = [
+      "Capitals puck drop moved to 8 p.m.",
+      "Upscale steakhouse opens in Bethesda",
+      "Budget gridlock returns to Annapolis",
+      "Friday night gridiron preview",
+    ];
+    for (const t of drop) assert.equal(isStateNewsRelevant(t), false, `kept: ${t}`);
+    const keep = [
+      "Maryland PSC approves BGE rate case",
+      "Texas PUC weighs new grid rules",
+      "Power grids strain under heat",
+      "Electrical contractors brace for data center boom",
+      "Hydroelectric dam relicensing draws comments",
+    ];
+    for (const t of keep) assert.ok(isStateNewsRelevant(t), `dropped: ${t}`);
+  });
+
   it("is case insensitive", () => {
     assert.ok(isStateNewsRelevant("OHIO POWER PLANT RETIRES"));
   });
@@ -134,6 +152,23 @@ describe("statesMentioned", () => {
 
   it("does not match a state name buried inside another word", () => {
     assert.deepEqual(statesMentioned("Indianapolis grid upgrade"), []);
+  });
+
+  it("reads place names that contain a state name as the place they are", () => {
+    assert.deepEqual(
+      statesMentioned("Kansas City council approves incentives for Meta data center").sort(),
+      ["Kansas", "Missouri"],
+    );
+    assert.deepEqual(statesMentioned("Washington County commissioners weigh data center rezoning"), []);
+    assert.deepEqual(statesMentioned("Delaware County residents fight data center substation"), []);
+    assert.deepEqual(statesMentioned("Tennessee Valley Authority plans new gas plant near Huntsville"), []);
+    assert.deepEqual(statesMentioned("Michigan City utility raises rates"), ["Indiana"]);
+    assert.deepEqual(statesMentioned("Oklahoma City data center gets tax break"), ["Oklahoma"]);
+  });
+
+  it("does not file a bare Washington, usually the federal government, under the state", () => {
+    assert.deepEqual(statesMentioned("Washington weighs new grid rules"), []);
+    assert.deepEqual(statesMentioned("Washington State regulators approve utility rate hike"), ["Washington"]);
   });
 });
 
