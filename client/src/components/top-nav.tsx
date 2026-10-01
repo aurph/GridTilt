@@ -1,4 +1,5 @@
 import { Link, useLocation } from "wouter";
+import { Search } from "lucide-react";
 import logoPath from "@assets/Image_[Vectorized]_(2)_1773890483514.png";
 
 /**
@@ -56,6 +57,17 @@ export function TopNav() {
           })}
         </nav>
         <div className="flex-1" />
+        <button
+          type="button"
+          onClick={() => window.dispatchEvent(new Event("gt-open-palette"))}
+          aria-label="Search"
+          title={"Search (⌘K)"}
+          className="mr-4 hidden md:flex shrink-0 items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors"
+          data-testid="top-nav-search"
+        >
+          <Search className="h-4 w-4" aria-hidden />
+          <kbd className="rounded border border-border px-1 py-0.5 font-mono text-10 leading-none">{"⌘K"}</kbd>
+        </button>
         <Link
           href="/subscribe"
           className="hidden md:flex shrink-0 items-center text-[13px] font-semibold leading-none no-underline text-muted-foreground hover:text-foreground transition-colors"
