@@ -47,6 +47,7 @@ import { getUraniumCorrelation } from "./uranium-correlation";
 import { footerBlockers, renderWeeklyEmail, renderWeeklyText, weeklyDateLabel, type NewsletterFooter } from "./weekly-digest";
 import { renderEditorialEmail, renderEditorialText } from "./editorial-issue";
 import { sortChanges, validateChangeLog, type ChangeRecord } from "./change-log";
+import { loadStatePage, loadStatePageSlugs } from "./state-page";
 import { fractionToPercent, getCachedFundamentals, refreshFundamentalsIfStale } from "./fundamentals";
 import { normalizeTickerInput, scoreBasket } from "./portfolio-score";
 import {
@@ -1980,6 +1981,21 @@ export async function registerRoutes(
     }
   });
 
+  // ─── State pages (T25 pilot; server/state-page.ts) ───────────────────
+  app.get("/api/state-pages", (_req, res) => {
+    res.json(loadStatePageSlugs());
+  });
+
+  // 404 when no page is published under the slug; 503 when the data behind a
+  // page could not be read or checked (a fault, not an absence).
+  app.get("/api/state-pages/:slug", (req, res) => {
+    const slug = String(req.params.slug ?? "");
+    const result = /^[a-z][a-z-]{1,40}$/.test(slug) ? loadStatePage(slug, easternDate(new Date())) : { kind: "absent" as const };
+    if (result.kind === "unavailable") return res.status(503).set("Retry-After", "300").json({ error: "This state page's data is unavailable right now" });
+    if (result.kind === "absent") return res.status(404).json({ error: "No state page at this address" });
+    res.json(result.page);
+  });
+
   // Corrections and documented changes to published facts (server/change-log.ts).
   // A log that fails validation is not served: a wrong correction notice is
   // worse than none.
@@ -2823,7 +2839,7 @@ export async function registerRoutes(
       const list = JSON.parse(readFileSync(join(process.cwd(), "content", "blog", "articles.json"), "utf-8"));
       articles = list.map((a: any) => ({ slug: String(a.slug), date: a.date ?? null, updated: a.updated ?? null }));
     } catch {}
-    const xml = buildSitemap({ tickers: Object.keys(COMPANY_DATABASE), clusters, articles });
+    const xml = buildSitemap({ tickers: Object.keys(COMPANY_DATABASE), clusters, articles, statePages: loadStatePageSlugs() });
     res.set("Content-Type", "application/xml").send(xml);
   });
 

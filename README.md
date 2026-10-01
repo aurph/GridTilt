@@ -12,18 +12,21 @@ Live: **[gridtilt.com](https://gridtilt.com)**
 
 ## Tools
 
-Eight tools in the sidebar. Retired routes (`/supply-chain`, `/power-deals`, `/queue`, `/gpu-economics`, `/trade`, `/portfolio`, `/brief`) redirect into tabs of these.
+Nine tools in the top navigation. Retired routes (`/supply-chain`, `/power-deals`, `/queue`, `/gpu-economics`, `/trade`, `/portfolio`, `/brief`) redirect into tabs of these.
 
 | Tool | Route | What's inside |
 |---|---|---|
 | **Tilt Overview** | `/overview` | Measured headline gauges (tracked AI data center power in GW, fleet-average GPU rental cost, tightest reserve margin among AI-load RTOs), tracked buildout over time, top movers, sector pulse, next catalysts, and a US electricity demand chart (static annual series from EIA Electric Power Monthly with labeled projections). |
 | **The Stack** | `/stack` | 100 tickers across 13 supply-chain layers with live quotes and sparklines. Card, table, heatmap, and flow views; the flow view is a d3 force graph of 24 supply-chain nodes and 52 real supply relationships. Also carries the uranium correlation card (see below). |
 | **Power** | `/power-map` | US data center facility map (Leaflet), plus tabs for AI power deals and the grid interconnection queue. |
+| **My Grid** | `/my-grid?state=XX` | One state's grid operator, NERC reliability area and reserve margin, tracked facilities of 400 MW and up, the regional queue, residential electricity prices (EIA, needs `EIA_API_KEY`) and state grid news. The state lives in the address; the page's canonical is `/my-grid`. |
 | **Compute Frontier** | `/compute-frontier` | 235 named AI superclusters across 77 operators: GPUs, chip type, rated and planned power, grid region, energy source. Each cluster carries its own source links, and every estimated value sits in a per-cluster `estimated[]` list. GPU counts appear only where an operator disclosed one. |
 | **GPU Prices** | `/neocloud-intel` | GPU rental price index built from live marketplace observations, with per-model price history. The economics tab models the cost of AI compute. |
 | **Analyze** | `/analyze` | Portfolio tab scores any portfolio 0-100 on AI-power exposure; scenario tab models demand growth, nuclear capacity, and grid stress. |
 | **Catalyst Tracker** | `/catalysts` | Earnings dates (live from Yahoo, seeded fallback) plus curated thesis catalysts on a monthly calendar. |
 | **Analysis** | `/blog` | Research articles plus the daily Buildout Brief. |
+
+State pages (`/state/:slug`) are the indexable, maintained reference for a state: its grid facts, dated public decisions with their documents, next public dates, related project records and the limits of what a price can say about a bill. Only Maryland is published (`/state/maryland`, from `server/data/state-pages.json`); any other slug is a 404.
 
 A news ticker runs across every dashboard page: a 7-day rolling feed from 8 industry RSS sources (Utility Dive, DCD, World Nuclear News, Power Engineering, POWER Magazine, Latitude Media, DOE, EIA), with NewsData.io as an optional additional tier.
 
@@ -58,8 +61,8 @@ The former headline gauges (AI Demand, Grid Stress, NPI) were sentiment formulas
 
 - **Client**: React 18, TypeScript, Vite, wouter, TanStack Query v5, Tailwind CSS, shadcn/ui (house-modified fork in `client/src/components/ui`; do not regenerate from upstream), Recharts, visx, d3, react-leaflet.
 - **Server**: Express 5, single process. Vite middleware in dev, static files from `dist/public` in prod. Port 5000.
-- **Persistence**: JSON files in `server/data/` and `content/blog/`. There is no database.
-- **Tests**: Node's built-in test runner; 217 tests across server and client lib suites.
+- **Persistence**: JSON files in `server/data/` and `content/blog/`, and Postgres for subscribers, consent and the newsletter delivery ledger when `DATABASE_URL` is set (see `docs/runbooks/subscriber-storage.md`).
+- **Tests**: Node's built-in test runner, across the server and client lib suites (`npm test`).
 
 ## Run locally
 
@@ -86,11 +89,11 @@ npm start        # serve the built bundle
 | `RESEND_API_KEY` | to send | Newsletter sending through Resend (one email per call, idempotency keys). Without it, signups are still stored and sending answers with the missing configuration. |
 | `NEWSLETTER_FROM`, `NEWSLETTER_POSTAL_ADDRESS`, `NEWSLETTER_PRIVACY_URL` | to send | Sender on a Resend-verified domain, the approved mailing address, and the published privacy notice. Sending is blocked until all are set. `NEWSLETTER_REPLY_TO` and `NEWSLETTER_CONTACT_EMAIL` are optional. See `docs/runbooks/newsletter-sending.md`. |
 | `RESEND_WEBHOOK_SECRET` | to send | Verifies Resend's delivery, bounce and complaint webhooks at `/api/webhooks/resend`. |
-| `EIA_API_KEY` | no | Free key from [eia.gov/opendata](https://www.eia.gov/opendata/register.php). Enables live US48 hourly demand. |
+| `EIA_API_KEY` | no | Free key from [eia.gov/opendata](https://www.eia.gov/opendata/register.php). Enables live US48 hourly demand and the residential electricity prices on My Grid and the state pages; without it they say prices are unavailable and link EIA's own table. |
 | `NEWSDATA_API_KEY` | no | Optional [newsdata.io](https://newsdata.io) key. The 8 RSS feeds work without it. |
 | `CARTO_API` | no | Free [Carto basemap key](https://carto.com/basemaps/apikey) (5M tiles/month). Without it the maps still render, but every tile is stamped "API KEY REQUIRED". Public by nature - restrict it by domain. |
 | `X_API_*` | no | Four X credentials for the weekday auto-poster; it dry-runs and logs locally without them. |
-| `X_POSTING_ENABLED` | no | Kill switch for the auto-poster; defaults off (dry-run). |
+| `X_POSTING_ENABLED` | no | Kill switch for the auto-poster; defaults off (dry-run). Each weekday post states one dated basis or skips with its reason in the social log. |
 | `DISABLE_DATACENTER_INGESTER` | no | Set to `1` to disable the 6-hour RSS datacenter ingester. |
 
 ## Project layout

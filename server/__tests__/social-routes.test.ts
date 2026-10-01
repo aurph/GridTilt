@@ -133,3 +133,19 @@ test("share cards render for real states, projects and corrections, and 404 othe
     assert.equal(res.status, 404, path);
   }
 });
+
+test("state page data: the published slug answers, anything else is a JSON 404", async () => {
+  const list = (await (await fetch(`${base}/api/state-pages`)).json()) as Array<{ slug: string; code: string }>;
+  assert.deepEqual(list.map((p) => [p.slug, p.code]), [["maryland", "MD"]]);
+  const res = await fetch(`${base}/api/state-pages/maryland`);
+  assert.equal(res.status, 200);
+  const page = (await res.json()) as { code: string; canonical: string; documents: unknown[] };
+  assert.equal(page.code, "MD");
+  assert.equal(page.canonical, "https://gridtilt.com/state/maryland");
+  assert.ok(page.documents.length > 0);
+  for (const slug of ["virginia", "MARYLAND", "..%2Fsecrets"]) {
+    const r = await fetch(`${base}/api/state-pages/${slug}`);
+    assert.equal(r.status, 404, slug);
+    assert.match(r.headers.get("content-type") ?? "", /json/);
+  }
+});

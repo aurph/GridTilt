@@ -154,6 +154,16 @@ export const DATASET_REGISTRY: DatasetSpec[] = [
     writes: "none",
   },
   {
+    id: "state-pages",
+    label: "State pages (Maryland pilot)",
+    file: "state-pages.json",
+    read: { kind: "none" },
+    expectedMaxAgeHours: null,
+    mechanism: "hand-curated: public decisions and next dates for each published state",
+    review: { owner: "Jack", everyDays: 30, scope: "every document and next date on each state page against its source; add new public decisions" },
+    writes: "none",
+  },
+  {
     // datacenters.json is a bare array whose consumers expect that shape, so
     // the ingester stamps a sidecar envelope instead of the data file itself.
     id: "datacenters",

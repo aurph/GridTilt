@@ -7,6 +7,13 @@
       "outcome": "changed",
       "scope": "Every power agreement row's firmness (signed, framework, option, preliminary, portfolio, not an AI offtake) against its primary documents",
       "evidence": "PR #40 (codex/trust), commits 8f92d81 through eefabdc"
+    },
+    {
+      "dataset": "state-pages",
+      "reviewed": "2026-10-01",
+      "outcome": "changed",
+      "scope": "Every Maryland document row, next date and the bill source against its source, wording kept to the documents' own terms and tense: Frederick County Executive Order 05-2026, the County Executive's letter to Quantum Maryland, LLC (both scans, read as images), the county's CDI site plan map (a status snapshot as of July 1, 2026, not a decision), PSC Order No. 92606 (Case No. 9773), and the Office of People's Counsel's Utility Rates and Basics page. The EIA table is linked, not quoted.",
+      "evidence": "codex/state-pilot (T25): server/data/state-pages.json, corrected after review findings F1 to F4 the same day"
     }
   ]
 }

@@ -1,0 +1,71 @@
+{
+  "about": "Hand-curated state pages (/state/:slug). One entry per published state. Each document row says what its document says, in the document's own terms and tense, with its date and link; kind \"status\" marks a snapshot (a map, a list) that decides nothing on its date. reviewed is the day every document, next date and the bill source were checked against their sources, and matches the latest state-pages entry in dataset-reviews.json. Add a state only when someone will maintain it; the freshness registry holds it to a 30-day review.",
+  "states": [
+    {
+      "code": "MD",
+      "slug": "maryland",
+      "reviewed": "2026-10-01",
+      "bill": {
+        "explanation": "A Maryland electric bill has a delivery part, for the utility's infrastructure and operating costs, with distribution rates the Public Service Commission sets in rate cases, and a supply part, for the electricity itself, which for customers on the utility's standard offer the utility buys on the open market and passes through without a profit on the energy",
+        "source": "Maryland Office of People's Counsel, Utility Rates and Basics",
+        "url": "https://opc.maryland.gov/Consumer-Learning/Utility-Rates-and-Basics"
+      },
+      "documents": [
+        {
+          "date": "2026-09-14",
+          "jurisdiction": "Frederick County",
+          "title": "Critical Digital Infrastructure (data center) applications on hold until July 1, 2027",
+          "summary": "Executive Order 05-2026 directs the Planning and Permitting Division staff to temporarily discontinue accepting, considering, processing or reviewing any applications for Critical Digital Infrastructure Facilities and Critical Digital Infrastructure Electric Substations, as determined by county staff; the order's recitals concern data centers. It does not apply to property that obtained an approved Adequate Public Facilities Ordinance Letter of Understanding before June 17, 2025. It replaces Executive Order 04-2026 of July 1, 2026 and expires on July 1, 2027, unless superseded or terminated earlier. The order notes that the state's Data Center Impact Analysis and Report, due by September 1, 2026, had not been completed.",
+          "source": "Frederick County Executive Order 05-2026",
+          "url": "https://www.frederickcountymd.gov/ArchiveCenter/ViewFile/Item/17236"
+        },
+        {
+          "date": "2026-09-14",
+          "jurisdiction": "Frederick County",
+          "title": "Quantum Maryland's development rights agreement (DRRA) rejected",
+          "summary": "The County Executive rejected Quantum Maryland, LLC's application for a Development Rights and Responsibilities Agreement (DRRA). She wrote that she will not forward the DRRA to the Planning Commission and will direct the Division of Planning and Permitting not to accept the company's application to amend its Adequate Public Facilities Ordinance Letter of Understanding. The letter says the proposal would have met critical needs in Adamstown and made the Frederick Digital Campus more sustainable, but that the cost of those benefits would have been too great for the community, and that provisions shielding the development from all future local laws are unacceptable.",
+          "source": "Frederick County Executive's letter to Quantum Maryland, LLC",
+          "url": "https://frederickcountymd.gov/DocumentCenter/View/375040/DRRA-Letter-091426"
+        },
+        {
+          "date": "2026-08-27",
+          "jurisdiction": "Maryland Public Service Commission",
+          "title": "Piedmont 500 kV line review rescheduled into 2027",
+          "summary": "Order No. 92606 in Case No. 9773, PSEG Renewable Transmission's application for a certificate to build a 500 kV line in Baltimore, Carroll and Frederick counties, sets direct testimony for March 2, 2027, one in-person public comment hearing per county on a Saturday beginning March 6, 2027, and evidentiary hearings from May 11 to 21, 2027, with a target final order 60 days after they end. The order sets the schedule; it does not rule on the application.",
+          "source": "Maryland PSC Order No. 92606",
+          "url": "https://psc.maryland.gov/wp-content/uploads/2026/08/Order_RevProcSched-9773.pdf"
+        },
+        {
+          "kind": "status",
+          "date": "2026-07-01",
+          "jurisdiction": "Frederick County",
+          "title": "Approved data center site plans in the overlay zone (county map)",
+          "summary": "The county's map shows the site plans approved as of July 1, 2026: Aligned Data Centers (4 buildings, 1,597,280 sq ft) and three projects named Bauxite, Bauxite II and Bauxite III (6, 7 and 4 buildings including accessory buildings), with four substation sites. It gives no approval dates and no power figures. It shows applications accepted on 1,297 acres of the overlay zone and not currently accepted on 1,287 acres.",
+          "source": "Frederick County, Critical Digital Infrastructure Site Plan Approvals map (as of July 1, 2026)",
+          "url": "https://frederickcountymd.gov/DocumentCenter/View/374476/CDI-approved-site-plans-July-2026"
+        }
+      ],
+      "nextDates": [
+        {
+          "date": "2027-03-06",
+          "what": "PSC public comment hearings on the Piedmont line begin: one per county, in person, on a Saturday",
+          "source": "Maryland PSC Order No. 92606",
+          "url": "https://psc.maryland.gov/wp-content/uploads/2026/08/Order_RevProcSched-9773.pdf"
+        },
+        {
+          "date": "2027-05-11",
+          "through": "2027-05-21",
+          "what": "Piedmont line evidentiary hearings; target final order 60 days after they end",
+          "source": "Maryland PSC Order No. 92606",
+          "url": "https://psc.maryland.gov/wp-content/uploads/2026/08/Order_RevProcSched-9773.pdf"
+        },
+        {
+          "date": "2027-07-01",
+          "what": "Frederick County's Executive Order 05-2026 expires, unless superseded or terminated earlier",
+          "source": "Frederick County Executive Order 05-2026",
+          "url": "https://www.frederickcountymd.gov/ArchiveCenter/ViewFile/Item/17236"
+        }
+      ]
+    }
+  ]
+}

@@ -11,7 +11,7 @@ around them. Tagline: "Equities, infrastructure, and power data for the AI power
 economy." Live at gridtilt.com. Built and directed by Jack Schwartz (aurph). Audience:
 the citizen-investor researching the AI power economy, not fund analysts or day traders.
 
-14 sidebar modules, 27 routes (wouter, client/src/App.tsx):
+14 sidebar modules, 29 routes (wouter, client/src/App.tsx; the table below predates the top nav):
 
 | Module | Route | Key |
 |---|---|---|
@@ -31,7 +31,11 @@ the citizen-investor researching the AI power economy, not fund analysts or day 
 | GPU Economics | /gpu-economics | G+E |
 
 Off-nav: "/" (marketing landing, bare layout, lazy Home.tsx), /subscribe, /admin/datacenters,
-/admin/social, /stock/:ticker, /sector/:slug, /region/:slug, /operator/:slug, /blog/:slug.
+/admin/social, /stock/:ticker, /sector/:slug, /region/:slug, /operator/:slug, /blog/:slug,
+/state/:slug (published states only, from server/data/state-pages.json: maryland; any other
+slug is a real 404). /state/:slug is the one indexable address for a state; /my-grid?state=XX
+stays the tool with /my-grid as its canonical. server/state-page.ts composes the page once for
+the JSON (/api/state-pages/:slug), the metadata and the facts written into the HTML.
 Every route except "/" gets the dashboard shell (AppSidebar + header + NewsTicker).
 The seven aliases (/gpu-economics, /power-deals, /brief, /supply-chain, /trade, /portfolio,
 /queue) are client <Redirect>s and server 301s to the same final address (seo.ts ALIAS_REDIRECTS).
@@ -77,7 +81,7 @@ Derived from the code; starred rules confirmed by Jack 2026-07-02.
   marketing only. The landing has its own scoped tokens (.gt-marketing, client/src/styles/anchor.css).
 - Server layout: every route lives in server/routes.ts; math and fetching live in small pure
   modules routes call (indices.ts, clusters.ts, deals.ts, gpu-index.ts, gpu-economics.ts,
-  gpu-history.ts, brief.ts, physical.ts, social-format.ts, social-data.ts, og-card.ts). New module = pure module + thin
+  gpu-history.ts, brief.ts, physical.ts, social-format.ts, social-data.ts, state-page.ts, og-card.ts). New module = pure module + thin
   route + test. server/physical.ts is the house template: constant URL, in-memory TTL cache,
   typed honest degradation ({configured:false} when keyless, 502 on failure), never fabricate.
 - Frontier model data is public at `/api/frontier-models`. Benchmark records require a cited
@@ -143,8 +147,9 @@ server/data custody (the fragility map):
 - Hand-curated, code never writes: catalysts.json, clusters.json, supply-chain-stages.json,
   frontier-models.json, dataset-reviews.json (one entry per completed review; the freshness
   report's claim-last-reviewed date), change-log.json (one entry per shipped correction, added in the same
-  change; validated by server/change-log.ts, served at /api/changes),
-  hyperscaler-capex.json, content/blog/articles.json (admin blog CRUD can also write it; see debt).
+  change; validated by server/change-log.ts, served at /api/changes), state-pages.json (per
+  state: dated public documents and next dates with links, reviewed every 30 days by Jack;
+  validated by server/state-page.ts), hyperscaler-capex.json, content/blog/articles.json (admin blog CRUD can also write it; see debt).
 - Machine-written, never hand-edit: datacenters.json, datacenters-pending.json, index-history.json,
   gpu-price-history.json, market-constants.json, social-log.json, backlog-auto-updates.json.
   subscribers.json is the development store only (ignored by version control; personal data);
