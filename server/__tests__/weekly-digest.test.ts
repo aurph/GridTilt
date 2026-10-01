@@ -2,7 +2,16 @@
 // omission of missing gauges, date label math.
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { renderWeeklyEmail, weeklyDateLabel, type WeeklyDigestInput } from "../weekly-digest";
+import {
+  footerBlockers,
+  personalize,
+  renderWeeklyEmail,
+  renderWeeklyText,
+  SIGNED_UP_HOOK,
+  UNSUBSCRIBE_HOOK,
+  weeklyDateLabel,
+  type WeeklyDigestInput,
+} from "../weekly-digest";
 
 const INPUT: WeeklyDigestInput = {
   brief: {
@@ -26,6 +35,12 @@ const INPUT: WeeklyDigestInput = {
   tightestRTO: { label: "MISO", marginPct: 11.0, referencePct: 8.1 },
   dateLabel: "Week of June 28 - July 4, 2026",
   siteUrl: "https://gridtilt.com",
+  asOf: "July 4, 2026",
+  figureSources: [
+    { figure: "Tracked AI power", source: "GridTilt facility registry", asOf: "July 4, 2026" },
+    { figure: "Grid headroom", source: "NERC 2025 Long-Term Reliability Assessment", asOf: "January 2026" },
+  ],
+  footer: { contactEmail: "gridtilt1@gmail.com", privacyUrl: "https://gridtilt.com/privacy", postalAddress: "PO Box 1, Baltimore, MD 21201" },
 };
 
 describe("renderWeeklyEmail", () => {
@@ -82,5 +97,46 @@ describe("weeklyDateLabel", () => {
   it("spans the six days before the end date, Eastern", () => {
     const label = weeklyDateLabel(new Date(Date.UTC(2026, 6, 4, 16, 0, 0))); // Jul 4 noon ET
     assert.equal(label, "Week of June 28 - July 4, 2026");
+  });
+});
+
+describe("issue footer, sources and plain text", () => {
+  const html = renderWeeklyEmail(INPUT);
+  const text = renderWeeklyText(INPUT);
+
+  it("states each figure's source and date, and the real basis for receiving it", () => {
+    assert.ok(html.includes("Sources and dates: Tracked AI power: GridTilt facility registry, July 4, 2026"));
+    assert.ok(html.includes("Percent moves as of July 4, 2026."));
+    assert.ok(html.includes(`signed up at gridtilt.com on ${SIGNED_UP_HOOK}`));
+    assert.ok(html.includes("mailto:gridtilt1@gmail.com"));
+    assert.ok(html.includes('href="https://gridtilt.com/privacy"'));
+    assert.ok(html.includes("PO Box 1, Baltimore, MD 21201"));
+  });
+
+  it("the plain text carries the same figures, sources, hooks and footer", () => {
+    for (const piece of ["18.8 GW", "$4.31/hr", "MISO reserve margin 11.0%", "Queue at 2,290 GW", "NVDA NVIDIA Corporation: -1.39%",
+      "Sources and dates:", UNSUBSCRIBE_HOOK, SIGNED_UP_HOOK, "Contact: gridtilt1@gmail.com", "Privacy: https://gridtilt.com/privacy", "PO Box 1"]) {
+      assert.ok(text.includes(piece), piece);
+    }
+    assert.equal(text.split(UNSUBSCRIBE_HOOK).length - 1, 1);
+    assert.ok(!/<(div|a|table|tr|td|span|br)\b/i.test(text), "no template markup in the text part");
+  });
+
+  it("personalizes each hook once, escaping the date in HTML", () => {
+    const one = personalize(html, { token: "abc123", signedUpOn: "May 1, 2026" }, true);
+    assert.ok(one.includes("/api/unsubscribe?token=abc123"));
+    assert.ok(one.includes("signed up at gridtilt.com on May 1, 2026"));
+    assert.ok(!one.includes(UNSUBSCRIBE_HOOK) && !one.includes(SIGNED_UP_HOOK));
+    const odd = personalize(html, { token: "t", signedUpOn: "<b>x</b>" }, true);
+    assert.ok(odd.includes("&lt;b&gt;x&lt;/b&gt;"));
+  });
+
+  it("a missing privacy notice or mailing address is shown, never invented, and blocks sending", () => {
+    const bare = { ...INPUT, footer: { contactEmail: "gridtilt1@gmail.com", privacyUrl: null, postalAddress: null } };
+    const b = renderWeeklyEmail(bare);
+    assert.ok(b.includes("privacy notice not published: sending is blocked"));
+    assert.ok(b.includes("mailing address not set: sending is blocked"));
+    assert.equal(footerBlockers(bare.footer).length, 2);
+    assert.deepEqual(footerBlockers(INPUT.footer), []);
   });
 });

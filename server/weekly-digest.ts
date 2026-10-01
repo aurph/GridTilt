@@ -1,9 +1,10 @@
 // ─── Weekly email digest ────────────────────────────────────────────────────
 //
-// Renders the newsletter HTML from the same composed Brief the site shows,
-// plus the measured headline numbers and the day's top movers. Pure function
-// of its inputs (snapshot-tested); the send pipeline personalizes per
-// recipient by replacing "token=PREVIEW" with each subscriber's HMAC token.
+// Renders the newsletter HTML and plain text from the same composed Brief the
+// site shows, plus the measured headline numbers and the day's top movers.
+// Pure functions of their inputs (snapshot-tested). An issue's content is
+// rendered once and frozen; personalize() then fills each recipient's
+// unsubscribe token ("token=PREVIEW") and signup date (SIGNED_UP_PREVIEW).
 //
 // Email HTML rules: table layout, inline styles only, no external CSS, no
 // webfonts - the dark GridTilt look approximated with email-safe styling.
@@ -22,6 +23,42 @@ export interface WeeklyDigestInput {
   /** e.g. "Week of June 29 - July 4, 2026" */
   dateLabel: string;
   siteUrl: string; // no trailing slash
+  /** When the figures were taken ("October 1, 2026"): the issue is frozen at this point. */
+  asOf: string;
+  /** Each figure in the email with its source and that source's date. */
+  figureSources: Array<{ figure: string; source: string; asOf: string }>;
+  footer: NewsletterFooter;
+}
+
+export interface NewsletterFooter {
+  contactEmail: string;
+  /** The published privacy notice. Null blocks sending; it is never invented. */
+  privacyUrl: string | null;
+  /** The approved mailing address required in commercial email. Null blocks sending. */
+  postalAddress: string | null;
+}
+
+/** Why an issue with this footer may not be sent. Empty means nothing in the footer blocks it. */
+export function footerBlockers(footer: NewsletterFooter): string[] {
+  const out: string[] = [];
+  if (!footer.privacyUrl) out.push("no published privacy notice (NEWSLETTER_PRIVACY_URL)");
+  if (!footer.postalAddress) out.push("no approved mailing address (NEWSLETTER_POSTAL_ADDRESS)");
+  return out;
+}
+
+export const UNSUBSCRIBE_HOOK = "token=PREVIEW";
+export const SIGNED_UP_HOOK = "SIGNED_UP_PREVIEW";
+
+/**
+ * One recipient's copy: the HMAC token into the unsubscribe link and the
+ * date they signed up into the line that says why they get this email.
+ * Each hook appears exactly once in a rendered issue.
+ */
+export function personalize(content: string, recipient: { token: string; signedUpOn: string }, html: boolean): string {
+  const date = html ? esc(recipient.signedUpOn) : recipient.signedUpOn;
+  return content
+    .replace(UNSUBSCRIBE_HOOK, `token=${encodeURIComponent(recipient.token)}`)
+    .replace(SIGNED_UP_HOOK, date);
 }
 
 const C = {
@@ -117,7 +154,21 @@ ${movers
   )
   .join("")}
 </table>
-<div style="font-size:11px;color:${C.inkFaint};margin-top:6px;">Percent moves as of send time.</div>`;
+<div style="font-size:11px;color:${C.inkFaint};margin-top:6px;">Percent moves as of ${esc(input.asOf)}.</div>`;
+
+  const sourcesHtml =
+    input.figureSources.length === 0
+      ? ""
+      : `<div style="font-size:11px;color:${C.inkFaint};line-height:1.6;margin-top:10px;">Sources and dates: ${input.figureSources
+          .map((f) => `${esc(f.figure)}: ${esc(f.source)}, ${esc(f.asOf)}`)
+          .join("; ")}.</div>`;
+  const { footer } = input;
+  const privacy = footer.privacyUrl
+    ? `<a href="${esc(footer.privacyUrl)}" style="color:${C.inkMuted};">Privacy</a>`
+    : `<span style="color:${C.negative};">[privacy notice not published: sending is blocked]</span>`;
+  const address = footer.postalAddress
+    ? esc(footer.postalAddress)
+    : `<span style="color:${C.negative};">[mailing address not set: sending is blocked]</span>`;
 
   return `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>The GridTilt Weekly</title></head>
@@ -150,15 +201,59 @@ ${moversHtml}
 
 <tr><td style="padding:18px 32px;border-top:1px solid ${C.border};">
 <div style="font-size:11px;color:${C.inkFaint};line-height:1.6;">
-You are receiving this because you subscribed at gridtilt.com.
-<a href="${siteUrl}/api/unsubscribe?token=PREVIEW" style="color:${C.inkMuted};">Unsubscribe</a>
-· Sources: Yahoo Finance, EIA, NERC LTRA, LBNL, public listings. Estimates are flagged on the site.
+You are receiving this because you signed up at gridtilt.com on ${SIGNED_UP_HOOK}.
+<a href="${siteUrl}/api/unsubscribe?${UNSUBSCRIBE_HOOK}" style="color:${C.inkMuted};">Unsubscribe</a>
+· Contact: <a href="mailto:${esc(footer.contactEmail)}" style="color:${C.inkMuted};">${esc(footer.contactEmail)}</a>
+· ${privacy}
 </div>
+<div style="font-size:11px;color:${C.inkFaint};line-height:1.6;margin-top:6px;">GridTilt · ${address}</div>
+${sourcesHtml}
 </td></tr>
 
 </table>
 </td></tr></table>
 </body></html>`;
+}
+
+/** The plain-text part of the same issue: every figure, source and footer line the HTML has. */
+export function renderWeeklyText(input: WeeklyDigestInput): string {
+  const lines: string[] = [];
+  lines.push(`The GridTilt Weekly, ${input.dateLabel}`, "");
+  lines.push(input.brief.summary, "");
+  if (input.trackedGW !== null) {
+    lines.push(
+      `Tracked AI power: ${input.trackedGW.toFixed(1)} GW${input.constructionGW !== null ? ` (+${input.constructionGW.toFixed(1)} GW building)` : ""}`,
+    );
+  }
+  if (input.fleetAvg !== null) {
+    lines.push(
+      `GPU fleet average: $${input.fleetAvg.toFixed(2)}/hr${input.fleetAvg1yChange !== null ? ` (${input.fleetAvg1yChange > 0 ? "+" : ""}${input.fleetAvg1yChange.toFixed(1)}% 1Y)` : ""}`,
+    );
+  }
+  if (input.tightestRTO !== null) {
+    lines.push(
+      `Grid headroom: ${input.tightestRTO.label} reserve margin ${input.tightestRTO.marginPct.toFixed(1)}%, NERC reference ${input.tightestRTO.referencePct}%`,
+    );
+  }
+  for (const section of input.brief.sections) {
+    lines.push("", section.heading.toUpperCase());
+    for (const point of section.points) lines.push(`- ${point}`);
+  }
+  if (input.movers.length > 0) {
+    lines.push("", "TOP MOVERS");
+    for (const m of input.movers) lines.push(`${m.ticker} ${m.name}: ${m.changePercent > 0 ? "+" : ""}${m.changePercent.toFixed(2)}%`);
+    lines.push(`Percent moves as of ${input.asOf}.`);
+  }
+  lines.push("", input.brief.takeaway, "", `Open the dashboard: ${input.siteUrl}/overview`, "");
+  if (input.figureSources.length > 0) {
+    lines.push(`Sources and dates: ${input.figureSources.map((f) => `${f.figure}: ${f.source}, ${f.asOf}`).join("; ")}.`, "");
+  }
+  lines.push(`You are receiving this because you signed up at gridtilt.com on ${SIGNED_UP_HOOK}.`);
+  lines.push(`Unsubscribe: ${input.siteUrl}/api/unsubscribe?${UNSUBSCRIBE_HOOK}`);
+  lines.push(`Contact: ${input.footer.contactEmail}`);
+  lines.push(`Privacy: ${input.footer.privacyUrl ?? "[privacy notice not published: sending is blocked]"}`);
+  lines.push(`GridTilt, ${input.footer.postalAddress ?? "[mailing address not set: sending is blocked]"}`);
+  return lines.join("\n") + "\n";
 }
 
 /** "Week of June 29 - July 4, 2026" from a given end date (US-Eastern day). */

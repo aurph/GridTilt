@@ -82,8 +82,11 @@ Derived from the code; starred rules confirmed by Jack 2026-07-02.
   source, native unit, evaluation setting, and exact comparability key. Never connect or rank
   results that only share a benchmark name.
 - Env: process.env direct. Required: UNSUB_TOKEN_SECRET (boot throws), ADMIN_API_KEY (admin 503s
-  without). Optional: DATABASE_URL (subscribers; required in production for signups),
-  RESEND_API_KEY, EIA_API_KEY, NEWSDATA_API_KEY, CARTO_API, X_API_KEY,
+  without). Optional: DATABASE_URL (subscribers and the newsletter ledger; required in production
+  for signups), RESEND_API_KEY, RESEND_WEBHOOK_SECRET, NEWSLETTER_FROM, NEWSLETTER_REPLY_TO,
+  NEWSLETTER_POSTAL_ADDRESS, NEWSLETTER_PRIVACY_URL, NEWSLETTER_CONTACT_EMAIL (sending is
+  blocked, with reasons, until the provider key, webhook secret, sender, privacy notice and mailing address are
+  set; see docs/runbooks/newsletter-sending.md), EIA_API_KEY, NEWSDATA_API_KEY, CARTO_API, X_API_KEY,
   X_API_SECRET, X_ACCESS_TOKEN, X_ACCESS_TOKEN_SECRET, X_POSTING_ENABLED,
   DISABLE_DATACENTER_INGESTER (last two missing from .env.example).
 - CARTO_API is the one env var that reaches the browser. server/runtime-config.ts injects it into
@@ -91,8 +94,11 @@ Derived from the code; starred rules confirmed by Jack 2026-07-02.
   build var (rotating would need a rebuild) and NOT an inline script (prod CSP is script-src
   'self', which drops it silently while curl still shows correct HTML). Every map takes its tiles
   from components/basemap-tiles.tsx; never hand-write a cartocdn URL.
-- Admin auth: x-admin-key header, timingSafeEqual; covers /api/admin/*, /api/newsletter/send,
-  /api/export/daily.
+- Admin auth: x-admin-key header, timingSafeEqual; covers /api/admin/*, /api/newsletter/*,
+  /api/export/daily. Sending is two admin steps (server/newsletter-routes.ts): POST
+  /api/admin/newsletter/issues freezes an issue revision, then .../:id/:revision/send with
+  {"confirm": "<id>/<revision>"}. The old one-shot /api/newsletter/send answers 410.
+  /api/webhooks/resend is gated by its Svix signature (RESEND_WEBHOOK_SECRET), not the key.
 - Commits: imperative subject prefixed by area ("Social: ...", "docs: ..."). NO Co-Authored-By
   lines, ever. Product copy and commits: plain voice, no em dashes, no marketing language.
 
@@ -107,7 +113,7 @@ Derived from the code; starred rules confirmed by Jack 2026-07-02.
 | RSS (8 news + 4 ingester feeds) | none | news fallback; datacenter discovery | ingester 6 h | items just absent |
 | Carto basemaps | CARTO_API | raster tiles for all three Leaflet maps | browser/CDN, 180 d | tiles still load, watermarked "API KEY REQUIRED" (HTTP 200, never an error) |
 | LBNL Queued Up page | none | new-edition flag only | 24 h throttle | manual XLSX ingest regardless |
-| Resend | RESEND_API_KEY | audience sync, newsletter send | on demand | signups are still stored (Postgres); send 400s |
+| Resend | RESEND_API_KEY (+ RESEND_WEBHOOK_SECRET) | newsletter send only, one email per call with an idempotency key; webhooks for delivery, bounces and complaints. No contact copies at the provider | on demand | sending answers 409 with the missing configuration; signups are still stored |
 | X API (OAuth 1.0a) | 4 creds + X_POSTING_ENABLED=true | weekday 8:30 ET post | external cron | dry-run, logged to social-log.json |
 
 Schedulers (no node-cron anywhere):

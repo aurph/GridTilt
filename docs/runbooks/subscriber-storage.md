@@ -49,7 +49,7 @@ The running production keeps accepting signups into its ephemeral file until the
    DATABASE_URL='<neon url>' npx tsx scripts/subscribers.ts import-legacy <second export> --id import-live-YYYY-MM-DD-b
    ```
 
-6. Check `GET /api/admin/subscribers` (admin key): `count` and `byState` should match the dry-run's addresses. Compare counts, not addresses.
+6. Check the counts: `curl -sS -H "x-admin-key: <admin key>" https://gridtilt.com/api/admin/subscribers | jq '{count, byState}'` should match the dry-run's addresses. Read only the counts; the full response lists every address.
 
 ## Backups
 
@@ -71,8 +71,10 @@ DATABASE_URL='<neon url>' npx tsx scripts/subscribers.ts export ~/Private/gridti
    DATABASE_URL='<isolated url>' npx tsx scripts/subscribers.ts restore ~/Private/gridtilt-subscribers-YYYY-MM-DD.json
    ```
 
-3. Point a local server at it (`DATABASE_URL='<isolated url>' npm run dev`) and check `/api/admin/subscribers`: counts and states match, and an opted-out address still gets "taken off the list earlier" from the form.
+3. Point a local server at it (`DATABASE_URL='<isolated url>' npm run dev`) and check `/api/admin/subscribers` with `| jq '{count, byState}'`: the counts and states match, and an opted-out address still gets "taken off the list earlier" from the form.
 4. Only then point production's `DATABASE_URL` at it, if that is the goal.
+
+A restore brings back the list and every opt-out, not the newsletter send history (issues and deliveries). Do not send again an issue that went out before the backup: on the restored database it has no record of who already got it.
 
 ## Rolling back the code
 
