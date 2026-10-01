@@ -50,6 +50,7 @@ async function serve(opts: { pool?: boolean; render?: () => RenderedIssue; block
       return false;
     },
     renderCurrent: opts.render ?? (() => rendered()),
+    renderEditorial: (issue) => rendered({ subject: issue.subject, suggestedIssueId: issue.issueId }),
     sendBlockers: () => opts.blockers ?? [],
     sendDeps: () => ({
       pool,
@@ -130,6 +131,31 @@ describe("newsletter routes", () => {
       assert.ok(s.sent[0].html.includes("token=tok-a%40example.com"));
       r = await s.admin("/api/admin/newsletter/issues/weekly-2026-10-05/1");
       assert.deepEqual(((await r.json()) as { counts: Record<string, number> }).counts, {}, "no delivery rows");
+    } finally {
+      await s.close();
+    }
+  });
+
+  it("a written issue is validated before it is frozen under its own id", async () => {
+    const s = await serve();
+    try {
+      const draft = {
+        issueId: "gridtilt-00",
+        subject: "GridTilt 00: What a power-project announcement tells you",
+        preheader: "A local starting point, one project record, and the limits of the numbers.",
+        sections: [{ heading: "This week", paragraphs: ["Planned capacity is not operating capacity."] }],
+      };
+      let r = await s.admin("/api/admin/newsletter/issues", {
+        method: "POST",
+        body: JSON.stringify({ editorial: { ...draft, sections: [{ heading: "Next public date", paragraphs: ["Hearing: TBD"] }] } }),
+      });
+      assert.equal(r.status, 400);
+      assert.ok(((await r.json()) as { errors: string[] }).errors.some((e) => e.includes("placeholder")));
+      assert.equal((await s.admin("/api/admin/newsletter/issues/gridtilt-00/1")).status, 404, "nothing stored");
+
+      r = await s.admin("/api/admin/newsletter/issues", { method: "POST", body: JSON.stringify({ editorial: draft }) });
+      assert.equal(r.status, 201);
+      assert.equal(((await r.json()) as { issueId: string }).issueId, "gridtilt-00");
     } finally {
       await s.close();
     }

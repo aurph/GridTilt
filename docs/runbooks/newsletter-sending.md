@@ -71,6 +71,19 @@ curl -sS -H "x-admin-key: <key>" https://gridtilt.com/api/admin/newsletter/issue
 - `unknown` rows older than that: look the recipient up in the Resend dashboard before doing anything by hand.
 - A correction: `POST /api/admin/newsletter/issues` with `{"issueId": "weekly-YYYY-MM-DD", "correctionReason": "<what was wrong>"}` makes revision 2, which goes only to readers of revision 1.
 
+## Written issues and the change log
+
+A written issue (issue zero, a correction note) is kept as a private draft file outside this repository and frozen through the same route, with the draft under `editorial`:
+
+```sh
+jq '{editorial: .}' ~/Private/issue-00.json | curl -sS -X POST -H "x-admin-key: <key>" -H "Content-Type: application/json" \
+  -d @- https://gridtilt.com/api/admin/newsletter/issues
+```
+
+The draft is validated first (`server/editorial-issue.ts`): 1 to 10 sections, https links only, every source with its date, and no placeholder text ("TBD", "{{...}}", "[link]"). A draft with problems is answered with the list and nothing is stored. It then gets the same footer, per-reader hooks, freezing, test copy and send as the weekly issue.
+
+"What changed" in an issue cites `server/data/change-log.json` (served at `GET /api/changes`): one entry per actual change, with the value before and after, the source and its date, when it was reviewed, where it shows on the site, and why. Add the entry in the same change that ships the correction, so the notice never goes out before the fix is live. "Checked, no material change" is its own kind of entry. Nothing is backfilled.
+
 ## The first test message (needs the owner's go-ahead)
 
 1. Subscribe one address you control through the site form, so its consent date and unsubscribe link are real.

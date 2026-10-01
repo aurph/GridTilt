@@ -15,6 +15,7 @@ import { createIssue, getIssue, issueStats } from "./newsletter-ledger";
 import { sendIssue, sendTestCopy, type SendDeps } from "./newsletter-send";
 import { applyResendEvent } from "./newsletter-events";
 import { verifyResendWebhook } from "./resend";
+import { parseEditorialIssue, type EditorialIssue } from "./editorial-issue";
 
 export interface RenderedIssue {
   subject: string;
@@ -30,6 +31,8 @@ export interface NewsletterRouteDeps {
   store: SubscriberStore | null;
   requireAdmin: (req: Request, res: Response) => boolean;
   renderCurrent: () => RenderedIssue;
+  /** A written issue (issue zero, a correction note) in the same frame and footer. */
+  renderEditorial: (issue: EditorialIssue) => RenderedIssue;
   /** Configuration that blocks sending (provider key, sender address); empty when ready. */
   sendBlockers: () => string[];
   /** Built only when sending is configured. */
@@ -76,16 +79,29 @@ export function registerNewsletterRoutes(app: Express, deps: NewsletterRouteDeps
   app.post("/api/admin/newsletter/issues", async (req, res) => {
     if (!deps.requireAdmin(req, res)) return;
     if (!deps.pool || !deps.store) return res.status(503).json({ error: LEDGER_MISSING });
+    const body = (req.body ?? {}) as { issueId?: unknown; correctionReason?: unknown; editorial?: unknown };
     let rendered: RenderedIssue;
-    try {
-      rendered = deps.renderCurrent();
-    } catch (e) {
-      // A failed render stores nothing: an error page is not an email body.
-      logError("Newsletter render failed:", errText(e));
-      return res.status(500).json({ error: "Rendering failed; nothing was stored." });
+    let issueId: string;
+    if (body.editorial !== undefined) {
+      const parsed = parseEditorialIssue(body.editorial);
+      if (!parsed.ok) return res.status(400).json({ error: "The editorial issue has problems; nothing was stored.", errors: parsed.errors });
+      try {
+        rendered = deps.renderEditorial(parsed.issue);
+      } catch (e) {
+        logError("Editorial render failed:", errText(e));
+        return res.status(500).json({ error: "Rendering failed; nothing was stored." });
+      }
+      issueId = parsed.issue.issueId;
+    } else {
+      try {
+        rendered = deps.renderCurrent();
+      } catch (e) {
+        // A failed render stores nothing: an error page is not an email body.
+        logError("Newsletter render failed:", errText(e));
+        return res.status(500).json({ error: "Rendering failed; nothing was stored." });
+      }
+      issueId = typeof body.issueId === "string" && body.issueId ? body.issueId : rendered.suggestedIssueId;
     }
-    const body = (req.body ?? {}) as { issueId?: unknown; correctionReason?: unknown };
-    const issueId = typeof body.issueId === "string" && body.issueId ? body.issueId : rendered.suggestedIssueId;
     try {
       const issue = await createIssue(deps.pool, {
         issueId,

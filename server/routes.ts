@@ -50,7 +50,9 @@ import {
 } from "./gpu-history";
 import { fetchLivePrices, type GpuSweepSummary } from "./gpu-live";
 import { getUraniumCorrelation } from "./uranium-correlation";
-import { footerBlockers, renderWeeklyEmail, renderWeeklyText, weeklyDateLabel } from "./weekly-digest";
+import { footerBlockers, renderWeeklyEmail, renderWeeklyText, weeklyDateLabel, type NewsletterFooter } from "./weekly-digest";
+import { renderEditorialEmail, renderEditorialText } from "./editorial-issue";
+import { sortChanges, validateChangeLog, type ChangeRecord } from "./change-log";
 import { fractionToPercent, getCachedFundamentals, refreshFundamentalsIfStale } from "./fundamentals";
 import { normalizeTickerInput, scoreBasket } from "./portfolio-score";
 import {
@@ -2242,6 +2244,24 @@ export async function registerRoutes(
     }
   });
 
+  // Corrections and documented changes to published facts (server/change-log.ts).
+  // A log that fails validation is not served: a wrong correction notice is
+  // worse than none.
+  app.get("/api/changes", (_req, res) => {
+    try {
+      const root = JSON.parse(readFileSync(join(process.cwd(), "server", "data", "change-log.json"), "utf-8"));
+      const problems = validateChangeLog(root.changes);
+      if (problems.length > 0) {
+        console.error("change-log.json failed validation:", problems.join("; "));
+        return res.status(500).json({ error: "The change log failed validation" });
+      }
+      res.json({ about: root.about ?? null, changes: sortChanges(root.changes as ChangeRecord[]) });
+    } catch (error) {
+      console.error("Change log endpoint error:", error);
+      res.status(500).json({ error: "Failed to load the change log" });
+    }
+  });
+
   // Subscribers live in Postgres when DATABASE_URL is set (server/subscriber-store.ts).
   // Production without it refuses signups (503) instead of writing to
   // ephemeral disk; development and tests use the local JSON file. A legacy
@@ -2370,6 +2390,15 @@ export async function registerRoutes(
   // measured gauges and the day's movers. Every figure carries its source and
   // that source's date; the footer comes from configuration, and a missing
   // privacy notice or mailing address blocks sending (never invented).
+  /** The footer every issue carries, from configuration; never invented. */
+  function newsletterFooter(): NewsletterFooter {
+    return {
+      contactEmail: process.env.NEWSLETTER_CONTACT_EMAIL || "gridtilt1@gmail.com",
+      privacyUrl: process.env.NEWSLETTER_PRIVACY_URL || null,
+      postalAddress: process.env.NEWSLETTER_POSTAL_ADDRESS || null,
+    };
+  }
+
   function renderCurrentIssue(): RenderedIssue {
     const now = new Date();
     const brief = composeBrief(buildBriefInput());
@@ -2399,25 +2428,35 @@ export async function registerRoutes(
     } catch {}
 
     const gpuRoot = readGpuRoot();
-    const gi = computeGpuIndex(gpuRoot.models ?? [], easternDay(), recordedByModel());
+    const servedGpu = servedGpuModels(gpuRoot.models ?? []);
+    const gi = computeGpuIndex(servedGpu.models, easternDay(), recordedByModel());
     const longDate = (d: Date) =>
       d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "America/New_York" });
+    const dayLabel = (day: string | null | undefined) => (day ? longDate(new Date(`${day}T12:00:00Z`)) : "date not recorded");
     const asOf = longDate(now);
-    const gpuAsOf = gpuRoot.lastRefreshed ? longDate(new Date(`${gpuRoot.lastRefreshed}T12:00:00Z`)) : "date not recorded";
+    const curatedAsOf = dayLabel(gpuRoot.lastRefreshed);
+    const modelCount = (gpuRoot.models ?? []).length;
+    // Which prices the average is made of, and their dates: live listings,
+    // the curated list, or a mix.
+    const gpuFigure =
+      servedGpu.liveCount === 0
+        ? { source: "GridTilt GPU rental index, curated list last refreshed", asOf: curatedAsOf }
+        : servedGpu.liveCount === modelCount
+          ? { source: "GridTilt GPU rental index, public listings observed", asOf: dayLabel(servedGpu.latestLiveDate) }
+          : {
+              source: `GridTilt GPU rental index, ${servedGpu.liveCount} of ${modelCount} models from public listings observed ${dayLabel(servedGpu.latestLiveDate)}, the rest from the curated list last refreshed`,
+              asOf: curatedAsOf,
+            };
 
     const figureSources: Array<{ figure: string; source: string; asOf: string }> = [];
     if (trackedGW !== null) figureSources.push({ figure: "Tracked AI power", source: "GridTilt facility registry, campuses of 400 MW and up", asOf });
-    if (gi.fleetAvg) figureSources.push({ figure: "GPU fleet average", source: "GridTilt GPU rental index from public listings, last refreshed", asOf: gpuAsOf });
+    if (gi.fleetAvg) figureSources.push({ figure: "GPU fleet average", ...gpuFigure });
     // NERC 2025 LTRA, summer 2026: the area with the smallest cushion above its
     // own reference. Mirror of client/src/data/nerc-reserve-margins.ts.
     figureSources.push({ figure: "Grid headroom", source: "NERC 2025 Long-Term Reliability Assessment, summer 2026 margins, published", asOf: "January 2026" });
     if (movers.length > 0) figureSources.push({ figure: "Top movers", source: "Yahoo Finance", asOf });
 
-    const footer = {
-      contactEmail: process.env.NEWSLETTER_CONTACT_EMAIL || "gridtilt1@gmail.com",
-      privacyUrl: process.env.NEWSLETTER_PRIVACY_URL || null,
-      postalAddress: process.env.NEWSLETTER_POSTAL_ADDRESS || null,
-    };
+    const footer = newsletterFooter();
     const dateLabel = weeklyDateLabel(now);
     const input = {
       brief,
@@ -2447,6 +2486,16 @@ export async function registerRoutes(
     store: subscriberStore,
     requireAdmin,
     renderCurrent: renderCurrentIssue,
+    renderEditorial: (issue) => {
+      const footer = newsletterFooter();
+      return {
+        subject: issue.subject,
+        html: renderEditorialEmail(issue, BASE_URL, footer),
+        text: renderEditorialText(issue, BASE_URL, footer),
+        blockers: footerBlockers(footer),
+        suggestedIssueId: issue.issueId,
+      };
+    },
     sendBlockers: () => {
       const out: string[] = [];
       if (!process.env.RESEND_API_KEY) out.push("RESEND_API_KEY is not set");
@@ -3872,6 +3921,35 @@ ${rssItems}
     return JSON.parse(readFileSync(GPU_PRICES_FILE, "utf-8"));
   }
 
+  /**
+   * The GPU prices the site serves. A live observation at most two Eastern
+   * days old replaces a model's curated price; otherwise the curated price
+   * stands. The GPU Prices page, the Brief and the weekly email all read this
+   * one layer: they had shown H100 at two prices on the same day because the
+   * Brief read only the curated list.
+   */
+  function servedGpuModels(models: any[]): { models: any[]; liveCount: number; latestLiveDate: string | null } {
+    const live = latestLiveByModel();
+    let liveCount = 0;
+    let latestLiveDate: string | null = null;
+    const served = models.map((m: any) => {
+      const l = live[m.model];
+      if (l && l.ageDays <= 2) {
+        liveCount++;
+        if (!latestLiveDate || l.date > latestLiveDate) latestLiveDate = l.date;
+        return {
+          ...m,
+          currentUsdPerHr: l.price,
+          estimated: (m.estimated ?? []).filter((f: string) => f !== "currentUsdPerHr"),
+          liveSources: l.sources,
+          liveDate: l.date,
+        };
+      }
+      return m;
+    });
+    return { models: served, liveCount, latestLiveDate };
+  }
+
   function easternDay(): string {
     return new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date());
   }
@@ -3913,20 +3991,7 @@ ${rssItems}
 
       // Fresh live observations (<=2 Eastern days old) are the served price;
       // the est. flag drops because the number is observed, not estimated.
-      const live = latestLiveByModel();
-      const served = models.map((m: any) => {
-        const l = live[m.model];
-        if (l && l.ageDays <= 2) {
-          return {
-            ...m,
-            currentUsdPerHr: l.price,
-            estimated: (m.estimated ?? []).filter((f: string) => f !== "currentUsdPerHr"),
-            liveSources: l.sources,
-            liveDate: l.date,
-          };
-        }
-        return m;
-      });
+      const served = servedGpuModels(models).models;
 
       const metrics = computeGpuIndex(served, easternDay(), recordedByModel());
       const rows = metrics.rows.map((r) => {
@@ -4020,7 +4085,8 @@ ${rssItems}
     const biggest = [...clusters].sort((a, b) => (b.plannedPowerMW ?? 0) - (a.plannedPowerMW ?? 0))[0] as any;
 
     const gpuRoot = readGpuRoot();
-    const gi = computeGpuIndex(gpuRoot.models ?? [], easternDay());
+    // The same served layer as the GPU Prices page (servedGpuModels).
+    const gi = computeGpuIndex(servedGpuModels(gpuRoot.models ?? []).models, easternDay(), recordedByModel());
     const byModel = Object.fromEntries(gi.rows.map((r) => [r.model, r]));
     const mover = gi.rows.filter((r) => r.changes.y1 != null).sort((a, b) => Math.abs(b.changes.y1 as number) - Math.abs(a.changes.y1 as number))[0];
     const cheapest = [...gi.rows].sort((a, b) => a.current - b.current)[0];
