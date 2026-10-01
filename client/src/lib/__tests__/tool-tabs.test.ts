@@ -1,6 +1,24 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { tabKeyTarget } from "../../components/ToolTabs";
+import { tabFromSearch, tabKeyTarget } from "../../components/ToolTabs";
+
+describe("tabFromSearch", () => {
+  const TABS = [
+    { id: "map", label: "Map" },
+    { id: "queue", label: "Queue" },
+    { id: "deals", label: "Deals" },
+  ];
+
+  it("reads the tab a search string names, with or without the leading ?", () => {
+    assert.equal(tabFromSearch(TABS, "map", "?tab=queue"), "queue");
+    assert.equal(tabFromSearch(TABS, "map", "tab=deals&utm_source=x"), "deals");
+  });
+
+  it("falls back for no tab or an unknown one", () => {
+    assert.equal(tabFromSearch(TABS, "map", ""), "map");
+    assert.equal(tabFromSearch(TABS, "map", "?tab=nope"), "map");
+  });
+});
 
 describe("tabKeyTarget", () => {
   it("moves right and wraps at the end", () => {

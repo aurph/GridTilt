@@ -295,7 +295,7 @@ export function EmailCapture({
           </div>
           <div>
             <h3 className="text-sm font-semibold text-ink">The GridTilt Brief</h3>
-            <p className="text-xs text-white/40 mt-0.5">Monthly thesis check, top movers, new facilities. No spam.</p>
+            <p className="text-xs text-white/40 mt-0.5">New power projects, grid changes and top movers, with sources.</p>
           </div>
         </div>
         <form onSubmit={handleSubmit} className="flex gap-2">
@@ -335,7 +335,7 @@ export function EmailCapture({
         <div className="flex items-center gap-3 mb-3">
           <Mail className="h-4 w-4 text-brand" />
           <span className="text-sm font-semibold text-ink">Get the GridTilt Brief</span>
-          <span className="text-xs text-white/30">Monthly. No spam.</span>
+          <span className="text-xs text-white/30">Power projects and grid changes, with sources.</span>
         </div>
         <form onSubmit={handleSubmit} className="flex gap-2">
           <input

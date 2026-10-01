@@ -47,6 +47,8 @@ interface DataCenter {
   annualMWh: number;
   gridOperator: string;
   openDate: string;
+  /** Set when a reviewed cluster record is this facility (server join). */
+  clusterId?: string;
 }
 
 const DATA_CENTERS_FALLBACK: DataCenter[] = [];
@@ -1336,7 +1338,16 @@ export default function PowerMap() {
                       </div>
                     </>
                   )}
-                  <div className="pt-1.5 mt-1" style={{ borderTop: `1px solid ${BORDER.subtle}` }}>
+                  <div className="pt-1.5 mt-1 space-y-1" style={{ borderTop: `1px solid ${BORDER.subtle}` }}>
+                    {displayDC.clusterId && (
+                      <Link
+                        href={`/compute-frontier/${displayDC.clusterId}`}
+                        className="block text-11 text-brand hover:text-brand-2 transition-colors pointer-events-auto"
+                        data-testid="link-facility-record"
+                      >
+                        Reviewed record and sources &rarr;
+                      </Link>
+                    )}
                     <a
                       href="/stack"
                       className="text-11 text-brand hover:text-brand-2 transition-colors pointer-events-auto"

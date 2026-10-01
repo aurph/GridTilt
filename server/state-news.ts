@@ -1,0 +1,327 @@
+import RSSParser from "rss-parser";
+
+// ─── State grid news ─────────────────────────────────────────────────────
+//
+// My Grid is built on the facility registry, and the registry floor is
+// 400 MW. Around forty states have no tracked campus, so for most readers
+// the page had nothing on it that was actually about their state. This
+// module is the layer that is true everywhere.
+//
+// Source is Google News RSS, one query per state, no key. That matters for
+// two reasons beyond cost: the alternatives for state legislative data all
+// need a key (OpenStates v3) or are unusable (the OpenStates bulk dump is
+// 10 GB of Postgres and a month stale), and grid legislation is reported as
+// news anyway. A well-scoped state query surfaces the moratorium, the rate
+// case and the bill in the week they happen.
+//
+// This module never writes to server/data. It is a read-through cache, so a
+// bad match shows one wrong headline for an hour rather than corrupting a
+// curated file the way a mis-tuned scanner regex would.
+
+const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour, same as /api/news
+const FEED_TIMEOUT_MS = 5000;
+const MAX_ITEMS = 12;
+
+/**
+ * Query window. Google News accepts `when:` as a search operator; 14 days
+ * keeps a quiet state from showing an empty card while still reading as
+ * current.
+ */
+const WINDOW = "when:14d";
+
+/**
+ * Grid terms, used twice: to scope the search and to score what comes back.
+ *
+ * Both regulator spellings are included because states split between
+ * "Public Service Commission" and "Public Utility Commission", and naming
+ * the body is what pulls in rate cases and dockets rather than only
+ * construction stories.
+ */
+const QUERY_TERMS = [
+  "grid",
+  "utility",
+  '"data center"',
+  "electricity",
+  '"power plant"',
+  '"Public Service Commission"',
+  '"Public Utility Commission"',
+];
+
+/**
+ * A headline must contain one of these to survive. Google honors the query
+ * loosely: a search scoped to Virginia returned "September Releases -
+ * Governor of Virginia", a generic press index with no grid content. The
+ * filter errs toward dropping, because a thin card of real stories beats a
+ * full one of noise.
+ */
+const RELEVANT = [
+  "grid", "utility", "utilities", "data center", "datacenter", "electric",
+  "electricity", "power plant", "powerplant", "megawatt", "gigawatt", "nuclear",
+  "solar", "wind farm", "transmission", "substation", "interconnection",
+  "rate case", "rate hike", "rate increase", "ratepayer", "public service commission",
+  "public utility commission", "puc", "psc", "energy bill", "power bill",
+  "moratorium", "kilowatt", "outage", "peak demand", "capacity market",
+  "hydroelectric", "hydropower",
+];
+
+/**
+ * Every term must start a word ("electric" still covers "electrical"), and
+ * the short ones must be whole words: as substrings, "puc" matched "puck",
+ * "psc" matched "upscale", and "grid" matched "gridlock" and "gridiron".
+ */
+const WHOLE_WORD = new Set(["grid", "puc", "psc"]);
+const RELEVANT_PATTERNS = RELEVANT.map((term) => {
+  const body = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/ /g, "\\s+");
+  return WHOLE_WORD.has(term) ? new RegExp(`\\b${body}s?\\b`, "i") : new RegExp(`\\b${body}`, "i");
+});
+
+export interface StateNewsItem {
+  headline: string;
+  source: string;
+  url: string;
+  /** The publisher's date, or null when the feed gave none. Never the fetch time. */
+  publishedAt: string | null;
+}
+
+export interface StateNewsPayload {
+  state: string;
+  stateName: string;
+  items: StateNewsItem[];
+  /** When GridTilt fetched the feed. Not an article date. */
+  retrievedAt: string;
+  /** The latest refresh failed; these are the previous headlines. */
+  stale: boolean;
+  source: string;
+  sourceUrl: string;
+}
+
+/**
+ * State names, server-side on purpose. client/src/data/state-grid.ts holds
+ * the same names, but nothing is shared between client and server in this
+ * project, so the table is re-declared here rather than imported across
+ * that boundary.
+ */
+export const STATE_NAMES: Record<string, string> = {
+  AL: "Alabama", AK: "Alaska", AZ: "Arizona", AR: "Arkansas", CA: "California",
+  CO: "Colorado", CT: "Connecticut", DE: "Delaware", DC: "District of Columbia",
+  FL: "Florida", GA: "Georgia", HI: "Hawaii", ID: "Idaho", IL: "Illinois",
+  IN: "Indiana", IA: "Iowa", KS: "Kansas", KY: "Kentucky", LA: "Louisiana",
+  ME: "Maine", MD: "Maryland", MA: "Massachusetts", MI: "Michigan",
+  MN: "Minnesota", MS: "Mississippi", MO: "Missouri", MT: "Montana",
+  NE: "Nebraska", NV: "Nevada", NH: "New Hampshire", NJ: "New Jersey",
+  NM: "New Mexico", NY: "New York", NC: "North Carolina", ND: "North Dakota",
+  OH: "Ohio", OK: "Oklahoma", OR: "Oregon", PA: "Pennsylvania",
+  RI: "Rhode Island", SC: "South Carolina", SD: "South Dakota",
+  TN: "Tennessee", TX: "Texas", UT: "Utah", VT: "Vermont", VA: "Virginia",
+  WA: "Washington", WV: "West Virginia", WI: "Wisconsin", WY: "Wyoming",
+};
+
+/** Exported for tests: the search URL for a state, or null if unknown. */
+export function stateNewsUrl(stateCode: string): string | null {
+  const name = STATE_NAMES[stateCode?.toUpperCase?.() ?? ""];
+  if (!name) return null;
+  const query = `"${name}" (${QUERY_TERMS.join(" OR ")}) ${WINDOW}`;
+  return `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en-US&gl=US&ceid=US:en`;
+}
+
+/** Exported for tests: does this headline carry any grid signal at all? */
+export function isStateNewsRelevant(text: string): boolean {
+  return RELEVANT_PATTERNS.some((pattern) => pattern.test(text));
+}
+
+/**
+ * State names longest-first, so "West Virginia" is consumed before the
+ * "Virginia" inside it can match, and likewise New/North/South/Rhode pairs.
+ */
+const NAMES_LONGEST_FIRST = Object.values(STATE_NAMES).sort((a, b) => b.length - a.length);
+
+/**
+ * Place names that contain a state name but mean somewhere else, rewritten
+ * before matching. "Kansas City" spans Missouri and Kansas, so it names both;
+ * the other "<State> City" towns name the state they are in. A "<State>
+ * County" (there are Washington, Delaware, Ohio, Indiana, Iowa, Texas and
+ * Nevada counties in other states) and the multi-state Tennessee Valley
+ * Authority name no state.
+ */
+const STATE_NAME_ALTERNATION = NAMES_LONGEST_FIRST.join("|");
+const PLACE_REWRITES: Array<[RegExp, string]> = [
+  [/Washington,?\s*,?\s*D\.?\s*C\.?/gi, " "],
+  [/\bKansas City\b/gi, " Missouri Kansas "],
+  [/\bMichigan City\b/gi, " Indiana "],
+  [/\bNevada City\b/gi, " California "],
+  [/\bArkansas City\b/gi, " Kansas "],
+  [/\bVirginia City\b/gi, " Nevada "],
+  [/\bTennessee Valley Authority\b/gi, " "],
+  [new RegExp(`\\b(?:${STATE_NAME_ALTERNATION}) County\\b`, "gi"), " "],
+];
+
+/**
+ * Exported for tests: which states a headline actually names.
+ *
+ * Matched spans are blanked as they are found, so a longer name cannot be
+ * double counted by the shorter one nested inside it. Washington DC is how
+ * most federal policy headlines read, and a bare "Washington" is as often the
+ * federal government as the state, so Washington counts only as "Washington
+ * state".
+ */
+export function statesMentioned(text: string): string[] {
+  let haystack = ` ${text} `;
+  for (const [pattern, replacement] of PLACE_REWRITES) haystack = haystack.replace(pattern, replacement);
+  const found: string[] = [];
+  for (const name of NAMES_LONGEST_FIRST) {
+    const spelled = name === "Washington" ? "Washington\\s+state" : name;
+    const pattern = new RegExp(`(^|[^A-Za-z])${spelled}([^A-Za-z]|$)`, "i");
+    if (pattern.test(haystack)) {
+      found.push(name);
+      haystack = haystack.replace(new RegExp(name, "gi"), " ");
+    }
+  }
+  return found;
+}
+
+/**
+ * Exported for tests: is this story plausibly about the reader's state?
+ *
+ * Google honors a scoped query loosely and pads with national stories once
+ * a small state runs out of local ones. Vermont's live feed returned a
+ * story about utility bills in Arizona. The rule that fixes it without
+ * throwing away good local coverage: reject a headline that names a
+ * different state and not this one. A headline naming no state at all is
+ * kept, because the genuinely local ones often read "Baltimore County
+ * Council ..." or "City of Torrington ..." and never say the state.
+ */
+export function isPlausiblyLocal(headline: string, stateName: string): boolean {
+  const mentioned = statesMentioned(headline);
+  if (mentioned.length === 0) return true;
+  return mentioned.includes(stateName);
+}
+
+/**
+ * Google News titles arrive as "Headline - Publisher". The publisher is not
+ * given as a separate field, so it is split off the end rather than
+ * invented; when there is no separator the source falls back to the feed.
+ */
+export function splitHeadlineSource(title: string): { headline: string; source: string | null } {
+  const at = title.lastIndexOf(" - ");
+  if (at <= 0 || at >= title.length - 3) return { headline: title.trim(), source: null };
+  return { headline: title.slice(0, at).trim(), source: title.slice(at + 3).trim() };
+}
+
+/** The shape this module needs from a feed entry; rss-parser returns more. */
+export interface RawFeedItem {
+  title?: string;
+  link?: string;
+  guid?: string;
+  isoDate?: string;
+  pubDate?: string;
+}
+
+/**
+ * Exported for tests: filter, dedupe, sort and cap. All the judgement in
+ * this module lives here, so it is kept pure and driven from fixtures
+ * rather than the network.
+ */
+export function buildStateNewsItems(
+  raw: RawFeedItem[],
+  stateName: string,
+  now = Date.now(),
+): StateNewsItem[] {
+  const seen = new Set<string>();
+  const items: Array<StateNewsItem & { namesState: boolean }> = [];
+
+  for (const item of raw ?? []) {
+    const rawTitle = (item.title ?? "").trim();
+    if (!rawTitle) continue;
+    const { headline, source } = splitHeadlineSource(rawTitle);
+    // Score the headline only. Google News descriptions are boilerplate
+    // markup naming the publisher, not the story.
+    if (!isStateNewsRelevant(headline)) continue;
+    if (!isPlausiblyLocal(headline, stateName)) continue;
+    // The original article is the point; an item with no web link to it is dropped.
+    const url = [item.link, item.guid].find((u) => typeof u === "string" && /^https?:\/\//i.test(u));
+    if (!url) continue;
+    const key = headline.slice(0, 60).toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    // A missing date stays missing: the fetch time is not when the story ran.
+    const dated = item.isoDate ?? item.pubDate ?? null;
+    items.push({
+      headline,
+      source: source ?? "Google News",
+      url,
+      publishedAt: dated && !Number.isNaN(new Date(dated).getTime()) ? dated : null,
+      namesState: statesMentioned(headline).includes(stateName),
+    });
+  }
+
+  // Headlines that name the state lead, because in a thin state the rest is
+  // regional or national coverage that merely survived the filter. Recency
+  // orders within each tier.
+  items.sort((a, b) => {
+    if (a.namesState !== b.namesState) return a.namesState ? -1 : 1;
+    const at = a.publishedAt ? new Date(a.publishedAt).getTime() : Number.NaN;
+    const bt = b.publishedAt ? new Date(b.publishedAt).getTime() : Number.NaN;
+    if (Number.isNaN(at) && Number.isNaN(bt)) return 0;
+    if (Number.isNaN(at)) return 1; // undated sinks rather than leading
+    if (Number.isNaN(bt)) return -1;
+    return bt - at;
+  });
+
+  return items.slice(0, MAX_ITEMS).map(({ namesState: _drop, ...item }) => item);
+}
+
+const cache = new Map<string, { at: number; payload: StateNewsPayload }>();
+
+/** Test seam: the module-level cache would otherwise leak between cases. */
+export function clearStateNewsCache(): void {
+  cache.clear();
+  lastFailure.clear();
+}
+
+/** After a failed refresh, serve the stale copy this long before asking again. */
+const RETRY_AFTER_FAILURE_MS = 10 * 60 * 1000;
+const lastFailure = new Map<string, number>();
+
+async function fetchGoogleNews(url: string): Promise<RawFeedItem[]> {
+  const parser = new RSSParser({ timeout: FEED_TIMEOUT_MS });
+  const feed = await parser.parseURL(url);
+  return (feed.items ?? []) as RawFeedItem[];
+}
+
+export async function getStateNews(
+  stateCode: string,
+  opts: { fetchFeed?: (url: string) => Promise<RawFeedItem[]>; now?: () => number } = {},
+): Promise<StateNewsPayload | null> {
+  const code = stateCode?.toUpperCase?.() ?? "";
+  const stateName = STATE_NAMES[code];
+  if (!stateName) return null;
+  const now = opts.now ?? Date.now;
+  const fetchFeed = opts.fetchFeed ?? fetchGoogleNews;
+
+  const hit = cache.get(code);
+  if (hit && now() - hit.at < CACHE_TTL_MS) return hit.payload;
+  const failedAt = lastFailure.get(code);
+  if (hit && failedAt !== undefined && now() - failedAt < RETRY_AFTER_FAILURE_MS) return { ...hit.payload, stale: true };
+
+  try {
+    const raw = await fetchFeed(stateNewsUrl(code)!);
+    const payload: StateNewsPayload = {
+      state: code,
+      stateName,
+      items: buildStateNewsItems(raw, stateName, now()),
+      retrievedAt: new Date(now()).toISOString(),
+      stale: false,
+      source: "Google News",
+      sourceUrl: "https://news.google.com/",
+    };
+    cache.set(code, { at: now(), payload });
+    lastFailure.delete(code);
+    return payload;
+  } catch (error) {
+    lastFailure.set(code, now());
+    // A failed refresh keeps the previous headlines, labeled with when they
+    // were retrieved; with nothing cached the route reports the failure.
+    if (hit) return { ...hit.payload, stale: true };
+    throw error;
+  }
+}

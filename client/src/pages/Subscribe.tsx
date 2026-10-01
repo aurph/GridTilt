@@ -97,11 +97,11 @@ export default function Subscribe() {
                 <Mail className="h-6 w-6 text-brand" />
               </div>
               <h1 className="text-3xl font-bold text-ink tracking-tight">
-                The GridTilt Brief
+                This week's power projects and grid changes.
               </h1>
               <p className="text-sm text-white/50 max-w-lg leading-relaxed">
-                The AI power buildout, in one weekly email: grid capacity, GPU pricing, top movers, and
-                the corporate power deals that moved the thesis. Sourced, not hyped.
+                The GridTilt brief: new power projects, grid conditions, GPU pricing and the power
+                agreements behind the buildout, with sources.
               </p>
             </div>
 
@@ -122,7 +122,7 @@ export default function Subscribe() {
               <div className="flex flex-wrap gap-x-6 gap-y-3" data-testid="subscribe-live-stats">
                 {equityCount !== null && (
                   <div>
-                    <div className="text-lg font-mono font-bold text-white/85">{equityCount}+</div>
+                    <div className="text-lg font-mono font-bold text-white/85">{equityCount}</div>
                     <div className="text-10 text-white/35">equities tracked</div>
                   </div>
                 )}
@@ -155,14 +155,13 @@ export default function Subscribe() {
             {status === "success" ? (
               <div className="bg-positive-deep/10 border border-positive-deep/20 rounded-lg p-6 text-center" data-testid="subscribe-success">
                 <CheckCircle2 className="h-8 w-8 text-positive mx-auto mb-2" />
-                <div className="text-sm font-semibold text-positive">You're in</div>
-                <div className="text-xs text-white/40 mt-1">Your first brief arrives with the next weekly send.</div>
+                <div className="text-sm font-semibold text-positive">You're on the list</div>
+                <div className="text-xs text-white/40 mt-1">The brief will go to this address.</div>
               </div>
             ) : status === "exists" ? (
               <div className="bg-brand-2/10 border border-brand-2/20 rounded-lg p-6 text-center" data-testid="subscribe-exists">
                 <Mail className="h-8 w-8 text-brand-2 mx-auto mb-2" />
                 <div className="text-sm font-semibold text-brand-2">You're already on the list</div>
-                <div className="text-xs text-white/40 mt-1">Check your inbox for the next brief.</div>
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="bg-surface-raised/60 border border-subtle rounded-xl p-5 space-y-3" data-testid="subscribe-form">

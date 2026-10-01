@@ -5,9 +5,9 @@
  * the facility list, and residential rates. State choice persists locally;
  * nothing leaves the browser.
  */
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "wouter";
+import { Link, useLocation, useSearch } from "wouter";
 import { MapContainer, CircleMarker, GeoJSON as GeoJSONLayer, Tooltip as MapTooltip, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -21,6 +21,14 @@ import { PageHeader } from "@/components/PageHeader";
 import { NERC_LTRA, STATE_NERC_NOTE, type NercRisk } from "@/data/nerc-reserve-margins";
 import { areaForState, areasForRegion, cushion } from "@/lib/reserve-margins";
 import { STATE_GRID, STATE_GRID_SOURCE } from "@/data/state-grid";
+import {
+  MY_GRID_STATE_KEY,
+  browserStorage,
+  choiceNavigation,
+  readSavedState,
+  resolveState,
+  writeSavedState,
+} from "@/lib/state-selection";
 import { BORDER, BRAND, FONT, INK, SEMANTIC, STATUS_COLORS, SURFACE } from "@/lib/tokens";
 import { seriesMotion, axisProps, gridProps, tooltipContentStyle, tooltipItemStyle, tooltipLabelStyle,  } from "@/lib/chart-theme";
 // US state boundaries: US Census cartographic boundary file (public domain),
@@ -29,7 +37,6 @@ import statesGeoRaw from "@/data/us-states.geo.json";
 
 const statesGeo = statesGeoRaw as unknown as FeatureCollection;
 
-const STORAGE_KEY = "gt-my-grid-state";
 
 // Same threshold the Power map honors: only hyperscale-class sites. The
 // captions on this page promise 400 MW and up, so the filter enforces it.
@@ -45,6 +52,8 @@ interface Facility {
   lng: number;
   powerMW: number | null;
   status: string;
+  /** Set when a reviewed cluster record is this facility. */
+  clusterId?: string;
 }
 
 interface RatePoint {
@@ -54,7 +63,25 @@ interface RatePoint {
 
 type RetailRates =
   | { configured: false; howTo: string }
-  | { configured: true; unit: string; source: string; sourceUrl: string; byState: Record<string, RatePoint[]> };
+  | {
+      configured: true;
+      unit: string;
+      source: string;
+      sourceUrl: string;
+      /** When GridTilt fetched it from EIA; not a data date. */
+      retrievedAt?: string;
+      /** Newest month anywhere in the response; a state can lag it. */
+      newestMonth?: string | null;
+      /** The latest refresh failed; this is the previous good fetch. */
+      stale?: boolean;
+      byState: Record<string, RatePoint[]>;
+    };
+
+/** EIA's own table of average residential prices by state, for readers when the feed is down. */
+const EIA_STATE_PRICES_URL = "https://www.eia.gov/electricity/monthly/epm_table_grapher.php?t=epmt_5_6_a";
+
+/** Maryland PSC page on how the supply part of a bill is priced (Standard Offer Service). Checked 2026-09-29. */
+const MD_PSC_SUPPLY_URL = "https://www.psc.state.md.us/electricity/standard-offer-service/";
 
 interface QueueProject {
   id?: string;
@@ -144,7 +171,7 @@ function MyGridMap({
 
   return (
     <Card className="my-grid-map border-card-border overflow-hidden" data-testid="my-grid-map">
-      <div className="h-[440px] w-full isolate z-0">
+      <div className="h-[300px] sm:h-[440px] w-full isolate z-0">
         <MapContainer
           center={[38.5, -96]}
           zoom={4}
@@ -183,6 +210,8 @@ function MyGridMap({
                   <span className="text-11 font-mono">
                     {f.name} · {f.company}
                     {f.powerMW ? ` · ${f.powerMW} MW` : ""} · {STATUS_LABEL[f.status] ?? f.status}
+                    {/* Out of state: say where it is; it is not counted in the chosen state. */}
+                    {!inState && ` · ${f.state}, outside ${stateCode}`}
                   </span>
                 </MapTooltip>
               </CircleMarker>
@@ -208,24 +237,27 @@ function CellLabel({ children }: { children: React.ReactNode }) {
   return <p className="text-[11px] text-muted-foreground">{children}</p>;
 }
 
+const isCovered = (code: string) => Boolean(STATE_GRID[code]);
+
 export default function MyGrid() {
-  const [state, setState] = useState<string>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      return saved && STATE_GRID[saved] ? saved : "";
-    } catch {
-      return "";
-    }
-  });
+  // The address is the record of the choice (/my-grid?state=MD), so a shared
+  // link opens the same state without the sender's browser storage. See
+  // lib/state-selection.ts for the precedence rules.
+  const search = useSearch();
+  const [, navigate] = useLocation();
+  const resolution = useMemo(() => resolveState(search, readSavedState(browserStorage(), MY_GRID_STATE_KEY), isCovered), [search]);
+  const state = resolution.code;
+
+  // Canonical address: an uppercase code, and a remembered state written into
+  // the URL, replacing the entry so back and forward land on explicit states.
+  useEffect(() => {
+    if (resolution.replaceSearch !== null) navigate(`/my-grid${resolution.replaceSearch}`, { replace: true });
+  }, [resolution.replaceSearch, navigate]);
 
   function chooseState(code: string) {
-    setState(code);
-    try {
-      if (code) localStorage.setItem(STORAGE_KEY, code);
-      else localStorage.removeItem(STORAGE_KEY);
-    } catch {
-      /* storage blocked; selection still works for the session */
-    }
+    writeSavedState(browserStorage(), MY_GRID_STATE_KEY, code);
+    const next = choiceNavigation(search, state, code);
+    navigate(`/my-grid${next.search}`, { replace: next.replace });
   }
 
   const {
@@ -311,6 +343,16 @@ export default function MyGrid() {
 
   const stateOptions = Object.entries(STATE_GRID).sort((a, b) => a[1].name.localeCompare(b[1].name));
 
+  // One map, placed after the state's summary (or the chooser), never above it.
+  const mapBlock = (
+    <>
+      <MyGridMap stateCode={state} stateName={grid?.name ?? null} facilities={facilities} />
+      <p className="text-10 text-muted-foreground/60 px-1">
+        GridTilt facility registry · hyperscale campuses of 400 MW and up · boundaries from US Census cartographic files
+      </p>
+    </>
+  );
+
   return (
     <div className="flex flex-col h-full overflow-y-auto">
       {/* Dark leaflet chrome for this page's map, scoped under .my-grid-map */}
@@ -356,7 +398,7 @@ export default function MyGrid() {
       <PageHeader
         title="My Grid"
         testId="my-grid-header"
-        about="Who runs your state's grid, how much headroom the region has, what is being built there, and what residential power costs. The state choice stays in this browser."
+        about="Who runs your state's grid, how much headroom its region has, what is being built there, and what residential power costs. The state is part of the page address, so a shared link opens the same state."
         right={
           <>
             <label className="flex items-center gap-2 text-11 text-muted-foreground">
@@ -379,10 +421,36 @@ export default function MyGrid() {
       />
 
       <div className="flex-1 w-full max-w-[1200px] mx-auto p-4 sm:p-6 space-y-4">
-        <MyGridMap stateCode={state} stateName={grid?.name ?? null} facilities={facilities} />
-        <p className="text-10 text-muted-foreground/60 px-1">
-          GridTilt facility registry · hyperscale campuses of 400 MW and up · boundaries from US Census cartographic files
-        </p>
+        {resolution.invalid !== null && (
+          <p role="status" className="rounded border border-warning/30 bg-warning/10 px-3 py-2 text-xs text-foreground" data-testid="my-grid-invalid-state">
+            "{resolution.invalid}" is not a state code this page covers. Choose a state instead.
+          </p>
+        )}
+
+        {!grid && (
+          <>
+            {/* The answer comes before the map: with no state chosen, the chooser. */}
+            <Card className="border-card-border p-4 flex flex-wrap items-center justify-between gap-3" data-testid="my-grid-chooser">
+              <p className="text-sm text-muted-foreground max-w-[52ch]">
+                Choose a state to see its grid operator, its NERC reliability area and reserve margin, tracked
+                data center projects, and residential electricity prices.
+              </p>
+              <select
+                value=""
+                onChange={(e) => chooseState(e.target.value)}
+                className="rounded border border-subtle bg-surface-base px-2 py-1.5 text-sm text-foreground"
+                aria-label="Choose a state"
+                data-testid="my-grid-state-prompt"
+              >
+                <option value="">Choose a state</option>
+                {stateOptions.map(([code, s]) => (
+                  <option key={code} value={code}>{s.name}</option>
+                ))}
+              </select>
+            </Card>
+            {mapBlock}
+          </>
+        )}
 
         {grid && (
           <>
@@ -459,10 +527,12 @@ export default function MyGrid() {
               </div>
             </Card>
 
+            {mapBlock}
+
             <Card className="border-card-border overflow-hidden" data-testid="my-grid-facilities">
               <div className="px-4 py-2 border-b border-border flex flex-wrap items-center justify-between gap-2">
                 <span className="text-[13px] font-semibold text-foreground">
-                  Being built in {grid.name}
+                  Tracked facilities in {grid.name}
                 </span>
                 <Link
                   href="/power-map"
@@ -482,8 +552,8 @@ export default function MyGrid() {
               ) : localFacilities.length === 0 ? (
                 <p className="p-4 text-xs leading-relaxed text-muted-foreground" data-testid="my-grid-no-facilities">
                   No tracked facilities in {grid.name}. The registry covers hyperscale campuses of
-                  400 MW and up; smaller sites are out of scope. Gray marks on the map are the
-                  nearest tracked facilities in neighboring states.
+                  400 MW and up; smaller sites are out of scope. Gray marks on the map are
+                  tracked facilities in other states.
                 </p>
               ) : (
                 <div className="overflow-x-auto">
@@ -501,7 +571,15 @@ export default function MyGrid() {
                         className="grid grid-cols-12 gap-2 px-4 py-2.5 border-b border-border/30 last:border-0 text-xs hover:bg-brand/5"
                         data-testid={`my-grid-facility-row-${f.id}`}
                       >
-                        <span className="col-span-4 font-medium text-foreground truncate">{f.name}</span>
+                        <span className="col-span-4 font-medium text-foreground truncate">
+                          {f.clusterId ? (
+                            <Link href={`/compute-frontier/${f.clusterId}`} className="text-foreground hover:text-brand underline decoration-dotted underline-offset-2" data-testid={`my-grid-facility-record-${f.id}`}>
+                              {f.name}
+                            </Link>
+                          ) : (
+                            f.name
+                          )}
+                        </span>
                         <span className="col-span-3 text-muted-foreground truncate">{f.company}</span>
                         <span className="col-span-2 text-muted-foreground truncate">{f.city}</span>
                         <span className="col-span-1 font-mono text-foreground text-right tabular-nums">
@@ -526,15 +604,11 @@ export default function MyGrid() {
               </div>
               <div className="p-4">
                 {ratesError ? (
-                  <ErrorState label="Rate data failed to load." onRetry={() => refetchRates()} />
+                  <RatesUnavailable stateCode={state} onRetry={() => refetchRates()} />
                 ) : !rates ? (
                   <Skeleton className="h-40 w-full" aria-hidden="true" />
-                ) : !("byState" in rates) ? (
-                  <p className="text-xs leading-relaxed text-muted-foreground max-w-[60ch]" data-testid="my-grid-rates-unconfigured">
-                    Rate data connects soon; nothing is shown in its place.
-                  </p>
-                ) : series.length === 0 ? (
-                  <p className="text-xs text-muted-foreground">No EIA series available for {grid.name}.</p>
+                ) : !("byState" in rates) || series.length === 0 ? (
+                  <RatesUnavailable stateCode={state} />
                 ) : (
                   <>
                     <div className="mb-4" data-testid="my-grid-rate">
@@ -568,19 +642,175 @@ export default function MyGrid() {
                       columns={["Month", "Cents per kWh"]}
                       rows={series.map((p) => [p.month, p.centsPerKwh.toFixed(2)])}
                     />
-                    <p className="mt-3 text-10 text-muted-foreground/60">
+                    {latest && rates.newestMonth && latest.month < rates.newestMonth && (
+                      <p className="mt-2 text-11 text-muted-foreground" data-testid="my-grid-rates-lag">
+                        EIA's newest month is {fmtMonth(rates.newestMonth)}; {grid.name}'s latest is {fmtMonth(latest.month)}.
+                      </p>
+                    )}
+                    {rates.stale && (
+                      <p className="mt-2 text-11 text-warning" data-testid="my-grid-rates-stale">
+                        The latest refresh from EIA failed; these figures were retrieved
+                        {rates.retrievedAt ? ` ${new Date(rates.retrievedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}` : " earlier"}.
+                      </p>
+                    )}
+                    <p className="mt-3 text-11 text-muted-foreground" data-testid="my-grid-rates-context">
+                      State averages give context. Your utility, usage and tariff determine your bill.
+                      {state === "MD" && (
+                        <>
+                          {" "}
+                          <a href={MD_PSC_SUPPLY_URL} target="_blank" rel="noopener noreferrer" className="text-brand hover:text-brand-2">
+                            Maryland PSC on how supply is priced
+                          </a>
+                          .
+                        </>
+                      )}
+                    </p>
+                    <p className="mt-2 text-10 text-muted-foreground/60">
                       <a href={rates.sourceUrl} target="_blank" rel="noopener noreferrer" className="text-brand hover:text-brand-2">
                         {rates.source}
                       </a>
                       {" · "}{rates.unit}
+                      {rates.retrievedAt && ` · retrieved ${new Date(rates.retrievedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`}
                     </p>
                   </>
                 )}
               </div>
             </Card>
+
+            {/* Headlines come after the state's own facts and rates, never in their place. */}
+            <StateNewsCard stateCode={state} stateName={grid.name} />
           </>
         )}
       </div>
     </div>
+  );
+}
+
+/**
+ * Shown when no state-average rate can be given: no key, a failed request, or
+ * no series for the state. The links a reader needs stay on screen.
+ */
+function RatesUnavailable({ stateCode, onRetry }: { stateCode: string; onRetry?: () => void }) {
+  return (
+    <div className="space-y-2" data-testid="my-grid-rates-unavailable">
+      <p className="text-xs leading-relaxed text-muted-foreground max-w-[60ch]">
+        State-average rates are unavailable right now. Your utility, usage and tariff determine your bill.
+      </p>
+      <p className="text-11 text-muted-foreground">
+        <a href={EIA_STATE_PRICES_URL} target="_blank" rel="noopener noreferrer" className="text-brand hover:text-brand-2">
+          EIA's table of average residential prices by state
+        </a>
+        {stateCode === "MD" && (
+          <>
+            {" · "}
+            <a href={MD_PSC_SUPPLY_URL} target="_blank" rel="noopener noreferrer" className="text-brand hover:text-brand-2">
+              Maryland PSC on how supply is priced
+            </a>
+          </>
+        )}
+        {onRetry && (
+          <>
+            {" · "}
+            <button type="button" onClick={onRetry} className="text-brand hover:text-brand-2 underline-offset-2 hover:underline">
+              Try again
+            </button>
+          </>
+        )}
+      </p>
+    </div>
+  );
+}
+
+// ─── State grid news ───────────────────────────────────────────────────────
+
+interface StateNewsItem {
+  headline: string;
+  source: string;
+  url: string;
+  /** The publisher's date, or null when the feed gave none. */
+  publishedAt: string | null;
+}
+
+interface StateNewsPayload {
+  state: string;
+  stateName: string;
+  items: StateNewsItem[];
+  /** When GridTilt fetched the feed; not an article date. */
+  retrievedAt: string;
+  /** The latest refresh failed; these are the previous headlines. */
+  stale: boolean;
+  source: string;
+  sourceUrl: string;
+}
+
+/** "3d ago" style age, or "date not given" when the feed gave none to trust. */
+function newsAge(iso: string | null): string {
+  const then = iso ? new Date(iso).getTime() : Number.NaN;
+  if (Number.isNaN(then)) return "date not given";
+  const hours = Math.floor((Date.now() - then) / 3_600_000);
+  if (hours < 1) return "just now";
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
+}
+
+/**
+ * What is happening on the grid where the reader lives.
+ *
+ * This is the only block on the page with something for all 51 states. The
+ * facility registry floor is 400 MW, so most states have no tracked campus
+ * and every card built on the registry comes up empty for them.
+ */
+function StateNewsCard({ stateCode, stateName }: { stateCode: string; stateName: string }) {
+  const { data, isLoading, isError, refetch } = useQuery<StateNewsPayload>({
+    queryKey: [`/api/state-news/${stateCode}`],
+    enabled: stateCode !== "",
+  });
+
+  return (
+    <Card className="border-card-border" data-testid="my-grid-news">
+      <div className="px-4 py-2 border-b border-border text-[13px] font-semibold text-foreground">
+        In the news · {stateName}
+      </div>
+      {isLoading ? (
+        <div className="p-4 space-y-2" aria-hidden="true">
+          {Array(4).fill(null).map((_, i) => <Skeleton key={i} className="h-7" />)}
+        </div>
+      ) : isError ? (
+        // A failed fetch must not read as "nothing is happening here".
+        <ErrorState label="State news failed to load." onRetry={() => refetch()} />
+      ) : !data || data.items.length === 0 ? (
+        <p className="p-4 text-xs leading-relaxed text-muted-foreground" data-testid="my-grid-no-news">
+          GridTilt shows Google News headlines that name {stateName} or no other state and mention the
+          grid, utilities or data centers. None from the last two weeks matched.
+        </p>
+      ) : (
+        <div data-testid="my-grid-news-list">
+          {data.items.map((item) => (
+            <a
+              key={item.url}
+              href={item.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block px-4 py-2.5 border-b border-border/30 last:border-0 hover:bg-brand/5 no-underline"
+              data-testid="my-grid-news-item"
+            >
+              <span className="block text-xs leading-snug text-foreground">{item.headline}</span>
+              <span className="mt-0.5 block text-10 text-muted-foreground/70">
+                {item.source} · {newsAge(item.publishedAt)}
+              </span>
+            </a>
+          ))}
+        </div>
+      )}
+      {data?.stale && (
+        <p className="px-4 pt-2 text-11 text-warning" data-testid="my-grid-news-stale">
+          Could not refresh; these headlines were retrieved {new Date(data.retrievedAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}.
+        </p>
+      )}
+      <div className="px-4 py-2 border-t border-border/50 text-10 text-muted-foreground/60">
+        Publishers' headlines from Google News, matched to {stateName} by keywords over the last 14 days. GridTilt has not
+        checked them, and some may be regional or national. A headline is not a verified project or bill status.
+      </div>
+    </Card>
   );
 }

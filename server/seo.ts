@@ -15,28 +15,28 @@ const BASE_URL = "https://gridtilt.com";
 
 const STATIC_PAGES: Record<string, { title: string; description: string; slug: string }> = {
   "/": {
-    title: "GridTilt \u2014 The AI Power Buildout, Tracked Honestly",
-    description: "A research dashboard for the AI infrastructure buildout \u2014 data centers, power, compute, and the public equities behind them. Three live market gauges. Six modules. No Bloomberg required.",
+    title: "GridTilt: Power projects, grid conditions, electricity costs",
+    description: "GridTilt shows what is being built on your power grid, who is behind it, and what is known about the cost. Choose your state, or explore projects, power agreements and the companies behind them.",
     slug: "",
   },
   "/overview": {
-    title: "Tilt Overview \u2014 Live Dashboard \u2014 GridTilt",
-    description: "Live composite indices, top movers, sector pulse, and catalyst calendar across the AI power thesis. Updated every 15 minutes.",
+    title: "Tilt Overview | GridTilt",
+    description: "US electricity use, grid conditions, power agreements, market movers and upcoming events for the AI power buildout.",
     slug: "overview",
   },
   "/stack": {
-    title: "AI Power Stocks by Sector \u2014 GridTilt",
-    description: "Live prices for 60+ stocks across nuclear, uranium, construction, utilities, data centers, and power hardware. Updated every 15 minutes.",
+    title: "AI Power Stocks by Sector | GridTilt",
+    description: "Live prices for public companies across nuclear, uranium, construction, utilities, data centers, and power hardware.",
     slug: "stack",
   },
   "/power-map": {
-    title: "AI Data Center Map \u2014 Locations by Grid Region \u2014 GridTilt",
-    description: "48 AI data center facilities mapped by operator, grid region, and capacity. Filter by Google, Amazon, Meta, Microsoft.",
+    title: "AI Data Center Map: Projects by Grid Region | GridTilt",
+    description: "Tracked AI data center campuses of 400 MW and up, mapped by operator, grid region and capacity, with power agreements and the interconnection queue.",
     slug: "power-map",
   },
   "/my-grid": {
-    title: "My Grid \u2014 Your State's Grid Operator, Buildout, and Rates \u2014 GridTilt",
-    description: "Pick a state to see its grid operator, projected reserve margin, the AI datacenter buildout in and around it, the regional interconnection queue, and residential electricity rates from the EIA.",
+    title: "My Grid: Your State's Grid Operator, Projects and Rates | GridTilt",
+    description: "Pick a state to see its grid operator, its NERC reliability area and reserve margin, tracked data center projects, the regional interconnection queue, and residential electricity rates from EIA.",
     slug: "my-grid",
   },
   "/catalysts": {
@@ -45,8 +45,8 @@ const STATIC_PAGES: Record<string, { title: string; description: string; slug: s
     slug: "catalysts",
   },
   "/blog": {
-    title: "AI Power Infrastructure Analysis \u2014 GridTilt",
-    description: "Research and analysis on the AI power infrastructure thesis. Data center power demand, nuclear energy, grid constraints, and investment implications.",
+    title: "Research | GridTilt",
+    description: "Research on data center power demand, nuclear energy, grid constraints, and the companies behind the buildout.",
     slug: "blog",
   },
   "/compute-frontier": {
@@ -75,8 +75,8 @@ const STATIC_PAGES: Record<string, { title: string; description: string; slug: s
     slug: "neocloud-intel",
   },
   "/subscribe": {
-    title: "Get the Tilt \u2014 Weekly AI Power Market Intel \u2014 GridTilt",
-    description: "Weekly digest of AI power market moves, catalysts, and thesis updates. Built for investors tracking the buildout.",
+    title: "The Brief: Power Projects and Grid Changes | GridTilt",
+    description: "New power projects, grid conditions and the companies behind them, by email.",
     slug: "subscribe",
   },
 };
@@ -119,7 +119,7 @@ function websiteJsonLd(): object {
     "@type": "WebSite",
     "name": "GridTilt",
     "url": BASE_URL,
-    "description": "AI power infrastructure investment dashboard",
+    "description": "Power projects, grid conditions and electricity costs for the AI buildout",
     "potentialAction": {
       "@type": "SearchAction",
       "target": `${BASE_URL}/stock/{search_term_string}`,
@@ -147,8 +147,8 @@ function datasetJsonLd(): object {
   return {
     "@context": "https://schema.org",
     "@type": "Dataset",
-    "name": "AI Data Center Locations \u2014 United States",
-    "description": "48 active and planned AI data center facilities mapped by operator, grid region, capacity, and status",
+    "name": "AI Data Center Locations: United States",
+    "description": "Tracked AI data center campuses of 400 MW and up, mapped by operator, grid region, capacity, and status",
     "url": `${BASE_URL}/power-map`,
     "creator": { "@type": "Organization", "name": "GridTilt" },
     "temporalCoverage": "2024/..",
@@ -208,20 +208,22 @@ function breadcrumbJsonLd(items: Array<{ name: string; url: string }>): object {
   };
 }
 
+// Structured data read by search and answer engines. It carried the claims the
+// pages had dropped: 288 TWh and 6.4% for data centers (LBNL: 192 TWh, 4.7%),
+// 60 transformers a year (DOE: about 343), a stale facility count, and three
+// answers describing the retired indices as current features.
 const TRADE_FAQS = [
-  { question: "How much electricity do AI data centers use?", answer: "AI data centers currently consume approximately 6.4% of US electricity, or about 288 TWh annually. Under base case projections, new AI capacity could reach 50 GW by 2030." },
-  { question: "What is the AI power demand thesis?", answer: "The thesis holds that companies building power infrastructure for AI data centers will benefit from multi-year demand driven by physical construction bottlenecks, grid interconnection queues, and transformer shortages." },
-  { question: "How many AI data centers are being built?", answer: "GridTilt tracks 48 AI data center facilities across the US, including operational, under construction, and announced projects totaling over 20 GW of capacity." },
-  { question: "What does the GridTilt Scenario Calculator model?", answer: "The calculator models total capex, large power transformer demand, nuclear build requirements, and grid interconnect timelines under conservative (35 GW), base (50 GW), and aggressive (75 GW) scenarios." },
-  { question: "What is a large power transformer (LPT) shortage?", answer: "The US produces approximately 60 large power transformers per year domestically. Under base case AI demand scenarios, annual LPT requirements could exceed domestic capacity, creating a multi-year supply bottleneck." },
+  { question: "How much electricity do US data centers use?", answer: "Lawrence Berkeley National Laboratory estimates US data centers used 192 TWh in 2024, 4.7% of US electricity (2025 Update, June 2026). Its range for 2030 is 521 to 843 TWh." },
+  { question: "Is the scenario calculator a forecast?", answer: "No. It does the arithmetic for assumptions you set, such as new capacity, cost per MW, power mix, computing load growth and PUE, and shows published figures beside the result." },
+  { question: "What does the GridTilt scenario calculator model?", answer: "Facility capex, large power transformer needs, the nuclear share of new supply and US data-center electricity use in 2030, under conservative (35 GW), base (50 GW) and aggressive (75 GW) presets you can change." },
+  { question: "How many large power transformers does the US build?", answer: "The Department of Energy estimated US capacity at about 343 large power transformers (100 MVA and up) a year, from 2019 data, when 137 were built in the US and 617 imported (Electric Grid Supply Chain Review, February 2022)." },
 ];
 
 const HOME_FAQS = [
-  { question: "What is GridTilt?", answer: "GridTilt is a financial dashboard tracking the AI power infrastructure buildout. It provides live market data for 60+ equities across compute, nuclear, uranium, power hardware, utilities, data centers, construction, and ETF sectors." },
-  { question: "What is the AI Power Demand Index?", answer: "The AI Power Demand Index is a composite indicator tracking semiconductor demand signals, datacenter REIT performance, and power hardware order trends to gauge the pace of AI infrastructure buildout." },
-  { question: "What is the Nuclear Power Index?", answer: "The Nuclear Power Index (NPI) tracks the performance of nuclear power generators, uranium miners, and nuclear policy developments relative to a January 2024 baseline. Values above 100 indicate sector appreciation." },
-  { question: "What is the Grid Stress Score?", answer: "The Grid Stress Score combines RTO reserve margin data, interconnection queue lengths, and transformer lead times to indicate how strained the US electrical grid is from AI datacenter demand." },
-  { question: "How often is GridTilt data updated?", answer: "Market data refreshes every 15 minutes during trading hours. Catalyst events and news feeds update hourly. The Power Map facility data is updated as new projects are announced." },
+  { question: "What is GridTilt?", answer: "GridTilt shows what is being built on the US power grid for AI, who is behind it, and what is known about the cost: data center projects, power agreements, grid conditions, electricity prices and the public companies involved, with sources." },
+  { question: "What does My Grid show?", answer: "Pick a state to see its grid operator, its NERC assessment area and reserve margin, tracked data center projects of 400 MW and up, and residential electricity prices where available." },
+  { question: "Where do GridTilt's numbers come from?", answer: "EIA, NERC, Lawrence Berkeley National Laboratory, company filings and announcements, public GPU rental listings, and Yahoo Finance for stock prices. Each page links the sources for its data." },
+  { question: "How often does the data change?", answer: "Stock prices update through the trading day. Project, agreement and grid data change when their sources publish new figures." },
 ];
 
 export function getPageMeta(pathname: string): PageMeta {
@@ -465,8 +467,8 @@ export function getPageMeta(pathname: string): PageMeta {
   }
 
   return {
-    title: "GridTilt \u2014 AI Power Infrastructure Dashboard",
-    description: "Track the AI power buildout. Live stock data, data center mapping, and thesis modeling for 60+ companies across 9 sectors.",
+    title: "GridTilt: Power projects, grid conditions, electricity costs",
+    description: "GridTilt shows what is being built on your power grid, who is behind it, and what is known about the cost.",
     canonical: BASE_URL,
     ogImage: `${BASE_URL}/api/og?page=home`,
     ogType: "website",

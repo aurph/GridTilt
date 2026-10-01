@@ -31,8 +31,9 @@ import {
 } from "./indices";
 import { recordDailyIndexValues, readIndexHistory } from "./index-history";
 import { getElectricityOutputMonthly, getHourlyDemandUS48 } from "./physical";
+import { getStateNews } from "./state-news";
 import { getRetailRatesByState } from "./retail-rates";
-import { computeClusterMetrics, type ClusterLite } from "./clusters";
+import { computeClusterMetrics, type ClusterLite, facilityClusterLinks } from "./clusters";
 import { computeGpuIndex } from "./gpu-index";
 import {
   hasTodayLiveSnapshot,
@@ -2032,7 +2033,8 @@ export async function registerRoutes(
   });
   // Residential retail rates by state (server/retail-rates.ts). Same honest
   // degradation contract: 503 + configured:false when keyless, 502 on
-  // upstream failure, never fabricated.
+  // upstream failure with nothing cached, never fabricated. A failed refresh
+  // with earlier data serves that data marked stale, with its retrieval time.
   app.get("/api/physical/retail-rates", async (_req, res) => {
     try {
       const result = await getRetailRatesByState();
@@ -2040,6 +2042,20 @@ export async function registerRoutes(
       res.json(result);
     } catch {
       res.status(502).json({ error: "Upstream EIA fetch failed. Try again later." });
+    }
+  });
+
+  // Grid news for one state (server/state-news.ts). Keyless, so there is no
+  // configured:false branch; an unknown state code is a 404 and an upstream
+  // failure is a 502. An empty items list is a legitimate answer for a quiet
+  // state and must never be padded.
+  app.get("/api/state-news/:state", async (req, res) => {
+    try {
+      const result = await getStateNews(req.params.state);
+      if (!result) return res.status(404).json({ error: "Unknown state code." });
+      res.json(result);
+    } catch {
+      res.status(502).json({ error: "Upstream news fetch failed. Try again later." });
     }
   });
 
@@ -3001,7 +3017,15 @@ export async function registerRoutes(
   }
 
   app.get("/api/datacenters", (_req, res) => {
-    res.json(loadDatacenters());
+    // A reviewed facility links to its sourced cluster record. Joined per
+    // response; datacenters.json itself is machine-written and not edited.
+    let links = new Map<number, string>();
+    try {
+      links = facilityClusterLinks(readClusterRoot().clusters ?? []);
+    } catch {
+      /* no links is fine; the facilities still render */
+    }
+    res.json(loadDatacenters().map((d) => (links.has(d.id) ? { ...d, clusterId: links.get(d.id) } : d)));
   });
 
   app.post("/api/admin/datacenters", (req, res) => {
@@ -3248,9 +3272,9 @@ Preferred-Languages: en
       } else if (page === "blog" && name) {
         card = pageCard(name, "GridTilt Analysis", await liveIndicesStats());
       } else if (page === "blog") {
-        card = pageCard("GridTilt Analysis", "Research on the AI power infrastructure thesis", await liveIndicesStats());
+        card = pageCard("GridTilt Research", "Power projects, grid conditions and the companies behind the buildout", await liveIndicesStats());
       } else if (page === "subscribe") {
-        card = pageCard("Get the Tilt", "Weekly AI power market intel, in your inbox", await liveIndicesStats());
+        card = pageCard("The GridTilt brief", "Power projects and grid changes, by email", await liveIndicesStats());
       } else if (page === "sector" && name) {
         card = pageCard(`${name} Sector`, "AI Power Infrastructure Stocks", await liveIndicesStats());
       } else if (page === "region" && name) {

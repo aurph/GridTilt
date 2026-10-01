@@ -288,3 +288,31 @@ test("every cluster linkedDeal resolves to a tracked deal id in the queue", () =
     }
   }
 });
+
+// ── Facility links (the map row a reviewed cluster corresponds to) ───────────
+
+test("a facility links to a cluster only when a cluster names it, never by similar names", async () => {
+  const { facilityClusterLinks } = await import("../clusters");
+  const links = facilityClusterLinks([
+    { id: "a", mapFacilityIds: [1, 2] },
+    { id: "b", mapFacilityIds: [2] },
+    { id: "c" },
+  ]);
+  assert.equal(links.get(1), "a");
+  assert.equal(links.has(2), false, "a facility two clusters claim is ambiguous and gets no link");
+  assert.equal(links.size, 1);
+});
+
+test("every shipped facility link points at an existing map row in the same state", async () => {
+  const { facilityClusterLinks } = await import("../clusters");
+  const rows = JSON.parse(readFileSync(join(process.cwd(), "server", "data", "datacenters.json"), "utf-8")) as Array<{ id: number; state: string }>;
+  const links = facilityClusterLinks(shipped as Array<{ id: string; mapFacilityIds?: unknown }>);
+  assert.ok(links.size >= 1, "the Abilene pilot is linked");
+  for (const [fid, cid] of links) {
+    const row = rows.find((r) => r.id === fid);
+    const cluster = shipped.find((c) => c.id === cid) as { location: { state: string } } | undefined;
+    assert.ok(row, `facility ${fid} exists`);
+    assert.equal(row!.state, cluster?.location.state, `facility ${fid} and ${cid} are in one state`);
+  }
+  assert.equal(links.get(18), "stargate-abilene");
+});
