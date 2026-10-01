@@ -116,11 +116,18 @@ describe("basemapTileLayerProps", () => {
     assert.equal(props.attribution, CARTO_ATTRIBUTION);
     assert.equal(props.subdomains, "abcd");
   });
+
+  it("sets each tile's referrer policy so a website-restricted key sees the site's origin", () => {
+    // Under same-origin or no-referrer the tiles would carry no Referer and a
+    // key restricted to gridtilt.com would answer every one with a 403.
+    assert.equal(basemapTileLayerProps("dark_nolabels").referrerPolicy, "strict-origin-when-cross-origin");
+  });
 });
 
 describe("attribution", () => {
-  it("still credits OSM and CARTO, which the free tier requires", () => {
+  it("credits OpenStreetMap contributors and CARTO in the words CARTO's terms ask for", () => {
     assert.ok(CARTO_ATTRIBUTION.includes("openstreetmap.org/copyright"));
+    assert.ok(CARTO_ATTRIBUTION.includes("OpenStreetMap</a> contributors"));
     assert.ok(CARTO_ATTRIBUTION.includes("carto.com/attributions"));
   });
 });

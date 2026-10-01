@@ -73,6 +73,20 @@ describe("injectRuntimeConfig", () => {
     );
   });
 
+  it("withholds a key CARTO rejected or refused, so the maps draw outlines instead of stamped or blank tiles", () => {
+    for (const status of ["rejected", "refused"] as const) {
+      const html = injectRuntimeConfig(HTML, env({ CARTO_API: "abc123" }), status);
+      assert.equal(injectedKey(html), null, status);
+      assert.ok(!html.includes("abc123"), status);
+    }
+  });
+
+  it("keeps the key while unchecked, accepted, or when CARTO could not be reached", () => {
+    for (const status of ["unchecked", "accepted", "unreachable"] as const) {
+      assert.equal(injectedKey(injectRuntimeConfig(HTML, env({ CARTO_API: "abc123" }), status)), "abc123", status);
+    }
+  });
+
   it("omits the tag entirely when no key is configured", () => {
     const html = injectRuntimeConfig(HTML, env());
     assert.equal(injectedKey(html), null);

@@ -3,6 +3,7 @@ import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
+import { startCartoKeyCheck } from "./runtime-config";
 import { createServer } from "http";
 
 const app = express();
@@ -207,6 +208,8 @@ app.use((req, res, next) => {
     },
     () => {
       log(`serving on port ${port}`);
+      // Asks CARTO whether CARTO_API works; see server/runtime-config.ts.
+      startCartoKeyCheck();
     },
   );
 })();

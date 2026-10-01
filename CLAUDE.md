@@ -87,7 +87,9 @@ Derived from the code; starred rules confirmed by Jack 2026-07-02.
   index.html as a meta tag on every request; client/src/lib/basemap.ts reads it back. NOT a VITE_
   build var (rotating would need a rebuild) and NOT an inline script (prod CSP is script-src
   'self', which drops it silently while curl still shows correct HTML). Every map takes its tiles
-  from components/basemap-tiles.tsx; never hand-write a cartocdn URL.
+  from components/basemap-tiles.tsx; never hand-write a cartocdn URL. server/carto-key.ts asks
+  CARTO at boot and every 12 h whether the key works (a rejected key gets the same watermark as
+  none); a rejected key is withheld and the maps draw US Census state outlines instead.
 - Admin auth: x-admin-key header, timingSafeEqual; covers /api/admin/*, /api/newsletter/send,
   /api/export/daily.
 - Commits: imperative subject prefixed by area ("Social: ...", "docs: ..."). NO Co-Authored-By
@@ -102,7 +104,7 @@ Derived from the code; starred rules confirmed by Jack 2026-07-02.
 | EIA v2 | EIA_API_KEY | US48 hourly demand (168 h) | 30 min | 503 + {configured:false, howTo} |
 | NewsData.io | NEWSDATA_API_KEY | news ticker tier 1 | 1 h | falls back to the 8 built-in RSS feeds |
 | RSS (8 news + 4 ingester feeds) | none | news fallback; datacenter discovery | ingester 6 h | items just absent |
-| Carto basemaps | CARTO_API | raster tiles for all three Leaflet maps | browser/CDN, 180 d | tiles still load, watermarked "API KEY REQUIRED" (HTTP 200, never an error) |
+| Carto basemaps | CARTO_API | raster tiles for all three Leaflet maps | browser/CDN; key re-checked 12 h | no key, or one CARTO rejects: maps draw state outlines (CARTO itself answers 200 with an "API KEY REQUIRED" watermark tile, never an error) |
 | LBNL Queued Up page | none | new-edition flag only | 24 h throttle | manual XLSX ingest regardless |
 | Resend | RESEND_API_KEY | audience sync, newsletter send | on demand | subscribe still saves locally; send 400s |
 | X API (OAuth 1.0a) | 4 creds + X_POSTING_ENABLED=true | weekday 8:30 ET post | external cron | dry-run, logged to social-log.json |
