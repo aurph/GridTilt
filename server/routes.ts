@@ -47,6 +47,7 @@ import { getUraniumCorrelation } from "./uranium-correlation";
 import { footerBlockers, renderWeeklyEmail, renderWeeklyText, weeklyDateLabel, type NewsletterFooter } from "./weekly-digest";
 import { renderEditorialEmail, renderEditorialText } from "./editorial-issue";
 import { sortChanges, validateChangeLog, type ChangeRecord } from "./change-log";
+import { loadStatePage, loadStatePageSlugs } from "./state-page";
 import { fractionToPercent, getCachedFundamentals, refreshFundamentalsIfStale } from "./fundamentals";
 import { normalizeTickerInput, scoreBasket } from "./portfolio-score";
 import {
@@ -1983,6 +1984,18 @@ export async function registerRoutes(
   // Corrections and documented changes to published facts (server/change-log.ts).
   // A log that fails validation is not served: a wrong correction notice is
   // worse than none.
+  // ─── State pages (T25 pilot; server/state-page.ts) ───────────────────
+  app.get("/api/state-pages", (_req, res) => {
+    res.json(loadStatePageSlugs());
+  });
+
+  app.get("/api/state-pages/:slug", (req, res) => {
+    const slug = String(req.params.slug ?? "");
+    const page = /^[a-z][a-z-]{1,40}$/.test(slug) ? loadStatePage(slug, easternDate(new Date())) : null;
+    if (!page) return res.status(404).json({ error: "No state page at this address" });
+    res.json(page);
+  });
+
   app.get("/api/changes", (_req, res) => {
     try {
       const root = JSON.parse(readFileSync(join(process.cwd(), "server", "data", "change-log.json"), "utf-8"));
@@ -2823,7 +2836,7 @@ export async function registerRoutes(
       const list = JSON.parse(readFileSync(join(process.cwd(), "content", "blog", "articles.json"), "utf-8"));
       articles = list.map((a: any) => ({ slug: String(a.slug), date: a.date ?? null, updated: a.updated ?? null }));
     } catch {}
-    const xml = buildSitemap({ tickers: Object.keys(COMPANY_DATABASE), clusters, articles });
+    const xml = buildSitemap({ tickers: Object.keys(COMPANY_DATABASE), clusters, articles, statePages: loadStatePageSlugs() });
     res.set("Content-Type", "application/xml").send(xml);
   });
 

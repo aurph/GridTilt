@@ -7,6 +7,13 @@
       "outcome": "changed",
       "scope": "Every power agreement row's firmness (signed, framework, option, preliminary, portfolio, not an AI offtake) against its primary documents",
       "evidence": "PR #40 (codex/trust), commits 8f92d81 through eefabdc"
+    },
+    {
+      "dataset": "state-pages",
+      "reviewed": "2026-10-01",
+      "outcome": "changed",
+      "scope": "Every Maryland document and next date against its source: PSC Order No. 92606 (Case No. 9773), Frederick County Executive Order 05-2026, the County Executive's letter to Quantum Maryland, LLC, and the county's CDI site plan map (as of July 1, 2026)",
+      "evidence": "codex/state-pilot (T25): server/data/state-pages.json created from those documents"
     }
   ]
 }

@@ -1,0 +1,68 @@
+{
+  "about": "Hand-curated state pages (/state/:slug). One entry per published state. Each document is a public decision or filing, stated as the document states it, with its date and link. reviewed is the day every row was last checked against its source. Add a state only when someone will maintain it; see the freshness registry for the review schedule.",
+  "states": [
+    {
+      "code": "MD",
+      "slug": "maryland",
+      "reviewed": "2026-10-01",
+      "billSource": {
+        "source": "Maryland Office of People's Counsel, Utility Rates and Basics",
+        "url": "https://opc.maryland.gov/Consumer-Learning/Utility-Rates-and-Basics"
+      },
+      "documents": [
+        {
+          "date": "2026-09-14",
+          "jurisdiction": "Frederick County",
+          "title": "New data center applications held until July 1, 2027",
+          "summary": "Executive Order 05-2026 replaces the July 1 order. County staff stop accepting or reviewing applications for data center facilities and data center electric substations, except on property with an Adequate Public Facilities Ordinance Letter of Understanding approved before June 17, 2025. The order notes the state's Data Center Impact Analysis, due September 1, 2026, had not been completed.",
+          "source": "Frederick County Executive Order 05-2026",
+          "url": "https://www.frederickcountymd.gov/ArchiveCenter/ViewFile/Item/17236"
+        },
+        {
+          "date": "2026-09-14",
+          "jurisdiction": "Frederick County",
+          "title": "Frederick Digital Campus agreement rejected",
+          "summary": "The County Executive rejected Quantum Maryland, LLC's application for a Development Rights and Responsibilities Agreement for the Frederick Digital Campus, will not forward it to the Planning Commission, and directed staff not to accept the company's application to amend its Adequate Public Facilities Ordinance Letter of Understanding.",
+          "source": "Frederick County Executive's letter to Quantum Maryland, LLC",
+          "url": "https://frederickcountymd.gov/DocumentCenter/View/375040/DRRA-Letter-091426"
+        },
+        {
+          "date": "2026-08-27",
+          "jurisdiction": "Maryland Public Service Commission",
+          "title": "Piedmont 500 kV line review rescheduled into 2027",
+          "summary": "Order No. 92606 in Case No. 9773 (PSEG Renewable Transmission's proposed 500 kV line in Baltimore, Carroll and Frederick counties) moves direct testimony to March 2, 2027, sets one Saturday public comment hearing per county starting March 6, 2027, and evidentiary hearings for May 11 to 21, 2027, with a target final order 60 days after they end. No decision has been made on the line.",
+          "source": "Maryland PSC Order No. 92606",
+          "url": "https://psc.maryland.gov/wp-content/uploads/2026/08/Order_RevProcSched-9773.pdf"
+        },
+        {
+          "date": "2026-07-01",
+          "jurisdiction": "Frederick County",
+          "title": "Data center site plans approved in the overlay zone",
+          "summary": "The county's map shows approved site plans for Aligned Data Centers (4 buildings, 1,597,280 sq ft) and three projects named Bauxite, Bauxite II and Bauxite III (6, 7 and 4 buildings including accessory buildings), with four substation sites. It states no power figures. Applications are accepted on 1,297 acres of the overlay zone and not currently accepted on 1,287 acres.",
+          "source": "Frederick County, Critical Digital Infrastructure Site Plan Approvals map (as of July 1, 2026)",
+          "url": "https://frederickcountymd.gov/DocumentCenter/View/374476/CDI-approved-site-plans-July-2026"
+        }
+      ],
+      "nextDates": [
+        {
+          "date": "2027-03-06",
+          "what": "PSC public comment hearings on the Piedmont line begin (one per county, on Saturdays, in person)",
+          "source": "Maryland PSC Order No. 92606",
+          "url": "https://psc.maryland.gov/wp-content/uploads/2026/08/Order_RevProcSched-9773.pdf"
+        },
+        {
+          "date": "2027-05-11",
+          "what": "Piedmont line evidentiary hearings begin, through May 21; target final order 60 days after they end",
+          "source": "Maryland PSC Order No. 92606",
+          "url": "https://psc.maryland.gov/wp-content/uploads/2026/08/Order_RevProcSched-9773.pdf"
+        },
+        {
+          "date": "2027-07-01",
+          "what": "Frederick County's hold on data center applications expires unless replaced",
+          "source": "Frederick County Executive Order 05-2026",
+          "url": "https://www.frederickcountymd.gov/ArchiveCenter/ViewFile/Item/17236"
+        }
+      ]
+    }
+  ]
+}

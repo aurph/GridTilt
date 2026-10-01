@@ -2,6 +2,7 @@ import express, { type Express } from "express";
 import fs from "fs";
 import path from "path";
 import { getPageMeta, injectMetaTags } from "./seo";
+import { injectStateHtml, statePagePrerender } from "./state-page";
 import { injectRuntimeConfig } from "./runtime-config";
 
 /**
@@ -13,7 +14,10 @@ import { injectRuntimeConfig } from "./runtime-config";
 export function pageResponse(indexHtml: string, originalUrl: string): { status: number; robots: string; html: string } {
   const pathname = originalUrl.split("?")[0] || "/";
   const meta = getPageMeta(pathname);
-  const html = injectRuntimeConfig(injectMetaTags(indexHtml, meta));
+  let html = injectRuntimeConfig(injectMetaTags(indexHtml, meta));
+  // A published state page carries its facts in the response itself.
+  const body = meta.status ? null : statePagePrerender(pathname);
+  if (body) html = injectStateHtml(html, body);
   return { status: meta.status ?? 200, robots: meta.robots ?? "index, follow", html };
 }
 

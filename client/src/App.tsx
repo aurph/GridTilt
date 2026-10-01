@@ -25,6 +25,7 @@ const TiltOverview = lazy(() => import("@/pages/TiltOverview"));
 const TheStack = lazy(() => import("@/pages/TheStack"));
 const PowerMap = lazy(() => import("@/pages/PowerMap"));
 const MyGrid = lazy(() => import("@/pages/my-grid"));
+const StatePage = lazy(() => import("@/pages/state-page"));
 const ComputeFrontier = lazy(() => import("@/pages/compute-frontier"));
 const ComputeFrontierMethodology = lazy(() => import("@/pages/ComputeFrontierMethodology"));
 const ComputeFrontierCompare = lazy(() => import("@/pages/ComputeFrontierCompare"));
@@ -133,6 +134,7 @@ function Router() {
       <Route path="/stack" component={TheStack} />
       <Route path="/power-map" component={PowerMap} />
       <Route path="/my-grid" component={MyGrid} />
+      <Route path="/state/:slug" component={StatePage} />
       <Route path="/compute-frontier" component={ComputeFrontier} />
       <Route path="/compute-frontier/methodology" component={ComputeFrontierMethodology} />
       <Route path="/compute-frontier/compare" component={ComputeFrontierCompare} />

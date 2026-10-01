@@ -282,6 +282,8 @@ export default function MyGrid() {
   );
 
   const { data: queue } = useQuery<QueueResponse>({ queryKey: ["/api/queue"] });
+  // States with a maintained page of public decisions and dates (/state/:slug).
+  const { data: statePages } = useQuery<Array<{ slug: string; code: string; reviewed: string }>>({ queryKey: ["/api/state-pages"] });
 
   const {
     data: rates,
@@ -300,6 +302,7 @@ export default function MyGrid() {
   });
 
   const grid = state ? STATE_GRID[state] : null;
+  const statePageFor = state ? statePages?.find((p) => p.code === state) ?? null : null;
   // Reliability geography (NERC's assessment area) is not the same map as the
   // market operator above it; SERC, WECC and NPCC are reported by sub-area.
   const nercArea = state ? areaForState(state) : null;
@@ -473,8 +476,17 @@ export default function MyGrid() {
         {grid && (
           <>
             <Card className="border-card-border" data-testid="my-grid-operator">
-              <div className="px-4 py-2 border-b border-border text-[13px] font-semibold text-foreground">
-                Your grid · {grid.name}
+              <div className="px-4 py-2 border-b border-border flex flex-wrap items-center justify-between gap-2">
+                <span className="text-[13px] font-semibold text-foreground">Your grid · {grid.name}</span>
+                {statePageFor && (
+                  <Link
+                    href={`/state/${statePageFor.slug}`}
+                    className="text-11 text-brand hover:text-brand-2 no-underline"
+                    data-testid="my-grid-state-page-link"
+                  >
+                    {grid.name}'s public decisions and dates →
+                  </Link>
+                )}
               </div>
               <div className="p-4 grid grid-cols-1 gap-x-8 gap-y-5 md:grid-cols-2 lg:grid-cols-4">
                 <div>

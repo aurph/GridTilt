@@ -2,6 +2,7 @@ import type { Request } from "express";
 import { readFileSync } from "fs";
 import { join } from "path";
 import { COMPANY_DATABASE, knownTicker } from "./company-registry";
+import { loadStatePage, stateDescription, stateTitle } from "./state-page";
 
 export interface PageMeta {
   title: string;
@@ -553,6 +554,26 @@ export function getPageMeta(pathname: string): PageMeta {
     return notFoundMeta();
   }
 
+  // State pages: only the published ones (server/data/state-pages.json).
+  // /my-grid?state=XX stays the tool, with /my-grid as its canonical.
+  const stateMatch = pathname.match(/^\/state\/([a-z][a-z-]{1,40})$/);
+  if (stateMatch) {
+    const page = loadStatePage(stateMatch[1]);
+    if (!page) return notFoundMeta();
+    return {
+      title: stateTitle(page),
+      description: stateDescription(page),
+      canonical: page.canonical,
+      ogImage: `${BASE_URL}/api/og?template=state_fact&state=${page.code}`,
+      ogType: "website",
+      jsonLd: [breadcrumbJsonLd([
+        { name: "GridTilt", url: BASE_URL },
+        { name: "My Grid", url: `${BASE_URL}/my-grid` },
+        { name: page.name, url: page.canonical },
+      ])],
+    };
+  }
+
   // Nothing above matched: no page lives here.
   return notFoundMeta();
 }
@@ -623,6 +644,7 @@ export const CRAWLABLE_API_PREFIXES = [
   "/api/sectors",
   "/api/stack",
   "/api/state-news",
+  "/api/state-pages",
   "/api/stock",
   "/api/supply-chain",
   "/api/top-movers",
@@ -662,6 +684,8 @@ export interface SitemapInput {
   tickers: string[];
   clusters: Array<{ id: string; reviewed?: string | null }>;
   articles: Array<{ slug: string; date?: string | null; updated?: string | null }>;
+  /** Published state pages, dated by their last review. */
+  statePages?: Array<{ slug: string; reviewed?: string | null }>;
 }
 
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
@@ -689,6 +713,10 @@ export function buildSitemap(input: SitemapInput): string {
   for (const c of input.clusters) {
     if (!/^[a-z0-9-]+$/.test(c.id)) continue;
     urls.push({ loc: `${BASE_URL}/compute-frontier/${c.id}`, ...(c.reviewed && DAY.test(c.reviewed) ? { lastmod: c.reviewed } : {}) });
+  }
+  for (const s of input.statePages ?? []) {
+    if (!/^[a-z][a-z-]{1,40}$/.test(s.slug)) continue;
+    urls.push({ loc: `${BASE_URL}/state/${s.slug}`, ...(s.reviewed && DAY.test(s.reviewed) ? { lastmod: s.reviewed } : {}) });
   }
   for (const a of input.articles) {
     if (!/^[a-z0-9-]+$/.test(a.slug)) continue;
