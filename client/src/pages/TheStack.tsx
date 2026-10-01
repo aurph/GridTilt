@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Profiler, Suspense, lazy, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useSearch } from "wouter";
 import { useMeasuredWidth } from "@/lib/use-measured-width";
 
 // Supply-chain flow view (consolidation): lazy so the d3 sim only loads
@@ -440,14 +441,36 @@ function readStoredView(): ViewMode {
 
 const fetchStack = (tf: string) => () => fetchJson<StackData>(`/api/stack?timeframe=${tf}`);
 
+/** The view a search string names, or null. */
+function viewFromSearch(search: string): ViewMode | null {
+  const q = new URLSearchParams(search.startsWith("?") ? search.slice(1) : search).get("view");
+  return q && (VIEW_MODES as string[]).includes(q) ? (q as ViewMode) : null;
+}
+
 export default function TheStack() {
   const [timeframe, setTimeframe] = useState<Timeframe>("1D");
   const [sortBy, setSortBy] = useState<SortBy>("change");
   const [view, setView] = useState<ViewMode>(readStoredView);
+  // A navigation that changes only ?view= (the search palette's Supply Chain
+  // entry while Equities is open) keeps the page mounted; follow it.
+  const search = useSearch();
+  const urlView = viewFromSearch(search);
+  useEffect(() => {
+    if (urlView) setView(urlView);
+  }, [urlView]);
   useEffect(() => {
     try {
       window.localStorage.setItem(VIEW_LS_KEY, view);
     } catch {}
+    // Keep the address in step with the view, so the same link always opens
+    // the same view and picking it again from search is not a no-op.
+    const sp = new URLSearchParams(window.location.search);
+    if (sp.get("view") !== (view === "heatmap" ? null : view)) {
+      if (view === "heatmap") sp.delete("view");
+      else sp.set("view", view);
+      const qs = sp.toString();
+      window.history.replaceState(null, "", `${window.location.pathname}${qs ? `?${qs}` : ""}`);
+    }
   }, [view]);
 
   const { data, isLoading, isError, refetch, dataUpdatedAt } = useQuery<StackData>({

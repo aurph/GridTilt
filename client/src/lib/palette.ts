@@ -17,6 +17,8 @@ export interface PaletteEntry {
   href: string;
   /** Extra matchable text that is not worth showing. */
   keywords?: string;
+  /** State entries: the two-letter code, so a pick can be remembered. */
+  stateCode?: string;
 }
 
 /** Order shown between equal scores: destinations before entities. */
@@ -53,9 +55,11 @@ export function stateEntries(states: Record<string, StateLike>): PaletteEntry[] 
     label: s.name,
     hint: "My Grid",
     category: "state" as const,
-    // The shareable state address (lib/state-selection.ts); My Grid remembers it itself.
+    // The shareable state address (lib/state-selection.ts). The palette
+    // remembers the pick as the reader's choice; a shared link is not remembered.
     href: `/my-grid?state=${code}`,
     keywords: code,
+    stateCode: code,
   }));
 }
 

@@ -71,6 +71,12 @@ describe("stateEntries", () => {
     const md = stateEntries(STATE_GRID).find((e) => e.id === "state-MD");
     assert.equal(md?.href, "/my-grid?state=MD");
   });
+
+  it("carries the state code, so the palette can remember the reader's pick", () => {
+    const md = stateEntries(STATE_GRID).find((e) => e.id === "state-MD");
+    assert.equal(md?.stateCode, "MD");
+    assert.ok(PAGE_ENTRIES.every((e) => e.stateCode === undefined), "only state entries are remembered");
+  });
 });
 
 describe("page entries", () => {

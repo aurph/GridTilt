@@ -14,6 +14,7 @@ import {
   type PaletteEntry,
 } from "@/lib/palette";
 import { STATE_GRID } from "@/data/state-grid";
+import { MY_GRID_STATE_KEY, browserStorage, writeSavedState } from "@/lib/state-selection";
 import { supplyNodes } from "@/data/supply-chain-config";
 
 /**
@@ -60,6 +61,24 @@ export function CommandPalette() {
       window.removeEventListener("gt-open-palette", onOpenEvent);
     };
   }, []);
+
+  // Escape and the Tab trap work wherever focus is while the palette is open;
+  // the input's own handler only sees keys while it has focus.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setOpen(false);
+      } else if (e.key === "Tab") {
+        // The input is the dialog's only control; Tab never reaches the page behind it.
+        e.preventDefault();
+        inputRef.current?.focus();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
 
   useEffect(() => {
     if (open) {
@@ -110,6 +129,9 @@ export function CommandPalette() {
 
   function go(entry: PaletteEntry) {
     setOpen(false);
+    // A state picked here is the reader's own choice, so My Grid remembers it
+    // like a pick from its own selector. A shared link is not remembered.
+    if (entry.stateCode) writeSavedState(browserStorage(), MY_GRID_STATE_KEY, entry.stateCode);
     navigate(entry.href);
   }
 
@@ -126,7 +148,12 @@ export function CommandPalette() {
         aria-modal="true"
         aria-label="Search GridTilt"
         className="mx-auto mt-[12vh] w-[min(92vw,560px)] overflow-hidden rounded-lg border border-border bg-background shadow-2xl"
-        onMouseDown={(e) => e.stopPropagation()}
+        onMouseDown={(e) => {
+          e.stopPropagation();
+          // Keep focus in the search box: a click on the hint, the icon or
+          // the list padding would otherwise move it to the page behind.
+          if (e.target !== inputRef.current) e.preventDefault();
+        }}
       >
         <div className="flex items-center gap-2 border-b border-border px-3">
           <Search className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
@@ -140,14 +167,8 @@ export function CommandPalette() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === "Escape") {
-                e.preventDefault();
-                setOpen(false);
-              } else if (e.key === "Tab") {
-                // The input is the dialog's only control; Tab must not leave
-                // the modal for the page behind it.
-                e.preventDefault();
-              } else if (e.key === "ArrowDown") {
+              // Escape and Tab are handled on the window while open (above).
+              if (e.key === "ArrowDown") {
                 e.preventDefault();
                 setActive((a) => Math.min(a + 1, results.length - 1));
               } else if (e.key === "ArrowUp") {
