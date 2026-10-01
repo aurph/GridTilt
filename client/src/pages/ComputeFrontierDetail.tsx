@@ -158,6 +158,11 @@ export default function ComputeFrontierDetail() {
                                   e.basis ? `basis: ${e.basis}` : null].filter(Boolean).join("; ")}
                               </span>
                             )}
+                            {e.note && (
+                              <span className="block text-10 text-muted-foreground/80 mt-0.5" data-testid={`cfd-evidence-note-${e.field}`}>
+                                GridTilt note, not in the source: {e.note}
+                              </span>
+                            )}
                           </td>
                           <td className="py-2 pr-3">
                             <a href={e.url} target="_blank" rel="noopener noreferrer" className="text-brand hover:text-brand-2 inline-flex items-center gap-1">

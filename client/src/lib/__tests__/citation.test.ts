@@ -2,6 +2,8 @@
 // it and share the same record. These cases pin what a citation carries.
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { buildCitation, materialEvidence, permalink, type CitableRecord } from "../citation";
 
 const RECORD: CitableRecord = {
@@ -38,4 +40,19 @@ test("a record not reviewed field by field has no citation to copy", () => {
 test("the permalink is the record's own page", () => {
   assert.equal(permalink("stargate-abilene"), "https://gridtilt.com/compute-frontier/stargate-abilene");
   assert.equal(permalink("a b"), "https://gridtilt.com/compute-frontier/a%20b");
+});
+
+test("the shipped Abilene record's citation says only what the Oracle call says", () => {
+  // The rated-power basis used to carry GridTilt's arithmetic and Epoch's
+  // estimate, and the copied citation attributed both to the Oracle call.
+  const shipped = JSON.parse(readFileSync(join(process.cwd(), "server", "data", "clusters.json"), "utf-8"))
+    .clusters as CitableRecord[];
+  const abilene = shipped.find((c) => c.id === "stargate-abilene")!;
+  const c = buildCitation(abilene)!;
+  assert.ok(c.includes("618 MW delivered"));
+  assert.ok(c.includes("basis: not stated"));
+  assert.ok(!/Epoch|824|843|implies/.test(c), c);
+  for (const e of abilene.evidence ?? []) {
+    assert.ok(!/Epoch|implies|GridTilt/.test(e.basis ?? ""), `${e.field} basis must be the source's own terms`);
+  }
 });

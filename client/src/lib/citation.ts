@@ -8,7 +8,10 @@
 export interface EvidenceEntry {
   field: string;
   value: string;
+  /** What the source says the figure measures, in its terms ("not stated" when it does not say). */
   basis?: string;
+  /** GridTilt's own reading of the figure. Never the source's words, so never in a citation. */
+  note?: string;
   kind?: string;
   asOf?: string;
   source: string;

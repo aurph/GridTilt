@@ -48,7 +48,8 @@
         {
           "field": "ratedPowerMW",
           "value": "618 MW delivered, 75% of total capacity",
-          "basis": "not stated; 75% implies about 824 MW in total, near Epoch's 843 MW IT full-build estimate",
+          "basis": "not stated",
+          "note": "618 MW at 75% implies about 824 MW in total, near Epoch's 843 MW IT full-build estimate",
           "kind": "operating",
           "asOf": "2026-09-10",
           "source": "Oracle Q1 FY2027 earnings call",
