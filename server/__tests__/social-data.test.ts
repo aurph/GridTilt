@@ -7,6 +7,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
   basisWords,
+  homeCard,
   buildoutCard,
   buildoutInputFrom,
   changeCard,
@@ -22,15 +23,18 @@ import {
   queueCard,
   queueInputFrom,
   stateCard,
+  unchangedSince,
   weekIndex,
   weeklyProject,
   type ClusterRecord,
   type ClusterRoot,
+  type LoggedPost,
 } from "../social-data";
 import { buildProjectPost } from "../social-format";
 import { computeClusterMetrics, type ClusterLite } from "../clusters";
 import type { Snapshot } from "../gpu-history";
-import { formatAsOf } from "../og-card";
+import { cardFits, formatAsOf } from "../og-card";
+import { STATE_GRID as ALL_STATES } from "../../client/src/data/state-grid";
 import type { ChangeRecord } from "../change-log";
 import { areaForState as clientAreaForState, cushion as clientCushion } from "../../client/src/lib/reserve-margins";
 
@@ -139,18 +143,29 @@ describe("GPU card and post", () => {
   it("uses the newest live snapshot and names providers once", () => {
     const input = gpuObservedInputFrom([snap("2026-09-29"), snap("2026-09-30"), { date: "2026-10-01", prices: { H100: 9 }, source: "curated" }], "2026-10-01", 2);
     assert.equal(input.observedOn, "2026-09-30", "curated rows are never observations");
-    assert.deepEqual(input.models[0], { model: "H100", price: 2.87, listings: 3, providers: ["RunPod", "Vast.ai"] });
+    assert.deepEqual(input.models[0], { model: "H100", price: 2.87, observations: 3, providers: ["RunPod", "Vast.ai"] });
     assert.equal(input.models.some((m) => m.model === "MI300X"), false, "only the posted models");
   });
 
   it("serves the live card while the page would, and the curated card otherwise, never mixed", () => {
     const live = gpuCard([snap("2026-09-30")], curated, "2026-10-01", 2);
     assert.equal(live.asOf, "30 SEP 2026");
+    // Every model the page serves live, single-listing MI300X included, H100 first.
     assert.deepEqual(live.stats, [
       { label: "H100", value: "$2.87" },
       { label: "H200", value: "$3.94" },
+      { label: "MI300X", value: "$2.39" },
     ]);
     assert.ok(!live.stats.some((s) => s.label === "GB200"), "no curated model on the live card");
+    assert.match(live.subtitle, /median of the provider prices observed that day for the model \(RunPod, Vast\.ai\)/);
+
+    // A snapshot only one listing deep is still what the page serves, so it is not "no live observation".
+    const thin: Snapshot = { date: "2026-09-30", source: "live", prices: { H100: 2.9 }, meta: { H100: { low: 2.9, high: 2.9, n: 1, sources: ["vast"] } } };
+    const thinCard = gpuCard([thin], curated, "2026-10-01", 2);
+    assert.equal(thinCard.title, "GPU rental prices, observed");
+    assert.deepEqual(thinCard.stats, [{ label: "H100", value: "$2.90" }]);
+    // A future-dated snapshot is not served.
+    assert.equal(gpuCard([snap("2026-10-05")], curated, "2026-10-01", 2).asOf, "27 JUN 2026");
 
     const stale = gpuCard([snap("2026-08-15")], curated, "2026-10-01", 2);
     assert.equal(stale.asOf, "27 JUN 2026", "the curated list's own date");
@@ -206,9 +221,71 @@ describe("change card and post", () => {
       assert.ok(card!.asOf && /\d{1,2} [A-Z]{3} \d{4}/.test(card!.asOf), c.id);
       assert.ok(card!.source.startsWith(c.source), c.id);
     }
+    // The NERC entry covers four areas; its card shows MISO, so its reason is MISO's alone.
+    const nerc = changeCard(changes.find((c) => c.id === "2026-09-29-nerc-reserve-margins")!)!;
+    assert.match(nerc.subtitle, /^Corrected Sep 29, 2026\. The old figure did not match NERC's assessment, and GridTilt read it against a 15% line NERC does not use for MISO\.$/);
+    assert.ok(!/AI signal/.test(nerc.subtitle));
     const abilene = changeCard(changes.find((c) => c.id === "2026-09-28-stargate-abilene-rated-power")!)!;
     assert.equal(abilene.title, "Stargate Abilene's delivered power");
     assert.equal(abilene.asOf, "28 SEP 2026");
+  });
+});
+
+describe("every shipped card fits", () => {
+  it("correction cards, state cards for all states, the project and buildout cards", () => {
+    const root = data("clusters.json") as ClusterRoot;
+    const abilene = (root.clusters ?? []).find((c) => c.id === "stargate-abilene")!;
+    const cards = [
+      ...(data("change-log.json").changes as ChangeRecord[]).map((c) => [c.id, changeCard(c)] as const),
+      ...Object.keys(ALL_STATES).map((code) => [code, stateCard(code)] as const),
+      ["stargate-abilene", projectCard(abilene, root)] as const,
+      ["buildout", buildoutCard(root)] as const,
+      ["home", homeCard(root)] as const,
+    ];
+    for (const [name, card] of cards) {
+      assert.ok(card, name);
+      const fit = cardFits(card!);
+      assert.ok(fit.stats, `${name}: stats row ${fit.statsWidth}px does not fit`);
+      assert.ok(fit.footer, `${name}: footer source does not fit`);
+    }
+  });
+});
+
+describe("the cron's repeat check", () => {
+  const entry = (over: Partial<LoggedPost>): LoggedPost => ({
+    timestamp: "2026-09-24T12:30:00.000Z",
+    template: "grid_backlog",
+    trigger: "cron",
+    ok: true,
+    text: "same text",
+    ...over,
+  });
+  it("skips only a text X accepted last time for the same template", () => {
+    assert.equal(unchangedSince([entry({})], "grid_backlog", "same text"), "unchanged since the post on 2026-09-24");
+    assert.equal(unchangedSince([entry({})], "grid_backlog", "new text"), null);
+    assert.equal(unchangedSince([entry({}), entry({ text: "newer text", timestamp: "2026-10-01T12:30:00.000Z" })], "grid_backlog", "same text"), null, "only the latest accepted post counts");
+  });
+  it("ignores dry runs, failures, skips, manual posts and other templates", () => {
+    for (const e of [entry({ dryRun: true }), entry({ ok: false }), entry({ skipped: "stale", text: "" }), entry({ trigger: "manual" }), entry({ template: "buildout" })]) {
+      assert.equal(unchangedSince([e], "grid_backlog", "same text"), null, JSON.stringify(e));
+    }
+    assert.equal(unchangedSince([], "grid_backlog", "same text"), null);
+  });
+});
+
+describe("home card", () => {
+  it("states each figure under the Compute Frontier page's own label, with the list's date", () => {
+    const root = data("clusters.json") as ClusterRoot;
+    const m = computeClusterMetrics((root.clusters ?? []) as ClusterLite[]);
+    const card = homeCard(root);
+    const gwLabel = (mw: number) => `${(mw / 1000).toLocaleString("en-US", { maximumFractionDigits: 1 })} GW`;
+    assert.deepEqual(card.stats, [
+      { label: "Tracked clusters", value: String(m.clusterCount) },
+      { label: "Operational power", value: gwLabel(m.operationalMW) },
+      { label: "Planned power", value: gwLabel(m.totalPlannedMW) },
+    ]);
+    assert.equal(card.asOf, formatAsOf(root.lastRefreshed));
+    assert.ok(!card.stats.some((s) => /operating/i.test(s.label)), "no planned figure under an operating label");
   });
 });
 

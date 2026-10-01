@@ -1,5 +1,5 @@
 import { averageLiveChanges } from "./pulse-math";
-import { ALL_STACK_TICKERS, COMPANY_DATABASE, STACK_TICKERS } from "./company-registry";
+import { ALL_STACK_TICKERS, COMPANY_DATABASE, STACK_TICKERS, knownTicker } from "./company-registry";
 import { fetchWithTimeout } from "./fetch-timeout";
 import type { Express, Request, Response } from "express";
 import { type Server } from "http";
@@ -16,7 +16,7 @@ import {
   rejectPending as rejectPendingDatacenter,
   stampFreshness as stampDatacenterFreshness,
 } from "./datacenter-ingester";
-import { ALIAS_REDIRECTS, BASE_URL, buildSitemap, robotsTxt } from "./seo";
+import { ALIAS_REDIRECTS, BASE_URL, buildSitemap, robotsTxt, ogNameKnown } from "./seo";
 import {
   computeAiPowerIndex,
   computeGridStress,
@@ -89,6 +89,7 @@ import {
 import {
   buildoutCard,
   buildoutInputFrom,
+  homeCard,
   changeCard,
   changeInputFrom,
   gpuCard,
@@ -99,6 +100,7 @@ import {
   queueCard,
   queueInputFrom,
   stateCard,
+  unchangedSince,
   weeklyProject,
   type ClusterRoot,
 } from "./social-data";
@@ -978,10 +980,15 @@ import { renderOgPng, formatAsOf } from "./og-card.js";
 const DATA_DIR = join(process.cwd(), "server", "data");
 const readDataJson = (file: string): any => JSON.parse(readFileSync(join(DATA_DIR, file), "utf-8"));
 
-/** The freshness registry's limit for a dataset in whole days: past it, the T22 monitor calls the data stale. */
+/**
+ * The freshness registry's expected age for a dataset, in whole days, rounded
+ * down so it never loosens the registry's limit. A post skips data older than
+ * this, about when the T22 monitor starts reporting the dataset as aging (it
+ * counts hours, and calls it stale only past twice the limit).
+ */
 function registryMaxAgeDays(id: string, fallbackDays: number): number {
   const hours = DATASET_REGISTRY.find((d) => d.id === id)?.expectedMaxAgeHours;
-  return typeof hours === "number" && hours > 0 ? Math.max(1, Math.round(hours / 24)) : fallbackDays;
+  return typeof hours === "number" && hours > 0 ? Math.max(1, Math.floor(hours / 24)) : fallbackDays;
 }
 
 /** The GPU Prices page serves a live price at most this many days old (servedGpuModels). */
@@ -1074,6 +1081,7 @@ export async function ogCardForTemplate(template: string, params: CardParams = {
       return c ? projectCard(c, root) : null;
     }
     case "project_status": {
+      if (!params.id) return null;
       const root = readDataJson("clusters.json") as ClusterRoot;
       const c = (root.clusters ?? []).find((x) => x.id === params.id);
       return c ? projectCard(c, root) : null;
@@ -1086,6 +1094,7 @@ export async function ogCardForTemplate(template: string, params: CardParams = {
       return c ? changeCard(c) : null;
     }
     case "correction": {
+      if (!params.id) return null;
       const c = ((readDataJson("change-log.json").changes ?? []) as ChangeRecord[]).find((x) => x.id === params.id);
       return c ? changeCard(c) : null;
     }
@@ -1103,66 +1112,66 @@ export async function ogCardForTemplate(template: string, params: CardParams = {
 /**
  * Link-preview cards for pages (the og:image URLs seo.ts writes). Pages
  * backed by one dated dataset reuse that dataset's card; the rest name the
- * page and its source and carry no numbers.
+ * page and its source and carry no numbers. A ticker or name GridTilt has no
+ * page for is null (a 404), so no card puts arbitrary text under the brand.
  */
-export function pageOgCard(page: string, ticker?: string, name?: string): OgCard {
+export function pageOgCard(page: string, ticker?: string, name?: string): OgCard | null {
   const classification = "GridTilt sector classifications";
   if (ticker) {
     const t = ticker.toUpperCase();
     const info = COMPANY_DATABASE[t];
-    return pageCard(
-      info ? `${info.name} ($${t})` : `$${t}`,
-      info ? `${info.primarySegment}, in GridTilt's sector classifications` : "Not in GridTilt's sector classifications",
-      `${classification}; quotes from Yahoo Finance`,
-    );
+    if (!info || !knownTicker(t)) return null;
+    return pageCard(`${info.name} ($${t})`, `${info.primarySegment}, in GridTilt's sector classifications`, `${classification}; quotes from Yahoo Finance`);
   }
+  // Keys are the slugs seo.ts writes into og:image (STATIC_PAGES, plus the
+  // entity pages); the server 301s the old aliases, so they never arrive here.
   switch (page) {
+    case "overview":
+      return pageCard("Overview", "Grid headroom, the tracked buildout, power agreements and GPU prices on one page", "NERC 2025 LTRA; GridTilt registries; public GPU listings");
+    case "my-grid":
+      return pageCard("My Grid", "Choose a state: its grid operator, NERC reserve margin, tracked projects and residential electricity prices", "NERC 2025 LTRA; EIA; GridTilt facility registry");
+    case "analyze":
+      return pageCard("Analyze", "An illustrative electricity scenario, and a ticker basket set against GridTilt's sector classifications", "Assumptions and classifications are listed on the page");
+    case "neocloud-intel":
+      return gpuCard(readGpuHistory(), readDataJson("gpu-rental-prices.json"), easternDate(new Date()), GPU_SERVED_MAX_AGE_DAYS);
+    case "compute-frontier/methodology":
+      return pageCard("How Compute Frontier counts clusters", "Status definitions, what rated and planned power measure, and how estimates are flagged", "GridTilt cluster records");
+    case "compute-frontier/compare":
+      return pageCard("Compare AI compute clusters", "Two tracked clusters side by side", "GridTilt cluster records");
     case "stack":
       return pageCard("AI power stocks", "Public companies across the AI power stack, grouped by GridTilt", `${classification}; quotes from Yahoo Finance`);
     case "power-map":
       return pageCard("US AI data center map", "Tracked campuses of 400 MW and up, by operator, grid region and capacity", "GridTilt facility registry");
     case "compute-frontier": {
       const root = readDataJson("clusters.json") as ClusterRoot;
-      const c = name ? (root.clusters ?? []).find((x) => x.name === name) : undefined;
-      return c ? projectCard(c, root) : buildoutCard(root);
+      if (!name) return buildoutCard(root);
+      const c = (root.clusters ?? []).find((x) => x.name === name);
+      return c ? projectCard(c, root) : null;
     }
-    case "supply-chain":
-      return pageCard("AI power supply chain", "The stages from chips to substations, and the companies in each", "GridTilt supply chain map");
-    case "queue":
-      return queueCard((readDataJson("interconnection-queue.json") as BacklogDataset).headline);
-    case "trade":
-      return pageCard("AI power scenario", "Change the assumptions and see the electricity demand they imply", "Assumptions and their sources are listed on the page");
-    case "portfolio":
-      return pageCard("Illustrative basket", "Compare a basket against GridTilt's sector classifications", classification);
     case "catalysts":
       return pageCard("Catalyst calendar", "Earnings, policy and regulatory dates for AI power", "GridTilt catalyst calendar: company, agency and market dates");
     case "blog": {
       if (!name) return pageCard("GridTilt research", "Power projects, grid conditions and the companies behind the buildout", "GridTilt research");
-      let date: string | null = null;
+      let article: { title?: string; date?: string } | undefined;
       try {
         const articles = JSON.parse(readFileSync(join(process.cwd(), "content", "blog", "articles.json"), "utf-8")) as Array<{ title?: string; date?: string }>;
-        date = articles.find((a) => a.title === name)?.date ?? null;
+        article = articles.find((a) => a.title === name);
       } catch {
-        // no date is shown rather than a guessed one
+        return null;
       }
-      return pageCard(name, "GridTilt research", "GridTilt research", { asOf: formatAsOf(date) });
+      return article ? pageCard(name, "GridTilt research", "GridTilt research", { asOf: formatAsOf(article.date) }) : null;
     }
     case "subscribe":
       return pageCard("The GridTilt brief", "Power projects and grid changes, by email", "GridTilt");
     case "sector":
-      if (name) return pageCard(`${name} sector`, "AI power infrastructure stocks, grouped by GridTilt", classification);
-      break;
+      return name && ogNameKnown("sector", name) ? pageCard(`${name} sector`, "AI power infrastructure stocks, grouped by GridTilt", classification) : null;
     case "region":
-      if (name) return pageCard(`${name} grid region`, "Tracked AI data center campuses in the region", "GridTilt facility registry");
-      break;
+      return name && ogNameKnown("region", name) ? pageCard(`${name} grid region`, "Tracked AI data center campuses in the region", "GridTilt facility registry") : null;
     case "operator":
-      if (name) return pageCard(`${name} AI data centers`, "Tracked campuses and their capacity", "GridTilt facility registry");
-      break;
+      return name && ogNameKnown("operator", name) ? pageCard(`${name} AI data centers`, "Tracked campuses and their capacity", "GridTilt facility registry") : null;
   }
-  // home, and anything unrecognized: the tracked buildout, dated.
-  const root = readDataJson("clusters.json") as ClusterRoot;
-  const card = buildoutCard(root);
-  return { ...card, title: "GridTilt", subtitle: "Equities, infrastructure, and power data for the AI power economy." };
+  // home, and anything unrecognized: the site's own card, dated by the cluster list.
+  return homeCard(readDataJson("clusters.json") as ClusterRoot);
 }
 
 // ─── X (Twitter) OAuth 1.0a posting client ──────────────────────────────────
@@ -1663,24 +1672,15 @@ const ON_DEMAND_TEMPLATES: Record<string, Composer> = {
   catalyst_preview: composeCatalystPreviewPost,
 };
 
-/**
- * The reason to skip a post whose text matches the last one X accepted for
- * the same template: nothing changed, so nothing is posted (and X refuses
- * exact duplicates anyway). Dry runs are never compared.
- */
+/** The social log's skip reason for an unchanged post (unchangedSince in social-data.ts). */
 function unchangedSinceLastPost(template: string, text: string): string | null {
   try {
     if (!existsSync(SOCIAL_LOG_FILE)) return null;
-    const log = JSON.parse(readFileSync(SOCIAL_LOG_FILE, "utf-8")) as SocialLogEntry[];
-    for (let i = log.length - 1; i >= 0; i--) {
-      const e = log[i];
-      if (e.template !== template || e.trigger !== "cron" || !e.ok || e.dryRun || e.skipped || !e.text) continue;
-      return e.text === text ? `unchanged since the post on ${e.timestamp.slice(0, 10)}` : null;
-    }
+    return unchangedSince(JSON.parse(readFileSync(SOCIAL_LOG_FILE, "utf-8")) as SocialLogEntry[], template, text);
   } catch {
     // an unreadable log is no reason to skip
+    return null;
   }
-  return null;
 }
 
 export async function registerRoutes(
@@ -2886,6 +2886,7 @@ Preferred-Languages: en
         if (!card) return res.status(404).json({ error: "No card for that template" });
       } else {
         card = pageOgCard(q("page") || "home", q("ticker"), q("name"));
+        if (!card) return res.status(404).json({ error: "No page for that name" });
       }
 
       const png = await renderOgPng(card);

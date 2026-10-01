@@ -69,14 +69,35 @@ function post(lines: string[]): PostResult {
   return { ok: true, text };
 }
 
-const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-/** Whole days from one YYYY-MM-DD to another (negative when `from` is later). */
-export function daysBetween(from: string, to: string): number {
-  const a = Date.parse(`${from.slice(0, 10)}T00:00:00Z`);
-  const b = Date.parse(`${to.slice(0, 10)}T00:00:00Z`);
-  return Math.round((b - a) / 86_400_000);
+/** A real calendar day written YYYY-MM-DD ("2026-13-01" and "2026-02-30" are not). */
+export function isDay(v: string | null | undefined): v is string {
+  if (typeof v !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(v)) return false;
+  const t = Date.parse(`${v}T00:00:00Z`);
+  return Number.isFinite(t) && new Date(t).toISOString().slice(0, 10) === v;
+}
+
+/**
+ * Whole days from one YYYY-MM-DD to another (negative when `from` is later),
+ * or null when either is not a real day. Every guard treats null as a skip.
+ */
+export function daysBetween(from: string, to: string): number | null {
+  if (!isDay(from) || !isDay(to)) return null;
+  return Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000);
+}
+
+/**
+ * The reason a data date cannot be posted as current, or null when it can.
+ * A missing, impossible or future date is a reason too: unknown is not fresh.
+ */
+function staleReason(what: string, day: string | null | undefined, today: string, maxDays: number, limitWhy: string): string | null {
+  if (!isDay(day)) return `${what} carries no valid date`;
+  const age = daysBetween(day, today);
+  if (age === null) return "today's date is not valid";
+  if (age < 0) return `${what} is dated ${day}, after today`;
+  if (age > maxDays) return `${what} is from ${day}, ${age} days ago, past the ${maxDays}-day limit ${limitWhy}`;
+  return null;
 }
 
 /**
@@ -119,18 +140,15 @@ export interface BuildoutInput {
 }
 
 export function buildBuildoutPost(i: BuildoutInput): PostResult {
-  if (!i.asOf || !DAY_RE.test(i.asOf)) return skip("the cluster list carries no data date");
-  const age = daysBetween(i.asOf, i.today);
-  if (age > i.maxAgeDays) {
-    return skip(`the cluster list was last refreshed ${i.asOf}, ${age} days ago; the freshness registry allows ${i.maxAgeDays}`);
-  }
+  const stale = staleReason("the cluster list", i.asOf, i.today, i.maxAgeDays, "the freshness registry sets");
+  if (stale) return skip(stale);
   if (i.clusterCount <= 0) return skip("the cluster list is empty");
   const counted = i.operational.count + i.construction.count + i.announced.count;
   if (counted !== i.clusterCount) {
     return skip(`${i.clusterCount - counted} of ${i.clusterCount} clusters have no recognized status, so the breakdown would not add up`);
   }
   return post([
-    `GridTilt tracks ${withCommas(i.clusterCount)} AI compute clusters: ${i.operational.count} operating, ${i.construction.count} under construction and ${i.announced.count} announced. Their planned power, the full announced build: ${gwFromMw(i.operational.plannedMW)} GW, ${gwFromMw(i.construction.plannedMW)} GW and ${gwFromMw(i.announced.plannedMW)} GW. Data as of ${shortDate(i.asOf)}.`,
+    `GridTilt tracks ${withCommas(i.clusterCount)} AI compute clusters: ${i.operational.count} operating, ${i.construction.count} under construction and ${i.announced.count} announced. Their planned power, the full announced build: ${gwFromMw(i.operational.plannedMW)} GW, ${gwFromMw(i.construction.plannedMW)} GW and ${gwFromMw(i.announced.plannedMW)} GW. Data as of ${shortDate(i.asOf as string)}.`,
     "",
     "https://gridtilt.com/compute-frontier",
   ]);
@@ -145,25 +163,32 @@ export interface GpuObservedInput {
   /** The page serves a live price this many days old at most. */
   maxAgeDays: number;
   /**
-   * Models observed that day, in display order: the median price, how many
-   * listings it came from, and the providers behind them ("RunPod", "Vast.ai").
+   * Models observed that day, in display order: the median of the provider
+   * prices observed (RunPod's two tiers and Vast.ai's own median count
+   * separately), how many there were, and the providers behind them.
    */
-  models: Array<{ model: string; price: number; listings: number; providers: string[] }>;
+  models: Array<{ model: string; price: number; observations: number; providers: string[] }>;
 }
 
 export function buildGpuObservedPost(i: GpuObservedInput): PostResult {
-  if (!i.observedOn || !DAY_RE.test(i.observedOn)) return skip("no live GPU price observation is recorded");
-  const age = daysBetween(i.observedOn, i.today);
-  if (age > i.maxAgeDays) {
-    return skip(`the newest live GPU price observation is from ${i.observedOn}, ${age} days ago; the page serves one at most ${i.maxAgeDays} days old`);
+  if (i.observedOn === null) return skip("no live GPU price observation is recorded");
+  const stale = staleReason("the newest live GPU price observation", i.observedOn, i.today, i.maxAgeDays, "for the page to serve it");
+  if (stale) return skip(stale);
+  const usable = i.models.filter((m) => m.price > 0 && m.observations >= 2 && m.providers.length > 0).slice(0, 4);
+  if (!usable.some((m) => m.model === "H100")) return skip(`H100 was not priced by at least two provider observations on ${i.observedOn}`);
+  // Each price names only the providers its median came from: models are
+  // grouped by provider set, in display order.
+  const groups: Array<{ key: string; providers: string[]; models: typeof usable }> = [];
+  for (const m of usable) {
+    const key = [...m.providers].sort().join("|");
+    const g = groups.find((x) => x.key === key);
+    if (g) g.models.push(m);
+    else groups.push({ key, providers: m.providers, models: [m] });
   }
-  const usable = i.models.filter((m) => m.price > 0 && m.listings >= 2).slice(0, 4);
-  if (!usable.some((m) => m.model === "H100")) return skip(`H100 was not observed in at least two listings on ${i.observedOn}`);
-  const names = Array.from(new Set(usable.flatMap((m) => m.providers)));
-  if (names.length === 0) return skip("the observation names no provider");
-  const providers = names.length === 1 ? names[0] : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
+  const and = (xs: string[]) => (xs.length <= 1 ? xs.join("") : `${xs.slice(0, -1).join(", ")} and ${xs[xs.length - 1]}`);
+  const parts = groups.map((g) => `${and(g.models.map((m) => `${m.model} ${usd(m.price)}`))} (${g.providers.join(", ")})`);
   return post([
-    `On-demand GPU rental prices observed ${shortDate(i.observedOn)}, each the median of public listings on ${providers}: ${usable.map((m) => `${m.model} ${usd(m.price)}`).join(", ")} per GPU-hour.`,
+    `On-demand GPU rental prices observed ${shortDate(i.observedOn as string)}, each the median of the provider prices seen for that model: ${parts.join("; ")}, per GPU-hour.`,
     "",
     "https://gridtilt.com/neocloud-intel",
   ]);
@@ -208,10 +233,10 @@ export function buildProjectPost(i: ProjectInput): PostResult {
   const head = `${i.name}${i.place ? `, ${i.place}` : ""}: ${status}.`;
   const planned = `${withCommas(i.plannedMW)} MW${i.plannedBasis ? ` ${i.plannedBasis}` : ""}`;
 
-  const reviewAge = i.reviewed && DAY_RE.test(i.reviewed) ? daysBetween(i.reviewed, i.today) : null;
+  const reviewAge = isDay(i.reviewed) ? daysBetween(i.reviewed, i.today) : null;
   if (reviewAge !== null && reviewAge >= 0 && reviewAge <= REVIEW_MAX_AGE_DAYS) {
     const reviewed = `Reviewed ${shortDate(i.reviewed as string)}.`;
-    if (i.operating && i.operating.mw > 0 && DAY_RE.test(i.operating.asOf)) {
+    if (i.operating && i.operating.mw > 0 && isDay(i.operating.asOf) && i.operating.asOf <= i.today) {
       return post([
         `${head} ${withCommas(i.operating.mw)} MW delivered as of ${shortDate(i.operating.asOf)} (${i.operating.source}). Planned: ${planned}, a different basis. ${reviewed}`,
         "",
@@ -221,12 +246,9 @@ export function buildProjectPost(i: ProjectInput): PostResult {
     return post([`${head} Planned: ${planned}. ${reviewed}`, "", i.url]);
   }
 
-  if (!i.listAsOf || !DAY_RE.test(i.listAsOf)) return skip("the cluster list carries no data date");
-  const age = daysBetween(i.listAsOf, i.today);
-  if (age > i.maxListAgeDays) {
-    return skip(`this week's project is ${i.name}, which has no recent review, and the cluster list was last refreshed ${i.listAsOf}, ${age} days ago`);
-  }
-  return post([`${head} Planned: ${planned}. Data as of ${shortDate(i.listAsOf)}.`, "", i.url]);
+  const stale = staleReason("the cluster list", i.listAsOf, i.today, i.maxListAgeDays, "the freshness registry sets");
+  if (stale) return skip(`this week's project is ${i.name}, which has no recent review, and ${stale}`);
+  return post([`${head} Planned: ${planned}. Data as of ${shortDate(i.listAsOf as string)}.`, "", i.url]);
 }
 
 // ── Thursday: the national interconnection queue (LBNL) ────────────────────
@@ -275,7 +297,9 @@ export const CHANGE_WINDOW_DAYS = 7;
 export function buildChangePost(change: ChangeInput | null, today: string): PostResult {
   if (!change) return skip("no documented change with a short form is on record");
   const age = daysBetween(change.reviewed, today);
-  if (age < 0 || age > CHANGE_WINDOW_DAYS) return skip(`no documented change in the last ${CHANGE_WINDOW_DAYS} days; the latest was reviewed ${change.reviewed}`);
+  if (age === null) return skip(`the latest change's review date (${change.reviewed}) is not a valid day`);
+  // Ages 0 to 6: one week, so a change is eligible on exactly one Friday.
+  if (age < 0 || age >= CHANGE_WINDOW_DAYS) return skip(`no documented change in the last ${CHANGE_WINDOW_DAYS} days; the latest was reviewed ${change.reviewed}`);
   const kind = change.kind === "correction" ? "Correction" : "Update";
   return post([
     `${kind}, ${shortDate(change.reviewed)}: ${change.label}. Before: ${change.before}. Now: ${change.after}. Source: ${change.source}, ${shortDate(change.sourceDate)}.`,

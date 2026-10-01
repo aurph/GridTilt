@@ -44,6 +44,8 @@ export const NERC_LTRA = {
   label: "NERC 2025 Long-Term Reliability Assessment (January 2026)",
   short: "NERC 2025 LTRA",
   url: "https://www.nerc.com/globalassets/our-work/assessments/nerc_ltra_2025.pdf",
+  /** YYYY-MM the report was published; dates every card and page that cites it. */
+  published: "2026-01",
 } as const;
 
 const area = (a: NercArea): [string, NercArea] => [a.key, a];

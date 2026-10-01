@@ -4,7 +4,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "fs";
 import { join } from "path";
-import { buildCardTree, projectDot, assertMapPathIntact, formatAsOf, type OgCard } from "../og-card";
+import { buildCardTree, cardFits, projectDot, assertMapPathIntact, formatAsOf, type OgCard } from "../og-card";
 import { MAP_W, MAP_H, MAP_SCALE, MAP_TRANSLATE, US_PATH } from "../us-map";
 
 // ── Fonts ──────────────────────────────────────────────────────────────────
@@ -188,6 +188,15 @@ test("stats on one card share a size, so no value outweighs its neighbor", () =>
   assert.equal(beforeAfter[0], beforeAfter[1], "the corrected value is never smaller than the old one");
   assert.equal(beforeAfter[0], 21);
   assert.deepEqual(sizes([{ label: "A", value: "29.7%" }, { label: "B", value: "18.6%" }]), [44, 44]);
+});
+
+test("the fit estimate flags a correction whose values would run off the card", () => {
+  const card = (before: string, after: string): OgCard => ({ ...sample, visual: { kind: "none" }, stats: [{ label: "Before", value: before }, { label: "Now", value: after }] });
+  // 58 and 62 characters: the case that rendered "NOW 1,400 MW across four building" and stopped.
+  assert.equal(cardFits(card("1,100 MW across three buildings, per a 2025 county record", "1,400 MW across four buildings, per the operator's 2026 filing")).stats, false);
+  // 40 and 40, the change log's limit, fits.
+  assert.equal(cardFits(card("x".repeat(40), "y".repeat(40))).stats, true);
+  assert.equal(cardFits({ ...sample, source: "s".repeat(220) }).footer, false);
 });
 
 test("all four visual kinds build without throwing", () => {

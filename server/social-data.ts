@@ -10,6 +10,7 @@ import { formatAsOf, type MapDot, type OgCard, type OgStat } from "./og-card";
 import type { Snapshot } from "./gpu-history";
 import { sortChanges, type ChangeRecord } from "./change-log";
 import {
+  daysBetween,
   shortDate,
   type BuildoutInput,
   type ChangeInput,
@@ -17,7 +18,7 @@ import {
   type ProjectInput,
   type QueueInput,
 } from "./social-format";
-import { NERC_LTRA, STATES, STATE_NERC_NOTE, REGION_AREAS, NERC_AREAS, areaForState, cushion } from "./state-facts";
+import { NERC_LTRA, STATES, STATE_GRID_SOURCE, STATE_NERC_NOTE, REGION_AREAS, NERC_AREAS, areaForState, cushion } from "./state-facts";
 
 const SITE = "https://gridtilt.com";
 
@@ -32,10 +33,8 @@ export function weekIndex(today: string): number {
 }
 
 const withCommas = (n: number) => n.toLocaleString("en-US");
-const gw = (mw: number) => {
-  const g = Math.round(mw / 100) / 10;
-  return Number.isInteger(g) ? String(g) : g.toFixed(1);
-};
+/** GW with one decimal from MW, formatted exactly as the Compute Frontier page formats it. */
+const gw = (mw: number) => (mw / 1000).toLocaleString("en-US", { maximumFractionDigits: 1 });
 const capitalize = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s);
 
 export interface ClusterEvidence {
@@ -122,12 +121,34 @@ export function buildoutCard(root: ClusterRoot): OgCard {
   const clusters = root.clusters ?? [];
   const i = buildoutInputFrom(root, root.lastRefreshed ?? "", 0);
   return {
-    title: "AI compute clusters, by status",
-    subtitle: `${withCommas(i.clusterCount)} clusters tracked, not exhaustive. Planned power is the full announced build, not what runs today.`,
+    title: "Planned power, by project status",
+    subtitle: `${withCommas(i.clusterCount)} AI compute clusters tracked, not exhaustive. Planned power is the full announced build, not what runs today.`,
     stats: [
       { label: `${i.operational.count} operating`, value: `${gw(i.operational.plannedMW)} GW` },
       { label: `${i.construction.count} building`, value: `${gw(i.construction.plannedMW)} GW` },
       { label: `${i.announced.count} announced`, value: `${gw(i.announced.plannedMW)} GW` },
+    ],
+    asOf: formatAsOf(root.lastRefreshed),
+    source: clusterSourceLine(clusters),
+    visual: { kind: "map", dots: clusterDots(clusters), legend: true },
+  };
+}
+
+/**
+ * The site's own card (link previews for the home page): the three figures
+ * the Compute Frontier page leads with, under that page's labels, so the
+ * basis of each number travels with it.
+ */
+export function homeCard(root: ClusterRoot): OgCard {
+  const clusters = root.clusters ?? [];
+  const m = computeClusterMetrics(clusters as ClusterLite[]);
+  return {
+    title: "GridTilt",
+    subtitle: "Equities, infrastructure, and power data for the AI power economy.",
+    stats: [
+      { label: "Tracked clusters", value: withCommas(m.clusterCount) },
+      { label: "Operational power", value: `${gw(m.operationalMW)} GW` },
+      { label: "Planned power", value: `${gw(m.totalPlannedMW)} GW` },
     ],
     asOf: formatAsOf(root.lastRefreshed),
     source: clusterSourceLine(clusters),
@@ -163,7 +184,7 @@ export function gpuObservedInputFrom(history: Snapshot[], today: string, maxAgeD
       ? GPU_POST_MODELS.filter((model) => typeof snap.prices[model] === "number").map((model) => ({
           model,
           price: snap.prices[model],
-          listings: snap.meta?.[model]?.n ?? 0,
+          observations: snap.meta?.[model]?.n ?? 0,
           providers: Array.from(new Set((snap.meta?.[model]?.sources ?? []).map((s) => PROVIDER_NAMES[s] ?? s))),
         }))
       : [],
@@ -188,19 +209,32 @@ export function gpuCard(
   today: string,
   maxAgeDays: number,
 ): OgCard {
-  const live = gpuObservedInputFrom(history, today, maxAgeDays);
-  const ageOk =
-    live.observedOn !== null &&
-    Date.parse(`${today}T00:00:00Z`) - Date.parse(`${live.observedOn}T00:00:00Z`) <= maxAgeDays * 86_400_000;
-  const observed = live.models.filter((m) => m.price > 0 && m.listings >= 2);
-  if (ageOk && observed.length > 0) {
+  // The page serves a model's live price whenever its observation is at most
+  // maxAgeDays old, whatever the listing count (servedGpuModels in routes.ts),
+  // so the card does the same for every model in that snapshot.
+  const snap = newestLiveSnapshot(history);
+  const age = snap ? daysBetween(snap.date, today) : null;
+  const observed = snap && age !== null && age >= 0 && age <= maxAgeDays
+    ? Object.entries(snap.prices)
+        .filter(([, price]) => typeof price === "number" && price > 0)
+        .map(([model, price]) => ({
+          model,
+          price,
+          providers: Array.from(new Set((snap.meta?.[model]?.sources ?? []).map((s) => PROVIDER_NAMES[s] ?? s))),
+        }))
+    : [];
+  if (snap && observed.length > 0) {
     const providers = Array.from(new Set(observed.flatMap((m) => m.providers)));
+    const order = (m: { model: string }) => {
+      const k = GPU_POST_MODELS.indexOf(m.model);
+      return k < 0 ? GPU_POST_MODELS.length : k;
+    };
     return {
       title: "GPU rental prices, observed",
-      subtitle: `On demand, per GPU-hour. Each price is the median of public listings on ${providers.join(" and ")}.`,
-      stats: observed.slice(0, 3).map((m) => ({ label: m.model, value: usd(m.price) })),
-      asOf: formatAsOf(live.observedOn),
-      source: `Public listings: ${providers.join(", ")} · observed daily by GridTilt`,
+      subtitle: `On demand, per GPU-hour. Each price is the median of the provider prices observed that day for the model${providers.length ? ` (${providers.join(", ")})` : ""}.`,
+      stats: [...observed].sort((a, b) => order(a) - order(b)).slice(0, 3).map((m) => ({ label: m.model, value: usd(m.price) })),
+      asOf: formatAsOf(snap.date),
+      source: `Provider prices${providers.length ? `: ${providers.join(", ")}` : ""} · observed daily by GridTilt`,
       visual: {
         kind: "columns",
         columns: [...observed].sort((a, b) => b.price - a.price).map((m) => ({ label: m.model, value: m.price, display: usd(m.price) })),
@@ -350,6 +384,33 @@ export function queueCard(h: QueueHeadline | null | undefined): OgCard {
   };
 }
 
+// ── The cron's repeat check ─────────────────────────────────────────────────
+
+export interface LoggedPost {
+  timestamp: string;
+  template?: string;
+  trigger?: string;
+  ok: boolean;
+  dryRun?: boolean;
+  skipped?: string;
+  text: string;
+}
+
+/**
+ * The reason to skip a post whose text matches the last one X accepted for
+ * the same template from the cron: nothing changed, so nothing is posted
+ * (and X refuses exact duplicates anyway). Dry runs, failures, skips and
+ * manual posts are never compared.
+ */
+export function unchangedSince(log: LoggedPost[], template: string, text: string): string | null {
+  for (let i = log.length - 1; i >= 0; i--) {
+    const e = log[i];
+    if (e.template !== template || e.trigger !== "cron" || !e.ok || e.dryRun || e.skipped || !e.text) continue;
+    return e.text === text ? `unchanged since the post on ${e.timestamp.slice(0, 10)}` : null;
+  }
+  return null;
+}
+
 // ── Friday: one documented change ───────────────────────────────────────────
 
 /** The newest change with a short form; "checked, no change" records are never posted. */
@@ -375,7 +436,8 @@ export function changeCard(c: ChangeRecord): OgCard | null {
   if (!c.short || c.kind === "checked-no-change") return null;
   return {
     title: capitalize(c.short.label),
-    subtitle: `${c.kind === "correction" ? "Corrected" : "Updated"} ${shortDate(c.reviewed)}. ${c.rationale}`,
+    // The short form's own reason when the entry covers more than this one figure.
+    subtitle: `${c.kind === "correction" ? "Corrected" : "Updated"} ${shortDate(c.reviewed)}. ${c.short.why ?? c.rationale}`,
     stats: [
       { label: "Before", value: c.short.before },
       { label: "Now", value: c.short.after },
@@ -387,6 +449,9 @@ export function changeCard(c: ChangeRecord): OgCard | null {
 }
 
 // ── State fact (share card) ─────────────────────────────────────────────────
+
+/** The report and the first clause of My Grid's operator source, short enough for the card's footer. */
+const STATE_CARD_SOURCE = `${NERC_LTRA.label} · operator: ${STATE_GRID_SOURCE.split(";")[0]}`;
 
 /**
  * A state's grid as My Grid shows it: the primary operator, its NERC area's
@@ -409,8 +474,8 @@ export function stateCard(code: string): OgCard | null {
         { label: area.referenceDefault ? "NERC default reference" : "NERC reference", value: `${area.reference}%` },
         { label: "Versus reference", value: `${c >= 0 ? "+" : ""}${c.toFixed(1)} pts` },
       ],
-      asOf: "JAN 2026",
-      source: `${NERC_LTRA.label}; operator from FERC and EIA footprints`,
+      asOf: formatAsOf(NERC_LTRA.published),
+      source: STATE_CARD_SOURCE,
       visual: { kind: "none" },
     };
   }
@@ -422,8 +487,8 @@ export function stateCard(code: string): OgCard | null {
         ? `${s.operatorLabel}. NERC reports ${s.region} by sub-area, and ${s.name} is not assigned to one of them here.${notes ? ` ${notes}` : ""}`
         : `${s.operatorLabel}. No NERC assessment area covers ${s.name}'s grid.${notes ? ` ${notes}` : ""}`,
     stats: [],
-    asOf: "JAN 2026",
-    source: `${NERC_LTRA.label}; operator from FERC and EIA footprints`,
+    asOf: formatAsOf(NERC_LTRA.published),
+    source: STATE_CARD_SOURCE,
     visual: { kind: "none" },
   };
 }

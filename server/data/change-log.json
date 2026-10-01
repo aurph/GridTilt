@@ -14,7 +14,7 @@
       "reviewed": "2026-09-29",
       "scope": "Overview grid headroom gauge, Power Map grid view, My Grid region card, region pages, weekly email",
       "rationale": "None of the old figures matched NERC's assessment, and the single 15% reference and the AI signal were not NERC's.",
-      "short": {"label": "MISO's summer 2026 reserve margin", "before": "13.4%", "after": "11.0%, against NERC's 8.1% reference", "source": "NERC 2025 LTRA", "url": "https://gridtilt.com/overview"}
+      "short": {"label": "MISO's summer 2026 reserve margin", "before": "13.4%", "after": "11.0%, against NERC's 8.1% reference", "source": "NERC 2025 LTRA", "url": "https://gridtilt.com/overview", "why": "The old figure did not match NERC's assessment, and GridTilt read it against a 15% line NERC does not use for MISO."}
     },
     {
       "id": "2026-09-28-lbnl-queued-up-calendar",

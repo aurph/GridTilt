@@ -304,18 +304,39 @@ function buildVisual(v: OgVisual): Node | null {
 // ─── Frame ─────────────────────────────────────────────────────────────────
 
 /** Build the satori element tree for a card. Pure: no IO, no fonts. */
+// Values are mono, so width scales with character count. Step the size down
+// for long values ("OpenAI / Oracle") so the stats row cannot run into the
+// visual on the right.
+const statSize = (value: string) => (value.length <= 7 ? 44 : value.length <= 11 ? 34 : value.length <= 16 ? 26 : 21);
+
+/**
+ * One size for every stat on a card, the size its longest value needs: a
+ * short value printed larger beside a long one reads as the more important
+ * number (an old "13.4%" would outweigh the corrected figure next to it).
+ */
+export function sharedStatSize(stats: OgStat[]): number {
+  return Math.min(44, ...stats.map((s) => statSize(s.value)));
+}
+
+/**
+ * Whether a card's stats row and footer fit, by estimate. satori neither
+ * wraps a row nor warns, so a value past the edge is cut off silently.
+ * JetBrains Mono advances 0.6em; labels are Inter caps at about 0.62em plus
+ * 2.5px tracking; the footer's Inter runs about 0.52em. A row may run under
+ * the empty lower part of a visual (720px), never past it.
+ */
+export function cardFits(card: OgCard): { stats: boolean; footer: boolean; statsWidth: number } {
+  const size = sharedStatSize(card.stats);
+  const col = (s: OgStat) => Math.max(s.label.length * (13 * 0.62 + 2.5), s.value.length * size * 0.6);
+  const statsWidth = Math.round(card.stats.reduce((w, s) => w + col(s), 0) + Math.max(0, card.stats.length - 1) * 50);
+  const footer = card.source.length * 14.5 * 0.52 + "gridtilt.com".length * 15 * 0.6 + 24;
+  return { stats: statsWidth <= (card.visual.kind === "none" ? 1090 : 720), footer: footer <= 1092, statsWidth };
+}
+
 export function buildCardTree(card: OgCard): Node {
   const visual = buildVisual(card.visual);
   const wide = visual === null;
-
-  // Values are mono, so width scales with character count. Step the size down
-  // for long values ("OpenAI / Oracle") so the stats row cannot run into the
-  // visual on the right.
-  const statSize = (value: string) => (value.length <= 7 ? 44 : value.length <= 11 ? 34 : value.length <= 16 ? 26 : 21);
-  // One size for every stat on a card, the size its longest value needs: a
-  // short value printed larger beside a long one reads as the more important
-  // number (an old "13.4%" would outweigh the corrected figure next to it).
-  const sharedSize = Math.min(44, ...card.stats.map((s) => statSize(s.value)));
+  const sharedSize = sharedStatSize(card.stats);
 
   const stat = (s: OgStat) =>
     box({ flexDirection: "column", gap: "7px" }, [

@@ -31,7 +31,15 @@ export interface NercAreaFact {
   outlook?: string;
 }
 
-export const NERC_LTRA = { label: "NERC 2025 Long-Term Reliability Assessment (January 2026)", short: "NERC 2025 LTRA", url: "https://www.nerc.com/globalassets/our-work/assessments/nerc_ltra_2025.pdf" } as const;
+export const NERC_LTRA = {
+  label: "NERC 2025 Long-Term Reliability Assessment (January 2026)",
+  short: "NERC 2025 LTRA",
+  url: "https://www.nerc.com/globalassets/our-work/assessments/nerc_ltra_2025.pdf",
+  published: "2026-01",
+} as const;
+
+/** client/src/data/state-grid.ts STATE_GRID_SOURCE, verbatim. */
+export const STATE_GRID_SOURCE = "FERC and EIA RTO/ISO footprints; NERC regional boundaries; primary operator shown, splits noted";
 
 export const STATES: Record<string, StateGridFact> = {
   AL: { name: "Alabama", region: "SERC", operatorLabel: "Southern Company territory (SERC)" },

@@ -2,7 +2,7 @@
 // so the state share card says what My Grid says for the same state.
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { STATE_GRID } from "../../client/src/data/state-grid";
+import { STATE_GRID, STATE_GRID_SOURCE as CLIENT_GRID_SOURCE } from "../../client/src/data/state-grid";
 import {
   NERC_AREAS as CLIENT_AREAS,
   REGION_AREAS as CLIENT_REGIONS,
@@ -11,7 +11,7 @@ import {
   NERC_LTRA as CLIENT_LTRA,
 } from "../../client/src/data/nerc-reserve-margins";
 import { areaForState as clientAreaForState, cushion as clientCushion } from "../../client/src/lib/reserve-margins";
-import { NERC_AREAS, NERC_LTRA, REGION_AREAS, STATES, STATE_NERC_AREA, STATE_NERC_NOTE, areaForState, cushion } from "../state-facts";
+import { NERC_AREAS, NERC_LTRA, REGION_AREAS, STATES, STATE_GRID_SOURCE, STATE_NERC_AREA, STATE_NERC_NOTE, areaForState, cushion } from "../state-facts";
 
 describe("state facts (server copy)", () => {
   it("covers every state My Grid covers, with the same name, region, operator and note", () => {
@@ -37,7 +37,9 @@ describe("state facts (server copy)", () => {
     assert.deepEqual(REGION_AREAS, CLIENT_REGIONS);
     assert.deepEqual(STATE_NERC_AREA, CLIENT_STATE_AREA);
     assert.deepEqual(STATE_NERC_NOTE, CLIENT_STATE_NOTE);
-    assert.equal(NERC_LTRA.url, CLIENT_LTRA.url);
+    // The card prints the label and dates itself from published: all of it must match.
+    assert.deepEqual({ ...NERC_LTRA }, { ...CLIENT_LTRA });
+    assert.equal(STATE_GRID_SOURCE, CLIENT_GRID_SOURCE);
   });
 
   it("assigns every state the same area, or none, with the same cushion", () => {

@@ -98,6 +98,9 @@ test("share cards render for real states, projects and corrections, and 404 othe
     "/api/og?template=correction&id=2026-09-29-nerc-reserve-margins",
     "/api/og?template=grid_backlog",
     "/api/og?page=home",
+    "/api/og?page=my-grid",
+    "/api/og?page=neocloud-intel",
+    "/api/og?ticker=NVDA",
     "/api/og?page=compute-frontier&name=Stargate%20Abilene%20(OpenAI%2FOracle)",
   ];
   for (const path of ok) {
@@ -115,6 +118,15 @@ test("share cards render for real states, projects and corrections, and 404 othe
     "/api/og?template=correction&id=2026-01-01-not-a-change",
     "/api/og?template=tilt_status",
     "/api/og?template=npi_update",
+    "/api/og?template=project_status",
+    "/api/og?template=correction",
+    // Names and tickers GridTilt has no page for never get a branded card.
+    "/api/og?page=blog&name=GridTilt%20finds%20PJM%20margin%20below%20zero",
+    "/api/og?page=sector&name=Fake",
+    "/api/og?page=region&name=Fake",
+    "/api/og?page=operator&name=Fake",
+    "/api/og?page=compute-frontier&name=Fake%20Campus",
+    "/api/og?ticker=NOTATICKER",
   ];
   for (const path of missing) {
     const res = await fetch(base + path);

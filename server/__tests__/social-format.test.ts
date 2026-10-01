@@ -43,6 +43,9 @@ test("dates print as precisely as the source states them", () => {
   assert.equal(shortDate("End of 2025"), "End of 2025", "anything else prints as given");
   assert.equal(daysBetween("2026-09-01", "2026-10-01"), 30);
   assert.equal(daysBetween("2026-10-02", "2026-10-01"), -1);
+  assert.equal(daysBetween("2026-13-01", "2026-10-01"), null, "an impossible date has no age");
+  assert.equal(daysBetween("2026-02-30", "2026-10-01"), null);
+  assert.equal(daysBetween("2026-10-01T09:00", "2026-10-01"), null);
 });
 
 // ── Monday: clusters by status ─────────────────────────────────────────────
@@ -73,8 +76,11 @@ test("buildout: counts and planned power by status, one basis, dated", () => {
 });
 
 test("buildout: skips a stale or undated list, and a breakdown that does not add up", () => {
-  assert.match(skipped(buildBuildoutPost({ ...BUILDOUT, asOf: "2026-09-01" })), /last refreshed 2026-09-01, 30 days ago; the freshness registry allows 2/);
-  assert.match(skipped(buildBuildoutPost({ ...BUILDOUT, asOf: null })), /no data date/);
+  assert.match(skipped(buildBuildoutPost({ ...BUILDOUT, asOf: "2026-09-01" })), /is from 2026-09-01, 30 days ago, past the 2-day limit the freshness registry sets/);
+  assert.match(skipped(buildBuildoutPost({ ...BUILDOUT, asOf: null })), /no valid date/);
+  assert.match(skipped(buildBuildoutPost({ ...BUILDOUT, asOf: "2026-13-01" })), /no valid date/, "an impossible date is unknown, not fresh");
+  assert.match(skipped(buildBuildoutPost({ ...BUILDOUT, asOf: "2026-02-30" })), /no valid date/);
+  assert.match(skipped(buildBuildoutPost({ ...BUILDOUT, asOf: "2026-12-01" })), /after today/, "a future date is not current");
   assert.match(skipped(buildBuildoutPost({ ...BUILDOUT, clusterCount: 240 })), /3 of 240 clusters have no recognized status/);
   assert.match(skipped(buildBuildoutPost({ ...BUILDOUT, clusterCount: 0, operational: { count: 0, plannedMW: 0 }, construction: { count: 0, plannedMW: 0 }, announced: { count: 0, plannedMW: 0 } })), /empty/);
 });
@@ -86,19 +92,19 @@ const GPU: GpuObservedInput = {
   today: "2026-10-01",
   maxAgeDays: 2,
   models: [
-    { model: "H100", price: 2.87, listings: 3, providers: ["RunPod", "Vast.ai"] },
-    { model: "H200", price: 3.94, listings: 3, providers: ["RunPod", "Vast.ai"] },
-    { model: "B200", price: 5.98, listings: 3, providers: ["RunPod", "Vast.ai"] },
-    { model: "B300", price: 7.42, listings: 2, providers: ["RunPod"] },
+    { model: "H100", price: 2.87, observations: 3, providers: ["RunPod", "Vast.ai"] },
+    { model: "H200", price: 3.94, observations: 3, providers: ["RunPod", "Vast.ai"] },
+    { model: "B200", price: 5.98, observations: 3, providers: ["RunPod", "Vast.ai"] },
+    { model: "B300", price: 7.42, observations: 2, providers: ["RunPod"] },
   ],
 };
 
-test("gpu: observed medians with their date and providers", () => {
+test("gpu: observed medians with their date, each naming only its own providers", () => {
   const t = text(buildGpuObservedPost(GPU));
   assert.equal(
     t,
     [
-      "On-demand GPU rental prices observed Sep 30, 2026, each the median of public listings on RunPod and Vast.ai: H100 $2.87, H200 $3.94, B200 $5.98, B300 $7.42 per GPU-hour.",
+      "On-demand GPU rental prices observed Sep 30, 2026, each the median of the provider prices seen for that model: H100 $2.87, H200 $3.94 and B200 $5.98 (RunPod, Vast.ai); B300 $7.42 (RunPod), per GPU-hour.",
       "",
       "https://gridtilt.com/neocloud-intel",
     ].join("\n"),
@@ -107,30 +113,32 @@ test("gpu: observed medians with their date and providers", () => {
   within280(t);
 });
 
-test("gpu: a single-listing model is left out; whole dollars print plain", () => {
+test("gpu: a model priced by one provider observation is left out; whole dollars print plain", () => {
   const t = text(
     buildGpuObservedPost({
       ...GPU,
       models: [
-        { model: "H100", price: 3, listings: 2, providers: ["RunPod"] },
-        { model: "MI300X", price: 2.39, listings: 1, providers: ["RunPod"] },
+        { model: "H100", price: 3, observations: 2, providers: ["RunPod"] },
+        { model: "MI300X", price: 2.39, observations: 1, providers: ["RunPod"] },
       ],
     }),
   );
-  assert.ok(t.includes("listings on RunPod: H100 $3 per GPU-hour."));
+  assert.ok(t.includes("seen for that model: H100 $3 (RunPod), per GPU-hour."));
   assert.ok(!t.includes("MI300X"));
 });
 
-test("gpu: skips when nothing current was observed, or H100 lacks two listings", () => {
-  assert.match(skipped(buildGpuObservedPost({ ...GPU, observedOn: "2026-08-15" })), /from 2026-08-15, 47 days ago; the page serves one at most 2 days old/);
+test("gpu: skips when nothing current was observed, or H100 lacks two provider observations", () => {
+  assert.match(skipped(buildGpuObservedPost({ ...GPU, observedOn: "2026-08-15" })), /from 2026-08-15, 47 days ago, past the 2-day limit for the page to serve it/);
   assert.match(skipped(buildGpuObservedPost({ ...GPU, observedOn: null })), /no live GPU price observation/);
+  assert.match(skipped(buildGpuObservedPost({ ...GPU, observedOn: "2026-13-01" })), /no valid date/);
+  assert.match(skipped(buildGpuObservedPost({ ...GPU, observedOn: "2026-10-02" })), /after today/);
   assert.match(
-    skipped(buildGpuObservedPost({ ...GPU, models: [{ model: "H100", price: 2.87, listings: 1, providers: ["Vast.ai"] }] })),
-    /H100 was not observed in at least two listings/,
+    skipped(buildGpuObservedPost({ ...GPU, models: [{ model: "H100", price: 2.87, observations: 1, providers: ["Vast.ai"] }] })),
+    /H100 was not priced by at least two provider observations/,
   );
   assert.match(
-    skipped(buildGpuObservedPost({ ...GPU, models: [{ model: "H100", price: -1, listings: 3, providers: ["RunPod"] }] })),
-    /H100 was not observed/,
+    skipped(buildGpuObservedPost({ ...GPU, models: [{ model: "H100", price: -1, observations: 3, providers: ["RunPod"] }] })),
+    /H100 was not priced/,
     "a negative price is not a price",
   );
 });
@@ -173,8 +181,12 @@ test("project: an unreviewed record posts only from a fresh list, with the list'
   );
   assert.match(
     skipped(buildProjectPost({ ...plain, listAsOf: "2026-09-01" })),
-    /this week's project is Example Campus, which has no recent review, and the cluster list was last refreshed 2026-09-01, 36 days ago/,
+    /this week's project is Example Campus, which has no recent review, and the cluster list is from 2026-09-01, 36 days ago/,
   );
+  assert.match(skipped(buildProjectPost({ ...plain, listAsOf: "2026-13-01" })), /no valid date/);
+  assert.match(skipped(buildProjectPost({ ...plain, listAsOf: "2026-10-09" })), /after today/);
+  // A review dated in the future is not a review; the list rule applies.
+  assert.match(skipped(buildProjectPost({ ...ABILENE, reviewed: "2026-10-30" })), /no recent review/);
 });
 
 test("project: an old review falls back to the list's date rule", () => {
@@ -251,6 +263,11 @@ test("change: no change this week means no post, never a stand-in", () => {
   assert.ok(daysBetween(CHANGE.reviewed, late) > CHANGE_WINDOW_DAYS);
   assert.match(skipped(buildChangePost(CHANGE, late)), /no documented change in the last 7 days; the latest was reviewed 2026-09-29/);
   assert.match(skipped(buildChangePost({ ...CHANGE, reviewed: "2026-10-05" }, "2026-10-02")), /no documented change/, "a future review date is not this week");
+  assert.match(skipped(buildChangePost({ ...CHANGE, reviewed: "2026-13-01" }, "2026-10-02")), /not a valid day/);
+  // One week: a change reviewed on a Friday is posted that Friday and not the next.
+  assert.ok(buildChangePost({ ...CHANGE, reviewed: "2026-10-02" }, "2026-10-02").ok);
+  assert.ok(buildChangePost(CHANGE, "2026-10-05").ok, "age 6 is still this week");
+  assert.match(skipped(buildChangePost({ ...CHANGE, reviewed: "2026-10-02" }, "2026-10-09")), /no documented change in the last 7 days/);
 });
 
 test("an over-long post is skipped with its length, not cut mid-sentence", () => {

@@ -129,8 +129,10 @@ Schedulers (no node-cron anywhere):
   day): Mon buildout (clusters by status), Tue gpu_rental (observed medians), Wed
   cluster_spotlight (one project, weekly by id), Thu grid_backlog (LBNL national total), Fri
   documented_change (newest change-log entry with a `short` form, reviewed in the last 7 days).
-  A day whose data is stale per the freshness registry, unreviewed or unsupported is skipped
-  and the reason is logged (`skipped` in social-log.json); an unchanged post is not repeated.
+  A day is skipped, with the reason logged (`skipped` in social-log.json), when its data is
+  older than the freshness registry's expected age in whole days (GPU: the page's 2-day
+  serving rule), carries no valid or a future date, or cannot support its total; a project
+  without a recent review posts only from a fresh list. An unchanged post is not repeated.
   Kill switch X_POSTING_ENABLED defaults OFF.
 - External n8n (Jetson homelab): weekly GPU reprice (rewrites gpu-rental-prices.json through a
   validation gate, commits to main) + daily GET /api/gpu-prices/metrics ping.
