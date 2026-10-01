@@ -17,7 +17,8 @@ export interface WeeklyDigestInput {
   constructionGW: number | null;
   fleetAvg: number | null;
   fleetAvg1yChange: number | null;
-  tightestRTO: { label: string; marginPct: number } | null;
+  /** The NERC area with the smallest cushion above its own reference margin. */
+  tightestRTO: { label: string; marginPct: number; referencePct: number } | null;
   /** e.g. "Week of June 29 - July 4, 2026" */
   dateLabel: string;
   siteUrl: string; // no trailing slash
@@ -80,7 +81,11 @@ export function renderWeeklyEmail(input: WeeklyDigestInput): string {
   }
   if (input.tightestRTO !== null) {
     keyCells.push(
-      keyNumberCell("Grid Headroom", `${input.tightestRTO.marginPct.toFixed(1)}%`, `${input.tightestRTO.label} reserve margin`),
+      keyNumberCell(
+        "Grid Headroom",
+        `${input.tightestRTO.marginPct.toFixed(1)}%`,
+        `${input.tightestRTO.label} reserve margin, NERC reference ${input.tightestRTO.referencePct}%`,
+      ),
     );
   }
 

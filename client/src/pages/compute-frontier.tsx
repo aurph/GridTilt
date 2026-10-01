@@ -54,7 +54,7 @@ interface OperatorBucket { operator: string; count: number; ratedMW: number; pla
 interface IsoBucket { iso: string; count: number; ratedMW: number; plannedMW: number; }
 interface StatusBucket { status: string; count: number; ratedMW: number; plannedMW: number; }
 interface EnergyBucket { source: string; count: number; ratedMW: number; plannedMW: number; }
-interface PowerSecuredDeal { id: string; projectName: string; capacityMW: number; firmness: string; clusterIds: string[]; }
+interface PowerSecuredDeal { id: string; projectName: string; capacityMW: number | null; firmness: string; clusterIds: string[]; }
 interface ClusterMetrics {
   clusterCount: number;
   operationalCount: number;
@@ -77,7 +77,9 @@ interface ClusterMetrics {
     clustersWithDeal: number;
     plannedMWWithDeal: number;
     totalPlannedMW: number;
-    securedMW: number;
+    /** Linked agreements by status (server/deals.ts subtotalsByStatus). Never added together. */
+    linkedByStatus: Array<{ key: string; count: number; mw: number; undisclosed: number }>;
+    /** Reviewed signed agreements only. */
     signedSecuredMW: number;
     deals: PowerSecuredDeal[];
   };
@@ -87,6 +89,17 @@ interface ClusterMetrics {
 // ─── Display helpers ───────────────────────────────────────────────────────
 
 const STATUS_COLOR: Record<string, string> = STATUS_COLORS;
+
+/** How an agreement status reads in a sentence ("2.0 GW signed"). */
+const STATUS_PHRASE: Record<string, string> = {
+  signed: "signed",
+  framework: "under frameworks",
+  option: "under options",
+  preliminary: "in letters of intent",
+  portfolio: "in company-wide totals",
+  "not-ai-offtake": "not contracted to an AI buyer",
+  unreviewed: "not yet reviewed",
+};
 
 const ENERGY_COLOR: Record<string, string> = {
   nuclear: CATEGORY_COLORS.nuclear,
@@ -259,9 +272,11 @@ export default function ComputeFrontier() {
           <MetricCard label="Tracked clusters" value={metrics ? String(metrics.clusterCount) : "—"} sub={metrics ? `${metrics.operationalCount} live · ${metrics.constructionCount} building` : ""} />
           <MetricCard label="Operational power" value={metrics ? `${gw(metrics.operationalMW)} GW` : "—"} sub={metrics ? `of ${gw(metrics.totalRatedMW)} GW rated today` : ""} />
           <MetricCard label="Planned power" value={metrics ? `${gw(metrics.totalPlannedMW)} GW` : "—"} sub="full announced build-out" accent />
-          <MetricCard label="Tracked GPUs" value={metrics ? gpuCell(metrics.totalGpus) : "—"} sub={metrics ? `across ${metrics.clustersWithGpuData} disclosing` : ""} />
+          {/* Accelerators, not GPUs: the total includes AWS Trainium chips
+              (Project Rainier's 500,000), which are not GPUs. */}
+          <MetricCard label="Tracked accelerators" value={metrics ? gpuCell(metrics.totalGpus) : "—"} sub={metrics ? `GPUs and Trainium, ${metrics.clustersWithGpuData} clusters disclosing` : ""} />
           <MetricCard label="Operators" value={metrics ? String(metrics.concentration.operatorCount) : "—"} sub={metrics?.concentration.topOperator ? `top: ${metrics.concentration.topOperator} ${Math.round(metrics.concentration.topOperatorPlannedShare * 100)}%` : ""} />
-          <MetricCard label="Nuclear secured" value={ps ? `${gw(ps.securedMW)} GW` : "—"} sub={ps ? `${ps.clustersWithDeal} clusters linked` : ""} />
+          <MetricCard label="Signed nuclear, linked" value={ps ? `${gw(ps.signedSecuredMW)} GW` : "—"} sub={ps ? `${ps.clustersWithDeal} clusters linked` : ""} />
         </div>
 
         {/* Charts */}
@@ -528,20 +543,30 @@ export default function ComputeFrontier() {
           <Card className="border-card-border p-4" data-testid="cf-power-secured">
             <div className="flex items-center gap-2 mb-2">
               <Atom className="h-4 w-4 text-brand" />
-              <span className="text-[13px] font-semibold text-foreground">Power needed vs power secured</span>
+              <span className="text-[13px] font-semibold text-foreground">Power needed vs linked power agreements</span>
             </div>
             <p className="text-xs text-muted-foreground leading-relaxed mb-3">
               Of <span className="text-foreground font-mono">{gw(ps.totalPlannedMW)} GW</span> planned across the tracked frontier,{" "}
-              <span className="text-foreground font-mono">{gw(ps.plannedMWWithDeal)} GW</span> sits at clusters tied to a tracked
-              nuclear-for-AI deal, backed by <span className="text-foreground font-mono">{gw(ps.securedMW)} GW</span> of linked nuclear capacity
-              {ps.signedSecuredMW > 0 ? <> ({gw(ps.signedSecuredMW)} GW of it under signed contracts)</> : null}.
-              Most clusters run on the grid or on-site gas, not a tracked nuclear deal.
+              <span className="text-foreground font-mono">{gw(ps.plannedMWWithDeal)} GW</span> sits at clusters linked to a tracked
+              nuclear agreement. By status, those agreements list{" "}
+              {ps.linkedByStatus.map((b, i) => (
+                <span key={b.key}>
+                  {i > 0 && (i === ps.linkedByStatus.length - 1 ? " and " : ", ")}
+                  <span className="text-foreground font-mono">{gw(b.mw)} GW</span> {STATUS_PHRASE[b.key] ?? b.key}
+                  {b.undisclosed > 0 && ` (${b.undisclosed} undisclosed)`}
+                </span>
+              ))}
+              . The statuses are not added together, since a framework's ceiling can include a signed plant.{" "}
+              Most clusters run on the grid or on-site gas, not a tracked nuclear agreement.
             </p>
             <div className="space-y-1.5">
               {ps.deals.map((d) => (
                 <div key={d.id} className="flex items-center justify-between text-11 border-t border-border/30 pt-1.5">
                   <span className="text-foreground">{d.projectName}</span>
-                  <span className="font-mono tabular-nums text-muted-foreground">{d.capacityMW.toLocaleString()} MW · {d.firmness} · {d.clusterIds.join(", ")}</span>
+                  <span className="font-mono tabular-nums text-muted-foreground">
+                    {d.capacityMW === null ? "undisclosed" : `${d.capacityMW.toLocaleString()} MW`} ·{" "}
+                    {d.firmness === "unreviewed" ? "not reviewed" : d.firmness} · {d.clusterIds.join(", ")}
+                  </span>
                 </div>
               ))}
             </div>

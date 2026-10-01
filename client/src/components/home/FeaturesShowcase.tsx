@@ -9,6 +9,7 @@ import { STAGE_LABELS, supplyNodes } from "@/data/supply-chain-config";
 import statesGeoRaw from "@/data/us-states.geo.json";
 import { Skeleton } from "@/components/ui/skeleton";
 import { filterTrackedFacilities } from "@/lib/real-gauges";
+import { electricityData } from "@/data/electricity-demand";
 
 /**
  * Module directory: six cards, each carrying a LIVE micro-preview drawn from
@@ -111,7 +112,11 @@ function SupplyChainMini() {
 }
 
 // -- Preview 4: the real next catalysts (/api/catalysts/all) ----------------
-interface CatalystItem { id: string; date: string; sortDate: string; ticker?: string; company?: string; title?: string; type: string; }
+interface CatalystItem {
+  id: string; date: string; sortDate: string; ticker?: string; company?: string; title?: string; type: string;
+  /** Month windows and estimates carry a label instead of a day (see server catalyst-lifecycle.ts). */
+  dateLabel?: string; exactDay?: boolean;
+}
 function fmtDay(d: string): string {
   return new Date(`${d.slice(0, 10)}T12:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
@@ -120,14 +125,17 @@ function CatalystRows() {
   if (!data) return <PreviewSkeleton />;
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const next = [...data.items]
-    .filter((c) => new Date(`${c.sortDate.slice(0, 10)}T12:00:00`) >= today)
+    // Catalysts arrive already filtered to upcoming by the server's rule.
+    .filter((c) => c.type === "catalyst" || new Date(`${c.sortDate.slice(0, 10)}T12:00:00`) >= today)
     .sort((a, b) => a.sortDate.localeCompare(b.sortDate))
     .slice(0, 4);
   return (
     <div className="flex h-full flex-col justify-center gap-1.5" data-testid="preview-catalysts">
       {next.map((c) => (
         <div key={c.id} className="flex items-center gap-2.5">
-          <span className="w-11 shrink-0 font-mono text-[10px] tabular-nums text-brand">{fmtDay(c.sortDate)}</span>
+          <span className="w-11 shrink-0 font-mono text-[10px] tabular-nums text-brand">
+            {c.type === "catalyst" && c.exactDay === false && c.dateLabel ? c.dateLabel : fmtDay(c.sortDate)}
+          </span>
           <span className="truncate text-[11px] text-foreground">
             {c.ticker ? <span className="font-semibold">{c.ticker}</span> : null}{" "}
             <span className="text-muted-foreground">{c.type === "earnings" ? "earnings" : c.title}</span>
@@ -156,40 +164,35 @@ function PortfolioPentagon() {
           {SEGMENTS[i]}
         </text>
       ))}
-      <text x="180" y="52" textAnchor="middle" fill="#8a8a85" fontSize="9.5">Enter a ticker</text>
-      <text x="180" y="66" textAnchor="middle" fill="#5c5c58" fontSize="8">to score exposure</text>
+      <text x="180" y="52" textAnchor="middle" fill="#8a8a85" fontSize="9.5">Enter tickers</text>
+      <text x="180" y="66" textAnchor="middle" fill="#5c5c58" fontSize="8">to compare sectors</text>
     </svg>
   );
 }
 
-// -- Preview 6: the real US demand curve (EIA actuals + projections) --------
-// Real US electricity demand, TWh. EIA actuals 2010-2025; GridTilt
-// projections 2026-2030. Same series the Overview demand chart uses.
-const DEMAND: { year: number; actual: number | null; proj: number | null }[] = [
-  { year: 2010, actual: 3879, proj: null }, { year: 2012, actual: 3826, proj: null },
-  { year: 2014, actual: 3879, proj: null }, { year: 2016, actual: 3898, proj: null },
-  { year: 2018, actual: 3997, proj: null }, { year: 2020, actual: 3802, proj: null },
-  { year: 2022, actual: 4050, proj: null }, { year: 2024, actual: 4380, proj: null },
-  { year: 2025, actual: 4490, proj: 4490 }, { year: 2027, actual: null, proj: 5180 },
-  { year: 2030, actual: null, proj: 6210 },
-];
+// -- Preview 6: the measured US demand curve ---------------------------------
+// The same EIA series as the landing and Overview charts. It used to end in a
+// dashed "2030 proj." line to 6,210 TWh that no source supported.
+const DEMAND = electricityData
+  .filter((d): d is typeof d & { demand: number } => d.demand !== null)
+  .map((d) => ({ year: Number(d.year), twh: d.demand }));
 function DemandSparkline() {
   const W = 260, H = 96, PAD = 6;
+  if (DEMAND.length < 2) return <PreviewSkeleton />;
   const xs = DEMAND.map((d) => d.year);
   const minX = Math.min(...xs), maxX = Math.max(...xs);
-  const allV = DEMAND.flatMap((d) => [d.actual, d.proj].filter((v): v is number => v != null));
-  const minV = Math.min(...allV), maxV = Math.max(...allV);
+  const vs = DEMAND.map((d) => d.twh);
+  const minV = Math.min(...vs), maxV = Math.max(...vs);
   const px = (y: number) => PAD + ((y - minX) / (maxX - minX)) * (W - 2 * PAD);
   const py = (v: number) => H - PAD - ((v - minV) / (maxV - minV)) * (H - 2 * PAD);
-  const actualPts = DEMAND.filter((d) => d.actual != null).map((d) => `${px(d.year)},${py(d.actual!)}`).join(" ");
-  const projPts = DEMAND.filter((d) => d.proj != null).map((d) => `${px(d.year)},${py(d.proj!)}`).join(" ");
+  const pts = DEMAND.map((d) => `${px(d.year)},${py(d.twh)}`).join(" ");
+  const last = DEMAND[DEMAND.length - 1];
   return (
     <svg viewBox={`0 0 ${W} ${H}`} className="h-full w-full" data-testid="preview-demand" aria-hidden>
-      <polyline points={actualPts} fill="none" stroke="#8a8a85" strokeWidth="1.5" />
-      <polyline points={projPts} fill="none" stroke="#F07800" strokeWidth="1.5" strokeDasharray="4 3" />
-      <circle cx={px(2030)} cy={py(6210)} r="2.5" fill="#F07800" />
-      <text x={px(2010)} y={H - 1} fill="#5c5c58" fontSize="8">2010</text>
-      <text x={px(2030)} y={H - 1} textAnchor="end" fill="#8a8a85" fontSize="8">2030 proj.</text>
+      <polyline points={pts} fill="none" stroke="#8a8a85" strokeWidth="1.5" />
+      <circle cx={px(last.year)} cy={py(last.twh)} r="2.5" fill="#F07800" />
+      <text x={px(minX)} y={H - 1} fill="#5c5c58" fontSize="8">{minX}</text>
+      <text x={px(maxX)} y={H - 1} textAnchor="end" fill="#8a8a85" fontSize="8">{maxX}</text>
     </svg>
   );
 }
@@ -208,8 +211,8 @@ const MODULES: Module[] = [
   { number: "02", name: "Power Map", caption: "", cta: "Open the map", route: "/power-map", preview: RealUSMap },
   { number: "03", name: "Supply Chain Flow", caption: "Where the buildout can get stuck, mapped to the companies exposed.", cta: "Trace the chain", route: "/stack?view=flow", preview: SupplyChainMini },
   { number: "04", name: "Catalyst Tracker", caption: "Earnings dates, rule changes, and policy votes. One calendar.", cta: "See what's next", route: "/catalysts", preview: CatalystRows },
-  { number: "05", name: "Analyze: Portfolio", caption: "Type a ticker. See how exposed it is to the power story.", cta: "Score a ticker", route: "/analyze?tab=portfolio", preview: PortfolioPentagon },
-  { number: "06", name: "Analyze: Scenario", caption: "Pick how fast demand grows. See what it does to the grid by 2030.", cta: "Run a scenario", route: "/analyze?tab=scenario", preview: DemandSparkline },
+  { number: "05", name: "Analyze: Baskets", caption: "Compare how GridTilt classifies a set of tickers across five sectors.", cta: "Compare tickers", route: "/analyze?tab=portfolio", preview: PortfolioPentagon },
+  { number: "06", name: "Analyze: Scenario", caption: "Set your own growth and build assumptions and see the 2030 arithmetic.", cta: "Run a scenario", route: "/analyze?tab=scenario", preview: DemandSparkline },
 ];
 
 /**

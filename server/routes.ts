@@ -13,6 +13,7 @@ import {
   loadPending as loadPendingDatacenters,
   approvePending as approvePendingDatacenter,
   rejectPending as rejectPendingDatacenter,
+  stampFreshness as stampDatacenterFreshness,
 } from "./datacenter-ingester";
 import {
   BASE_URL,
@@ -45,7 +46,27 @@ import { fetchLivePrices, type GpuSweepSummary } from "./gpu-live";
 import { getUraniumCorrelation } from "./uranium-correlation";
 import { renderWeeklyEmail, weeklyDateLabel } from "./weekly-digest";
 import { fractionToPercent, getCachedFundamentals, refreshFundamentalsIfStale } from "./fundamentals";
-import { computeDealMetrics, type DealProject } from "./deals";
+import { normalizeTickerInput, scoreBasket } from "./portfolio-score";
+import {
+  easternDate,
+  catalystPhase,
+  catalystSortDate,
+  catalystDateLabel,
+  catalystShortLabel,
+  upcomingCatalysts,
+  type CatalystRecord,
+} from "./catalyst-lifecycle";
+import {
+  computeDealMetrics,
+  effectiveFirmness,
+  mergeBacklogProjectUpdate,
+  parseBacklogProjectRequest,
+  subtotalsByStatus,
+  BACKLOG_TYPES,
+  FIRMNESS_VALUES,
+  ASSET_VALUES,
+  type DealProject,
+} from "./deals";
 import { composeBrief, renderBriefText, type BriefInput } from "./brief";
 import { computeGpuEconomics, TRAINING_PRESETS } from "./gpu-economics";
 import { readFrontierRegistry, summarizeFrontierRegistry, type FrontierRegistryResponse } from "./frontier-models";
@@ -196,37 +217,6 @@ const COMPANY_DATABASE: Record<string, {
   ANET: { name: "Arista Networks Inc", primarySegment: "Compute", sectors: { Compute: 40, Infrastructure: 30, Power: 5, Cooling: 8, Grid: 5 }, explanation: "DC networking switches and software. Dominates cloud provider network deployments." },
   MRVL: { name: "Marvell Technology Inc", primarySegment: "Compute", sectors: { Compute: 65, Infrastructure: 18, Power: 5, Cooling: 8, Grid: 5 }, explanation: "Custom AI accelerator and DC networking silicon. Electro-optics for hyperscaler infrastructure." },
 };
-
-function scorePortfolioTicker(ticker: string) {
-  const known = COMPANY_DATABASE[ticker.toUpperCase()];
-  if (known) {
-    const sectors = known.sectors;
-    const score = Math.round(
-      sectors.Compute * 0.3 +
-      sectors.Infrastructure * 0.25 +
-      sectors.Power * 0.25 +
-      sectors.Cooling * 0.1 +
-      sectors.Grid * 0.1
-    );
-    return {
-      ticker: ticker.toUpperCase(),
-      name: known.name,
-      score: Math.min(score, 100),
-      sectors,
-      primarySegment: known.primarySegment,
-      explanation: known.explanation,
-    };
-  }
-
-  return {
-    ticker: ticker.toUpperCase(),
-    name: `${ticker.toUpperCase()} (Unknown)`,
-    score: 8,
-    sectors: { Compute: 10, Infrastructure: 5, Power: 5, Cooling: 5, Grid: 5 },
-    primarySegment: "Other",
-    explanation: "No direct AI power infrastructure exposure identified. May have indirect benefits from broader technology adoption.",
-  };
-}
 
 // Yahoo chart() options keyed to the requested timeframe.
 // Returns intraday for 1D, hourly for 5D, daily for 1M.
@@ -1034,17 +1024,25 @@ interface BacklogProject {
   id: string;
   projectName: string;
   sponsor: string;
-  capacityMW: number;
-  type: "nuclear" | "gas" | "solar" | "wind" | "storage" | "hybrid" | "load" | "other";
+  /** Null when the parties have not disclosed it. */
+  capacityMW: number | null;
+  type: (typeof BACKLOG_TYPES)[number];
   iso: string;
   state: string;
   status: "active" | "withdrawn" | "operational";
   category: "generation" | "load" | "ppa" | "aggregate" | "regulatory";
-  expectedOnline: string | null;
+  expectedOnline?: string | null;
   offtaker?: string | null;
   dcRelevant: boolean;
   sources?: string[];
   notes?: string;
+  // Agreement review fields; see server/deals.ts.
+  firmness?: DealProject["firmness"];
+  firmnessSource?: string;
+  reviewed?: string;
+  asset?: DealProject["asset"];
+  includes?: string[];
+  upTo?: boolean;
 }
 interface BacklogDataset {
   /** When a value in this dataset last changed. */
@@ -1251,7 +1249,9 @@ export async function ogCardForTemplate(template: string): Promise<OgCard> {
       const bars: Bar[] = [
         { label: "PJM reopened cycle", value: h.pjmReopenedGW, display: gw(h.pjmReopenedGW) },
         { label: "ERCOT large-load", value: h.ercotLargeLoadGW, display: gw(h.ercotLargeLoadGW), hot: true },
-        { label: "Dominion contracted", value: h.dominionContractedGW, display: gw(h.dominionContractedGW) },
+        // Dominion counts engineering and construction letters as well as signed
+        // service agreements in this figure, so it is not "contracted" power.
+        { label: "Dominion DC, all stages", value: h.dominionContractedGW, display: gw(h.dominionContractedGW) },
       ].filter((b) => typeof b.value === "number" && b.value > 0);
       return {
         title: "the grid is the bottleneck",
@@ -1344,7 +1344,9 @@ export async function ogCardForTemplate(template: string): Promise<OgCard> {
       const h = data.headline;
       return {
         title: "us interconnection backlog",
-        subtitle: `tracking ${h.trackedProjects} named projects · ${h.trackedCapacityGW} GW`,
+        // No GW total: the named projects mix data-center load, generation and
+        // power agreements for the same plants, so their MW do not add up.
+        subtitle: `tracking ${h.trackedProjects} named projects`,
         stats: [
           { label: "Total queue (GW)", value: h.queueOverallGW.toLocaleString() },
           { label: "Median wait", value: `${h.medianWaitMonths} mo` },
@@ -1825,10 +1827,10 @@ async function composeCatalystPreviewTweet(): Promise<string> {
   // The dashboard's calendar merges live earnings dates with the curated
   // policy catalysts; the tweet previews the SAME merged week, otherwise it
   // says "quiet docket" while the calendar shows earnings (the old bug).
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const todayStr = today.toISOString().split("T")[0];
-  const endStr = new Date(today.getTime() + 7 * 86400000).toISOString().split("T")[0];
+  // Eastern calendar days, the same convention the calendar uses.
+  const now = new Date();
+  const todayStr = easternDate(now);
+  const endStr = easternDate(new Date(now.getTime() + 7 * 86400000));
 
   // Earnings side: module-scope cache, refreshed by the dispatch handlers
   // right before this composer runs (refreshEarningsCache is route-scoped).
@@ -1846,14 +1848,13 @@ async function composeCatalystPreviewTweet(): Promise<string> {
   let manual: { date: string; title: string; tier1: boolean }[] = [];
   try {
     const filePath = join(process.cwd(), "server", "data", "catalysts.json");
-    const catalysts = JSON.parse(readFileSync(filePath, "utf-8")) as any[];
-    manual = catalysts
-      .filter((c) => typeof c.date === "string" && c.date >= todayStr && c.date <= endStr)
-      .map((c) => ({
-        date: c.date,
-        title: c.title,
-        tier1: Array.isArray(c.tickers) && c.tickers.some((t: string) => TIER1_EARNINGS.has(t)),
-      }));
+    const catalysts = JSON.parse(readFileSync(filePath, "utf-8")) as CatalystRecord[];
+    manual = upcomingCatalysts(catalysts, todayStr, { through: endStr }).map((c) => ({
+      date: catalystSortDate(c),
+      label: catalystShortLabel(c) ?? undefined,
+      title: c.title,
+      tier1: Array.isArray(c.tickers) && c.tickers.some((t: string) => TIER1_EARNINGS.has(t)),
+    }));
   } catch {
     // curated file is optional; earnings alone still make a post
   }
@@ -2469,7 +2470,10 @@ export async function registerRoutes(
         constructionGW,
         fleetAvg: gi.fleetAvg || null,
         fleetAvg1yChange: gi.fleetAvg1yChange,
-        tightestRTO: { label: "MISO", marginPct: 13.4 }, // NERC LTRA 2025; mirror of client data/rto-config
+        // NERC 2025 LTRA, summer 2026: the area with the smallest cushion above its
+        // own reference. Mirror of client/src/data/nerc-reserve-margins.ts; it said
+        // MISO 13.4%, a figure no NERC report contains.
+        tightestRTO: { label: "MISO", marginPct: 11.0, referencePct: 8.1 },
         dateLabel: weeklyDateLabel(new Date()),
         siteUrl: BASE_URL,
       });
@@ -2696,18 +2700,14 @@ export async function registerRoutes(
   });
 
   // Portfolio scoring endpoint
+  // Editorial sector classifications for a list of tickers. A ticker the
+  // registry does not classify comes back uncovered, with no score; the mean
+  // covers classified tickers only. Malformed input is a 400, not a 500.
   app.post("/api/portfolio-score", async (req, res) => {
+    const input = normalizeTickerInput(req.body?.tickers);
+    if (!input.ok) return res.status(400).json({ error: input.error });
     try {
-      const { tickers } = req.body;
-      if (!Array.isArray(tickers) || tickers.length === 0) {
-        return res.status(400).json({ error: "tickers must be a non-empty array" });
-      }
-
-      const results = tickers.slice(0, 15).map((ticker: string) =>
-        scorePortfolioTicker(ticker.trim().toUpperCase())
-      );
-
-      res.json({ results });
+      res.json(scoreBasket(input.tickers, COMPANY_DATABASE));
     } catch (error) {
       console.error("Portfolio score error:", error);
       res.status(500).json({ error: "Failed to score portfolio" });
@@ -2780,20 +2780,23 @@ export async function registerRoutes(
   function loadManualCatalysts(): any[] {
     try {
       const filePath = join(process.cwd(), "server", "data", "catalysts.json");
-      const raw = readFileSync(filePath, "utf-8");
-      const todayStr = new Date().toISOString().split('T')[0];
-      return JSON.parse(raw)
-        .filter((c: any) => typeof c.date === "string" && c.date >= todayStr)
-        .map((c: any) => ({
-          id: c.id?.toString() ?? c.title,
-          category: c.category,
-          title: c.title,
-          description: c.thesisImpact || '',
-          dateLabel: new Date(c.date + "T12:00:00").toLocaleDateString("en-US", { month: "short", year: "numeric" }),
-          sortDate: c.date,
-          affectedTickers: c.tickers || [],
-          affectedSectors: [],
-        }));
+      const list = JSON.parse(readFileSync(filePath, "utf-8")) as CatalystRecord[];
+      // Upcoming by the Eastern calendar day; past, completed and undated
+      // events never reach the calendar.
+      return upcomingCatalysts(list, easternDate(new Date())).map((c) => ({
+        id: c.id?.toString() ?? c.title,
+        category: c.category,
+        title: c.title,
+        description: c.thesisImpact || '',
+        dateLabel: catalystDateLabel(c),
+        // Month windows and estimates show their label; only an exact confirmed
+        // day gets "Today", "In 3d" or a weekday.
+        exactDay: catalystShortLabel(c) === null,
+        dateKind: c.dateKind ?? null,
+        sortDate: catalystSortDate(c),
+        affectedTickers: c.tickers || [],
+        affectedSectors: [],
+      }));
     } catch {
       return [];
     }
@@ -2848,7 +2851,9 @@ export async function registerRoutes(
   };
 
   function getEarningsData() {
-    const todayStr = new Date().toISOString().split('T')[0];
+    // Same Eastern calendar day as the curated catalysts (the UTC date turned
+    // over at 8 pm Eastern and dropped same-day reports early).
+    const todayStr = easternDate(new Date());
 
     // Single source of truth: Yahoo Finance calendarEvents. No date seeds.
     if (!earningsCache?.items) return [];
@@ -2916,6 +2921,7 @@ export async function registerRoutes(
       title: c.title,
       description: c.description,
       dateLabel: c.dateLabel,
+      exactDay: c.exactDay,
       affectedTickers: c.affectedTickers,
       affectedSectors: c.affectedSectors,
     }));
@@ -2957,6 +2963,9 @@ export async function registerRoutes(
 
   function saveDatacenters(list: Datacenter[]): void {
     writeFileSync(datacentersPath, JSON.stringify(list, null, 2) + "\n", "utf-8");
+    // An admin add or delete changes the approved dataset, same as an ingester
+    // approval, so it moves lastRefreshed in the freshness sidecar too.
+    stampDatacenterFreshness("lastRefreshed");
   }
 
   function validateDatacenter(body: any): { ok: true; value: Omit<Datacenter, "id"> } | { ok: false; error: string } {
@@ -3017,6 +3026,22 @@ export async function registerRoutes(
     res.status(201).json(created);
   });
 
+  // Correct a facility in place. Delete-and-re-add changed the id, and ids
+  // are what map cards, links and evidence records point at.
+  app.put("/api/admin/datacenters/:id", (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    const id = parseInt(req.params.id, 10);
+    if (!Number.isFinite(id)) return res.status(400).json({ error: "Invalid id" });
+    const parsed = validateDatacenter(req.body);
+    if (!parsed.ok) return res.status(400).json({ error: parsed.error });
+    const list = loadDatacenters();
+    const idx = list.findIndex((d) => d.id === id);
+    if (idx < 0) return res.status(404).json({ error: "Not found" });
+    list[idx] = { id, ...parsed.value };
+    saveDatacenters(list);
+    res.json(list[idx]);
+  });
+
   app.delete("/api/admin/datacenters/:id", (req, res) => {
     if (!requireAdmin(req, res)) return;
     const id = parseInt(req.params.id, 10);
@@ -3067,11 +3092,13 @@ export async function registerRoutes(
   app.get("/api/catalysts", (_req, res) => {
     try {
       const filePath = join(process.cwd(), "server", "data", "catalysts.json");
-      const raw = readFileSync(filePath, "utf-8");
-      const catalysts = JSON.parse(raw);
-      const sorted = catalysts.sort((a: any, b: any) =>
-        new Date(a.date).getTime() - new Date(b.date).getTime()
-      );
+      const catalysts = JSON.parse(readFileSync(filePath, "utf-8")) as CatalystRecord[];
+      // The full record, history included, with each entry's phase so no
+      // consumer can mistake a past or undated event for an upcoming one.
+      const today = easternDate(new Date());
+      const sorted = catalysts
+        .map((c) => ({ ...c, phase: catalystPhase(c, today) }))
+        .sort((a, b) => catalystSortDate(a).localeCompare(catalystSortDate(b)));
       res.json(sorted);
     } catch (error) {
       console.error("Catalysts read error:", error);
@@ -3197,8 +3224,8 @@ Preferred-Languages: en
         const companyInfo = COMPANY_DATABASE[ticker.toUpperCase()];
         card = pageCard(
           companyInfo ? `${companyInfo.name} ($${ticker.toUpperCase()})` : `$${ticker.toUpperCase()}`,
-          companyInfo ? `${companyInfo.primarySegment} Sector` : "AI Power Thesis Analysis",
-          [{ label: "Sector", value: companyInfo?.primarySegment || "Unknown" }],
+          companyInfo ? `${companyInfo.primarySegment} Sector` : "Not in GridTilt's sector classifications",
+          [{ label: "Sector", value: companyInfo?.primarySegment || "Not covered" }],
         );
       } else if (page === "stack") {
         card = pageCard("60+ AI Power Stocks", "Live Data Across 8 Sectors", await liveIndicesStats());
@@ -3215,7 +3242,7 @@ Preferred-Languages: en
       } else if (page === "trade") {
         card = pageCard("AI Power Scenario Calculator", "Model demand, capex, and LPT requirements through 2030", await liveIndicesStats());
       } else if (page === "portfolio") {
-        card = pageCard("AI Power Thesis Score", "Rate any portfolio against the AI power buildout", await liveIndicesStats());
+        card = pageCard("Illustrative basket", "Compare editorial sector classifications", await liveIndicesStats());
       } else if (page === "catalysts") {
         card = pageCard("Catalyst Calendar", "Earnings, policy, and regulatory events for AI power", await liveIndicesStats());
       } else if (page === "blog" && name) {
@@ -3499,58 +3526,31 @@ Preferred-Languages: en
   }
 
   // POST /api/admin/add-backlog-project
-  // Body: { projectName, sponsor, capacityMW, type, iso, state, category,
-  //         expectedOnline?, offtaker?, dcRelevant?, status?, sources?, notes? }
+  // Body: { projectName, sponsor, capacityMW (number, or null if undisclosed),
+  //         type, iso, state, category, expectedOnline?, offtaker?, dcRelevant?,
+  //         status?, sources?, notes?, firmness?, firmnessSource?, reviewed?,
+  //         asset?, includes?, upTo? }
   // Behavior: appends a new project, or updates an existing one if `id` is
-  // supplied and matches. Returns the saved project + new project count.
+  // supplied and matches. On an update, fields the body leaves out keep their
+  // stored values (parseBacklogProjectRequest + mergeBacklogProjectUpdate in
+  // server/deals.ts). Returns the saved project + new project count.
   app.post("/api/admin/add-backlog-project", (req, res) => {
     if (!requireAdmin(req, res)) return;
     const b = req.body || {};
-    const required = ["projectName", "sponsor", "capacityMW", "type", "iso", "state", "category"];
-    for (const k of required) {
-      if (b[k] === undefined || b[k] === null || b[k] === "") {
-        return res.status(400).json({ error: `missing required field: ${k}` });
-      }
-    }
-    if (typeof b.capacityMW !== "number") {
-      return res.status(400).json({ error: "capacityMW must be a number" });
-    }
-    const validTypes = ["nuclear", "gas", "solar", "wind", "storage", "hybrid", "load", "other"];
-    if (!validTypes.includes(b.type)) {
-      return res.status(400).json({ error: `type must be one of: ${validTypes.join(", ")}` });
-    }
-    const validCategories = ["generation", "load", "ppa", "aggregate", "regulatory"];
-    if (!validCategories.includes(b.category)) {
-      return res.status(400).json({ error: `category must be one of: ${validCategories.join(", ")}` });
-    }
-    const validStatuses = ["active", "withdrawn", "operational"];
-    const status = b.status ?? "active";
-    if (!validStatuses.includes(status)) {
-      return res.status(400).json({ error: `status must be one of: ${validStatuses.join(", ")}` });
-    }
-
     try {
       const data = loadBacklog();
-      const id = (b.id && typeof b.id === "string") ? b.id : slugify(b.projectName);
-      const project: BacklogProject = {
-        id,
-        projectName: b.projectName,
-        sponsor: b.sponsor,
-        capacityMW: b.capacityMW,
-        type: b.type,
-        iso: b.iso,
-        state: b.state,
-        status,
-        category: b.category,
-        expectedOnline: b.expectedOnline ?? null,
-        offtaker: b.offtaker ?? null,
-        dcRelevant: b.dcRelevant === true,
-        sources: Array.isArray(b.sources) ? b.sources : undefined,
-        notes: typeof b.notes === "string" ? b.notes : undefined,
-      };
-
+      const id = typeof b.id === "string" && b.id ? b.id : slugify(String(b.projectName ?? ""));
       const idx = data.projects.findIndex((p) => p.id === id);
+      const parsed = parseBacklogProjectRequest(b, id, idx < 0);
+      if (!parsed.ok) return res.status(400).json({ error: parsed.error });
+      const incoming = parsed.project;
       const action = idx >= 0 ? "updated" : "added";
+      // An update merges instead of replacing, so fields this route does not
+      // know about survive, and a review lapses if its checked facts change.
+      const project = mergeBacklogProjectUpdate(
+        idx >= 0 ? (data.projects[idx] as DealProject) : undefined,
+        incoming,
+      ) as BacklogProject;
       if (idx >= 0) data.projects[idx] = project;
       else data.projects.push(project);
 
@@ -3792,10 +3792,13 @@ ${rssItems}
     const catalystsPath = join(process.cwd(), "server", "data", "catalysts.json");
     let relatedCatalysts: any[] = [];
     try {
-      const raw = readFileSync(catalystsPath, "utf-8");
-      relatedCatalysts = JSON.parse(raw)
-        .filter((c: any) => c.tickers?.includes(ticker))
-        .slice(0, 5);
+      // The page titles these "Upcoming Catalysts", so they pass the same
+      // lifecycle filter as the calendar; unfiltered, they listed events
+      // months in the past.
+      const list = JSON.parse(readFileSync(catalystsPath, "utf-8")) as CatalystRecord[];
+      relatedCatalysts = upcomingCatalysts(list, easternDate(new Date()), { ticker })
+        .slice(0, 5)
+        .map((c) => ({ ...c, dateLabel: catalystDateLabel(c) }));
     } catch {}
 
     const score = computeThesisScore(companyInfo);
@@ -3877,20 +3880,21 @@ ${rssItems}
     return JSON.parse(readFileSync(CLUSTERS_FILE, "utf-8"));
   }
 
-  // For each cluster with a linkedDeal, join to the tracked nuclear deal so the
-  // page can compare planned compute power against the nuclear power secured.
-  // Firmness is optional (older datasets omit it); we default to "tracked".
+  // For each cluster with a linkedDeal, join to the tracked agreement so the
+  // page can compare planned compute power against the power agreements behind
+  // it. "Secured" means a reviewed, signed agreement; a letter of intent or an
+  // unreviewed row is listed with its status but never counted as secured.
   function computePowerSecured(clusters: any[]) {
-    let deals: any[] = [];
+    let deals: DealProject[] = [];
     try {
       const queuePath = join(process.cwd(), "server", "data", "interconnection-queue.json");
-      deals = (JSON.parse(readFileSync(queuePath, "utf-8")).projects as any[]) ?? [];
+      deals = (JSON.parse(readFileSync(queuePath, "utf-8")).projects as DealProject[]) ?? [];
     } catch {
       /* deals are optional; the cluster list still renders without them */
     }
-    const dealById = new Map<string, any>(deals.map((d): [string, any] => [d.id, d]));
+    const dealById = new Map<string, DealProject>(deals.map((d): [string, DealProject] => [d.id, d]));
     const withDeal = clusters.filter((c) => c.linkedDeal);
-    const byDeal = new Map<string, { id: string; projectName: string; capacityMW: number; firmness: string; clusterIds: string[] }>();
+    const byDeal = new Map<string, { id: string; projectName: string; capacityMW: number | null; firmness: string; clusterIds: string[] }>();
     for (const c of withDeal) {
       const d = dealById.get(c.linkedDeal);
       if (!d) continue;
@@ -3898,20 +3902,26 @@ ${rssItems}
         byDeal.get(d.id) ?? {
           id: d.id,
           projectName: d.projectName,
-          capacityMW: d.capacityMW ?? 0,
-          firmness: d.firmness ?? "tracked",
+          capacityMW: typeof d.capacityMW === "number" ? d.capacityMW : null,
+          firmness: effectiveFirmness(d),
           clusterIds: [] as string[],
         };
       entry.clusterIds.push(c.id);
       byDeal.set(d.id, entry);
     }
     const dealList = Array.from(byDeal.values());
+    // One subtotal per status, with the deals page's rules (nested rows once,
+    // undisclosed sizes apart). It used to add every linked agreement into one
+    // "across every status" figure, a framework's ceiling beside signed deals.
+    const linked = subtotalsByStatus(dealList.map((d) => dealById.get(d.id)!));
     return {
       clustersWithDeal: withDeal.length,
       plannedMWWithDeal: withDeal.reduce((a, c) => a + (c.plannedPowerMW || 0), 0),
       totalPlannedMW: clusters.reduce((a, c) => a + (c.plannedPowerMW || 0), 0),
-      securedMW: dealList.reduce((a, d) => a + d.capacityMW, 0),
-      signedSecuredMW: dealList.filter((d) => d.firmness === "signed").reduce((a, d) => a + d.capacityMW, 0),
+      /** Linked agreements by status. Never add these together. */
+      linkedByStatus: linked.byFirmness,
+      /** Reviewed signed agreements only. */
+      signedSecuredMW: linked.signed.mw,
       deals: dealList,
     };
   }
@@ -4144,12 +4154,17 @@ ${rssItems}
       },
       grid: { queueGW: qh.queueOverallGW, medianWaitMonths: qh.medianWaitMonths, ercotGW: qh.ercotLargeLoadGW },
       deals: {
-        dealCount: dm.dealCount,
-        contractedGW: +(dm.totalContractedMW / 1000).toFixed(1),
-        topBuyer: dm.topBuyer,
-        topBuyerGW: +((dm.byOfftaker[0]?.mw ?? 0) / 1000).toFixed(1),
-        topType: dm.byType[0]?.key ?? null,
-        topTypeGW: +((dm.byType[0]?.mw ?? 0) / 1000).toFixed(1),
+        signedCount: dm.signed.count,
+        signedUndisclosed: dm.signed.undisclosed,
+        signedGW: +(dm.signed.mw / 1000).toFixed(1),
+        pendingCount: dm.byFirmness
+          .filter((b) => b.key === "framework" || b.key === "option" || b.key === "preliminary")
+          .reduce((s, b) => s + b.count, 0),
+        unreviewedCount: dm.byFirmness.find((b) => b.key === "unreviewed")?.count ?? 0,
+        topSignedBuyer: dm.topSignedBuyer,
+        topSignedBuyerGW: +((dm.signedByBuyer[0]?.mw ?? 0) / 1000).toFixed(1),
+        topSignedType: dm.signedByType[0]?.key ?? null,
+        topSignedTypeGW: +((dm.signedByType[0]?.mw ?? 0) / 1000).toFixed(1),
       },
     };
     return input;

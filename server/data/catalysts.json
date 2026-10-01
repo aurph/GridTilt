@@ -50,6 +50,7 @@
   {
     "id": 16,
     "date": "2026-08-27",
+    "dateKind": "estimated",
     "title": "NVIDIA Q2 FY2027 earnings (typical reporting week)",
     "category": "Earnings",
     "thesisImpact": "NVIDIA's quarterly print is the dominant signal for AI-infra demand. Guidance on Blackwell ramps, datacenter mix, and capex absorption sets the tone for the entire stack.",
@@ -65,10 +66,12 @@
   },
   {
     "id": 18,
-    "date": "2026-12-15",
-    "title": "LBNL Queued Up 2026 Edition expected",
+    "date": "2026-05",
+    "status": "completed",
+    "title": "LBNL Queued Up 2026 Edition published",
     "category": "Industry",
-    "thesisImpact": "Lawrence Berkeley National Lab publishes the annual interconnection queue report mid-December. The 2026 edition will show end-of-2025 totals across all ISOs and balancing areas.",
-    "tickers": ["GEV", "PWR", "ETN"]
+    "thesisImpact": "Lawrence Berkeley National Lab published the 2026 edition in May 2026, covering interconnection queues through the end of 2025: about 8,200 active projects, 1,312 GW of generation and about 749 GW of storage.",
+    "tickers": ["GEV", "PWR", "ETN"],
+    "sourceUrl": "https://eta-publications.lbl.gov/publications/queued-2026-edition-characteristics"
   }
 ]
