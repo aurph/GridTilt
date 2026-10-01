@@ -10,9 +10,26 @@
  *
  * Two different land tiles are fetched. Real map tiles of different places are
  * never identical; the watermark is the same image everywhere.
+ *
+ * A key restricted to websites ("Restrict to specific websites (Referer)" in
+ * CARTO's dashboard) answers HTTP 403 to any request whose Referer does not
+ * match, and server-side requests send none by default (CARTO's basemaps FAQ,
+ * checked 2026-10-01). So the check sends the Referer a browser on the site
+ * sends: the site's origin, which is what the tiles carry under
+ * strict-origin-when-cross-origin (see basemapTileLayerProps). A 403 then
+ * means the key's website list does not include the site: "refused".
  */
 
-export type CartoKeyStatus = "unchecked" | "accepted" | "rejected" | "unreachable";
+export type CartoKeyStatus = "unchecked" | "accepted" | "rejected" | "refused" | "unreachable";
+
+/**
+ * The origin a browser on the site sends as Referer: production is
+ * gridtilt.com (no www; that name has no DNS record), development is
+ * localhost. CARTO matches the host only, without scheme or port.
+ */
+export function siteReferer(env: NodeJS.ProcessEnv = process.env): string {
+  return env.NODE_ENV === "production" ? "https://gridtilt.com/" : "http://localhost/";
+}
 
 /** Central US at zoom 4 (x=3 and x=4, y=6): both land, visibly different. */
 export const PROBE_TILE_URLS = [
@@ -20,7 +37,7 @@ export const PROBE_TILE_URLS = [
   "https://b.basemaps.cartocdn.com/dark_nolabels/4/4/6.png",
 ] as const;
 
-type FetchLike = (url: string, init?: { signal?: AbortSignal }) => Promise<{
+type FetchLike = (url: string, init?: { signal?: AbortSignal; headers?: Record<string, string> }) => Promise<{
   ok: boolean;
   status: number;
   headers: { get(name: string): string | null };
@@ -35,19 +52,24 @@ export async function probeCartoKey(
   key: string,
   fetchImpl: FetchLike = fetch as unknown as FetchLike,
   timeoutMs = 8000,
+  referer: string = siteReferer(),
 ): Promise<Exclude<CartoKeyStatus, "unchecked">> {
   let responses;
   try {
     responses = await Promise.all(
       PROBE_TILE_URLS.map((url) =>
-        fetchImpl(`${url}?key=${encodeURIComponent(key)}`, { signal: AbortSignal.timeout(timeoutMs) }),
+        fetchImpl(`${url}?key=${encodeURIComponent(key)}`, {
+          signal: AbortSignal.timeout(timeoutMs),
+          headers: { Referer: referer },
+        }),
       ),
     );
   } catch {
     return "unreachable";
   }
 
-  if (responses.some((r) => r.status === 401 || r.status === 403)) return "rejected";
+  // A known key whose website restriction does not cover this site.
+  if (responses.some((r) => r.status === 401 || r.status === 403)) return "refused";
   if (responses.some((r) => !r.ok)) return "unreachable";
   if (responses.some((r) => isWatermarkEtag(r.headers.get("etag")))) return "rejected";
 

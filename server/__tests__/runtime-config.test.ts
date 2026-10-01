@@ -73,10 +73,12 @@ describe("injectRuntimeConfig", () => {
     );
   });
 
-  it("withholds a key CARTO rejected, so the maps draw outlines instead of watermarks", () => {
-    const html = injectRuntimeConfig(HTML, env({ CARTO_API: "abc123" }), "rejected");
-    assert.equal(injectedKey(html), null);
-    assert.ok(!html.includes("abc123"));
+  it("withholds a key CARTO rejected or refused, so the maps draw outlines instead of stamped or blank tiles", () => {
+    for (const status of ["rejected", "refused"] as const) {
+      const html = injectRuntimeConfig(HTML, env({ CARTO_API: "abc123" }), status);
+      assert.equal(injectedKey(html), null, status);
+      assert.ok(!html.includes("abc123"), status);
+    }
   });
 
   it("keeps the key while unchecked, accepted, or when CARTO could not be reached", () => {

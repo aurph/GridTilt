@@ -6,7 +6,7 @@
  */
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { probeCartoKey, PROBE_TILE_URLS } from "../carto-key";
+import { probeCartoKey, PROBE_TILE_URLS, siteReferer } from "../carto-key";
 
 interface FakeResponse {
   status?: number;
@@ -14,12 +14,14 @@ interface FakeResponse {
   body?: string;
 }
 
-/** A fetch that answers each probe tile in order and records the URLs asked for. */
+/** A fetch that answers each probe tile in order and records the URLs and headers asked for. */
 function fakeFetch(answers: FakeResponse[] | Error) {
   const urls: string[] = [];
+  const headers: Array<Record<string, string> | undefined> = [];
   let i = 0;
-  const impl = async (url: string) => {
+  const impl = async (url: string, init?: { headers?: Record<string, string> }) => {
     urls.push(url);
+    headers.push(init?.headers);
     if (answers instanceof Error) throw answers;
     const a = answers[i++ % answers.length];
     const status = a.status ?? 200;
@@ -30,7 +32,7 @@ function fakeFetch(answers: FakeResponse[] | Error) {
       arrayBuffer: async () => new TextEncoder().encode(a.body ?? "").buffer as ArrayBuffer,
     };
   };
-  return { impl, urls };
+  return { impl, urls, headers };
 }
 
 describe("probeCartoKey", () => {
@@ -58,9 +60,17 @@ describe("probeCartoKey", () => {
     assert.equal(await probeCartoKey("bad", f.impl), "rejected");
   });
 
-  it("treats 401 and 403 as a rejected key", async () => {
-    assert.equal(await probeCartoKey("k", fakeFetch([{ status: 401 }]).impl), "rejected");
-    assert.equal(await probeCartoKey("k", fakeFetch([{ status: 403 }]).impl), "rejected");
+  it("calls 401 and 403 refused: a key whose website list does not include the site", async () => {
+    assert.equal(await probeCartoKey("k", fakeFetch([{ status: 401 }]).impl), "refused");
+    assert.equal(await probeCartoKey("k", fakeFetch([{ status: 403 }]).impl), "refused");
+  });
+
+  it("sends the site's origin as Referer, as a browser on the site does", async () => {
+    // A key restricted to websites answers 403 to a request with no Referer,
+    // which is every server-side request unless it sets one.
+    const f = fakeFetch([{ body: "a" }, { body: "b" }]);
+    await probeCartoKey("k", f.impl, 8000, "https://gridtilt.com/");
+    assert.deepEqual(f.headers, [{ Referer: "https://gridtilt.com/" }, { Referer: "https://gridtilt.com/" }]);
   });
 
   it("says unreachable, not rejected, when CARTO errors or cannot be reached", async () => {
@@ -76,5 +86,13 @@ describe("probeCartoKey", () => {
       f.urls,
       PROBE_TILE_URLS.map((u) => `${u}?key=a%26b`),
     );
+  });
+});
+
+describe("siteReferer", () => {
+  it("is the production origin in production and localhost elsewhere", () => {
+    assert.equal(siteReferer({ NODE_ENV: "production" }), "https://gridtilt.com/");
+    assert.equal(siteReferer({ NODE_ENV: "development" }), "http://localhost/");
+    assert.equal(siteReferer({}), "http://localhost/");
   });
 });

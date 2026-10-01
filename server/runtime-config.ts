@@ -12,7 +12,7 @@
  * (components/basemap-tiles.tsx) instead of CARTO's watermarked tiles.
  */
 
-import { probeCartoKey, type CartoKeyStatus } from "./carto-key";
+import { probeCartoKey, siteReferer, type CartoKeyStatus } from "./carto-key";
 
 export interface RuntimeConfig {
   cartoApiKey: string | null;
@@ -66,9 +66,10 @@ export function readCartoApiKey(env: NodeJS.ProcessEnv = process.env): string | 
 
 /**
  * What CARTO last said about the key (see carto-key.ts). A key CARTO rejected
- * is withheld from the page, so the maps draw state outlines instead of tiles
- * stamped "API KEY REQUIRED". Unchecked and unreachable keep the key: the
- * check has not said no, and a network blip should not strip the basemap.
+ * (watermark) or refused (403, website restriction) is withheld from the page,
+ * so the maps draw state outlines instead of stamped or blank tiles. Unchecked
+ * and unreachable keep the key: the check has not said no, and a network blip
+ * should not strip the basemap.
  */
 let keyStatus: CartoKeyStatus = "unchecked";
 
@@ -77,7 +78,7 @@ export function buildRuntimeConfig(
   status: CartoKeyStatus = keyStatus,
 ): RuntimeConfig {
   const key = readCartoApiKey(env);
-  return { cartoApiKey: key && status !== "rejected" ? key : null };
+  return { cartoApiKey: key && status !== "rejected" && status !== "refused" ? key : null };
 }
 
 const RECHECK_MS = 12 * 60 * 60 * 1000;
@@ -91,11 +92,15 @@ export function startCartoKeyCheck(env: NodeJS.ProcessEnv = process.env): void {
   const key = readCartoApiKey(env);
   if (!key || env.NODE_ENV === "test") return;
   const run = async () => {
-    const next = await probeCartoKey(key);
+    const next = await probeCartoKey(key, undefined, undefined, siteReferer(env));
     if (next !== keyStatus) {
       if (next === "accepted") console.log("[carto] CARTO accepted CARTO_API; maps use its tiles.");
       else if (next === "rejected")
         console.warn("[carto] CARTO rejected CARTO_API (tiles come back watermarked). Maps show state outlines until it works.");
+      else if (next === "refused")
+        console.warn(
+          `[carto] CARTO refused CARTO_API for ${new URL(siteReferer(env)).hostname} (HTTP 403). Add that host to the key's website list in CARTO. Maps show state outlines until it works.`,
+        );
       else console.warn("[carto] Could not reach CARTO to check CARTO_API; keeping the key.");
     }
     keyStatus = next;
@@ -128,7 +133,7 @@ function escapeAttribute(value: string): string {
  * such directive, needs no nonce or hash, costs no extra request, and is in
  * the DOM before the app module (which is deferred) ever runs.
  *
- * The tag is omitted entirely when no key is configured or CARTO rejected it.
+ * The tag is omitted entirely when no key is configured or CARTO said no to it.
  */
 export function injectRuntimeConfig(
   html: string,

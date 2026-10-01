@@ -53,6 +53,13 @@ export interface BasemapTileLayerProps {
   url: string;
   attribution: string;
   subdomains: string;
+  /**
+   * Set on each tile image. A key restricted to websites needs the site's
+   * origin as Referer, and an element's own policy wins over the page's, so
+   * the tiles keep sending it even if the page policy ever tightens to
+   * same-origin or no-referrer (either would turn every tile into a 403).
+   */
+  referrerPolicy: "strict-origin-when-cross-origin";
   maxZoom?: number;
 }
 
@@ -74,6 +81,7 @@ export function basemapTileLayerProps(
     url: cartoTileUrl(style),
     attribution: CARTO_ATTRIBUTION,
     subdomains: "abcd",
+    referrerPolicy: "strict-origin-when-cross-origin",
   };
   if (maxZoom !== undefined) props.maxZoom = maxZoom;
   return props;
