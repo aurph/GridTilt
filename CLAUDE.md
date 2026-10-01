@@ -33,6 +33,8 @@ the citizen-investor researching the AI power economy, not fund analysts or day 
 Off-nav: "/" (marketing landing, bare layout, lazy Home.tsx), /subscribe, /admin/datacenters,
 /admin/social, /stock/:ticker, /sector/:slug, /region/:slug, /operator/:slug, /blog/:slug.
 Every route except "/" gets the dashboard shell (AppSidebar + header + NewsTicker).
+The seven aliases (/gpu-economics, /power-deals, /brief, /supply-chain, /trade, /portfolio,
+/queue) are client <Redirect>s and server 301s to the same final address (seo.ts ALIAS_REDIRECTS).
 The G-chord list is maintained twice in App.tsx (display ~67-83, handler ~250-254); keep in sync.
 
 ## 2. Stack
@@ -183,7 +185,13 @@ daily X post). routes.ts only gathers data; ogCardForTemplate returns an OgCard.
   rationale, limiters, 100 kb body cap. Security-reviewed; do not casually edit.
 - Unsub token + admin auth crypto (routes.ts ~2143-2171): unsub links in already-sent emails
   depend on the exact HMAC derivation.
-- seo.ts: hand-written per-page meta, regex head surgery, sitemap slug exports. Fragile by design.
+- seo.ts: hand-written per-page meta, regex head surgery, buildSitemap. Fragile by design. An
+  address that names nothing (unknown ticker, sector, region, operator, cluster, article or path)
+  gets notFoundMeta: HTTP 404, noindex, no canonical; never the home page's meta on a 200.
+  Tickers are judged by server/company-registry.ts (the list the stock API answers from).
+  ALIAS_REDIRECTS mirrors App.tsx's <Redirect> routes and the server answers each with one 301.
+  server/__tests__/seo-truth.test.ts holds the client parity checks (sectors, regions,
+  operators, redirects); change both sides together.
 - social-format.ts: public tweet copy locked character-for-character by tests; change copy and
   test in the same commit, on purpose.
 - News scanner regexes + sanity ranges (routes.ts ~659-741, ~866-871): they auto-write curated
