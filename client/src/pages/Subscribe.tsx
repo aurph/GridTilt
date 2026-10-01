@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { CheckCircle2, Mail, TrendingUp, Map, BarChart3, TrendingDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { apiRequest } from "@/lib/queryClient";
+import { signupErrorMessage, signupResult } from "@/lib/signup";
 import { filterTrackedFacilities } from "@/lib/real-gauges";
 
 interface TopMover {
@@ -36,7 +37,7 @@ const FEATURES = [
 
 export default function Subscribe() {
   const [email, setEmail] = useState("");
-  const [status, setStatus] = useState<"idle" | "loading" | "success" | "exists" | "error">("idle");
+  const [status, setStatus] = useState<"idle" | "loading" | "success" | "exists" | "suppressed" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
 
   const { data: movers } = useQuery<TopMover[]>({ queryKey: ["/api/top-movers"] });
@@ -74,16 +75,19 @@ export default function Subscribe() {
     setStatus("loading");
     try {
       const res = await apiRequest("POST", "/api/subscribe", { email: email.trim() });
-      const data = await res.json();
-      if (data.status === "exists") {
-        setStatus("exists");
-      } else {
+      const result = signupResult(await res.json());
+      if (result.kind === "subscribed") {
         setStatus("success");
         setEmail("");
+      } else if (result.kind === "exists") {
+        setStatus("exists");
+      } else {
+        setErrorMsg(result.message);
+        setStatus(result.kind === "suppressed" ? "suppressed" : "error");
       }
-    } catch {
+    } catch (err) {
       setStatus("error");
-      setErrorMsg("Something went wrong, try again");
+      setErrorMsg(signupErrorMessage(err));
     }
   }
 
@@ -163,6 +167,11 @@ export default function Subscribe() {
                 <Mail className="h-8 w-8 text-brand-2 mx-auto mb-2" />
                 <div className="text-sm font-semibold text-brand-2">You're already on the list</div>
               </div>
+            ) : status === "suppressed" ? (
+              <div className="bg-surface-raised/60 border border-subtle rounded-lg p-6 text-center" role="status" data-testid="subscribe-suppressed">
+                <Mail className="h-8 w-8 text-white/40 mx-auto mb-2" />
+                <div className="text-sm text-white/70">{errorMsg}</div>
+              </div>
             ) : (
               <form onSubmit={handleSubmit} className="bg-surface-raised/60 border border-subtle rounded-xl p-5 space-y-3" data-testid="subscribe-form">
                 <div>
@@ -188,7 +197,7 @@ export default function Subscribe() {
                   {status === "loading" ? "..." : "Subscribe"}
                 </Button>
                 {status === "error" && (
-                  <p className="text-xs text-negative" data-testid="subscribe-error">{errorMsg}</p>
+                  <p className="text-xs text-negative" role="status" data-testid="subscribe-error">{errorMsg}</p>
                 )}
                 <p className="text-10 text-white/25 text-center pt-1">
                   Free. One email per week. Unsubscribe anytime.

@@ -33,6 +33,9 @@ import { recordDailyIndexValues, readIndexHistory } from "./index-history";
 import { getElectricityOutputMonthly, getHourlyDemandUS48 } from "./physical";
 import { getStateNews } from "./state-news";
 import { getRetailRatesByState } from "./retail-rates";
+import { Pool as PgPool } from "pg";
+import { chooseStore, postgresStore, sslFor, type PoolLike } from "./subscriber-store";
+import { registerSubscriberRoutes } from "./subscriber-routes";
 import { computeClusterMetrics, type ClusterLite, facilityClusterLinks } from "./clusters";
 import { computeGpuIndex } from "./gpu-index";
 import {
@@ -2237,26 +2240,30 @@ export async function registerRoutes(
     }
   });
 
-  const SUBSCRIBERS_FILE = join(process.cwd(), "server", "data", "subscribers.json");
-  interface Subscriber {
-    email: string;
-    subscribedAt: string;
-    intent?: string;
-    context?: string;
-  }
-
-  function loadSubscribers(): Subscriber[] {
-    try {
-      if (existsSync(SUBSCRIBERS_FILE)) {
-        return JSON.parse(readFileSync(SUBSCRIBERS_FILE, "utf8"));
-      }
-    } catch {}
-    return [];
-  }
-
-  function saveSubscribers(subs: Subscriber[]) {
-    writeFileSync(SUBSCRIBERS_FILE, JSON.stringify(subs, null, 2));
-  }
+  // Subscribers live in Postgres when DATABASE_URL is set (server/subscriber-store.ts).
+  // Production without it refuses signups (503) instead of writing to
+  // ephemeral disk; development and tests use the local JSON file. A legacy
+  // list is imported only by the operator (scripts/subscribers.ts), never at boot.
+  const subscriberChoice = chooseStore(
+    // The literal process.env.NODE_ENV is what the build replaces; read off an
+    // env object it would be undefined in the deployment (see chooseStore).
+    { databaseUrl: process.env.DATABASE_URL, production: process.env.NODE_ENV === "production" },
+    (url) => {
+      const pool = new PgPool({ connectionString: url, ssl: sslFor(url), max: 3 });
+      // An idle connection dropped by the server emits "error"; unhandled, it
+      // would crash the process.
+      pool.on("error", (e) => console.error("[subscribers] idle connection error:", e.message));
+      let target = "(unparseable DATABASE_URL)";
+      try {
+        const u = new URL(url);
+        target = `${u.hostname}${u.pathname}`; // never the user or password
+      } catch {}
+      console.log(`[subscribers] Postgres at ${target}`);
+      return postgresStore(pool as unknown as PoolLike);
+    },
+  );
+  const subscriberStore = subscriberChoice.ok ? subscriberChoice.store : null;
+  if (!subscriberChoice.ok) console.warn(`[subscribers] ${subscriberChoice.reason}`);
 
   const UNSUB_TOKEN_SECRET: string =
     process.env.UNSUB_TOKEN_SECRET ??
@@ -2343,107 +2350,36 @@ export async function registerRoutes(
     });
   });
 
-  app.post("/api/subscribe", subscribeLimiter, async (req: Request, res) => {
-    try {
-      const { email, intent, context } = req.body;
-      if (!email || typeof email !== "string") {
-        return res.status(400).json({ error: "Email is required" });
-      }
-
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
-        return res.status(400).json({ error: "That doesn't look like an email" });
-      }
-
-      const subscribers = loadSubscribers();
-      const normalizedEmail = email.toLowerCase().trim();
-      const trimmedIntent =
-        typeof intent === "string" && intent.trim() ? intent.trim().slice(0, 500) : null;
-      const trimmedContext =
-        typeof context === "string" && context.trim() ? context.trim().slice(0, 64) : null;
-
-      const existing = subscribers.find((s) => s.email === normalizedEmail);
-      if (existing) {
-        // Merge new segmentation fields onto the existing record so we don't
-        // silently drop a returning subscriber's answer (e.g., they were on the
-        // dashboard waitlist last month, today they filled the BuildYourOwn
-        // textarea on /). Preserve a prior intent rather than overwrite it;
-        // always refresh context (most-recent surface is the most useful tag).
-        let mutated = false;
-        if (trimmedIntent && !existing.intent) {
-          existing.intent = trimmedIntent;
-          mutated = true;
-        }
-        if (trimmedContext && existing.context !== trimmedContext) {
-          existing.context = trimmedContext;
-          mutated = true;
-        }
-        if (mutated) saveSubscribers(subscribers);
-        return res.json({ message: "You're already on the list", status: "exists" });
-      }
-
-      const record: Subscriber = {
-        email: normalizedEmail,
-        subscribedAt: new Date().toISOString(),
-      };
-      if (trimmedIntent) record.intent = trimmedIntent;
-      if (trimmedContext) record.context = trimmedContext;
-      subscribers.push(record);
-      saveSubscribers(subscribers);
-
-      if (process.env.RESEND_API_KEY) {
-        try {
-          const resendRes = await fetchWithTimeout("https://api.resend.com/audiences", {
-            method: "GET",
-            headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}` },
-          });
-          const audiences = await resendRes.json();
-          const audienceId = audiences?.data?.[0]?.id;
-          if (audienceId) {
-            await fetchWithTimeout(`https://api.resend.com/audiences/${audienceId}/contacts`, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
-              },
-              body: JSON.stringify({ email: normalizedEmail }),
-            });
-          }
-        } catch (e) {
-          console.error("Resend sync error:", e);
-        }
-      }
-
-      res.json({ message: "You're in", status: "subscribed" });
-    } catch (error) {
-      console.error("Subscribe error:", error);
-      res.status(500).json({ error: "Something went wrong, try again" });
+  // Adds the new address to the email provider's audience. Runs only after the
+  // signup is stored; a failure here is logged and never shown to the reader.
+  async function syncResendAudience(email: string): Promise<void> {
+    if (!process.env.RESEND_API_KEY) return;
+    const resendRes = await fetchWithTimeout("https://api.resend.com/audiences", {
+      method: "GET",
+      headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}` },
+    });
+    const audiences = await resendRes.json();
+    const audienceId = audiences?.data?.[0]?.id;
+    if (audienceId) {
+      await fetchWithTimeout(`https://api.resend.com/audiences/${audienceId}/contacts`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+        },
+        body: JSON.stringify({ email }),
+      });
     }
-  });
+  }
 
-  app.get("/api/unsubscribe", unsubscribeLimiter, (req, res) => {
-    const { token } = req.query;
-    if (!token || typeof token !== "string") {
-      return res.status(400).send("Invalid unsubscribe link");
-    }
-
-    const subscribers = loadSubscribers();
-    const remaining = subscribers.filter((s) => !safeEqualStr(makeUnsubToken(s.email), token));
-
-    if (remaining.length < subscribers.length) {
-      saveSubscribers(remaining);
-      return res.send(`
-        <html><head><title>Unsubscribed</title><style>body{background:#0d0d14;color:#fff;font-family:system-ui;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;}
-        .card{text-align:center;padding:2rem;}.check{color:#22c55e;font-size:3rem;}</style></head>
-        <body><div class="card"><div class="check">&#10003;</div><h2>Unsubscribed</h2><p style="color:#888;">You've been removed from the GridTilt mailing list.</p></div></body></html>
-      `);
-    }
-
-    res.send(`
-      <html><head><title>Unsubscribe</title><style>body{background:#0d0d14;color:#fff;font-family:system-ui;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;}
-      .card{text-align:center;padding:2rem;}</style></head>
-      <body><div class="card"><h2>Not Found</h2><p style="color:#888;">This email was not found in our subscriber list.</p></div></body></html>
-    `);
+  registerSubscriberRoutes(app, {
+    store: subscriberStore,
+    // Unchanged derivation: unsubscribe links in emails already sent depend on it.
+    tokenMatches: (email, token) => safeEqualStr(makeUnsubToken(email), token),
+    requireAdmin,
+    subscribeLimiter,
+    unsubscribeLimiter,
+    afterSubscribe: syncResendAudience,
   });
 
   app.get("/api/newsletter/preview", async (req, res) => {
@@ -2523,8 +2459,14 @@ export async function registerRoutes(
       return res.status(400).json({ error: "RESEND_API_KEY not configured" });
     }
 
+    if (!subscriberStore) {
+      return res.status(503).json({ error: "Subscriber storage is not configured (DATABASE_URL)" });
+    }
+
     try {
-      const subscribers = loadSubscribers();
+      // Active addresses with a recorded signup date only; opted-out,
+      // bounced and undated legacy rows are never sent to.
+      const subscribers = await subscriberStore.listSendable();
       if (subscribers.length === 0) {
         return res.json({ message: "No subscribers", sent: 0 });
       }
@@ -2581,21 +2523,6 @@ export async function registerRoutes(
       console.error("Newsletter send error:", error);
       res.status(500).json({ error: "Failed to send newsletter" });
     }
-  });
-
-  app.get("/api/admin/subscribers", (req, res) => {
-    if (!requireAdmin(req, res)) return;
-    const subscribers = loadSubscribers();
-    res.json({ count: subscribers.length, subscribers });
-  });
-
-  app.delete("/api/admin/subscribers/:email", (req, res) => {
-    if (!requireAdmin(req, res)) return;
-    const emailToRemove = decodeURIComponent(req.params.email).toLowerCase();
-    const subscribers = loadSubscribers();
-    const remaining = subscribers.filter((s) => s.email !== emailToRemove);
-    saveSubscribers(remaining);
-    res.json({ message: "Removed", count: remaining.length });
   });
 
   async function refreshEarningsCache(): Promise<any[]> {
