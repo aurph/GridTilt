@@ -20,7 +20,14 @@ import { PageHeader } from "@/components/PageHeader";
 import { NERC_LTRA, STATE_NERC_NOTE, type NercRisk } from "@/data/nerc-reserve-margins";
 import { areaForState, areasForRegion, cushion } from "@/lib/reserve-margins";
 import { STATE_GRID, STATE_GRID_SOURCE } from "@/data/state-grid";
-import { readSavedState, resolveState, stateSearch, writeSavedState } from "@/lib/state-selection";
+import {
+  MY_GRID_STATE_KEY,
+  browserStorage,
+  choiceNavigation,
+  readSavedState,
+  resolveState,
+  writeSavedState,
+} from "@/lib/state-selection";
 import { BORDER, BRAND, FONT, INK, SEMANTIC, STATUS_COLORS, SURFACE } from "@/lib/tokens";
 import { seriesMotion, axisProps, gridProps, tooltipContentStyle, tooltipItemStyle, tooltipLabelStyle,  } from "@/lib/chart-theme";
 // US state boundaries: US Census cartographic boundary file (public domain),
@@ -29,7 +36,6 @@ import statesGeoRaw from "@/data/us-states.geo.json";
 
 const statesGeo = statesGeoRaw as unknown as FeatureCollection;
 
-const STORAGE_KEY = "gt-my-grid-state";
 
 // Same threshold the Power map honors: only hyperscale-class sites. The
 // captions on this page promise 400 MW and up, so the filter enforces it.
@@ -206,8 +212,8 @@ function MyGridMap({
                   <span className="text-11 font-mono">
                     {f.name} · {f.company}
                     {f.powerMW ? ` · ${f.powerMW} MW` : ""} · {STATUS_LABEL[f.status] ?? f.status}
-                    {/* A neighbor says where it is; it is not counted in the chosen state. */}
-                    {!inState && ` · ${f.state}, neighboring state`}
+                    {/* Out of state: say where it is; it is not counted in the chosen state. */}
+                    {!inState && ` · ${f.state}, outside ${stateCode}`}
                   </span>
                 </MapTooltip>
               </CircleMarker>
@@ -233,15 +239,6 @@ function CellLabel({ children }: { children: React.ReactNode }) {
   return <p className="text-[11px] text-muted-foreground">{children}</p>;
 }
 
-/** localStorage, or null where reading it throws (blocked storage, some privacy modes). */
-function safeStorage(): Storage | null {
-  try {
-    return typeof window !== "undefined" ? window.localStorage : null;
-  } catch {
-    return null;
-  }
-}
-
 const isCovered = (code: string) => Boolean(STATE_GRID[code]);
 
 export default function MyGrid() {
@@ -250,7 +247,7 @@ export default function MyGrid() {
   // lib/state-selection.ts for the precedence rules.
   const search = useSearch();
   const [, navigate] = useLocation();
-  const resolution = useMemo(() => resolveState(search, readSavedState(safeStorage(), STORAGE_KEY), isCovered), [search]);
+  const resolution = useMemo(() => resolveState(search, readSavedState(browserStorage(), MY_GRID_STATE_KEY), isCovered), [search]);
   const state = resolution.code;
 
   // Canonical address: an uppercase code, and a remembered state written into
@@ -260,8 +257,9 @@ export default function MyGrid() {
   }, [resolution.replaceSearch, navigate]);
 
   function chooseState(code: string) {
-    writeSavedState(safeStorage(), STORAGE_KEY, code);
-    navigate(`/my-grid${stateSearch(code, search)}`);
+    writeSavedState(browserStorage(), MY_GRID_STATE_KEY, code);
+    const next = choiceNavigation(search, state, code);
+    navigate(`/my-grid${next.search}`, { replace: next.replace });
   }
 
   const {
@@ -556,8 +554,8 @@ export default function MyGrid() {
               ) : localFacilities.length === 0 ? (
                 <p className="p-4 text-xs leading-relaxed text-muted-foreground" data-testid="my-grid-no-facilities">
                   No tracked facilities in {grid.name}. The registry covers hyperscale campuses of
-                  400 MW and up; smaller sites are out of scope. Gray marks on the map are the
-                  nearest tracked facilities in neighboring states.
+                  400 MW and up; smaller sites are out of scope. Gray marks on the map are
+                  tracked facilities in other states.
                 </p>
               ) : (
                 <div className="overflow-x-auto">
@@ -608,11 +606,11 @@ export default function MyGrid() {
               </div>
               <div className="p-4">
                 {ratesError ? (
-                  <RatesUnavailable onRetry={() => refetchRates()} />
+                  <RatesUnavailable stateCode={state} onRetry={() => refetchRates()} />
                 ) : !rates ? (
                   <Skeleton className="h-40 w-full" aria-hidden="true" />
                 ) : !("byState" in rates) || series.length === 0 ? (
-                  <RatesUnavailable />
+                  <RatesUnavailable stateCode={state} />
                 ) : (
                   <>
                     <div className="mb-4" data-testid="my-grid-rate">
@@ -690,17 +688,28 @@ export default function MyGrid() {
   );
 }
 
-/** Shown when no state-average rate can be given: no key, a failed request, or no series for the state. */
-function RatesUnavailable({ onRetry }: { onRetry?: () => void }) {
+/**
+ * Shown when no state-average rate can be given: no key, a failed request, or
+ * no series for the state. The links a reader needs stay on screen.
+ */
+function RatesUnavailable({ stateCode, onRetry }: { stateCode: string; onRetry?: () => void }) {
   return (
     <div className="space-y-2" data-testid="my-grid-rates-unavailable">
       <p className="text-xs leading-relaxed text-muted-foreground max-w-[60ch]">
-        State-average rates are unavailable. Your utility's supply and delivery charges may differ.
+        State-average rates are unavailable right now. Your utility, usage and tariff determine your bill.
       </p>
       <p className="text-11 text-muted-foreground">
         <a href={EIA_STATE_PRICES_URL} target="_blank" rel="noopener noreferrer" className="text-brand hover:text-brand-2">
           EIA's table of average residential prices by state
         </a>
+        {stateCode === "MD" && (
+          <>
+            {" · "}
+            <a href={MD_PSC_SUPPLY_URL} target="_blank" rel="noopener noreferrer" className="text-brand hover:text-brand-2">
+              Maryland PSC on how supply is priced
+            </a>
+          </>
+        )}
         {onRetry && (
           <>
             {" · "}
@@ -773,7 +782,8 @@ function StateNewsCard({ stateCode, stateName }: { stateCode: string; stateName:
         <ErrorState label="State news failed to load." onRetry={() => refetch()} />
       ) : !data || data.items.length === 0 ? (
         <p className="p-4 text-xs leading-relaxed text-muted-foreground" data-testid="my-grid-no-news">
-          Google News returned no {stateName} grid, utility or data center headlines from the last two weeks.
+          GridTilt shows Google News headlines that name {stateName} or no other state and mention the
+          grid, utilities or data centers. None from the last two weeks matched.
         </p>
       ) : (
         <div data-testid="my-grid-news-list">

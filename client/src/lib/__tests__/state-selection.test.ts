@@ -4,6 +4,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
+  choiceNavigation,
   normalizeStateCode,
   readSavedState,
   resolveState,
@@ -86,4 +87,92 @@ test("rewriting the address keeps other parameters, such as a campaign tag", () 
   assert.equal(stateSearch("", "?utm_source=x&state=MD"), "?utm_source=x");
   assert.equal(resolveState("?utm_source=x", "VA", isCovered).replaceSearch, "?utm_source=x&state=VA");
   assert.equal(resolveState("utm_source=x&state=va", null, isCovered).replaceSearch, "?utm_source=x&state=VA");
+});
+
+test("a choice from the chooser replaces its entry; a change between states pushes", () => {
+  assert.deepEqual(choiceNavigation("", "", "MD"), { search: "?state=MD", replace: true });
+  assert.deepEqual(choiceNavigation("?state=ZZ", "", "MD"), { search: "?state=MD", replace: true });
+  assert.deepEqual(choiceNavigation("?state=MD", "MD", "TX"), { search: "?state=TX", replace: false });
+  // Clearing pushes the chooser, so Back returns to the state that was shown.
+  assert.deepEqual(choiceNavigation("?state=MD", "MD", ""), { search: "", replace: false });
+  // Other parameters ride along.
+  assert.deepEqual(choiceNavigation("?utm_source=x", "", "VA"), { search: "?utm_source=x&state=VA", replace: true });
+});
+
+/**
+ * A small model of the browser history plus the page's two navigation paths:
+ * the reader's choice (choiceNavigation) and the canonical rewrite the page
+ * applies after resolving the URL (resolveState's replaceSearch).
+ */
+function historyModel(start: string[]) {
+  const entries = [...start];
+  let index = entries.length - 1;
+  let saved: string | null = null;
+  const settle = () => {
+    // What My Grid does on render: resolve, then replace with the canonical URL.
+    const url = entries[index];
+    if (!url.startsWith("/my-grid")) return;
+    const search = url.slice("/my-grid".length);
+    const r = resolveState(search, saved, isCovered);
+    if (r.replaceSearch !== null) entries[index] = `/my-grid${r.replaceSearch}`;
+  };
+  const shown = () => {
+    const url = entries[index];
+    return url.startsWith("/my-grid") ? resolveState(url.slice("/my-grid".length), saved, isCovered).code : null;
+  };
+  settle();
+  return {
+    choose(code: string) {
+      // The page passes the state from the render before the click, then saves.
+      const before = shown() ?? "";
+      saved = code || null;
+      const url = entries[index];
+      const next = choiceNavigation(url.slice("/my-grid".length), before, code);
+      const target = `/my-grid${next.search}`;
+      if (next.replace) entries[index] = target;
+      else {
+        entries.splice(index + 1);
+        entries.push(target);
+        index++;
+      }
+      settle();
+    },
+    back() {
+      index = Math.max(0, index - 1);
+      settle();
+    },
+    get url() {
+      return entries[index];
+    },
+    shown,
+  };
+}
+
+test("Back after the first choice leaves My Grid instead of re-showing the same state", () => {
+  // Landing -> "Choose your state" -> pick Maryland -> Back.
+  const h = historyModel(["/", "/my-grid"]);
+  assert.equal(h.shown(), "");
+  h.choose("MD");
+  assert.equal(h.url, "/my-grid?state=MD");
+  h.back();
+  assert.equal(h.url, "/", "Back must reach the page the reader came from");
+});
+
+test("Back after changing state returns to the previous state", () => {
+  const h = historyModel(["/", "/my-grid"]);
+  h.choose("MD");
+  h.choose("TX");
+  h.back();
+  assert.equal(h.url, "/my-grid?state=MD");
+  assert.equal(h.shown(), "MD");
+});
+
+test("clearing and picking again keeps Back on the earlier state", () => {
+  const h = historyModel(["/", "/my-grid"]);
+  h.choose("MD");
+  h.choose("");
+  assert.equal(h.shown(), "");
+  h.choose("VA");
+  h.back();
+  assert.equal(h.url, "/my-grid?state=MD");
 });

@@ -12,9 +12,24 @@
  *   back silently to the remembered state, which would answer a question the
  *   reader did not ask.
  * - A lowercase code is normalized to the canonical uppercase URL.
+ * - A choice made from the chooser replaces the chooser's history entry. A
+ *   pushed choice left the bare /my-grid behind it, which the remembered state
+ *   rewrote on Back, so Back seemed to do nothing.
  */
 
 export type StateSource = "url" | "saved" | "none";
+
+/** Where My Grid remembers the reader's own choice (never a shared link's state). */
+export const MY_GRID_STATE_KEY = "gt-my-grid-state";
+
+/** localStorage, or null where reading it throws (blocked storage, some privacy modes). */
+export function browserStorage(): Storage | null {
+  try {
+    return typeof window !== "undefined" ? window.localStorage : null;
+  } catch {
+    return null;
+  }
+}
 
 export interface StateResolution {
   /** Two-letter code to show, or "" for the chooser. */
@@ -43,6 +58,20 @@ export function stateSearch(code: string, current = ""): string {
   else params.delete("state");
   const q = params.toString();
   return q ? `?${q}` : "";
+}
+
+/**
+ * How to record a reader's choice in history. While the chooser is on screen
+ * (no state shown: a bare URL or an invalid code) the choice replaces that
+ * entry, so Back leaves My Grid. Between two shown states it is a push, so
+ * Back returns to the previous state. Clearing the choice pushes the chooser.
+ */
+export function choiceNavigation(
+  currentSearch: string,
+  shownCode: string,
+  code: string,
+): { search: string; replace: boolean } {
+  return { search: stateSearch(code, currentSearch), replace: shownCode === "" && code !== "" };
 }
 
 /**
