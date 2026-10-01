@@ -120,6 +120,11 @@ Derived from the code; starred rules confirmed by Jack 2026-07-02.
 
 Schedulers (no node-cron anywhere):
 - In-process: datacenter ingester setInterval every 6 h (off in tests; DISABLE_DATACENTER_INGESTER=1).
+- GitHub Actions .github/workflows/data-freshness.yml: news scan daily, recorder ping weekdays,
+  freshness deadman twice daily. Scheduled runs are OFF until the repository variable
+  FRESHNESS_SCHEDULES_ENABLED is "true" (secret GRIDTILT_ADMIN_KEY). The repo is public, so its
+  logs print status codes and dataset ids only. ops/freshness-monitor.md explains the statuses,
+  the review sidecar and which writes land on the instance (lost on redeploy).
 - External cron-job.org: POST /api/admin/cron/daily-tweet weekdays 8:30 ET. Rotation: Mon
   buildout, Tue gpu_rental, Wed cluster_spotlight, Thu grid_backlog, Fri power_mix. Kill switch
   X_POSTING_ENABLED defaults OFF.
@@ -130,7 +135,8 @@ Schedulers (no node-cron anywhere):
 
 server/data custody (the fragility map):
 - Hand-curated, code never writes: catalysts.json, clusters.json, supply-chain-stages.json,
-  frontier-models.json, change-log.json (one entry per shipped correction, added in the same
+  frontier-models.json, dataset-reviews.json (one entry per completed review; the freshness
+  report's claim-last-reviewed date), change-log.json (one entry per shipped correction, added in the same
   change; validated by server/change-log.ts, served at /api/changes),
   hyperscaler-capex.json, content/blog/articles.json (admin blog CRUD can also write it; see debt).
 - Machine-written, never hand-edit: datacenters.json, datacenters-pending.json, index-history.json,
@@ -215,8 +221,8 @@ Documented, not to fix casually or silently:
 - PRs #1 and #2 CLOSED 2026-08-18. Their code was already in main (SEC-1..5 and the
   auth-boundary test via feat/live-gpu-prices; the indices retirement via feat/real-gauges).
   Their audit docs were salvaged to docs/ARCHITECTURE.md and docs/audit/, marked historical.
-  Still outstanding from that work: cron-job.org needs a job POSTing /api/admin/scan-news-now
-  (x-admin-key) to restore automated news scans. See docs/ or the Desktop cron setup guide.
+  The automated news scan is in .github/workflows/data-freshness.yml, off until the owner sets
+  FRESHNESS_SCHEDULES_ENABLED (see ops/freshness-monitor.md).
 - Indices RESOLVED 2026-08-18: retired from the surface, kept as a recorded series. The Overview
   shows the measured gauges; no client fetches /api/kpis. The route still computes and appends to
   index-history.json on purpose, because the series is public, has a backtest and a committed

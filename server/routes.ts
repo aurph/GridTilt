@@ -73,7 +73,7 @@ import { composeBrief, renderBriefText, type BriefInput } from "./brief";
 import { computeGpuEconomics, TRAINING_PRESETS } from "./gpu-economics";
 import { readFrontierRegistry, summarizeFrontierRegistry, type FrontierRegistryResponse } from "./frontier-models";
 import { readInferencePrices, buildInferencePriceView } from "./inference-prices";
-import { computeFreshness, type FileContents } from "./freshness";
+import { computeFreshness, renderFreshnessAlert, type FileContents, type ReviewRecord } from "./freshness";
 import { DATASET_REGISTRY } from "./freshness-registry";
 import {
   buildBuildoutTweet,
@@ -2205,9 +2205,30 @@ export async function registerRoutes(
     return contents;
   }
 
+  /** Completed reviews (server/data/dataset-reviews.json, hand-curated). */
+  function readDatasetReviews(): ReviewRecord[] {
+    try {
+      const root = JSON.parse(readFileSync(join(process.cwd(), "server", "data", "dataset-reviews.json"), "utf-8"));
+      return Array.isArray(root.reviews) ? (root.reviews as ReviewRecord[]) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function freshnessReport() {
+    return computeFreshness(readRegisteredDatasets(), Date.now(), DATASET_REGISTRY, readDatasetReviews());
+  }
+
   app.get("/api/admin/freshness", (req: Request, res) => {
     if (!requireAdmin(req, res)) return;
-    res.json(computeFreshness(readRegisteredDatasets(), Date.now()));
+    res.json(freshnessReport());
+  });
+
+  // What an alert would say for the current report. Nothing is sent: delivery
+  // and schedules need the owner's go-ahead.
+  app.get("/api/admin/freshness/alert-preview", (req: Request, res) => {
+    if (!requireAdmin(req, res)) return;
+    res.json(renderFreshnessAlert(freshnessReport()));
   });
 
   // The deadman. An external pinger (cron-job.org, same account already firing
@@ -2220,14 +2241,14 @@ export async function registerRoutes(
   // a stale-data 503 for an unhealthy instance and start recycling it.
   app.get("/api/admin/freshness/check", (req: Request, res) => {
     if (!requireAdmin(req, res)) return;
-    const report = computeFreshness(readRegisteredDatasets(), Date.now());
+    const report = freshnessReport();
     // "aging" is intentionally a 200: one missed run should not page anyone,
-    // or the alert stops meaning anything.
+    // or the alert stops meaning anything. Everything in `attention` (a
+    // stopped or failing mechanism, missing coverage, an unreadable stamp, an
+    // overdue review) is a 503.
     res.status(report.healthy ? 200 : 503).json({
       healthy: report.healthy,
-      stale: report.datasets
-        .filter((d) => d.status === "stale")
-        .map((d) => ({ id: d.id, asOf: d.asOf, detail: d.detail, mechanism: d.mechanism })),
+      attention: report.attention,
       aging: report.aging,
       generatedAt: report.generatedAt,
     });

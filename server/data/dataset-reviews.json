@@ -1,0 +1,12 @@
+{
+  "about": "Hand-curated: one entry per completed review of a dataset's facts against their sources (the claim-last-reviewed date in the freshness report). Add an entry when a review is done; never to clear an alert.",
+  "reviews": [
+    {
+      "dataset": "interconnection-queue",
+      "reviewed": "2026-09-28",
+      "outcome": "changed",
+      "scope": "Every power agreement row's firmness (signed, framework, option, preliminary, portfolio, not an AI offtake) against its primary documents",
+      "evidence": "PR #40 (codex/trust), commits 8f92d81 through eefabdc"
+    }
+  ]
+}
