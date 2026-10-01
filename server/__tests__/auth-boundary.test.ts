@@ -52,6 +52,7 @@ const PROTECTED_ROUTES: Array<[string, string]> = [
   ["GET", "/api/admin/gpu-history"],
   ["GET", "/api/admin/freshness"],
   ["GET", "/api/admin/freshness/check"],
+  ["GET", "/api/admin/freshness/alert-preview"],
   ["GET", "/api/newsletter/preview"], // SEC-1: was public, leaked subscriber count
   ["POST", "/api/social/generate"], // SEC-2: was public, burned Yahoo quota
   ["DELETE", "/api/admin/subscribers/x@y.com"],

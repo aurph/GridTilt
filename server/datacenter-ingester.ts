@@ -303,6 +303,34 @@ export function stampFreshness(
   writeFileSync(p.stampPath, JSON.stringify(stamp, null, 2) + "\n", "utf-8");
 }
 
+/**
+ * Record how a scan went. lastChecked moves only when at least one feed
+ * answered: a run whose every fetch failed checked nothing, and stamping it
+ * would report a dead source as fresh. Partial coverage is recorded beside
+ * it; a run with no answering feed records a failure instead.
+ */
+export function recordIngestionRun(
+  outcome: { feedsOk: number; feedsTotal: number; scanned: number },
+  p: IngesterPaths = defaultPaths(),
+  now: Date = new Date(),
+): void {
+  if (!p.stampPath) return;
+  let stamp: Record<string, string> = {};
+  try {
+    if (existsSync(p.stampPath)) stamp = JSON.parse(readFileSync(p.stampPath, "utf-8"));
+  } catch {
+    stamp = {};
+  }
+  if (outcome.feedsOk > 0) {
+    stamp.lastChecked = now.toISOString();
+    stamp.lastCoverage = `${outcome.feedsOk} of ${outcome.feedsTotal} feeds answered, ${outcome.scanned} items scanned`;
+  } else {
+    stamp.lastFailureAt = now.toISOString();
+    stamp.lastFailureReason = `all ${outcome.feedsTotal} feeds failed`;
+  }
+  writeFileSync(p.stampPath, JSON.stringify(stamp, null, 2) + "\n", "utf-8");
+}
+
 export function loadApproved(p: IngesterPaths = defaultPaths()): ApprovedDatacenter[] {
   try {
     if (!existsSync(p.approvedPath)) return [];
@@ -352,10 +380,12 @@ export async function runDatacenterIngestion(
     return Math.max(maxApproved, maxPending) + 1;
   };
 
+  let feedsOk = 0;
   for (const feed of INGEST_FEEDS) {
     let parsed;
     try {
       parsed = await feedFetcher(feed.url);
+      feedsOk++;
     } catch {
       continue;
     }
@@ -408,7 +438,7 @@ export async function runDatacenterIngestion(
   }
 
   if (added > 0) savePending(nextPending, paths);
-  stampFreshness("lastChecked", paths);
+  recordIngestionRun({ feedsOk, feedsTotal: INGEST_FEEDS.length, scanned }, paths);
   return { scanned, matched, added, skippedDuplicate };
 }
 

@@ -188,12 +188,32 @@ test("a scan stamps lastChecked; an approval stamps lastRefreshed", async () => 
     async () => ({ items: [] }),
   );
   let stamp = JSON.parse(readFileSync(stampPath, "utf-8"));
-  assert.equal(stamp.lastChecked, today, "scan moves lastChecked");
+  assert.ok(String(stamp.lastChecked).startsWith(today), "scan moves lastChecked (a full timestamp)");
+  assert.match(stamp.lastCoverage, /feeds answered/);
   assert.equal(stamp.lastRefreshed, "2026-01-01", "empty scan leaves lastRefreshed");
 
   approvePending(5, { approvedPath, pendingPath, stampPath });
   stamp = JSON.parse(readFileSync(stampPath, "utf-8"));
   assert.equal(stamp.lastRefreshed, today, "approval moves lastRefreshed");
+});
+
+test("a scan whose every feed fails records a failure and does not move lastChecked", async () => {
+  // A run that reached no source checked nothing; stamping it would make a
+  // dead source read as fresh.
+  const dir = mkdtempSync(join(tmpdir(), "dc-fail-"));
+  const approvedPath = join(dir, "datacenters.json");
+  const pendingPath = join(dir, "pending.json");
+  const stampPath = join(dir, "datacenters-freshness.json");
+  writeFileSync(approvedPath, "[]");
+  writeFileSync(pendingPath, "[]");
+  writeFileSync(stampPath, JSON.stringify({ lastChecked: "2026-01-01T00:00:00.000Z" }));
+  await runDatacenterIngestion({ approvedPath, pendingPath, stampPath }, async () => {
+    throw new Error("network down");
+  });
+  const stamp = JSON.parse(readFileSync(stampPath, "utf-8"));
+  assert.equal(stamp.lastChecked, "2026-01-01T00:00:00.000Z");
+  assert.match(stamp.lastFailureReason, /^all \d+ feeds failed$/);
+  assert.ok(stamp.lastFailureAt);
 });
 
 test("stamping is a no-op without a stampPath (path-injecting callers)", async () => {
