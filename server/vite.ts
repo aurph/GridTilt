@@ -9,6 +9,7 @@ import path from "path";
 // dependency tree, which is also where the advisory against it came from.
 import { randomUUID } from "crypto";
 import { getPageMeta, injectMetaTags } from "./seo";
+import { injectRuntimeConfig } from "./runtime-config";
 
 const viteLogger = createLogger();
 
@@ -55,6 +56,7 @@ export async function setupVite(server: Server, app: Express) {
       const pathname = req.originalUrl.split("?")[0] || "/";
       const meta = getPageMeta(pathname);
       template = injectMetaTags(template, meta);
+      template = injectRuntimeConfig(template);
       const page = await vite.transformIndexHtml(url, template);
       res.status(200).set({ "Content-Type": "text/html" }).end(page);
     } catch (e) {
