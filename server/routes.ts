@@ -36,6 +36,8 @@ import { getRetailRatesByState } from "./retail-rates";
 import { Pool as PgPool } from "pg";
 import { chooseStore, postgresStore, sslFor, type PoolLike } from "./subscriber-store";
 import { registerSubscriberRoutes } from "./subscriber-routes";
+import { registerNewsletterRoutes, type RenderedIssue } from "./newsletter-routes";
+import { sendViaResend } from "./resend";
 import { computeClusterMetrics, type ClusterLite, facilityClusterLinks } from "./clusters";
 import { computeGpuIndex } from "./gpu-index";
 import {
@@ -48,7 +50,7 @@ import {
 } from "./gpu-history";
 import { fetchLivePrices, type GpuSweepSummary } from "./gpu-live";
 import { getUraniumCorrelation } from "./uranium-correlation";
-import { renderWeeklyEmail, weeklyDateLabel } from "./weekly-digest";
+import { footerBlockers, renderWeeklyEmail, renderWeeklyText, weeklyDateLabel } from "./weekly-digest";
 import { fractionToPercent, getCachedFundamentals, refreshFundamentalsIfStale } from "./fundamentals";
 import { normalizeTickerInput, scoreBasket } from "./portfolio-score";
 import {
@@ -2244,6 +2246,8 @@ export async function registerRoutes(
   // Production without it refuses signups (503) instead of writing to
   // ephemeral disk; development and tests use the local JSON file. A legacy
   // list is imported only by the operator (scripts/subscribers.ts), never at boot.
+  // The same pool backs the newsletter's delivery ledger (newsletter-ledger.ts).
+  let subscriberPool: PoolLike | null = null;
   const subscriberChoice = chooseStore(
     // The literal process.env.NODE_ENV is what the build replaces; read off an
     // env object it would be undefined in the deployment (see chooseStore).
@@ -2259,7 +2263,8 @@ export async function registerRoutes(
         target = `${u.hostname}${u.pathname}`; // never the user or password
       } catch {}
       console.log(`[subscribers] Postgres at ${target}`);
-      return postgresStore(pool as unknown as PoolLike);
+      subscriberPool = pool as unknown as PoolLike;
+      return postgresStore(subscriberPool);
     },
   );
   const subscriberStore = subscriberChoice.ok ? subscriberChoice.store : null;
@@ -2350,28 +2355,6 @@ export async function registerRoutes(
     });
   });
 
-  // Adds the new address to the email provider's audience. Runs only after the
-  // signup is stored; a failure here is logged and never shown to the reader.
-  async function syncResendAudience(email: string): Promise<void> {
-    if (!process.env.RESEND_API_KEY) return;
-    const resendRes = await fetchWithTimeout("https://api.resend.com/audiences", {
-      method: "GET",
-      headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}` },
-    });
-    const audiences = await resendRes.json();
-    const audienceId = audiences?.data?.[0]?.id;
-    if (audienceId) {
-      await fetchWithTimeout(`https://api.resend.com/audiences/${audienceId}/contacts`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
-        },
-        body: JSON.stringify({ email }),
-      });
-    }
-  }
-
   registerSubscriberRoutes(app, {
     store: subscriberStore,
     // Unchanged derivation: unsubscribe links in emails already sent depend on it.
@@ -2379,150 +2362,115 @@ export async function registerRoutes(
     requireAdmin,
     subscribeLimiter,
     unsubscribeLimiter,
-    afterSubscribe: syncResendAudience,
+    // No provider contact sync: it used "the first audience in the list", and
+    // the Postgres list with its suppressions is the only list. Resend sends.
   });
 
-  app.get("/api/newsletter/preview", async (req, res) => {
-    if (!requireAdmin(req, res)) return; // SEC-1: leaked subscriber count when public
+  // The weekly issue, from the same composed Brief the site shows plus the
+  // measured gauges and the day's movers. Every figure carries its source and
+  // that source's date; the footer comes from configuration, and a missing
+  // privacy notice or mailing address blocks sending (never invented).
+  function renderCurrentIssue(): RenderedIssue {
+    const now = new Date();
+    const brief = composeBrief(buildBriefInput());
+
+    let stockData: Record<string, any> = {};
     try {
-      // The weekly digest renders from the same composed Brief the site
-      // shows, plus the measured gauges and the day's movers.
-      const brief = composeBrief(buildBriefInput());
+      const cached = stackCache["1D"];
+      if (cached) stockData = cached.data;
+    } catch {}
+    const movers = Object.values(stockData)
+      .filter((s: any) => typeof s?.changePercent === "number" && s.changePercent !== 0)
+      .sort((a: any, b: any) => Math.abs(b.changePercent) - Math.abs(a.changePercent))
+      .slice(0, 5)
+      .map((s: any) => ({ ticker: s.ticker, name: s.name, changePercent: s.changePercent }));
 
-      let stockData: Record<string, any> = {};
-      try {
-        const cached = stackCache["1D"];
-        if (cached) stockData = cached.data;
-      } catch {}
-      const movers = Object.values(stockData)
-        .filter((s: any) => typeof s?.changePercent === "number" && s.changePercent !== 0)
-        .sort((a: any, b: any) => Math.abs(b.changePercent) - Math.abs(a.changePercent))
-        .slice(0, 5)
-        .map((s: any) => ({ ticker: s.ticker, name: s.name, changePercent: s.changePercent }));
-
-      // Tracked power from the facility dataset, same >=400 MW floor and
-      // operational+construction definition as the dashboard.
-      let trackedGW: number | null = null;
-      let constructionGW: number | null = null;
-      try {
-        const dcs = JSON.parse(readFileSync(join(process.cwd(), "server", "data", "datacenters.json"), "utf-8")) as Array<{ powerMW: number; status: string }>;
-        const tracked = dcs.filter((d) => typeof d.powerMW === "number" && d.powerMW >= 400);
-        const opMW = tracked.filter((d) => d.status === "operational").reduce((t, d) => t + d.powerMW, 0);
-        const conMW = tracked.filter((d) => d.status === "construction").reduce((t, d) => t + d.powerMW, 0);
-        trackedGW = (opMW + conMW) / 1000;
-        constructionGW = conMW / 1000;
-      } catch {}
-
-      const gi = computeGpuIndex(readGpuRoot().models ?? [], easternDay(), recordedByModel());
-
-      const html = renderWeeklyEmail({
-        brief,
-        movers,
-        trackedGW,
-        constructionGW,
-        fleetAvg: gi.fleetAvg || null,
-        fleetAvg1yChange: gi.fleetAvg1yChange,
-        // NERC 2025 LTRA, summer 2026: the area with the smallest cushion above its
-        // own reference. Mirror of client/src/data/nerc-reserve-margins.ts; it said
-        // MISO 13.4%, a figure no NERC report contains.
-        tightestRTO: { label: "MISO", marginPct: 11.0, referencePct: 8.1 },
-        dateLabel: weeklyDateLabel(new Date()),
-        siteUrl: BASE_URL,
-      });
-
-      res.type("html").send(html);
-    } catch (error) {
-      console.error("Newsletter preview error:", error);
-      res.status(500).json({ error: "Failed to generate preview" });
-    }
-  });
-
-  let lastNewsletterSendMs = 0;
-  try {
-    const marker = JSON.parse(readFileSync(join(process.cwd(), "server", "data", "newsletter-log.json"), "utf-8"));
-    if (typeof marker?.lastSendMs === "number") lastNewsletterSendMs = marker.lastSendMs;
-  } catch {}
-
-  app.post("/api/newsletter/send", async (req, res) => {
-    if (!requireAdmin(req, res)) return;
-    // Weekly cadence guard: a misfired cron must not double-send. Bypass
-    // with {"force": true} for deliberate re-sends.
-    const SIX_DAYS = 6 * 24 * 60 * 60 * 1000;
-    if (Date.now() - lastNewsletterSendMs < SIX_DAYS && req.body?.force !== true) {
-      return res.status(409).json({
-        error: "Newsletter already sent within the past 6 days. Pass {\"force\": true} to override.",
-        lastSend: new Date(lastNewsletterSendMs).toISOString(),
-      });
-    }
-
-    if (!process.env.RESEND_API_KEY) {
-      return res.status(400).json({ error: "RESEND_API_KEY not configured" });
-    }
-
-    if (!subscriberStore) {
-      return res.status(503).json({ error: "Subscriber storage is not configured (DATABASE_URL)" });
-    }
-
+    // Tracked power from the facility dataset, same >=400 MW floor and
+    // operational+construction definition as the dashboard.
+    let trackedGW: number | null = null;
+    let constructionGW: number | null = null;
     try {
-      // Active addresses with a recorded signup date only; opted-out,
-      // bounced and undated legacy rows are never sent to.
-      const subscribers = await subscriberStore.listSendable();
-      if (subscribers.length === 0) {
-        return res.json({ message: "No subscribers", sent: 0 });
+      const dcs = JSON.parse(readFileSync(join(process.cwd(), "server", "data", "datacenters.json"), "utf-8")) as Array<{ powerMW: number; status: string }>;
+      const tracked = dcs.filter((d) => typeof d.powerMW === "number" && d.powerMW >= 400);
+      const opMW = tracked.filter((d) => d.status === "operational").reduce((t, d) => t + d.powerMW, 0);
+      const conMW = tracked.filter((d) => d.status === "construction").reduce((t, d) => t + d.powerMW, 0);
+      trackedGW = (opMW + conMW) / 1000;
+      constructionGW = conMW / 1000;
+    } catch {}
+
+    const gpuRoot = readGpuRoot();
+    const gi = computeGpuIndex(gpuRoot.models ?? [], easternDay(), recordedByModel());
+    const longDate = (d: Date) =>
+      d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "America/New_York" });
+    const asOf = longDate(now);
+    const gpuAsOf = gpuRoot.lastRefreshed ? longDate(new Date(`${gpuRoot.lastRefreshed}T12:00:00Z`)) : "date not recorded";
+
+    const figureSources: Array<{ figure: string; source: string; asOf: string }> = [];
+    if (trackedGW !== null) figureSources.push({ figure: "Tracked AI power", source: "GridTilt facility registry, campuses of 400 MW and up", asOf });
+    if (gi.fleetAvg) figureSources.push({ figure: "GPU fleet average", source: "GridTilt GPU rental index from public listings, last refreshed", asOf: gpuAsOf });
+    // NERC 2025 LTRA, summer 2026: the area with the smallest cushion above its
+    // own reference. Mirror of client/src/data/nerc-reserve-margins.ts.
+    figureSources.push({ figure: "Grid headroom", source: "NERC 2025 Long-Term Reliability Assessment, summer 2026 margins, published", asOf: "January 2026" });
+    if (movers.length > 0) figureSources.push({ figure: "Top movers", source: "Yahoo Finance", asOf });
+
+    const footer = {
+      contactEmail: process.env.NEWSLETTER_CONTACT_EMAIL || "gridtilt1@gmail.com",
+      privacyUrl: process.env.NEWSLETTER_PRIVACY_URL || null,
+      postalAddress: process.env.NEWSLETTER_POSTAL_ADDRESS || null,
+    };
+    const dateLabel = weeklyDateLabel(now);
+    const input = {
+      brief,
+      movers,
+      trackedGW,
+      constructionGW,
+      fleetAvg: gi.fleetAvg || null,
+      fleetAvg1yChange: gi.fleetAvg1yChange,
+      tightestRTO: { label: "MISO", marginPct: 11.0, referencePct: 8.1 },
+      dateLabel,
+      siteUrl: BASE_URL,
+      asOf,
+      figureSources,
+      footer,
+    };
+    return {
+      subject: `The GridTilt Weekly: ${dateLabel}`,
+      html: renderWeeklyEmail(input),
+      text: renderWeeklyText(input),
+      blockers: footerBlockers(footer),
+      suggestedIssueId: `weekly-${easternDay()}`,
+    };
+  }
+
+  registerNewsletterRoutes(app, {
+    pool: subscriberPool,
+    store: subscriberStore,
+    requireAdmin,
+    renderCurrent: renderCurrentIssue,
+    sendBlockers: () => {
+      const out: string[] = [];
+      if (!process.env.RESEND_API_KEY) out.push("RESEND_API_KEY is not set");
+      if (!process.env.NEWSLETTER_FROM) {
+        out.push("NEWSLETTER_FROM is not set (a sender on a domain verified in Resend, such as GridTilt <brief@news.gridtilt.com>)");
       }
-
-      const previewUrl = `http://localhost:${process.env.PORT || 5000}/api/newsletter/preview`;
-      // Preview is admin-gated (SEC-1); forward the server's own key on the
-      // internal call so the send path keeps working.
-      const previewRes = await fetchWithTimeout(previewUrl, {
-        headers: { "x-admin-key": process.env.ADMIN_API_KEY || "" },
-      });
-      const htmlTemplate = await previewRes.text();
-
-      let sent = 0;
-      let errors = 0;
-      for (const sub of subscribers) {
-        const token = makeUnsubToken(sub.email);
-        const personalizedHtml = htmlTemplate.replace(
-          "token=PREVIEW",
-          `token=${token}`
-        );
-
-        try {
-          const sendRes = await fetchWithTimeout("https://api.resend.com/emails", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
-            },
-            body: JSON.stringify({
-              from: "GridTilt <brief@gridtilt.com>",
-              to: sub.email,
-              subject: `The GridTilt Weekly · ${weeklyDateLabel(new Date())}`,
-              html: personalizedHtml,
-            }),
-          });
-          if (sendRes.ok) {
-            sent++;
-          } else {
-            errors++;
-          }
-        } catch {
-          errors++;
-        }
-      }
-
-      if (sent > 0) {
-        lastNewsletterSendMs = Date.now();
-        try {
-          writeFileSync(join(process.cwd(), "server", "data", "newsletter-log.json"), JSON.stringify({ lastSendMs: lastNewsletterSendMs, sent }, null, 2) + "\n", "utf-8");
-        } catch {}
-      }
-      res.json({ message: `Newsletter sent`, sent, errors, total: subscribers.length });
-    } catch (error) {
-      console.error("Newsletter send error:", error);
-      res.status(500).json({ error: "Failed to send newsletter" });
-    }
+      // Without verified webhooks, bounces and complaints would never suppress
+      // an address, and later issues would keep mailing it.
+      if (!process.env.RESEND_WEBHOOK_SECRET) out.push("RESEND_WEBHOOK_SECRET is not set (bounces and complaints would not be recorded)");
+      return out;
+    },
+    sendDeps: () => {
+      const apiKey = process.env.RESEND_API_KEY;
+      const from = process.env.NEWSLETTER_FROM;
+      if (!subscriberPool || !subscriberStore || !apiKey || !from) return null;
+      return {
+        pool: subscriberPool,
+        store: subscriberStore,
+        send: (email, key) => sendViaResend(apiKey, email, key),
+        tokenFor: makeUnsubToken,
+        config: { from, replyTo: process.env.NEWSLETTER_REPLY_TO || undefined, siteUrl: BASE_URL },
+      };
+    },
+    webhookSecret: () => process.env.RESEND_WEBHOOK_SECRET,
   });
 
   async function refreshEarningsCache(): Promise<any[]> {

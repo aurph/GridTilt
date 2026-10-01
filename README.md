@@ -83,7 +83,9 @@ npm start        # serve the built bundle
 | `UNSUB_TOKEN_SECRET` | yes | HMAC key for unsubscribe tokens. `openssl rand -hex 32`. |
 | `ADMIN_API_KEY` | yes | Guards `/api/admin/*`, newsletter send, and daily export. `openssl rand -hex 32`. |
 | `DATABASE_URL` | production | Postgres for subscribers (a GridTilt-only Neon database). Without it, production answers signups "unavailable"; development uses an ignored local file. See `docs/runbooks/subscriber-storage.md`. |
-| `RESEND_API_KEY` | no | Syncs subscribers to Resend and enables newsletter sends. Without it, signups are still stored but nothing is sent. |
+| `RESEND_API_KEY` | to send | Newsletter sending through Resend (one email per call, idempotency keys). Without it, signups are still stored and sending answers with the missing configuration. |
+| `NEWSLETTER_FROM`, `NEWSLETTER_POSTAL_ADDRESS`, `NEWSLETTER_PRIVACY_URL` | to send | Sender on a Resend-verified domain, the approved mailing address, and the published privacy notice. Sending is blocked until all are set. `NEWSLETTER_REPLY_TO` and `NEWSLETTER_CONTACT_EMAIL` are optional. See `docs/runbooks/newsletter-sending.md`. |
+| `RESEND_WEBHOOK_SECRET` | to send | Verifies Resend's delivery, bounce and complaint webhooks at `/api/webhooks/resend`. |
 | `EIA_API_KEY` | no | Free key from [eia.gov/opendata](https://www.eia.gov/opendata/register.php). Enables live US48 hourly demand. |
 | `NEWSDATA_API_KEY` | no | Optional [newsdata.io](https://newsdata.io) key. The 8 RSS feeds work without it. |
 | `CARTO_API` | no | Free [Carto basemap key](https://carto.com/basemaps/apikey) (5M tiles/month). Without it the maps still render, but every tile is stamped "API KEY REQUIRED". Public by nature - restrict it by domain. |

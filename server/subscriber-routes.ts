@@ -111,6 +111,22 @@ export function registerSubscriberRoutes(app: Express, deps: SubscriberRouteDeps
     }
   });
 
+  // RFC 8058 one-click: mail clients POST "List-Unsubscribe=One-Click" to the
+  // List-Unsubscribe URL. The answer is an empty 200 (a token that matches no
+  // one has nothing to stop); a failed write is a 503 so the client can retry.
+  app.post("/api/unsubscribe", deps.unsubscribeLimiter ?? pass, async (req: Request, res: Response) => {
+    const { token } = req.query;
+    if (!token || typeof token !== "string") return res.status(400).end();
+    if (!deps.store) return res.status(503).set("Retry-After", RETRY_AFTER_SECONDS).end();
+    try {
+      await deps.store.unsubscribe((address) => deps.tokenMatches(address, token));
+      res.status(200).end();
+    } catch (e) {
+      logError("One-click unsubscribe write failed:", errorText(e));
+      res.status(503).set("Retry-After", RETRY_AFTER_SECONDS).end();
+    }
+  });
+
   app.get("/api/admin/subscribers", async (req: Request, res: Response) => {
     if (!deps.requireAdmin(req, res)) return;
     if (!deps.store) return res.status(503).json({ error: "Subscriber storage is not configured" });

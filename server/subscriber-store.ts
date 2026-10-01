@@ -56,8 +56,10 @@ export interface SubscriberStore {
   suppress(email: string, state: "bounced" | "complained", now?: Date): Promise<WriteResult>;
   /** Admin retention deletion: personal data removed, a hashed marker kept. */
   erase(email: string): Promise<WriteResult & { found: boolean }>;
-  /** Addresses that may receive a send: active, with a recorded consent date. */
+  /** Addresses that may receive a send: active, with a recorded consent date, not suppressed. */
   listSendable(): Promise<SubscriberRecord[]>;
+  /** The same rule for one address, read fresh: checked immediately before each send attempt. */
+  isSendable(email: string): Promise<boolean>;
   listAll(): Promise<SubscriberRecord[]>;
   end?(): Promise<void>;
 }
@@ -281,7 +283,19 @@ export function postgresStore(
       const r = await pool.query(
         "SELECT * FROM subscribers WHERE state = 'active' AND subscribed_at IS NOT NULL ORDER BY subscribed_at, email",
       );
-      return r.rows.map(toRecord);
+      // A suppression wins even over an active row (a restored or hand-edited database).
+      const sup = await pool.query("SELECT email_hash FROM subscriber_suppressions");
+      const suppressedHashes = new Set(sup.rows.map((x) => String(x.email_hash)));
+      return r.rows.map(toRecord).filter((rec) => !suppressedHashes.has(emailHash(rec.email)));
+    },
+
+    async isSendable(rawEmail: string) {
+      await ensure();
+      const email = normalizeEmail(rawEmail);
+      if (await suppressed(email)) return false;
+      const r = await pool.query("SELECT state, subscribed_at FROM subscribers WHERE email = $1", [email]);
+      const row = r.rows[0];
+      return Boolean(row && row.state === "active" && row.subscribed_at != null);
     },
 
     async listAll() {
@@ -493,7 +507,15 @@ export function jsonDevStore(file: string = join(process.cwd(), "server", "data"
       return { persisted: true, found: data.subscribers.length < before };
     },
     async listSendable() {
-      return readJson(file).subscribers.filter((s) => s.state === "active" && s.subscribedAt !== null);
+      const data = readJson(file);
+      return data.subscribers.filter((s) => s.state === "active" && s.subscribedAt !== null && !data.suppressions[emailHash(s.email)]);
+    },
+    async isSendable(rawEmail) {
+      const data = readJson(file);
+      const email = normalizeEmail(rawEmail);
+      if (data.suppressions[emailHash(email)]) return false;
+      const s = data.subscribers.find((x) => x.email === email);
+      return Boolean(s && s.state === "active" && s.subscribedAt !== null);
     },
     async listAll() {
       return readJson(file).subscribers;

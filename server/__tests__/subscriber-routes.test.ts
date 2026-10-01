@@ -82,6 +82,33 @@ describe("subscriber routes", () => {
     }
   });
 
+  it("one-click unsubscribe (RFC 8058): a POST to the link opts out with an empty 200", async () => {
+    const s = await serve(memStore());
+    try {
+      await s.signup({ email: "click@example.com" });
+      const r = await fetch(`${s.url}/api/unsubscribe?token=${encodeURIComponent(token("click@example.com"))}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: "List-Unsubscribe=One-Click",
+      });
+      assert.equal(r.status, 200);
+      assert.equal(await r.text(), "");
+      const again = await s.signup({ email: "click@example.com" });
+      assert.equal(((await again.json()) as { status: string }).status, "suppressed");
+      assert.equal((await fetch(`${s.url}/api/unsubscribe`, { method: "POST" })).status, 400);
+      assert.equal((await fetch(`${s.url}/api/unsubscribe?token=t-nobody@example.com`, { method: "POST" })).status, 200);
+    } finally {
+      await s.close();
+    }
+    const down = await serve(brokenStore());
+    try {
+      const r = await fetch(`${down.url}/api/unsubscribe?token=${encodeURIComponent(token("x@example.com"))}`, { method: "POST" });
+      assert.equal(r.status, 503, "a failed write is retryable, never a silent 200");
+    } finally {
+      await down.close();
+    }
+  });
+
   it("rejects bad input and unknown links without a success page", async () => {
     const s = await serve(memStore());
     try {
