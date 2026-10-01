@@ -231,8 +231,9 @@ function App() {
 
   const isMarketing = MARKETING_ROUTES.includes(location);
 
-  // Privacy-respecting pageviews (GoatCounter); inert unless
-  // VITE_GOATCOUNTER_CODE is set at build time.
+  // Privacy-respecting page views (GoatCounter); inert unless
+  // VITE_GOATCOUNTER_CODE is set at build time, and only on the production
+  // host. See lib/analytics.ts and lib/analytics-events.ts.
   useEffect(() => {
     initAnalytics();
   }, []);
