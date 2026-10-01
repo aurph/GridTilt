@@ -587,6 +587,69 @@ function escapeHtml(str: string): string {
   return str.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
+/**
+ * Read-only data the public pages fetch while they render. robots.txt blocked
+ * all of /api/, so a crawler that renders JavaScript (Google does, and obeys
+ * robots.txt for the requests a page makes) got the page frame without its
+ * facts, and X's crawler could not fetch share images from /api/og. Only these
+ * prefixes are opened; admin, subscriber, newsletter, webhook and export
+ * routes stay disallowed. robots.txt is not access control: those routes
+ * check the admin key or a signature themselves.
+ */
+export const CRAWLABLE_API_PREFIXES = [
+  "/api/blog",
+  "/api/brief",
+  "/api/catalysts/",
+  "/api/changes",
+  "/api/clusters",
+  "/api/datacenters",
+  "/api/deals/metrics",
+  "/api/frontier-models",
+  "/api/gpu-economics",
+  "/api/gpu-prices/metrics",
+  "/api/inference-prices",
+  "/api/news",
+  "/api/og",
+  "/api/physical/",
+  "/api/queue",
+  "/api/sector-pulse",
+  "/api/sectors",
+  "/api/stack",
+  "/api/state-news",
+  "/api/stock",
+  "/api/supply-chain",
+  "/api/top-movers",
+] as const;
+
+export function robotsTxt(): string {
+  return [
+    "User-agent: *",
+    "Allow: /",
+    "Disallow: /api/",
+    ...CRAWLABLE_API_PREFIXES.map((p) => `Allow: ${p}`),
+    // Longer than /api/news, so it wins for the newsletter's admin routes.
+    "Disallow: /api/newsletter/",
+    "Disallow: /admin/",
+    `Sitemap: ${BASE_URL}/sitemap.xml`,
+    "",
+  ].join("\n");
+}
+
+/**
+ * Whether robots.txt lets a crawler fetch this path, by the rule Google
+ * documents: the longest matching rule wins, and Allow wins a tie.
+ */
+export function robotsAllows(path: string, txt: string = robotsTxt()): boolean {
+  let best: { len: number; allow: boolean } | null = null;
+  for (const line of txt.split("\n")) {
+    const m = /^(Allow|Disallow):\s*(\S+)\s*$/.exec(line.trim());
+    if (!m || !path.startsWith(m[2])) continue;
+    const rule = { len: m[2].length, allow: m[1] === "Allow" };
+    if (!best || rule.len > best.len || (rule.len === best.len && rule.allow)) best = rule;
+  }
+  return best ? best.allow : true;
+}
+
 export interface SitemapInput {
   /** Tickers with a stock page (the company registry). */
   tickers: string[];

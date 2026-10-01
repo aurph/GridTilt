@@ -16,7 +16,7 @@ import {
   rejectPending as rejectPendingDatacenter,
   stampFreshness as stampDatacenterFreshness,
 } from "./datacenter-ingester";
-import { ALIAS_REDIRECTS, BASE_URL, buildSitemap } from "./seo";
+import { ALIAS_REDIRECTS, BASE_URL, buildSitemap, robotsTxt } from "./seo";
 import {
   computeAiPowerIndex,
   computeGridStress,
@@ -2950,12 +2950,7 @@ export async function registerRoutes(
 
   // ─── SEO: Robots.txt ───────────────────────────────────────────────────
   app.get("/robots.txt", (_req, res) => {
-    res.set("Content-Type", "text/plain").send(`User-agent: *
-Allow: /
-Disallow: /api/
-Disallow: /admin/
-Sitemap: ${BASE_URL}/sitemap.xml
-`);
+    res.set("Content-Type", "text/plain").send(robotsTxt());
   });
 
   // ─── SEO: humans.txt ───────────────────────────────────────────────────
