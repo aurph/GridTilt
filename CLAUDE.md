@@ -128,7 +128,8 @@ Schedulers (no node-cron anywhere):
 
 server/data custody (the fragility map):
 - Hand-curated, code never writes: catalysts.json, clusters.json, supply-chain-stages.json,
-  frontier-models.json,
+  frontier-models.json, change-log.json (one entry per shipped correction, added in the same
+  change; validated by server/change-log.ts, served at /api/changes),
   hyperscaler-capex.json, content/blog/articles.json (admin blog CRUD can also write it; see debt).
 - Machine-written, never hand-edit: datacenters.json, datacenters-pending.json, index-history.json,
   gpu-price-history.json, market-constants.json, social-log.json, backlog-auto-updates.json.

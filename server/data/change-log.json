@@ -1,0 +1,61 @@
+{
+  "about": "Corrections and documented changes to GridTilt's published facts. Hand-curated: one entry per actual change, with the value before and after, the source and its date, and when GridTilt reviewed it. Entries are added when a change ships; nothing is backfilled.",
+  "changes": [
+    {
+      "id": "2026-09-29-nerc-reserve-margins",
+      "kind": "correction",
+      "entity": "grid/reserve-margins",
+      "field": "Summer 2026 reserve margin and reference level",
+      "before": "MISO 13.4%, PJM 17.5%, ERCOT 15.8%, SPP 27.8%, each read against a single 15% reference, with a GridTilt \"AI signal\" beside them",
+      "after": "MISO 11.0% (NERC reference 8.1%), PJM 29.7% (18.6%), ERCOT 28.2% (13.75%), SPP 32.4% (19.0%), each against its own reference, with NERC's own risk rating",
+      "source": "NERC 2025 Long-Term Reliability Assessment",
+      "sourceUrl": "https://www.nerc.com/globalassets/our-work/assessments/nerc_ltra_2025.pdf",
+      "sourceDate": "2026-01",
+      "reviewed": "2026-09-29",
+      "scope": "Overview grid headroom gauge, Power Map grid view, My Grid region card, region pages, weekly email",
+      "rationale": "None of the old figures matched NERC's assessment, and the single 15% reference and the AI signal were not NERC's."
+    },
+    {
+      "id": "2026-09-28-lbnl-queued-up-calendar",
+      "kind": "correction",
+      "entity": "catalysts/18",
+      "field": "Status and date",
+      "before": "Upcoming: LBNL Queued Up 2026 Edition expected December 15, 2026",
+      "after": "Published May 2026 (data through the end of 2025)",
+      "source": "Lawrence Berkeley National Laboratory, Queued Up: 2026 Edition",
+      "sourceUrl": "https://eta-publications.lbl.gov/publications/queued-2026-edition-characteristics",
+      "sourceDate": "2026-05",
+      "reviewed": "2026-09-28",
+      "scope": "Catalyst calendar, Overview and landing previews",
+      "rationale": "The calendar listed an edition LBNL had already published as an upcoming December event."
+    },
+    {
+      "id": "2026-09-28-stargate-abilene-rated-power",
+      "kind": "correction",
+      "entity": "clusters/stargate-abilene",
+      "field": "Rated (delivered) power",
+      "before": "200 MW (a GridTilt estimate)",
+      "after": "618 MW delivered, 75% of total capacity, as stated by Oracle; the source does not say what the figure measures",
+      "source": "Oracle Q1 FY2027 earnings call",
+      "sourceUrl": "https://www.fool.com/earnings/call-transcripts/2026/09/11/oracle-orcl-q1-2027-earnings-call-transcript/",
+      "sourceDate": "2026-09-10",
+      "reviewed": "2026-09-28",
+      "scope": "Compute Frontier record, cluster totals",
+      "rationale": "The estimate was replaced by the operator's own disclosed figure."
+    },
+    {
+      "id": "2026-09-28-data-center-electricity-use",
+      "kind": "correction",
+      "entity": "site/data-center-electricity-use",
+      "field": "US data center electricity use",
+      "before": "About 288 TWh, 6.4% of US electricity",
+      "after": "192 TWh in 2024, 4.7% of US electricity; 521 to 843 TWh in 2030",
+      "source": "Lawrence Berkeley National Laboratory, 2025 United States Data Center Energy Usage Report Update",
+      "sourceUrl": "https://escholarship.org/content/qt33m6w3x0/qt33m6w3x0.pdf",
+      "sourceDate": "2026-06-18",
+      "reviewed": "2026-09-28",
+      "scope": "Site search descriptions and FAQ, Analyze scenario baseline",
+      "rationale": "The old figure matched no published estimate; the scenario now starts from LBNL's."
+    }
+  ]
+}

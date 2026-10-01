@@ -94,6 +94,37 @@ function keyNumberCell(label: string, value: string, sub: string): string {
 </td>`;
 }
 
+/** The footer every issue carries: why you get it, unsubscribe, contact, privacy, mailing address. */
+export function footerHtml(siteUrl: string, footer: NewsletterFooter): string {
+  const privacy = footer.privacyUrl
+    ? `<a href="${esc(footer.privacyUrl)}" style="color:${C.inkMuted};">Privacy</a>`
+    : `<span style="color:${C.negative};">[privacy notice not published: sending is blocked]</span>`;
+  const address = footer.postalAddress
+    ? esc(footer.postalAddress)
+    : `<span style="color:${C.negative};">[mailing address not set: sending is blocked]</span>`;
+  return `<div style="font-size:11px;color:${C.inkFaint};line-height:1.6;">
+You are receiving this because you signed up at gridtilt.com on ${SIGNED_UP_HOOK}.
+<a href="${siteUrl}/api/unsubscribe?${UNSUBSCRIBE_HOOK}" style="color:${C.inkMuted};">Unsubscribe</a>
+· Contact: <a href="mailto:${esc(footer.contactEmail)}" style="color:${C.inkMuted};">${esc(footer.contactEmail)}</a>
+· ${privacy}
+</div>
+<div style="font-size:11px;color:${C.inkFaint};line-height:1.6;margin-top:6px;">GridTilt · ${address}</div>`;
+}
+
+export function footerText(siteUrl: string, footer: NewsletterFooter): string[] {
+  return [
+    `You are receiving this because you signed up at gridtilt.com on ${SIGNED_UP_HOOK}.`,
+    `Unsubscribe: ${siteUrl}/api/unsubscribe?${UNSUBSCRIBE_HOOK}`,
+    `Contact: ${footer.contactEmail}`,
+    `Privacy: ${footer.privacyUrl ?? "[privacy notice not published: sending is blocked]"}`,
+    `GridTilt, ${footer.postalAddress ?? "[mailing address not set: sending is blocked]"}`,
+  ];
+}
+
+/** Email-safe palette shared with the editorial renderer. */
+export const EMAIL_COLORS = C;
+export const escapeEmailHtml = (v: string) => esc(v);
+
 export function renderWeeklyEmail(input: WeeklyDigestInput): string {
   const { brief, movers, dateLabel, siteUrl } = input;
 
@@ -162,13 +193,6 @@ ${movers
       : `<div style="font-size:11px;color:${C.inkFaint};line-height:1.6;margin-top:10px;">Sources and dates: ${input.figureSources
           .map((f) => `${esc(f.figure)}: ${esc(f.source)}, ${esc(f.asOf)}`)
           .join("; ")}.</div>`;
-  const { footer } = input;
-  const privacy = footer.privacyUrl
-    ? `<a href="${esc(footer.privacyUrl)}" style="color:${C.inkMuted};">Privacy</a>`
-    : `<span style="color:${C.negative};">[privacy notice not published: sending is blocked]</span>`;
-  const address = footer.postalAddress
-    ? esc(footer.postalAddress)
-    : `<span style="color:${C.negative};">[mailing address not set: sending is blocked]</span>`;
 
   return `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>The GridTilt Weekly</title></head>
@@ -200,13 +224,7 @@ ${moversHtml}
 </td></tr>
 
 <tr><td style="padding:18px 32px;border-top:1px solid ${C.border};">
-<div style="font-size:11px;color:${C.inkFaint};line-height:1.6;">
-You are receiving this because you signed up at gridtilt.com on ${SIGNED_UP_HOOK}.
-<a href="${siteUrl}/api/unsubscribe?${UNSUBSCRIBE_HOOK}" style="color:${C.inkMuted};">Unsubscribe</a>
-· Contact: <a href="mailto:${esc(footer.contactEmail)}" style="color:${C.inkMuted};">${esc(footer.contactEmail)}</a>
-· ${privacy}
-</div>
-<div style="font-size:11px;color:${C.inkFaint};line-height:1.6;margin-top:6px;">GridTilt · ${address}</div>
+${footerHtml(siteUrl, input.footer)}
 ${sourcesHtml}
 </td></tr>
 
@@ -248,11 +266,7 @@ export function renderWeeklyText(input: WeeklyDigestInput): string {
   if (input.figureSources.length > 0) {
     lines.push(`Sources and dates: ${input.figureSources.map((f) => `${f.figure}: ${f.source}, ${f.asOf}`).join("; ")}.`, "");
   }
-  lines.push(`You are receiving this because you signed up at gridtilt.com on ${SIGNED_UP_HOOK}.`);
-  lines.push(`Unsubscribe: ${input.siteUrl}/api/unsubscribe?${UNSUBSCRIBE_HOOK}`);
-  lines.push(`Contact: ${input.footer.contactEmail}`);
-  lines.push(`Privacy: ${input.footer.privacyUrl ?? "[privacy notice not published: sending is blocked]"}`);
-  lines.push(`GridTilt, ${input.footer.postalAddress ?? "[mailing address not set: sending is blocked]"}`);
+  lines.push(...footerText(input.siteUrl, input.footer));
   return lines.join("\n") + "\n";
 }
 
