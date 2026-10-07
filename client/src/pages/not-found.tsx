@@ -8,7 +8,6 @@ const SECTIONS: { label: string; href: string; desc: string }[] = [
   { label: "Overview", href: "/overview", desc: "Tilt score, top movers, and the buildout timeline" },
   { label: "Equities", href: "/stack", desc: "100+ tracked stocks across 13 sectors" },
   { label: "Power", href: "/power-map", desc: "US datacenter map, deals, and interconnection queue" },
-  { label: "My Grid", href: "/my-grid", desc: "Your state's grid operator, headroom, and rates" },
   { label: "Compute", href: "/compute-frontier", desc: "Named AI training superclusters, tracked by GPU and MW" },
   { label: "GPU Prices", href: "/neocloud-intel", desc: "On-demand GPU rental pricing across neoclouds" },
   { label: "Analyze", href: "/analyze", desc: "Portfolio exposure and buildout scenario modeling" },

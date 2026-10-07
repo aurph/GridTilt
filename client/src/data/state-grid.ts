@@ -1,5 +1,5 @@
 /**
- * State -> primary grid operator, for the My Grid page. Keys into
+ * State -> primary grid operator, for Power's state buildout panel. Keys into
  * RTO_CONFIG where a NERC-assessed region applies. This is a deliberate
  * simplification: several states sit in more than one market, and the
  * split is stated in `note` rather than hidden. Alaska and Hawaii run

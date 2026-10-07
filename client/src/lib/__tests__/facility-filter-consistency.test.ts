@@ -47,7 +47,7 @@ test("every surface reading /api/datacenters applies the tracked floor", () => {
 
     const filters =
       /filterTrackedFacilities/.test(src) ||
-      // my-grid filters inline against the same exported constant.
+      // Filtering inline against the same exported constant also counts.
       /MIN_TRACKED_MW/.test(src);
     if (!filters) offenders.push(rel);
   }
