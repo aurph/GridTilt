@@ -25,6 +25,8 @@ import {
 import { Cpu, Server, Zap, TrendingUp, TrendingDown, Info, Clock, ChevronDown, ChevronRight } from "lucide-react";
 import { AsOf, ErrorState } from "@/components/Freshness";
 import { PageHeader, HeaderStat } from "@/components/PageHeader";
+import { layerRows } from "@/lib/stack-layers";
+import { SlowLoad } from "@/components/SlowLoad";
 import { BRAND, CATEGORY_COLORS, CHART_CHROME, INK, SEMANTIC } from "@/lib/tokens";
 import { axisProps, gridProps, seriesMotion } from "@/lib/chart-theme";
 import { sparklineDomain } from "@/lib/gpu-series";
@@ -228,7 +230,7 @@ function majorityMarketState(data: StackData | undefined, layerKeys: readonly st
   if (!data) return null;
   const counts = new Map<string, number>();
   for (const k of layerKeys) {
-    for (const s of ((data as any)[k] as StockData[] | undefined) ?? []) {
+    for (const s of layerRows<StockData>(data, k)) {
       if (s.marketState) counts.set(s.marketState, (counts.get(s.marketState) ?? 0) + 1);
     }
   }
@@ -604,7 +606,14 @@ export default function TheStack() {
             <Badge className="bg-brand-2/15 text-brand-2 border-brand-2/30 text-xs">
               Yahoo Finance{majorityState === "REGULAR" ? " · Live" : ""}
             </Badge>
-            <AsOf updatedAt={dataUpdatedAt} intervalMs={900_000} />
+            {/* One line in the header rather than per layer: the skeletons
+                already say something is coming, and repeating a timer eight
+                times says it eight times. Cold /api/stack is 4.2s. */}
+            {isLoading ? (
+              <SlowLoad active label="Pricing 100 equities" upstream="Yahoo Finance" />
+            ) : (
+              <AsOf updatedAt={dataUpdatedAt} intervalMs={900_000} />
+            )}
           </>
         }
         controls={
@@ -684,7 +693,7 @@ export default function TheStack() {
       <div className="flex-1 p-6 space-y-8">
         {view === "cards" &&
           layerConfig.map((layer) => {
-            const stocks = (data as any)?.[layer.key] as StockData[] | undefined;
+            const stocks = layerRows<StockData>(data, layer.key);
             return (
               // content-visibility virtualizes off-screen layer sections:
               // render/layout/paint are skipped until scrolled near.
@@ -826,7 +835,7 @@ export default function TheStack() {
                       data={regression.upper}
                       fill="none"
                       line={{ stroke: BRAND.secondary, strokeWidth: 1, strokeDasharray: "5 4", strokeOpacity: 0.35 }}
-                      shape={() => null as any}
+                      shape={() => <g />}
                       legendType="none"
                       name="Upper Band"
                     />
@@ -835,7 +844,7 @@ export default function TheStack() {
                       data={regression.lower}
                       fill="none"
                       line={{ stroke: BRAND.secondary, strokeWidth: 1, strokeDasharray: "5 4", strokeOpacity: 0.35 }}
-                      shape={() => null as any}
+                      shape={() => <g />}
                       legendType="none"
                       name="Lower Band"
                     />
@@ -844,7 +853,7 @@ export default function TheStack() {
                       data={regression.line}
                       fill="none"
                       line={{ stroke: BRAND.secondary, strokeWidth: 2, strokeOpacity: 0.85 }}
-                      shape={() => null as any}
+                      shape={() => <g />}
                       legendType="none"
                       name="OLS Fit"
                     />
@@ -907,7 +916,7 @@ function pctMapOf(sd: StackData | undefined, layerKeys: string[]): Record<string
   const m: Record<string, number | null> = {};
   if (!sd) return m;
   for (const k of layerKeys) {
-    for (const s of ((sd as any)[k] as StockData[] | undefined) ?? []) {
+    for (const s of layerRows<StockData>(sd, k)) {
       m[s.ticker] = pctFromSparkline(s.sparkline);
     }
   }
@@ -1007,7 +1016,7 @@ function StackTable({
           </tbody>
         ) : (
           layers.map((layer) => {
-            const stocks = ((data as any)?.[layer.key] as StockData[] | undefined) ?? [];
+            const stocks = layerRows<StockData>(data, layer.key);
             const isCollapsed = collapsed[layer.key] ?? false;
             const rows = sortTableRows(
               stocks.map((s) => ({
@@ -1119,7 +1128,7 @@ function StackHeatmap({
   const input = useMemo(() => {
     const byLayer: Record<string, Array<{ ticker: string; name: string; changePercent: number | null; stale?: boolean; marketCap?: number | null; marketCapDisplay?: string }>> = {};
     for (const layer of layers) {
-      const stocks = ((data as any)?.[layer.key] as StockData[] | undefined) ?? [];
+      const stocks = layerRows<StockData>(data, layer.key);
       byLayer[layer.key] = stocks.map((s) => ({
         ticker: s.ticker,
         name: s.name,

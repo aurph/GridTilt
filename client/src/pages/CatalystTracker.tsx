@@ -15,6 +15,7 @@ import {
   type CatalystCategory,
 } from "@/data/catalyst-config";
 import { BRAND, INK, SURFACE, BORDER } from "@/lib/tokens";
+import { activatable } from "@/lib/a11y";
 
 interface EarningsItem {
   id: string;
@@ -163,7 +164,10 @@ function CalendarGrid({
                 borderLeft: isToday ? `2px solid ${BRAND.primary}` : isSelected ? `2px solid ${BORDER.strong}` : "2px solid transparent",
                 opacity: isWeekend && dayItems.length === 0 ? 0.6 : 1,
               }}
-              onClick={() => onDateSelect(isSelected ? null : dateStr)}
+              {...activatable(
+                () => onDateSelect(isSelected ? null : dateStr),
+                `${dateStr}, ${dayItems.length} ${dayItems.length === 1 ? "catalyst" : "catalysts"}`,
+              )}
               data-testid={`calendar-day-${dateStr}`}
             >
               <div className="text-13 font-medium mb-1" style={{ color: isToday ? BRAND.primary : INK.secondary }}>
@@ -320,7 +324,7 @@ function UpcomingTimeline({ items }: { items: MergedItem[] }) {
                   <span
                     className="text-13 font-bold cursor-pointer hover:underline"
                     style={{ color: INK.primary }}
-                    onClick={() => navigate(`/stock/${e.ticker}`)}
+                    {...activatable(() => navigate(`/stock/${e.ticker}`), `Open ${e.ticker}`)}
                   >
                     {e.ticker}
                   </span>
@@ -451,7 +455,7 @@ function ThesisCatalysts({ catalysts }: { catalysts: CatalystItem[] }) {
                       background: `${stageColorOf({ ticker: t })}14`,
                       border: `1px solid ${stageColorOf({ ticker: t })}30`,
                     }}
-                    onClick={() => navigate(`/stock/${t}`)}
+                    {...activatable(() => navigate(`/stock/${t}`), `Open ${t}`)}
                     data-testid={`catalyst-ticker-${t}`}
                   >
                     {t}

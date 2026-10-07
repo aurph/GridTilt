@@ -30,6 +30,7 @@ import { axisProps, gridProps, seriesMotion, timeTicks, tooltipContentStyle, too
 import {
   US_SECTOR_DEMAND,
   DATA_CENTER_LOAD,
+  DATA_CENTER_2030,
   sectorTotalTWh,
   sectorShare,
   demandTrough,
@@ -60,19 +61,26 @@ function alpha(hex: string, a: number): string {
 
 // US total annual electricity demand (TWh), EIA.
 //
-// The data-center series carries ONLY the two figures LBNL actually publishes:
-// 58 TWh in 2014 and 176 TWh in 2023. It previously ran a smooth invented curve
-// from 140 to 576 TWh, which was 2-3x above the reference figures at every point
-// (170 vs 58 in 2014, 310 vs 176 in 2023). Years LBNL does not measure are null,
-// and the chart joins the two anchors with a dashed segment so the gap reads as
-// unmeasured rather than observed.
+// The data-center series carries only figures LBNL publishes. Years it does not
+// model are null, and the chart joins anchors with a dashed segment so the gap
+// reads as unmeasured rather than observed. It previously ran a smooth invented
+// curve from 140 to 576 TWh, 2-3x above the reference figures at every point.
 //
 // The 2026-2030 rows are gone with the projection they carried. Those were
-// labelled "GridTilt Projection" in the legend and topped out at 2,100 TWh of
-// data-center demand by 2030, roughly 4x the top of LBNL's published 2028 range
-// of 325-580 TWh. Nothing sourced supported them.
+// labelled "GridTilt Projection" and topped out at 2,100 TWh by 2030, roughly 4x
+// the top of LBNL's published range. Nothing sourced supported them.
 //
-// Source: LBNL, 2024 United States Data Center Energy Usage Report (DOE-funded)
+// Anchors span two editions, which is why each is labelled:
+//   2014, 2023  LBNL 2024 Report
+//   2024        LBNL 2025 Update, its last historical year
+// The 2025 Update revised pre-2024 years slightly below the 2024 Report but does
+// not restate them year by year, so the older anchors keep their original
+// edition rather than being silently adjusted.
+//
+// Sources:
+// LBNL, United States Data Center Energy Usage Report: 2025 Update
+// (LBNL-2001758, June 2026) https://escholarship.org/uc/item/33m6w3x0
+// LBNL, 2024 United States Data Center Energy Usage Report
 // https://eta-publications.lbl.gov/sites/default/files/2024-12/lbnl-2024-united-states-data-center-energy-usage-report_1.pdf
 const electricityData: Array<{ year: string; demand: number | null; dcDemand: number | null }> = [
   { year: "2010", demand: 3879, dcDemand: null },
@@ -89,7 +97,7 @@ const electricityData: Array<{ year: string; demand: number | null; dcDemand: nu
   { year: "2021", demand: 3930, dcDemand: null },
   { year: "2022", demand: 4050, dcDemand: null },
   { year: "2023", demand: 4195, dcDemand: 176 },
-  { year: "2024", demand: 4380, dcDemand: null },
+  { year: "2024", demand: 4380, dcDemand: 192 },
   { year: "2025", demand: 4490, dcDemand: null },
 ];
 
@@ -570,7 +578,7 @@ function BuildoutHistoryCard({
   );
 }
 
-function CatalystCalendarSection() {
+function CatalystCalendarSection({ className = "" }: { className?: string }) {
   const today = new Date();
   const [viewMonth, setViewMonth] = useState(today.getMonth());
   const [viewYear, setViewYear] = useState(today.getFullYear());
@@ -618,7 +626,7 @@ function CatalystCalendarSection() {
   }
 
   return (
-    <Card className="p-5 border-card-border" data-testid="catalyst-calendar">
+    <Card className={`p-5 border-card-border flex flex-col ${className}`} data-testid="catalyst-calendar">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Calendar className="h-3.5 w-3.5 text-brand-2" />
@@ -668,7 +676,9 @@ function CatalystCalendarSection() {
         ))}
       </div>
 
-      <div className="grid grid-cols-7 gap-px">
+      {/* auto-rows-fr lets the week rows share any height the card gains from
+          stretching, so the slack reads as spacing rather than a void. */}
+      <div className="grid grid-cols-7 gap-px flex-1 auto-rows-fr">
         {Array(firstDay).fill(null).map((_, i) => <div key={`empty-${i}`} />)}
         {Array.from({ length: daysInMonth }, (_, i) => {
           const day = i + 1;
@@ -681,7 +691,7 @@ function CatalystCalendarSection() {
           const dayButton = (
             <button
               onClick={() => setSelectedDay(isSelected ? null : dateKey)}
-              className={`relative flex flex-col items-center justify-center h-8 rounded text-xs transition-colors w-full ${
+              className={`relative flex h-full min-h-8 w-full flex-col items-center justify-center rounded text-xs transition-colors ${
                 isSelected ? "bg-brand/20 text-brand-2" :
                 isToday ? "bg-muted/40 text-foreground font-semibold" :
                 "text-muted-foreground hover:bg-muted/20 hover:text-foreground"
@@ -751,8 +761,12 @@ function CatalystCalendarSection() {
         </div>
       )}
 
-      <div className="mt-4 pt-3 border-t border-border">
-        <p className="text-[11px] text-muted-foreground/70 mb-2">Next 5 Upcoming</p>
+      {/* mt-auto pins this to the bottom, so when the card stretches to match the
+          column beside it the slack lands above this list rather than below it. */}
+      <div className="mt-auto pt-4 border-t border-border">
+        <p className="text-[11px] text-muted-foreground/70 mb-2">
+          {isLoading || upcoming.length === 0 ? "Next Upcoming" : `Next ${upcoming.length} Upcoming`}
+        </p>
         <div className="space-y-2">
           {isLoading
             ? Array(5).fill(null).map((_, i) => (
@@ -1031,8 +1045,11 @@ export default function TiltOverview() {
             />
             <BuildoutHistoryCard buildout={buildout} tracked={tracked} isLoading={dcLoading} />
           </div>
-          <div className="lg:col-span-2 space-y-4">
-            <CatalystCalendarSection />
+          {/* The catalyst card absorbs the slack so this column bottoms out level
+              with the taller one. Fixed heights would not: the left column grows
+              with the number of movers, which varies by day. */}
+          <div className="lg:col-span-2 flex flex-col gap-4">
+            <CatalystCalendarSection className="flex-1" />
             <XFollowCard />
           </div>
         </div>
@@ -1053,16 +1070,18 @@ export default function TiltOverview() {
                 </UITooltip>
               </div>
               <p className="text-xs text-muted-foreground">
-                US total electricity demand (TWh), EIA, through 2025. Data-center demand on the right axis
-                shows the two years LBNL measures, 2014 and 2023; the dashed segment between them is not measured.{" "}
+                US total electricity demand (TWh), EIA, through 2025. Data-center demand on the right
+                axis shows only the years LBNL models: 58 TWh in 2014 and 176 TWh in 2023 from the
+                2024 report, and 192 TWh in 2024 from the{" "}
                 <a
-                  href="https://eta-publications.lbl.gov/sites/default/files/2024-12/lbnl-2024-united-states-data-center-energy-usage-report_1.pdf"
+                  href={DATA_CENTER_LOAD.sourceUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-brand hover:text-brand-2"
                 >
-                  LBNL 2024 report
+                  2025 update
                 </a>
+                . Dashed segments span years neither report models.
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-4 text-xs">
@@ -1072,7 +1091,7 @@ export default function TiltOverview() {
               </div>
               <div className="flex items-center gap-1.5">
                 <div className="h-2 w-4 rounded-sm" style={{ backgroundColor: TOKEN_CATEGORY_COLORS.datacenters }} />
-                <span className="text-muted-foreground">Data centers (LBNL, measured years)</span>
+                <span className="text-muted-foreground">Data centers (LBNL, modelled years)</span>
               </div>
             </div>
           </div>
@@ -1238,12 +1257,15 @@ export default function TiltOverview() {
         {/* 4-column stat strip */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {[
-            // LBNL 2024 report (DOE-funded): 176 TWh measured in 2023 (4.4% of
-            // US demand); 2028 projected range 325-580 TWh (6.7%-12%). The 2025
-            // point is inside LBNL's projection band, not a measurement, and
-            // EIA publishes no data-center category — so it is labelled as the
-            // estimate it is, not attributed to EIA.
-            { label: "DC Share of US Demand", value: "~6.4% (est.)", sub: "LBNL est. ~288 TWh in 2025; 4.4% measured in 2023. LBNL projects 6.7\u201312% by 2028.", color: TOKEN_CATEGORY_COLORS.datacenters },
+            {
+              // From the 2025 Update rather than the 2024 report: it puts 2024 at
+              // 192 TWh and 2028 at 464 TWh, so the 288 TWh 2025 point this card
+              // used to carry is not on the modelled curve.
+              label: "DC Share of US Demand",
+              value: `${DATA_CENTER_LOAD.sharePctOfUS}%`,
+              sub: `LBNL 2025 Update: ${DATA_CENTER_LOAD.twh} TWh in ${DATA_CENTER_LOAD.year}. Reference case ${DATA_CENTER_2030.sharePctOfUS}% of US electricity by 2030, range ${DATA_CENTER_2030.lowPct} to ${DATA_CENTER_2030.highPct}%.`,
+              color: TOKEN_CATEGORY_COLORS.datacenters,
+            },
             {
               label: "Nuclear Power Contracted",
               // "Committed" previously counted Meta's 6.6 GW RFP, a request
@@ -1338,16 +1360,23 @@ export default function TiltOverview() {
                 >
                   ~{DATA_CENTER_LOAD.twh.toLocaleString()} TWh
                 </p>
-                <span className="flex items-center gap-0.5 text-xs font-mono font-semibold tabular-nums text-positive">
-                  <ArrowUp className="h-3 w-3" />
-                  {DATA_CENTER_LOAD.yoy}%
+                <span className="font-mono text-xs tabular-nums text-muted-foreground">
+                  {DATA_CENTER_LOAD.year}
                 </span>
               </div>
             </div>
             <p className="text-[11px] leading-relaxed text-muted-foreground/70 mt-1.5">
-              Estimated, and metered inside {DATA_CENTER_LOAD.containedIn} above rather than added to
-              them. EIA's end-use accounting has no data-center category, so this is a derived
-              figure.
+              Counted inside {DATA_CENTER_LOAD.containedIn} above rather than added to them, and for{" "}
+              {DATA_CENTER_LOAD.year} rather than the 2025 the sector rows cover. A modelled estimate,
+              not a metered total: EIA's end-use accounting has no data-center category.{" "}
+              <a
+                href={DATA_CENTER_LOAD.sourceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-brand hover:text-brand-2"
+              >
+                {DATA_CENTER_LOAD.source}
+              </a>
             </p>
           </div>
 

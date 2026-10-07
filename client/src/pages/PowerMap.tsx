@@ -1,12 +1,13 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { MapContainer, TileLayer, ZoomControl, useMap, useMapEvents } from "react-leaflet";
+import { MapContainer, ZoomControl, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AsOf, ErrorState } from "@/components/Freshness";
+import { BasemapTiles } from "@/components/basemap-tiles";
 import { BiggestDataCenters } from "@/components/BiggestDataCenters";
 import { StateBuildout } from "@/components/StateBuildout";
 import { CompanyBuildout } from "@/components/CompanyBuildout";
@@ -304,6 +305,11 @@ function RTORegions({ viewMode }: { viewMode: ViewMode }) {
         if (cancelled) return;
 
         const topojsonModule = await import("topojson-client");
+        // Left as any on purpose. feature() is generic over topojson's own
+        // Topology type, so removing this means declaring the full nested
+        // GeometryObject shape of the states file just to satisfy the overload.
+        // Tried it: the type is larger than the code it guards and buys nothing,
+        // since the result is handed straight to Leaflet's GeoJSON layer.
         const geoData = topojsonModule.feature(topo, topo.objects.states) as any;
 
         const stateNames: Record<string, string> = {};
@@ -613,6 +619,17 @@ export default function PowerMap() {
   const [rtoFocus, setRtoFocus]           = useState<string | null>(null);
   const [showAllUpcoming, setShowAllUpcoming] = useState(false);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+
+  // The sheet could only be dismissed by tapping its backdrop, so anyone on a
+  // keyboard was stuck in it. Escape is the expected way out of a modal.
+  useEffect(() => {
+    if (!mobileFiltersOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMobileFiltersOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [mobileFiltersOpen]);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const [tab, setTab] = useToolTabs(POWER_TABS, "map");
@@ -1205,12 +1222,7 @@ export default function PowerMap() {
             style={{ width: "100%", height: "100%", minHeight: 520, background: SURFACE.base }}
             className="rounded-none"
           >
-            <TileLayer
-              url="https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png"
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
-              subdomains="abcd"
-              maxZoom={19}
-            />
+            <BasemapTiles maxZoom={19} />
             <RTORegions viewMode={viewMode} />
             <FacilityMarkers
               viewMode={viewMode}
@@ -1484,7 +1496,13 @@ export default function PowerMap() {
 
       {mobileFiltersOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
-          <div className="absolute inset-0 bg-black/60" onClick={() => setMobileFiltersOpen(false)} />
+          {/* Tap-outside-to-close for a thumb. Escape covers the keyboard, so
+              this is decoration to a screen reader rather than a control. */}
+          <div
+            className="absolute inset-0 bg-black/60"
+            onClick={() => setMobileFiltersOpen(false)}
+            aria-hidden="true"
+          />
           <div className="absolute bottom-0 left-0 right-0 bg-surface-raised border-t border-subtle rounded-t-xl p-5 max-h-[80vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">

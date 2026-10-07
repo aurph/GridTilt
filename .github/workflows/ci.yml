@@ -44,3 +44,16 @@ jobs:
       # A green test suite with a broken build still cannot deploy.
       - name: Build
         run: npm run build
+
+      # Reports only. The score is low and the remaining findings need
+      # judgement rather than a switch, so failing the build on it would just
+      # block every PR. Rule overrides and their reasons live in
+      # .aislop/config.yml. Turn this into a gate once the score is defensible.
+      - name: Slop scan
+        run: npx --yes aislop@0.14.1 scan .
+        continue-on-error: true
+
+      # This one does fail the build. Nothing here needs judgement: a new high
+      # advisory is either fixable or it is a decision someone has to record.
+      - name: Audit
+        run: npm audit --audit-level=high

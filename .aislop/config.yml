@@ -1,0 +1,41 @@
+# aislop config. Run `npx aislop scan .` for the current score.
+#
+# Rule overrides below are decisions about this repo, not blanket suppressions.
+# Each says why.
+
+exclude:
+  # Design-source archive and generated assets, not application code.
+  - attached_assets
+  - .card-preview
+  # Generated from scripts/generate-map-path.mjs; regenerate rather than edit.
+  - server/us-map.ts
+
+rules:
+  # OFF. Checked against this codebase before disabling: the rule flags any
+  # prose preamble, and here those preambles carry the constraints the code
+  # cannot state itself. A --safe run deleted, among others:
+  #
+  #   og-card.ts        satori cannot synthesize font weights, and truncates
+  #                     large inline SVG. Both document bugs that already
+  #                     shipped, and the second is why assertMapPathIntact exists.
+  #   indices.ts        the backtest must reconstruct the series with the EXACT
+  #                     shipped formulas.
+  #   uranium-correlation.ts  this module replaced a Math.random dataset; failure
+  #                     yields null, never invented dots.
+  #   tokens.ts         status colors are a brand-hue ramp, NOT the red/green
+  #                     semantic scale, which is reserved for price direction.
+  #
+  # The rule is right about decorative section dividers, which are removed by
+  # hand where they carry nothing. It is wrong about the rest, and an automated
+  # pass cannot tell the two apart.
+  ai-slop/narrative-comment: "off"
+
+  # OFF. These are curated public source URLs shown to the reader as provenance
+  # (LBNL, EIA, FRED, NERC). They belong next to the figure they support, not in
+  # env config. Live API base URLs are already module constants.
+  ai-slop/hardcoded-url: "off"
+
+  # Kept as warnings and worked through by hand rather than auto-fixed, since
+  # each needs a decision about what the real type or behaviour should be.
+  ai-slop/unsafe-type-assertion: warning
+  ai-slop/double-type-assertion: warning

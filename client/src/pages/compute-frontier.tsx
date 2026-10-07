@@ -1,12 +1,13 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { MapContainer, TileLayer, CircleMarker, Tooltip as MapTooltip, ZoomControl } from "react-leaflet";
+import { MapContainer, CircleMarker, Tooltip as MapTooltip, ZoomControl } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AsOf, ErrorState, SrChartTable } from "@/components/Freshness";
+import { BasemapTiles } from "@/components/basemap-tiles";
 import {
   Tooltip as UITooltip,
   TooltipContent,
@@ -412,11 +413,7 @@ export default function ComputeFrontier() {
           <div style={{ height: 420 }}>
             {clusters && clusters.length > 0 ? (
               <MapContainer center={[39.5, -98.5]} zoom={4} minZoom={3} maxZoom={10} zoomControl={false} style={{ width: "100%", height: "100%", background: SURFACE.base }}>
-                <TileLayer
-                  url="https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png"
-                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
-                  subdomains="abcd"
-                />
+                <BasemapTiles />
                 {filtered.map((c) => (
                   <CircleMarker
                     key={c.id}

@@ -80,9 +80,14 @@ Derived from the code; starred rules confirmed by Jack 2026-07-02.
   source, native unit, evaluation setting, and exact comparability key. Never connect or rank
   results that only share a benchmark name.
 - Env: process.env direct. Required: UNSUB_TOKEN_SECRET (boot throws), ADMIN_API_KEY (admin 503s
-  without). Optional: RESEND_API_KEY, EIA_API_KEY, NEWSDATA_API_KEY, X_API_KEY, X_API_SECRET,
-  X_ACCESS_TOKEN, X_ACCESS_TOKEN_SECRET, X_POSTING_ENABLED, DISABLE_DATACENTER_INGESTER
-  (last two missing from .env.example).
+  without). Optional: RESEND_API_KEY, EIA_API_KEY, NEWSDATA_API_KEY, CARTO_API, X_API_KEY,
+  X_API_SECRET, X_ACCESS_TOKEN, X_ACCESS_TOKEN_SECRET, X_POSTING_ENABLED,
+  DISABLE_DATACENTER_INGESTER (last two missing from .env.example).
+- CARTO_API is the one env var that reaches the browser. server/runtime-config.ts injects it into
+  index.html as a meta tag on every request; client/src/lib/basemap.ts reads it back. NOT a VITE_
+  build var (rotating would need a rebuild) and NOT an inline script (prod CSP is script-src
+  'self', which drops it silently while curl still shows correct HTML). Every map takes its tiles
+  from components/basemap-tiles.tsx; never hand-write a cartocdn URL.
 - Admin auth: x-admin-key header, timingSafeEqual; covers /api/admin/*, /api/newsletter/send,
   /api/export/daily.
 - Commits: imperative subject prefixed by area ("Social: ...", "docs: ..."). NO Co-Authored-By
@@ -97,6 +102,7 @@ Derived from the code; starred rules confirmed by Jack 2026-07-02.
 | EIA v2 | EIA_API_KEY | US48 hourly demand (168 h) | 30 min | 503 + {configured:false, howTo} |
 | NewsData.io | NEWSDATA_API_KEY | news ticker tier 1 | 1 h | falls back to the 8 built-in RSS feeds |
 | RSS (8 news + 4 ingester feeds) | none | news fallback; datacenter discovery | ingester 6 h | items just absent |
+| Carto basemaps | CARTO_API | raster tiles for all three Leaflet maps | browser/CDN, 180 d | tiles still load, watermarked "API KEY REQUIRED" (HTTP 200, never an error) |
 | LBNL Queued Up page | none | new-edition flag only | 24 h throttle | manual XLSX ingest regardless |
 | Resend | RESEND_API_KEY | audience sync, newsletter send | on demand | subscribe still saves locally; send 400s |
 | X API (OAuth 1.0a) | 4 creds + X_POSTING_ENABLED=true | weekday 8:30 ET post | external cron | dry-run, logged to social-log.json |
@@ -182,17 +188,22 @@ Documented, not to fix casually or silently:
 - Fake-data debt CLOSED on feat/live-gpu-prices (2026-07-04): the CCJ/CEG scatter now computes
   from real SRUUF/CCJ/CEG weekly closes (server/uranium-correlation.ts, tested); fetch failure
   serves empty + null r, never invented dots. PR #2's removal approach is obsolete.
-- Security closes from PR #1 (da97234) APPLIED on feat/live-gpu-prices (2026-07-04): SEC-1..5 +
-  auth-boundary tests. PR #1 itself is obsolete once that branch merges. Note: cron-job.org needs
-  a second job POSTing /api/admin/scan-news-now (x-admin-key) to restore automated news scans.
-- PR #2 (feat/real-metrics) proposes retiring the sentiment indices for a sourced scoreboard;
-  main kept the indices (served at /api/kpis, out of the social rotation). Owner decision pending.
-- No CI (no .github/ at all). Tests and tsc run only when someone remembers.
+- PRs #1 and #2 CLOSED 2026-08-18. Their code was already in main (SEC-1..5 and the
+  auth-boundary test via feat/live-gpu-prices; the indices retirement via feat/real-gauges).
+  Their audit docs were salvaged to docs/ARCHITECTURE.md and docs/audit/, marked historical.
+  Still outstanding from that work: cron-job.org needs a job POSTing /api/admin/scan-news-now
+  (x-admin-key) to restore automated news scans. See docs/ or the Desktop cron setup guide.
+- Indices RESOLVED 2026-08-18: retired from the surface, kept as a recorded series. The Overview
+  shows the measured gauges; no client fetches /api/kpis. The route still computes and appends to
+  index-history.json on purpose, because the series is public, has a backtest and a committed
+  seed, and the indices.ts constants are do-not-touch. Rationale sits at the route.
+- CI runs on every push and PR (.github/workflows/ci.yml, Node 22): typecheck, tests, build, a
+  reporting-only slop scan, and `npm audit` which DOES fail the build on a new high advisory.
 - Durability (audit M2): subscribers.json and all machine-written JSON live on autoscale
   ephemeral disk; admin blog CRUD writes git-tracked content/ at runtime. A redeploy can lose
   subscribers and posts. Jetson Postgres is the planned fix.
-- `npm run dev` on macOS: server/index.ts:188 sets reusePort unconditionally, which fails on
-  darwin; the off-darwin conditional is stranded in unmerged PR #1.
+- `npm run dev` on macOS works: reusePort is guarded by `process.platform === "linux"`.
+  Note port 5000 is taken by AirPlay Receiver on macOS; use PORT=5199 or turn AirPlay off.
 - routes.ts is a 3,913-line monolith (70 routes + OAuth client + OG renderer + 3 scanners +
   static data tables).
 - README + replit.md rewritten from code truth (2026-07-04, feat/live-gpu-prices). HANDOFF.md and

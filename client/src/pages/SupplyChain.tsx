@@ -18,6 +18,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
+import { activatable } from "@/lib/a11y";
 import {
   supplyNodes,
   supplyLinks,
@@ -776,7 +777,7 @@ function DetailPanel({
                 <span
                   key={i}
                   className="sc-flow-tag sc-flow-tag-clickable"
-                  onClick={() => onSelectNode(u.id)}
+                  {...activatable(() => onSelectNode(u.id))}
                   data-testid={`upstream-${i}`}
                 >
                   {u.name}
@@ -794,7 +795,7 @@ function DetailPanel({
                 <span
                   key={i}
                   className="sc-flow-tag sc-flow-tag-clickable"
-                  onClick={() => onSelectNode(d.id)}
+                  {...activatable(() => onSelectNode(d.id))}
                   data-testid={`downstream-${i}`}
                 >
                   {d.name}
@@ -828,7 +829,7 @@ function DetailPanel({
             <div
               key={c.ticker}
               className="sc-stock-row"
-              onClick={() => onNavigate(`/stock/${c.ticker}`)}
+              {...activatable(() => onNavigate(`/stock/${c.ticker}`), `${c.ticker}, ${c.name}`)}
               data-testid={`company-${c.ticker}`}
             >
               <span className="sc-stock-col-ticker sc-mono font-bold text-ink">{c.ticker}</span>

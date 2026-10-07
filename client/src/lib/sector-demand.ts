@@ -24,18 +24,47 @@ export const US_SECTOR_DEMAND: Sector[] = [
 /**
  * Data-center load: a slice of the sectors above, not an addition to them.
  *
- * Flagged estimated. EIA's end-use accounting has no data-center category, so
- * this is derived rather than metered. Source: LBNL, 2024 United States Data
- * Center Energy Usage Report (DOE-funded) — 176 TWh measured in 2023, 2028
- * projected range 325-580 TWh; the 2025 figure sits inside that projection
- * band. The Overview KPI labels it as an estimate and cites LBNL, never EIA.
- * https://eta-publications.lbl.gov/sites/default/files/2024-12/lbnl-2024-united-states-data-center-energy-usage-report_1.pdf
+ * 192 TWh in 2024, 4.7% of total US electricity. LBNL, United States Data Center
+ * Energy Usage Report: 2025 Update (LBNL-2001758, June 2026). Excludes crypto
+ * mining, which is out of that report's scope. 2024 is its last historical year.
+ *
+ * Still flagged estimated: LBNL's figure is a bottom-up model over shipment data,
+ * not a metered total, and EIA's end-use accounting has no data-center category
+ * to check it against.
+ *
+ * History, because this number has been wrong twice. It was first 288 TWh
+ * attributed to "EIA 2025", which EIA does not publish. That was then re-cited to
+ * LBNL as a 2025 point inside the 2024 report's projection band, which fixed the
+ * attribution but kept a figure LBNL never printed: the 2025 Update puts 2024 at
+ * 192 TWh and 2028 at 464 TWh, so 288 in 2025 implies a one-year jump the model
+ * does not show. Both versions also happened to make the sector card total
+ * 4,490 TWh, which is how an unsourced number kept surviving review.
+
  */
 export const DATA_CENTER_LOAD = {
-  twh: 288,
-  yoy: 33.3,
+  twh: 192,
+  /** The year the figure is for, which is not the sector rows' year. */
+  year: 2024,
+  sharePctOfUS: 4.7,
   estimated: true,
   containedIn: "commercial and industrial",
+  source: "LBNL 2025 Update",
+  sourceUrl: "https://escholarship.org/uc/item/33m6w3x0",
+} as const;
+
+/**
+ * LBNL's Reference Case for 2030: 649 TWh, 11.8% of forecast US electricity,
+ * with a compounded-uncertainty range of 521-843 TWh (9.5-15.3%).
+ *
+ * Supersedes the 2024 Report's 6.7-12.0%-by-2028 range. The site quoted only
+ * that range's top as "12%+ by 2028", which read as a floor rather than a ceiling
+ * and is now two editions out of date.
+ */
+export const DATA_CENTER_2030 = {
+  twh: 649,
+  sharePctOfUS: 11.8,
+  lowPct: 9.5,
+  highPct: 15.3,
 } as const;
 
 /** Sum of the end-use sectors. Never includes data-center load. */
