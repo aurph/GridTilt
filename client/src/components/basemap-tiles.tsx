@@ -1,5 +1,5 @@
 import { TileLayer } from "react-leaflet";
-import { basemapTileLayerProps, type CartoStyle } from "@/lib/basemap";
+import { basemapLabelLayerProps, basemapTileLayerProps, type CartoStyle } from "@/lib/basemap";
 
 interface BasemapTilesProps {
   style?: CartoStyle;
@@ -8,10 +8,15 @@ interface BasemapTilesProps {
 }
 
 /**
- * The single place any GridTilt map gets its Carto tiles, so the API key is
- * wired once instead of per map. See client/src/lib/basemap.ts for why the
- * key is public and where it comes from.
+ * The single place any GridTilt map gets its basemap: Carto when CARTO_API
+ * is set, Esri's keyless tiles otherwise. See client/src/lib/basemap.ts.
  */
 export function BasemapTiles({ style = "dark_nolabels", maxZoom }: BasemapTilesProps) {
-  return <TileLayer {...basemapTileLayerProps(style, maxZoom)} />;
+  const labels = basemapLabelLayerProps(style, maxZoom);
+  return (
+    <>
+      <TileLayer {...basemapTileLayerProps(style, maxZoom)} />
+      {labels && <TileLayer {...labels} />}
+    </>
+  );
 }

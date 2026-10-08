@@ -6,11 +6,14 @@
 import { describe, it, afterEach } from "node:test";
 import assert from "node:assert/strict";
 import {
+  basemapLabelLayerProps,
   basemapTileLayerProps,
   cartoTileUrl,
   getCartoApiKey,
   CARTO_ATTRIBUTION,
   CARTO_KEY_META_NAME,
+  ESRI_ATTRIBUTION,
+  ESRI_MAX_NATIVE_ZOOM,
 } from "../basemap";
 
 const globalWithDocument = globalThis as { document?: unknown };
@@ -110,11 +113,45 @@ describe("basemapTileLayerProps", () => {
     assert.equal(props.maxZoom, 0);
   });
 
-  it("carries the url, attribution, and subdomains Leaflet needs", () => {
-    const props = basemapTileLayerProps("dark_all");
+  it("carries the url, attribution, and subdomains Leaflet needs when keyed", () => {
+    const props = basemapTileLayerProps("dark_all", undefined, "k");
     assert.ok(props.url.includes("/dark_all/"));
     assert.equal(props.attribution, CARTO_ATTRIBUTION);
     assert.equal(props.subdomains, "abcd");
+  });
+
+  it("falls back to keyless Esri tiles when no Carto key is set", () => {
+    // Unkeyed Carto tiles are watermarked "API KEY REQUIRED"; never serve them.
+    setNoMeta();
+    const props = basemapTileLayerProps("dark_nolabels");
+    assert.ok(!props.url.includes("cartocdn"));
+    assert.ok(props.url.includes("World_Dark_Gray_Base"));
+    assert.ok(props.url.endsWith("/{z}/{y}/{x}"), "Esri is z/y/x");
+    assert.equal(props.attribution, ESRI_ATTRIBUTION);
+    assert.equal(props.maxNativeZoom, ESRI_MAX_NATIVE_ZOOM);
+  });
+
+  it("uses Esri's light canvas for light styles", () => {
+    assert.ok(basemapTileLayerProps("light_nolabels", undefined, null).url.includes("World_Light_Gray_Base"));
+  });
+});
+
+describe("basemapLabelLayerProps", () => {
+  it("adds Esri's label layer for labeled styles without a key", () => {
+    const props = basemapLabelLayerProps("dark_all", undefined, null);
+    assert.ok(props?.url.includes("World_Dark_Gray_Reference"));
+  });
+
+  it("is null for unlabeled styles", () => {
+    assert.equal(basemapLabelLayerProps("dark_nolabels", undefined, null), null);
+  });
+
+  it("is null when Carto is keyed, since Carto bakes labels in", () => {
+    assert.equal(basemapLabelLayerProps("dark_all", undefined, "k"), null);
+  });
+
+  it("passes maxZoom through so the overlay matches the base", () => {
+    assert.equal(basemapLabelLayerProps("dark_all", 19, null)?.maxZoom, 19);
   });
 });
 
