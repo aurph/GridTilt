@@ -9,7 +9,8 @@
  * choreography.
  */
 import { useEffect, useMemo, useRef, useState } from "react";
-import { MapContainer, TileLayer, CircleMarker, Tooltip as MapTooltip, ZoomControl } from "react-leaflet";
+import { MapContainer, CircleMarker, Tooltip as MapTooltip, ZoomControl } from "react-leaflet";
+import { BasemapTiles } from "@/components/basemap-tiles";
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -131,11 +132,7 @@ export default function BuildoutReplay({ clusters }: { clusters: TimelineCluster
           zoomControl={false}
           style={{ width: "100%", height: "100%", background: SURFACE.base }}
         >
-          <TileLayer
-            url="https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png"
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
-            subdomains="abcd"
-          />
+          <BasemapTiles />
           {visible.map((e) => {
             const live = e.kind === "live";
             const color = STATUS_COLOR[e.status] ?? INK.muted;
