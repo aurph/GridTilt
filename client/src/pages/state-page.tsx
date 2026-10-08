@@ -3,8 +3,7 @@
  * public decisions with their documents, where things stood on dated status
  * records, the next public dates, the projects GridTilt records there, and
  * what the data cannot say about a bill. The server writes the same record
- * into the HTML and serves it as JSON, so the two cannot differ. The
- * interactive view of the state stays in My Grid.
+ * into the HTML and serves it as JSON, so the two cannot differ.
  */
 import type { ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -73,7 +72,6 @@ interface StatePageData {
   bill: { explanation: string; source: string; url: string };
   reviewed: string;
   canonical: string;
-  myGridUrl: string;
 }
 
 interface RatePoint {
@@ -153,8 +151,8 @@ export default function StatePage() {
   if (notFound) {
     return (
       <div className="p-6 text-sm text-muted-foreground" data-testid="state-page-missing">
-        There is no state page at this address. Every state is in{" "}
-        <Link href="/my-grid" className="text-brand hover:text-brand-2" data-testid="state-page-missing-my-grid">My Grid</Link>.
+        There is no state page at this address. Every tracked project is on the{" "}
+        <Link href="/power-map" className="text-brand hover:text-brand-2" data-testid="state-page-missing-map">Power Map</Link>.
       </div>
     );
   }
@@ -172,8 +170,8 @@ export default function StatePage() {
         about="One state's grid operator and reliability outlook, recent public decisions with their documents, where things stood on dated status records, the next public dates, and the projects GridTilt records there. Decisions and dates carry their documents and the day GridTilt checked them; project figures come from Compute Frontier records, each with its own sources."
         right={
           data ? (
-            <Link href={`/my-grid?state=${data.code}`} className="text-11 text-brand hover:text-brand-2" data-testid="state-page-my-grid">
-              Open in My Grid →
+            <Link href="/power-map" className="text-11 text-brand hover:text-brand-2" data-testid="state-page-map">
+              Open the Power Map →
             </Link>
           ) : undefined
         }
@@ -288,7 +286,7 @@ export default function StatePage() {
                 </ul>
               )}
               <p className="px-4 py-3 border-t border-border/50 text-11 leading-relaxed text-muted-foreground" data-testid="state-page-coverage">
-                My Grid's facility map covers campuses of {data.registry.floorMW} MW and up and lists {data.registry.tracked} in {data.name}.
+                GridTilt's facility map covers campuses of {data.registry.floorMW} MW and up and lists {data.registry.tracked} in {data.name}.
                 Neither list is a complete count of the state's data centers; a project missing here is not evidence that none exists.
               </p>
             </Card>

@@ -98,7 +98,6 @@ test("share cards render for real states, projects and corrections, and 404 othe
     "/api/og?template=correction&id=2026-09-29-nerc-reserve-margins",
     "/api/og?template=grid_backlog",
     "/api/og?page=home",
-    "/api/og?page=my-grid",
     "/api/og?page=neocloud-intel",
     "/api/og?ticker=NVDA",
     "/api/og?page=compute-frontier&name=Stargate%20Abilene%20(OpenAI%2FOracle)",

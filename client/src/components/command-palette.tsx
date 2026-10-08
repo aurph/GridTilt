@@ -12,15 +12,14 @@ import {
   type ArticleLike,
   type ClusterLike,
   type PaletteEntry,
+  type StatePageLike,
 } from "@/lib/palette";
 import { STATE_GRID } from "@/data/state-grid";
-import { MY_GRID_STATE_KEY, browserStorage, writeSavedState } from "@/lib/state-selection";
 import { supplyNodes } from "@/data/supply-chain-config";
-import { trackEvent } from "@/lib/analytics";
 
 /**
  * Quick-open (Cmd+K / Ctrl+K): search what already exists and go there.
- * Pages and states are static; clusters and research load from their
+ * Pages are static; state pages, clusters and research load from their
  * file-backed endpoints on first open. No quote APIs are touched, so an
  * open palette costs two cached JSON reads at most.
  *
@@ -31,7 +30,7 @@ import { trackEvent } from "@/lib/analytics";
 
 const CATEGORY_TAG: Record<PaletteEntry["category"], string> = {
   page: "page",
-  state: "my grid",
+  state: "state",
   stock: "stock",
   cluster: "cluster",
   research: "research",
@@ -96,6 +95,10 @@ export function CommandPalette() {
     }
   }, [open]);
 
+  const { data: statePages } = useQuery<StatePageLike[]>({
+    queryKey: ["/api/state-pages"],
+    enabled: open,
+  });
   const { data: clusters } = useQuery<ClusterLike[]>({
     queryKey: ["/api/clusters"],
     enabled: open,
@@ -114,12 +117,12 @@ export function CommandPalette() {
   const entries = useMemo(
     () => [
       ...PAGE_ENTRIES,
-      ...stateEntries(STATE_GRID),
+      ...stateEntries(statePages ?? [], STATE_GRID),
       ...stockEntries(supplyNodes, withPage),
       ...clusterEntries(clusters ?? []),
       ...researchEntries(articles ?? []),
     ],
-    [clusters, articles, withPage],
+    [statePages, clusters, articles, withPage],
   );
 
   const results = useMemo(() => rankEntries(entries, query), [entries, query]);
@@ -136,14 +139,6 @@ export function CommandPalette() {
 
   function go(entry: PaletteEntry) {
     setOpen(false);
-    if (entry.stateCode) {
-      // A state picked here is the reader's own choice, so My Grid remembers it
-      // like a pick from its own selector (a shared link is not remembered),
-      // and it counts as state_selected. Only the choice is counted, never what
-      // was typed.
-      writeSavedState(browserStorage(), MY_GRID_STATE_KEY, entry.stateCode);
-      trackEvent({ name: "state_selected", state: entry.stateCode, surface: "search" });
-    }
     navigate(entry.href);
   }
 

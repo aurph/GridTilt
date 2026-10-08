@@ -49,7 +49,7 @@ describe("robots.txt", () => {
     ]) {
       assert.equal(robotsAllows(p), false, p);
     }
-    assert.ok(robotsAllows("/my-grid?state=MD"));
+    assert.ok(robotsAllows("/state/maryland"));
   });
 
   it("applies the longest matching rule, as Google does", () => {

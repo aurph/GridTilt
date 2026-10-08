@@ -1,5 +1,5 @@
 /**
- * State -> primary grid operator, for the My Grid page. `region` is one of
+ * State -> primary grid operator, for the state pages, share cards and Power state panel. `region` is one of
  * the site's seven map regions (REGION_AREAS in nerc-reserve-margins.ts maps
  * each to NERC assessment areas). This is a deliberate
  * simplification: several states sit in more than one market, and the

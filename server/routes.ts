@@ -25,7 +25,6 @@ import {
 } from "./indices";
 import { recordDailyIndexValues, readIndexHistory } from "./index-history";
 import { getElectricityOutputMonthly, getHourlyDemandUS48 } from "./physical";
-import { getStateNews } from "./state-news";
 import { getRetailRatesByState } from "./retail-rates";
 import { Pool as PgPool } from "pg";
 import { chooseStore, postgresStore, sslFor, type PoolLike } from "./subscriber-store";
@@ -1129,8 +1128,6 @@ export function pageOgCard(page: string, ticker?: string, name?: string): OgCard
   switch (page) {
     case "overview":
       return pageCard("Overview", "Grid headroom, the tracked buildout, power agreements and GPU prices on one page", "NERC 2025 LTRA; GridTilt registries; public GPU listings");
-    case "my-grid":
-      return pageCard("My Grid", "Choose a state: its grid operator, NERC reserve margin, tracked projects and residential electricity prices", "NERC 2025 LTRA; EIA; GridTilt facility registry");
     case "analyze":
       return pageCard("Analyze", "An illustrative electricity scenario, and a ticker basket set against GridTilt's sector classifications", "Assumptions and classifications are listed on the page");
     case "neocloud-intel":
@@ -1786,20 +1783,6 @@ export async function registerRoutes(
       res.json(result);
     } catch {
       res.status(502).json({ error: "Upstream EIA fetch failed. Try again later." });
-    }
-  });
-
-  // Grid news for one state (server/state-news.ts). Keyless, so there is no
-  // configured:false branch; an unknown state code is a 404 and an upstream
-  // failure is a 502. An empty items list is a legitimate answer for a quiet
-  // state and must never be padded.
-  app.get("/api/state-news/:state", async (req, res) => {
-    try {
-      const result = await getStateNews(req.params.state);
-      if (!result) return res.status(404).json({ error: "Unknown state code." });
-      res.json(result);
-    } catch {
-      res.status(502).json({ error: "Upstream news fetch failed. Try again later." });
     }
   });
 

@@ -290,7 +290,7 @@ describe("home card", () => {
 });
 
 describe("state card", () => {
-  it("says what My Grid says for Maryland", () => {
+  it("says what the state grid table says for Maryland", () => {
     const card = stateCard("MD")!;
     const area = clientAreaForState("MD")!;
     assert.equal(card.title, "Maryland's grid");
@@ -304,7 +304,7 @@ describe("state card", () => {
     assert.match(card.source, /NERC 2025 Long-Term Reliability Assessment/);
   });
 
-  it("carries My Grid's notes where a state spans areas, and says so where no area applies", () => {
+  it("carries the state grid table's notes where a state spans areas, and says so where no area applies", () => {
     assert.match(stateCard("KY")!.subtitle, /About two-thirds of Kentucky's land is in PJM/);
     assert.match(stateCard("IL")!.subtitle, /Figures shown are PJM\./);
     const ak = stateCard("AK")!;

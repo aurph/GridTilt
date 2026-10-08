@@ -450,14 +450,14 @@ export function changeCard(c: ChangeRecord): OgCard | null {
 
 // ── State fact (share card) ─────────────────────────────────────────────────
 
-/** The report and the first clause of My Grid's operator source, short enough for the card's footer. */
+/** The report and the first clause of the state grid table's operator source, short enough for the card's footer. */
 const STATE_CARD_SOURCE = `${NERC_LTRA.label} · operator: ${STATE_GRID_SOURCE.split(";")[0]}`;
 
 /**
- * A state's grid as My Grid shows it: the primary operator, its NERC area's
+ * A state's grid as the state grid table records it: the primary operator, its NERC area's
  * summer margin against that area's own reference, and NERC's risk rating,
- * with the notes My Grid prints where a state spans more than one area.
- * Null for a code My Grid does not cover.
+ * with the table's notes where a state spans more than one area.
+ * Null for a code the table does not cover.
  */
 export function stateCard(code: string): OgCard | null {
   const s = STATES[code];

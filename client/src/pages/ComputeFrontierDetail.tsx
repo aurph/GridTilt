@@ -11,11 +11,10 @@ import { FIELD_LABEL, buildCitation, permalink, type EvidenceEntry } from "@/lib
 import { previousPage, trackEvent } from "@/lib/analytics";
 
 /** Where the reader came from, as a bounded entry surface. */
-function entrySurface(): "map" | "my-grid" | "internal" | "direct" {
+function entrySurface(): "map" | "internal" | "direct" {
   const prior = previousPage();
   if (!prior) return "direct";
   if (prior.startsWith("/power-map")) return "map";
-  if (prior.startsWith("/my-grid")) return "my-grid";
   return "internal";
 }
 

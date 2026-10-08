@@ -61,7 +61,7 @@ describe("entity pages: real ones keep their page, invented ones are 404", () =>
 
   it("an unknown address is a 404; every known page and the admin screens are not", () => {
     assert.equal(getPageMeta("/made/up/path").status, 404);
-    assert.notEqual(getPageMeta("/my-grid").status, 404);
+    assert.notEqual(getPageMeta("/power-map").status, 404);
     const admin = getPageMeta("/admin/datacenters");
     assert.equal(admin.status ?? 200, 200);
     assert.equal(admin.robots, "noindex, nofollow");

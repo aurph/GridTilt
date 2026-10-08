@@ -9,7 +9,6 @@ const SECTIONS: [string, string][] = [
   ["Overview", "/overview"],
   ["Equities", "/stack"],
   ["Power", "/power-map"],
-  ["My Grid", "/my-grid"],
   ["Compute", "/compute-frontier"],
   ["GPU Prices", "/neocloud-intel"],
   ["Analyze", "/analyze"],

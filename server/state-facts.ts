@@ -1,6 +1,6 @@
 // ─── State grid facts (server copy) ──────────────────────────────────────────
 //
-// What My Grid shows about a state's grid, for the state share card
+// What the state grid table says about a state's grid, for the state share card
 // (/api/og?template=state_fact&state=XX): the primary operator from
 // client/src/data/state-grid.ts and the NERC 2025 LTRA areas from
 // client/src/data/nerc-reserve-margins.ts. Copied, not imported, because
@@ -15,7 +15,7 @@ export interface StateGridFact {
   /** One of the seven map regions, or null when no assessed region applies. */
   region: string | null;
   operatorLabel: string;
-  /** Where the state sits in more than one market, as My Grid states it. */
+  /** Where the state sits in more than one market, as the state grid table states it. */
   note?: string;
 }
 
@@ -167,7 +167,7 @@ export const STATE_NERC_NOTE: Record<string, string> = {
   MT: "The eastern edge is in SPP and MISO.",
 };
 
-/** Points of margin above the area's own reference level, as My Grid prints it. */
+/** Points of margin above the area's own reference level, as the state page prints it. */
 export function cushion(a: NercAreaFact): number {
   return +(a.margin - a.reference).toFixed(2);
 }

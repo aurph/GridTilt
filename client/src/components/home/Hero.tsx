@@ -174,18 +174,18 @@ export function Hero() {
           </motion.p>
           <motion.div variants={fadeUp} className="mt-8 flex flex-wrap items-center justify-center gap-4">
             <Link
-              href="/my-grid"
+              href="/overview"
               className="rounded bg-brand px-6 py-3 text-[14px] font-semibold text-black no-underline transition-opacity hover:opacity-90"
-              data-testid="hero-cta-state"
+              data-testid="hero-cta-dashboard"
             >
-              Choose your state
+              Open the dashboard
             </Link>
             <Link
               href="/power-map"
               className="rounded border border-border bg-card/60 px-6 py-3 text-[14px] font-semibold text-foreground no-underline transition-colors hover:border-brand/50"
-              data-testid="hero-cta-projects"
+              data-testid="hero-cta-map"
             >
-              Explore projects
+              Explore the map
             </Link>
           </motion.div>
 

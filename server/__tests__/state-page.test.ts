@@ -1,5 +1,5 @@
 // The Maryland pilot page: one composed record feeds the JSON, the HTML and
-// the metadata, its grid facts are My Grid's, its documents are dated and
+// the metadata, its grid facts are the state grid table's, its documents are dated and
 // linked in their own terms, and nothing in it claims coverage or review the
 // records do not have.
 import { describe, it } from "node:test";
@@ -78,7 +78,7 @@ describe("state pages: curated file", () => {
 describe("state pages: Maryland", () => {
   const md = page();
 
-  it("states My Grid's operator and NERC area facts exactly", () => {
+  it("states the state grid table's operator and NERC area facts exactly", () => {
     const area = clientAreaForState("MD")!;
     assert.equal(md.operatorLabel, STATE_GRID.MD.operatorLabel);
     assert.equal(md.nerc?.key, area.key);
@@ -87,7 +87,6 @@ describe("state pages: Maryland", () => {
     assert.equal(md.nerc?.cushion, clientCushion(area));
     assert.equal(md.nerc?.risk, area.risk);
     assert.equal(md.canonical, "https://gridtilt.com/state/maryland");
-    assert.equal(md.myGridUrl, "https://gridtilt.com/my-grid?state=MD");
   });
 
   it("lists the Compute Frontier records with their estimate flags and their own review state", () => {
@@ -203,13 +202,12 @@ describe("state pages: a fault is not an absence", () => {
 describe("state pages: one canonical address, wired through", () => {
   const SHELL = '<html><head><title>GridTilt</title></head><body><div id="root"></div></body></html>';
 
-  it("/state/maryland is the indexable page; the My Grid tool keeps its own canonical", () => {
+  it("/state/maryland is the indexable page", () => {
     const meta = getPageMeta("/state/maryland");
     assert.equal(meta.canonical, "https://gridtilt.com/state/maryland");
     assert.equal(meta.status, undefined);
     assert.equal(meta.ogImage, "https://gridtilt.com/api/og?template=state_fact&state=MD");
     assert.equal(meta.title, "Maryland's grid: operator, reliability and data center decisions | GridTilt");
-    assert.equal(getPageMeta("/my-grid").canonical, "https://gridtilt.com/my-grid");
   });
 
   it("an unpublished state is a real 404, not a thin page", () => {
@@ -221,13 +219,13 @@ describe("state pages: one canonical address, wired through", () => {
     assert.equal(statePagePrerender("/state/virginia", TODAY), null);
   });
 
-  it("the response carries the page's facts in its HTML; the tool's response does not", () => {
+  it("the response carries the page's facts in its HTML; other pages' responses do not", () => {
     const res = pageResponse(SHELL, "/state/maryland?utm_source=x");
     assert.equal(res.status, 200);
     assert.match(res.html, /<div id="root"><main data-prerender="state-page">/);
     assert.match(res.html, /Order No\. 92606/);
     assert.match(res.html, /<link rel="canonical" href="https:\/\/gridtilt\.com\/state\/maryland" \/>/);
-    const tool = pageResponse(SHELL, "/my-grid?state=MD");
+    const tool = pageResponse(SHELL, "/power-map");
     assert.ok(!tool.html.includes("data-prerender"));
     const missing = pageResponse(SHELL, "/state/virginia");
     assert.equal(missing.status, 404);

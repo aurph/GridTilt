@@ -31,6 +31,7 @@ export const ALIAS_REDIRECTS: Record<string, string> = {
   "/trade": "/analyze?tab=scenario",
   "/portfolio": "/analyze?tab=portfolio",
   "/queue": "/power-map?tab=queue",
+  "/my-grid": "/power-map",
 };
 
 /** Admin screens: served, never indexed. */
@@ -92,11 +93,6 @@ const STATIC_PAGES: Record<string, { title: string; description: string; slug: s
     title: "AI Data Center Map: Projects by Grid Region | GridTilt",
     description: "Tracked AI data center campuses of 400 MW and up, mapped by operator, grid region and capacity, with power agreements and the interconnection queue.",
     slug: "power-map",
-  },
-  "/my-grid": {
-    title: "My Grid: Your State's Grid Operator, Projects and Rates | GridTilt",
-    description: "Pick a state to see its grid operator, its NERC reliability area and reserve margin, tracked data center projects, the regional interconnection queue, and residential electricity rates from EIA.",
-    slug: "my-grid",
   },
   "/catalysts": {
     title: "AI Power Earnings Calendar and Catalyst Events \u2014 GridTilt",
@@ -285,7 +281,6 @@ const TRADE_FAQS = [
 
 const HOME_FAQS = [
   { question: "What is GridTilt?", answer: "GridTilt shows what is being built on the US power grid for AI, who is behind it, and what is known about the cost: data center projects, power agreements, grid conditions, electricity prices and the public companies involved, with sources." },
-  { question: "What does My Grid show?", answer: "Pick a state to see its grid operator, its NERC assessment area and reserve margin, tracked data center projects of 400 MW and up, and residential electricity prices where available." },
   { question: "Where do GridTilt's numbers come from?", answer: "EIA, NERC, Lawrence Berkeley National Laboratory, company filings and announcements, public GPU rental listings, and Yahoo Finance for stock prices. Each page links the sources for its data." },
   { question: "How often does the data change?", answer: "Stock prices update through the trading day. Project, agreement and grid data change when their sources publish new figures." },
 ];
@@ -572,7 +567,6 @@ export function getPageMeta(pathname: string): PageMeta {
   }
 
   // State pages: only the published ones (server/data/state-pages.json).
-  // /my-grid?state=XX stays the tool, with /my-grid as its canonical.
   const stateMatch = pathname.match(/^\/state\/([a-z][a-z-]{1,40})$/);
   if (stateMatch) {
     const result = loadStatePage(stateMatch[1]);
@@ -587,7 +581,7 @@ export function getPageMeta(pathname: string): PageMeta {
       ogType: "website",
       jsonLd: [breadcrumbJsonLd([
         { name: "GridTilt", url: BASE_URL },
-        { name: "My Grid", url: `${BASE_URL}/my-grid` },
+        { name: "Power", url: `${BASE_URL}/power-map` },
         { name: page.name, url: page.canonical },
       ])],
     };
@@ -662,7 +656,6 @@ export const CRAWLABLE_API_PREFIXES = [
   "/api/sector-pulse",
   "/api/sectors",
   "/api/stack",
-  "/api/state-news",
   "/api/state-pages",
   "/api/stock",
   "/api/supply-chain",

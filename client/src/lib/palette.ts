@@ -17,8 +17,6 @@ export interface PaletteEntry {
   href: string;
   /** Extra matchable text that is not worth showing. */
   keywords?: string;
-  /** State entries: the two-letter code, so a pick can be remembered. */
-  stateCode?: string;
 }
 
 /** Order shown between equal scores: destinations before entities. */
@@ -34,7 +32,6 @@ export const PAGE_ENTRIES: PaletteEntry[] = [
   { id: "page-overview", label: "Overview", category: "page", href: "/overview", keywords: "dashboard tilt home" },
   { id: "page-stack", label: "Equities", hint: "The Stack", category: "page", href: "/stack", keywords: "stocks tickers heatmap supply" },
   { id: "page-power-map", label: "Power Map", hint: "facilities on the grid", category: "page", href: "/power-map", keywords: "data centers map facilities" },
-  { id: "page-my-grid", label: "My Grid", hint: "your state", category: "page", href: "/my-grid", keywords: "state operator rates" },
   { id: "page-compute", label: "Compute Frontier", hint: "supercluster tracker", category: "page", href: "/compute-frontier", keywords: "clusters gpu superclusters" },
   { id: "page-gpu", label: "GPU Prices", hint: "rental index", category: "page", href: "/neocloud-intel", keywords: "neocloud rental h100 economics" },
   { id: "page-analyze", label: "Analyze", hint: "baskets and scenarios", category: "page", href: "/analyze", keywords: "portfolio basket scenario calculator" },
@@ -49,18 +46,23 @@ export interface StateLike {
   name: string;
 }
 
-export function stateEntries(states: Record<string, StateLike>): PaletteEntry[] {
-  return Object.entries(states).map(([code, s]) => ({
-    id: `state-${code}`,
-    label: s.name,
-    hint: "My Grid",
-    category: "state" as const,
-    // The shareable state address (lib/state-selection.ts). The palette
-    // remembers the pick as the reader's choice; a shared link is not remembered.
-    href: `/my-grid?state=${code}`,
-    keywords: code,
-    stateCode: code,
-  }));
+export interface StatePageLike {
+  slug: string;
+  code: string;
+}
+
+/** Published state pages only (/api/state-pages); a state with no page offers nothing. */
+export function stateEntries(pages: StatePageLike[], states: Record<string, StateLike>): PaletteEntry[] {
+  return pages
+    .filter((p) => states[p.code])
+    .map((p) => ({
+      id: `state-${p.code}`,
+      label: states[p.code].name,
+      hint: "state page",
+      category: "state" as const,
+      href: `/state/${p.slug}`,
+      keywords: p.code,
+    }));
 }
 
 export interface SupplyNodeLike {

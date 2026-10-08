@@ -9,14 +9,13 @@
  * (script-src 'self') blocks, so nothing could have been counted there. An
  * image request needs only img-src https:, which the CSP already allows.
  *
- * What is sent is built in analytics-events.ts: five events with bounded,
+ * What is sent is built in analytics-events.ts: page views and two events with bounded,
  * allowlisted context, only on the production host, never from automated
  * browsers or admin pages. A failure here never touches the page.
  */
 import {
   campaignQuery,
   createDeduper,
-  eventDedupeKey,
   eventPath,
   pagePath,
   trafficAllowed,
@@ -84,11 +83,11 @@ export function trackPageview(pathname: string, search = typeof window !== "unde
   send(params);
 }
 
-/** One of the four task events, sent at most once per page view. */
+/** One of the task events, sent at most once per page view. */
 export function trackEvent(ctx: EventContext): void {
   if (!enabled()) return;
   const p = eventPath(ctx);
-  if (!p || !events.first(eventDedupeKey(ctx, p))) return;
+  if (!p || !events.first(p)) return;
   send({ p, e: "true" });
 }
 

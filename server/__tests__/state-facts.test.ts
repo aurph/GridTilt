@@ -1,5 +1,5 @@
 // The server's copy of the state and NERC area tables matches the client's,
-// so the state share card says what My Grid says for the same state.
+// so the state share card says what the state grid table says for the same state.
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { STATE_GRID, STATE_GRID_SOURCE as CLIENT_GRID_SOURCE } from "../../client/src/data/state-grid";
@@ -14,7 +14,7 @@ import { areaForState as clientAreaForState, cushion as clientCushion } from "..
 import { NERC_AREAS, NERC_LTRA, REGION_AREAS, STATES, STATE_GRID_SOURCE, STATE_NERC_AREA, STATE_NERC_NOTE, areaForState, cushion } from "../state-facts";
 
 describe("state facts (server copy)", () => {
-  it("covers every state My Grid covers, with the same name, region, operator and note", () => {
+  it("covers every state the state grid table covers, with the same name, region, operator and note", () => {
     assert.deepEqual(Object.keys(STATES).sort(), Object.keys(STATE_GRID).sort());
     for (const [code, s] of Object.entries(STATE_GRID)) {
       assert.deepEqual(STATES[code], { name: s.name, region: s.region, operatorLabel: s.operatorLabel, ...(s.note ? { note: s.note } : {}) }, code);

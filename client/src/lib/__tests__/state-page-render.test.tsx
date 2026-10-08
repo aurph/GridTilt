@@ -45,7 +45,7 @@ describe("state page render", () => {
     assert.match(html, /As of July 1, 2026 · Frederick County/);
     assert.match(html, /not yet reviewed field by field/);
     assert.match(html, /May 11 to 21, 2027/);
-    assert.match(html, /href="\/my-grid\?state=MD"/);
+    assert.match(html, /href="\/power-map"/);
     assert.match(html, /29\.7%/);
     assert.match(html, /reference level of 18\.6%/);
     assert.match(html, /Order No\. 92606/);

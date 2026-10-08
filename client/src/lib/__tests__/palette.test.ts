@@ -11,9 +11,14 @@ import {
 import { STATE_GRID } from "../../data/state-grid";
 import { supplyNodes } from "../../data/supply-chain-config";
 
+const PAGES = [
+  { slug: "maryland", code: "MD" },
+  { slug: "texas", code: "TX" },
+];
+
 const ALL: PaletteEntry[] = [
   ...PAGE_ENTRIES,
-  ...stateEntries(STATE_GRID),
+  ...stateEntries(PAGES, STATE_GRID),
   ...stockEntries(supplyNodes),
   ...clusterEntries([
     { id: "stargate-abilene", name: "Stargate Abilene (OpenAI/Oracle)", operator: "OpenAI / Oracle", location: { city: "Abilene", state: "TX" } },
@@ -69,22 +74,20 @@ describe("stockEntries", () => {
 });
 
 describe("stateEntries", () => {
-  it("covers every STATE_GRID state and matches on the postal code", () => {
-    const entries = stateEntries(STATE_GRID);
-    assert.equal(entries.length, Object.keys(STATE_GRID).length);
+  it("offers only states with a published page, and matches on the postal code", () => {
+    const entries = stateEntries(PAGES, STATE_GRID);
+    assert.deepEqual(entries.map((e) => e.id), ["state-MD", "state-TX"]);
     const out = rankEntries(entries, "tx");
     assert.equal(out[0]?.id, "state-TX");
   });
 
-  it("opens the shareable state address, not a remembered choice", () => {
-    const md = stateEntries(STATE_GRID).find((e) => e.id === "state-MD");
-    assert.equal(md?.href, "/my-grid?state=MD");
+  it("opens the state page", () => {
+    const md = stateEntries(PAGES, STATE_GRID).find((e) => e.id === "state-MD");
+    assert.equal(md?.href, "/state/maryland");
   });
 
-  it("carries the state code, so the palette can remember the reader's pick", () => {
-    const md = stateEntries(STATE_GRID).find((e) => e.id === "state-MD");
-    assert.equal(md?.stateCode, "MD");
-    assert.ok(PAGE_ENTRIES.every((e) => e.stateCode === undefined), "only state entries are remembered");
+  it("skips a page whose code names no known state", () => {
+    assert.deepEqual(stateEntries([{ slug: "atlantis", code: "ZZ" }], STATE_GRID), []);
   });
 });
 

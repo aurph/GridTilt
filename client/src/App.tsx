@@ -24,7 +24,6 @@ const Home = lazy(() => import("@/pages/Home"));
 const TiltOverview = lazy(() => import("@/pages/TiltOverview"));
 const TheStack = lazy(() => import("@/pages/TheStack"));
 const PowerMap = lazy(() => import("@/pages/PowerMap"));
-const MyGrid = lazy(() => import("@/pages/my-grid"));
 const StatePage = lazy(() => import("@/pages/state-page"));
 const ComputeFrontier = lazy(() => import("@/pages/compute-frontier"));
 const ComputeFrontierMethodology = lazy(() => import("@/pages/ComputeFrontierMethodology"));
@@ -52,7 +51,6 @@ const PAGE_TITLES: Record<string, string> = {
   "/overview": "Overview",
   "/stack": "Equities",
   "/power-map": "Power",
-  "/my-grid": "My Grid",
   "/compute-frontier": "Compute Frontier",
   "/neocloud-intel": "GPU Prices",
   "/analyze": "Analyze",
@@ -70,7 +68,6 @@ const SHORTCUTS = [
   { keys: ["G", "6"], description: "Go to Catalyst Tracker", path: "/catalysts" },
   { keys: ["G", "7"], description: "Go to Analyze", path: "/analyze" },
   { keys: ["G", "8"], description: "Go to Research", path: "/blog" },
-  { keys: ["G", "9"], description: "Go to My Grid", path: "/my-grid" },
   { keys: ["⌘", "K"], description: "Search pages, states, tickers, clusters", path: null },
   { keys: ["?"], description: "Show this keyboard shortcuts panel", path: null },
 ];
@@ -133,7 +130,8 @@ function Router() {
       <Route path="/overview" component={TiltOverview} />
       <Route path="/stack" component={TheStack} />
       <Route path="/power-map" component={PowerMap} />
-      <Route path="/my-grid" component={MyGrid} />
+      {/* My Grid was retired; the server 301s /my-grid to Power (seo.ts ALIAS_REDIRECTS) */}
+      <Route path="/my-grid">{() => <Redirect to="/power-map" replace />}</Route>
       <Route path="/state/:slug" component={StatePage} />
       <Route path="/compute-frontier" component={ComputeFrontier} />
       <Route path="/compute-frontier/methodology" component={ComputeFrontierMethodology} />
@@ -267,7 +265,7 @@ function App() {
         const routes: Record<string, string> = {
           "1": "/overview", "2": "/stack", "3": "/power-map",
           "4": "/compute-frontier", "5": "/neocloud-intel", "6": "/catalysts",
-          "7": "/analyze", "8": "/blog", "9": "/my-grid",
+          "7": "/analyze", "8": "/blog",
         };
         if (routes[e.key]) {
           navigate(routes[e.key]);

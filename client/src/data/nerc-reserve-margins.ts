@@ -2,7 +2,7 @@
  * Reserve margins from NERC's 2025 Long-Term Reliability Assessment (released
  * January 29, 2026), Table 2 and each assessment area's dashboard: summer 2026,
  * or winter 2026-27 for an area that peaks in winter. One source for the Power
- * map, the Overview headroom gauge, My Grid and the region pages.
+ * map, the Overview headroom gauge, the state pages and the region pages.
  *
  * The figures this replaced were labeled "NERC LTRA 2025 (2026 projections)"
  * but matched neither the 2025 nor the 2024 report (PJM 17.5% where NERC has

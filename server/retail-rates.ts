@@ -2,7 +2,7 @@ import { fetchWithTimeout } from "./fetch-timeout";
 // ─── Residential electricity rates by state ─────────────────────────────
 //
 // EIA v2 retail-sales: average residential price in cents/kWh, monthly, for
-// every state in one call. Powers the My Grid page's "what electricity
+// every state in one call. Powers the state page's "what electricity
 // costs where you live" context. Same rules as the rest of server/physical:
 // free EIA key required, self-reports unconfigured without one, 24 h cache,
 // never fabricates.

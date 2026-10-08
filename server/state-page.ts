@@ -3,13 +3,10 @@
 // One composed record per published state, used three ways so they cannot
 // differ: the JSON the client page renders (/api/state-pages/:slug), the facts
 // written into the page's HTML for readers and crawlers without JavaScript,
-// and the page's metadata. Grid facts come from the server copy of My Grid's
-// tables (state-facts.ts); projects come from the Compute Frontier records and
+// and the page's metadata. Grid facts come from the state grid tables
+// (state-facts.ts); projects come from the Compute Frontier records and
 // the 400 MW facility registry; documents and dates are hand-curated in
 // server/data/state-pages.json with the day they were checked.
-//
-// The interactive tool stays at /my-grid?state=XX, whose canonical is
-// /my-grid; the state page is the one indexable address for the state.
 
 import { readFileSync } from "fs";
 import { join } from "path";
@@ -82,7 +79,7 @@ export interface StatePageData {
   name: string;
   operatorLabel: string;
   operatorNote: string | null;
-  /** The NERC area My Grid shows for the state, or null with the reason in nercGap. */
+  /** The state's NERC area, or null with the reason in nercGap. */
   nerc: { key: string; label: string; season: string; margin: number; reference: number; referenceDefault: boolean; risk: string; outlook: string | null; cushion: number } | null;
   nercGap: string | null;
   /** Where another NERC area covers part of the state. */
@@ -99,10 +96,9 @@ export interface StatePageData {
   /** The day the curated rows (documents, dates, bill source) were checked. */
   reviewed: string;
   canonical: string;
-  myGridUrl: string;
 }
 
-/** The facility registry's floor, the same filter My Grid applies. */
+/** The facility registry's floor, the same filter the Power Map applies. */
 export const REGISTRY_FLOOR_MW = 400;
 
 const SLUG = /^[a-z][a-z-]{1,40}$/;
@@ -140,7 +136,7 @@ export function validateStatePages(raw: unknown, today?: string): string[] {
   states.forEach((s: any, i) => {
     const at = `states[${i}]${typeof s?.code === "string" ? ` (${s.code})` : ""}`;
     const known = STATES[s?.code];
-    if (!known) errors.push(`${at}: code is not a state My Grid covers`);
+    if (!known) errors.push(`${at}: code is not a state the state grid table covers`);
     else if (codes.has(s.code)) errors.push(`${at}: duplicate code`);
     else codes.add(s.code);
     if (typeof s?.slug !== "string" || !SLUG.test(s.slug)) errors.push(`${at}: slug must be lowercase words`);
@@ -262,7 +258,6 @@ export function composeStatePage(slug: string, input: StatePageInput): StatePage
     bill: curated.bill,
     reviewed: curated.reviewed,
     canonical: `${SITE}/state/${slug}`,
-    myGridUrl: `${SITE}/my-grid?state=${code}`,
   };
 }
 
@@ -314,7 +309,7 @@ export function renderStateHtml(d: StatePageData): string {
   const out: string[] = [];
   out.push(`<main data-prerender="state-page">`);
   out.push(`<h1>${esc(d.name)}'s grid</h1>`);
-  out.push(p(a(d.myGridUrl, `Open ${d.name} in My Grid`)));
+  out.push(p(a(`${SITE}/power-map`, "Open the Power Map")));
 
   out.push(`<h2>Grid operator and reliability</h2>`);
   out.push(p(`${esc(d.operatorLabel)}.${d.operatorNote ? ` ${esc(d.operatorNote)}` : ""}`));
@@ -372,7 +367,7 @@ export function renderStateHtml(d: StatePageData): string {
   }
   out.push(
     p(
-      `My Grid's facility map covers campuses of ${d.registry.floorMW} MW and up and lists ${d.registry.tracked} in ${esc(d.name)}. Neither list is a complete count of the state's data centers; a project missing here is not evidence that none exists.`,
+      `GridTilt's facility map covers campuses of ${d.registry.floorMW} MW and up and lists ${d.registry.tracked} in ${esc(d.name)}. Neither list is a complete count of the state's data centers; a project missing here is not evidence that none exists.`,
     ),
   );
 
@@ -415,7 +410,7 @@ function readCurated(today: string): CuratedStates | null {
   }
 }
 
-/** The published pages, for the sitemap and My Grid's link. */
+/** The published pages, for the sitemap and the search palette. */
 export function loadStatePageSlugs(today: string = easternToday()): Array<{ slug: string; code: string; reviewed: string }> {
   const curated = readCurated(today);
   return curated ? statePageSlugs(curated) : [];
