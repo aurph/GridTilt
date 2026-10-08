@@ -54,6 +54,7 @@ jobs:
         continue-on-error: true
 
       # This one does fail the build. Nothing here needs judgement: a new high
-      # advisory is either fixable or it is a decision someone has to record.
+      # advisory is either fixable or it is a decision someone has to record,
+      # in audit-exceptions.json with a reason and a reviewBy date.
       - name: Audit
-        run: npm audit --audit-level=high
+        run: node scripts/audit-gate.mjs
