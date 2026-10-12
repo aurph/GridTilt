@@ -90,7 +90,14 @@ const STATUS_ORDER = ["operational", "construction", "announced"];
  *  deliberate: behind-the-meter gas, nuclear, and hydro are the salient story,
  *  so they win over a plain "grid" mention when both appear. */
 function bucketEnergySource(s?: string): string {
-  const t = (s ?? "").toLowerCase();
+  // A qualifier describing gas as backup, temporary or still under evaluation
+  // is not the campus's supply: drop that clause before bucketing, so a grid
+  // campus with backup turbines stays grid. "with" starts a new clause, so in
+  // "natural gas with battery backup" only the battery is dropped.
+  const t = (s ?? "")
+    .toLowerCase()
+    .replace(/\bwith\b/g, ";")
+    .replace(/[^;()+]*\b(backup|temporary|under evaluation)\b[^;()+]*/g, " ");
   if (/nuclear|smr|reactor/.test(t)) return "nuclear";
   if (/gas/.test(t)) return "on-site gas";
   if (/hydro/.test(t)) return "hydro";
@@ -217,4 +224,26 @@ export function computeClusterMetrics(clusters: ClusterLite[]): ClusterMetrics {
     linkedDealCount,
     linkedDealIds,
   };
+}
+
+/**
+ * Map facility id -> cluster id, from the clusters that name the Power Map
+ * rows they correspond to (`mapFacilityIds`, set only when a review
+ * established that the row and the cluster are the same campus, never from
+ * similar names). A facility claimed by two clusters is ambiguous and gets no
+ * link.
+ */
+export function facilityClusterLinks(clusters: Array<{ id: string; mapFacilityIds?: unknown }>): Map<number, string> {
+  const links = new Map<number, string>();
+  const ambiguous = new Set<number>();
+  for (const c of clusters) {
+    if (!Array.isArray(c.mapFacilityIds)) continue;
+    for (const fid of c.mapFacilityIds) {
+      if (typeof fid !== "number") continue;
+      if (links.has(fid) && links.get(fid) !== c.id) ambiguous.add(fid);
+      else links.set(fid, c.id);
+    }
+  }
+  ambiguous.forEach((fid) => links.delete(fid));
+  return links;
 }

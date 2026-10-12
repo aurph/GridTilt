@@ -27,7 +27,7 @@ export default function BlogIndex() {
       <PageHeader
         title="Research"
         testId="blog-header"
-        about="Research and analysis on the AI power infrastructure thesis. Data-driven, no hype."
+        about="Research on power projects, grid conditions and the companies behind the buildout."
       />
 
       <div className="max-w-[1200px] mx-auto w-full px-4 md:px-8 py-6 space-y-8">

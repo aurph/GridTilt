@@ -8,15 +8,29 @@ import {
   ResponsiveContainer,
   ReferenceLine,
 } from "recharts";
-import { electricityData, demandAnnotations } from "@/data/electricity-demand";
+import { electricityData, demandAnnotations, US_END_USE_SOURCE } from "@/data/electricity-demand";
+import { DATA_CENTER_LOAD, demandTrough, latestDemand, pctChange } from "@/lib/sector-demand";
 import { seriesMotion } from "@/lib/chart-theme";
 
 const HORIZ_PAD = "clamp(24px, 5vw, 96px)";
-const DATA = "#F07800";
 const DATA_MUTED = "#9C9A93";
 const RULE = "rgba(255, 255, 255, 0.06)";
 const RULE_BRIGHT = "rgba(255, 255, 255, 0.14)";
 
+// The heading is computed from the series so it cannot drift from the line
+// under it. The old one promised 1,500 TWh of new data-center load by 2030 and
+// compared it with the UK, whose 2024 electricity demand was 319 TWh.
+const FIRST_YEAR = electricityData[0]?.year;
+const LATEST = latestDemand(electricityData);
+const TROUGH = demandTrough(electricityData);
+const RISE = TROUGH && LATEST ? pctChange(TROUGH.twh, LATEST.twh) : null;
+
+const LINK_STYLE = { color: "var(--mkt-ink-muted)", textDecoration: "underline", textUnderlineOffset: 2 };
+
+// One measured series on one axis. Data-center use used to share the plot on a
+// second axis, where 176 TWh drew above a 4,000 TWh total line. The estimate
+// now sits in the text with its source; the Overview chart plots it with room
+// to explain the two report editions.
 export function DemandChart() {
   return (
     <section
@@ -38,15 +52,23 @@ export function DemandChart() {
       >
         <div style={{ marginBottom: 48, maxWidth: 1040 }}>
           <h2 className="gt-section-heading" style={{ marginBottom: 24 }}>
-            US demand was flat for ten years.
-            <br />
-            <span style={{ color: "var(--mkt-accent)", fontStyle: "italic" }}>
-              It isn't anymore.
-            </span>
+            US electricity use, {FIRST_YEAR} to {LATEST?.year}
+            {LATEST && TROUGH && RISE !== null && (
+              <>
+                <br />
+                <span style={{ color: "var(--mkt-accent)", fontStyle: "italic" }}>
+                  {LATEST.twh.toLocaleString()} TWh in {LATEST.year}, up {RISE.toFixed(0)}% from {TROUGH.year}.
+                </span>
+              </>
+            )}
           </h2>
           <p className="gt-section-dek">
-            Data centers will add about 1,500 TWh to the US grid by 2030. That's the
-            entire UK's annual consumption.
+            Data centers used an estimated {DATA_CENTER_LOAD.twh} TWh in {DATA_CENTER_LOAD.year},{" "}
+            {DATA_CENTER_LOAD.sharePctOfUS}% of US electricity, by{" "}
+            <a href={DATA_CENTER_LOAD.sourceUrl} target="_blank" rel="noopener noreferrer" style={LINK_STYLE}>
+              LBNL's estimate
+            </a>
+            .
           </p>
         </div>
 
@@ -62,10 +84,7 @@ export function DemandChart() {
             letterSpacing: "0.04em",
           }}
         >
-          <LegendItem color={DATA_MUTED} label="total US demand" />
-          <LegendItem color={DATA_MUTED} label="total, projected" dashed />
-          <LegendItem color={DATA} label="data centers" />
-          <LegendItem color={DATA} label="data centers, projected" dashed />
+          <LegendItem color={DATA_MUTED} label="US electricity end use, TWh" />
         </div>
 
         <div style={{ width: "100%", aspectRatio: "16 / 7", minHeight: 360 }}>
@@ -84,15 +103,8 @@ export function DemandChart() {
                 tickLine={false}
                 tick={{ fill: "#9C9A93", fontSize: 11, fontFamily: "JetBrains Mono, monospace" }}
                 tickFormatter={(v) => `${(v / 1000).toFixed(1)}k`}
-                domain={[3500, 6500]}
-              />
-              <YAxis
-                yAxisId="dc"
-                orientation="right"
-                axisLine={false}
-                tickLine={false}
-                tick={{ fill: "#9C9A93", fontSize: 11, fontFamily: "JetBrains Mono, monospace" }}
-                domain={[0, 2400]}
+                domain={[3600, 4400]}
+                ticks={[3600, 3800, 4000, 4200, 4400]}
               />
               <Tooltip
                 contentStyle={{
@@ -112,33 +124,15 @@ export function DemandChart() {
                 itemStyle={{ color: "#F2F1ED", padding: 0 }}
                 cursor={{ stroke: RULE_BRIGHT, strokeWidth: 1 }}
                 formatter={(value, name) => {
-                  if (value == null) return ["n/a", name];
+                  if (value == null) return ["no data", name];
                   return [`${Math.round(value as number).toLocaleString()} TWh`, name];
                 }}
               />
 
-              <Line {...seriesMotion()} yAxisId="total" type="monotone" dataKey="demand"      stroke={DATA_MUTED} strokeWidth={1.5} dot={false} connectNulls={false} name="Total" />
-              <Line {...seriesMotion()} yAxisId="total" type="monotone" dataKey="projected"   stroke={DATA_MUTED} strokeWidth={1.5} strokeDasharray="5 3" dot={false} connectNulls={false} name="Total proj." />
-              <Line {...seriesMotion()} yAxisId="dc"    type="monotone" dataKey="dcDemand"    stroke={DATA}       strokeWidth={2}   dot={false} connectNulls={false} name="Data centers" />
-              <Line {...seriesMotion()} yAxisId="dc"    type="monotone" dataKey="dcProjected" stroke={DATA}       strokeWidth={2}   strokeDasharray="5 3" dot={false} connectNulls={false} name="DC proj." />
+              <Line {...seriesMotion()} yAxisId="total" type="linear" dataKey="demand" stroke={DATA_MUTED} strokeWidth={1.5} dot={false} activeDot={{ r: 4, fill: DATA_MUTED }} connectNulls={false} name="US end use" />
 
-              <ReferenceLine
-                yAxisId="total"
-                y={5100}
-                stroke="rgba(255,255,255,0.12)"
-                strokeDasharray="2 2"
-                label={{
-                  value: "5,100 TWh, current capacity",
-                  fill: "#9C9A93",
-                  fontSize: 10,
-                  position: "insideTopLeft",
-                  fontFamily: "JetBrains Mono, monospace",
-                }}
-              />
-
-              {/* event markers stay unlabeled in the plot: three "top" labels collide
-                  into overlap at most widths, worst on phones. The key below carries
-                  the text instead. */}
+              {/* event markers stay unlabeled in the plot: labels collide at
+                  most widths, worst on phones. The key below carries the text. */}
               {demandAnnotations.map((a) => (
                 <ReferenceLine
                   key={a.year}
@@ -177,7 +171,7 @@ export function DemandChart() {
                 }}
               />
               <span style={{ color: "#B0B0AC" }}>{a.year}</span>
-              <span>{a.label.replace(/\s*[—·]\s*/g, " + ")}</span>
+              <span>{a.label}</span>
             </span>
           ))}
         </div>
@@ -189,27 +183,32 @@ export function DemandChart() {
             color: "var(--mkt-ink-quiet)",
             marginTop: 14,
             letterSpacing: "0.06em",
+            lineHeight: 1.7,
           }}
+          data-testid="home-demand-sources"
         >
-          source: EIA Electric Power Monthly (historical 2010 to 2025), GridTilt
-          projection 2026 to 2030. Not a forecast.
+          source:{" "}
+          <a href={US_END_USE_SOURCE.url} target="_blank" rel="noopener noreferrer" style={LINK_STYLE}>
+            {US_END_USE_SOURCE.label}
+          </a>
+          , electricity end use (retail sales plus direct use), retrieved {US_END_USE_SOURCE.retrieved}.
+          Data centers:{" "}
+          <a href={DATA_CENTER_LOAD.sourceUrl} target="_blank" rel="noopener noreferrer" style={LINK_STYLE}>
+            {DATA_CENTER_LOAD.source}
+          </a>
+          , a model estimate, not a metered total.
         </p>
       </div>
     </section>
   );
 }
 
-function LegendItem({ color, label, dashed }: { color: string; label: string; dashed?: boolean }) {
+function LegendItem({ color, label }: { color: string; label: string }) {
   return (
     <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
       <span
         aria-hidden
-        style={{
-          width: 26,
-          height: 0,
-          borderTop: `2px ${dashed ? "dashed" : "solid"} ${color}`,
-          display: "inline-block",
-        }}
+        style={{ width: 26, height: 0, borderTop: `2px solid ${color}`, display: "inline-block" }}
       />
       <span>{label}</span>
     </span>

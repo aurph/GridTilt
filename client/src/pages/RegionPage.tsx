@@ -5,47 +5,52 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertTriangle, MapPin, Zap } from "lucide-react";
-import { RTO_CONFIG, RTO_SOURCE_NOTE } from "@/data/rto-config";
+import { NERC_LTRA } from "@/data/nerc-reserve-margins";
+import { areasForRegion, regionMarginText, regionRisk, regionRiskText } from "@/lib/reserve-margins";
 import { ErrorState } from "@/components/Freshness";
 import { SortableTh } from "@/components/sortable-table";
 import { nextSort, sortBy, type SortState } from "@/lib/table-sort";
 import { filterTrackedFacilities } from "@/lib/real-gauges";
 
+// Descriptions say what each organization is, as it describes itself (PJM's
+// and MISO's own pages, checked 2026-10-01). Dated figures do not go here:
+// the NERC section below reads the reviewed table, and a number in this text
+// would go stale beside it (MISO's said 13.4% after NERC's 11.0% replaced it).
 const REGION_META: Record<string, { name: string; fullName: string; states: string; description: string }> = {
   "pjm": {
     name: "PJM", fullName: "PJM Interconnection",
     states: "PA, NJ, DE, MD, VA, WV, OH, IN, IL, MI, KY, NC, TN, DC",
-    description: "PJM is the largest electricity market in North America, serving 65 million customers across 13 states. It hosts the highest concentration of hyperscaler data centers in the US, primarily in Northern Virginia (Data Center Alley). PJM capacity auction clearing prices hit record levels in 2025 at $270/MW-day, driven by AI data center load additions outpacing new generation.",
+    description: "PJM Interconnection runs the high-voltage grid and a wholesale electricity market in all or parts of 13 states and the District of Columbia. It does not own power lines or power plants; it directs their operation for many owners.",
   },
   "ercot": {
     name: "ERCOT", fullName: "Electric Reliability Council of Texas",
     states: "TX (most of state)",
-    description: "ERCOT operates the isolated Texas grid serving 26 million customers. Texas has attracted significant data center investment due to low electricity costs, land availability, and minimal regulatory overhead. EIA projects a 79% wholesale price increase in ERCOT by 2027 due to data center demand growth.",
+    description: "ERCOT runs the grid and wholesale electricity market for most of Texas. Its grid is a separate interconnection from the rest of the country's.",
   },
   "miso": {
     name: "MISO", fullName: "Midcontinent Independent System Operator",
     states: "ND, SD, NE, MN, IA, WI, IL, IN, MI, AR, MS, LA, TX (part)",
-    description: "MISO manages one of the most capacity-constrained grids in the US, with reserve margins dropping to 13.4% per NERC's latest assessment. The region serves a growing concentration of hyperscaler data centers, particularly in Iowa and Illinois.",
+    description: "MISO runs the high-voltage grid and a wholesale electricity market across 15 US states and the Canadian province of Manitoba.",
   },
   "wecc": {
     name: "WECC", fullName: "Western Electricity Coordinating Council",
     states: "WA, OR, CA, NV, AZ, UT, CO, WY, MT, ID, NM",
-    description: "WECC covers the western interconnection, including major data center markets in Oregon (The Dalles), Nevada, and Arizona. Google, Meta, and Microsoft have significant facility presence in the Pacific Northwest due to hydroelectric power availability.",
+    description: "WECC is the reliability organization for the Western Interconnection. Most of the West has no single market operator: CAISO runs California's market, and many utilities run their own systems.",
   },
   "serc": {
     name: "SERC", fullName: "SERC Reliability Corporation",
     states: "VA, NC, SC, GA, AL, FL, TN, MS",
-    description: "SERC covers the southeastern US, a growing data center market driven by lower land costs and expanding utility partnerships. Duke Energy and Southern Company are actively negotiating AI data center power agreements in this region.",
+    description: "SERC is the reliability organization for much of the Southeast, where utilities such as Southern Company, Duke Energy and TVA run their own systems rather than a regional market.",
   },
   "spp": {
     name: "SPP", fullName: "Southwest Power Pool",
     states: "KS, OK, NE, NM, TX (panhandle), AR, MO, ND, SD, MT, WY, IA, MN, LA",
-    description: "SPP manages the grid across the south-central plains states. While not yet a major data center hub, SPP's abundant wind resources and available land are attracting interest from hyperscalers seeking renewable-powered facilities.",
+    description: "Southwest Power Pool runs the high-voltage grid and a wholesale electricity market across the central United States.",
   },
   "npcc": {
     name: "NPCC", fullName: "Northeast Power Coordinating Council",
     states: "NY, CT, MA, ME, NH, RI, VT",
-    description: "NPCC covers the northeastern US and coordinates with ISO-NE and NYISO. The region has limited data center expansion due to high electricity costs and constrained transmission, but hosts critical financial services and enterprise computing infrastructure.",
+    description: "NPCC is the reliability organization for New York and New England, whose grids and markets are run by NYISO and ISO New England.",
   },
 };
 
@@ -109,11 +114,12 @@ const STATUS_BADGE: Record<Datacenter["status"], { label: string; className: str
   announced: { label: "Announced", className: "bg-muted text-muted-foreground" },
 };
 
-const SIGNAL_BADGE: Record<string, string> = {
-  Critical: "bg-negative-deep/15 text-negative border-negative-deep/30",
+/** NERC's 2026 risk levels; a region whose areas differ gets the neutral style. */
+const RISK_BADGE: Record<string, string> = {
+  High: "bg-negative-deep/15 text-negative border-negative-deep/30",
   Elevated: "bg-warning/15 text-warning border-warning/30",
-  Moderate: "bg-positive-deep/15 text-positive border-positive-deep/30",
-  Low: "bg-positive-deep/15 text-positive border-positive-deep/30",
+  Normal: "bg-positive-deep/15 text-positive border-positive-deep/30",
+  mixed: "bg-muted/30 text-muted-foreground border-border",
 };
 
 export default function RegionPage() {
@@ -149,7 +155,7 @@ export default function RegionPage() {
     (acc, d) => ({ ...acc, [d.status]: (acc[d.status] ?? 0) + 1 }),
     {} as Record<string, number>,
   );
-  const rtoConfig = RTO_CONFIG[region.name];
+  const nercAreas = areasForRegion(region.name);
 
   const regionCounts: Record<string, number> = {};
   for (const d of all) {
@@ -192,21 +198,27 @@ export default function RegionPage() {
           )}
         </Card>
         <Card className="p-4 border-card-border" data-testid="stat-reserve-margin">
-          <p className="text-[11px] text-muted-foreground mb-1">Reserve Margin</p>
-          <p className="text-xl font-bold font-mono text-foreground">
-            {rtoConfig ? `${rtoConfig.reserveMargin.toFixed(1)}%` : "N/A"}
-          </p>
-        </Card>
-        <Card className="p-4 border-card-border" data-testid="stat-ai-signal">
-          <p className="text-[11px] text-muted-foreground mb-1">AI Load Signal</p>
-          {rtoConfig ? (
-            <Badge className={`font-mono ${SIGNAL_BADGE[rtoConfig.aiSignal] ?? ""}`}>{rtoConfig.aiSignal}</Badge>
+          <p className="text-[11px] text-muted-foreground mb-1">Reserve margin, summer 2026</p>
+          {nercAreas.length === 1 ? (
+            <p className="text-xl font-bold font-mono text-foreground">
+              {nercAreas[0].margin.toFixed(1)}%
+              <span className="ml-1.5 text-11 font-sans font-normal text-muted-foreground">reference {nercAreas[0].reference}%</span>
+            </p>
           ) : (
-            <p className="text-xl font-bold font-mono text-foreground">N/A</p>
+            // SERC, WECC and NPCC are reported only by sub-area.
+            <p className="text-xs text-muted-foreground leading-snug">{regionMarginText(region.name)}</p>
           )}
         </Card>
+        <Card className="p-4 border-card-border" data-testid="stat-nerc-risk">
+          <p className="text-[11px] text-muted-foreground mb-1">NERC risk, 2026</p>
+          <Badge className={RISK_BADGE[regionRisk(region.name) ?? "mixed"]}>{regionRiskText(region.name)}</Badge>
+        </Card>
       </div>
-      <p className="text-9 text-muted-foreground/50 -mt-4">Reserve margin and AI load signal: {RTO_SOURCE_NOTE}.</p>
+      <p className="text-9 text-muted-foreground/50 -mt-4">
+        Reserve margin and risk:{" "}
+        <a href={NERC_LTRA.url} target="_blank" rel="noopener noreferrer" className="underline decoration-dotted underline-offset-2">{NERC_LTRA.label}</a>.
+        NERC rates each area against its own reference margin.
+      </p>
 
       <Card className="p-5 border-card-border" data-testid="region-facilities">
         <div className="flex items-baseline justify-between gap-3 mb-3 flex-wrap">

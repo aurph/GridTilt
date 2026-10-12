@@ -1,0 +1,12 @@
+{
+  "about": "High or critical npm advisories that have no fix short of a breaking upgrade, accepted on purpose. scripts/audit-gate.mjs fails CI on any high or critical advisory not listed here, and on any entry past its reviewBy date. Remove an entry as soon as a non-breaking fix exists.",
+  "exceptions": [
+    {
+      "advisory": "GHSA-vfj7-8cjw-p6xm",
+      "package": "braces",
+      "reason": "No patched braces release exists. It is reached only through tailwindcss 3 (chokidar, micromatch, fast-glob) at build time, matching the repo's own content globs; no reader input ever reaches it. The only fix npm offers is tailwindcss 4, a breaking migration of every stylesheet.",
+      "accepted": "2026-10-08",
+      "reviewBy": "2026-12-31"
+    }
+  ]
+}

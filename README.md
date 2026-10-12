@@ -12,7 +12,7 @@ Live: **[gridtilt.com](https://gridtilt.com)**
 
 ## Tools
 
-Eight tools in the sidebar. Retired routes (`/supply-chain`, `/power-deals`, `/queue`, `/gpu-economics`, `/trade`, `/portfolio`, `/brief`) redirect into tabs of these.
+Nine tools in the top navigation. Retired routes (`/supply-chain`, `/power-deals`, `/queue`, `/gpu-economics`, `/trade`, `/portfolio`, `/brief`) redirect into tabs of these.
 
 | Tool | Route | What's inside |
 |---|---|---|
@@ -24,6 +24,8 @@ Eight tools in the sidebar. Retired routes (`/supply-chain`, `/power-deals`, `/q
 | **Analyze** | `/analyze` | Portfolio tab scores any portfolio 0-100 on AI-power exposure; scenario tab models demand growth, nuclear capacity, and grid stress. |
 | **Catalyst Tracker** | `/catalysts` | Earnings dates (live from Yahoo, seeded fallback) plus curated thesis catalysts on a monthly calendar. |
 | **Analysis** | `/blog` | Research articles plus the daily Buildout Brief. |
+
+State pages (`/state/:slug`) are the indexable, maintained reference for a state: its grid facts, dated public decisions with their documents, next public dates, related project records and the limits of what a price can say about a bill. Only Maryland is published (`/state/maryland`, from `server/data/state-pages.json`); any other slug is a 404.
 
 A news ticker runs across every dashboard page: a 7-day rolling feed from 8 industry RSS sources (Utility Dive, DCD, World Nuclear News, Power Engineering, POWER Magazine, Latitude Media, DOE, EIA), with NewsData.io as an optional additional tier.
 
@@ -58,8 +60,8 @@ The former headline gauges (AI Demand, Grid Stress, NPI) were sentiment formulas
 
 - **Client**: React 18, TypeScript, Vite, wouter, TanStack Query v5, Tailwind CSS, shadcn/ui (house-modified fork in `client/src/components/ui`; do not regenerate from upstream), Recharts, visx, d3, react-leaflet.
 - **Server**: Express 5, single process. Vite middleware in dev, static files from `dist/public` in prod. Port 5000.
-- **Persistence**: JSON files in `server/data/` and `content/blog/`. There is no database.
-- **Tests**: Node's built-in test runner; 217 tests across server and client lib suites.
+- **Persistence**: JSON files in `server/data/` and `content/blog/`, and Postgres for subscribers, consent and the newsletter delivery ledger when `DATABASE_URL` is set (see `docs/runbooks/subscriber-storage.md`).
+- **Tests**: Node's built-in test runner, across the server and client lib suites (`npm test`).
 
 ## Run locally
 
@@ -82,12 +84,15 @@ npm start        # serve the built bundle
 |---|---|---|
 | `UNSUB_TOKEN_SECRET` | yes | HMAC key for unsubscribe tokens. `openssl rand -hex 32`. |
 | `ADMIN_API_KEY` | yes | Guards `/api/admin/*`, newsletter send, and daily export. `openssl rand -hex 32`. |
-| `RESEND_API_KEY` | no | Syncs subscribers to Resend and enables newsletter sends. Without it, signups only persist to local JSON. |
-| `EIA_API_KEY` | no | Free key from [eia.gov/opendata](https://www.eia.gov/opendata/register.php). Enables live US48 hourly demand. |
+| `DATABASE_URL` | production | Postgres for subscribers (a GridTilt-only Neon database). Without it, production answers signups "unavailable"; development uses an ignored local file. See `docs/runbooks/subscriber-storage.md`. |
+| `RESEND_API_KEY` | to send | Newsletter sending through Resend (one email per call, idempotency keys). Without it, signups are still stored and sending answers with the missing configuration. |
+| `NEWSLETTER_FROM`, `NEWSLETTER_POSTAL_ADDRESS`, `NEWSLETTER_PRIVACY_URL` | to send | Sender on a Resend-verified domain, the approved mailing address, and the published privacy notice. Sending is blocked until all are set. `NEWSLETTER_REPLY_TO` and `NEWSLETTER_CONTACT_EMAIL` are optional. See `docs/runbooks/newsletter-sending.md`. |
+| `RESEND_WEBHOOK_SECRET` | to send | Verifies Resend's delivery, bounce and complaint webhooks at `/api/webhooks/resend`. |
+| `EIA_API_KEY` | no | Free key from [eia.gov/opendata](https://www.eia.gov/opendata/register.php). Enables live US48 hourly demand and the residential electricity prices on the state pages; without it they say prices are unavailable and link EIA's own table. |
 | `NEWSDATA_API_KEY` | no | Optional [newsdata.io](https://newsdata.io) key. The 8 RSS feeds work without it. |
 | `CARTO_API` | no | Free [Carto basemap key](https://carto.com/basemaps/apikey) (5M tiles/month). Without it the maps still render, but every tile is stamped "API KEY REQUIRED". Public by nature - restrict it by domain. |
 | `X_API_*` | no | Four X credentials for the weekday auto-poster; it dry-runs and logs locally without them. |
-| `X_POSTING_ENABLED` | no | Kill switch for the auto-poster; defaults off (dry-run). |
+| `X_POSTING_ENABLED` | no | Kill switch for the auto-poster; defaults off (dry-run). Each weekday post states one dated basis or skips with its reason in the social log. |
 | `DISABLE_DATACENTER_INGESTER` | no | Set to `1` to disable the 6-hour RSS datacenter ingester. |
 
 ## Project layout

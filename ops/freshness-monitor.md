@@ -1,82 +1,115 @@
 # Dataset freshness monitor
 
-Answers the one question an unattended pipeline cannot answer about itself:
-**has a refresh mechanism stopped running?**
+Answers two questions an unattended pipeline cannot answer about itself:
+**has a refresh mechanism stopped running, and has anyone re-checked the facts
+nobody refreshes automatically?**
 
 A flow on the Jetson dies quietly. The box reboots, n8n is switched off, a PAT
 expires. Nothing errors, because nothing is watching. The only symptom is a date
 that stops moving, which is how `interconnection-queue.json` reached 77 days
-without anyone noticing.
+without anyone noticing. A hand-curated file ages the same way with no symptom
+at all.
 
 ## What it is
 
 - `server/freshness-registry.ts` declares every dataset: where it lives, how to
-  read its timestamp, how old it is allowed to get, and what is supposed to
-  refresh it. Adding a dataset here is the whole integration.
+  read its run stamp (and its data stamp where they differ), how old the run may
+  get, what refreshes it, who reviews it and how often, and where its writes land.
+  Adding a dataset there is the whole integration.
+- `server/data/dataset-reviews.json` (hand-curated) records each completed review:
+  dataset, date, outcome (`changed` / `no-change`), scope, evidence. Add an entry
+  when a review is done; never to clear an alert.
 - `server/freshness.ts` is the pure classifier. No fs, no clock, no env.
 - `GET /api/admin/freshness` returns the full report.
-- `GET /api/admin/freshness/check` is the deadman: 200 when nothing is stale,
-  503 listing offenders when something is.
+- `GET /api/admin/freshness/check` is the deadman: 200 when nothing needs
+  attention, 503 with the `attention` list (id, status, detail) when something does.
+- `GET /api/admin/freshness/alert-preview` returns the text an alert would carry,
+  with what to do for each item. It sends nothing.
 
-Both routes are admin-gated. Freshness is the floor, not a feature; a public
-"look how current we are" page advertises the bare minimum.
+All three are admin-gated. Freshness is the floor, not a feature.
+
+## Three dates, never one
+
+- **Job last success** (`jobLastSuccess`): when the mechanism last completed a
+  run. A scanner's `lastChecked` says it looked; it does not certify every record
+  or change a source's publication date.
+- **Data last observed** (`dataLastObserved`): when a value last changed or was seen.
+- **Claim last reviewed** (`claimLastReviewed`): when a person last re-checked the
+  facts against their sources, from `dataset-reviews.json`.
+
+So the monitor can be green while the site shows an older "as of" date on a
+stat. Both are honest; they answer different questions.
 
 ## Statuses
 
-| status | meaning | trips the alarm |
+| status | meaning | needs attention (503) |
 |---|---|---|
-| `ok` | within its declared cadence | no |
-| `aging` | overdue but under 2x cadence, ie. one missed run | no |
-| `stale` | past 2x cadence, the mechanism has probably stopped | **yes** |
-| `manual` | hand-curated, no cadence declared | no |
-| `unknown` | no readable timestamp in the file | no |
+| `ok` | run within its cadence; review current, if it has one | no |
+| `aging` | run overdue but under 2x cadence (one missed run) | no |
+| `stale` | run past 2x cadence: the mechanism has probably stopped | **yes** |
+| `no_run_observed` | a cadence is declared but nothing has stamped a run | **yes** |
+| `fetch_failed` | a failure is recorded after the last success | **yes** |
+| `partial_coverage` | the newest stamp is fresh but some expected series are not | **yes** |
+| `review_overdue` | never reviewed, or past its review deadline | **yes** |
+| `unknown` | a timestamp the dataset should carry is unreadable, or the file is missing | **yes** |
+| `reviewed_no_change` | reviewed in time and nothing changed | no |
+| `manual` | hand-curated with no cadence and no review schedule | no |
 
-`aging` is deliberately a 200. If a single missed run pages you, the alert stops
-meaning anything within a month.
+A dataset can have several issues (`issues`, worst first); its `status` is the
+worst. `aging` stays a 200 so a single missed run does not page anyone.
 
-`unknown` deliberately does not alarm either: it marks a gap in instrumentation,
-not evidence of failure. `datacenters.json` is the current example, a bare array
-with no date field anywhere, so its age cannot be checked at all.
+Coverage for the GPU recorder: every model it has ever observed live should keep
+appearing. One fresh H100 row does not make a missing H200 series look healthy.
+Models never observed live (not every model is listed for rent) are not expected,
+and nothing promises daily data for every model.
 
-## Wiring the deadman
+The data center ingester now moves `lastChecked` only when at least one feed
+answered, records `lastCoverage` (feeds answered, items scanned), and records
+`lastFailureAt` / `lastFailureReason` when every feed failed.
 
-**The watchdog must not run on the Jetson.** A watchdog hosted on the box it
-watches dies with it, which is the exact failure this exists to catch. Use the
-same cron-job.org account already firing the daily tweet.
+## Where writes land (read this before scheduling anything)
 
-1. New cron job, URL `https://gridtilt.com/api/admin/freshness/check`.
-2. Add request header `x-admin-key` with the production `ADMIN_API_KEY`.
-3. Schedule daily. Hourly is pointless: every cadence here is measured in days.
-4. Enable the job's failure notification. cron-job.org alerts on any non-2xx,
-   which is exactly the 503.
-5. Save, run once manually, and confirm you get the failure mail while datasets
-   are still stale. **Verify the alarm fires before trusting the silence.**
+`writes` in the registry says it:
 
-Nothing else to configure. The response body lists each stale dataset with its
-mechanism, so the alert tells you which flow to go restart.
+- `repo`: the mechanism commits (the n8n flows for clusters and curated GPU prices).
+- `instance`: the mechanism writes on the running Replit autoscale instance:
+  the news scan (`interconnection-queue.json`), the GPU recorder
+  (`gpu-price-history.json`), the data center ingester (`datacenters-pending.json`,
+  the sidecar) and `/api/kpis` (`index-history.json`). **A redeploy reverts those
+  files to the committed copy**, and the report then reads the committed dates. A
+  scheduled ping keeps the live site current between deploys; it does not make
+  the data durable or put it in the repository.
+- `none`: hand-edited only.
 
-## Why the dates can disagree with the site
+## The scheduled jobs (`.github/workflows/data-freshness.yml`)
 
-Two different questions, deliberately two different fields:
+Reviewed reuse of PR #31: news scan daily, recorder ping on weekdays, deadman twice
+a day. Changes from #31:
 
-- `lastRefreshed` is when a value last **changed**.
-- `lastChecked` is when something last **looked**, changed or not.
+- **Off until approved.** Scheduled runs do nothing unless the repository variable
+  `FRESHNESS_SCHEDULES_ENABLED` is `true`. A manual run always works. Merging the
+  file starts nothing.
+- **Public logs stay clean.** The repository is public, so are its Actions logs;
+  every step prints status codes and dataset ids only, never a response body.
+- **No retry on the scan.** It writes; a retry after a timeout could run it twice.
+  The recorder pings keep two retries because each recorder writes at most once a day.
+- Five-minute job timeouts and one run per job at a time.
 
-Staleness follows `lastChecked` where it exists, falling back to `lastRefreshed`.
-Otherwise a dataset that is checked daily and correctly unchanged would read as
-abandoned, and you could not tell that apart from the scanner never running.
+The watchdog runs on GitHub, not on the Jetson or Replit: a watchdog hosted on the
+box it watches dies with it.
 
-So once the scanner is scheduled, the monitor can be green while the homepage
-still shows an older "as of" date on that stat. Both are honest and they answer
-different questions. Do not "fix" this by pointing them at the same field.
+To turn it on: repository secret `GRIDTILT_ADMIN_KEY` (the production
+`ADMIN_API_KEY`), then repository variable `FRESHNESS_SCHEDULES_ENABLED=true`. Run
+the deadman once by hand first and confirm it fails while datasets need attention:
+**verify the alarm fires before trusting the silence.** GitHub suspends schedules
+after about 60 days without repository activity; any commit re-arms them.
 
-`POST /api/admin/scan-news-now` stamps `lastChecked` on every run. The n8n
-`cluster-refresh` flow achieves the same thing differently: it commits even on a
-zero-change pass so only `lastRefreshed` moves.
+## Current state (committed data, 2026-10-01)
 
-## Current state
-
-As of the last check, three datasets are stale purely because their flows were
-built but never mounted on the Jetson: `clusters`, `interconnection-queue`, and
-`gpu-rental-prices`. See `ops/n8n/README.md` for mounting instructions. The
-monitor does not fix staleness, it makes staleness loud.
+All nine datasets need attention: clusters, the interconnection queue, curated GPU
+prices, the GPU recorder and the data center ingester are stale because their
+mechanisms are not running (the n8n flows were built but never mounted; see
+`ops/n8n/README.md`), and the hyperscaler capex, inference prices, frontier models
+and catalyst calendar have no recorded review. The power agreements' firmness
+review (2026-09-28) is recorded. The monitor does not fix staleness; it makes it
+loud and says what to do.

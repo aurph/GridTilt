@@ -13,21 +13,31 @@
  * bare fragment rather than an element. Pointing at ids that do not exist is
  * worse than omitting the attribute, so wiring the panels is its own change.
  */
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useSearch } from "wouter";
 
 export interface ToolTab {
   id: string;
   label: string;
 }
 
-export function readTabParam(tabs: ToolTab[], fallback: string): string {
-  const sp = new URLSearchParams(window.location.search);
-  const t = sp.get("tab");
+/** The tab a search string names, or the fallback for none or an unknown id. */
+export function tabFromSearch(tabs: ToolTab[], fallback: string, search: string): string {
+  const t = new URLSearchParams(search.startsWith("?") ? search.slice(1) : search).get("tab");
   return tabs.some((x) => x.id === t) ? (t as string) : fallback;
 }
 
+export function readTabParam(tabs: ToolTab[], fallback: string): string {
+  return tabFromSearch(tabs, fallback, window.location.search);
+}
+
 export function useToolTabs(tabs: ToolTab[], fallback: string): [string, (id: string) => void] {
-  const [active, setActive] = useState(() => readTabParam(tabs, fallback));
+  const search = useSearch();
+  const fromUrl = useMemo(() => tabFromSearch(tabs, fallback, search), [tabs, fallback, search]);
+  const [active, setActive] = useState(fromUrl);
+  // A navigation that changes only ?tab= (the search palette, a link) keeps
+  // the page mounted, so the initial state alone would ignore it.
+  useEffect(() => setActive(fromUrl), [fromUrl]);
   useEffect(() => {
     const sp = new URLSearchParams(window.location.search);
     if (active === fallback) sp.delete("tab");

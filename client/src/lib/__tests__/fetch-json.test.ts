@@ -42,7 +42,7 @@ describe("fetchJson", () => {
   });
 
   it("throws on the honest 503 unconfigured payload too", async () => {
-    // Callers that want to render a 503 body (my-grid rates) keep their own
+    // Callers that want to render a 503 body (state-page rates) keep their own
     // queryFn on purpose; the shared helper must not silently allow it.
     stub(503, { configured: false });
     await assert.rejects(() => fetchJson("/api/physical/retail-rates"), /503/);

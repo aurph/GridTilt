@@ -1,43 +1,98 @@
 import type { Request } from "express";
 import { readFileSync } from "fs";
 import { join } from "path";
+import { COMPANY_DATABASE, knownTicker } from "./company-registry";
+import { loadStatePage, stateDescription, stateTitle } from "./state-page";
 
 export interface PageMeta {
   title: string;
   description: string;
-  canonical: string;
+  /** Null for a page that must not claim a canonical address (a 404, an admin page). */
+  canonical: string | null;
   ogImage: string;
   ogType: string;
   jsonLd: object[];
+  /** HTTP status for the HTML response; 200 when absent. */
+  status?: number;
+  /** robots meta and X-Robots-Tag; "index, follow" when absent. */
+  robots?: string;
+}
+
+/**
+ * Client routes that only forward somewhere else (client/src/App.tsx). The
+ * server answers them with one 301 to the final address, so a crawler never
+ * indexes an alias or follows two hops.
+ */
+export const ALIAS_REDIRECTS: Record<string, string> = {
+  "/gpu-economics": "/neocloud-intel?tab=economics",
+  "/power-deals": "/power-map?tab=deals",
+  "/brief": "/blog",
+  "/supply-chain": "/stack?view=flow",
+  "/trade": "/analyze?tab=scenario",
+  "/portfolio": "/analyze?tab=portfolio",
+  "/queue": "/power-map?tab=queue",
+  "/my-grid": "/power-map",
+};
+
+/** Admin screens: served, never indexed. */
+const ADMIN_PAGES = new Set(["/admin/datacenters", "/admin/social"]);
+
+/**
+ * An address that names nothing GridTilt has: a real 404, not the home page's
+ * metadata on a 200 (which search engines read as a duplicate home page).
+ */
+/**
+ * A page whose data could not be read or checked: a 503 with noindex, so a
+ * crawler retries later instead of dropping the address as missing.
+ */
+export function unavailableMeta(): PageMeta {
+  return {
+    title: "Temporarily unavailable | GridTilt",
+    description: "This page's data could not be loaded. Try again shortly.",
+    canonical: null,
+    ogImage: `${BASE_URL}/api/og?page=home`,
+    ogType: "website",
+    jsonLd: [],
+    status: 503,
+    robots: "noindex",
+  };
+}
+
+export function notFoundMeta(): PageMeta {
+  return {
+    title: "Not found | GridTilt",
+    description: "There is no page at this address on GridTilt.",
+    canonical: null,
+    ogImage: `${BASE_URL}/api/og?page=home`,
+    ogType: "website",
+    jsonLd: [],
+    status: 404,
+    robots: "noindex",
+  };
 }
 
 const BASE_URL = "https://gridtilt.com";
 
 const STATIC_PAGES: Record<string, { title: string; description: string; slug: string }> = {
   "/": {
-    title: "GridTilt \u2014 The AI Power Buildout, Tracked Honestly",
-    description: "A research dashboard for the AI infrastructure buildout \u2014 data centers, power, compute, and the public equities behind them. Three live market gauges. Six modules. No Bloomberg required.",
+    title: "GridTilt: Power projects, grid conditions, electricity costs",
+    description: "GridTilt shows what is being built on your power grid, who is behind it, and what is known about the cost. Choose your state, or explore projects, power agreements and the companies behind them.",
     slug: "",
   },
   "/overview": {
-    title: "Tilt Overview \u2014 Live Dashboard \u2014 GridTilt",
-    description: "Live composite indices, top movers, sector pulse, and catalyst calendar across the AI power thesis. Updated every 15 minutes.",
+    title: "Tilt Overview | GridTilt",
+    description: "US electricity use, grid conditions, power agreements, market movers and upcoming events for the AI power buildout.",
     slug: "overview",
   },
   "/stack": {
-    title: "AI Power Stocks by Sector \u2014 GridTilt",
-    description: "Live prices for 60+ stocks across nuclear, uranium, construction, utilities, data centers, and power hardware. Updated every 15 minutes.",
+    title: "AI Power Stocks by Sector | GridTilt",
+    description: "Live prices for public companies across nuclear, uranium, construction, utilities, data centers, and power hardware.",
     slug: "stack",
   },
   "/power-map": {
-    title: "AI Data Center Map \u2014 Locations by Grid Region \u2014 GridTilt",
-    description: "48 AI data center facilities mapped by operator, grid region, and capacity. Filter by Google, Amazon, Meta, Microsoft.",
+    title: "AI Data Center Map: Projects by Grid Region | GridTilt",
+    description: "Tracked AI data center campuses of 400 MW and up, mapped by operator, grid region and capacity, with power agreements and the interconnection queue.",
     slug: "power-map",
-  },
-  "/my-grid": {
-    title: "My Grid \u2014 Your State's Grid Operator, Buildout, and Rates \u2014 GridTilt",
-    description: "Pick a state to see its grid operator, projected reserve margin, the AI datacenter buildout in and around it, the regional interconnection queue, and residential electricity rates from the EIA.",
-    slug: "my-grid",
   },
   "/catalysts": {
     title: "AI Power Earnings Calendar and Catalyst Events \u2014 GridTilt",
@@ -45,8 +100,8 @@ const STATIC_PAGES: Record<string, { title: string; description: string; slug: s
     slug: "catalysts",
   },
   "/blog": {
-    title: "AI Power Infrastructure Analysis \u2014 GridTilt",
-    description: "Research and analysis on the AI power infrastructure thesis. Data center power demand, nuclear energy, grid constraints, and investment implications.",
+    title: "Research | GridTilt",
+    description: "Research on data center power demand, nuclear energy, grid constraints, and the companies behind the buildout.",
     slug: "blog",
   },
   "/compute-frontier": {
@@ -65,8 +120,8 @@ const STATIC_PAGES: Record<string, { title: string; description: string; slug: s
     slug: "compute-frontier/compare",
   },
   "/analyze": {
-    title: "Analyze - Portfolio Exposure and Buildout Scenarios | GridTilt",
-    description: "Score any portfolio for AI power exposure, and model buildout scenarios across demand growth, generation mix, and grid variables.",
+    title: "Analyze - Illustrative Baskets and Buildout Scenarios | GridTilt",
+    description: "Compare the editorial sector classifications of a basket of tickers, and model buildout scenarios across demand growth, generation mix, and grid variables.",
     slug: "analyze",
   },
   "/neocloud-intel": {
@@ -75,21 +130,26 @@ const STATIC_PAGES: Record<string, { title: string; description: string; slug: s
     slug: "neocloud-intel",
   },
   "/subscribe": {
-    title: "Get the Tilt \u2014 Weekly AI Power Market Intel \u2014 GridTilt",
-    description: "Weekly digest of AI power market moves, catalysts, and thesis updates. Built for investors tracking the buildout.",
+    title: "The Brief: Power Projects and Grid Changes | GridTilt",
+    description: "New power projects, grid conditions and the companies behind them, by email.",
     slug: "subscribe",
   },
 };
 
 const SECTOR_SLUGS: Record<string, { name: string; description: string }> = {
-  "nuclear-power": { name: "Nuclear Power", description: "Track nuclear power generation stocks tied to the AI infrastructure buildout. Live prices, thesis analysis, and sector performance." },
-  "uranium": { name: "Uranium & Fuel Cycle", description: "Track uranium mining and nuclear fuel cycle stocks. Live prices, supply dynamics, and AI power demand impact." },
-  "compute": { name: "Compute", description: "Track GPU, semiconductor, and cloud compute stocks driving AI infrastructure. Live prices and thesis analysis." },
-  "power-hardware": { name: "Power Hardware", description: "Track electrical equipment and power hardware stocks supplying AI data center infrastructure." },
-  "utilities": { name: "Utilities", description: "Track regulated and merchant utilities positioned for AI data center power demand growth." },
-  "data-center-reits": { name: "Data Center REITs", description: "Track data center REIT stocks hosting AI compute infrastructure. Live prices and capacity data." },
-  "construction-epc": { name: "Construction & EPC", description: "Track construction and engineering firms building AI data center and grid infrastructure." },
-  "etf-benchmarks": { name: "ETF Benchmarks", description: "Track ETFs and index funds benchmarking the AI power infrastructure thesis sectors." },
+  "nuclear-power": { name: "Nuclear Power", description: "Nuclear power generators tied to the AI infrastructure buildout: live prices, GridTilt's sector classification and sector context." },
+  "uranium": { name: "Uranium & Fuel Cycle", description: "Uranium miners and nuclear fuel cycle companies: live prices, GridTilt's sector classification and sector context." },
+  "compute": { name: "Compute", description: "GPU, semiconductor and cloud compute companies behind AI infrastructure: live prices and sector context." },
+  "power-hardware": { name: "Power Hardware", description: "Electrical equipment and power hardware suppliers to AI data centers: live prices and sector context." },
+  "utilities": { name: "Utilities", description: "Regulated and merchant utilities serving AI data center power demand: live prices and sector context." },
+  "data-center-reits": { name: "Data Center REITs", description: "Data center REITs hosting AI compute infrastructure: live prices and sector context." },
+  "construction-epc": { name: "Construction & EPC", description: "Construction and engineering firms building data center and grid infrastructure: live prices and sector context." },
+  "etf-benchmarks": { name: "ETF Benchmarks", description: "Funds that benchmark the AI power infrastructure sectors: live prices and sector context." },
+  "raw-materials-mining": { name: "Raw Materials & Mining", description: "Copper, steel and rare earth producers behind the physical buildout: live prices and sector context." },
+  "natural-gas": { name: "Natural Gas", description: "Natural gas producers and exporters supplying power generation for data centers: live prices and sector context." },
+  "renewable-generation": { name: "Renewable Generation", description: "Solar and wind suppliers and developers signing power agreements with large buyers: live prices and sector context." },
+  "transmission-grid-hardware": { name: "Transmission & Grid Hardware", description: "Wire, cable and grid equipment makers connecting new load to the grid: live prices and sector context." },
+  "crypto-ai-hosting": { name: "Crypto & AI Hosting", description: "Bitcoin miners and hosts converting power capacity to AI compute: live prices and sector context." },
 };
 
 const REGION_SLUGS: Record<string, { name: string; description: string }> = {
@@ -119,7 +179,7 @@ function websiteJsonLd(): object {
     "@type": "WebSite",
     "name": "GridTilt",
     "url": BASE_URL,
-    "description": "AI power infrastructure investment dashboard",
+    "description": "Power projects, grid conditions and electricity costs for the AI buildout",
     "potentialAction": {
       "@type": "SearchAction",
       "target": `${BASE_URL}/stock/{search_term_string}`,
@@ -147,8 +207,8 @@ function datasetJsonLd(): object {
   return {
     "@context": "https://schema.org",
     "@type": "Dataset",
-    "name": "AI Data Center Locations \u2014 United States",
-    "description": "48 active and planned AI data center facilities mapped by operator, grid region, capacity, and status",
+    "name": "AI Data Center Locations: United States",
+    "description": "Tracked AI data center campuses of 400 MW and up, mapped by operator, grid region, capacity, and status",
     "url": `${BASE_URL}/power-map`,
     "creator": { "@type": "Organization", "name": "GridTilt" },
     "temporalCoverage": "2024/..",
@@ -208,23 +268,48 @@ function breadcrumbJsonLd(items: Array<{ name: string; url: string }>): object {
   };
 }
 
+// Structured data read by search and answer engines. It carried the claims the
+// pages had dropped: 288 TWh and 6.4% for data centers (LBNL: 192 TWh, 4.7%),
+// 60 transformers a year (DOE: about 343), a stale facility count, and three
+// answers describing the retired indices as current features.
 const TRADE_FAQS = [
-  { question: "How much electricity do AI data centers use?", answer: "AI data centers currently consume approximately 6.4% of US electricity, or about 288 TWh annually. Under base case projections, new AI capacity could reach 50 GW by 2030." },
-  { question: "What is the AI power demand thesis?", answer: "The thesis holds that companies building power infrastructure for AI data centers will benefit from multi-year demand driven by physical construction bottlenecks, grid interconnection queues, and transformer shortages." },
-  { question: "How many AI data centers are being built?", answer: "GridTilt tracks 48 AI data center facilities across the US, including operational, under construction, and announced projects totaling over 20 GW of capacity." },
-  { question: "What does the GridTilt Scenario Calculator model?", answer: "The calculator models total capex, large power transformer demand, nuclear build requirements, and grid interconnect timelines under conservative (35 GW), base (50 GW), and aggressive (75 GW) scenarios." },
-  { question: "What is a large power transformer (LPT) shortage?", answer: "The US produces approximately 60 large power transformers per year domestically. Under base case AI demand scenarios, annual LPT requirements could exceed domestic capacity, creating a multi-year supply bottleneck." },
+  { question: "How much electricity do US data centers use?", answer: "Lawrence Berkeley National Laboratory estimates US data centers used 192 TWh in 2024, 4.7% of US electricity (2025 Update, June 2026). Its range for 2030 is 521 to 843 TWh." },
+  { question: "Is the scenario calculator a forecast?", answer: "No. It does the arithmetic for assumptions you set, such as new capacity, cost per MW, power mix, computing load growth and PUE, and shows published figures beside the result." },
+  { question: "What does the GridTilt scenario calculator model?", answer: "Facility capex, large power transformer needs, the nuclear share of new supply and US data-center electricity use in 2030, under conservative (35 GW), base (50 GW) and aggressive (75 GW) presets you can change." },
+  { question: "How many large power transformers does the US build?", answer: "The Department of Energy estimated US capacity at about 343 large power transformers (100 MVA and up) a year, from 2019 data, when 137 were built in the US and 617 imported (Electric Grid Supply Chain Review, February 2022)." },
 ];
 
 const HOME_FAQS = [
-  { question: "What is GridTilt?", answer: "GridTilt is a financial dashboard tracking the AI power infrastructure buildout. It provides live market data for 60+ equities across compute, nuclear, uranium, power hardware, utilities, data centers, construction, and ETF sectors." },
-  { question: "What is the AI Power Demand Index?", answer: "The AI Power Demand Index is a composite indicator tracking semiconductor demand signals, datacenter REIT performance, and power hardware order trends to gauge the pace of AI infrastructure buildout." },
-  { question: "What is the Nuclear Power Index?", answer: "The Nuclear Power Index (NPI) tracks the performance of nuclear power generators, uranium miners, and nuclear policy developments relative to a January 2024 baseline. Values above 100 indicate sector appreciation." },
-  { question: "What is the Grid Stress Score?", answer: "The Grid Stress Score combines RTO reserve margin data, interconnection queue lengths, and transformer lead times to indicate how strained the US electrical grid is from AI datacenter demand." },
-  { question: "How often is GridTilt data updated?", answer: "Market data refreshes every 15 minutes during trading hours. Catalyst events and news feeds update hourly. The Power Map facility data is updated as new projects are announced." },
+  { question: "What is GridTilt?", answer: "GridTilt shows what is being built on the US power grid for AI, who is behind it, and what is known about the cost: data center projects, power agreements, grid conditions, electricity prices and the public companies involved, with sources." },
+  { question: "Where do GridTilt's numbers come from?", answer: "EIA, NERC, Lawrence Berkeley National Laboratory, company filings and announcements, public GPU rental listings, and Yahoo Finance for stock prices. Each page links the sources for its data." },
+  { question: "How often does the data change?", answer: "Stock prices update through the trading day. Project, agreement and grid data change when their sources publish new figures." },
 ];
 
+/** True when an og:image name belongs to a sector, region or operator page seo.ts publishes. */
+export function ogNameKnown(kind: "sector" | "region" | "operator", name: string): boolean {
+  if (kind === "sector") return Object.values(SECTOR_SLUGS).some((s) => s.name === name);
+  if (kind === "region") return Object.values(REGION_SLUGS).some((r) => r.name === name);
+  return Object.values(OPERATOR_SLUGS).some((n) => n === name);
+}
+
 export function getPageMeta(pathname: string): PageMeta {
+  // Reached only where the server's 301 did not run (the dev server's own
+  // routing); describe the destination, never a separate page.
+  const alias = ALIAS_REDIRECTS[pathname];
+  if (alias) return getPageMeta(alias.split("?")[0]);
+
+  if (ADMIN_PAGES.has(pathname)) {
+    return {
+      title: "Admin | GridTilt",
+      description: "GridTilt administration.",
+      canonical: null,
+      ogImage: `${BASE_URL}/api/og?page=home`,
+      ogType: "website",
+      jsonLd: [],
+      robots: "noindex, nofollow",
+    };
+  }
+
   const staticPage = STATIC_PAGES[pathname];
   if (staticPage) {
     const jsonLd: object[] = [];
@@ -285,23 +370,29 @@ export function getPageMeta(pathname: string): PageMeta {
     };
   }
 
-  const stockMatch = pathname.match(/^\/stock\/([A-Z]+)$/i);
+  const stockMatch = pathname.match(/^\/stock\/([A-Z.]+)$/i);
   if (stockMatch) {
     const ticker = stockMatch[1].toUpperCase();
+    // The same registry the stock API answers from: no entry, no page.
+    if (!knownTicker(ticker)) return notFoundMeta();
+    const company = (COMPANY_DATABASE as Record<string, { name: string; primarySegment: string }>)[ticker];
+    const isFund = company.primarySegment === "ETF" || /\bETF\b/.test(company.name);
     return {
-      title: `$${ticker} \u2014 AI Power Thesis Analysis | GridTilt`,
-      description: `${ticker} analysis for the AI power infrastructure thesis. Live price, thesis score, sector context. Track ${ticker} on GridTilt.`,
+      title: `${ticker}: ${company.name}, AI power sector classification | GridTilt`,
+      description: `${company.name} (${ticker}) on GridTilt: live price, editorial sector classification and sector context.`,
       canonical: `${BASE_URL}/stock/${ticker}`,
       ogImage: `${BASE_URL}/api/og?ticker=${ticker}`,
       ogType: "website",
       jsonLd: [
         {
+          // A page about the company (or fund), not a product GridTilt offers.
           "@context": "https://schema.org",
-          "@type": "FinancialProduct",
-          "name": `${ticker} \u2014 AI Power Thesis Analysis`,
-          "description": `Live price data, thesis alignment score, and sector analysis for ${ticker} on GridTilt`,
+          "@type": "WebPage",
+          "name": `${ticker}: ${company.name}`,
           "url": `${BASE_URL}/stock/${ticker}`,
-          "provider": { "@type": "Organization", "name": "GridTilt" },
+          "about": isFund
+            ? { "@type": "Thing", "name": company.name, "identifier": ticker }
+            : { "@type": "Corporation", "name": company.name, "tickerSymbol": ticker },
         },
         breadcrumbJsonLd([
           { name: "GridTilt", url: BASE_URL },
@@ -330,6 +421,7 @@ export function getPageMeta(pathname: string): PageMeta {
         ])],
       };
     }
+    return notFoundMeta();
   }
 
   const regionMatch = pathname.match(/^\/region\/([a-z]+)$/);
@@ -338,7 +430,7 @@ export function getPageMeta(pathname: string): PageMeta {
     const region = REGION_SLUGS[slug];
     if (region) {
       return {
-        title: `${region.name} Grid Region \u2014 AI Data Center Locations | GridTilt`,
+        title: `${region.name} Grid Region: AI Data Center Locations | GridTilt`,
         description: region.description,
         canonical: `${BASE_URL}/region/${slug}`,
         ogImage: `${BASE_URL}/api/og?page=region&name=${encodeURIComponent(region.name)}`,
@@ -350,6 +442,7 @@ export function getPageMeta(pathname: string): PageMeta {
         ])],
       };
     }
+    return notFoundMeta();
   }
 
   const operatorMatch = pathname.match(/^\/operator\/([a-z]+)$/);
@@ -358,7 +451,7 @@ export function getPageMeta(pathname: string): PageMeta {
     const name = OPERATOR_SLUGS[slug];
     if (name) {
       return {
-        title: `${name} AI Data Centers \u2014 Locations and Capacity | GridTilt`,
+        title: `${name} AI Data Centers: Locations and Capacity | GridTilt`,
         description: `${name} AI data center facilities tracked on GridTilt. Map, capacity data, and grid analysis.`,
         canonical: `${BASE_URL}/operator/${slug}`,
         ogImage: `${BASE_URL}/api/og?page=operator&name=${encodeURIComponent(name)}`,
@@ -370,28 +463,24 @@ export function getPageMeta(pathname: string): PageMeta {
         ])],
       };
     }
+    return notFoundMeta();
   }
 
   const blogMatch = pathname.match(/^\/blog\/([a-z0-9-]+)$/);
   if (blogMatch) {
     const slug = blogMatch[1];
-    let articleTitle = slug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-    let articleDescription = "Analysis and research on the AI power infrastructure thesis from GridTilt.";
-    let articleDate = "";
-    let articleKeywords: string[] = [];
-
+    let article: any = null;
     try {
       const blogPath = join(process.cwd(), "content", "blog", "articles.json");
-      const raw = readFileSync(blogPath, "utf-8");
-      const articles = JSON.parse(raw);
-      const article = articles.find((a: any) => a.slug === slug);
-      if (article) {
-        articleTitle = article.title;
-        articleDescription = article.description;
-        articleDate = article.date;
-        articleKeywords = article.keywords || [];
-      }
+      const articles = JSON.parse(readFileSync(blogPath, "utf-8"));
+      article = articles.find((a: any) => a.slug === slug) ?? null;
     } catch {}
+    // No article, no page: a title made up from the slug was a soft 404.
+    if (!article) return notFoundMeta();
+    const articleTitle: string = article.title;
+    const articleDescription: string = article.description;
+    const articleDate: string = article.date ?? "";
+    const articleKeywords: string[] = article.keywords || [];
 
     const jsonLd: object[] = [
       {
@@ -428,7 +517,19 @@ export function getPageMeta(pathname: string): PageMeta {
     const cluster = loadClustersForSeo().find((c: any) => c.id === slug);
     if (cluster) {
       const loc = `${cluster.location?.city}, ${cluster.location?.state}`;
-      const desc = `${cluster.name}: ${cluster.operator}, ${cluster.status}, ${Number(cluster.plannedPowerMW).toLocaleString()} MW planned in ${cluster.gridRegion} (${loc}). Chips: ${cluster.chipType}.`.slice(0, 300);
+      // The status in words, so a planned site is never described as running.
+      const statusWords: Record<string, string> = { operational: "operating", construction: "under construction", planned: "planned", announced: "announced" };
+      const status = statusWords[cluster.status] ?? String(cluster.status ?? "status not recorded");
+      const planned = Number(cluster.plannedPowerMW);
+      const desc = [
+        `${cluster.name}: ${cluster.operator}, ${status}`,
+        Number.isFinite(planned) && planned > 0 ? `${planned.toLocaleString("en-US")} MW planned in ${cluster.gridRegion} (${loc})` : `in ${cluster.gridRegion} (${loc})`,
+        cluster.chipType ? `Chips: ${cluster.chipType}` : null,
+      ]
+        .filter(Boolean)
+        .join(". ")
+        .concat(".")
+        .slice(0, 300);
       return {
         title: `${cluster.name} · AI Supercluster · GridTilt`,
         description: desc,
@@ -462,28 +563,44 @@ export function getPageMeta(pathname: string): PageMeta {
         ],
       };
     }
+    return notFoundMeta();
   }
 
-  return {
-    title: "GridTilt \u2014 AI Power Infrastructure Dashboard",
-    description: "Track the AI power buildout. Live stock data, data center mapping, and thesis modeling for 60+ companies across 9 sectors.",
-    canonical: BASE_URL,
-    ogImage: `${BASE_URL}/api/og?page=home`,
-    ogType: "website",
-    jsonLd: [],
-  };
+  // State pages: only the published ones (server/data/state-pages.json).
+  const stateMatch = pathname.match(/^\/state\/([a-z][a-z-]{1,40})$/);
+  if (stateMatch) {
+    const result = loadStatePage(stateMatch[1]);
+    if (result.kind === "absent") return notFoundMeta();
+    if (result.kind === "unavailable") return unavailableMeta();
+    const page = result.page;
+    return {
+      title: stateTitle(page),
+      description: stateDescription(page),
+      canonical: page.canonical,
+      ogImage: `${BASE_URL}/api/og?template=state_fact&state=${page.code}`,
+      ogType: "website",
+      jsonLd: [breadcrumbJsonLd([
+        { name: "GridTilt", url: BASE_URL },
+        { name: "Power", url: `${BASE_URL}/power-map` },
+        { name: page.name, url: page.canonical },
+      ])],
+    };
+  }
+
+  // Nothing above matched: no page lives here.
+  return notFoundMeta();
 }
 
 export function injectMetaTags(html: string, meta: PageMeta): string {
   const metaTags = `
     <title>${escapeHtml(meta.title)}</title>
     <meta name="description" content="${escapeHtml(meta.description)}" />
-    <link rel="canonical" href="${meta.canonical}" />
-    <meta name="robots" content="index, follow" />
+    ${meta.canonical ? `<link rel="canonical" href="${meta.canonical}" />` : ""}
+    <meta name="robots" content="${escapeHtml(meta.robots ?? "index, follow")}" />
     <meta property="og:title" content="${escapeHtml(meta.title)}" />
     <meta property="og:description" content="${escapeHtml(meta.description)}" />
     <meta property="og:image" content="${meta.ogImage}" />
-    <meta property="og:url" content="${meta.canonical}" />
+    ${meta.canonical ? `<meta property="og:url" content="${meta.canonical}" />` : ""}
     <meta property="og:type" content="${meta.ogType}" />
     <meta property="og:site_name" content="GridTilt" />
     <meta name="twitter:card" content="summary_large_image" />
@@ -511,9 +628,117 @@ function escapeHtml(str: string): string {
   return str.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-export const SITEMAP_STATIC_PAGES = Object.keys(STATIC_PAGES);
-export const SITEMAP_SECTOR_SLUGS = Object.keys(SECTOR_SLUGS);
-export const SITEMAP_REGION_SLUGS = Object.keys(REGION_SLUGS);
-export const SITEMAP_OPERATOR_SLUGS = Object.keys(OPERATOR_SLUGS);
-export const SITEMAP_CLUSTER_SLUGS: string[] = loadClustersForSeo().map((c: any) => c.id);
+/**
+ * Read-only data the public pages fetch while they render. robots.txt blocked
+ * all of /api/, so a crawler that renders JavaScript (Google does, and obeys
+ * robots.txt for the requests a page makes) got the page frame without its
+ * facts, and X's crawler could not fetch share images from /api/og. Only these
+ * prefixes are opened; admin, subscriber, newsletter, webhook and export
+ * routes stay disallowed. robots.txt is not access control: those routes
+ * check the admin key or a signature themselves.
+ */
+export const CRAWLABLE_API_PREFIXES = [
+  "/api/blog",
+  "/api/brief",
+  "/api/catalysts/",
+  "/api/changes",
+  "/api/clusters",
+  "/api/datacenters",
+  "/api/deals/metrics",
+  "/api/frontier-models",
+  "/api/gpu-economics",
+  "/api/gpu-prices/metrics",
+  "/api/inference-prices",
+  "/api/news",
+  "/api/og",
+  "/api/physical/",
+  "/api/queue",
+  "/api/sector-pulse",
+  "/api/sectors",
+  "/api/stack",
+  "/api/state-pages",
+  "/api/stock",
+  "/api/supply-chain",
+  "/api/top-movers",
+] as const;
+
+export function robotsTxt(): string {
+  return [
+    "User-agent: *",
+    "Allow: /",
+    "Disallow: /api/",
+    ...CRAWLABLE_API_PREFIXES.map((p) => `Allow: ${p}`),
+    // Longer than /api/news, so it wins for the newsletter's admin routes.
+    "Disallow: /api/newsletter/",
+    "Disallow: /admin/",
+    `Sitemap: ${BASE_URL}/sitemap.xml`,
+    "",
+  ].join("\n");
+}
+
+/**
+ * Whether robots.txt lets a crawler fetch this path, by the rule Google
+ * documents: the longest matching rule wins, and Allow wins a tie.
+ */
+export function robotsAllows(path: string, txt: string = robotsTxt()): boolean {
+  let best: { len: number; allow: boolean } | null = null;
+  for (const line of txt.split("\n")) {
+    const m = /^(Allow|Disallow):\s*(\S+)\s*$/.exec(line.trim());
+    if (!m || !path.startsWith(m[2])) continue;
+    const rule = { len: m[2].length, allow: m[1] === "Allow" };
+    if (!best || rule.len > best.len || (rule.len === best.len && rule.allow)) best = rule;
+  }
+  return best ? best.allow : true;
+}
+
+export interface SitemapInput {
+  /** Tickers with a stock page (the company registry). */
+  tickers: string[];
+  clusters: Array<{ id: string; reviewed?: string | null }>;
+  articles: Array<{ slug: string; date?: string | null; updated?: string | null }>;
+  /** Published state pages, dated by their last review. */
+  statePages?: Array<{ slug: string; reviewed?: string | null }>;
+}
+
+const DAY = /^\d{4}-\d{2}-\d{2}$/;
+
+function xmlEscape(v: string): string {
+  return v.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+/**
+ * The sitemap lists only addresses that resolve to a page, with a lastmod
+ * only where GridTilt knows a substantive change date: an article's date or
+ * update, a project record's review. Fetching, building or deploying is not a
+ * content change, so nothing is stamped with today's date, and the same
+ * content gives the same sitemap tomorrow.
+ */
+export function buildSitemap(input: SitemapInput): string {
+  const urls: Array<{ loc: string; lastmod?: string }> = [];
+  for (const p of Object.keys(STATIC_PAGES)) urls.push({ loc: `${BASE_URL}${p === "/" ? "" : p}` });
+  for (const t of Array.from(new Set(input.tickers.map((x) => x.toUpperCase()))).filter(knownTicker).sort()) {
+    urls.push({ loc: `${BASE_URL}/stock/${t}` });
+  }
+  for (const slug of Object.keys(SECTOR_SLUGS)) urls.push({ loc: `${BASE_URL}/sector/${slug}` });
+  for (const slug of Object.keys(REGION_SLUGS)) urls.push({ loc: `${BASE_URL}/region/${slug}` });
+  for (const slug of Object.keys(OPERATOR_SLUGS)) urls.push({ loc: `${BASE_URL}/operator/${slug}` });
+  for (const c of input.clusters) {
+    if (!/^[a-z0-9-]+$/.test(c.id)) continue;
+    urls.push({ loc: `${BASE_URL}/compute-frontier/${c.id}`, ...(c.reviewed && DAY.test(c.reviewed) ? { lastmod: c.reviewed } : {}) });
+  }
+  for (const s of input.statePages ?? []) {
+    if (!/^[a-z][a-z-]{1,40}$/.test(s.slug)) continue;
+    urls.push({ loc: `${BASE_URL}/state/${s.slug}`, ...(s.reviewed && DAY.test(s.reviewed) ? { lastmod: s.reviewed } : {}) });
+  }
+  for (const a of input.articles) {
+    if (!/^[a-z0-9-]+$/.test(a.slug)) continue;
+    const changed = [a.updated, a.date].find((d): d is string => typeof d === "string" && DAY.test(d));
+    urls.push({ loc: `${BASE_URL}/blog/${a.slug}`, ...(changed ? { lastmod: changed } : {}) });
+  }
+  const body = urls
+    .map((u) => `  <url>\n    <loc>${xmlEscape(u.loc)}</loc>${u.lastmod ? `\n    <lastmod>${u.lastmod}</lastmod>` : ""}\n  </url>`)
+    .join("\n");
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${body}\n</urlset>\n`;
+}
+
 export { BASE_URL, SECTOR_SLUGS, REGION_SLUGS, OPERATOR_SLUGS };

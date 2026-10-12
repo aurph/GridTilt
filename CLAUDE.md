@@ -11,7 +11,7 @@ around them. Tagline: "Equities, infrastructure, and power data for the AI power
 economy." Live at gridtilt.com. Built and directed by Jack Schwartz (aurph). Audience:
 the citizen-investor researching the AI power economy, not fund analysts or day traders.
 
-14 sidebar modules, 27 routes (wouter, client/src/App.tsx):
+14 sidebar modules, 29 routes (wouter, client/src/App.tsx; the table below predates the top nav):
 
 | Module | Route | Key |
 |---|---|---|
@@ -31,8 +31,14 @@ the citizen-investor researching the AI power economy, not fund analysts or day 
 | GPU Economics | /gpu-economics | G+E |
 
 Off-nav: "/" (marketing landing, bare layout, lazy Home.tsx), /subscribe, /admin/datacenters,
-/admin/social, /stock/:ticker, /sector/:slug, /region/:slug, /operator/:slug, /blog/:slug.
+/admin/social, /stock/:ticker, /sector/:slug, /region/:slug, /operator/:slug, /blog/:slug,
+/state/:slug (published states only, from server/data/state-pages.json: maryland; any other
+slug is a real 404). /state/:slug is the one indexable address for a state. My Grid was retired
+(2026-10); /my-grid 301s to /power-map. server/state-page.ts composes the page once for
+the JSON (/api/state-pages/:slug), the metadata and the facts written into the HTML.
 Every route except "/" gets the dashboard shell (AppSidebar + header + NewsTicker).
+The eight aliases (/gpu-economics, /power-deals, /brief, /supply-chain, /trade, /portfolio,
+/queue, /my-grid) are client <Redirect>s and server 301s to the same final address (seo.ts ALIAS_REDIRECTS).
 The G-chord list is maintained twice in App.tsx (display ~67-83, handler ~250-254); keep in sync.
 
 ## 2. Stack
@@ -49,8 +55,10 @@ The G-chord list is maintained twice in App.tsx (display ~67-83, handler ~250-25
 - Tests: Node's built-in runner. `npm test` = server/__tests__ + client/src/lib/__tests__ (300 tests). No component/DOM tests.
 - Scripts: `dev` (tsx), `build` (script/build.ts: vite client + esbuild server to dist/index.cjs),
   `start`, `check` (tsc), `test`, `backtest:indices`.
-- Persistence: JSON in server/data/ plus content/blog/articles.json. There is NO database,
-  NO Drizzle, NO shared/ dir, NO server/storage.ts (README still claims these; it is wrong).
+- Persistence: JSON in server/data/ plus content/blog/articles.json, except subscribers: Postgres
+  via DATABASE_URL (server/subscriber-store.ts, raw `pg`, no ORM). Production without DATABASE_URL
+  answers signups 503; the JSON file is development/test only. NO Drizzle, NO shared/ dir, NO
+  server/storage.ts.
 
 ## 3. Conventions
 
@@ -73,14 +81,18 @@ Derived from the code; starred rules confirmed by Jack 2026-07-02.
   marketing only. The landing has its own scoped tokens (.gt-marketing, client/src/styles/anchor.css).
 - Server layout: every route lives in server/routes.ts; math and fetching live in small pure
   modules routes call (indices.ts, clusters.ts, deals.ts, gpu-index.ts, gpu-economics.ts,
-  gpu-history.ts, brief.ts, physical.ts, social-format.ts, og-card.ts). New module = pure module + thin
+  gpu-history.ts, brief.ts, physical.ts, social-format.ts, social-data.ts, state-page.ts, og-card.ts). New module = pure module + thin
   route + test. server/physical.ts is the house template: constant URL, in-memory TTL cache,
   typed honest degradation ({configured:false} when keyless, 502 on failure), never fabricate.
 - Frontier model data is public at `/api/frontier-models`. Benchmark records require a cited
   source, native unit, evaluation setting, and exact comparability key. Never connect or rank
   results that only share a benchmark name.
 - Env: process.env direct. Required: UNSUB_TOKEN_SECRET (boot throws), ADMIN_API_KEY (admin 503s
-  without). Optional: RESEND_API_KEY, EIA_API_KEY, NEWSDATA_API_KEY, CARTO_API, X_API_KEY,
+  without). Optional: DATABASE_URL (subscribers and the newsletter ledger; required in production
+  for signups), RESEND_API_KEY, RESEND_WEBHOOK_SECRET, NEWSLETTER_FROM, NEWSLETTER_REPLY_TO,
+  NEWSLETTER_POSTAL_ADDRESS, NEWSLETTER_PRIVACY_URL, NEWSLETTER_CONTACT_EMAIL (sending is
+  blocked, with reasons, until the provider key, webhook secret, sender, privacy notice and mailing address are
+  set; see docs/runbooks/newsletter-sending.md), EIA_API_KEY, NEWSDATA_API_KEY, CARTO_API, X_API_KEY,
   X_API_SECRET, X_ACCESS_TOKEN, X_ACCESS_TOKEN_SECRET, X_POSTING_ENABLED,
   DISABLE_DATACENTER_INGESTER (last two missing from .env.example).
 - CARTO_API is the one env var that reaches the browser. server/runtime-config.ts injects it into
@@ -88,8 +100,11 @@ Derived from the code; starred rules confirmed by Jack 2026-07-02.
   build var (rotating would need a rebuild) and NOT an inline script (prod CSP is script-src
   'self', which drops it silently while curl still shows correct HTML). Every map takes its tiles
   from components/basemap-tiles.tsx; never hand-write a cartocdn URL.
-- Admin auth: x-admin-key header, timingSafeEqual; covers /api/admin/*, /api/newsletter/send,
-  /api/export/daily.
+- Admin auth: x-admin-key header, timingSafeEqual; covers /api/admin/*, /api/newsletter/*,
+  /api/export/daily. Sending is two admin steps (server/newsletter-routes.ts): POST
+  /api/admin/newsletter/issues freezes an issue revision, then .../:id/:revision/send with
+  {"confirm": "<id>/<revision>"}. The old one-shot /api/newsletter/send answers 410.
+  /api/webhooks/resend is gated by its Svix signature (RESEND_WEBHOOK_SECRET), not the key.
 - Commits: imperative subject prefixed by area ("Social: ...", "docs: ..."). NO Co-Authored-By
   lines, ever. Product copy and commits: plain voice, no em dashes, no marketing language.
 
@@ -104,14 +119,25 @@ Derived from the code; starred rules confirmed by Jack 2026-07-02.
 | RSS (8 news + 4 ingester feeds) | none | news fallback; datacenter discovery | ingester 6 h | items just absent |
 | Carto basemaps | CARTO_API | raster tiles for all three Leaflet maps | browser/CDN, 180 d | tiles still load, watermarked "API KEY REQUIRED" (HTTP 200, never an error) |
 | LBNL Queued Up page | none | new-edition flag only | 24 h throttle | manual XLSX ingest regardless |
-| Resend | RESEND_API_KEY | audience sync, newsletter send | on demand | subscribe still saves locally; send 400s |
+| Resend | RESEND_API_KEY (+ RESEND_WEBHOOK_SECRET) | newsletter send only, one email per call with an idempotency key; webhooks for delivery, bounces and complaints. No contact copies at the provider | on demand | sending answers 409 with the missing configuration; signups are still stored |
 | X API (OAuth 1.0a) | 4 creds + X_POSTING_ENABLED=true | weekday 8:30 ET post | external cron | dry-run, logged to social-log.json |
 
 Schedulers (no node-cron anywhere):
 - In-process: datacenter ingester setInterval every 6 h (off in tests; DISABLE_DATACENTER_INGESTER=1).
-- External cron-job.org: POST /api/admin/cron/daily-tweet weekdays 8:30 ET. Rotation: Mon
-  buildout, Tue gpu_rental, Wed cluster_spotlight, Thu grid_backlog, Fri power_mix. Kill switch
-  X_POSTING_ENABLED defaults OFF.
+- GitHub Actions .github/workflows/data-freshness.yml: news scan daily, recorder ping weekdays,
+  freshness deadman twice daily. Scheduled runs are OFF until the repository variable
+  FRESHNESS_SCHEDULES_ENABLED is "true" (secret GRIDTILT_ADMIN_KEY). The repo is public, so its
+  logs print status codes and dataset ids only. ops/freshness-monitor.md explains the statuses,
+  the review sidecar and which writes land on the instance (lost on redeploy).
+- External cron-job.org: POST /api/admin/cron/daily-tweet weekdays 8:30 ET. Rotation (Eastern
+  day): Mon buildout (clusters by status), Tue gpu_rental (observed medians), Wed
+  cluster_spotlight (one project, weekly by id), Thu grid_backlog (LBNL national total), Fri
+  documented_change (newest change-log entry with a `short` form, reviewed in the last 7 days).
+  A day is skipped, with the reason logged (`skipped` in social-log.json), when its data is
+  older than the freshness registry's expected age in whole days (GPU: the page's 2-day
+  serving rule), carries no valid or a future date, or cannot support its total; a project
+  without a recent review posts only from a fresh list. An unchanged post is not repeated.
+  Kill switch X_POSTING_ENABLED defaults OFF.
 - External n8n (Jetson homelab): weekly GPU reprice (rewrites gpu-rental-prices.json through a
   validation gate, commits to main) + daily GET /api/gpu-prices/metrics ping.
 - Request-piggybacked daily recorders: /api/kpis appends index-history.json (live data, weekdays,
@@ -119,11 +145,16 @@ Schedulers (no node-cron anywhere):
 
 server/data custody (the fragility map):
 - Hand-curated, code never writes: catalysts.json, clusters.json, supply-chain-stages.json,
-  frontier-models.json,
-  hyperscaler-capex.json, content/blog/articles.json (admin blog CRUD can also write it; see debt).
+  frontier-models.json, dataset-reviews.json (one entry per completed review; the freshness
+  report's claim-last-reviewed date), change-log.json (one entry per shipped correction, added in the same
+  change; validated by server/change-log.ts, served at /api/changes), state-pages.json (per
+  state: dated public documents and next dates with links, reviewed every 30 days by Jack;
+  validated by server/state-page.ts), hyperscaler-capex.json, content/blog/articles.json (admin blog CRUD can also write it; see debt).
 - Machine-written, never hand-edit: datacenters.json, datacenters-pending.json, index-history.json,
-  gpu-price-history.json, market-constants.json, social-log.json, subscribers.json,
-  backlog-auto-updates.json.
+  gpu-price-history.json, market-constants.json, social-log.json, backlog-auto-updates.json.
+  subscribers.json is the development store only (ignored by version control; personal data);
+  production subscribers live in Postgres, and a legacy list is imported only with
+  scripts/subscribers.ts.
 - Shared custody, be careful: interconnection-queue.json (curated projects; news scanner and
   admin routes write into it). gpu-rental-prices.json is rewritten weekly by n8n; schema changes
   break the unattended refresh.
@@ -131,7 +162,12 @@ server/data custody (the fragility map):
 ## 4b. Social / OG cards
 
 server/og-card.ts owns the layout, fonts and map for every card (/api/og and the
-daily X post). routes.ts only gathers data; ogCardForTemplate returns an OgCard.
+daily X post). server/social-data.ts decides what each card and post says from the
+data files; routes.ts reads the files. ogCardForTemplate returns an OgCard, or null
+for an unknown template or id (a 404, never a stand-in card). Share cards:
+`/api/og?template=state_fact&state=MD`, `template=project_status&id=<cluster id>`,
+`template=correction&id=<change-log id>`. The state card reads server/state-facts.ts,
+a copy of the client's state and NERC tables kept equal by a parity test.
 
 - Every card MUST carry `asOf` and `source`. They are required fields, not
   optional decoration: the product claim is "tracked with sourced numbers", so a
@@ -151,8 +187,8 @@ daily X post). routes.ts only gathers data; ogCardForTemplate returns an OgCard.
   coordinates with plain arithmetic and never imports d3-geo, which is ESM-only
   and would throw ERR_REQUIRE_ESM from the CJS bundle on older Node. d3-geo is a
   devDependency used only by that script and the parity test.
-- `npx tsx scripts/preview-cards.ts` renders every template to .card-preview/
-  for eyeballing. It posts nothing.
+- `npx tsx scripts/preview-cards.ts` renders every template, share variant and a few
+  page cards to .card-preview/ for eyeballing. It posts nothing.
 - client/src/data/us-states.geo.json is the source geometry. The copy that
   shipped on the elevate branch had Virginia's outer ring wound backwards, which
   d3 reads as "the whole sphere minus Virginia". geoAlbersUsa's clipping hid it;
@@ -171,13 +207,23 @@ daily X post). routes.ts only gathers data; ogCardForTemplate returns an OgCard.
   rationale, limiters, 100 kb body cap. Security-reviewed; do not casually edit.
 - Unsub token + admin auth crypto (routes.ts ~2143-2171): unsub links in already-sent emails
   depend on the exact HMAC derivation.
-- seo.ts: hand-written per-page meta, regex head surgery, sitemap slug exports. Fragile by design.
+- seo.ts: hand-written per-page meta, regex head surgery, buildSitemap. Fragile by design. An
+  address that names nothing (unknown ticker, sector, region, operator, cluster, article or path)
+  gets notFoundMeta: HTTP 404, noindex, no canonical; never the home page's meta on a 200.
+  Tickers are judged by server/company-registry.ts (the list the stock API answers from).
+  ALIAS_REDIRECTS mirrors App.tsx's <Redirect> routes and the server answers each with one 301.
+  server/__tests__/seo-truth.test.ts holds the client parity checks (sectors, regions,
+  operators, redirects); change both sides together.
 - social-format.ts: public tweet copy locked character-for-character by tests; change copy and
   test in the same commit, on purpose.
 - News scanner regexes + sanity ranges (routes.ts ~659-741, ~866-871): they auto-write curated
   data files; widening a range turns headline noise into data corruption.
-- Deal firmness field: zero "signed" entries today is deliberate (signedSecuredMW stays 0 until
-  curated). Do not invent classifications.
+- Deal firmness (server/deals.ts): every agreement row was reviewed against primary documents on
+  2026-09-28 (signed / framework / option / preliminary / portfolio / not-ai-offtake). A status
+  counts only with firmnessSource (https) and a reviewed date; the admin route rejects firmness
+  without both, and a changed fact voids the review unless the same request carries the row's
+  first review or a newer one. Subtotals are per status and never added
+  across statuses. Do not invent classifications or infer one from a headline.
 - attached_assets/previews/*.svg: live code assets imported via @assets. The rest of
   attached_assets is design-source archive.
 
@@ -191,17 +237,23 @@ Documented, not to fix casually or silently:
 - PRs #1 and #2 CLOSED 2026-08-18. Their code was already in main (SEC-1..5 and the
   auth-boundary test via feat/live-gpu-prices; the indices retirement via feat/real-gauges).
   Their audit docs were salvaged to docs/ARCHITECTURE.md and docs/audit/, marked historical.
-  Still outstanding from that work: cron-job.org needs a job POSTing /api/admin/scan-news-now
-  (x-admin-key) to restore automated news scans. See docs/ or the Desktop cron setup guide.
+  The automated news scan is in .github/workflows/data-freshness.yml, off until the owner sets
+  FRESHNESS_SCHEDULES_ENABLED (see ops/freshness-monitor.md).
 - Indices RESOLVED 2026-08-18: retired from the surface, kept as a recorded series. The Overview
   shows the measured gauges; no client fetches /api/kpis. The route still computes and appends to
   index-history.json on purpose, because the series is public, has a backtest and a committed
   seed, and the indices.ts constants are do-not-touch. Rationale sits at the route.
 - CI runs on every push and PR (.github/workflows/ci.yml, Node 22): typecheck, tests, build, a
   reporting-only slop scan, and `npm audit` which DOES fail the build on a new high advisory.
-- Durability (audit M2): subscribers.json and all machine-written JSON live on autoscale
-  ephemeral disk; admin blog CRUD writes git-tracked content/ at runtime. A redeploy can lose
-  subscribers and posts. Jetson Postgres is the planned fix.
+- Durability (audit M2): subscribers moved to Postgres (T17: one row per address with a state,
+  suppressions kept as email hashes, explicit one-time imports, backup/restore in
+  scripts/subscribers.ts, runbook docs/runbooks/subscriber-storage.md). The other machine-written
+  JSON still lives on autoscale ephemeral disk, and admin blog CRUD writes tracked content/ at
+  runtime; a redeploy can lose those.
+- Production detection: the deployment runs `node dist/index.cjs` with NO NODE_ENV at runtime.
+  Only the literal `process.env.NODE_ENV` is replaced at build time (script/build.ts define), so
+  code that must know it is in production reads that literal (server/index.ts, chooseStore's
+  caller, siteReferer), never NODE_ENV off a passed-in env object.
 - `npm run dev` on macOS works: reusePort is guarded by `process.platform === "linux"`.
   Note port 5000 is taken by AirPlay Receiver on macOS; use PORT=5199 or turn AirPlay off.
 - routes.ts is a 3,913-line monolith (70 routes + OAuth client + OG renderer + 3 scanners +
