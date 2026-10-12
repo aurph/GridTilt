@@ -3663,6 +3663,12 @@ ${rssItems}
 
   // Live sweep guard: at most one in flight, retried on the next request
   // after a failure. Request-driven (not a timer) so it works on autoscale.
+  // Off unless GPU_LIVE_SWEEP_ENABLED=true: Vast.ai's and RunPod's terms need
+  // written permission for automated price collection, and none is on file.
+  // While off, served prices fall back to the curated (est.) values.
+  function gpuLiveSweepEnabled(): boolean {
+    return process.env.GPU_LIVE_SWEEP_ENABLED === "true";
+  }
   let gpuLiveSweepInFlight = false;
   let lastGpuSweep: GpuSweepSummary | null = null;
   app.get("/api/gpu-prices/metrics", (_req, res) => {
@@ -3672,7 +3678,7 @@ ${rssItems}
 
       // First request of the Eastern day kicks off the live sweep in the
       // background; the response never waits on provider APIs.
-      if (!hasTodayLiveSnapshot() && !gpuLiveSweepInFlight) {
+      if (gpuLiveSweepEnabled() && !hasTodayLiveSnapshot() && !gpuLiveSweepInFlight) {
         gpuLiveSweepInFlight = true;
         fetchLivePrices(models.map((m: any) => ({ model: m.model, currentUsdPerHr: m.currentUsdPerHr })))
           .then(({ prices, summary }) => {
@@ -3705,6 +3711,7 @@ ${rssItems}
         lastRefreshed: root.lastRefreshed ?? null,
         health: {
           ...historyHealth,
+          sweepEnabled: gpuLiveSweepEnabled(),
           lastSweep: lastGpuSweep,
           curatedLastRefreshed: root.lastRefreshed ?? null,
         },
