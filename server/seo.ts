@@ -99,6 +99,11 @@ const STATIC_PAGES: Record<string, { title: string; description: string; slug: s
     description: "Upcoming earnings dates, regulatory decisions, and policy events for AI infrastructure stocks. Auto-updated catalyst calendar.",
     slug: "catalysts",
   },
+  "/timeline": {
+    title: "Timeline: Power Deals, Clusters and Grid Events by Date | GridTilt",
+    description: "Dated events from GridTilt's datasets in one feed: power agreements, compute cluster announcements, confirmed earnings dates, state actions, model releases and published corrections, each linked to its source.",
+    slug: "timeline",
+  },
   "/blog": {
     title: "Research | GridTilt",
     description: "Research on data center power demand, nuclear energy, grid constraints, and the companies behind the buildout.",
@@ -659,6 +664,7 @@ export const CRAWLABLE_API_PREFIXES = [
   "/api/state-pages",
   "/api/stock",
   "/api/supply-chain",
+  "/api/timeline",
   "/api/top-movers",
 ] as const;
 
