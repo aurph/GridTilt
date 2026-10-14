@@ -45,6 +45,7 @@ interface GpuSweepSummary {
   usableModels: number;
 }
 interface GpuPipelineHealth {
+  sweepEnabled?: boolean;
   recordedDays: number;
   lastRecordedDate: string | null;
   lastSweep: GpuSweepSummary | null;
@@ -245,8 +246,10 @@ export default function NeocloudIntel() {
           <>
             On-demand GPU rental prices ($/GPU/hr) blended across the major neoclouds and marketplaces (Lambda,
             RunPod, Vast.ai, CoreWeave, TensorWave, Vultr, Nebius) and the getdeploying.com / Silicon Data trackers.
-            Models covered by live provider prices (RunPod, Vast.ai marketplace) show an observed daily price and
-            drop the est. flag; the rest are curated, source-verified estimates flagged est. Low and high are the
+            {data?.health?.sweepEnabled === false
+              ? "The live provider price sweep is paused, so prices are curated, source-verified estimates flagged est."
+              : "Models covered by live provider prices (RunPod, Vast.ai marketplace) show an observed daily price and drop the est. flag; the rest are curated, source-verified estimates flagged est."}
+            {" "}Low and high are the
             observed marketplace range. Prices move constantly and vary widely by provider, term, and availability.
             Open any table row for sources.
           </>
@@ -574,7 +577,9 @@ function PipelineHealthLine({ health }: { health: GpuPipelineHealth }) {
   return (
     <p className="mt-1 max-w-3xl text-10 leading-relaxed text-muted-foreground" data-testid="ni-pipeline-health">
       Live observations: {health.recordedDays} days, last {health.lastRecordedDate ?? "none"}. Curated reprice: {health.curatedLastRefreshed ?? "unknown"}.
-      {sweep ? (
+      {health.sweepEnabled === false ? (
+        <span className="text-muted-foreground/70"> Live sweep paused; prices shown are curated estimates.</span>
+      ) : sweep ? (
         <span className={failed > 0 ? "text-warning" : "text-muted-foreground/70"}>
           {` Last sweep ${sweep.date}: ${failed > 0 ? `${failed} provider request${failed === 1 ? "" : "s"} failed` : `${sweep.usableModels} models recorded`} (RunPod ${sweep.perProvider.runpod.succeeded}/${sweep.perProvider.runpod.requests}, Vast ${sweep.perProvider.vast.succeeded}/${sweep.perProvider.vast.requests}).`}
         </span>
