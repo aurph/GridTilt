@@ -2612,6 +2612,7 @@ export async function registerRoutes(
       quarter: e.quarter,
       stage: e.stage,
       stageColor: e.stageColor,
+      dateStatus: e.dateStatus,
     }));
 
     const manualCatalysts = loadManualCatalysts();

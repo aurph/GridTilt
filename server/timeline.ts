@@ -14,6 +14,7 @@
 
 import { normalizeOfftaker, isPowerAgreement, type DealProject } from "./deals";
 import { knownTicker } from "./company-registry";
+import { isDay, isHttps, sourcedAnnouncement } from "./announced";
 
 export const TIMELINE_EVENT_TYPES = [
   "power_deal",
@@ -57,18 +58,8 @@ export interface TimelineEvent {
   recordKey: string;
 }
 
-const DAY = /^(\d{4})-(\d{2})-(\d{2})$/;
+export { isDay, sourcedAnnouncement };
 
-/** A real calendar day in YYYY-MM-DD form. "2026-02-30" and "2026-05" are not. */
-export function isDay(value: unknown): value is string {
-  if (typeof value !== "string") return false;
-  const m = DAY.exec(value);
-  if (!m) return false;
-  const d = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])));
-  return d.getUTCFullYear() === Number(m[1]) && d.getUTCMonth() === Number(m[2]) - 1 && d.getUTCDate() === Number(m[3]);
-}
-
-const isHttps = (u: unknown): u is string => typeof u === "string" && /^https:\/\//.test(u);
 const httpsOnly = (list: unknown[] | undefined): string[] => Array.from(new Set((list ?? []).filter(isHttps)));
 
 // Company names as they appear in deal, cluster and lab records, mapped to the
@@ -112,14 +103,6 @@ export function tickersFor(...names: Array<string | null | undefined>): string[]
 export interface DatedDeal extends DealProject {
   announced?: string;
   announcedSource?: string;
-}
-
-/** The announcement date a row carries, only when its source is an https URL the row cites. */
-export function sourcedAnnouncement(row: { announced?: unknown; announcedSource?: unknown; sources?: unknown[]; firmnessSource?: unknown }): { date: string; source: string } | null {
-  if (!isDay(row.announced) || !isHttps(row.announcedSource)) return null;
-  const cited = [...(row.sources ?? []), row.firmnessSource];
-  if (!cited.includes(row.announcedSource)) return null;
-  return { date: row.announced, source: row.announcedSource };
 }
 
 export function buildDealEvents(projects: DatedDeal[]): TimelineEvent[] {

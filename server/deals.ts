@@ -11,6 +11,8 @@
 // counts only when the row names the document that establishes it and the
 // date it was reviewed; anything else is "unreviewed".
 
+import { sourcedAnnouncement } from "./announced";
+
 export const FIRMNESS_VALUES = [
   "signed", // a definitive agreement or completed acquisition
   "framework", // a signed master agreement for up to X, project contracts to follow
@@ -51,6 +53,9 @@ export interface DealProject {
   includes?: string[];
   /** The capacity is a ceiling ("up to"), not a contract quantity. */
   upTo?: boolean;
+  /** YYYY-MM-DD the deal was first announced, read from `announcedSource`, a URL the row cites. */
+  announced?: string;
+  announcedSource?: string;
 }
 
 export type FirmnessKey = Firmness | "unreviewed";
@@ -77,6 +82,8 @@ export interface DealRow {
   /** A portfolio or aggregate: listed, never added to the rows inside it. */
   aggregate: boolean;
   includes: string[];
+  /** Sourced announcement day, or null. Rows with one appear on the timeline. */
+  announced: string | null;
 }
 
 export interface Bucket {
@@ -162,6 +169,7 @@ function toRow(p: DealProject): DealRow {
     upTo: p.upTo === true,
     aggregate: p.category === "aggregate" || firmness === "portfolio",
     includes: p.includes ?? [],
+    announced: sourcedAnnouncement(p)?.date ?? null,
   };
 }
 
