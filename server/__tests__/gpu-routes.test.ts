@@ -107,7 +107,11 @@ test("GPU metrics never call RunPod or Vast.ai unless the sweep is enabled", asy
   }
 });
 
-test("GPU metrics start the provider sweep when GPU_LIVE_SWEEP_ENABLED=true", async () => {
+test("GPU metrics start the provider sweep when GPU_LIVE_SWEEP_ENABLED=true", async (t) => {
+  // Recorded workspace data may already contain today's snapshot. Exercise a
+  // fresh day without deleting or rewriting that history; provider mocks above
+  // return no observations, so the sweep cannot persist synthetic prices.
+  t.mock.timers.enable({ apis: ["Date"], now: new Date("2100-01-02T17:00:00Z") });
   process.env.GPU_LIVE_SWEEP_ENABLED = "true";
   providerCalls = 0;
   const { url, close } = await startTestServer();

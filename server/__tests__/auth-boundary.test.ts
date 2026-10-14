@@ -10,6 +10,8 @@ import type { AddressInfo } from "node:net";
 process.env.UNSUB_TOKEN_SECRET ||= "test-secret-for-auth-test";
 process.env.ADMIN_API_KEY ||= "test-admin-key";
 process.env.NODE_ENV = "test";
+// This offline auth test must not select the workspace's real database.
+delete process.env.DATABASE_URL;
 const ADMIN_KEY = process.env.ADMIN_API_KEY;
 
 // Keep every test offline: stub Yahoo so no route reaches the network.
