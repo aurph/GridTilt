@@ -7,11 +7,11 @@ import { Wordmark } from "./Wordmark";
 import { GridPulse } from "./grid-pulse";
 import { MarketTape } from "./market-tape";
 
-// The wordmark leads and the tagline stays as shipped; the hero's job here is
-// to prove the numbers under it are real. Every figure carries the date its
-// dataset was last refreshed, read from the same API that serves the figure.
-// Nothing is hardcoded, and a stat with no refresh date says so rather than
-// borrowing today's.
+// The wordmark leads, then one statement of purpose and the state-first
+// journey. Each stat is read from the API that serves it; nothing is
+// hardcoded. Refresh dates are fetched but hidden until the refresh pipeline
+// runs (SHOW_REFRESH_DATES below), and a stat with no date would say so rather
+// than borrow today's.
 
 interface ClusterMetrics {
   clusterCount: number;
@@ -21,8 +21,9 @@ interface ClusterMetrics {
   lastRefreshed: string | null;
 }
 interface DealMetrics {
-  dealCount: number;
-  totalContractedMW: number;
+  rowCount: number;
+  /** Reviewed, signed agreements only; see server/deals.ts. */
+  signed: { count: number; mw: number };
   lastRefreshed: string | null;
 }
 interface GpuMetrics {
@@ -102,7 +103,7 @@ export function Hero() {
   const { data: gpu } = useQuery<GpuMetrics>({ queryKey: ["/api/gpu-prices/metrics"] });
 
   const opGw = useCountUp(clusters ? clusters.operationalMW / 1000 : null);
-  const dealGw = useCountUp(deals ? deals.totalContractedMW / 1000 : null);
+  const dealGw = useCountUp(deals?.signed ? deals.signed.mw / 1000 : null);
   const gpuHr = useCountUp(gpu ? gpu.fleetAvg : null, 2);
   const clusterCount = useCountUp(clusters ? clusters.clusterCount : null, 0);
 
@@ -116,12 +117,14 @@ export function Hero() {
       href: "/compute-frontier",
     },
     {
+      // Signed agreements only. It read "Contracted power deals" over a sum
+      // that included letters of intent, frameworks and a company-wide total.
       icon: Handshake,
-      label: "Contracted power deals",
+      label: "Signed power agreements",
       value: dealGw ? `${dealGw} GW` : "--",
-      sub: deals ? `${deals.dealCount} corporate deals` : undefined,
+      sub: deals?.signed ? `${deals.signed.count} signed of ${deals.rowCount} listed` : undefined,
       asOf: shortDate(deals?.lastRefreshed),
-      href: "/power-deals",
+      href: "/power-map?tab=deals",
     },
     {
       icon: Cpu,
@@ -166,8 +169,8 @@ export function Hero() {
             Energy infrastructure, in plain sight.
           </motion.p>
           <motion.p variants={fadeUp} className="mx-auto mt-3 max-w-[54ch] text-[14px] leading-[1.65] text-muted-foreground sm:text-[15px]">
-            Data centers are rewriting the American power grid. GridTilt maps who is building,
-            where the electricity comes from, and what it means for the bill you pay.
+            GridTilt shows what is being built on your power grid, who is behind it, and what is
+            known about the cost.
           </motion.p>
           <motion.div variants={fadeUp} className="mt-8 flex flex-wrap items-center justify-center gap-4">
             <Link

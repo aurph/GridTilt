@@ -1,0 +1,110 @@
+# Data freshness automation (reviewed reuse of PR #31).
+#
+# Three jobs against the production site:
+#
+#   news-scan      daily    POST /api/admin/scan-news-now (admin key). It WRITES:
+#                           the news scanner can add to interconnection-queue.json
+#                           and stamps lastChecked, on the running instance only.
+#                           A redeploy reverts that file to the committed copy.
+#   recorder-ping  weekdays GET /api/gpu-prices/metrics (starts the day's live GPU
+#                           sweep and appends gpu-price-history.json) and GET
+#                           /api/kpis (appends index-history.json after 10 AM ET).
+#                           Both WRITE on the instance only, same caveat.
+#   deadman        2x daily GET /api/admin/freshness/check (admin key, read-only).
+#                           A 503 means a dataset needs attention and fails this
+#                           job, so GitHub's workflow-failure email is the alert.
+#
+# Off until the owner turns it on: scheduled runs do nothing unless the
+# repository variable FRESHNESS_SCHEDULES_ENABLED is "true". A manual run
+# (workflow_dispatch) always works. Merging this file does not start anything.
+#
+# This repository is public, so its Actions logs are public: every step prints
+# status codes and dataset ids only, never a response body.
+#
+# Setup: repository secret GRIDTILT_ADMIN_KEY = the production ADMIN_API_KEY;
+# repository variable FRESHNESS_SCHEDULES_ENABLED = true when approved.
+# GitHub suspends schedules after ~60 days without repository activity.
+
+name: data-freshness
+
+on:
+  schedule:
+    - cron: "17 11 * * *" # news scan: daily 11:17 UTC (7:17 ET in summer, 6:17 in winter)
+    - cron: "17 15 * * 1-5" # recorder ping: weekdays 15:17 UTC, after the index recorder's 10 AM ET gate in both seasons
+    - cron: "7 13,21 * * *" # deadman: twice daily
+  workflow_dispatch: {}
+
+permissions:
+  contents: none
+
+env:
+  BASE: https://gridtilt.com
+
+jobs:
+  news-scan:
+    if: github.event_name == 'workflow_dispatch' || (github.event.schedule == '17 11 * * *' && vars.FRESHNESS_SCHEDULES_ENABLED == 'true')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    concurrency:
+      group: freshness-news-scan
+      cancel-in-progress: false
+    steps:
+      - name: Trigger the news scan (writes on the instance)
+        env:
+          KEY: ${{ secrets.GRIDTILT_ADMIN_KEY }}
+        run: |
+          if [ -z "$KEY" ]; then
+            echo "::error::GRIDTILT_ADMIN_KEY repository secret is not set."
+            exit 1
+          fi
+          # No automatic retry: this request writes, and a retry after a
+          # timeout could run the scan twice.
+          status=$(curl -sS --max-time 120 -o /dev/null -w "%{http_code}" \
+            -X POST -H "x-admin-key: $KEY" "$BASE/api/admin/scan-news-now") || status=000
+          echo "HTTP $status"
+          [ "$status" = "200" ] || { echo "::error::news scan answered HTTP $status"; exit 1; }
+
+  recorder-ping:
+    if: github.event_name == 'workflow_dispatch' || (github.event.schedule == '17 15 * * 1-5' && vars.FRESHNESS_SCHEDULES_ENABLED == 'true')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    concurrency:
+      group: freshness-recorder-ping
+      cancel-in-progress: false
+    steps:
+      - name: Ping the recorders (each writes at most once a day)
+        run: |
+          for path in /api/gpu-prices/metrics /api/kpis; do
+            status=$(curl -sS --retry 2 --retry-delay 15 --max-time 120 -o /dev/null -w "%{http_code}" "$BASE$path") || status=000
+            echo "$path HTTP $status"
+            [ "$status" = "200" ] || { echo "::error::$path answered HTTP $status"; exit 1; }
+          done
+
+  deadman:
+    if: github.event_name == 'workflow_dispatch' || (github.event.schedule == '7 13,21 * * *' && vars.FRESHNESS_SCHEDULES_ENABLED == 'true')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    concurrency:
+      group: freshness-deadman
+      cancel-in-progress: true
+    steps:
+      - name: Freshness check (read-only)
+        env:
+          KEY: ${{ secrets.GRIDTILT_ADMIN_KEY }}
+        run: |
+          if [ -z "$KEY" ]; then
+            echo "::error::GRIDTILT_ADMIN_KEY repository secret is not set."
+            exit 1
+          fi
+          body=$(mktemp)
+          status=$(curl -sS --retry 2 --retry-delay 15 --max-time 120 \
+            -H "x-admin-key: $KEY" -o "$body" -w "%{http_code}" \
+            "$BASE/api/admin/freshness/check") || status=000
+          echo "HTTP $status"
+          # Ids and statuses only; the details stay behind the admin key.
+          jq -r '.attention[]? | "\(.id): \(.status)"' "$body" 2>/dev/null || true
+          rm -f "$body"
+          if [ "$status" != "200" ]; then
+            echo "::error::Freshness check answered HTTP $status. Open /api/admin/freshness/alert-preview with the admin key for what to do."
+            exit 1
+          fi

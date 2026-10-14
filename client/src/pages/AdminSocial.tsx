@@ -12,12 +12,16 @@ import { KeyRound, Send, Sparkles, Trash2, ExternalLink, RefreshCw, Check, X as 
 const ADMIN_KEY_STORAGE = "gridtilt_admin_key";
 const TWEET_MAX = 280;
 
+// The server's Mon-Fri rotation, then its on-demand templates
+// (ROTATING_TEMPLATES and ON_DEMAND_TEMPLATES in server/routes.ts).
 const TEMPLATES = [
+  { name: "buildout", label: "Mon: clusters by status" },
+  { name: "gpu_rental", label: "Tue: GPU prices" },
+  { name: "cluster_spotlight", label: "Wed: one project" },
+  { name: "grid_backlog", label: "Thu: the queue" },
+  { name: "documented_change", label: "Fri: a documented change" },
   { name: "top_movers", label: "Top movers" },
-  { name: "thesis_pulse", label: "Thesis pulse" },
-  { name: "stack_spotlight", label: "Stack spotlight" },
-  { name: "catalyst_lookahead", label: "Catalyst lookahead" },
-  { name: "data_center_watch", label: "Data center watch" },
+  { name: "catalyst_preview", label: "Catalyst preview" },
 ];
 
 type SocialLogEntry = {
@@ -30,7 +34,13 @@ type SocialLogEntry = {
   dryRun?: boolean;
   template?: string;
   trigger?: "cron" | "manual";
+  /** Why the day's post was not made. */
+  skipped?: string;
 };
+
+type GenerateResult =
+  | { template: string; text: string; length: number; skipped?: undefined }
+  | { template: string; skipped: true; reason: string };
 
 function fmtTime(iso: string): string {
   try {
@@ -91,16 +101,20 @@ export default function AdminSocial() {
     mutationFn: async (template: string) => {
       const res = await fetch("/api/social/generate", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-admin-key": adminKey },
         body: JSON.stringify({ template }),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.error || `generate failed: ${res.status}`);
       }
-      return res.json() as Promise<{ template: string; text: string; length: number }>;
+      return res.json() as Promise<GenerateResult>;
     },
     onSuccess: (data) => {
+      if (data.skipped) {
+        toast({ title: `"${data.template}" would skip today`, description: data.reason });
+        return;
+      }
       setComposeText(data.text);
       toast({ title: `Loaded "${data.template}"`, description: `${data.length} chars` });
     },
@@ -348,7 +362,9 @@ export default function AdminSocial() {
               data-testid={`row-log-${i}`}
             >
               <div className="flex items-center gap-2 flex-wrap text-xs">
-                {entry.ok ? (
+                {entry.skipped ? (
+                  <Badge variant="outline" className="text-10">skipped</Badge>
+                ) : entry.ok ? (
                   <Badge className="bg-positive-deep/20 text-positive border-positive-deep/40 text-10 gap-1">
                     <Check className="h-2.5 w-2.5" /> ok
                   </Badge>
@@ -372,7 +388,7 @@ export default function AdminSocial() {
               </div>
 
               <pre className="text-xs whitespace-pre-wrap font-mono text-foreground/90">
-                {entry.text}
+                {entry.skipped ? `Not posted: ${entry.skipped}` : entry.text}
               </pre>
 
               {entry.error && (

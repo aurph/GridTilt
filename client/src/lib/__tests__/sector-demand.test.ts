@@ -14,11 +14,26 @@ import {
   pctChange,
 } from "../sector-demand";
 
-test("the end-use sectors are exactly the three that exist", () => {
+test("the rows are the four retail-sales sectors EIA reports", () => {
+  // The card listed three and called them all of US demand. EIA's retail sales
+  // also have a transportation sector, and end use adds direct use on top.
   assert.deepEqual(
     US_SECTOR_DEMAND.map((s) => s.sector),
-    ["Residential", "Commercial", "Industrial"],
+    ["Residential", "Commercial", "Industrial", "Transportation"],
   );
+});
+
+test("the rows are EIA's 2025 retail sales, which the card overstated", () => {
+  // MER Table 7.6, 2025. The card showed 1,658 / 1,569 / 975 TWh.
+  const twh = Object.fromEntries(US_SECTOR_DEMAND.map((s) => [s.sector, Math.round(s.twh)]));
+  assert.deepEqual(twh, { Residential: 1515, Commercial: 1493, Industrial: 1042, Transportation: 7 });
+  assert.equal(Math.round(sectorTotalTWh()), 4058, "EIA total retail sales, 2025");
+});
+
+test("industrial sales rose in 2025; the card showed a 3.2% fall", () => {
+  const industrial = US_SECTOR_DEMAND.find((s) => s.sector === "Industrial");
+  assert.ok(industrial && industrial.yoy > 0, `got ${industrial?.yoy}`);
+  assert.equal(industrial.yoy, 0.7);
 });
 
 test("data centers are not one of the sectors", () => {
@@ -31,13 +46,14 @@ test("data centers are not one of the sectors", () => {
 
 test("the sector total excludes data-center load", () => {
   const total = sectorTotalTWh();
-  assert.equal(total, 4202, "1,658 + 1,569 + 975");
+  const sectorsOnly = US_SECTOR_DEMAND.reduce((s, x) => s + x.twh, 0);
+  assert.equal(total, sectorsOnly);
   assert.notEqual(
-    total,
-    4202 + DATA_CENTER_LOAD.twh,
+    Math.round(total),
+    Math.round(sectorsOnly + DATA_CENTER_LOAD.twh),
     "the sector sum must never absorb the data-center figure",
   );
-  assert.notEqual(total, 4490, "4,490 was the old double-counted figure");
+  assert.notEqual(Math.round(total), 4490, "4,490 was the old double-counted figure");
 });
 
 test("the data-center figure is the sourced one, not the fabricated 288", () => {
@@ -77,7 +93,7 @@ test("data-center load is flagged as an estimate, not a measurement", () => {
 test("shares are taken against the sector sum", () => {
   const total = sectorTotalTWh();
   const residential = sectorShare(US_SECTOR_DEMAND[0].twh, total);
-  assert.ok(residential !== null && Math.abs(residential - 39.46) < 0.1, `got ${residential}`);
+  assert.ok(residential !== null && Math.abs(residential - 37.33) < 0.1, `got ${residential}`);
   const all = US_SECTOR_DEMAND.reduce((s, x) => s + (sectorShare(x.twh, total) ?? 0), 0);
   assert.ok(Math.abs(all - 100) < 0.001, `sector shares must total 100, got ${all}`);
 });

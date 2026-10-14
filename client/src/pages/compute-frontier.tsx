@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { MapContainer, CircleMarker, Tooltip as MapTooltip, ZoomControl } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
+import BuildoutReplay from "@/components/BuildoutReplay";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -27,6 +28,7 @@ import { ArrowUpDown, Atom } from "lucide-react";
 import { PageHeader, HeaderStat } from "@/components/PageHeader";
 import { BRAND, INK, SURFACE, CATEGORY_COLORS, STATUS_COLORS } from "@/lib/tokens";
 import { axisProps, gridProps, seriesMotion, tooltipContentStyle, tooltipItemStyle, tooltipLabelStyle } from "@/lib/chart-theme";
+import { computeBuildoutReality } from "@/lib/buildout-reality";
 
 // ─── Types (mirror /api/clusters and /api/clusters/metrics) ────────────────
 
@@ -54,7 +56,7 @@ interface OperatorBucket { operator: string; count: number; ratedMW: number; pla
 interface IsoBucket { iso: string; count: number; ratedMW: number; plannedMW: number; }
 interface StatusBucket { status: string; count: number; ratedMW: number; plannedMW: number; }
 interface EnergyBucket { source: string; count: number; ratedMW: number; plannedMW: number; }
-interface PowerSecuredDeal { id: string; projectName: string; capacityMW: number; firmness: string; clusterIds: string[]; }
+interface PowerSecuredDeal { id: string; projectName: string; capacityMW: number | null; firmness: string; clusterIds: string[]; }
 interface ClusterMetrics {
   clusterCount: number;
   operationalCount: number;
@@ -77,7 +79,9 @@ interface ClusterMetrics {
     clustersWithDeal: number;
     plannedMWWithDeal: number;
     totalPlannedMW: number;
-    securedMW: number;
+    /** Linked agreements by status (server/deals.ts subtotalsByStatus). Never added together. */
+    linkedByStatus: Array<{ key: string; count: number; mw: number; undisclosed: number }>;
+    /** Reviewed signed agreements only. */
     signedSecuredMW: number;
     deals: PowerSecuredDeal[];
   };
@@ -87,6 +91,17 @@ interface ClusterMetrics {
 // ─── Display helpers ───────────────────────────────────────────────────────
 
 const STATUS_COLOR: Record<string, string> = STATUS_COLORS;
+
+/** How an agreement status reads in a sentence ("2.0 GW signed"). */
+const STATUS_PHRASE: Record<string, string> = {
+  signed: "signed",
+  framework: "under frameworks",
+  option: "under options",
+  preliminary: "in letters of intent",
+  portfolio: "in company-wide totals",
+  "not-ai-offtake": "not contracted to an AI buyer",
+  unreviewed: "not yet reviewed",
+};
 
 const ENERGY_COLOR: Record<string, string> = {
   nuclear: CATEGORY_COLORS.nuclear,
@@ -259,10 +274,64 @@ export default function ComputeFrontier() {
           <MetricCard label="Tracked clusters" value={metrics ? String(metrics.clusterCount) : "—"} sub={metrics ? `${metrics.operationalCount} live · ${metrics.constructionCount} building` : ""} />
           <MetricCard label="Operational power" value={metrics ? `${gw(metrics.operationalMW)} GW` : "—"} sub={metrics ? `of ${gw(metrics.totalRatedMW)} GW rated today` : ""} />
           <MetricCard label="Planned power" value={metrics ? `${gw(metrics.totalPlannedMW)} GW` : "—"} sub="full announced build-out" accent />
-          <MetricCard label="Tracked GPUs" value={metrics ? gpuCell(metrics.totalGpus) : "—"} sub={metrics ? `across ${metrics.clustersWithGpuData} disclosing` : ""} />
+          {/* Accelerators, not GPUs: the total includes AWS Trainium chips
+              (Project Rainier's 500,000), which are not GPUs. */}
+          <MetricCard label="Tracked accelerators" value={metrics ? gpuCell(metrics.totalGpus) : "—"} sub={metrics ? `GPUs and Trainium, ${metrics.clustersWithGpuData} clusters disclosing` : ""} />
           <MetricCard label="Operators" value={metrics ? String(metrics.concentration.operatorCount) : "—"} sub={metrics?.concentration.topOperator ? `top: ${metrics.concentration.topOperator} ${Math.round(metrics.concentration.topOperatorPlannedShare * 100)}%` : ""} />
-          <MetricCard label="Nuclear secured" value={ps ? `${gw(ps.securedMW)} GW` : "—"} sub={ps ? `${ps.clustersWithDeal} clusters linked` : ""} />
+          <MetricCard label="Signed nuclear, linked" value={ps ? `${gw(ps.signedSecuredMW)} GW` : "—"} sub={ps ? `${ps.clustersWithDeal} clusters linked` : ""} />
         </div>
+
+        {/* Buildout reality: how much of the promise is energized today */}
+        {metrics && (() => {
+          const r = computeBuildoutReality(metrics);
+          const seg = [
+            // "growth at live sites" is a lighter step of the operational hue:
+            // same sites, capacity not yet running. Construction and announced
+            // keep their own status-ramp colors.
+            { key: "energized", label: "energized today", mw: r.energizedMW, color: STATUS_COLOR.operational },
+            { key: "growing", label: "growth at live sites", mw: r.growingOnSiteMW, color: `${STATUS_COLOR.operational}66` },
+            { key: "construction", label: "under construction", mw: r.constructionMW, color: STATUS_COLOR.construction },
+            { key: "announced", label: "announced only", mw: r.announcedMW, color: STATUS_COLOR.announced ?? INK.faint },
+          ].filter((s) => s.mw > 0);
+          return (
+            <Card className="border-card-border p-4" data-testid="cf-buildout-reality">
+              <p className="text-sm text-foreground">
+                Of the{" "}
+                <span className="font-mono font-bold tabular-nums">{gw(r.totalPlannedMW)} GW</span> announced
+                across every tracked cluster,{" "}
+                <span className="font-mono font-bold tabular-nums">{gw(r.energizedMW)} GW</span> is energized
+                today — <span className="font-mono font-bold tabular-nums">{(r.energizedShare * 100).toFixed(1)}%</span>.
+              </p>
+              <div className="mt-3 flex h-3 w-full gap-[2px]" role="img"
+                aria-label={`Of ${gw(r.totalPlannedMW)} gigawatts announced, ${gw(r.energizedMW)} energized, ${gw(r.growingOnSiteMW)} growth at live sites, ${gw(r.constructionMW)} under construction, ${gw(r.announcedMW)} announced only`}>
+                {seg.map((s) => (
+                  <div
+                    key={s.key}
+                    className="rounded-[2px]"
+                    style={{ width: `${(s.mw / r.totalPlannedMW) * 100}%`, background: s.color, minWidth: 3 }}
+                  />
+                ))}
+              </div>
+              <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-11 text-muted-foreground">
+                {seg.map((s) => (
+                  <span key={s.key} className="inline-flex items-center gap-1.5">
+                    <span className="h-2 w-2 rounded-full flex-shrink-0" style={{ background: s.color }} />
+                    {s.label} <span className="font-mono tabular-nums text-foreground">{gw(s.mw)} GW</span>
+                  </span>
+                ))}
+              </div>
+              <p className="mt-3 text-11 leading-relaxed text-muted-foreground/70">
+                The unbuilt {gw(r.unbuiltMW)} GW implies very roughly ${(r.unbuiltCapexB / 1000).toFixed(1)}T of
+                capital still to be spent, at{" "}
+                <a href="https://epoch.ai/data/ai-data-centers" target="_blank" rel="noreferrer" className="hover:text-foreground underline decoration-border">
+                  Epoch AI's ~$38B per GW
+                </a>{" "}
+                of IT capacity ($26B compute + $12B construction). Order-of-magnitude context only: tracked MW
+                mixes facility and IT power bases, and announced figures are targets, not commitments.
+              </p>
+            </Card>
+          );
+        })()}
 
         {/* Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3" data-testid="cf-charts">
@@ -446,6 +515,9 @@ export default function ComputeFrontier() {
           </div>
         </Card>
 
+        {/* The buildout, replayed: press play and watch it arrive */}
+        {clusters && clusters.length > 0 && <BuildoutReplay clusters={clusters} />}
+
         {/* Filters */}
         <div className="flex flex-wrap items-center gap-2 text-xs" data-testid="cf-filters">
           <ChipSelect label="Operator" value={operatorFilter} onChange={setOperatorFilter} options={[{ value: "all", label: "all" }, ...operators.map((o) => ({ value: o, label: o }))]} />
@@ -528,20 +600,30 @@ export default function ComputeFrontier() {
           <Card className="border-card-border p-4" data-testid="cf-power-secured">
             <div className="flex items-center gap-2 mb-2">
               <Atom className="h-4 w-4 text-brand" />
-              <span className="text-[13px] font-semibold text-foreground">Power needed vs power secured</span>
+              <span className="text-[13px] font-semibold text-foreground">Power needed vs linked power agreements</span>
             </div>
             <p className="text-xs text-muted-foreground leading-relaxed mb-3">
               Of <span className="text-foreground font-mono">{gw(ps.totalPlannedMW)} GW</span> planned across the tracked frontier,{" "}
-              <span className="text-foreground font-mono">{gw(ps.plannedMWWithDeal)} GW</span> sits at clusters tied to a tracked
-              nuclear-for-AI deal, backed by <span className="text-foreground font-mono">{gw(ps.securedMW)} GW</span> of linked nuclear capacity
-              {ps.signedSecuredMW > 0 ? <> ({gw(ps.signedSecuredMW)} GW of it under signed contracts)</> : null}.
-              Most clusters run on the grid or on-site gas, not a tracked nuclear deal.
+              <span className="text-foreground font-mono">{gw(ps.plannedMWWithDeal)} GW</span> sits at clusters linked to a tracked
+              nuclear agreement. By status, those agreements list{" "}
+              {ps.linkedByStatus.map((b, i) => (
+                <span key={b.key}>
+                  {i > 0 && (i === ps.linkedByStatus.length - 1 ? " and " : ", ")}
+                  <span className="text-foreground font-mono">{gw(b.mw)} GW</span> {STATUS_PHRASE[b.key] ?? b.key}
+                  {b.undisclosed > 0 && ` (${b.undisclosed} undisclosed)`}
+                </span>
+              ))}
+              . The statuses are not added together, since a framework's ceiling can include a signed plant.{" "}
+              Most clusters run on the grid or on-site gas, not a tracked nuclear agreement.
             </p>
             <div className="space-y-1.5">
               {ps.deals.map((d) => (
                 <div key={d.id} className="flex items-center justify-between text-11 border-t border-border/30 pt-1.5">
                   <span className="text-foreground">{d.projectName}</span>
-                  <span className="font-mono tabular-nums text-muted-foreground">{d.capacityMW.toLocaleString()} MW · {d.firmness} · {d.clusterIds.join(", ")}</span>
+                  <span className="font-mono tabular-nums text-muted-foreground">
+                    {d.capacityMW === null ? "undisclosed" : `${d.capacityMW.toLocaleString()} MW`} ·{" "}
+                    {d.firmness === "unreviewed" ? "not reviewed" : d.firmness} · {d.clusterIds.join(", ")}
+                  </span>
                 </div>
               ))}
             </div>

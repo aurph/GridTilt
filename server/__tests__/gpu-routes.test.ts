@@ -25,9 +25,11 @@ yahooProto.chart = () => Promise.reject(new Error("offline"));
 // Keep a metrics request offline while still allowing this test to call its
 // local Express server through the platform fetch implementation.
 const nativeFetch = globalThis.fetch;
+let providerCalls = 0;
 globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
   const url = String(input);
   if (url.startsWith("http://127.0.0.1:")) return nativeFetch(input, init);
+  if (url.includes("runpod") || url.includes("vast.ai")) providerCalls += 1;
   if (url.includes("runpod")) {
     return new Response(JSON.stringify({ data: { gpuTypes: [] } }), {
       status: 200,
@@ -85,6 +87,41 @@ test("GPU metrics expose persisted history health", async () => {
     assert.ok("lastSweep" in body.health);
     assert.equal(body.health.curatedLastRefreshed, body.lastRefreshed);
   } finally {
+    await close();
+  }
+});
+
+test("GPU metrics never call RunPod or Vast.ai unless the sweep is enabled", async () => {
+  delete process.env.GPU_LIVE_SWEEP_ENABLED;
+  providerCalls = 0;
+  const { url, close } = await startTestServer();
+  try {
+    const response = await fetch(`${url}/api/gpu-prices/metrics`);
+    assert.equal(response.status, 200);
+    const body = (await response.json()) as { health?: { sweepEnabled: boolean } };
+    assert.equal(body.health?.sweepEnabled, false);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    assert.equal(providerCalls, 0);
+  } finally {
+    await close();
+  }
+});
+
+test("GPU metrics start the provider sweep when GPU_LIVE_SWEEP_ENABLED=true", async () => {
+  process.env.GPU_LIVE_SWEEP_ENABLED = "true";
+  providerCalls = 0;
+  const { url, close } = await startTestServer();
+  try {
+    const response = await fetch(`${url}/api/gpu-prices/metrics`);
+    assert.equal(response.status, 200);
+    const body = (await response.json()) as { health?: { sweepEnabled: boolean } };
+    assert.equal(body.health?.sweepEnabled, true);
+    for (let i = 0; i < 40 && providerCalls === 0; i++) {
+      await new Promise((resolve) => setTimeout(resolve, 25));
+    }
+    assert.ok(providerCalls > 0);
+  } finally {
+    delete process.env.GPU_LIVE_SWEEP_ENABLED;
     await close();
   }
 });

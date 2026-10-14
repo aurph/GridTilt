@@ -2,7 +2,24 @@ import express, { type Express } from "express";
 import fs from "fs";
 import path from "path";
 import { getPageMeta, injectMetaTags } from "./seo";
+import { injectStateHtml, statePagePrerender } from "./state-page";
 import { injectRuntimeConfig } from "./runtime-config";
+
+/**
+ * The HTML answer for a page address: the app shell with that page's
+ * metadata, and the status and robots header the metadata calls for. An
+ * address that names nothing gets a real 404 with noindex (seo.ts); the shell
+ * still loads and shows its own not-found page.
+ */
+export function pageResponse(indexHtml: string, originalUrl: string): { status: number; robots: string; html: string } {
+  const pathname = originalUrl.split("?")[0] || "/";
+  const meta = getPageMeta(pathname);
+  let html = injectRuntimeConfig(injectMetaTags(indexHtml, meta));
+  // A published state page carries its facts in the response itself.
+  const body = meta.status ? null : statePagePrerender(pathname);
+  if (body) html = injectStateHtml(html, body);
+  return { status: meta.status ?? 200, robots: meta.robots ?? "index, follow", html };
+}
 
 export function serveStatic(app: Express) {
   const distPath = path.resolve(__dirname, "public");
@@ -25,14 +42,7 @@ export function serveStatic(app: Express) {
 
   app.use("/{*path}", (req, res) => {
     const indexPath = path.resolve(distPath, "index.html");
-    let html = fs.readFileSync(indexPath, "utf-8");
-    const pathname = req.originalUrl.split("?")[0] || "/";
-    const meta = getPageMeta(pathname);
-    html = injectMetaTags(html, meta);
-    html = injectRuntimeConfig(html);
-    res
-      .set("Content-Type", "text/html")
-      .set("X-Robots-Tag", "index, follow")
-      .send(html);
+    const page = pageResponse(fs.readFileSync(indexPath, "utf-8"), req.originalUrl);
+    res.status(page.status).set("Content-Type", "text/html").set("X-Robots-Tag", page.robots).send(page.html);
   });
 }

@@ -9,6 +9,7 @@ import path from "path";
 // dependency tree, which is also where the advisory against it came from.
 import { randomUUID } from "crypto";
 import { getPageMeta, injectMetaTags } from "./seo";
+import { injectStateHtml, statePagePrerender } from "./state-page";
 import { injectRuntimeConfig } from "./runtime-config";
 
 const viteLogger = createLogger();
@@ -57,8 +58,14 @@ export async function setupVite(server: Server, app: Express) {
       const meta = getPageMeta(pathname);
       template = injectMetaTags(template, meta);
       template = injectRuntimeConfig(template);
+      const stateBody = meta.status ? null : statePagePrerender(pathname);
+      if (stateBody) template = injectStateHtml(template, stateBody);
       const page = await vite.transformIndexHtml(url, template);
-      res.status(200).set({ "Content-Type": "text/html" }).end(page);
+      // A 404 for an address that names nothing (seo.ts), same as production.
+      res
+        .status(meta.status ?? 200)
+        .set({ "Content-Type": "text/html", "X-Robots-Tag": meta.robots ?? "index, follow" })
+        .end(page);
     } catch (e) {
       vite.ssrFixStacktrace(e as Error);
       next(e);

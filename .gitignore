@@ -12,6 +12,9 @@ server/public/
 .env.*.local
 *.pem
 
+# Personal data: the development subscriber file (production uses Postgres)
+server/data/subscribers.json
+
 # Logs
 npm-debug.log*
 yarn-debug.log*

@@ -10,7 +10,8 @@ import PortfolioOverlay from "@/pages/PortfolioOverlay";
 import TheTrade from "@/pages/TheTrade";
 
 export const ANALYZE_TABS: ToolTab[] = [
-  { id: "portfolio", label: "Portfolio" },
+  // The id stays "portfolio" so shared ?tab=portfolio links keep working.
+  { id: "portfolio", label: "Baskets" },
   { id: "scenario", label: "Scenario" },
 ];
 
@@ -22,7 +23,7 @@ export default function Analyze() {
       <PageHeader
         title="Analyze"
         testId="analyze-header"
-        about="Your inputs, scored against the AI power buildout: portfolio exposure scoring and buildout scenario modeling."
+        about="Illustrative tools: compare how GridTilt classifies a basket of tickers, and model a buildout scenario from your own assumptions."
         controls={<ToolTabs tabs={ANALYZE_TABS} active={tab} onChange={setTab} />}
       />
 

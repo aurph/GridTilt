@@ -40,10 +40,13 @@ import {
   tooltipItemStyle,
   tooltipLabelStyle,
 } from "@/lib/chart-theme";
+import { DEMAND_ANCHOR, FLEET_PUE, LBNL_2030_RANGE, SCENARIO_YEARS, perScenarioYear, scenarioUse } from "@/lib/scenario-model";
 
-const BASE_POWER_TWH = 4490;
-const BASE_YEAR = 2025;
-const US_LPT_CAPACITY = 60;
+// DOE, Electric Grid Supply Chain Review (Feb 2022), from 2019 data: 137 large
+// power transformers (100 MVA and up) built in the US, 617 imported, and an
+// estimated capacity of about 343 a year. It read 60, credited to a DOE study
+// that does not exist.
+const US_LPT_CAPACITY = 343;
 
 type PresetName = "Conservative" | "Base" | "Aggressive" | "Custom";
 
@@ -91,7 +94,7 @@ const PRESET_RAMPS: Record<Exclude<PresetName, "Custom">, number[]> = {
 // ramp" in the chart footnote.
 const CUSTOM_RAMP_WEIGHTS = [0.05, 0.10, 0.15, 0.20, 0.25, 0.25];
 
-const YEARS = ["2025", "2026", "2027", "2028", "2029", "2030"];
+const YEARS = SCENARIO_YEARS.map(String);
 
 // Segment colors: compute/power from CATEGORY_COLORS; Infrastructure has no
 // token category, so it takes series slot 3 (teal, shared with datacenters).
@@ -102,19 +105,22 @@ const SEGMENT_COLORS: Record<string, string> = {
 };
 
 const TOP_COMPANIES = [
-  { ticker: "NVDA", name: "NVIDIA Corporation",    segment: "Compute",        thesisScore: 9.5, rationale: "GPU monopoly, >80% AI accelerator share",       color: SEGMENT_COLORS.Compute },
-  { ticker: "EQIX", name: "Equinix Inc",           segment: "Infrastructure", thesisScore: 9.0, rationale: "100% DC revenue, highest power density growth",   color: SEGMENT_COLORS.Infrastructure },
-  { ticker: "VRT",  name: "Vertiv Holdings",       segment: "Infrastructure", thesisScore: 8.8, rationale: "Critical thermal mgmt for every AI data center",   color: SEGMENT_COLORS.Infrastructure },
-  { ticker: "CEG",  name: "Constellation Energy",  segment: "Power",          thesisScore: 8.2, rationale: "Largest nuclear utility + first AI baseload PPA",  color: SEGMENT_COLORS.Power },
-  { ticker: "CCJ",  name: "Cameco Corporation",    segment: "Power",          thesisScore: 7.5, rationale: "Pure uranium miner, highest spot price beta",      color: SEGMENT_COLORS.Power },
-  { ticker: "TSM",  name: "Taiwan Semiconductor",  segment: "Compute",        thesisScore: 7.2, rationale: "Manufactures all advanced AI chips",               color: SEGMENT_COLORS.Compute },
-  { ticker: "VST",  name: "Vistra Corp",           segment: "Power",          thesisScore: 7.0, rationale: "Merchant power, direct power price beneficiary",   color: SEGMENT_COLORS.Power },
-  { ticker: "AMD",  name: "Advanced Micro Devices",segment: "Compute",        thesisScore: 6.0, rationale: "GPU inference competition, DC revenue +122% YoY",  color: SEGMENT_COLORS.Compute },
+  { ticker: "NVDA", name: "NVIDIA Corporation",    segment: "Compute",        thesisScore: 9.5, rationale: "GPUs, AI accelerators and networking",          color: SEGMENT_COLORS.Compute },
+  { ticker: "EQIX", name: "Equinix Inc",           segment: "Infrastructure", thesisScore: 9.0, rationale: "Colocation data center REIT",                   color: SEGMENT_COLORS.Infrastructure },
+  { ticker: "VRT",  name: "Vertiv Holdings",       segment: "Infrastructure", thesisScore: 8.8, rationale: "Power and cooling equipment for data centers",  color: SEGMENT_COLORS.Infrastructure },
+  { ticker: "CEG",  name: "Constellation Energy",  segment: "Power",          thesisScore: 8.2, rationale: "Nuclear and gas generation",                   color: SEGMENT_COLORS.Power },
+  { ticker: "CCJ",  name: "Cameco Corporation",    segment: "Power",          thesisScore: 7.5, rationale: "Uranium mining and fuel services",              color: SEGMENT_COLORS.Power },
+  { ticker: "TSM",  name: "Taiwan Semiconductor",  segment: "Compute",        thesisScore: 7.2, rationale: "Contract chip manufacturing",                   color: SEGMENT_COLORS.Compute },
+  { ticker: "VST",  name: "Vistra Corp",           segment: "Power",          thesisScore: 7.0, rationale: "Merchant power generation",                     color: SEGMENT_COLORS.Power },
+  { ticker: "AMD",  name: "Advanced Micro Devices",segment: "Compute",        thesisScore: 6.0, rationale: "GPUs and data center CPUs",                     color: SEGMENT_COLORS.Compute },
 ];
 
 const segmentIcons: Record<string, React.ElementType> = {
   Compute: Cpu, Infrastructure: Server, Power: Zap,
 };
+
+/** Fixed display order for the sensitivities list. */
+const SEGMENT_ORDER = ["Compute", "Infrastructure", "Power"];
 
 function NumField({
   label, value, unit, min, max, step = 1, onChange, hint, testId,
@@ -200,23 +206,18 @@ export default function TheTrade({ embedded = false }: { embedded?: boolean; par
 
   const outputs = useMemo(() => {
     const totalCapexB = inputs.newCapacityGW * inputs.capexPerMW;
-    const annualLPT = (inputs.newCapacityGW * inputs.lptPerGW) / 5;
+    // Spread over the six timeline years, the same years the buildout chart
+    // spreads the capacity over. It divided by 5.
+    const annualLPT = perScenarioYear(inputs.newCapacityGW * inputs.lptPerGW);
     const nuclearGW = inputs.newCapacityGW * inputs.nuclearPct / 100;
     const gasGW = inputs.newCapacityGW * inputs.gasPct / 100;
     const renewablesGW = inputs.newCapacityGW * inputs.renewablesPct / 100;
     const gridGW = inputs.newCapacityGW * inputs.gridPurchasePct / 100;
     const lptRatio = annualLPT / US_LPT_CAPACITY;
 
-    const demandYears = YEARS.map((year) => {
-      const yearsOut = parseInt(year) - BASE_YEAR;
-      const compounded = Math.pow(1 + inputs.aiCagrPct / 100, yearsOut);
-      const aiDemand = BASE_POWER_TWH * 0.045 * compounded * inputs.pue;
-      return {
-        year,
-        totalDemand: Math.round(BASE_POWER_TWH + aiDemand),
-        aiDemand: Math.round(aiDemand),
-      };
-    });
+    // aiCagrPct is the growth of data-center computing load; see scenario-model.ts.
+    const use2030 = scenarioUse(2030, inputs.aiCagrPct, inputs.pue);
+    const fasterGrowthTwh = scenarioUse(2030, inputs.aiCagrPct + 10, inputs.pue).dataCenterTwh - use2030.dataCenterTwh;
 
     return {
       totalCapexB,
@@ -226,14 +227,15 @@ export default function TheTrade({ embedded = false }: { embedded?: boolean; par
       renewablesGW,
       gridGW,
       lptRatio,
-      demandIn2030: demandYears[demandYears.length - 1]?.totalDemand ?? 0,
-      aiShareIn2030: demandYears[demandYears.length - 1]
-        ? (demandYears[demandYears.length - 1].aiDemand / demandYears[demandYears.length - 1].totalDemand * 100)
-        : 0,
+      use2030,
+      fasterGrowthTwh,
     };
   }, [inputs]);
 
-  const rankedCompanies = useMemo(() => {
+  // Same arithmetic as before. The list is no longer sorted by the result:
+  // an editorial score moved by two sliders is not a ranking with a method
+  // behind it, so the order is fixed (segment, then ticker).
+  const companySensitivities = useMemo(() => {
     return [...TOP_COMPANIES]
       .map((c) => {
         const bump =
@@ -245,14 +247,11 @@ export default function TheTrade({ embedded = false }: { embedded?: boolean; par
         const adjusted = Math.min(10.0, c.thesisScore + bump);
         return { ...c, adjusted, delta: bump };
       })
-      .sort((a, b) => b.adjusted - a.adjusted);
+      .sort(
+        (a, b) =>
+          SEGMENT_ORDER.indexOf(a.segment) - SEGMENT_ORDER.indexOf(b.segment) || a.ticker.localeCompare(b.ticker),
+      );
   }, [inputs.nuclearPct, inputs.aiCagrPct]);
-
-  const lptColor = outputs.lptRatio < 0.5
-    ? "text-positive"
-    : outputs.lptRatio < 1.0
-    ? "text-warning"
-    : "text-negative";
 
   const presetButtons: { key: PresetName; label: string }[] = [
     { key: "Conservative", label: "Conservative" },
@@ -290,20 +289,18 @@ export default function TheTrade({ embedded = false }: { embedded?: boolean; par
 
   // Embedded mode (Analyze tool, scenario tab): the host page owns the hero,
   // so render a slim intro (description + presets) instead of the full header.
+  // The presets are GridTilt's own assumptions, not a published projection.
+  const introText = "Illustrative 2030 scenario. Change the assumptions below.";
   const intro = embedded ? (
     <div className="px-1">
-      <p className="text-muted-foreground text-xs leading-relaxed max-w-3xl">
-        50 GW of new AI datacenter capacity is projected by 2030. Model capex, grid interconnect timelines, and power supply mix under different assumptions.
-      </p>
+      <p className="text-muted-foreground text-xs leading-relaxed max-w-3xl" data-testid="scenario-intro">{introText}</p>
       {presetSelector}
     </div>
   ) : (
     <div className="border-b border-border px-6 py-5">
       <div>
         <h1 className="text-2xl font-bold text-foreground tracking-tight">Scenario Calculator</h1>
-        <p className="text-muted-foreground text-sm mt-1 max-w-xl">
-          50 GW of new AI datacenter capacity is projected by 2030. Model capex, grid interconnect timelines, and power supply mix under different assumptions.
-        </p>
+        <p className="text-muted-foreground text-sm mt-1 max-w-xl" data-testid="scenario-intro">{introText}</p>
       </div>
       {presetSelector}
     </div>
@@ -337,13 +334,13 @@ export default function TheTrade({ embedded = false }: { embedded?: boolean; par
                   hint="Total new AI data center capacity added 2025-2030"
                 />
                 <NumField
-                  label="Avg Capex per MW"
+                  label="Facility cost per MW"
                   unit="$M / MW"
                   value={inputs.capexPerMW}
                   min={1} max={20} step={0.5}
                   testId="input-capex-per-mw"
                   onChange={(v) => setField("capexPerMW", v)}
-                  hint="All-in construction cost per MW of DC capacity"
+                  hint="Construction cost, excluding servers and chips"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -354,14 +351,14 @@ export default function TheTrade({ embedded = false }: { embedded?: boolean; par
                   min={1} max={10} step={0.5}
                   testId="input-lpt-per-gw"
                   onChange={(v) => setField("lptPerGW", v)}
-                  hint="Large power transformers needed per GW of new capacity"
+                  hint="Placeholder: no published figure for data-center load"
                 />
                 <div className="space-y-1">
-                  <span className="text-xs text-muted-foreground">Grid Interconnect Timeline</span>
+                  <span className="text-xs text-muted-foreground">Assumed interconnection wait</span>
                   <div className="h-8 flex items-center px-3 rounded-md border border-border/60 bg-muted/20 text-sm font-mono text-foreground">
                     {inputs.interconnectYears}
                   </div>
-                  <p className="text-10 text-muted-foreground/50">Avg queue-to-energize lead time</p>
+                  <p className="text-10 text-muted-foreground/50">Set by the preset, not measured</p>
                 </div>
               </div>
             </Card>
@@ -451,41 +448,41 @@ export default function TheTrade({ embedded = false }: { embedded?: boolean; par
             <Card className="p-4 border-card-border space-y-4">
               <div className="flex items-center gap-2">
                 <Cpu className="h-3.5 w-3.5 text-brand-2" />
-                <p className="text-xs font-semibold text-foreground">AI Demand Model</p>
+                <p className="text-xs font-semibold text-foreground">Data center demand</p>
                 <UITooltip>
                   <TooltipTrigger>
                     <Info className="h-3 w-3 text-muted-foreground/60" />
                   </TooltipTrigger>
                   <TooltipContent className="max-w-xs">
-                    <p className="text-xs">CAGR = annual growth rate of AI compute demand. PUE = Power Usage Effectiveness (overhead multiplier on compute load).</p>
+                    <p className="text-xs">Starts from LBNL's {DEMAND_ANCHOR.dataCenterTwh} TWh of US data-center use in {DEMAND_ANCHOR.year}. Divided by its {FLEET_PUE[2024]} average PUE, that is the computing load; the load grows at your rate and is multiplied by your 2030 PUE.</p>
                   </TooltipContent>
                 </UITooltip>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <NumField
-                  label="AI Workload CAGR"
+                  label="Computing load growth"
                   unit="%/yr"
                   value={inputs.aiCagrPct}
                   min={5} max={60} step={1}
                   testId="input-ai-cagr"
                   onChange={(v) => setField("aiCagrPct", v)}
-                  hint="Annual growth in AI compute demand, compounded to 2030"
+                  hint="Yearly growth in data-center IT load, 2024 to 2030"
                 />
                 <NumField
-                  label="Avg Data Center PUE"
+                  label="Fleet PUE in 2030"
                   unit="x"
                   value={inputs.pue}
                   min={1.0} max={1.8} step={0.05}
                   testId="input-pue"
                   onChange={(v) => setField("pue", v)}
-                  hint="Power Usage Effectiveness (1.0 = lossless; 1.3 = industry norm)"
+                  hint={`LBNL: ${FLEET_PUE[2024]} in 2024, ${FLEET_PUE.projected2030} projected for 2030`}
                 />
               </div>
               <div className="grid grid-cols-3 gap-3">
                 {[
-                  { label: "2030 AI Grid Share", value: `${outputs.aiShareIn2030.toFixed(1)}%`, color: "text-brand-2" },
-                  { label: "2030 US Demand", value: `${(outputs.demandIn2030 / 1000).toFixed(1)}k TWh`, color: "text-foreground" },
-                  { label: "Annual DC Pace", value: `${(inputs.newCapacityGW / 5).toFixed(1)} GW/yr`, color: "text-foreground" },
+                  { label: "2030 data centers", value: `${Math.round(outputs.use2030.dataCenterTwh)} TWh`, color: "text-brand-2" },
+                  { label: "Share of US use", value: `${outputs.use2030.dataCenterSharePct.toFixed(1)}%`, color: "text-foreground" },
+                  { label: "New capacity a year", value: `${perScenarioYear(inputs.newCapacityGW).toFixed(1)} GW`, color: "text-foreground" },
                 ].map((s) => (
                   <div key={s.label} className="rounded-md p-2.5 bg-muted/30 border border-border text-center">
                     <p className="text-10 text-muted-foreground mb-1 leading-tight">{s.label}</p>
@@ -493,26 +490,40 @@ export default function TheTrade({ embedded = false }: { embedded?: boolean; par
                   </div>
                 ))}
               </div>
+              <p className="text-10 text-muted-foreground/70 leading-relaxed" data-testid="scenario-demand-context">
+                US use in 2030: {Math.round(outputs.use2030.totalTwh).toLocaleString()} TWh, with everything besides data centers held
+                at its {DEMAND_ANCHOR.year} level. LBNL's 2030 range for data centers is{" "}
+                {LBNL_2030_RANGE.low} to {LBNL_2030_RANGE.high} TWh ({LBNL_2030_RANGE.reference} in its reference case).
+              </p>
             </Card>
           </div>
 
           {/* ---- RIGHT: OUTPUTS ---- */}
           <div className="space-y-5">
-            <h2 className="text-[13px] font-semibold text-foreground">Scenario Outputs</h2>
+            <div>
+              <h2 className="text-[13px] font-semibold text-foreground">Scenario Outputs</h2>
+              {/* The assumptions and the caveat sit with the numbers they produce,
+                  not only inside the collapsed methodology panel. */}
+              <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed" data-testid="scenario-assumptions">
+                From your assumptions: {inputs.newCapacityGW} GW of new capacity by 2030, ${inputs.capexPerMW}M per MW of facility cost,{" "}
+                {inputs.nuclearPct}% nuclear, {inputs.aiCagrPct}% a year computing load growth, 2030 PUE {inputs.pue.toFixed(2)}.
+                A scenario, not a forecast or financial advice.
+              </p>
+            </div>
 
             {/* 4 KPI output cards */}
             <div className="grid grid-cols-2 gap-3">
               <Card className="p-3.5 border-card-border" data-testid="output-total-capex">
-                <p className="text-[11px] text-muted-foreground mb-1">Total Capex</p>
+                <p className="text-[11px] text-muted-foreground mb-1">Facility capex</p>
                 <p className="text-2xl font-bold font-mono text-brand-2">${outputs.totalCapexB.toFixed(0)}B</p>
                 <p className="text-10 text-muted-foreground/60 mt-0.5">{inputs.newCapacityGW} GW × ${inputs.capexPerMW}M/MW</p>
               </Card>
 
               <Card className={`p-3.5 border-card-border`} data-testid="output-lpt-demand">
                 <p className="text-[11px] text-muted-foreground mb-1">Annual LPTs Needed</p>
-                <p className={`text-2xl font-bold font-mono ${lptColor}`}>{outputs.annualLPT.toFixed(0)}/yr</p>
+                <p className="text-2xl font-bold font-mono text-brand-2">{outputs.annualLPT.toFixed(0)}/yr</p>
                 <p className="text-10 text-muted-foreground/60 mt-0.5">
-                  vs. {US_LPT_CAPACITY} domestic · {(outputs.lptRatio * 100).toFixed(0)}% of US capacity
+                  {(outputs.lptRatio * 100).toFixed(0)}% of the ~{US_LPT_CAPACITY} a year DOE estimates US plants can build
                 </p>
               </Card>
 
@@ -532,9 +543,9 @@ export default function TheTrade({ embedded = false }: { embedded?: boolean; par
               </Card>
 
               <Card className="p-3.5 border-card-border" data-testid="output-interconnect">
-                <p className="text-[11px] text-muted-foreground mb-1">Grid Interconnect</p>
+                <p className="text-[11px] text-muted-foreground mb-1">Interconnection wait (assumed)</p>
                 <p className="text-lg font-bold font-mono text-foreground leading-snug mt-0.5">{inputs.interconnectYears}</p>
-                <p className="text-10 text-muted-foreground/60 mt-1">Avg queue-to-energize lead time</p>
+                <p className="text-10 text-muted-foreground/60 mt-1">LBNL: generators and storage built in 2025 waited a median 61 months</p>
               </Card>
             </div>
 
@@ -614,16 +625,20 @@ export default function TheTrade({ embedded = false }: { embedded?: boolean; par
               </Card>
             </div>
 
-            {/* Company rankings */}
+            {/* Company sensitivities (not a ranking) */}
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <h2 className="text-[13px] font-semibold text-foreground">Scenario-Adjusted Positions</h2>
+                <h2 className="text-[13px] font-semibold text-foreground">Illustrative company sensitivities</h2>
                 <UITooltip>
                   <TooltipTrigger>
                     <Info className="h-3.5 w-3.5 text-muted-foreground/60" />
                   </TooltipTrigger>
                   <TooltipContent className="max-w-xs">
-                    <p className="text-xs">Thesis leverage scores (0-10) adjusted by your scenario inputs. Higher nuclear % boosts Power names; higher CAGR boosts Compute. Not financial advice.</p>
+                    <p className="text-xs">
+                      GridTilt's editorial 0-10 score for each business, moved by two inputs: a higher nuclear share
+                      raises power names, faster computing load growth raises compute and infrastructure names. This scale
+                      is separate from the 0-100 sector scores on Analyze and the stock pages. Not a forecast of returns.
+                    </p>
                   </TooltipContent>
                 </UITooltip>
               </div>
@@ -634,21 +649,19 @@ export default function TheTrade({ embedded = false }: { embedded?: boolean; par
                   </div>
                 ) : (
                 <>
-                <div className="grid grid-cols-[1.5rem_1fr_auto_auto] gap-x-3 px-3 py-2 border-b border-border bg-muted/20">
-                  <span className="text-[11px] text-muted-foreground">#</span>
-                  <span className="text-[11px] text-muted-foreground">Position</span>
+                <div className="grid grid-cols-[1fr_auto_auto] gap-x-3 px-3 py-2 border-b border-border bg-muted/20">
+                  <span className="text-[11px] text-muted-foreground">Company</span>
                   <span className="text-[11px] text-muted-foreground text-right">Score</span>
-                  <span className="text-[11px] text-muted-foreground text-right w-12">Delta</span>
+                  <span className="text-[11px] text-muted-foreground text-right w-12">Change</span>
                 </div>
-                {rankedCompanies.map((company, index) => {
+                {companySensitivities.map((company) => {
                   const SegIcon = segmentIcons[company.segment] ?? DollarSign;
                   return (
                     <div
                       key={company.ticker}
-                      className="grid grid-cols-[1.5rem_1fr_auto_auto] gap-x-3 items-center px-3 py-2.5 border-b border-border/50 last:border-0 hover:bg-muted/10 transition-colors"
+                      className="grid grid-cols-[1fr_auto_auto] gap-x-3 items-center px-3 py-2.5 border-b border-border/50 last:border-0 hover:bg-muted/10 transition-colors"
                       data-testid={`trade-company-${company.ticker}`}
                     >
-                      <span className="text-xs font-mono text-muted-foreground/60">{index + 1}</span>
                       <div className="min-w-0">
                         <div className="flex items-center gap-2 mb-0.5">
                           <span className="font-bold text-sm text-foreground font-mono">{company.ticker}</span>
@@ -703,7 +716,7 @@ export default function TheTrade({ embedded = false }: { embedded?: boolean; par
                   <div className="flex items-center gap-2">
                     <Info className="h-3.5 w-3.5 text-muted-foreground" />
                     <span className="text-[13px] font-semibold text-foreground">Methodology</span>
-                    <span className="text-10 text-muted-foreground/50">Sources (IEA, EIA, DOE, McKinsey, hyperscaler earnings calls), formulas, and key sensitivities</span>
+                    <span className="text-10 text-muted-foreground/50">Sources, formulas, and what moves the numbers</span>
                   </div>
                   <ChevronDown
                     className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${methodologyOpen ? "rotate-180" : ""}`}
@@ -715,26 +728,34 @@ export default function TheTrade({ embedded = false }: { embedded?: boolean; par
                   {/* Sources */}
                   <div className="space-y-3">
                     <p className="text-[12px] font-semibold text-foreground">Sources</p>
+                    {/* Each line names the document, its date and what it measures. The
+                        list used to credit numbers to sources that did not publish them:
+                        4,490 TWh and 6.4% to AEO2025, 60 transformers a year to a DOE
+                        study that does not exist, $7-12M per MW to hyperscaler calls. */}
                     <ul className="space-y-2 text-muted-foreground leading-relaxed">
                       <li className="flex gap-2">
-                        <span className="text-brand-2 font-medium flex-shrink-0">IEA</span>
-                        <span>Electricity 2025: AI data centers projected at 400-1,000 TWh global consumption by 2026</span>
-                      </li>
-                      <li className="flex gap-2">
                         <span className="text-brand-2 font-medium flex-shrink-0">EIA</span>
-                        <span>Annual Energy Outlook 2025: US baseline consumption ~4,490 TWh (2025E); data centers = 6.4% of US load</span>
+                        <span>Monthly Energy Review, Table 7.1: US electricity end use was 4,110 TWh in 2024 (4,195 in 2025). <a href="https://www.eia.gov/totalenergy/data/browser/?tbl=T07.01" className="underline decoration-dotted underline-offset-2 hover:text-foreground" target="_blank" rel="noopener noreferrer">Table</a></span>
                       </li>
                       <li className="flex gap-2">
-                        <span className="text-brand-2 font-medium flex-shrink-0">McKinsey</span>
-                        <span>$5.2T global AI infrastructure investment projection through 2030 (2024 Global Technology Report)</span>
+                        <span className="text-brand-2 font-medium flex-shrink-0">LBNL</span>
+                        <span>Data center energy report, 2025 Update (June 2026): 192 TWh in 2024, 4.7% of US use; average PUE 1.45; 521 to 843 TWh in 2030. <a href="https://escholarship.org/uc/item/33m6w3x0" className="underline decoration-dotted underline-offset-2 hover:text-foreground" target="_blank" rel="noopener noreferrer">Report</a></span>
                       </li>
                       <li className="flex gap-2">
                         <span className="text-brand-2 font-medium flex-shrink-0">DOE</span>
-                        <span>Transformer Supply Chain Study 2023: US domestic large power transformer (LPT) manufacturing capacity ~60 units/year</span>
+                        <span>Electric Grid Supply Chain Review (Feb 2022): in 2019, 137 large power transformers (100 MVA and up) were built in the US and 617 imported; capacity about 343 a year. <a href="https://www.energy.gov/sites/default/files/2022-02/Electric%20Grid%20Supply%20Chain%20Report%20-%20Final.pdf" className="underline decoration-dotted underline-offset-2 hover:text-foreground" target="_blank" rel="noopener noreferrer">Report</a></span>
                       </li>
                       <li className="flex gap-2">
-                        <span className="text-brand-2 font-medium flex-shrink-0">Hyperscalers</span>
-                        <span>2024-2025 earnings calls: all-in capex guidance of $7-12M/MW for hyperscale AI data centers (AWS, Google, Microsoft, Meta)</span>
+                        <span className="text-brand-2 font-medium flex-shrink-0">Cost</span>
+                        <span>Construction cost per MW, excluding servers and chips: JLL global average $10.7M in 2025; Cushman &amp; Wakefield $17.6M for new US and Canada builds (2026 guide). <a href="https://www.jll.com/content/dam/jllcom/en/global/documents/reports/research-reports/26-research-global-data-center-outlook-new.pdf" className="underline decoration-dotted underline-offset-2 hover:text-foreground" target="_blank" rel="noopener noreferrer">JLL</a> <a href="https://ir.cushmanwakefield.com/news/press-release-details/2026/Cushman--Wakefield-Releases-2026-Data-Center-Development-Cost-Guide-Citing-21-Rise-in-Per-MW-Construction-Costs/default.aspx" className="underline decoration-dotted underline-offset-2 hover:text-foreground" target="_blank" rel="noopener noreferrer">C&amp;W</a></span>
+                      </li>
+                      <li className="flex gap-2">
+                        <span className="text-brand-2 font-medium flex-shrink-0">Queue</span>
+                        <span>LBNL Queued Up (2026 edition): generators and storage built in 2025 took a median 61 months from interconnection request to operation. Data-center load queues are not covered. <a href="https://eta-publications.lbl.gov/sites/default/files/2026-06/queued_up_2026_edition.pdf" className="underline decoration-dotted underline-offset-2 hover:text-foreground" target="_blank" rel="noopener noreferrer">Report</a></span>
+                      </li>
+                      <li className="flex gap-2">
+                        <span className="text-brand-2 font-medium flex-shrink-0">Context</span>
+                        <span>IEA, Energy and AI (Apr 2025): data centers worldwide used about 415 TWh in 2024, about 945 TWh in 2030 in its base case. McKinsey (Apr 2025): $5.2 trillion of AI data-center capex worldwide by 2030 in its middle scenario, about 60% of it chips and hardware, so not comparable with facility capex here. <a href="https://www.iea.org/reports/energy-and-ai" className="underline decoration-dotted underline-offset-2 hover:text-foreground" target="_blank" rel="noopener noreferrer">IEA</a> <a href="https://www.mckinsey.com/industries/technology-media-and-telecommunications/our-insights/the-cost-of-compute-a-7-trillion-dollar-race-to-scale-data-centers" className="underline decoration-dotted underline-offset-2 hover:text-foreground" target="_blank" rel="noopener noreferrer">McKinsey</a></span>
                       </li>
                     </ul>
                   </div>
@@ -744,20 +765,24 @@ export default function TheTrade({ embedded = false }: { embedded?: boolean; par
                     <p className="text-[12px] font-semibold text-foreground">Formulas</p>
                     <div className="space-y-3 text-muted-foreground">
                       <div>
-                        <p className="text-10 font-medium text-foreground/80 mb-0.5">Total Capex ($B)</p>
+                        <p className="text-10 font-medium text-foreground/80 mb-0.5">Facility capex ($B)</p>
                         <p className="leading-relaxed">GW × 1,000 (MW/GW) × Capex ($/MW in millions) / 1,000 = GW × Capex/MW. Example: 50 GW × $9M/MW = $450B.</p>
                       </div>
                       <div>
                         <p className="text-10 font-medium text-foreground/80 mb-0.5">Annual LPT Demand</p>
-                        <p className="leading-relaxed">Total GW × LPTs per GW / 5 years. Default 4 LPTs/GW sourced from DOE interconnection studies. Compare against {US_LPT_CAPACITY} units/year domestic manufacturing capacity.</p>
+                        <p className="leading-relaxed">Total GW × LPTs per GW ÷ 6 years (2025 through 2030). The default of 4 per GW is a GridTilt placeholder; no published figure for data-center load was found. Compared with DOE's estimate of US capacity, about {US_LPT_CAPACITY} a year (2019 data).</p>
                       </div>
                       <div>
                         <p className="text-10 font-medium text-foreground/80 mb-0.5">Generation Breakdown</p>
                         <p className="leading-relaxed">New Capacity (GW) × Supply Mix %. Annual ramp × mix applied year-by-year in the chart.</p>
                       </div>
                       <div>
-                        <p className="text-10 font-medium text-foreground/80 mb-0.5">AI Demand (TWh)</p>
-                        <p className="leading-relaxed">Base Grid (4,490 TWh) × AI share (4.5% 2025E) × (1 + CAGR)^years × PUE. Compounded annually from 2025 baseline.</p>
+                        <p className="text-10 font-medium text-foreground/80 mb-0.5">Data-center use in 2030 (TWh)</p>
+                        <p className="leading-relaxed">
+                          ({DEMAND_ANCHOR.dataCenterTwh} TWh ÷ {FLEET_PUE[2024]}) × (1 + growth)^{2030 - DEMAND_ANCHOR.year} × your 2030 PUE. LBNL's {DEMAND_ANCHOR.year} use divided by its
+                          average PUE that year is the computing load. US use is data centers plus everything else held at its {DEMAND_ANCHOR.year} level
+                          ({(DEMAND_ANCHOR.usTwh - DEMAND_ANCHOR.dataCenterTwh).toLocaleString()} TWh: EIA's {DEMAND_ANCHOR.usTwh.toLocaleString()} less LBNL's {DEMAND_ANCHOR.dataCenterTwh}). New capacity and demand growth are separate inputs; the calculator does not reconcile them.
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -766,13 +791,14 @@ export default function TheTrade({ embedded = false }: { embedded?: boolean; par
                   <div className="space-y-3">
                     <p className="text-[12px] font-semibold text-foreground">Key Sensitivities</p>
                     <div className="space-y-2 text-muted-foreground leading-relaxed">
-                      <p><span className="text-foreground font-medium">Nuclear %</span> is the highest-leverage input. Each 10pp increase re-rates CEG, CCJ, and VST scores.</p>
-                      <p><span className="text-foreground font-medium">Capex per MW</span> drives total capital deployed. At 50 GW, the $7M-$12M range = $150B swing.</p>
-                      <p><span className="text-foreground font-medium">LPT per GW</span> (default: 4) is the most uncertain assumption in this model; academic literature ranges from 2 to 6.</p>
-                      <p><span className="text-foreground font-medium">AI CAGR</span> is the most volatile input; a 10pp change produces a ~200 TWh swing in 2030 US power demand.</p>
+                      <p><span className="text-foreground font-medium">Nuclear %</span> moves the illustrative scores of CEG, CCJ, and VST.</p>
+                      <p><span className="text-foreground font-medium">Facility cost per MW</span>: at {inputs.newCapacityGW} GW, each $1M per MW adds ${inputs.newCapacityGW}B.</p>
+                      <p><span className="text-foreground font-medium">LPTs per GW</span> (default 4) has no published basis for data-center load. For comparison, NLR's January 2026 transmission supply-chain study (Table 16) estimates 1 (nuclear) to 10 (solar) step-up transformers per GW of new generation.{" "}
+                        <a href="https://docs.nlr.gov/docs/fy26osti/97167.pdf" className="underline decoration-dotted underline-offset-2 hover:text-foreground" target="_blank" rel="noopener noreferrer">Study</a></p>
+                      <p><span className="text-foreground font-medium">Computing load growth</span>: at your settings, 10 points faster growth adds {Math.round(outputs.fasterGrowthTwh).toLocaleString()} TWh of data-center use in 2030.</p>
                     </div>
                     <div className="mt-3 p-3 rounded bg-muted/20 border border-border/60 text-muted-foreground/70 leading-relaxed">
-                      All assumptions are adjustable. GridTilt provides the framework; you provide the thesis. This is a scenario analysis tool, not financial advice.
+                      All assumptions are adjustable. This is a scenario tool, not a forecast or financial advice.
                     </div>
                   </div>
                 </div>

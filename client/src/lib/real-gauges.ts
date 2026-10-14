@@ -7,9 +7,8 @@
  * Sources:
  * - Tracked AI DC power: the verified facility dataset (/api/datacenters)
  * - Cost of AI compute: the GPU rental index (/api/gpu-prices/metrics)
- * - Grid headroom: NERC LTRA reserve margins (data/rto-config)
+ * - Grid headroom: NERC 2025 LTRA reserve margins, in lib/reserve-margins.ts
  */
-import type { RTOConfig } from "@/data/rto-config";
 
 /**
  * Same hyperscale floor the Power map advertises: only >=400 MW sites are
@@ -152,23 +151,5 @@ export function buildBuildoutHistory(facilities: FacilityLite[]): BuildoutHistor
   return { online, pipeline, undatedCount };
 }
 
-// ─── Grid headroom ──────────────────────────────────────────────────────────
-
-export interface GridHeadroom {
-  rto: string;
-  label: string;
-  reserveMarginPct: number;
-  aiSignal: RTOConfig["aiSignal"];
-}
-
-/** The tightest reserve margin among tracked RTOs - the binding constraint. */
-export function tightestRTO(config: Record<string, RTOConfig>): GridHeadroom | null {
-  let best: GridHeadroom | null = null;
-  for (const [rto, c] of Object.entries(config ?? {})) {
-    if (!Number.isFinite(c.reserveMargin)) continue;
-    if (!best || c.reserveMargin < best.reserveMarginPct) {
-      best = { rto, label: c.label, reserveMarginPct: c.reserveMargin, aiSignal: c.aiSignal };
-    }
-  }
-  return best;
-}
+// Grid headroom moved to reserve-margins.ts (tightestArea), which ranks NERC
+// areas by their cushion above their own reference margin.

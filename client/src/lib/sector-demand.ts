@@ -1,10 +1,15 @@
 /**
- * US electricity demand by end-use sector.
+ * US retail electricity sales by sector.
  *
- * Residential, commercial and industrial are exhaustive. Data centers are not a
- * fourth sector; their load is metered inside commercial and industrial, so it
- * must stay out of any sector total. The Overview card previously added it,
- * printing 4,490 TWh where the sectors sum to 4,202. Tests enforce the rule.
+ * EIA reports four retail-sales sectors. Data centers are not one of them;
+ * their load is billed inside commercial and industrial, so it must stay out
+ * of any sector total. The Overview card previously added it, printing 4,490
+ * TWh. Tests enforce the rule.
+ *
+ * Retail sales are not all of US use: end use adds direct use, electricity
+ * generated and used on site (137 TWh in 2025). The card used to call three
+ * sectors "all demand" and showed 1,658 / 1,569 / 975 TWh with industrial down
+ * 3.2%, none of which matches EIA.
  */
 
 export interface Sector {
@@ -14,12 +19,27 @@ export interface Sector {
   yoy: number;
 }
 
-/** Source: EIA Electric Power Monthly (2025). There is no fourth end-use sector. */
-export const US_SECTOR_DEMAND: Sector[] = [
-  { sector: "Residential", twh: 1658, yoy: 2.1 },
-  { sector: "Commercial", twh: 1569, yoy: 2.4 },
-  { sector: "Industrial", twh: 975, yoy: -3.2 },
+export const US_SECTOR_SOURCE = {
+  label: "EIA Monthly Energy Review, Table 7.6",
+  url: "https://www.eia.gov/totalenergy/data/browser/?tbl=T07.06",
+  year: 2025,
+  retrieved: "2026-09-28",
+} as const;
+
+/** TWh, EIA's million-kWh figures unrounded, so the rows sum to EIA's total. */
+const SALES: Array<[string, number, number]> = [
+  // sector, 2025, 2024
+  ["Residential", 1514.993, 1482.874],
+  ["Commercial", 1493.486, 1450.941],
+  ["Industrial", 1042.217, 1034.584],
+  ["Transportation", 7.311, 6.983],
 ];
+
+export const US_SECTOR_DEMAND: Sector[] = SALES.map(([sector, now, prior]) => ({
+  sector,
+  twh: now,
+  yoy: Math.round(((now - prior) / prior) * 1000) / 10,
+}));
 
 /**
  * Data-center load: a slice of the sectors above, not an addition to them.
@@ -89,8 +109,8 @@ export interface DemandPoint {
 /**
  * Lowest measured year in a demand series, skipping unmeasured years.
  *
- * The card claimed "up 15% from the 2022 low"; the series trough is 2020 and 2022
- * to 2025 is about +11%. Derived so the copy cannot drift from the series again.
+ * The card claimed "up 15% from the 2022 low"; the measured trough is 2012 in the
+ * end-use series. Derived so the copy cannot drift from the series again.
  */
 export function demandTrough(series: DemandPoint[]): { year: string; twh: number } | null {
   let best: { year: string; twh: number } | null = null;

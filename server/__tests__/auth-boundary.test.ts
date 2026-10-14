@@ -17,17 +17,22 @@ interface YahooLike {
   quote: (...args: unknown[]) => Promise<unknown>;
   chart: (...args: unknown[]) => Promise<unknown>;
   search?: (...args: unknown[]) => Promise<unknown>;
+  quoteSummary: (...args: unknown[]) => Promise<unknown>;
 }
 const yahooModule = await import("yahoo-finance2");
 const YahooFinanceClass = (yahooModule as unknown as { default: new () => YahooLike }).default;
 const proto = YahooFinanceClass.prototype as YahooLike;
 const originalQuote = proto.quote;
 const originalChart = proto.chart;
+const originalSummary = proto.quoteSummary;
 proto.quote = () => Promise.reject(new Error("offline"));
 proto.chart = () => Promise.reject(new Error("offline"));
+// quoteSummary feeds the earnings calendar registerRoutes refreshes at startup.
+proto.quoteSummary = () => Promise.reject(new Error("offline"));
 after(() => {
   proto.quote = originalQuote;
   proto.chart = originalChart;
+  proto.quoteSummary = originalSummary;
 });
 
 const { registerRoutes } = await import("../routes");
@@ -52,15 +57,22 @@ const PROTECTED_ROUTES: Array<[string, string]> = [
   ["GET", "/api/admin/gpu-history"],
   ["GET", "/api/admin/freshness"],
   ["GET", "/api/admin/freshness/check"],
+  ["GET", "/api/admin/freshness/alert-preview"],
   ["GET", "/api/newsletter/preview"], // SEC-1: was public, leaked subscriber count
   ["POST", "/api/social/generate"], // SEC-2: was public, burned Yahoo quota
   ["DELETE", "/api/admin/subscribers/x@y.com"],
-  ["POST", "/api/newsletter/send"],
+  ["POST", "/api/newsletter/send"], // retired (410) behind the key
+  ["POST", "/api/admin/newsletter/issues"],
+  ["GET", "/api/admin/newsletter/issues/weekly-x/1"],
+  ["GET", "/api/admin/newsletter/issues/weekly-x/1/preview"],
+  ["POST", "/api/admin/newsletter/issues/weekly-x/1/send"],
+  ["POST", "/api/admin/newsletter/issues/weekly-x/1/test"],
   ["POST", "/api/admin/post-now"],
   ["POST", "/api/admin/cron/daily-tweet"],
   ["GET", "/api/admin/social-log"],
   ["DELETE", "/api/admin/tweet/123"],
   ["POST", "/api/admin/datacenters"],
+  ["PUT", "/api/admin/datacenters/1"],
   ["DELETE", "/api/admin/datacenters/1"],
   ["GET", "/api/admin/datacenters/pending"],
   ["POST", "/api/admin/datacenters/ingest"],
@@ -123,6 +135,12 @@ test("admin auth boundary: the correct key is accepted, a missing key never auth
       );
       assert.ok(res.status < 200 || res.status >= 300, `${method} ${path} must not succeed without a key`);
     }
+
+    // Provider webhooks are gated by their signature, not the admin key: an
+    // unsigned call never succeeds (401, or 503 while no secret is configured).
+    const hook = await fetch(`${url}/api/webhooks/resend`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+    await hook.text();
+    assert.ok(hook.status === 401 || hook.status === 503, `unsigned webhook returned ${hook.status}`);
   } finally {
     await close();
   }
