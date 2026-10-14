@@ -131,7 +131,7 @@ export function effectiveFirmness(p: DealProject): FirmnessKey {
 }
 
 /** An agreement row: has a buyer, is not a data-center load, is not grid supply. */
-function isPowerAgreement(p: DealProject): boolean {
+export function isPowerAgreement(p: DealProject): boolean {
   if (!p.offtaker || p.type === "load" || p.category === "load") return false;
   return effectiveFirmness(p) !== "not-ai-offtake";
 }
