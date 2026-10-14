@@ -242,7 +242,9 @@ Documented, not to fix casually or silently:
 - GPU live sweep PAUSED 2026-10-12: Vast.ai's terms (2026-09-01) and RunPod's (2026-03-24) need
   written permission for automated price collection and index use. The RunPod/Vast sweep in
   server/gpu-live.ts runs only when GPU_LIVE_SWEEP_ENABLED is "true"; leave it unset until a
-  written yes is on file. While off, GPU prices serve the curated values with the est. flag.
+  written yes is on file. While off, no new live points are recorded; once the newest recorded
+  point is more than 2 Eastern days old, GPU prices serve the curated values with the est. flag.
+  Already recorded days in gpu-price-history.json are kept and still chart.
 - Indices RESOLVED 2026-08-18: retired from the surface, kept as a recorded series. The Overview
   shows the measured gauges; no client fetches /api/kpis. The route still computes and appends to
   index-history.json on purpose, because the series is public, has a backtest and a committed

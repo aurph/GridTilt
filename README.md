@@ -33,7 +33,7 @@ A news ticker runs across every dashboard page: a 7-day rolling feed from 8 indu
 
 The rule across the app: serve real observations, flag estimates, and degrade with an explicit error instead of fabricating a number.
 
-- **GPU prices** are recorded from public, keyless marketplace APIs: RunPod (secure and community on-demand pricing) and Vast.ai (median of the cheapest verified on-demand offers). A model with no live source that day records nothing; curated anchor prices are flagged `est.` and charts interpolate across gaps instead of inventing points.
+- **GPU prices** were recorded daily from RunPod (secure and community on-demand pricing) and Vast.ai (median of the cheapest verified on-demand offers). That sweep is paused until both providers give written permission; it runs only when `GPU_LIVE_SWEEP_ENABLED=true`. A model with no live source that day records nothing; curated anchor prices are flagged `est.` and charts interpolate across gaps instead of inventing points.
 - **Uranium correlation** is computed from 52 weeks of real weekly closes: SRUUF (Sprott Physical Uranium Trust, the closest freely quotable spot proxy) against CCJ and CEG. On fetch failure the card shows an unavailable state, not invented dots.
 - **Equity quotes** fall back per ticker to labeled static data when Yahoo throttles; the change column renders "--" rather than a stale number pretending to be live.
 - **Keyed sources** respond `{configured: false}` with setup instructions when the key is absent; upstream failures return 502. Nothing is faked on failure.
@@ -43,7 +43,7 @@ The rule across the app: serve real observations, flag estimates, and degrade wi
 | Data | Source | Behavior |
 |---|---|---|
 | Equity quotes, sparklines, fundamentals (~100 tickers) | Yahoo Finance via `yahoo-finance2` (unofficial, indicative) | Live; per-ticker labeled static fallback |
-| GPU rental prices | RunPod GraphQL API + Vast.ai marketplace API (public, keyless) | Live observations recorded daily; no observation means no record |
+| GPU rental prices | Curated, source-verified estimates (`est.`); RunPod + Vast.ai live sweep paused pending written permission | Recorded days stay in history; no new live points while paused |
 | Uranium correlation | SRUUF vs CCJ and CEG weekly closes via Yahoo | Live; null (unavailable) on failure |
 | US monthly electric output | FRED [`IPG2211A2N`](https://fred.stlouisfed.org/series/IPG2211A2N) at `/api/physical/electricity-output` | Live, daily cache; 502 on failure |
 | US48 hourly demand | EIA v2 at `/api/physical/load-hourly` (needs `EIA_API_KEY`) | Live, 30-min cache; `{configured: false}` without a key |
