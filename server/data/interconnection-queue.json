@@ -47,7 +47,9 @@
       "firmness": "signed",
       "firmnessSource": "https://www.constellationenergy.com/news/2024/Constellation-to-Launch-Crane-Clean-Energy-Center-Restoring-Jobs-and-Carbon-Free-Power-to-The-Grid.html",
       "reviewed": "2026-09-28",
-      "asset": "restart"
+      "asset": "restart",
+      "announced": "2024-09-20",
+      "announcedSource": "https://www.constellationenergy.com/news/2024/Constellation-to-Launch-Crane-Clean-Energy-Center-Restoring-Jobs-and-Carbon-Free-Power-to-The-Grid.html"
     },
     {
       "id": "palisades",
@@ -100,7 +102,9 @@
       "firmness": "signed",
       "firmnessSource": "https://www.sec.gov/Archives/edgar/data/1622536/000162828025030559/a20250611pressreleasebusin.htm",
       "reviewed": "2026-09-28",
-      "asset": "existing"
+      "asset": "existing",
+      "announced": "2025-06-11",
+      "announcedSource": "https://www.sec.gov/Archives/edgar/data/1622536/000162828025030559/a20250611pressreleasebusin.htm"
     },
     {
       "id": "clinton-meta",
@@ -124,7 +128,9 @@
       "firmness": "signed",
       "firmnessSource": "https://www.constellationenergy.com/news/2025/constellation-meta-sign-20-year-deal-for-clean-reliable-nuclear-energy-in-illinois.html",
       "reviewed": "2026-09-28",
-      "asset": "mixed"
+      "asset": "mixed",
+      "announced": "2025-06-03",
+      "announcedSource": "https://www.constellationenergy.com/news/2025/constellation-meta-sign-20-year-deal-for-clean-reliable-nuclear-energy-in-illinois.html"
     },
     {
       "id": "comanche-peak-3",
@@ -192,7 +198,9 @@
       "firmness": "framework",
       "firmnessSource": "https://oklo.com/newsroom/oklo-meta-announce-agreement-in-support-of-1-2-gw-nuclear-energy-development-in-southern-ohio",
       "reviewed": "2026-09-28",
-      "asset": "new-build"
+      "asset": "new-build",
+      "announced": "2026-01-09",
+      "announcedSource": "https://oklo.com/newsroom/oklo-meta-announce-agreement-in-support-of-1-2-gw-nuclear-energy-development-in-southern-ohio"
     },
     {
       "id": "google-kairos-hermes2",
@@ -266,7 +274,9 @@
       "firmness": "framework",
       "firmnessSource": "https://www.sec.gov/Archives/edgar/data/1533232/000117184324002391/exh_991.htm",
       "reviewed": "2026-09-28",
-      "asset": "new-build"
+      "asset": "new-build",
+      "announced": "2024-05-01",
+      "announcedSource": "https://www.sec.gov/Archives/edgar/data/1533232/000117184324002391/exh_991.htm"
     },
     {
       "id": "google-intersect-power",
@@ -315,7 +325,9 @@
       "firmness": "signed",
       "firmnessSource": "https://totalenergies.com/system/files/documents/totalenergies_pr-totalenergies-to-provide-1GW-solar-capacity-power-google-s-data-centers-texas-15-years_2026_en.pdf",
       "reviewed": "2026-09-28",
-      "asset": "new-build"
+      "asset": "new-build",
+      "announced": "2026-02-09",
+      "announcedSource": "https://totalenergies.com/system/files/documents/totalenergies_pr-totalenergies-to-provide-1GW-solar-capacity-power-google-s-data-centers-texas-15-years_2026_en.pdf"
     },
     {
       "id": "stargate-abilene",
@@ -716,7 +728,9 @@
       "firmness": "preliminary",
       "firmnessSource": "https://voltagrid.com/wp-content/uploads/VoltaGrid-Press-Release_Oracle_October-15th.pdf",
       "reviewed": "2026-09-28",
-      "asset": "new-build"
+      "asset": "new-build",
+      "announced": "2025-10-15",
+      "announcedSource": "https://voltagrid.com/wp-content/uploads/VoltaGrid-Press-Release_Oracle_October-15th.pdf"
     },
     {
       "id": "propetro-propwr-midwest",
@@ -765,7 +779,9 @@
       "firmness": "signed",
       "firmnessSource": "https://www.sec.gov/Archives/edgar/data/936340/000093634025000219/exhibit991-093025.htm",
       "reviewed": "2026-09-28",
-      "asset": "mixed"
+      "asset": "mixed",
+      "announced": "2025-10-30",
+      "announcedSource": "https://www.sec.gov/Archives/edgar/data/936340/000093634025000219/exhibit991-093025.htm"
     },
     {
       "id": "dominion-va-aggregate",
@@ -1175,7 +1191,9 @@
       "firmness": "signed",
       "firmnessSource": "https://www.sec.gov/Archives/edgar/data/1692819/000119312526008508/d20785d8k.htm",
       "reviewed": "2026-09-28",
-      "asset": "mixed"
+      "asset": "mixed",
+      "announced": "2026-01-09",
+      "announcedSource": "https://www.sec.gov/Archives/edgar/data/1692819/000119312526008508/d20785d8k.htm"
     },
     {
       "id": "oklo-datacenter-lois",
@@ -1201,7 +1219,9 @@
       "firmness": "preliminary",
       "firmnessSource": "https://oklo.com/newsroom/oklo-secures-partnerships-for-up-to-750-megawatts-of-power-for-u-s-data-centers",
       "reviewed": "2026-09-28",
-      "asset": "new-build"
+      "asset": "new-build",
+      "announced": "2024-11-13",
+      "announcedSource": "https://oklo.com/newsroom/oklo-secures-partnerships-for-up-to-750-megawatts-of-power-for-u-s-data-centers"
     },
     {
       "id": "oklo-switch-mpa",
@@ -1226,7 +1246,9 @@
       "firmness": "preliminary",
       "firmnessSource": "https://oklo.com/newsroom/news-details/2024/Oklo-and-Switch-Form-Landmark-Strategic-Relationship-to-Deploy-12-Gigawatts-of-Advanced-Nuclear-Power-One-of-the-Largest-Corporate-Clean-Power-Agreements-Ever-Signed/default.aspx",
       "reviewed": "2026-09-28",
-      "asset": "new-build"
+      "asset": "new-build",
+      "announced": "2024-12-18",
+      "announcedSource": "https://oklo.com/newsroom/news-details/2024/Oklo-and-Switch-Form-Landmark-Strategic-Relationship-to-Deploy-12-Gigawatts-of-Advanced-Nuclear-Power-One-of-the-Largest-Corporate-Clean-Power-Agreements-Ever-Signed/default.aspx"
     },
     {
       "id": "meta-aes-solar",
@@ -1249,7 +1271,9 @@
       "firmness": "signed",
       "firmnessSource": "https://s202.q4cdn.com/986265382/files/doc_news/2025/05/05-20-25-AES-Meta-PR_FINAL.pdf",
       "reviewed": "2026-09-28",
-      "asset": "new-build"
+      "asset": "new-build",
+      "announced": "2025-05-21",
+      "announcedSource": "https://s202.q4cdn.com/986265382/files/doc_news/2025/05/05-20-25-AES-Meta-PR_FINAL.pdf"
     },
     {
       "id": "ms-chevron-kilby",
@@ -1297,7 +1321,9 @@
       "notes": "25-year large-load electric service agreement for OpenAI's Effingham County campus: approximately 3,200 MW delivered in phases between 2028 and 2032, with up to 1,000 MW of demand response Georgia Power can call. Georgia Power says the contract 'has been approved as part of the regulatory process' (August 2026). Georgia Power says the demand response lets it invest in fewer new generation resources.",
       "firmness": "signed",
       "firmnessSource": "https://www.prnewswire.com/news-releases/georgia-power-to-serve-openai-project-in-effingham-county-302832224.html",
-      "reviewed": "2026-09-28"
+      "reviewed": "2026-09-28",
+      "announced": "2026-07-22",
+      "announcedSource": "https://www.prnewswire.com/news-releases/georgia-power-to-serve-openai-project-in-effingham-county-302832224.html"
     },
     {
       "id": "vistra-aws-comanche-peak",
@@ -1323,7 +1349,9 @@
       "firmness": "signed",
       "firmnessSource": "https://www.sec.gov/Archives/edgar/data/1692819/000119312525221774/d43667d8k.htm",
       "reviewed": "2026-09-28",
-      "asset": "existing"
+      "asset": "existing",
+      "announced": "2025-09-29",
+      "announcedSource": "https://www.sec.gov/Archives/edgar/data/1692819/000119312525221774/d43667d8k.htm"
     },
     {
       "id": "google-cypress-steel-river",
@@ -1348,7 +1376,9 @@
       "firmness": "signed",
       "firmnessSource": "https://cypresscreekenergy.com/news/steel-river-groundbreaking/",
       "reviewed": "2026-09-28",
-      "asset": "new-build"
+      "asset": "new-build",
+      "announced": "2026-07-14",
+      "announcedSource": "https://cypresscreekenergy.com/news/steel-river-groundbreaking/"
     },
     {
       "id": "google-enlight-solstice",
@@ -1565,7 +1595,9 @@
       "firmness": "signed",
       "firmnessSource": "https://www.langleyholdings.com/news/2026/06/03/bergen-engines-signs-approximately-750mw-u-s-power-agreement-with-crusoe-for-ai-data-centers/",
       "reviewed": "2026-09-28",
-      "asset": "new-build"
+      "asset": "new-build",
+      "announced": "2026-06-03",
+      "announcedSource": "https://www.langleyholdings.com/news/2026/06/03/bergen-engines-signs-approximately-750mw-u-s-power-agreement-with-crusoe-for-ai-data-centers/"
     },
     {
       "id": "nrg-hyperscaler-ccgt",
@@ -1588,7 +1620,9 @@
       "firmness": "preliminary",
       "firmnessSource": "https://www.sec.gov/Archives/edgar/data/0001013871/000101387126000018/nrgq22026ex991.htm",
       "reviewed": "2026-09-28",
-      "asset": "new-build"
+      "asset": "new-build",
+      "announced": "2026-08-04",
+      "announcedSource": "https://www.sec.gov/Archives/edgar/data/0001013871/000101387126000018/nrgq22026ex991.htm"
     },
     {
       "id": "oracle-bloom-msa",
@@ -1613,7 +1647,9 @@
       "firmness": "signed",
       "firmnessSource": "https://www.bloomenergy.com/news/bloom-energy-and-oracle-expand-strategic-partnership-to-deploy-up-to-2-8-gw-to-accelerate-ai-infrastructure-build-out/",
       "reviewed": "2026-09-28",
-      "asset": "new-build"
+      "asset": "new-build",
+      "announced": "2026-04-13",
+      "announcedSource": "https://www.bloomenergy.com/news/bloom-energy-and-oracle-expand-strategic-partnership-to-deploy-up-to-2-8-gw-to-accelerate-ai-infrastructure-build-out/"
     },
     {
       "id": "amentum-srs-ai",
@@ -1656,7 +1692,9 @@
       "firmness": "signed",
       "firmnessSource": "https://www.investor.nexteraenergy.com/news-and-events/news-releases/2025/12-08-2025-123107665",
       "reviewed": "2026-09-28",
-      "asset": "new-build"
+      "asset": "new-build",
+      "announced": "2025-12-08",
+      "announcedSource": "https://www.investor.nexteraenergy.com/news-and-events/news-releases/2025/12-08-2025-123107665"
     },
     {
       "id": "google-clearway-portfolio",
@@ -1704,7 +1742,9 @@
       "firmness": "signed",
       "firmnessSource": "https://www.prnewswire.com/news-releases/invenergy-to-provide-meta-with-nearly-800-mw-supporting-data-center-operations-302492175.html",
       "reviewed": "2026-09-28",
-      "asset": "new-build"
+      "asset": "new-build",
+      "announced": "2025-06-26",
+      "announcedSource": "https://www.prnewswire.com/news-releases/invenergy-to-provide-meta-with-nearly-800-mw-supporting-data-center-operations-302492175.html"
     },
     {
       "id": "amazon-zanskar-geothermal",
@@ -1801,7 +1841,9 @@
       "firmness": "signed",
       "firmnessSource": "https://blog.google/company-news/outreach-and-initiatives/sustainability/first-carbon-capture-storage-project/",
       "reviewed": "2026-09-28",
-      "asset": "new-build"
+      "asset": "new-build",
+      "announced": "2025-10-23",
+      "announcedSource": "https://blog.google/company-news/outreach-and-initiatives/sustainability/first-carbon-capture-storage-project/"
     },
     {
       "id": "amazon-sunstone-acquisition",
@@ -1897,7 +1939,9 @@
       "firmness": "preliminary",
       "firmnessSource": "https://www.langleyholdings.com/news/2026/06/03/bergen-engines-signs-approximately-750mw-u-s-power-agreement-with-crusoe-for-ai-data-centers/",
       "reviewed": "2026-09-28",
-      "asset": "new-build"
+      "asset": "new-build",
+      "announced": "2026-06-03",
+      "announcedSource": "https://www.langleyholdings.com/news/2026/06/03/bergen-engines-signs-approximately-750mw-u-s-power-agreement-with-crusoe-for-ai-data-centers/"
     },
     {
       "id": "google-kairos-fleet",

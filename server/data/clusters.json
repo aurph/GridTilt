@@ -497,7 +497,9 @@
         "https://www.ajc.com/business/2025/11/microsofts-newest-ai-superfactory-opens-at-sprawling-fayetteville-campus/",
         "https://epoch.ai/data/ai-data-centers"
       ],
-      "notes": "Two-story GPU building, ~800k sq ft, ~300 MW, 140 kW/rack, GB200/GB300. Part of Microsoft's >2 GW multi-site Fairwater 'AI superfactory'. Previously also tracked as a second entry; merged Sept 2026 (Epoch cross-validation exposed the duplicate). Epoch measures 636 MW IT (859 MW facility) as of mid-2026 - well above both prior entries. Rated power calibrated to Epoch AI’s satellite-derived IT-power estimate (CC-BY, Sept 2026)."
+      "notes": "Two-story GPU building, ~800k sq ft, ~300 MW, 140 kW/rack, GB200/GB300. Part of Microsoft's >2 GW multi-site Fairwater 'AI superfactory'. Previously also tracked as a second entry; merged Sept 2026 (Epoch cross-validation exposed the duplicate). Epoch measures 636 MW IT (859 MW facility) as of mid-2026 - well above both prior entries. Rated power calibrated to Epoch AI’s satellite-derived IT-power estimate (CC-BY, Sept 2026).",
+      "announced": "2025-11-12",
+      "announcedSource": "https://news.microsoft.com/source/features/ai/from-wisconsin-to-atlanta-microsoft-connects-datacenters-to-build-its-first-ai-superfactory/"
     },
     {
       "id": "aws-rainier",
@@ -878,7 +880,9 @@
         "https://www.businesswire.com/news/home/20241119926895/en/Patmos-Announces-Nebius-as-First-Tenant-in-New-Kansas-City-Data-Center",
         "https://nebius.com/blog/posts/nebius-opens-first-availability-zone-in-us"
       ],
-      "notes": "Nebius's first US availability zone at the Patmos KC data center; 5 MW initial, up to 40 MW, ~35k GPUs (H200 then Blackwell). GPU count estimated."
+      "notes": "Nebius's first US availability zone at the Patmos KC data center; 5 MW initial, up to 40 MW, ~35k GPUs (H200 then Blackwell). GPU count estimated.",
+      "announced": "2024-11-19",
+      "announcedSource": "https://nebius.com/blog/posts/nebius-opens-first-availability-zone-in-us"
     },
     {
       "id": "nebius-independence",
@@ -1283,7 +1287,9 @@
         "https://www.datacenterdynamics.com/en/news/nscale-to-supply-microsoft-with-additional-100000-nvidia-gpus-in-us-and-europe/",
         "https://nscale.com/press-releases/nscale-microsoft-2025"
       ],
-      "notes": "Nscale's Cedarvale campus in Barstow TX (Ward County), leasing from Ionic Digital, supplying Microsoft. ~234 MW firm phase 1 scaling toward ~1.2 GW (Microsoft option), ~104,000 NVIDIA GB300; phased from Q3 2026. Full capacity is a scale-to target (estimated)."
+      "notes": "Nscale's Cedarvale campus in Barstow TX (Ward County), leasing from Ionic Digital, supplying Microsoft. ~234 MW firm phase 1 scaling toward ~1.2 GW (Microsoft option), ~104,000 NVIDIA GB300; phased from Q3 2026. Full capacity is a scale-to target (estimated).",
+      "announced": "2025-10-15",
+      "announcedSource": "https://nscale.com/press-releases/nscale-microsoft-2025"
     },
     {
       "id": "galaxy-helios",
@@ -1600,7 +1606,9 @@
         "https://www.datacentermap.com/usa/indiana/jeffersonville/meta-jeffersonville-data-center/",
         "https://epoch.ai/data/ai-data-centers"
       ],
-      "notes": "Meta's first Indiana campus, announced Jan 2024, ~$800M, ~700,000 sq ft on a 619-acre site in River Ridge Commerce Center near Louisville. Under construction with planned 2026 operations; expansions through 2029. Renewable-matched, LEED Gold. Meta did not disclose MW; third-party tracker (datacentermap) lists ~407 MW, so plannedPowerMW set to ~400 (estimated). First phases live per Epoch’s satellite-verified estimate; build continues. Rated power calibrated to Epoch AI’s satellite-derived IT-power estimate (CC-BY, Sept 2026)."
+      "notes": "Meta's first Indiana campus, announced Jan 2024, ~$800M, ~700,000 sq ft on a 619-acre site in River Ridge Commerce Center near Louisville. Under construction with planned 2026 operations; expansions through 2029. Renewable-matched, LEED Gold. Meta did not disclose MW; third-party tracker (datacentermap) lists ~407 MW, so plannedPowerMW set to ~400 (estimated). First phases live per Epoch’s satellite-verified estimate; build continues. Rated power calibrated to Epoch AI’s satellite-derived IT-power estimate (CC-BY, Sept 2026).",
+      "announced": "2024-01-25",
+      "announcedSource": "https://www.insideindianabusiness.com/articles/meta-to-build-800m-data-center-add-100-jobs-at-river-ridge"
     },
     {
       "id": "meta-kansas-city-mo",
@@ -1726,7 +1734,9 @@
         "https://governor.alabama.gov/newsroom/2024/05/governor-ivey-announces-meta-plans-to-build-800-million-next-generation-data-center-in-montgomery/",
         "https://epoch.ai/data/ai-data-centers"
       ],
-      "notes": "Announced May 2024 (~$800M), expanded Sept 2025 to bring total Montgomery investment to $1.5B and campus to 1.3M+ sq ft (two more buildings). AI-optimized, off I-65 across from the Hyundai plant. Expected online end of 2026 (estimated). plannedPowerMW is a GridTilt estimate; MW not disclosed. First phases live per Epoch’s satellite-verified estimate; build continues. Rated power calibrated to Epoch AI’s satellite-derived IT-power estimate (CC-BY, Sept 2026)."
+      "notes": "Announced May 2024 (~$800M), expanded Sept 2025 to bring total Montgomery investment to $1.5B and campus to 1.3M+ sq ft (two more buildings). AI-optimized, off I-65 across from the Hyundai plant. Expected online end of 2026 (estimated). plannedPowerMW is a GridTilt estimate; MW not disclosed. First phases live per Epoch’s satellite-verified estimate; build continues. Rated power calibrated to Epoch AI’s satellite-derived IT-power estimate (CC-BY, Sept 2026).",
+      "announced": "2024-05-02",
+      "announcedSource": "https://governor.alabama.gov/newsroom/2024/05/governor-ivey-announces-meta-plans-to-build-800-million-next-generation-data-center-in-montgomery/"
     },
     {
       "id": "applied-digital-adair-county-ia",
@@ -3728,7 +3738,9 @@
         "https://datacenters.atmeta.com/us-locations/",
         "https://epoch.ai/data/ai-data-centers"
       ],
-      "notes": "AI-optimized data center at UMore Park (former WWII gunpowder site), Dakota County. $800M, 715,000 sq ft on 280 acres; Meta's 23rd global data center. Officially stated to require ~700 MW of power; 100% renewable via Xcel Energy. Targeted open 2026. First phases live per Epoch’s satellite-verified estimate; build continues. Rated power calibrated to Epoch AI’s satellite-derived IT-power estimate (CC-BY, Sept 2026)."
+      "notes": "AI-optimized data center at UMore Park (former WWII gunpowder site), Dakota County. $800M, 715,000 sq ft on 280 acres; Meta's 23rd global data center. Officially stated to require ~700 MW of power; 100% renewable via Xcel Energy. Targeted open 2026. First phases live per Epoch’s satellite-verified estimate; build continues. Rated power calibrated to Epoch AI’s satellite-derived IT-power estimate (CC-BY, Sept 2026).",
+      "announced": "2024-03-14",
+      "announcedSource": "https://mn.gov/deed/newscenter/press-releases/?id=1045-614051"
     },
     {
       "id": "meta-cheyenne-wy",
@@ -3886,7 +3898,9 @@
         "https://www.datacenterdynamics.com/en/news/ai-cloud-firm-lambda-targets-data-center-deployment-in-kansas-city-missouri/",
         "https://ded.mo.gov/press-room/lambda-establish-ai-factory-facility-kansas-city"
       ],
-      "notes": "Former Bank of America DC campus at 11155 N. Airworld Drive, Kansas City (Platte County/Northland). 259,110 sq ft across two buildings, 16.9 acres. Launching early 2026 at 24 MW with >10,000 NVIDIA Blackwell Ultra GPUs (disclosed count), scalable to 100+ MW and double the GPUs. gpuCount = announced initial figure; plannedPowerMW = announced max scale."
+      "notes": "Former Bank of America DC campus at 11155 N. Airworld Drive, Kansas City (Platte County/Northland). 259,110 sq ft across two buildings, 16.9 acres. Launching early 2026 at 24 MW with >10,000 NVIDIA Blackwell Ultra GPUs (disclosed count), scalable to 100+ MW and double the GPUs. gpuCount = announced initial figure; plannedPowerMW = announced max scale.",
+      "announced": "2025-10-28",
+      "announcedSource": "https://ded.mo.gov/press-room/lambda-establish-ai-factory-facility-kansas-city"
     },
     {
       "id": "lambda-prime-lax01-vernon-ca",
@@ -6590,7 +6604,9 @@
         "https://siliconangle.com/2025/05/14/tensorwave-raises-100m-build-8000-amd-gpu-ai-training-cluster-data-center/",
         "https://tecfusions.com/tensorwave-expands-with-tecfusions-splitting-20-mw-across-arizona-and-pennsylvania-locations/"
       ],
-      "notes": "Single-tenant TECfusions facility ~6 miles from downtown Tucson; described as North America's largest AMD-based AI deployment. 8,192 AMD Instinct MI325X GPUs on an initial 14.4 MW phase (delivered 2025), plus a 10 MW expansion announced Jan 2026 (~24 MW total). Coords approximate the SE-Tucson TECfusions location."
+      "notes": "Single-tenant TECfusions facility ~6 miles from downtown Tucson; described as North America's largest AMD-based AI deployment. 8,192 AMD Instinct MI325X GPUs on an initial 14.4 MW phase (delivered 2025), plus a 10 MW expansion announced Jan 2026 (~24 MW total). Coords approximate the SE-Tucson TECfusions location.",
+      "announced": "2025-05-14",
+      "announcedSource": "https://siliconangle.com/2025/05/14/tensorwave-raises-100m-build-8000-amd-gpu-ai-training-cluster-data-center/"
     },
     {
       "id": "tensorwave-new-kensington-pa",
