@@ -42,6 +42,7 @@ import {
   summarizeGpuHistory,
 } from "./gpu-history";
 import { fetchLivePrices, type GpuSweepSummary } from "./gpu-live";
+import { readThrough } from "./swr";
 import { getUraniumCorrelation } from "./uranium-correlation";
 import { footerBlockers, renderWeeklyEmail, renderWeeklyText, weeklyDateLabel, type NewsletterFooter } from "./weekly-digest";
 import { renderEditorialEmail, renderEditorialText } from "./editorial-issue";
@@ -341,14 +342,24 @@ const STACK_CACHE_TTL = 10 * 60 * 1000;
 // Fetch live quote + real historical sparkline for every tracked ticker.
 // Falls through to STATIC_MARKET_DATA on per-ticker Yahoo failure, with
 // sparkline left empty (UI shows nothing rather than fabricated data).
+// Served stale-while-revalidate (server/swr.ts): an expired timeframe returns
+// at once and refreshes once in the background. A refresh in which every
+// ticker fell back to static data (Yahoo down) does not replace live quotes.
 async function getCachedStockData(timeframe: string): Promise<Record<string, any>> {
-  const cacheKey = timeframe;
-  const now = Date.now();
-  const cached = stackCache[cacheKey];
-  if (cached && now - cached.timestamp < STACK_CACHE_TTL) {
-    return cached.data;
-  }
+  const c = stackCache[timeframe];
+  return readThrough({
+    key: `stack:${timeframe}`,
+    cached: c ? { value: c.data, at: c.timestamp } : null,
+    ttlMs: STACK_CACHE_TTL,
+    load: () => loadStockData(timeframe),
+    save: (data) => {
+      stackCache[timeframe] = { data, timestamp: Date.now() };
+    },
+    keep: (next, prev) => !prev || Object.values(next).some((row: any) => row && row.stale !== true),
+  });
+}
 
+async function loadStockData(timeframe: string): Promise<Record<string, any>> {
   const stockData: Record<string, any> = {};
   try {
     const YahooFinanceClass = (await import("yahoo-finance2")).default;
@@ -439,7 +450,6 @@ async function getCachedStockData(timeframe: string): Promise<Record<string, any
     }
   }
 
-  stackCache[cacheKey] = { data: stockData, timestamp: now };
   return stockData;
 }
 
@@ -2278,12 +2288,23 @@ export async function registerRoutes(
     webhookSecret: () => process.env.RESEND_WEBHOOK_SECRET,
   });
 
-  async function refreshEarningsCache(): Promise<any[]> {
-    const now = Date.now();
-    if (earningsCache && (now - earningsCache.timestamp) < EARNINGS_CACHE_TTL) {
-      return earningsCache.items;
-    }
+  // Stale-while-revalidate (server/swr.ts); an empty Yahoo answer never
+  // replaces loaded dates.
+  function refreshEarningsCache(): Promise<any[]> {
+    return readThrough({
+      key: "earnings",
+      cached: earningsCache ? { value: earningsCache.items, at: earningsCache.timestamp } : null,
+      ttlMs: EARNINGS_CACHE_TTL,
+      load: loadEarningsDates,
+      save: (items) => {
+        earningsCache = { items, timestamp: Date.now() };
+      },
+      keep: (next) => next.length > 0,
+    });
+  }
 
+  async function loadEarningsDates(): Promise<any[]> {
+    const now = Date.now();
     const results: any[] = [];
     let idCounter = 1000;
 
@@ -2376,13 +2397,8 @@ export async function registerRoutes(
       return true;
     });
 
-    if (deduped.length > 0) {
-      earningsCache = { items: deduped, timestamp: now };
-    }
     return deduped;
   }
-
-  refreshEarningsCache().catch(() => {});
 
   // Earnings calendar endpoint - upcoming earnings dates for all stack tickers (4h cache)
   app.get("/api/earnings-calendar", async (_req, res) => {
@@ -2411,13 +2427,22 @@ export async function registerRoutes(
   });
 
   // Live news endpoint - priority: 1) NewsData.io  2) RSS feeds  3) empty array
-  app.get("/api/news", async (_req, res) => {
-    try {
-      const now = Date.now();
-      if (newsCache && (now - newsCache.timestamp) < NEWS_CACHE_TTL) {
-        return res.json(newsCache.items);
-      }
+  // Stale-while-revalidate (server/swr.ts); an empty fetch never replaces
+  // loaded headlines.
+  function getNews(): Promise<NewsItem[]> {
+    return readThrough({
+      key: "news",
+      cached: newsCache ? { value: newsCache.items, at: newsCache.timestamp } : null,
+      ttlMs: NEWS_CACHE_TTL,
+      load: loadNews,
+      save: (items) => {
+        newsCache = { items, timestamp: Date.now() };
+      },
+      keep: (next) => next.length > 0,
+    });
+  }
 
+  async function loadNews(): Promise<NewsItem[]> {
       // Priority 1: NewsData.io (if key configured)
       const apiKey = process.env.NEWSDATA_API_KEY;
       if (apiKey) {
@@ -2437,11 +2462,10 @@ export async function registerRoutes(
                 publishedAt: a.pubDate ?? new Date().toISOString(),
               }));
             if (items.length > 0) {
-              newsCache = { items, timestamp: now };
               // News-driven dataset writes (backlog + market-constant scanners,
               // LBNL check) run only from authenticated /api/admin/scan-news-now.
               // A public GET must never persist state (SEC-4).
-              return res.json(items);
+              return items;
             }
           }
         } catch (_e) {
@@ -2453,15 +2477,19 @@ export async function registerRoutes(
       try {
         const rssItems = await fetchRSSNews();
         if (rssItems.length >= 3) {
-          newsCache = { items: rssItems, timestamp: now };
           // Scanners run only via authenticated /api/admin/scan-news-now (SEC-4).
-          return res.json(rssItems);
+          return rssItems;
         }
       } catch (_e) {
         // No more sources available
       }
+      return [];
+  }
 
-      res.json([]);
+  // Live news endpoint - priority: 1) NewsData.io  2) RSS feeds  3) empty array
+  app.get("/api/news", async (_req, res) => {
+    try {
+      res.json(await getNews());
     } catch (error) {
       console.error("News error:", error);
       res.json([]);
@@ -2792,6 +2820,20 @@ export async function registerRoutes(
   });
 
   startDatacenterIngesterSchedule();
+
+  // Warm the quote, earnings and news caches at boot so the first visitors
+  // after a deploy or cold start do not wait on ~5 s of upstream calls. One
+  // after another, so the Yahoo fan-outs do not overlap. Off in tests and with
+  // DISABLE_CACHE_WARM=1.
+  if (process.env.NODE_ENV !== "test" && process.env.DISABLE_CACHE_WARM !== "1") {
+    void (async () => {
+      const t0 = Date.now();
+      await getCachedStockData("1D").catch(() => {});
+      await refreshEarningsCache().catch(() => {});
+      await getNews().catch(() => {});
+      console.log(`[warm] quote, earnings and news caches ready in ${((Date.now() - t0) / 1000).toFixed(1)}s`);
+    })();
+  }
 
   app.get("/api/catalysts", (_req, res) => {
     try {
