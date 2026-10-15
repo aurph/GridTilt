@@ -9,7 +9,8 @@
     "start": "NODE_ENV=production node dist/index.cjs",
     "check": "tsc",
     "test": "TZ=America/New_York TSX_TSCONFIG_PATH=tsconfig.test.json node --import tsx --test server/__tests__/*.test.ts client/src/lib/__tests__/*.test.ts client/src/lib/__tests__/*.test.tsx",
-    "backtest:indices": "tsx scripts/backtest-indices.ts"
+    "backtest:indices": "tsx scripts/backtest-indices.ts",
+    "smoke": "tsx scripts/smoke.ts"
   },
   "dependencies": {
     "@radix-ui/react-collapsible": "^1.1.4",
