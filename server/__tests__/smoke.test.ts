@@ -52,7 +52,11 @@ test("daysBetween counts calendar days and rejects junk", () => {
 test("API checks pass on this build: deals, clusters, GPU switch, robots, sitemap, JSON 404", async () => {
   const { base, close } = await start();
   try {
-    const apiChecks = CHECKS.filter((c) => c.path.startsWith("/api/") || c.path.endsWith(".txt") || c.path.endsWith(".xml"));
+    // Only checks served from local data. /api/news would fetch RSS through
+    // rss-parser, which bypasses the fetch stub and holds the test process
+    // open on a CI runner until its sockets time out.
+    const LOCAL = ["power deals", "clusters", "GPU price sweep stays off without permission", "Maryland state data", "robots.txt", "sitemap.xml", "unknown API path is a JSON 404", "frontier models", "retail electricity rates (EIA)", "admin freshness report"];
+    const apiChecks = CHECKS.filter((c) => LOCAL.includes(c.name));
     const results = await runSmoke({ base, today: "2026-10-15" }, apiChecks);
     const byName = new Map(results.map((r) => [r.name, r]));
     for (const name of ["power deals", "clusters", "GPU price sweep stays off without permission", "Maryland state data", "robots.txt", "sitemap.xml", "unknown API path is a JSON 404", "frontier models"]) {
