@@ -156,11 +156,15 @@ Schedulers (no node-cron anywhere):
 
 server/data custody (the fragility map):
 - Announcement dates (deal rows in interconnection-queue.json, rows in clusters.json): optional
-  `announced` (YYYY-MM-DD) + `announcedSource`, hand-entered from a source the row already cites
-  (the announcing party's dated release or filing, or a source that states the day). Never a
-  year, month, URL-implied, expansion, earnings-recap or inferred date. 30 rows carry one
-  (2026-10-14, the top deals by MW and clusters by GPU count); timeline.test.ts fails on any
-  row whose date is not a real day or whose source the row does not cite.
+  `announced` (YYYY-MM-DD) + `announcedSource`, hand-entered from a source the row cites (the
+  announcing party's dated release or filing, or a source that states the day). A primary
+  release found for the purpose is added to the row's `sources` first. Never a year, month,
+  URL-implied, expansion, earnings-recap of an earlier deal, groundbreaking after an earlier
+  announcement, regulatory filing or inferred date. 91 rows carry one (52 deals, 39 clusters,
+  2026-10-15); timeline.test.ts fails on any row whose date is not a real day or whose source
+  the row does not cite. Deal titles: PPAs name buyer and seller; other rows read
+  "<sponsor> announced <project>". Aggregate, regulatory and not-ai-offtake rows never become
+  deal events.
 - Hand-curated, code never writes: catalysts.json, clusters.json, supply-chain-stages.json,
   frontier-models.json, dataset-reviews.json (one entry per completed review; the freshness
   report's claim-last-reviewed date), change-log.json (one entry per shipped correction, added in the same
