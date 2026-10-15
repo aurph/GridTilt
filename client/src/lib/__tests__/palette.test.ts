@@ -94,7 +94,7 @@ describe("stateEntries", () => {
 describe("page entries", () => {
   it("go straight to final routes, never to a redirect alias", () => {
     // Redirects in App.tsx: each of these only forwards somewhere else.
-    const aliases = ["/power-deals", "/queue", "/supply-chain", "/brief", "/trade", "/portfolio", "/gpu-economics"];
+    const aliases = ["/power-deals", "/queue", "/brief", "/trade", "/portfolio", "/gpu-economics", "/my-grid"];
     for (const e of PAGE_ENTRIES) {
       const path = e.href.split("?")[0];
       assert.ok(!aliases.includes(path), `${e.label} points at the alias ${e.href}`);

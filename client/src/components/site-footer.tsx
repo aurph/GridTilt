@@ -8,6 +8,7 @@ import { Link } from "wouter";
 const SECTIONS: [string, string][] = [
   ["Overview", "/overview"],
   ["Equities", "/stack"],
+  ["Supply Chain", "/supply-chain"],
   ["Power", "/power-map"],
   ["Compute", "/compute-frontier"],
   ["GPU Prices", "/neocloud-intel"],
