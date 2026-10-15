@@ -36,6 +36,7 @@ const StockPage = lazy(() => import("@/pages/StockPage"));
 const SectorPage = lazy(() => import("@/pages/SectorPage"));
 const RegionPage = lazy(() => import("@/pages/RegionPage"));
 const OperatorPage = lazy(() => import("@/pages/OperatorPage"));
+const Timeline = lazy(() => import("@/pages/timeline"));
 const BlogIndex = lazy(() => import("@/pages/BlogIndex"));
 const BlogPost = lazy(() => import("@/pages/BlogPost"));
 const Subscribe = lazy(() => import("@/pages/Subscribe"));
@@ -55,6 +56,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/neocloud-intel": "GPU Prices",
   "/analyze": "Analyze",
   "/catalysts": "Catalyst Tracker",
+  "/timeline": "Timeline",
   "/blog": "Research",
   "/subscribe": "Subscribe",
 };
@@ -148,6 +150,7 @@ function Router() {
       <Route path="/trade">{() => <Redirect to="/analyze?tab=scenario" replace />}</Route>
       <Route path="/portfolio">{() => <Redirect to="/analyze?tab=portfolio" replace />}</Route>
       <Route path="/catalysts" component={CatalystTracker} />
+      <Route path="/timeline" component={Timeline} />
       <Route path="/queue">{() => <Redirect to="/power-map?tab=queue" replace />}</Route>
       <Route path="/stock/:ticker" component={StockPage} />
       <Route path="/sector/:slug" component={SectorPage} />

@@ -30,6 +30,17 @@ the citizen-investor researching the AI power economy, not fund analysts or day 
 | The Buildout Brief | /brief | G+B |
 | GPU Economics | /gpu-economics | G+E |
 
+Timeline (/timeline, top nav, 2026-10): one newest-first feed of dated events built per request
+by server/timeline.ts (/api/timeline) from stored files only; filters live in the query string
+(client/src/lib/timeline-filters.ts). An event exists only where its record carries a real
+YYYY-MM-DD: deal and cluster rows with a sourced `announced` (see section 4), frontier model
+release dates, research post dates, state-page documents and next dates, token price points,
+change-log corrections, and Yahoo earnings dates Yahoo marks confirmed (estimates are listed
+apart, never as events). GPU price milestones read the RunPod/Vast history, so they stay off
+unless GPU_LIVE_SWEEP_ENABLED records written permission. Titles are templates; never generate
+them. Reverse links: deals tab ?deal=<id>, cluster pages and the catalyst detail link to
+/timeline?record=<kind>:<id>.
+
 Off-nav: "/" (marketing landing, bare layout, lazy Home.tsx), /subscribe, /admin/datacenters,
 /admin/social, /stock/:ticker, /sector/:slug, /region/:slug, /operator/:slug, /blog/:slug,
 /state/:slug (published states only, from server/data/state-pages.json: maryland; any other
@@ -144,6 +155,16 @@ Schedulers (no node-cron anywhere):
   after 10 AM ET only); /api/gpu-prices/metrics appends gpu-price-history.json.
 
 server/data custody (the fragility map):
+- Announcement dates (deal rows in interconnection-queue.json, rows in clusters.json): optional
+  `announced` (YYYY-MM-DD) + `announcedSource`, hand-entered from a source the row cites (the
+  announcing party's dated release or filing, or a source that states the day). A primary
+  release found for the purpose is added to the row's `sources` first. Never a year, month,
+  URL-implied, expansion, earnings-recap of an earlier deal, groundbreaking after an earlier
+  announcement, regulatory filing or inferred date. 91 rows carry one (52 deals, 39 clusters,
+  2026-10-15); timeline.test.ts fails on any row whose date is not a real day or whose source
+  the row does not cite. Deal titles: PPAs name buyer and seller; other rows read
+  "<sponsor> announced <project>". Aggregate, regulatory and not-ai-offtake rows never become
+  deal events.
 - Hand-curated, code never writes: catalysts.json, clusters.json, supply-chain-stages.json,
   frontier-models.json, dataset-reviews.json (one entry per completed review; the freshness
   report's claim-last-reviewed date), change-log.json (one entry per shipped correction, added in the same

@@ -16,6 +16,7 @@ const SECTIONS: { label: string; href: string; match: (p: string) => boolean }[]
   { label: "GPU Prices", href: "/neocloud-intel", match: (p) => p === "/neocloud-intel" || p === "/gpu-economics" },
   { label: "Analyze", href: "/analyze", match: (p) => p === "/analyze" || p === "/trade" || p === "/portfolio" },
   { label: "Catalysts", href: "/catalysts", match: (p) => p === "/catalysts" },
+  { label: "Timeline", href: "/timeline", match: (p) => p === "/timeline" },
   { label: "Research", href: "/blog", match: (p) => p.startsWith("/blog") || p === "/brief" },
 ];
 

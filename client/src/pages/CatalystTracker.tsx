@@ -28,6 +28,8 @@ interface EarningsItem {
   quarter: string;
   stage: string;
   stageColor: string;
+  /** Yahoo's flag: only confirmed dates are on the timeline. */
+  dateStatus?: "confirmed" | "estimated";
 }
 
 interface CatalystItem {
@@ -250,6 +252,18 @@ function DayDetailCard({ item }: { item: MergedItem }) {
         >
           View {e.ticker} <ArrowRight style={{ width: 12, height: 12 }} />
         </button>
+        {e.dateStatus === "confirmed" ? (
+          <button
+            className="flex items-center gap-1 mt-1 text-xs transition-colors"
+            style={{ color: INK.muted }}
+            onClick={() => navigate(`/timeline?record=ticker:${e.ticker}`)}
+            data-testid={`timeline-link-${e.ticker}`}
+          >
+            View on timeline <ArrowRight style={{ width: 12, height: 12 }} />
+          </button>
+        ) : (
+          <div className="mt-1 text-xs" style={{ color: INK.faint }}>Yahoo marks this date as an estimate.</div>
+        )}
       </div>
     );
   }

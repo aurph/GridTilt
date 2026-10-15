@@ -39,6 +39,9 @@ interface Cluster {
   /** YYYY-MM-DD the record was reviewed field by field; absent when it has not been. */
   reviewed?: string;
   evidence?: EvidenceEntry[];
+  /** YYYY-MM-DD first announced, read from announcedSource (a cited source). Clusters with one are on the timeline. */
+  announced?: string;
+  announcedSource?: string;
 }
 
 const STATUS_COLOR: Record<string, string> = STATUS_COLORS;
@@ -116,6 +119,17 @@ export default function ComputeFrontierDetail() {
               <Fact label="Energy source">{cluster.energySource}</Fact>
               <Fact label="Workload">{cluster.workload}</Fact>
               <Fact label="Online">{cluster.onlineDate}<Est on={cluster.estimated.includes("onlineDate")} /></Fact>
+              {cluster.announced && cluster.announcedSource && (
+                <Fact label="Announced">
+                  <a href={cluster.announcedSource} target="_blank" rel="noopener noreferrer" className="hover:text-brand">
+                    {cluster.announced}
+                  </a>
+                  {" · "}
+                  <Link href={`/timeline?record=cluster:${cluster.id}`} className="text-brand hover:text-brand-2" data-testid="cfd-timeline">
+                    View on timeline
+                  </Link>
+                </Fact>
+              )}
             </div>
 
             {cluster.notes && (

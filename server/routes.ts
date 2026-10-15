@@ -42,6 +42,7 @@ import {
   summarizeGpuHistory,
 } from "./gpu-history";
 import { fetchLivePrices, type GpuSweepSummary } from "./gpu-live";
+import { buildTimeline, earningsDateStatus, type EarningsDate } from "./timeline";
 import { getUraniumCorrelation } from "./uranium-correlation";
 import { footerBlockers, renderWeeklyEmail, renderWeeklyText, weeklyDateLabel, type NewsletterFooter } from "./weekly-digest";
 import { renderEditorialEmail, renderEditorialText } from "./editorial-issue";
@@ -2355,9 +2356,14 @@ export async function registerRoutes(
         const dateStr = d.toISOString().slice(0, 10);
         const staticData = STATIC_MARKET_DATA[ticker];
         const name = staticData?.name ?? ticker;
+        const calendarDays = earningsDateArr
+          .map((x: any) => toMs(x))
+          .filter((t: number) => t > 0)
+          .map((t: number) => new Date(t).toISOString().slice(0, 10));
         results.push({
           id: idCounter++,
           date: dateStr,
+          dateStatus: earningsDateStatus(dateStr, calendarDays, summary?.calendarEvents?.earnings?.isEarningsDateEstimate),
           title: `${ticker}: ${name} Earnings`,
           category: "Earnings",
           thesisImpact: `Watch for AI/datacenter demand commentary, power consumption guidance, and forward revenue outlook from ${name}.`,
@@ -2555,7 +2561,7 @@ export async function registerRoutes(
     if (!earningsCache?.items) return [];
 
     const seen = new Set<string>();
-    const allEntries: Array<{ ticker: string; company: string; date: string; time: string; quarter: string }> = [];
+    const allEntries: Array<{ ticker: string; company: string; date: string; time: string; quarter: string; dateStatus: "confirmed" | "estimated" }> = [];
 
     for (const item of earningsCache.items) {
       const ticker = item.tickers?.[0];
@@ -2569,6 +2575,7 @@ export async function registerRoutes(
         date: item.date,
         time: meta?.timeHint ?? '',
         quarter: '',  // intentionally blank; we don't want to claim a quarter we can't verify
+        dateStatus: item.dateStatus === "confirmed" ? "confirmed" : "estimated",
       });
       seen.add(ticker);
     }
@@ -2605,6 +2612,7 @@ export async function registerRoutes(
       quarter: e.quarter,
       stage: e.stage,
       stageColor: e.stageColor,
+      dateStatus: e.dateStatus,
     }));
 
     const manualCatalysts = loadManualCatalysts();
@@ -2627,6 +2635,45 @@ export async function registerRoutes(
     );
 
     res.json({ items: merged });
+  });
+
+  // ─── Timeline: dated events across the datasets (server/timeline.ts) ─────
+  // Reads stored files and the earnings cache only. GPU price milestones are
+  // built from recorded RunPod/Vast observations, so they appear only while
+  // GPU_LIVE_SWEEP_ENABLED records that written permission is on file. Nothing
+  // here calls a GPU provider. Built per request: every source is a small JSON
+  // file (see docs in the module), so there is no cache to invalidate.
+  app.get("/api/timeline", async (_req, res) => {
+    try {
+      await refreshEarningsCache().catch(() => {});
+      const earnings: EarningsDate[] = getEarningsData().map((e: any) => ({
+        ticker: e.ticker,
+        company: e.company,
+        date: e.date,
+        dateStatus: e.dateStatus,
+      }));
+      const articles = JSON.parse(readFileSync(join(process.cwd(), "content", "blog", "articles.json"), "utf-8"));
+      const events = buildTimeline({
+        deals: readDataJson("interconnection-queue.json").projects ?? [],
+        clusters: readDataJson("clusters.json").clusters ?? [],
+        earnings,
+        gpuHistory: readGpuHistory(),
+        gpuDataPermitted: process.env.GPU_LIVE_SWEEP_ENABLED === "true",
+        frontierModels: readDataJson("frontier-models.json"),
+        inferencePrices: readDataJson("inference-prices.json"),
+        articles: Array.isArray(articles) ? articles : [],
+        statePages: readDataJson("state-pages.json"),
+        changeLog: readDataJson("change-log.json"),
+      });
+      const estimatedEarnings = earnings
+        .filter((e) => e.dateStatus !== "confirmed")
+        .map((e) => ({ ticker: e.ticker, company: e.company, date: e.date }))
+        .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : a.ticker.localeCompare(b.ticker)));
+      res.json({ today: easternDate(new Date()), events, estimatedEarnings });
+    } catch (err) {
+      console.error("Timeline error:", err);
+      res.status(500).json({ error: "Failed to build timeline" });
+    }
   });
 
   // ─── Datacenters: JSON-backed registry of hyperscale sites ──────────────
