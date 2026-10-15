@@ -18,6 +18,7 @@
 // regenerable from public prices via `npm run backtest:indices`.
 
 import { readFileSync, writeFileSync } from "fs";
+import { notifyDocWritten } from "./durable-docs";
 import { join } from "path";
 import { NPI_WEIGHTS } from "./indices";
 
@@ -100,6 +101,7 @@ export function recordDailyIndexValues(k: RecorderInput): void {
     days.sort((a, b) => (a.date < b.date ? -1 : 1));
     raw.days = days;
     writeFileSync(FILE, JSON.stringify(raw, null, 2) + "\n");
+    notifyDocWritten("index-history.json");
     lastRecordedDate = today;
   } catch {
     // History logging must never break the request path.
