@@ -105,17 +105,36 @@ export interface DatedDeal extends DealProject {
   announcedSource?: string;
 }
 
+/**
+ * A party's name as it reads in a title: the curated row keeps notes in
+ * parentheses ("Avangrid (Iberdrola)", "Amentum (NNSA phased lease)"); titles
+ * drop them. The full string stays on the record.
+ */
+export function partyName(raw: string): string {
+  return raw.replace(/\s*\([^)]*\)/g, "").replace(/\s{2,}/g, " ").trim() || raw;
+}
+
 export function buildDealEvents(projects: DatedDeal[]): TimelineEvent[] {
   const out: TimelineEvent[] = [];
   for (const p of projects) {
+    // Company-wide rollups, rulings and power not sold to an AI buyer are not
+    // AI power deals; the deal templates would misdescribe them.
+    if (p.category === "aggregate" || p.category === "regulatory" || p.firmness === "not-ai-offtake") continue;
     const a = sourcedAnnouncement(p);
     if (!a) continue;
     const agreement = isPowerAgreement(p);
     const buyer = p.offtaker ? normalizeOfftaker(p.offtaker) : null;
     const undisclosed = !buyer || /^(undisclosed|multiple)/i.test(buyer);
-    const title = undisclosed
-      ? `${p.sponsor} announced a power deal with an undisclosed buyer`
-      : `${buyer} announced a power deal with ${p.sponsor}`;
+    // A purchase agreement names both sides. Leases, campuses, acquisitions and
+    // generation projects are named by their sponsor and project instead.
+    const ppa = p.category === "ppa";
+    const sponsor = partyName(p.sponsor);
+    const title = !ppa
+      ? `${sponsor} announced ${p.projectName}`
+      : undisclosed
+        ? `${sponsor} announced a power deal with an undisclosed buyer`
+        : `${partyName(buyer)} announced a power deal with ${sponsor}`;
+    const description = ppa ? p.projectName : p.offtaker ?? undefined;
     const mw = typeof p.capacityMW === "number" && p.capacityMW > 0 ? p.capacityMW : null;
     out.push({
       id: `power_deal:${p.id}`,
@@ -123,7 +142,7 @@ export function buildDealEvents(projects: DatedDeal[]): TimelineEvent[] {
       dateBasis: "announced",
       eventType: "power_deal",
       title,
-      description: p.projectName,
+      ...(description ? { description } : {}),
       ...(mw ? { magnitude: { unit: "MW" as const, value: mw, ...(p.upTo ? { qualifier: "up to" as const } : {}) } } : {}),
       relatedTickers: tickersFor(p.sponsor, p.offtaker),
       sourceTool: "/power-map",
@@ -170,7 +189,7 @@ export function buildClusterEvents(clusters: ClusterRecord[]): TimelineEvent[] {
       date: a.date,
       dateBasis: "announced",
       eventType: "cluster_announced",
-      title: `${c.operator} announced ${c.name}`,
+      title: `${partyName(c.operator)} announced ${c.name}`,
       ...(magnitude ? { magnitude } : {}),
       relatedTickers: tickersFor(c.operator, c.name),
       sourceTool: "/compute-frontier",
