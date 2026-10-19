@@ -1,47 +1,194 @@
 {
-  "rawMaterials": {
-    "name": "Raw Materials",
-    "tagline": "Where it comes from",
-    "color": "#CD7F32",
-    "bottleneckStatus": "Tightening",
-    "bottleneckDetail": "Copper supply is tight against grid and data center demand, and new mines take years to bring online. Uranium mine output remains short of reactor demand. Electrical steel lead times at 8-12 months. Demand from AI data centers could require 475,000 additional tons of copper annually by 2028.",
-    "keyMetric": "Copper: +475k tons/yr by 2028",
-    "tickers": ["CCJ", "UEC", "NXE", "DNN", "UUUU", "LEU", "FCX", "SCCO", "TECK", "HBM", "NUE", "STLD", "CLF", "X", "MP", "USAR", "BHP", "RIO", "VALE", "AR", "EQT", "RRC", "SWN", "LNG", "COPX"]
-  },
-  "generation": {
-    "name": "Generation",
-    "tagline": "How it's made",
-    "color": "#F07800",
-    "bottleneckStatus": "Tightening",
-    "bottleneckDetail": "GE Vernova gas turbine backlog exceeds 3 years. Nuclear fleet operating near capacity limits. Constellation, Vistra, and Talen are signing long-term PPAs with hyperscalers at premium rates. SMR deployment timeline remains 2028-2030 at earliest.",
-    "keyMetric": "GEV backlog: $100B+",
-    "tickers": ["CEG", "VST", "TLN", "NRG", "GEV", "SIEGY", "BKR", "SMR", "OKLO", "BWXT", "NEE", "AES", "FSLR", "ENPH", "SEDG", "SO", "DUK", "AEP"]
-  },
-  "transmission": {
-    "name": "Transmission",
-    "tagline": "How it moves",
-    "color": "#F0A500",
-    "bottleneckStatus": "Bottlenecked",
-    "bottleneckDetail": "Large power transformer lead times at 18-36 months. US domestic production approximately 60 units/year against estimated demand of 200-500 over 5 years. This is the tightest bottleneck in the chain. PJM interconnection queue exceeds 250 GW of pending projects with 4+ year wait times.",
-    "keyMetric": "LPT lead time: 18-36 months",
-    "tickers": ["ETN", "ABB", "PWR", "EMR", "HUBB", "AYI", "WIRE", "AOS", "GNRC", "IDA", "NVT"]
-  },
-  "distribution": {
-    "name": "Distribution",
-    "tagline": "How it connects",
-    "color": "#B8860B",
-    "bottleneckStatus": "Tightening",
-    "bottleneckDetail": "Data center switchgear and UPS systems face 12-18 month lead times. Liquid cooling demand growing 40%+ annually as GPU power density increases. Eaton and Vertiv order backlogs at record levels. Site development constrained by permitting delays in key markets.",
-    "keyMetric": "Eaton backlog: 2-3 years",
-    "tickers": ["VRT", "CARR", "JCI", "ETN", "ABB", "EME", "MTZ", "STRL", "FLR", "J", "ACM", "PRIM"]
-  },
-  "endUse": {
-    "name": "End Use",
-    "tagline": "Where it goes",
-    "color": "#F0A500",
-    "bottleneckStatus": "Flowing",
-    "bottleneckDetail": "48 tracked facilities. 28 operational, 15 under construction, 5 announced. Total tracked capacity: 20.7 GW. Hyperscaler capex commitments exceed $200B over the next 3 years. GPU compute demand continues to outpace supply.",
-    "keyMetric": "48 facilities / 20.7 GW",
-    "tickers": ["EQIX", "DLR", "AMT", "NVDA", "AMD", "AVGO", "TSM", "MU", "INTC", "SMCI", "META", "AMZN", "MSFT", "GOOGL", "AAPL", "IREN", "CLSK", "MARA", "DELL", "ANET", "MRVL"]
+  "reviewed": "2026-10-18",
+  "method": "Each status is GridTilt's assessment of whether supply in that stage is keeping up with data center demand, judged only from the figures cited under it. Bottlenecked: a key piece of equipment takes two years or more to deliver. Tightening: lead times run past six months, or order backlogs grow more than 25% a year. No status: the cited evidence shows neither. End use is the demand side, so it shows live counts instead. Reviewed every 90 days.",
+  "stages": {
+    "rawMaterials": {
+      "name": "Raw Materials",
+      "tagline": "Where it comes from",
+      "status": null,
+      "evidence": [
+        {
+          "statement": "Cleveland-Cliffs is the only US producer of the grain-oriented electrical steel used in transformer cores.",
+          "url": "https://www.clevelandcliffs.com/news/news-releases/detail/644/cleveland-cliffs-announces-its-new-state-of-the-art",
+          "publisher": "Cleveland-Cliffs",
+          "asOf": "2024-07-22"
+        },
+        {
+          "statement": "China accounts for over 90% of global rare earth refining supply.",
+          "url": "https://www.iea.org/reports/global-critical-minerals-outlook-2026/outlook",
+          "publisher": "IEA, Global Critical Minerals Outlook 2026",
+          "asOf": "2026-07-16"
+        },
+        {
+          "statement": "The uranium spot price averaged $89.63 per pound at the end of September 2026, from UxC and TradeTech month-end prices.",
+          "url": "https://www.cameco.com/invest/markets/uranium-price",
+          "publisher": "Cameco",
+          "asOf": "2026-09-30"
+        }
+      ],
+      "tickers": [
+        "CCJ",
+        "UEC",
+        "NXE",
+        "DNN",
+        "UUUU",
+        "LEU",
+        "FCX",
+        "SCCO",
+        "TECK",
+        "HBM",
+        "NUE",
+        "STLD",
+        "CLF",
+        "MP",
+        "AR",
+        "EQT",
+        "RRC",
+        "EXE"
+      ]
+    },
+    "generation": {
+      "name": "Generation",
+      "tagline": "How it's made",
+      "status": "Tightening",
+      "evidence": [
+        {
+          "statement": "GE Vernova's gas power equipment backlog plus slot reservations grew from 100 GW to 116 GW in Q2 2026.",
+          "url": "https://www.sec.gov/Archives/edgar/data/0001996810/000199681026000147/gevpressrelease2q26.htm",
+          "publisher": "GE Vernova Q2 2026 results (SEC filing)",
+          "asOf": "2026-06-30"
+        },
+        {
+          "statement": "The NRC issued the first US small modular reactor construction permit, for TVA's Clinch River BWRX-300, on September 29, 2026; an operating license is still required.",
+          "url": "https://www.nrc.gov/about-nrc/news-releases/2026/26-079",
+          "publisher": "US Nuclear Regulatory Commission",
+          "asOf": "2026-09-29"
+        }
+      ],
+      "tickers": [
+        "CEG",
+        "VST",
+        "TLN",
+        "SO",
+        "BWXT",
+        "GEV",
+        "SMEGF",
+        "BKR",
+        "FSLR",
+        "NEE",
+        "AES",
+        "SMR",
+        "OKLO"
+      ]
+    },
+    "transmission": {
+      "name": "Transmission",
+      "tagline": "How it moves",
+      "status": "Bottlenecked",
+      "evidence": [
+        {
+          "statement": "The average lead time for US power transformers was 128 weeks, about 2.5 years, in Q2 2025.",
+          "url": "https://www.woodmac.com/news/opinion/mind-the-gap-tackling-supply-chain-challenges-in-the-electric-td-sector/",
+          "publisher": "Wood Mackenzie",
+          "asOf": "2025-06"
+        },
+        {
+          "statement": "Imports supply an estimated 80% of US power transformer demand.",
+          "url": "https://www.woodmac.com/press-releases/power-transformers-and-distribution-transformers-will-face-supply-deficits-of-30-and-10-in-2025/",
+          "publisher": "Wood Mackenzie",
+          "asOf": "2025-08-14"
+        }
+      ],
+      "tickers": [
+        "GEV",
+        "SMEGF",
+        "ETN",
+        "HUBB",
+        "PRYMY",
+        "PWR",
+        "MTZ",
+        "PRIM",
+        "ABBNY",
+        "DUK",
+        "AEP"
+      ]
+    },
+    "distribution": {
+      "name": "Distribution",
+      "tagline": "How it reaches the rack",
+      "status": "Tightening",
+      "evidence": [
+        {
+          "statement": "The average lead time for US switchgear was 44 weeks in Q2 2025.",
+          "url": "https://www.woodmac.com/news/opinion/mind-the-gap-tackling-supply-chain-challenges-in-the-electric-td-sector/",
+          "publisher": "Wood Mackenzie",
+          "asOf": "2025-06"
+        },
+        {
+          "statement": "Eaton's Electrical Americas backlog at the end of June 2026 was up 33% from a year earlier.",
+          "url": "https://www.sec.gov/Archives/edgar/data/0001551182/000155118226000027/etn06302026exhibit99.htm",
+          "publisher": "Eaton Q2 2026 results (SEC filing)",
+          "asOf": "2026-06-30"
+        },
+        {
+          "statement": "Vertiv's backlog reached $15.0 billion at the end of 2025, up 109% from a year earlier; it now reports backlog once a year.",
+          "url": "https://www.sec.gov/Archives/edgar/data/1674101/000167410126000006/exhibit991vrt02112026.htm",
+          "publisher": "Vertiv Q4 2025 results (SEC filing)",
+          "asOf": "2025-12-31"
+        }
+      ],
+      "tickers": [
+        "VRT",
+        "CARR",
+        "JCI",
+        "NVT",
+        "ETN",
+        "ABBNY",
+        "EME",
+        "STRL",
+        "FLR",
+        "GNRC"
+      ]
+    },
+    "endUse": {
+      "name": "End Use",
+      "tagline": "Where it's consumed",
+      "status": null,
+      "evidence": [
+        {
+          "statement": "Alphabet raised its full-year 2026 capital expenditure guidance to $195-205 billion, from $180-190 billion.",
+          "url": "https://abc.xyz/investor/events/event-details/2026/2026-Q2-Earnings-Call-2026-GgTAq7Is0z/default.aspx",
+          "publisher": "Alphabet Q2 2026 earnings call",
+          "asOf": "2026-07-22"
+        },
+        {
+          "statement": "NVIDIA's data center revenue was $89.0 billion in the quarter ended July 26, 2026, up 117% from a year earlier.",
+          "url": "https://www.sec.gov/Archives/edgar/data/0001045810/000104581026000073/q2fy27pr.htm",
+          "publisher": "NVIDIA Q2 FY2027 results (SEC filing)",
+          "asOf": "2026-07-26"
+        }
+      ],
+      "tickers": [
+        "MSFT",
+        "AMZN",
+        "GOOGL",
+        "META",
+        "EQIX",
+        "DLR",
+        "AMT",
+        "NVDA",
+        "AMD",
+        "AVGO",
+        "TSM",
+        "INTC",
+        "SMCI",
+        "IREN",
+        "CLSK",
+        "MARA",
+        "MU",
+        "ANET",
+        "MRVL"
+      ]
+    }
   }
 }

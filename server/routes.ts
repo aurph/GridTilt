@@ -46,6 +46,7 @@ import { buildTimeline, earningsDateStatus, type EarningsDate } from "./timeline
 import { readThrough } from "./swr";
 import { durableDocs, notifyDocWritten, setActiveDurableDocs } from "./durable-docs";
 import { publicDataStatus } from "./data-status";
+import { buildSupplyChainPayload, type StagesFile } from "./supply-chain";
 import { getUraniumCorrelation } from "./uranium-correlation";
 import { footerBlockers, renderWeeklyEmail, renderWeeklyText, weeklyDateLabel, type NewsletterFooter } from "./weekly-digest";
 import { renderEditorialEmail, renderEditorialText } from "./editorial-issue";
@@ -109,16 +110,8 @@ import {
   type ClusterRoot,
 } from "./social-data";
 
-interface SupplyChainStage {
-  name: string;
-  tagline: string;
-  color: string;
-  bottleneckStatus: "Tightening" | "Bottlenecked" | "Flowing";
-  bottleneckDetail: string;
-  keyMetric: string;
-  tickers: string[];
-}
-const SUPPLY_CHAIN_STAGES: Record<string, SupplyChainStage> = JSON.parse(
+// Stage tickers and dated, sourced stage assessments (server/supply-chain.ts).
+const SUPPLY_CHAIN_STAGES: StagesFile = JSON.parse(
   readFileSync(join(process.cwd(), "server", "data", "supply-chain-stages.json"), "utf-8"),
 );
 
@@ -193,11 +186,11 @@ const STATIC_MARKET_DATA: Record<string, {
   ETN:  { name: "Eaton Corporation plc", price: 398.00, change: 0.00, changePercent: 0.00, pe: 39.1, revenueGrowth: 9.0, marketCapDisplay: "$155B" },
   NVT:  { name: "nVent Electric PLC", price: 88.00, change: 0.00, changePercent: 0.00, pe: 24.8, revenueGrowth: 22.4, marketCapDisplay: "$14B" },
   CARR: { name: "Carrier Global Corp", price: 74.00, change: 0.00, changePercent: 0.00, pe: 26.2, revenueGrowth: 9.8, marketCapDisplay: "$62B" },
-  ABB:  { name: "ABB Ltd", price: 56.00, change: 0.00, changePercent: 0.00, pe: 28.4, revenueGrowth: 8.2, marketCapDisplay: "$120B" },
+  ABBNY: { name: "ABB Ltd (ADR)", price: 91.05, change: 0.00, changePercent: 0.00, pe: 33.1, revenueGrowth: null, marketCapDisplay: "$165B" },
   EMR:  { name: "Emerson Electric Co", price: 126.00, change: 0.00, changePercent: 0.00, pe: 28.8, revenueGrowth: 7.4, marketCapDisplay: "$36B" },
   HUBB: { name: "Hubbell Inc", price: 388.00, change: 0.00, changePercent: 0.00, pe: 22.6, revenueGrowth: 8.8, marketCapDisplay: "$21B" },
   JCI:  { name: "Johnson Controls Int'l", price: 66.00, change: 0.00, changePercent: 0.00, pe: 22.4, revenueGrowth: 6.2, marketCapDisplay: "$44B" },
-  SIEGY:{ name: "Siemens Energy AG", price: 48.00, change: 0.00, changePercent: 0.00, pe: 32.8, revenueGrowth: 18.4, marketCapDisplay: "$60B" },
+  SMEGF: { name: "Siemens Energy AG", price: 150.00, change: 0.00, changePercent: 0.00, pe: 41.4, revenueGrowth: null, marketCapDisplay: "$128B" },
   BKR:  { name: "Baker Hughes Co", price: 41.00, change: 0.00, changePercent: 0.00, pe: 21.4, revenueGrowth: 8.8, marketCapDisplay: "$40B" },
   // Utilities
   D:    { name: "Dominion Energy Inc", price: 55.00, change: 0.00, changePercent: 0.00, pe: 18.6, revenueGrowth: 4.8, marketCapDisplay: "$47B" },
@@ -232,7 +225,6 @@ const STATIC_MARKET_DATA: Record<string, {
   NUE:  { name: "Nucor Corporation", price: 142.00, change: 0.00, changePercent: 0.00, pe: 11.2, revenueGrowth: -8.4, marketCapDisplay: "$33B" },
   STLD: { name: "Steel Dynamics Inc", price: 118.00, change: 0.00, changePercent: 0.00, pe: 9.8, revenueGrowth: -6.2, marketCapDisplay: "$18B" },
   CLF:  { name: "Cleveland-Cliffs Inc", price: 14.50, change: 0.00, changePercent: 0.00, pe: null, revenueGrowth: -12.4, marketCapDisplay: "$7.2B" },
-  X:    { name: "United States Steel Corp", price: 38.00, change: 0.00, changePercent: 0.00, pe: 18.6, revenueGrowth: -4.8, marketCapDisplay: "$8.5B" },
   MP:   { name: "MP Materials Corp", price: 18.00, change: 0.00, changePercent: 0.00, pe: null, revenueGrowth: 22.4, marketCapDisplay: "$3.0B" },
   BHP:  { name: "BHP Group Ltd", price: 56.00, change: 0.00, changePercent: 0.00, pe: 18.2, revenueGrowth: 4.8, marketCapDisplay: "$140B" },
   RIO:  { name: "Rio Tinto Group", price: 64.00, change: 0.00, changePercent: 0.00, pe: 9.4, revenueGrowth: 2.8, marketCapDisplay: "$105B" },
@@ -242,7 +234,7 @@ const STATIC_MARKET_DATA: Record<string, {
   AR:   { name: "Antero Resources Corp", price: 32.00, change: 0.00, changePercent: 0.00, pe: 8.4, revenueGrowth: 28.6, marketCapDisplay: "$9.2B" },
   EQT:  { name: "EQT Corporation", price: 42.00, change: 0.00, changePercent: 0.00, pe: 14.8, revenueGrowth: 32.4, marketCapDisplay: "$22B" },
   RRC:  { name: "Range Resources Corp", price: 34.00, change: 0.00, changePercent: 0.00, pe: 10.2, revenueGrowth: 18.8, marketCapDisplay: "$8.0B" },
-  SWN:  { name: "Southwestern Energy Co", price: 6.80, change: 0.00, changePercent: 0.00, pe: 8.6, revenueGrowth: 22.4, marketCapDisplay: "$7.5B" },
+  EXE:  { name: "Expand Energy Corp", price: 93.41, change: 0.00, changePercent: 0.00, pe: 8.1, revenueGrowth: null, marketCapDisplay: "$21.6B" },
   LNG:  { name: "Cheniere Energy Inc", price: 198.00, change: 0.00, changePercent: 0.00, pe: 12.8, revenueGrowth: 8.4, marketCapDisplay: "$45B" },
   // Renewable Generation
   FSLR: { name: "First Solar Inc", price: 178.00, change: 0.00, changePercent: 0.00, pe: 16.4, revenueGrowth: 28.2, marketCapDisplay: "$19B" },
@@ -250,10 +242,8 @@ const STATIC_MARKET_DATA: Record<string, {
   SEDG: { name: "SolarEdge Technologies", price: 16.00, change: 0.00, changePercent: 0.00, pe: null, revenueGrowth: -42.8, marketCapDisplay: "$920M" },
   AES:  { name: "AES Corporation", price: 18.00, change: 0.00, changePercent: 0.00, pe: 8.4, revenueGrowth: 4.8, marketCapDisplay: "$12B" },
   // Transmission & Grid Hardware
-  WIRE: { name: "Encore Wire Corp", price: 312.00, change: 0.00, changePercent: 0.00, pe: 18.6, revenueGrowth: 14.8, marketCapDisplay: "$6.2B" },
+  PRYMY: { name: "Prysmian S.p.A. (ADR)", price: 60.60, change: 0.00, changePercent: 0.00, pe: 22.1, revenueGrowth: null, marketCapDisplay: "$36.3B" },
   GNRC: { name: "Generac Holdings Inc", price: 148.00, change: 0.00, changePercent: 0.00, pe: 24.2, revenueGrowth: 8.4, marketCapDisplay: "$9.0B" },
-  AYI:  { name: "Acuity Brands Inc", price: 268.00, change: 0.00, changePercent: 0.00, pe: 22.8, revenueGrowth: 6.2, marketCapDisplay: "$8.5B" },
-  AOS:  { name: "A.O. Smith Corporation", price: 82.00, change: 0.00, changePercent: 0.00, pe: 20.4, revenueGrowth: 4.8, marketCapDisplay: "$11B" },
   IDA:  { name: "IDACORP Inc", price: 108.00, change: 0.00, changePercent: 0.00, pe: 21.6, revenueGrowth: 6.8, marketCapDisplay: "$5.8B" },
   // Crypto/AI DC Operators
   CLSK: { name: "CleanSpark Inc", price: 12.50, change: 0.00, changePercent: 0.00, pe: null, revenueGrowth: 145.2, marketCapDisplay: "$3.2B" },
@@ -1914,36 +1904,11 @@ export async function registerRoutes(
     try {
       const stockData = await getCachedStockData("1D");
 
-      const stages = Object.entries(SUPPLY_CHAIN_STAGES).map(([key, stage]) => {
-        const stocks = stage.tickers
-          .map((t) => stockData[t])
-          .filter(Boolean);
-        // Stale tickers are excluded, not zeroed; see averageLiveChanges.
-        const avgChange = averageLiveChanges(stocks.map((st) => st.changePercent));
-        return {
-          key,
-          name: stage.name,
-          tagline: stage.tagline,
-          color: stage.color,
-          companyCount: stocks.length,
-          avgChange,
-          bottleneckStatus: stage.bottleneckStatus,
-          bottleneckDetail: stage.bottleneckDetail,
-          keyMetric: stage.keyMetric,
-          stocks: stocks.map((s) => ({
-            ticker: s.ticker,
-            name: s.name,
-            price: s.price,
-            change: s.change,
-            changePercent: s.changePercent,
-            marketCapDisplay: s.marketCapDisplay,
-            stale: s.stale ?? false,
-          })),
-        };
-      });
-
-      const tightest = stages.find((s) => s.bottleneckStatus === "Bottlenecked");
-      res.json({ stages, tightestBottleneck: tightest?.name ?? "Transmission" });
+      let clusters: Array<{ status: string }> = [];
+      try {
+        clusters = readDataJson("clusters.json").clusters ?? [];
+      } catch {}
+      res.json(buildSupplyChainPayload(SUPPLY_CHAIN_STAGES, stockData, clusters, averageLiveChanges));
     } catch (error) {
       console.error("Supply chain error:", error);
       res.status(500).json({ error: "Failed to fetch supply chain data" });
@@ -2593,14 +2558,14 @@ export async function registerRoutes(
     TECK: 'Raw Materials', HBM: 'Raw Materials', NUE: 'Raw Materials', STLD: 'Raw Materials',
     CLF: 'Raw Materials', X: 'Raw Materials', MP: 'Raw Materials', USAR: 'Raw Materials', BHP: 'Raw Materials',
     RIO: 'Raw Materials', VALE: 'Raw Materials', AR: 'Raw Materials', EQT: 'Raw Materials',
-    RRC: 'Raw Materials', SWN: 'Raw Materials', LNG: 'Raw Materials',
+    RRC: 'Raw Materials', EXE: 'Raw Materials', LNG: 'Raw Materials',
     CEG: 'Generation', VST: 'Generation', TLN: 'Generation', NRG: 'Generation',
-    GEV: 'Generation', SIEGY: 'Generation', BKR: 'Generation', SMR: 'Generation',
+    GEV: 'Generation', SMEGF: 'Generation', BKR: 'Generation', SMR: 'Generation',
     OKLO: 'Generation', BWXT: 'Generation', NEE: 'Generation', AES: 'Generation',
     FSLR: 'Generation', ENPH: 'Generation', SEDG: 'Generation', SO: 'Generation',
     DUK: 'Generation', AEP: 'Generation',
-    ETN: 'Transmission', ABB: 'Transmission', PWR: 'Transmission', EMR: 'Transmission',
-    HUBB: 'Transmission', AYI: 'Transmission', WIRE: 'Transmission', GNRC: 'Transmission',
+    ETN: 'Transmission', ABBNY: 'Transmission', PWR: 'Transmission', EMR: 'Transmission',
+    HUBB: 'Transmission', PRYMY: 'Transmission', GNRC: 'Distribution',
     IDA: 'Transmission', NVT: 'Transmission',
     VRT: 'Distribution', CARR: 'Distribution', JCI: 'Distribution', EME: 'Distribution',
     MTZ: 'Distribution', STRL: 'Distribution', FLR: 'Distribution', J: 'Distribution', ACM: 'Distribution', PRIM: 'Distribution',

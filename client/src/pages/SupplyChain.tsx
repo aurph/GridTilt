@@ -7,7 +7,7 @@ import {
   Atom, Wrench, Hammer, Gem, Flame, Radiation, Gauge, Sun, FlaskConical,
   Plug, HardHat, Snowflake, ToggleRight, Building, Battery,
   Cloud, Warehouse, Cpu, Pickaxe, Workflow, GitBranch, Clock,
-  MemoryStick, Network, Users, RotateCw,
+  MemoryStick, Network, Users, RotateCw, ExternalLink,
 } from "lucide-react";
 import { AsOf } from "@/components/Freshness";
 import { SiBitcoin } from "react-icons/si";
@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
 import { activatable } from "@/lib/a11y";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   supplyNodes,
   supplyLinks,
@@ -46,21 +47,45 @@ interface StockData {
   stale?: boolean;
 }
 
-type BottleneckStatus = 'Flowing' | 'Tightening' | 'Bottlenecked';
+// Payload of /api/supply-chain (server/supply-chain.ts). A stage's status is
+// GridTilt's dated assessment, read from the cited evidence; the demand stage
+// carries live registry figures instead of a status.
+type StageStatus = 'Tightening' | 'Bottlenecked';
+
+interface StageEvidence {
+  statement: string;
+  url: string;
+  publisher: string;
+  asOf: string;
+}
+
+interface StageLive {
+  value: string;
+  label: string;
+  href: string;
+}
 
 interface StageApiData {
   key: string;
-  avgChange: number;
+  name: string;
+  avgChange: number | null;
   stocks: StockData[];
-  bottleneckStatus?: BottleneckStatus;
-  bottleneckDetail?: string;
-  keyMetric?: string;
+  status: StageStatus | null;
+  evidence: StageEvidence[];
+  live: StageLive | null;
+}
+
+interface SupplyChainPayload {
+  reviewed: string;
+  method: string;
+  stages: StageApiData[];
 }
 
 interface StageMeta {
-  status: BottleneckStatus;
-  detail: string;
-  keyMetric: string;
+  name: string;
+  status: StageStatus | null;
+  evidence: StageEvidence[];
+  live: StageLive | null;
 }
 
 // Map server stage key (camelCase) to client stage id (kebab-case)
@@ -72,8 +97,7 @@ const STAGE_KEY_MAP: Record<string, string> = {
   endUse: 'end-use',
 };
 
-const STATUS_COLOR: Record<BottleneckStatus, string> = {
-  Flowing: SEMANTIC.positiveDeep,
+const STATUS_COLOR: Record<StageStatus, string> = {
   Tightening: SEMANTIC.warning,
   Bottlenecked: SEMANTIC.negativeDeep,
 };
@@ -323,9 +347,9 @@ function NetworkGraph({
           const stageX = [0.1, 0.3, 0.5, 0.7, 0.9];
           const x = stageX[s.index] * GRAPH_W;
           const meta = stageMeta[s.id];
-          const pillColor = meta ? STATUS_COLOR[meta.status] : null;
-          const tip = meta
-            ? `${meta.status}: ${meta.detail}${meta.keyMetric ? ` (${meta.keyMetric})` : ''}`
+          const pillColor = meta?.status ? STATUS_COLOR[meta.status] : null;
+          const tip = meta?.status
+            ? `${meta.status}: ${meta.evidence.map((e) => e.statement).join(' ')}`
             : undefined;
           return (
             <g key={s.id} data-testid={`stage-label-${s.id}`}>
@@ -338,7 +362,12 @@ function NetworkGraph({
               >
                 {stageTitle(s.name)}
               </text>
-              {meta && (
+              {meta && !meta.status && meta.live && (
+                <text x={x} y={44} textAnchor="middle" className="sc-stage-pill-text" fill={INK.muted} style={{ fontFamily: FONT.sans }}>
+                  {meta.live.value} {meta.live.label}
+                </text>
+              )}
+              {meta?.status && pillColor && (
                 <g transform={`translate(${x}, 40)`}>
                   {tip && <title>{tip}</title>}
                   <rect
@@ -500,43 +529,12 @@ function NetworkGraph({
                 className="sc-node-sublabel"
                 fill={INK.faint}
               >
-                {node.companies.length} co.
+                {node.companies.length > 0 ? `${node.companies.length} co.` : "no listed co."}
               </text>
             </g>
           );
         })}
 
-        {activeNode && links.map((link, i) => {
-          if (!connectedLinkSet?.has(i)) return null;
-          const src = link.source as SimNode;
-          const tgt = link.target as SimNode;
-          if (!src.x || !tgt.x || !link.label) return null;
-
-          const mx = (src.x + tgt.x) / 2;
-          const my = (src.y! + tgt.y!) / 2;
-
-          return (
-            <g key={`label-${i}`} transform={`translate(${mx},${my})`}>
-              <rect
-                x={-link.label.length * 3.2 - 6}
-                y={-8}
-                width={link.label.length * 6.4 + 12}
-                height={16}
-                rx={3}
-                fill={`rgba(${hexToRgb(SURFACE.base)},0.9)`}
-                stroke={`rgba(${hexToRgb(BRAND.primary)},0.15)`}
-                strokeWidth={0.5}
-              />
-              <text
-                textAnchor="middle"
-                dy={4}
-                className="sc-link-label"
-              >
-                {link.label}
-              </text>
-            </g>
-          );
-        })}
       </g>
     </svg>
   );
@@ -549,10 +547,10 @@ function hexToRgb(hex: string): string {
   return `${r},${g},${b}`;
 }
 
-// ─── Flow view — alternate Sankey-style layered diagram ─────────────────────
-// Columns per stage, nodes stacked vertically with height proportional to
-// connection count, bezier bands connecting source nodes to target nodes.
-// Click a node to focus its connections.
+// ─── Flow view: layered diagram of supply relationships ─────────────────────
+// Columns per stage, every node the same height and every band the same
+// width: the links say which part supplies which, not how much flows, so
+// nothing here is sized as if it were a quantity.
 
 function FlowView({
   activeNode,
@@ -574,8 +572,7 @@ function FlowView({
       (byStage[n.stageIndex] = byStage[n.stageIndex] || []).push(n);
     });
 
-    // Sort within each stage by connection count (heavier nodes toward middle
-    // to reduce visual crossing of bands).
+    // Order within each stage by connection count to reduce band crossings.
     Object.values(byStage).forEach((arr) => {
       arr.sort((a, b) => (connectionCounts[b.id] ?? 0) - (connectionCounts[a.id] ?? 0));
     });
@@ -587,13 +584,11 @@ function FlowView({
 
     for (let s = 0; s <= 4; s++) {
       const stageNodes = byStage[s] || [];
-      const totalConn = stageNodes.reduce((sum, n) => sum + (connectionCounts[n.id] ?? 1), 0);
       const gapsTotal = (stageNodes.length - 1) * NODE_GAP;
-      const heightForNodes = totalUsableH - gapsTotal;
-      let cursor = 60;
+      const h = Math.min(64, (totalUsableH - gapsTotal) / Math.max(stageNodes.length, 1));
+      const used = stageNodes.length * h + gapsTotal;
+      let cursor = 60 + (totalUsableH - used) / 2;
       stageNodes.forEach((n) => {
-        const share = (connectionCounts[n.id] ?? 1) / Math.max(totalConn, 1);
-        const h = Math.max(18, share * heightForNodes);
         positions[n.id] = { x: stageX[s] * W - NODE_W / 2, y: cursor, h };
         cursor += h + NODE_GAP;
       });
@@ -758,9 +753,18 @@ function DetailPanel({
         </button>
       </div>
 
-      {node.keyMetric && (
-        <div className="sc-mono text-11 mb-2" style={{ color: stageColor }}>
-          {node.keyMetric.label}: {node.keyMetric.value}
+      {node.fact && (
+        <div className="mb-2" data-testid={`fact-${node.id}`}>
+          <div className="sc-mono text-11" style={{ color: stageColor }}>
+            {node.fact.label}: {node.fact.value}
+          </div>
+          <div className="text-[11px] mt-0.5" style={{ color: INK.faint }}>
+            {node.fact.statement}{" "}
+            <a href={node.fact.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-0.5 hover:text-ink underline-offset-2 hover:underline">
+              {node.fact.publisher}, {node.fact.asOf}
+              <ExternalLink className="h-2.5 w-2.5" />
+            </a>
+          </div>
         </div>
       )}
 
@@ -808,6 +812,9 @@ function DetailPanel({
       </div>
 
       <div className="text-[11px] font-medium text-muted-foreground mb-2">Securities</div>
+      {node.companies.length === 0 ? (
+        <p className="text-xs" style={{ color: INK.faint }}>No listed company maps to this part of the chain.</p>
+      ) : (
       <div className="sc-stock-table">
         <div className="sc-stock-header" style={{ fontFamily: FONT.sans, letterSpacing: "normal", fontSize: 10 }}>
           <span className="sc-stock-col-ticker">Ticker</span>
@@ -858,6 +865,7 @@ function DetailPanel({
           );
         })}
       </div>
+      )}
     </div>
   );
 }
@@ -877,7 +885,9 @@ export default function SupplyChain({ embedded = false }: { embedded?: boolean; 
   };
   const [entrancePhase, setEntrancePhase] = useState(0);
 
-  const { data: apiData, isError, refetch, dataUpdatedAt } = useQuery<{ stages: StageApiData[] }>({
+  const isMobile = useIsMobile();
+  const panelRef = useRef<HTMLDivElement>(null);
+  const { data: apiData, isError, refetch, dataUpdatedAt } = useQuery<SupplyChainPayload>({
     queryKey: ["/api/supply-chain"],
     refetchInterval: 5 * 60 * 1000,
   });
@@ -894,12 +904,8 @@ export default function SupplyChain({ embedded = false }: { embedded?: boolean; 
     const m: Record<string, StageMeta> = {};
     apiData?.stages?.forEach((stage) => {
       const clientId = STAGE_KEY_MAP[stage.key];
-      if (clientId && stage.bottleneckStatus) {
-        m[clientId] = {
-          status: stage.bottleneckStatus,
-          detail: stage.bottleneckDetail ?? '',
-          keyMetric: stage.keyMetric ?? '',
-        };
+      if (clientId) {
+        m[clientId] = { name: stage.name, status: stage.status, evidence: stage.evidence ?? [], live: stage.live };
       }
     });
     return m;
@@ -918,6 +924,26 @@ export default function SupplyChain({ embedded = false }: { embedded?: boolean; 
   }, []);
 
   const activeNodeData = activeNode ? supplyNodes.find((n) => n.id === activeNode) : null;
+
+  // Below the side-panel breakpoint the panel opens under the graph: bring it
+  // into view so a click visibly does something.
+  useEffect(() => {
+    if (!activeNode || !panelRef.current) return;
+    if (window.matchMedia("(min-width: 1100px)").matches && !isMobile) return;
+    panelRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }, [activeNode, isMobile]);
+
+  const panel = activeNodeData ? (
+    <div ref={panelRef} className="sc-panel-slot" onClick={(e) => e.stopPropagation()}>
+      <DetailPanel
+        node={activeNodeData}
+        stockMap={stockMap}
+        onClose={() => setActiveNode(null)}
+        onNavigate={navigate}
+        onSelectNode={setActiveNode}
+      />
+    </div>
+  ) : null;
 
   return (
     // Embedded (Equities flow view): the host owns page scroll/padding.
@@ -951,8 +977,8 @@ export default function SupplyChain({ embedded = false }: { embedded?: boolean; 
           ) : (
             <AsOf updatedAt={dataUpdatedAt} intervalMs={5 * 60 * 1000} />
           )}
-          <span className="sc-topbar-sep">|</span>
-          <div className="sc-view-toggle" data-testid="sc-view-toggle" onClick={(e) => e.stopPropagation()}>
+          {!isMobile && <span className="sc-topbar-sep">|</span>}
+          {!isMobile && <div className="sc-view-toggle" data-testid="sc-view-toggle" onClick={(e) => e.stopPropagation()}>
             <button
               className={`sc-view-btn ${viewMode === "network" ? "sc-view-btn-active" : ""}`}
               onClick={() => setView("network")}
@@ -963,47 +989,159 @@ export default function SupplyChain({ embedded = false }: { embedded?: boolean; 
               onClick={() => setView("flow")}
               data-testid="view-flow"
             >flow</button>
-          </div>
+          </div>}
         </div>
       </div>
 
-      <div className="sc-graph-container" onClick={(e) => e.stopPropagation()}>
-        {viewMode === "network" ? (
-          <NetworkGraph
-            activeNode={activeNode}
-            onSelectNode={setActiveNode}
-            entrancePhase={entrancePhase}
-            stageMeta={stageMeta}
-          />
-        ) : (
-          <FlowView
-            activeNode={activeNode}
-            onSelectNode={setActiveNode}
-          />
-        )}
-      </div>
+      {isMobile ? (
+        <StageList activeNode={activeNode} onSelectNode={setActiveNode} stageMeta={stageMeta} panel={panel} />
+      ) : (
+        <div className={`sc-body ${activeNodeData ? "sc-body-with-panel" : ""}`}>
+          <div className="min-w-0">
+            <div className="sc-graph-container" onClick={(e) => e.stopPropagation()}>
+              {viewMode === "network" ? (
+                <NetworkGraph
+                  activeNode={activeNode}
+                  onSelectNode={setActiveNode}
+                  entrancePhase={entrancePhase}
+                  stageMeta={stageMeta}
+                />
+              ) : (
+                <FlowView
+                  activeNode={activeNode}
+                  onSelectNode={setActiveNode}
+                />
+              )}
+            </div>
 
-      <div className="sc-legend" style={{ fontFamily: FONT.sans }} data-testid="sc-legend" onClick={(e) => e.stopPropagation()}>
-        {STAGE_LABELS.map((s) => (
-          <span key={s.id}>
-            <span className="sc-legend-swatch" style={{ background: STAGE_COLORS[s.id] }} />
-            {stageTitle(s.name)}
-          </span>
-        ))}
-        <span className="sc-legend-hint">x = supply chain stage · node size = connection count · click a node to explore. scroll to zoom. double-click to reset.</span>
-      </div>
-
-      {activeNodeData && (
-        <div onClick={(e) => e.stopPropagation()}>
-          <DetailPanel
-            node={activeNodeData}
-            stockMap={stockMap}
-            onClose={() => setActiveNode(null)}
-            onNavigate={navigate}
-            onSelectNode={setActiveNode}
-          />
+            <div className="sc-legend" style={{ fontFamily: FONT.sans }} data-testid="sc-legend" onClick={(e) => e.stopPropagation()}>
+              {STAGE_LABELS.map((s) => (
+                <span key={s.id}>
+                  <span className="sc-legend-swatch" style={{ background: STAGE_COLORS[s.id] }} />
+                  {stageTitle(s.name)}
+                </span>
+              ))}
+              <span className="sc-legend-hint">
+                {viewMode === "network"
+                  ? "x = supply chain stage · node size = number of links · click a node for its companies and sources · scroll to zoom, double-click to reset"
+                  : "links show which part supplies which, not quantities · click a node for its companies and sources"}
+              </span>
+            </div>
+          </div>
+          {panel}
         </div>
       )}
+
+      {apiData && <StageAssessments data={apiData} />}
+    </div>
+  );
+}
+
+// ─── Stage assessments: the evidence behind each stage status ───────────────
+
+function StageAssessments({ data }: { data: SupplyChainPayload }) {
+  return (
+    <section className="sc-assessments" aria-label="Stage assessments" data-testid="sc-assessments" onClick={(e) => e.stopPropagation()}>
+      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 mb-3">
+        <h2 className="text-[13px] font-semibold text-ink">Stage assessments</h2>
+        <span className="sc-mono text-[11px]" style={{ color: INK.faint }}>reviewed {data.reviewed}</span>
+      </div>
+      <p className="text-[12px] leading-relaxed mb-4" style={{ color: INK.muted }}>{data.method}</p>
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+        {data.stages.map((st) => (
+          <div key={st.key} className="sc-assessment" data-testid={`assessment-${st.key}`}>
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="text-[12px] font-semibold text-ink">{st.name}</span>
+              {st.status ? (
+                <span className="inline-flex items-center gap-1 text-[11px]" style={{ color: STATUS_COLOR[st.status] }}>
+                  <span className="h-1.5 w-1.5 rounded-full" style={{ background: STATUS_COLOR[st.status] }} />
+                  {st.status}
+                </span>
+              ) : (
+                <span className="text-[11px]" style={{ color: INK.faint }}>
+                  {st.key === "endUse" ? "demand side, no status" : "no status: the evidence shows neither a long lead time nor a fast-growing backlog"}
+                </span>
+              )}
+            </div>
+            {st.live && (
+              <p className="text-[12px] mb-1" style={{ color: INK.muted }}>
+                <a href={st.live.href} className="hover:text-ink underline-offset-2 hover:underline">
+                  {st.live.value} {st.live.label}
+                </a>
+              </p>
+            )}
+            <ul className="space-y-1.5">
+              {st.evidence.map((e, i) => (
+                <li key={i} className="text-[12px] leading-snug" style={{ color: INK.muted }}>
+                  {e.statement}{" "}
+                  <a href={e.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-0.5 whitespace-nowrap text-[11px] hover:text-ink underline-offset-2 hover:underline" style={{ color: INK.faint }}>
+                    {e.publisher}, {e.asOf}
+                    <ExternalLink className="h-2.5 w-2.5" />
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+// ─── Phones: the chain as a readable list, stage by stage ───────────────────
+
+function StageList({
+  activeNode,
+  onSelectNode,
+  stageMeta,
+  panel,
+}: {
+  activeNode: string | null;
+  onSelectNode: (id: string | null) => void;
+  stageMeta: Record<string, StageMeta>;
+  panel: React.ReactNode;
+}) {
+  return (
+    <div className="space-y-4" data-testid="sc-stage-list" onClick={(e) => e.stopPropagation()}>
+      {STAGE_LABELS.map((s) => {
+        const meta = stageMeta[s.id];
+        const nodes = supplyNodes.filter((n) => n.stage === s.id);
+        return (
+          <section key={s.id} aria-label={stageTitle(s.name)}>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="sc-legend-swatch" style={{ background: STAGE_COLORS[s.id] }} />
+              <h2 className="text-[13px] font-semibold text-ink">{stageTitle(s.name)}</h2>
+              {meta?.status && (
+                <span className="text-[11px]" style={{ color: STATUS_COLOR[meta.status] }}>{meta.status}</span>
+              )}
+            </div>
+            <ul className="space-y-1.5">
+              {nodes.map((n) => {
+                const Icon = ICON_MAP[n.icon] || Zap;
+                const open = activeNode === n.id;
+                return (
+                  <li key={n.id}>
+                    <button
+                      type="button"
+                      className={`sc-list-row ${open ? "sc-list-row-open" : ""}`}
+                      aria-expanded={open}
+                      onClick={() => onSelectNode(open ? null : n.id)}
+                      data-testid={`list-node-${n.id}`}
+                    >
+                      <Icon style={{ width: 16, height: 16, color: STAGE_COLORS[n.stage] }} />
+                      <span className="text-[13px] text-ink">{n.name}</span>
+                      <span className="ml-auto sc-mono text-[11px]" style={{ color: INK.faint }}>
+                        {n.companies.length > 0 ? `${n.companies.length} co.` : "no listed co."}
+                      </span>
+                    </button>
+                    {open && panel}
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        );
+      })}
     </div>
   );
 }

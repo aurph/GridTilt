@@ -64,10 +64,12 @@ describe("stockEntries", () => {
   });
 
   it("offers only tickers that have a stock page when the server's list is given", () => {
-    // USA Rare Earth is in the supply-chain config but has no stock page.
-    const all = stockEntries(supplyNodes).map((e) => e.label);
-    assert.ok(all.includes("USAR"));
-    const withPage = stockEntries(supplyNodes, new Set(["SMR", "CEG"])).map((e) => e.label);
+    // A node company without a stock page must not be offered once the
+    // server's list is known.
+    const nodes = [...supplyNodes, { ...supplyNodes[0], id: "no-page", companies: [{ ticker: "NOPG", name: "No Page Inc" }] }];
+    const all = stockEntries(nodes).map((e) => e.label);
+    assert.ok(all.includes("NOPG"));
+    const withPage = stockEntries(nodes, new Set(["SMR", "CEG"])).map((e) => e.label);
     assert.deepEqual(withPage.sort(), ["CEG", "SMR"]);
     assert.deepEqual(stockEntries(supplyNodes, new Set()), [], "nothing before the list arrives");
   });
