@@ -27,7 +27,6 @@ export const ALIAS_REDIRECTS: Record<string, string> = {
   "/gpu-economics": "/neocloud-intel?tab=economics",
   "/power-deals": "/power-map?tab=deals",
   "/brief": "/blog",
-  "/supply-chain": "/stack?view=flow",
   "/trade": "/analyze?tab=scenario",
   "/portfolio": "/analyze?tab=portfolio",
   "/queue": "/power-map?tab=queue",
@@ -88,6 +87,11 @@ const STATIC_PAGES: Record<string, { title: string; description: string; slug: s
     title: "AI Power Stocks by Sector | GridTilt",
     description: "Live prices for public companies across nuclear, uranium, construction, utilities, data centers, and power hardware.",
     slug: "stack",
+  },
+  "/supply-chain": {
+    title: "AI Power Supply Chain: Raw Materials to End Use | GridTilt",
+    description: "How uranium, copper, gas, generation, transformers, substations, cooling and data centers connect, with the public companies at each stage and where the chain is tightening.",
+    slug: "supply-chain",
   },
   "/power-map": {
     title: "AI Data Center Map: Projects by Grid Region | GridTilt",

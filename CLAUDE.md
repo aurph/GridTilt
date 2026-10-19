@@ -48,8 +48,10 @@ slug is a real 404). /state/:slug is the one indexable address for a state. My G
 (2026-10); /my-grid 301s to /power-map. server/state-page.ts composes the page once for
 the JSON (/api/state-pages/:slug), the metadata and the facts written into the HTML.
 Every route except "/" gets the dashboard shell (AppSidebar + header + NewsTicker).
-The eight aliases (/gpu-economics, /power-deals, /brief, /supply-chain, /trade, /portfolio,
-/queue, /my-grid) are client <Redirect>s and server 301s to the same final address (seo.ts ALIAS_REDIRECTS).
+The seven aliases (/gpu-economics, /power-deals, /brief, /trade, /portfolio, /queue, /my-grid)
+are client <Redirect>s and server 301s to the same final address (seo.ts ALIAS_REDIRECTS).
+/supply-chain is a page again (2026-10-15, Jack's call): the standalone graph in the top nav after
+Equities; Equities keeps its Flow tab (the same component, embedded).
 The G-chord list is maintained twice in App.tsx (display ~67-83, handler ~250-254); keep in sync.
 
 ## 2. Stack
