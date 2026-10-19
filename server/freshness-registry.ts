@@ -164,6 +164,16 @@ export const DATASET_REGISTRY: DatasetSpec[] = [
     writes: "none",
   },
   {
+    id: "supply-chain",
+    label: "Supply chain stages and facts",
+    file: "supply-chain-stages.json",
+    read: { kind: "envelope", fields: ["reviewed"] },
+    expectedMaxAgeHours: null,
+    mechanism: "hand-curated: stage statuses and their evidence (supply-chain-stages.json) and node facts (client/src/data/supply-chain-config.ts)",
+    review: { owner: "Jack", everyDays: 90, scope: "every stage status against its method and evidence, every node fact against its source, and every ticker still trading under the right company" },
+    writes: "none",
+  },
+  {
     // datacenters.json is a bare array whose consumers expect that shape, so
     // the ingester stamps a sidecar envelope instead of the data file itself.
     id: "datacenters",
