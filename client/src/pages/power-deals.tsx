@@ -1,4 +1,4 @@
-import { Fragment, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Card } from "@/components/ui/card";
@@ -42,6 +42,8 @@ interface DealRow {
   upTo: boolean;
   aggregate: boolean;
   includes: string[];
+  /** Sourced announcement day; rows with one are on the timeline. */
+  announced: string | null;
 }
 interface DealMetrics {
   rowCount: number;
@@ -112,7 +114,13 @@ export default function PowerDeals({ embedded = false }: { embedded?: boolean; p
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
   const [sortKey, setSortKey] = useState<SortKey>("capacityMW");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
-  const [open, setOpen] = useState<string | null>(null);
+  // ?deal=<id> (the timeline's link to a deal) opens that row and scrolls to it.
+  const [open, setOpen] = useState<string | null>(() => new URLSearchParams(window.location.search).get("deal"));
+  const [linkedDeal] = useState(open);
+  useEffect(() => {
+    if (!linkedDeal || !data) return;
+    document.getElementById(`deal-row-${linkedDeal}`)?.scrollIntoView({ block: "center" });
+  }, [linkedDeal, data]);
 
   const rows = data?.rows ?? [];
   // A row inside another listed row of the same status (a tranche inside its
@@ -349,6 +357,7 @@ export default function PowerDeals({ embedded = false }: { embedded?: boolean; p
                     aria-expanded={isOpen}
                     aria-controls={`deal-detail-${r.id}`}
                     className="grid w-full grid-cols-12 gap-2 px-4 py-2.5 border-b border-border/30 text-left text-xs hover:bg-brand/5 items-center"
+                    id={`deal-row-${r.id}`}
                     data-testid={`deal-row-${r.id}`}
                   >
                     <span className="col-span-2 min-w-0">
@@ -405,6 +414,15 @@ export default function PowerDeals({ embedded = false }: { embedded?: boolean; p
                           </>
                         )}
                       </div>
+                      {r.announced && (
+                        <div>
+                          <span className="text-muted-foreground/60">Announced: </span>
+                          {r.announced} ·{" "}
+                          <Link href={`/timeline?record=deal:${r.id}`} className="text-brand hover:text-brand-2" data-testid={`deal-timeline-${r.id}`}>
+                            View on timeline
+                          </Link>
+                        </div>
+                      )}
                       {r.firmness === "portfolio" && <div>A company-wide total. The agreements inside it are listed separately and are not added to it.</div>}
                       {parentOf.get(r.id) && (
                         <div>Part of {parentOf.get(r.id)}: its MW is counted once, in that row.</div>
