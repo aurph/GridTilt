@@ -146,6 +146,16 @@ Schedulers (no node-cron anywhere):
   after 10 AM ET only); /api/gpu-prices/metrics appends gpu-price-history.json.
 
 server/data custody (the fragility map):
+- Supply chain (2026-10-18 accuracy pass): every figure on /supply-chain is either live from
+  GridTilt's own data (end-use cluster counts) or a sourced, dated fact (node `fact` in
+  client/src/data/supply-chain-config.ts; stage `evidence` in supply-chain-stages.json, validated
+  by server/supply-chain.ts). Node descriptions state roles only, no figures. A stage status
+  follows the stated method (Bottlenecked: key equipment lead time two years or more; Tightening:
+  lead times past six months or backlogs growing over 25% a year); review every 90 days.
+  supply-chain.test.ts enforces sources, dates, stage-ticker parity with the graph, registry
+  membership for every graph ticker, and that retired tickers (ABB, SWN, WIRE, X, SIEGY, AYI,
+  AOS) never return. Before adding a ticker anywhere, confirm it trades (Yahoo quote with a
+  recent regularMarketTime) and names the right company.
 - Hand-curated, code never writes: catalysts.json, clusters.json, supply-chain-stages.json,
   frontier-models.json, dataset-reviews.json (one entry per completed review; the freshness
   report's claim-last-reviewed date), change-log.json (one entry per shipped correction, added in the same

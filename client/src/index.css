@@ -575,6 +575,58 @@ html {
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* Graph + detail panel. From 1100px the panel docks beside the graph, so a
+   click shows its companies and sources without scrolling; narrower screens
+   stack it under the graph. */
+.sc-body { display: block; }
+@media (min-width: 1100px) {
+  .sc-body-with-panel {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 380px;
+    gap: 16px;
+    align-items: start;
+  }
+  .sc-body-with-panel .sc-panel-slot {
+    position: sticky;
+    top: 12px;
+    max-height: calc(100vh - 140px);
+    overflow-y: auto;
+  }
+  .sc-body-with-panel .sc-detail-panel {
+    margin: 0;
+    max-width: none;
+    padding: 18px;
+  }
+}
+
+.sc-assessments {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-subtle);
+}
+.sc-assessment {
+  background: var(--surface-base);
+  border: 1px solid var(--border-subtle);
+  border-radius: 3px;
+  padding: 12px 14px;
+}
+
+/* Phones: the stage list */
+.sc-list-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 12px;
+  background: var(--surface-base);
+  border: 1px solid var(--border-subtle);
+  border-radius: 3px;
+  text-align: left;
+}
+.sc-list-row-open { border-color: var(--brand-glow); }
+.sc-list-row:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+
 .sc-divider {
   height: 1px;
   background: var(--border-subtle);
