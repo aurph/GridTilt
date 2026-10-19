@@ -298,4 +298,7 @@ Documented, not to fix casually or silently:
   then Replit -> Deployments -> Redeploy, manually. Never say "shipped" after a push.
 - Build: npm run build (vite client to dist/public, esbuild server to dist/index.cjs); the
   .replit postMerge hook runs npm install.
-- After redeploy, sanity-check /api/stack, /api/kpis, and /api/clusters/metrics.
+- After redeploy, run `npm run smoke -- https://gridtilt.com` (server/smoke.ts; add
+  SMOKE_ADMIN_KEY for the admin freshness report). FAIL = the deploy is wrong (broken page or
+  API, soft 404, GPU sweep on without permission); WARN = stale data, missing EIA key, slow
+  response. Exit code 1 on any FAIL.
