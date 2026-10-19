@@ -44,6 +44,7 @@ import {
 import { fetchLivePrices, type GpuSweepSummary } from "./gpu-live";
 import { buildTimeline, earningsDateStatus, type EarningsDate } from "./timeline";
 import { readThrough } from "./swr";
+import { durableDocs, notifyDocWritten, setActiveDurableDocs } from "./durable-docs";
 import { getUraniumCorrelation } from "./uranium-correlation";
 import { footerBlockers, renderWeeklyEmail, renderWeeklyText, weeklyDateLabel, type NewsletterFooter } from "./weekly-digest";
 import { renderEditorialEmail, renderEditorialText } from "./editorial-issue";
@@ -642,6 +643,7 @@ function appendAutoUpdateLog(entry: BacklogAutoUpdateEntry): void {
   // Bounded to last 500 entries
   const trimmed = log.length > 500 ? log.slice(-500) : log;
   writeFileSync(AUTO_UPDATE_LOG, JSON.stringify(trimmed, null, 2) + "\n");
+  notifyDocWritten("backlog-auto-updates.json");
 }
 
 // Returns a count of applied + flagged updates after one pass.
@@ -1419,6 +1421,7 @@ function appendSocialLog(entry: SocialLogEntry): void {
   // Keep the last 500 entries to bound file size
   if (log.length > 500) log = log.slice(-500);
   writeFileSync(SOCIAL_LOG_FILE, JSON.stringify(log, null, 2));
+  notifyDocWritten("social-log.json");
 }
 
 // ─── KPI computation (shared by /api/kpis and the cron composer) ────────────
@@ -2034,6 +2037,26 @@ export async function registerRoutes(
     },
   );
   const subscriberStore = subscriberChoice.ok ? subscriberChoice.store : null;
+
+  // Recorded logs survive redeploys (server/durable-docs.ts): with a database,
+  // each append-only file is merged with its Postgres copy before any request
+  // can record, and every later write is mirrored back. A database failure
+  // here is logged and the site runs on the local files as before.
+  if (subscriberPool) {
+    const docs = durableDocs(subscriberPool);
+    try {
+      // Boot must not hang on an unreachable database (the pool has no
+      // connect timeout); after 20 s the site starts on its local files.
+      const report = await Promise.race([
+        docs.hydrate(),
+        new Promise<never>((_, reject) => setTimeout(() => reject(new Error("timed out after 20 s")), 20_000).unref()),
+      ]);
+      console.log(`[durable] ${report.map((r) => `${r.name} ${r.mergedRows} rows (file ${r.fileRows}, db ${r.dbRows})`).join("; ")}`);
+      setActiveDurableDocs(docs);
+    } catch (e) {
+      console.error("[durable] hydrate failed; recorded logs will not survive a redeploy:", e instanceof Error ? e.message : e);
+    }
+  }
   if (!subscriberChoice.ok) console.warn(`[subscribers] ${subscriberChoice.reason}`);
 
   const UNSUB_TOKEN_SECRET: string =

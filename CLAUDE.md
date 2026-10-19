@@ -274,9 +274,14 @@ Documented, not to fix casually or silently:
   reporting-only slop scan, and `npm audit` which DOES fail the build on a new high advisory.
 - Durability (audit M2): subscribers moved to Postgres (T17: one row per address with a state,
   suppressions kept as email hashes, explicit one-time imports, backup/restore in
-  scripts/subscribers.ts, runbook docs/runbooks/subscriber-storage.md). The other machine-written
-  JSON still lives on autoscale ephemeral disk, and admin blog CRUD writes tracked content/ at
-  runtime; a redeploy can lose those.
+  scripts/subscribers.ts, runbook docs/runbooks/subscriber-storage.md). With DATABASE_URL set,
+  the append-only logs (index-history.json, gpu-price-history.json, social-log.json,
+  backlog-auto-updates.json) are mirrored in Postgres table gt_documents (server/durable-docs.ts):
+  merged with the database at boot (union by date/timestamp, 20 s cap, failure logged and the
+  site runs on local files), and every write calls notifyDocWritten(name). A new append-only
+  writer must call it too. Still on ephemeral disk: datacenters.json, datacenters-pending.json,
+  market-constants.json, admin edits to interconnection-queue.json, and admin blog CRUD in
+  content/. Mirroring those needs deletion tombstones and a rule for repo edits; not done.
 - Production detection: the deployment runs `node dist/index.cjs` with NO NODE_ENV at runtime.
   Only the literal `process.env.NODE_ENV` is replaced at build time (script/build.ts define), so
   code that must know it is in production reads that literal (server/index.ts, chooseStore's
