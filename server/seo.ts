@@ -104,6 +104,11 @@ const STATIC_PAGES: Record<string, { title: string; description: string; slug: s
     description: "Dated events from GridTilt's datasets in one feed: power agreements, compute cluster announcements, confirmed earnings dates, state actions, model releases and published corrections, each linked to its source.",
     slug: "timeline",
   },
+  "/data-status": {
+    title: "Data Status | GridTilt",
+    description: "When each GridTilt dataset was last updated and last reviewed against its sources, and how often it is expected to change.",
+    slug: "data-status",
+  },
   "/blog": {
     title: "Research | GridTilt",
     description: "Research on data center power demand, nuclear energy, grid constraints, and the companies behind the buildout.",
@@ -648,6 +653,7 @@ export const CRAWLABLE_API_PREFIXES = [
   "/api/catalysts/",
   "/api/changes",
   "/api/clusters",
+  "/api/data-status",
   "/api/datacenters",
   "/api/deals/metrics",
   "/api/frontier-models",

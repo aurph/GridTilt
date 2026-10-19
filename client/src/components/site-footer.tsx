@@ -18,6 +18,7 @@ const SECTIONS: [string, string][] = [
 
 const DATA: [string, string][] = [
   ["Methodology", "/compute-frontier/methodology"],
+  ["Data status", "/data-status"],
   ["The brief", "/subscribe"],
 ];
 

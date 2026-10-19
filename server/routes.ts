@@ -45,6 +45,7 @@ import { fetchLivePrices, type GpuSweepSummary } from "./gpu-live";
 import { buildTimeline, earningsDateStatus, type EarningsDate } from "./timeline";
 import { readThrough } from "./swr";
 import { durableDocs, notifyDocWritten, setActiveDurableDocs } from "./durable-docs";
+import { publicDataStatus } from "./data-status";
 import { getUraniumCorrelation } from "./uranium-correlation";
 import { footerBlockers, renderWeeklyEmail, renderWeeklyText, weeklyDateLabel, type NewsletterFooter } from "./weekly-digest";
 import { renderEditorialEmail, renderEditorialText } from "./editorial-issue";
@@ -2129,6 +2130,17 @@ export async function registerRoutes(
   function freshnessReport() {
     return computeFreshness(readRegisteredDatasets(), Date.now(), DATASET_REGISTRY, readDatasetReviews());
   }
+
+  // Public view of the same report: dates and a plain status per dataset,
+  // without file names, mechanisms or failure details (server/data-status.ts).
+  app.get("/api/data-status", (_req, res) => {
+    try {
+      res.json(publicDataStatus(freshnessReport(), { gpuSweepEnabled: process.env.GPU_LIVE_SWEEP_ENABLED === "true" }));
+    } catch (err) {
+      console.error("Data status error:", err);
+      res.status(500).json({ error: "Failed to compute data status" });
+    }
+  });
 
   app.get("/api/admin/freshness", (req: Request, res) => {
     if (!requireAdmin(req, res)) return;
