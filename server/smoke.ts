@@ -126,7 +126,7 @@ function keyedFeed(name: string, path: string): Check {
 }
 
 export const CHECKS: Check[] = [
-  ...["/", "/overview", "/stack", "/power-map", "/compute-frontier", "/neocloud-intel", "/analyze", "/catalysts", "/blog"].map(page),
+  ...["/", "/overview", "/stack", "/supply-chain", "/power-map", "/compute-frontier", "/neocloud-intel", "/analyze", "/catalysts", "/timeline", "/blog", "/data-status"].map(page),
   {
     name: "state page /state/maryland",
     path: "/state/maryland",
@@ -164,6 +164,17 @@ export const CHECKS: Check[] = [
     const newest = j.map((i: any) => String(i?.publishedAt ?? "")).sort().pop() ?? "";
     const age = daysBetween(newest, o.today);
     return age === null || age > 2 ? warn(`newest item ${newest || "undated"}`) : ok(`${j.length} items`);
+  }),
+  jsonCheck("timeline", "/api/timeline", (j) => {
+    const events = Array.isArray(j?.events) ? j.events : null;
+    if (!events) return fail("no events array");
+    if (!events.some((e: any) => e?.eventType === "power_deal")) return fail("no power deal events (announced dates missing?)");
+    return ok(`${events.length} events`);
+  }),
+  jsonCheck("data status", "/api/data-status", (j) => {
+    if (!Array.isArray(j?.datasets) || j.datasets.length === 0) return fail("no datasets");
+    const behind = j.datasets.filter((d: any) => d?.status === "behind").map((d: any) => d.label);
+    return behind.length ? warn(`${behind.length} behind schedule: ${behind.join(", ")}`) : ok(`${j.datasets.length} datasets`);
   }),
   jsonCheck("frontier models", "/api/frontier-models", (j) => (Array.isArray(j?.models) && j.models.length > 0 ? ok() : fail("no models"))),
   jsonCheck("Maryland state data", "/api/state-pages/maryland", (j) => (j?.code === "MD" ? ok() : fail("no MD payload"))),

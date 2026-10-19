@@ -14,6 +14,7 @@ const SECTIONS: [string, string][] = [
   ["GPU Prices", "/neocloud-intel"],
   ["Analyze", "/analyze"],
   ["Catalysts", "/catalysts"],
+  ["Timeline", "/timeline"],
   ["Research", "/blog"],
 ];
 
