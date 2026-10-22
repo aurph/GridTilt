@@ -26,6 +26,23 @@ import {
   BRAND, BORDER, FONT, INK, SEMANTIC, SERIES, STATUS_COLORS, SURFACE,
 } from "@/lib/tokens";
 import { ToolTabs, useToolTabs } from "@/components/ToolTabs";
+import {
+  CLUSTER_STATUSES,
+  clusterLabelMinMW,
+  clusterPassesFilters,
+  clusterPinRadius,
+  clusterRTO,
+  clusterStats,
+  formatClusterMW,
+  hasCoords,
+  isEstimated,
+  knownChip,
+  parseView,
+  type ClusterPoint,
+  type ClusterStats,
+  type ClusterStatus,
+  type PowerMapView,
+} from "@/lib/power-map-clusters";
 import PowerDeals from "@/pages/power-deals";
 import Queue from "@/pages/Queue";
 
@@ -123,22 +140,26 @@ function getStatusBadge(status: DataCenter["status"]) {
   return map[status];
 }
 
-function parseFiltersFromURL(): { companies: string[]; rtos: string[]; capacity: string } {
+function parseFiltersFromURL(): { companies: string[]; rtos: string[]; capacity: string; view: ViewMode } {
   try {
     const params = new URLSearchParams(window.location.search);
     return {
       companies: params.get("companies")?.split(",").filter(Boolean) ?? [],
       rtos:      params.get("rtos")?.split(",").filter(Boolean) ?? [],
       capacity:  params.get("capacity") ?? "all",
+      view:      parseView(params.get("view")),
     };
   } catch {
-    return { companies: [], rtos: [], capacity: "all" };
+    return { companies: [], rtos: [], capacity: "all", view: "dc" };
   }
 }
 
-function pushFiltersToURL(companies: string[], rtos: string[], capacity: string) {
+// `view` rides along so /power-map?view=clusters is a shareable address for
+// the AI Clusters view; the default facility view keeps the bare URL.
+function pushFiltersToURL(companies: string[], rtos: string[], capacity: string, view: ViewMode = "dc") {
   try {
     const params = new URLSearchParams();
+    if (view !== "dc") params.set("view", view);
     if (companies.length) params.set("companies", companies.join(","));
     if (rtos.length) params.set("rtos", rtos.join(","));
     if (capacity !== "all") params.set("capacity", capacity);
@@ -147,7 +168,7 @@ function pushFiltersToURL(companies: string[], rtos: string[], capacity: string)
   } catch {}
 }
 
-type ViewMode = "dc" | "stress";
+type ViewMode = PowerMapView;
 
 // Escape user-controlled strings before interpolating into raw Leaflet
 // divIcon HTML. Datacenter names arrive via the admin form / ingester
@@ -338,7 +359,8 @@ function RTORegions({ viewMode }: { viewMode: ViewMode }) {
           map.removeLayer(layerRef.current);
         }
 
-        const isDC = viewMode === "dc";
+        // The clusters view keeps the muted region fills; only NERC Risk recolors them.
+        const isDC = viewMode !== "stress";
 
         layerRef.current = L.geoJSON(geoData, {
           style: (feature) => {
@@ -596,6 +618,221 @@ function FacilityMarkers({
   return null;
 }
 
+/**
+ * AI Clusters view marker. Area tracks planned MW on the same sqrt scale and
+ * px range as the facility pins (clusterPinRadius), with the same status
+ * colors and operational pulse, so the two views read alike.
+ */
+function createClusterIcon(c: ClusterPoint): L.DivIcon {
+  const r = clusterPinRadius(c.plannedPowerMW);
+  const color = STATUS_COLORS[c.status] ?? INK.muted;
+  const size = Math.ceil((r + 12) * 2);
+  const center = size / 2;
+  const baseOpacity = c.status === "announced" ? 0.75 : 1;
+  const animClass = c.status === "operational" ? "pin-pulse" : "";
+
+  const svg = `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="${center}" cy="${center}" r="${r + 8}" fill="${color}" opacity="0.3" class="${animClass}-glow" />
+    <circle cx="${center}" cy="${center}" r="${r}" fill="${color}" opacity="${baseOpacity}" />
+  </svg>`;
+
+  return L.divIcon({
+    html: `<div class="pin-wrapper ${animClass}">${svg}</div>`,
+    className: "leaflet-pin-icon",
+    iconSize: [size, size],
+    iconAnchor: [center, center],
+  });
+}
+
+function clusterZIndex(status: ClusterStatus): number {
+  return status === "operational" ? 100 : status === "construction" ? 50 : 0;
+}
+
+/**
+ * Every cluster with coordinates, one marker each at every zoom (the facility
+ * layer's approach). Hover and selection restyle imperatively, as
+ * FacilityMarkers does, so a mouseover never rebuilds the layer.
+ */
+function ClusterMarkers({
+  clusters,
+  statuses,
+  rtoFocus,
+  hoveredId,
+  setHoveredId,
+  selected,
+  setSelected,
+  setTooltipCluster,
+  setTooltipPos,
+}: {
+  clusters: ClusterPoint[];
+  statuses: ClusterStatus[];
+  rtoFocus: string | null;
+  hoveredId: string | null;
+  setHoveredId: (id: string | null) => void;
+  selected: ClusterPoint | null;
+  setSelected: (c: ClusterPoint | null) => void;
+  setTooltipCluster: (c: ClusterPoint | null) => void;
+  setTooltipPos: (pos: { x: number; y: number } | null) => void;
+}) {
+  const map = useMap();
+  const markersRef = useRef<Record<string, L.Marker>>({});
+  const groupRef = useRef<L.LayerGroup | null>(null);
+
+  useEffect(() => {
+    if (!groupRef.current) {
+      groupRef.current = L.layerGroup().addTo(map);
+    }
+    const group = groupRef.current;
+    group.clearLayers();
+
+    const markers: Record<string, L.Marker> = {};
+    clusters.forEach((c) => {
+      if (!clusterPassesFilters(c, statuses, rtoFocus)) return;
+
+      const marker = L.marker([c.location.lat, c.location.lng], {
+        icon: createClusterIcon(c),
+        zIndexOffset: clusterZIndex(c.status),
+      });
+
+      marker.on("mouseover", (e) => {
+        setHoveredId(c.id);
+        setTooltipCluster(c);
+        const point = map.latLngToContainerPoint(e.latlng);
+        setTooltipPos({ x: point.x, y: point.y });
+      });
+
+      marker.on("mouseout", () => {
+        setHoveredId(null);
+        setTooltipCluster(null);
+        setTooltipPos(null);
+      });
+
+      marker.on("click", (e) => {
+        setSelected(c);
+        setHoveredId(null);
+        setTooltipCluster(null);
+        const point = map.latLngToContainerPoint(e.latlng);
+        setTooltipPos({ x: point.x, y: point.y });
+      });
+
+      markers[c.id] = marker;
+      marker.addTo(group);
+    });
+    markersRef.current = markers;
+
+    return () => {
+      group.clearLayers();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map, clusters, statuses, rtoFocus]);
+
+  useEffect(() => {
+    return () => {
+      if (groupRef.current) {
+        map.removeLayer(groupRef.current);
+        groupRef.current = null;
+      }
+    };
+  }, [map]);
+
+  const prevHoveredRef = useRef<string | null>(null);
+  useEffect(() => {
+    const prev = prevHoveredRef.current;
+    if (prev !== null && prev !== hoveredId) {
+      const m = markersRef.current[prev];
+      if (m) {
+        m.getElement()?.classList.remove("pin-hovered");
+        const c = clusters.find((x) => x.id === prev);
+        m.setZIndexOffset(c ? clusterZIndex(c.status) : 0);
+      }
+    }
+    if (hoveredId !== null) {
+      const m = markersRef.current[hoveredId];
+      if (m) {
+        m.getElement()?.classList.add("pin-hovered");
+        m.setZIndexOffset(1000);
+      }
+    }
+    prevHoveredRef.current = hoveredId;
+  }, [hoveredId, clusters]);
+
+  const prevSelectedRef = useRef<string | null>(null);
+  useEffect(() => {
+    const prev = prevSelectedRef.current;
+    if (prev !== null && prev !== selected?.id) {
+      markersRef.current[prev]?.getElement()?.classList.remove("pin-selected");
+    }
+    if (selected) {
+      markersRef.current[selected.id]?.getElement()?.classList.add("pin-selected");
+    }
+    prevSelectedRef.current = selected?.id ?? null;
+  }, [selected]);
+
+  return null;
+}
+
+/** Cluster name labels on the facility view's zoom rule (clusterLabelMinMW). */
+function ClusterLabels({ clusters, statuses, rtoFocus }: {
+  clusters: ClusterPoint[];
+  statuses: ClusterStatus[];
+  rtoFocus: string | null;
+}) {
+  const map = useMap();
+  const labelsRef = useRef<L.LayerGroup | null>(null);
+
+  useEffect(() => {
+    function updateLabels() {
+      if (labelsRef.current) {
+        labelsRef.current.clearLayers();
+      } else {
+        labelsRef.current = L.layerGroup().addTo(map);
+      }
+
+      const minMW = clusterLabelMinMW(map.getZoom());
+      if (minMW === null) return;
+
+      clusters.forEach((c) => {
+        if (!clusterPassesFilters(c, statuses, rtoFocus)) return;
+        if (c.plannedPowerMW < minMW) return;
+
+        const truncName = c.name.length > 20 ? c.name.slice(0, 18) + ".." : c.name;
+        const label = L.marker([c.location.lat, c.location.lng], {
+          icon: L.divIcon({
+            html: `<div class="map-label">${escapeHtml(truncName)}</div>`,
+            className: "leaflet-label-icon",
+            iconSize: [120, 16],
+            iconAnchor: [-8, 20],
+          }),
+          interactive: false,
+          zIndexOffset: -10,
+        });
+        label.addTo(labelsRef.current!);
+      });
+    }
+
+    updateLabels();
+    map.on("zoomend", updateLabels);
+
+    return () => {
+      map.off("zoomend", updateLabels);
+      if (labelsRef.current) {
+        labelsRef.current.clearLayers();
+      }
+    };
+  }, [map, clusters, statuses, rtoFocus]);
+
+  useEffect(() => {
+    return () => {
+      if (labelsRef.current) {
+        map.removeLayer(labelsRef.current);
+        labelsRef.current = null;
+      }
+    };
+  }, [map]);
+
+  return null;
+}
+
 function MapClickHandler({ onMapClick }: { onMapClick: () => void }) {
   useMapEvents({
     click: () => {
@@ -624,7 +861,27 @@ export default function PowerMap() {
   );
 
   const [selected, setSelected]           = useState<DataCenter | null>(null);
-  const [viewMode, setViewMode]           = useState<ViewMode>("dc");
+  const [viewMode, setViewMode]           = useState<ViewMode>(initialFilters.view);
+  const isClusterView = viewMode === "clusters";
+
+  // AI Clusters view: the Compute Frontier record set, with no size floor,
+  // drawn on this map. Fetched once the view is opened; the query key is the
+  // one /compute-frontier uses, so a visit there warms it.
+  const {
+    data: fetchedClusters,
+    isLoading: clLoading,
+    isError: clError,
+    refetch: refetchClusters,
+    dataUpdatedAt: clUpdatedAt,
+  } = useQuery<ClusterPoint[]>({
+    queryKey: ["/api/clusters"],
+    enabled: isClusterView,
+  });
+  const clusters = useMemo(() => (fetchedClusters ?? []).filter(hasCoords), [fetchedClusters]);
+  const [clusterStatuses, setClusterStatuses]   = useState<ClusterStatus[]>([]);
+  const [selectedCluster, setSelectedCluster]   = useState<ClusterPoint | null>(null);
+  const [tooltipCluster, setTooltipCluster]     = useState<ClusterPoint | null>(null);
+  const [hoveredClusterId, setHoveredClusterId] = useState<string | null>(null);
   const [hoveredId, setHoveredId]         = useState<number | null>(null);
   const [tooltipDC, setTooltipDC]         = useState<DataCenter | null>(null);
   const [tooltipPos, setTooltipPos]       = useState<{ x: number; y: number } | null>(null);
@@ -654,7 +911,7 @@ export default function PowerMap() {
       ? filterCompanies.filter((x) => x !== c)
       : [...filterCompanies, c];
     setFilterCompanies(next);
-    pushFiltersToURL(next, filterRTOs, filterCapacity);
+    pushFiltersToURL(next, filterRTOs, filterCapacity, viewMode);
   }
 
   function toggleRTO(rto: string) {
@@ -662,41 +919,60 @@ export default function PowerMap() {
       ? filterRTOs.filter((x) => x !== rto)
       : [...filterRTOs, rto];
     setFilterRTOs(next);
-    pushFiltersToURL(filterCompanies, next, filterCapacity);
+    pushFiltersToURL(filterCompanies, next, filterCapacity, viewMode);
   }
 
   function setCapacity(cap: string) {
     setFilterCapacity(cap);
-    pushFiltersToURL(filterCompanies, filterRTOs, cap);
+    pushFiltersToURL(filterCompanies, filterRTOs, cap, viewMode);
   }
 
   function clearAllFilters() {
     setFilterCompanies([]);
     setFilterRTOs([]);
     setFilterCapacity("all");
-    pushFiltersToURL([], [], "all");
+    pushFiltersToURL([], [], "all", viewMode);
     setMobileFiltersOpen(false);
   }
 
   function removeCompanyFilter(c: string) {
     const next = filterCompanies.filter((x) => x !== c);
     setFilterCompanies(next);
-    pushFiltersToURL(next, filterRTOs, filterCapacity);
+    pushFiltersToURL(next, filterRTOs, filterCapacity, viewMode);
   }
 
   function removeRTOFilter(rto: string) {
     const next = filterRTOs.filter((x) => x !== rto);
     setFilterRTOs(next);
-    pushFiltersToURL(filterCompanies, next, filterCapacity);
+    pushFiltersToURL(filterCompanies, next, filterCapacity, viewMode);
   }
 
   function removeCapacityFilter() {
     setFilterCapacity("all");
-    pushFiltersToURL(filterCompanies, filterRTOs, "all");
+    pushFiltersToURL(filterCompanies, filterRTOs, "all", viewMode);
   }
 
   function toggleRtoFocus(rto: string) {
     setRtoFocus((f) => (f === rto ? null : rto));
+  }
+
+  // Switching views drops any open detail card: a facility card over the
+  // clusters layer (or the reverse) would describe a marker that is gone.
+  function switchView(v: ViewMode) {
+    setViewMode(v);
+    setSelected(null);
+    setTooltipDC(null);
+    setHoveredId(null);
+    setSelectedCluster(null);
+    setTooltipCluster(null);
+    setHoveredClusterId(null);
+    setTooltipPos(null);
+    pushFiltersToURL(filterCompanies, filterRTOs, filterCapacity, v);
+  }
+
+  // Same idiom as the company chips: no selection means every status.
+  function toggleClusterStatus(s: ClusterStatus) {
+    setClusterStatuses((cur) => (cur.includes(s) ? cur.filter((x) => x !== s) : [...cur, s]));
   }
 
   const activeFilterCount = filterCompanies.length + filterRTOs.length + (filterCapacity !== "all" ? 1 : 0);
@@ -765,6 +1041,20 @@ export default function PowerMap() {
     { mw: 1000, label: "1 GW" },
     { mw: 1500, label: "1.5 GW" },
   ];
+
+  const clusterRows = useMemo(
+    () => clusters.filter((c) => clusterPassesFilters(c, clusterStatuses, rtoFocus)),
+    [clusters, clusterStatuses, rtoFocus],
+  );
+  const allClusterStats = useMemo(() => clusterStats(clusters), [clusters]);
+  const shownClusterStats = useMemo(() => clusterStats(clusterRows), [clusterRows]);
+  const clusterLegendSizes = [
+    { mw: 100, label: "100 MW" },
+    { mw: 1000, label: "1 GW" },
+    { mw: 5000, label: "5 GW" },
+  ];
+  const displayCluster = isClusterView ? (selectedCluster || tooltipCluster) : null;
+  const clusterChip = displayCluster ? knownChip(displayCluster.chipType) : null;
 
   return (
     <div className="flex flex-col h-full overflow-y-auto">
@@ -916,8 +1206,8 @@ export default function PowerMap() {
           <div className="rounded-lg border border-subtle bg-surface-raised p-4">
             <div className="flex items-center gap-2 mb-1.5">
               <Zap className="h-4 w-4 text-brand" />
-              <span className="text-sm font-semibold text-foreground">Power Map</span>
-              <AsOf updatedAt={dataUpdatedAt} intervalMs={900_000} className="ml-auto" />
+              <span className="text-sm font-semibold text-foreground">{isClusterView ? "AI Clusters" : "Power Map"}</span>
+              <AsOf updatedAt={isClusterView ? clUpdatedAt : dataUpdatedAt} intervalMs={900_000} className="ml-auto" />
             </div>
             <div className="flex items-start gap-2 mb-3">
               <MonitorSmartphone className="h-3.5 w-3.5 text-muted-foreground/60 mt-0.5 flex-shrink-0" />
@@ -925,7 +1215,18 @@ export default function PowerMap() {
                 Pinch to zoom the map, or tap a site for its detail.
               </p>
             </div>
-            {dcError ? (
+            {isClusterView ? (
+              <ClusterStatsRow
+                all={allClusterStats}
+                shown={shownClusterStats}
+                statuses={clusterStatuses}
+                onToggleStatus={toggleClusterStatus}
+                loading={clLoading}
+                error={clError}
+                onRetry={() => refetchClusters()}
+                compact
+              />
+            ) : dcError ? (
               <ErrorState label="Facility data failed to load." onRetry={() => refetchDataCenters()} className="py-4" />
             ) : dcLoading ? (
               <Skeleton className="h-5 w-56" aria-hidden="true" />
@@ -958,6 +1259,7 @@ export default function PowerMap() {
           style={{ minHeight: 520 }}
           ref={mapContainerRef}
         >
+          {!isClusterView && (
           <div className="absolute top-3 left-3 z-[1000] hidden sm:block pointer-events-auto" data-testid="stats-overlay">
             <div className="bg-surface-raised/90 backdrop-blur-md border border-subtle rounded-lg px-4 py-3 shadow-xl">
               <div className="flex items-center gap-2 mb-2">
@@ -998,25 +1300,77 @@ export default function PowerMap() {
               </div>
             </div>
           </div>
+          )}
+
+          {isClusterView && (
+          <div className="absolute top-3 left-3 z-[1000] hidden sm:block pointer-events-auto" data-testid="stats-overlay-clusters">
+            <div className="bg-surface-raised/90 backdrop-blur-md border border-subtle rounded-lg px-4 py-3 shadow-xl">
+              <div className="flex items-center gap-2 mb-2">
+                <Zap className="h-3.5 w-3.5 text-brand" />
+                <span className="text-xs font-semibold text-white/90 tracking-tight">AI Clusters</span>
+                <UITooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      className="text-white/40 hover:text-brand transition-colors"
+                      aria-label="What this view shows"
+                      data-testid="clusters-banner"
+                    >
+                      <Info className="h-3.5 w-3.5" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" align="start" className="max-w-xs z-[1200] p-3">
+                    <p className="text-[11px] font-semibold text-brand mb-1.5">Every tracked AI cluster</p>
+                    <p className="text-11 leading-snug text-white/70">
+                      The <Link href="/compute-frontier" className="text-brand hover:text-brand-2">Compute Frontier</Link> record set with no size floor. Marker size is planned MW, an estimate for most sites. Energized is rated MW at operational sites. Click a site for its record and sources.
+                    </p>
+                  </TooltipContent>
+                </UITooltip>
+                <span className="text-10 font-mono text-white/40">
+                  {clLoading ? "loading…" : clError ? "load failed" : `${clusters.length} clusters`}
+                </span>
+                <AsOf updatedAt={clUpdatedAt} intervalMs={900_000} />
+              </div>
+              <ClusterStatsRow
+                all={allClusterStats}
+                shown={shownClusterStats}
+                statuses={clusterStatuses}
+                onToggleStatus={toggleClusterStatus}
+                loading={clLoading}
+                error={clError}
+                onRetry={() => refetchClusters()}
+              />
+            </div>
+          </div>
+          )}
 
           <div className="absolute top-3 right-3 z-[1000] flex flex-col items-end gap-2 pointer-events-auto">
             <div className="flex rounded-md overflow-hidden border border-subtle text-xs shadow-lg">
               <button
                 className={`px-3 py-1.5 transition-all duration-500 ${viewMode === "dc" ? "bg-brand text-black font-semibold" : "bg-surface-raised/90 text-white/60 hover:text-white/90 backdrop-blur-md"}`}
-                onClick={() => setViewMode("dc")}
+                onClick={() => switchView("dc")}
                 data-testid="toggle-dc-locations"
               >
                 DC Locations
               </button>
               <button
+                className={`px-3 py-1.5 transition-all duration-500 ${viewMode === "clusters" ? "bg-brand text-black font-semibold" : "bg-surface-raised/90 text-white/60 hover:text-white/90 backdrop-blur-md"}`}
+                onClick={() => switchView("clusters")}
+                data-testid="toggle-clusters"
+              >
+                AI Clusters
+              </button>
+              <button
                 className={`px-3 py-1.5 transition-all duration-500 ${viewMode === "stress" ? "bg-brand text-black font-semibold" : "bg-surface-raised/90 text-white/60 hover:text-white/90 backdrop-blur-md"}`}
-                onClick={() => setViewMode("stress")}
+                onClick={() => switchView("stress")}
                 data-testid="toggle-grid-stress"
               >
                 NERC Risk
               </button>
             </div>
 
+            {/* The facility filters (operator, region, capacity) are facility
+                fields; the clusters view filters by status in its overlay. */}
+            {!isClusterView && (
             <button
               onClick={() => {
                 const isMobile = window.innerWidth < 768;
@@ -1039,6 +1393,7 @@ export default function PowerMap() {
               <span className="text-10 text-white/40 ml-1">{anyFilterActive || rtoFocus ? `${filteredCount}/${dataCenters.length}` : `${dataCenters.length}`}</span>
               <ChevronDown className={`h-3 w-3 transition-transform ${filtersExpanded ? "rotate-180" : ""}`} />
             </button>
+            )}
 
             {rtoFocus && (
               <button
@@ -1047,13 +1402,13 @@ export default function PowerMap() {
                 style={{ borderColor: alpha(BRAND.primary, 0.4), color: BRAND.primary }}
                 data-testid="map-rto-focus-chip"
               >
-                <span>{rtoFocus} facilities only</span>
+                <span>{rtoFocus} {isClusterView ? "clusters" : "facilities"} only</span>
                 <X className="h-3 w-3" />
               </button>
             )}
           </div>
 
-          {filtersExpanded && (
+          {filtersExpanded && !isClusterView && (
             <div className="absolute top-[88px] right-3 z-[1000] pointer-events-auto" data-testid="filter-panel">
               <div className="bg-surface-raised/95 backdrop-blur-md border border-subtle rounded-lg p-4 shadow-2xl w-[320px] max-h-[60vh] overflow-y-auto">
                 <div className="flex items-center justify-between mb-3">
@@ -1173,7 +1528,40 @@ export default function PowerMap() {
 
           <div className="absolute bottom-3 left-3 z-[1000] pointer-events-none" data-testid="map-legend">
             <div className="bg-surface-raised/90 backdrop-blur-md border border-subtle rounded-lg px-3 py-2.5 shadow-lg">
-              {viewMode === "dc" ? (
+              {viewMode === "clusters" ? (
+                <div className="flex items-start gap-4">
+                  <div>
+                    <p className="text-10 text-white/40 mb-1.5">Size = planned MW</p>
+                    <div className="flex items-end gap-2.5">
+                      {clusterLegendSizes.map(({ mw, label }) => {
+                        const d = Math.round(clusterPinRadius(mw) * 2);
+                        return (
+                          <div key={mw} className="flex flex-col items-center gap-1">
+                            <span
+                              className="rounded-full border"
+                              style={{
+                                width: d,
+                                height: d,
+                                borderColor: INK.secondary,
+                                backgroundColor: alpha(INK.secondary, 0.12),
+                              }}
+                            />
+                            <span className="text-9 font-mono text-white/50 whitespace-nowrap">{label}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-10 text-white/40 mb-1.5">Color = status</p>
+                    <div className="space-y-1 text-10 text-white/60">
+                      <div className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ backgroundColor: STATUS_COLORS.operational }} />Operational</div>
+                      <div className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ backgroundColor: STATUS_COLORS.construction }} />Construction</div>
+                      <div className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ backgroundColor: STATUS_COLORS.announced }} />Announced</div>
+                    </div>
+                  </div>
+                </div>
+              ) : viewMode === "dc" ? (
                 <div className="flex items-start gap-4">
                   <div>
                     <p className="text-10 text-white/40 mb-1.5">Size = capacity</p>
@@ -1240,33 +1628,52 @@ export default function PowerMap() {
           >
             <BasemapTiles maxZoom={19} />
             <RTORegions viewMode={viewMode} />
-            <FacilityMarkers
-              viewMode={viewMode}
-              filterCompanies={filterCompanies}
-              filterRTOs={filterRTOs}
-              filterCapacity={filterCapacity}
-              rtoFocus={rtoFocus}
-              hoveredId={hoveredId}
-              setHoveredId={setHoveredId}
-              selected={selected}
-              setSelected={setSelected}
-              setTooltipDC={setTooltipDC}
-              setTooltipPos={setTooltipPos}
-              dataCenters={dataCenters}
-            />
-            <FacilityLabels
-              viewMode={viewMode}
-              filterCompanies={filterCompanies}
-              filterRTOs={filterRTOs}
-              filterCapacity={filterCapacity}
-              rtoFocus={rtoFocus}
-              dataCenters={dataCenters}
-            />
-            <MapClickHandler onMapClick={() => { setSelected(null); setTooltipDC(null); setTooltipPos(null); }} />
+            {isClusterView ? (
+              <>
+                <ClusterMarkers
+                  clusters={clusters}
+                  statuses={clusterStatuses}
+                  rtoFocus={rtoFocus}
+                  hoveredId={hoveredClusterId}
+                  setHoveredId={setHoveredClusterId}
+                  selected={selectedCluster}
+                  setSelected={setSelectedCluster}
+                  setTooltipCluster={setTooltipCluster}
+                  setTooltipPos={setTooltipPos}
+                />
+                <ClusterLabels clusters={clusters} statuses={clusterStatuses} rtoFocus={rtoFocus} />
+              </>
+            ) : (
+              <>
+                <FacilityMarkers
+                  viewMode={viewMode}
+                  filterCompanies={filterCompanies}
+                  filterRTOs={filterRTOs}
+                  filterCapacity={filterCapacity}
+                  rtoFocus={rtoFocus}
+                  hoveredId={hoveredId}
+                  setHoveredId={setHoveredId}
+                  selected={selected}
+                  setSelected={setSelected}
+                  setTooltipDC={setTooltipDC}
+                  setTooltipPos={setTooltipPos}
+                  dataCenters={dataCenters}
+                />
+                <FacilityLabels
+                  viewMode={viewMode}
+                  filterCompanies={filterCompanies}
+                  filterRTOs={filterRTOs}
+                  filterCapacity={filterCapacity}
+                  rtoFocus={rtoFocus}
+                  dataCenters={dataCenters}
+                />
+              </>
+            )}
+            <MapClickHandler onMapClick={() => { setSelected(null); setTooltipDC(null); setSelectedCluster(null); setTooltipCluster(null); setTooltipPos(null); }} />
             <ZoomControl position="bottomright" />
           </MapContainer>
 
-          {dcError && (
+          {!isClusterView && dcError && (
             <div className="absolute inset-0 z-[1010] flex items-center justify-center pointer-events-none">
               <div className="pointer-events-auto bg-surface-raised/95 backdrop-blur-md border border-subtle rounded-lg shadow-2xl px-8">
                 <ErrorState label="Facility data failed to load - the map has no sites to show." onRetry={() => refetchDataCenters()} />
@@ -1274,7 +1681,15 @@ export default function PowerMap() {
             </div>
           )}
 
-          {showTooltip && (
+          {isClusterView && clError && (
+            <div className="absolute inset-0 z-[1010] flex items-center justify-center pointer-events-none">
+              <div className="pointer-events-auto bg-surface-raised/95 backdrop-blur-md border border-subtle rounded-lg shadow-2xl px-8">
+                <ErrorState label="Cluster data failed to load - the map has no sites to show." onRetry={() => refetchClusters()} />
+              </div>
+            </div>
+          )}
+
+          {!isClusterView && showTooltip && (
             <div
               className="absolute z-[1001] pointer-events-none power-map-tooltip"
               style={{
@@ -1355,6 +1770,105 @@ export default function PowerMap() {
                     >
                       View in Equities &rarr;
                     </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          {isClusterView && displayCluster && tooltipPos && (
+            <div
+              className="absolute z-[1001] pointer-events-none power-map-tooltip"
+              style={{
+                left: Math.min(Math.max(tooltipPos.x + 16, 8), (mapContainerRef.current?.clientWidth ?? 600) - 296),
+                top: Math.max(tooltipPos.y - 180, 8),
+              }}
+            >
+              <div
+                className="border rounded-lg shadow-2xl text-xs min-w-[260px] max-w-[280px] overflow-hidden"
+                style={{
+                  background: SURFACE.raised,
+                  borderColor: alpha(BRAND.primary, 0.3),
+                  boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
+                  backdropFilter: "blur(8px)",
+                }}
+                data-testid="cluster-detail-tooltip"
+              >
+                <div className="px-4 pt-3 pb-2 border-b" style={{ borderColor: BORDER.subtle }}>
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="font-bold text-white text-sm leading-tight">{displayCluster.name}</p>
+                    <span
+                      className="text-10 px-2 py-0.5 rounded-full font-medium whitespace-nowrap"
+                      style={{
+                        backgroundColor: alpha(STATUS_COLORS[displayCluster.status], 0.15),
+                        color: STATUS_COLORS[displayCluster.status],
+                      }}
+                    >
+                      {getStatusBadge(displayCluster.status).label}
+                    </span>
+                  </div>
+                </div>
+                <div className="px-4 py-3 space-y-2">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-white/40 text-xs">Operator</span>
+                    <span className="text-white text-xs text-right">{displayCluster.operator}</span>
+                  </div>
+                  {(displayCluster.location.city || displayCluster.location.state) && (
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-white/40 text-xs">Location</span>
+                      <span className="text-white text-xs text-right">
+                        {[displayCluster.location.city, displayCluster.location.state].filter(Boolean).join(", ")}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-white/40 text-xs">Planned</span>
+                    <span className="text-brand-2 font-mono font-bold text-13 tabular-nums">
+                      {formatClusterMW(displayCluster.plannedPowerMW)}
+                      {isEstimated(displayCluster, "plannedPowerMW") && <span className="text-10 font-normal text-white/40 ml-1">est.</span>}
+                    </span>
+                  </div>
+                  {displayCluster.ratedPowerMW > 0 && (
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-white/40 text-xs">Rated</span>
+                      <span className="text-white text-xs font-mono tabular-nums">
+                        {formatClusterMW(displayCluster.ratedPowerMW)}
+                        {isEstimated(displayCluster, "ratedPowerMW") && <span className="text-10 text-white/40 ml-1">est.</span>}
+                      </span>
+                    </div>
+                  )}
+                  {(displayCluster.gpuCount ?? 0) > 0 && (
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-white/40 text-xs">GPUs</span>
+                      <span className="text-white text-xs font-mono tabular-nums text-right">
+                        {(displayCluster.gpuCount ?? 0).toLocaleString()}{clusterChip ? ` ${clusterChip}` : ""}
+                        {isEstimated(displayCluster, "gpuCount") && <span className="text-10 text-white/40 ml-1">est.</span>}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-white/40 text-xs">Grid Region</span>
+                    <span className="text-white text-xs">{clusterRTO(displayCluster.gridRegion) ?? displayCluster.gridRegion ?? "Unknown"}</span>
+                  </div>
+                  {selectedCluster && displayCluster.energySource && (
+                    <div className="flex items-start justify-between gap-3">
+                      <span className="text-white/40 text-xs">Power</span>
+                      <span className="text-white text-xs text-right">{displayCluster.energySource}</span>
+                    </div>
+                  )}
+                  {selectedCluster && displayCluster.onlineDate && (
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-white/40 text-xs">Online</span>
+                      <span className="text-white text-xs">{displayCluster.onlineDate}</span>
+                    </div>
+                  )}
+                  <div className="pt-1.5 mt-1" style={{ borderTop: `1px solid ${BORDER.subtle}` }}>
+                    <Link
+                      href={`/compute-frontier/${displayCluster.id}`}
+                      className="block text-11 text-brand hover:text-brand-2 transition-colors pointer-events-auto"
+                      data-testid="link-cluster-record"
+                    >
+                      Record and sources &rarr;
+                    </Link>
                   </div>
                 </div>
               </div>
@@ -1626,6 +2140,65 @@ export default function PowerMap() {
         </div>
       )}
       </>)}
+    </div>
+  );
+}
+
+/**
+ * Cluster headline numbers plus the status chips that filter the markers.
+ * Shared by the desktop overlay and the phone summary card. Planned MW is an
+ * estimate for most rows; energized is rated MW at operational sites.
+ */
+function ClusterStatsRow({ all, shown, statuses, onToggleStatus, loading, error, onRetry, compact }: {
+  all: ClusterStats;
+  shown: ClusterStats;
+  statuses: ClusterStatus[];
+  onToggleStatus: (s: ClusterStatus) => void;
+  loading: boolean;
+  error: boolean;
+  onRetry: () => void;
+  compact?: boolean;
+}) {
+  if (error) return <ErrorState label="Cluster data failed to load." onRetry={onRetry} className={compact ? "py-4" : "py-1"} />;
+  if (loading) return <Skeleton className="h-5 w-56" aria-hidden="true" />;
+  const filtered = statuses.length > 0;
+  const stats = filtered ? shown : all;
+  const ink = compact ? "text-muted-foreground" : "text-white/50";
+  const sep = compact ? "text-muted-foreground/30" : "text-white/20";
+  return (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-11 font-mono">
+      <span className="flex items-center gap-3 whitespace-nowrap">
+        <span className="text-brand-2 font-bold" title="planned MW across the clusters shown; an estimate for most sites">
+          {(stats.plannedMW / 1000).toFixed(1)} GW planned
+        </span>
+        <span className={sep}>|</span>
+        <span className={ink} title="rated MW at operational clusters">{(stats.operationalMW / 1000).toFixed(1)} GW energized</span>
+        {filtered && (
+          <>
+            <span className={sep}>|</span>
+            <span className={ink}>{stats.count} of {all.count}</span>
+          </>
+        )}
+      </span>
+      <div className="flex items-center gap-1" role="group" aria-label="Filter clusters by status">
+        {CLUSTER_STATUSES.map((s) => {
+          const on = !filtered || statuses.includes(s);
+          return (
+            <button
+              key={s}
+              type="button"
+              onClick={() => onToggleStatus(s)}
+              aria-pressed={statuses.includes(s)}
+              title={`${getStatusBadge(s).label}: ${all.byStatus[s]} clusters`}
+              data-testid={`cluster-status-${s}`}
+              className={`flex items-center gap-1 rounded px-1 py-0.5 transition-opacity ${on ? "opacity-100" : "opacity-40 hover:opacity-70"}`}
+            >
+              <span className="h-1.5 w-1.5 rounded-full inline-block" style={{ backgroundColor: STATUS_COLORS[s] }} />
+              <span className={ink}>{all.byStatus[s]}</span>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
