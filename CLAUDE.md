@@ -41,6 +41,14 @@ unless GPU_LIVE_SWEEP_ENABLED records written permission. Titles are templates; 
 them. Reverse links: deals tab ?deal=<id>, cluster pages and the catalyst detail link to
 /timeline?record=<kind>:<id>.
 
+Power Map (/power-map, Map tab) draws one Leaflet map in three views, round-tripped as `?view=`:
+DC Locations (the tracked facilities, >= 400 MW, /api/datacenters, with the operator, region and
+capacity filters), AI Clusters (2026-10: every /api/clusters row with coordinates, no size floor,
+the same records as /compute-frontier; marker area = planned MW, status chips filter, the detail
+card links to the record) and NERC Risk. The pure helpers (view param, region bucket, radius,
+filters, overlay sums) live in client/src/lib/power-map-clusters.ts and are tested; the two
+marker layers never draw at once.
+
 Off-nav: "/" (marketing landing, bare layout, lazy Home.tsx), /subscribe, /admin/datacenters,
 /admin/social, /stock/:ticker, /sector/:slug, /region/:slug, /operator/:slug, /blog/:slug,
 /state/:slug (published states only, from server/data/state-pages.json: maryland; any other

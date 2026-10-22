@@ -477,6 +477,9 @@ export default function ComputeFrontier() {
               <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ background: STATUS_COLOR.operational }} />operational</span>
               <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ background: STATUS_COLOR.construction }} />construction</span>
               <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ background: STATUS_COLOR.announced }} />announced</span>
+              <Link href="/power-map?view=clusters" className="text-brand hover:text-brand-2 transition-colors" data-testid="link-power-map-clusters">
+                Open on the Power Map &rarr;
+              </Link>
             </div>
           </div>
           <div style={{ height: 420 }}>
