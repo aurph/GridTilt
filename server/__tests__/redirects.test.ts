@@ -47,8 +47,8 @@ test("aliases, API 404s, the ticker list and the sitemap", async () => {
     r = await fetch(`${url}/queue`, { redirect: "manual" });
     assert.equal(r.status, 301);
     assert.equal(r.headers.get("location"), "/power-map?tab=queue");
-    r = await fetch(`${url}/supply-chain?view=table`, { redirect: "manual" });
-    assert.equal(r.headers.get("location"), "/stack?view=flow", "the alias's own parameter wins");
+    r = await fetch(`${url}/power-deals?tab=queue`, { redirect: "manual" });
+    assert.equal(r.headers.get("location"), "/power-map?tab=deals", "the alias's own parameter wins");
 
     r = await fetch(`${url}/api/stock/NOPE`);
     assert.equal(r.status, 404);

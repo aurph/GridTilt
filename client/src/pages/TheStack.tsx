@@ -590,7 +590,7 @@ export default function TheStack() {
       title: "Transmission & Grid Hardware",
       icon: Server,
       color: CATEGORY_COLORS.grid,
-      description: "Wire, generators, and grid equipment connecting power to data center campuses.",
+      description: "Transmission cable and grid components connecting power to data center campuses.",
       tooltip: "Every data center requires extensive copper wiring (Encore Wire), backup generators (Generac), and electrical infrastructure. Grid interconnection is the bottleneck for new data center energization timelines.",
     },
     {

@@ -37,10 +37,11 @@ export const PAGE_ENTRIES: PaletteEntry[] = [
   { id: "page-analyze", label: "Analyze", hint: "baskets and scenarios", category: "page", href: "/analyze", keywords: "portfolio basket scenario calculator" },
   { id: "page-catalysts", label: "Catalysts", hint: "earnings and policy", category: "page", href: "/catalysts", keywords: "earnings calendar events" },
   { id: "page-timeline", label: "Timeline", hint: "dated events", category: "page", href: "/timeline", keywords: "events history deals announcements what happened" },
+  { id: "page-data-status", label: "Data status", hint: "freshness of each dataset", category: "page", href: "/data-status", keywords: "freshness updated stale last updated sources" },
   { id: "page-research", label: "Research", hint: "analysis and the Brief", category: "page", href: "/blog", keywords: "blog articles brief" },
   { id: "page-queue", label: "Interconnection queue", hint: "Power Map tab", category: "page", href: "/power-map?tab=queue", keywords: "backlog interconnection queue lbnl" },
   { id: "page-deals", label: "Power agreements", hint: "Power Map tab", category: "page", href: "/power-map?tab=deals", keywords: "deals nuclear ppa agreements" },
-  { id: "page-supply-chain", label: "Supply Chain", hint: "flow view in Equities", category: "page", href: "/stack?view=flow", keywords: "graph flow stages" },
+  { id: "page-supply-chain", label: "Supply Chain", hint: "raw materials to end use", category: "page", href: "/supply-chain", keywords: "graph flow stages network bottleneck" },
 ];
 
 export interface StateLike {

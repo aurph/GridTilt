@@ -8,16 +8,19 @@ import { Link } from "wouter";
 const SECTIONS: [string, string][] = [
   ["Overview", "/overview"],
   ["Equities", "/stack"],
+  ["Supply Chain", "/supply-chain"],
   ["Power", "/power-map"],
   ["Compute", "/compute-frontier"],
   ["GPU Prices", "/neocloud-intel"],
   ["Analyze", "/analyze"],
   ["Catalysts", "/catalysts"],
+  ["Timeline", "/timeline"],
   ["Research", "/blog"],
 ];
 
 const DATA: [string, string][] = [
   ["Methodology", "/compute-frontier/methodology"],
+  ["Data status", "/data-status"],
   ["The brief", "/subscribe"],
 ];
 

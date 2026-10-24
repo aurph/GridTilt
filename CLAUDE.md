@@ -41,6 +41,14 @@ unless GPU_LIVE_SWEEP_ENABLED records written permission. Titles are templates; 
 them. Reverse links: deals tab ?deal=<id>, cluster pages and the catalyst detail link to
 /timeline?record=<kind>:<id>.
 
+Power Map (/power-map, Map tab) draws one Leaflet map in three views, round-tripped as `?view=`:
+DC Locations (the tracked facilities, >= 400 MW, /api/datacenters, with the operator, region and
+capacity filters), AI Clusters (2026-10: every /api/clusters row with coordinates, no size floor,
+the same records as /compute-frontier; marker area = planned MW, status chips filter, the detail
+card links to the record) and NERC Risk. The pure helpers (view param, region bucket, radius,
+filters, overlay sums) live in client/src/lib/power-map-clusters.ts and are tested; the two
+marker layers never draw at once.
+
 Off-nav: "/" (marketing landing, bare layout, lazy Home.tsx), /subscribe, /admin/datacenters,
 /admin/social, /stock/:ticker, /sector/:slug, /region/:slug, /operator/:slug, /blog/:slug,
 /state/:slug (published states only, from server/data/state-pages.json: maryland; any other
@@ -48,8 +56,10 @@ slug is a real 404). /state/:slug is the one indexable address for a state. My G
 (2026-10); /my-grid 301s to /power-map. server/state-page.ts composes the page once for
 the JSON (/api/state-pages/:slug), the metadata and the facts written into the HTML.
 Every route except "/" gets the dashboard shell (AppSidebar + header + NewsTicker).
-The eight aliases (/gpu-economics, /power-deals, /brief, /supply-chain, /trade, /portfolio,
-/queue, /my-grid) are client <Redirect>s and server 301s to the same final address (seo.ts ALIAS_REDIRECTS).
+The seven aliases (/gpu-economics, /power-deals, /brief, /trade, /portfolio, /queue, /my-grid)
+are client <Redirect>s and server 301s to the same final address (seo.ts ALIAS_REDIRECTS).
+/supply-chain is a page again (2026-10-15, Jack's call): the standalone graph in the top nav after
+Equities; Equities keeps its Flow tab (the same component, embedded).
 The G-chord list is maintained twice in App.tsx (display ~67-83, handler ~250-254); keep in sync.
 
 ## 2. Stack
@@ -156,11 +166,25 @@ Schedulers (no node-cron anywhere):
 
 server/data custody (the fragility map):
 - Announcement dates (deal rows in interconnection-queue.json, rows in clusters.json): optional
-  `announced` (YYYY-MM-DD) + `announcedSource`, hand-entered from a source the row already cites
-  (the announcing party's dated release or filing, or a source that states the day). Never a
-  year, month, URL-implied, expansion, earnings-recap or inferred date. 30 rows carry one
-  (2026-10-14, the top deals by MW and clusters by GPU count); timeline.test.ts fails on any
-  row whose date is not a real day or whose source the row does not cite.
+  `announced` (YYYY-MM-DD) + `announcedSource`, hand-entered from a source the row cites (the
+  announcing party's dated release or filing, or a source that states the day). A primary
+  release found for the purpose is added to the row's `sources` first. Never a year, month,
+  URL-implied, expansion, earnings-recap of an earlier deal, groundbreaking after an earlier
+  announcement, regulatory filing or inferred date. 91 rows carry one (52 deals, 39 clusters,
+  2026-10-15); timeline.test.ts fails on any row whose date is not a real day or whose source
+  the row does not cite. Deal titles: PPAs name buyer and seller; other rows read
+  "<sponsor> announced <project>". Aggregate, regulatory and not-ai-offtake rows never become
+  deal events.
+- Supply chain (2026-10-18 accuracy pass): every figure on /supply-chain is either live from
+  GridTilt's own data (end-use cluster counts) or a sourced, dated fact (node `fact` in
+  client/src/data/supply-chain-config.ts; stage `evidence` in supply-chain-stages.json, validated
+  by server/supply-chain.ts). Node descriptions state roles only, no figures. A stage status
+  follows the stated method (Bottlenecked: key equipment lead time two years or more; Tightening:
+  lead times past six months or backlogs growing over 25% a year); review every 90 days.
+  supply-chain.test.ts enforces sources, dates, stage-ticker parity with the graph, registry
+  membership for every graph ticker, and that retired tickers (ABB, SWN, WIRE, X, SIEGY, AYI,
+  AOS) never return. Before adding a ticker anywhere, confirm it trades (Yahoo quote with a
+  recent regularMarketTime) and names the right company.
 - Hand-curated, code never writes: catalysts.json, clusters.json, supply-chain-stages.json,
   frontier-models.json, dataset-reviews.json (one entry per completed review; the freshness
   report's claim-last-reviewed date), change-log.json (one entry per shipped correction, added in the same
@@ -270,9 +294,14 @@ Documented, not to fix casually or silently:
   reporting-only slop scan, and `npm audit` which DOES fail the build on a new high advisory.
 - Durability (audit M2): subscribers moved to Postgres (T17: one row per address with a state,
   suppressions kept as email hashes, explicit one-time imports, backup/restore in
-  scripts/subscribers.ts, runbook docs/runbooks/subscriber-storage.md). The other machine-written
-  JSON still lives on autoscale ephemeral disk, and admin blog CRUD writes tracked content/ at
-  runtime; a redeploy can lose those.
+  scripts/subscribers.ts, runbook docs/runbooks/subscriber-storage.md). With DATABASE_URL set,
+  the append-only logs (index-history.json, gpu-price-history.json, social-log.json,
+  backlog-auto-updates.json) are mirrored in Postgres table gt_documents (server/durable-docs.ts):
+  merged with the database at boot (union by date/timestamp, 20 s cap, failure logged and the
+  site runs on local files), and every write calls notifyDocWritten(name). A new append-only
+  writer must call it too. Still on ephemeral disk: datacenters.json, datacenters-pending.json,
+  market-constants.json, admin edits to interconnection-queue.json, and admin blog CRUD in
+  content/. Mirroring those needs deletion tombstones and a rule for repo edits; not done.
 - Production detection: the deployment runs `node dist/index.cjs` with NO NODE_ENV at runtime.
   Only the literal `process.env.NODE_ENV` is replaced at build time (script/build.ts define), so
   code that must know it is in production reads that literal (server/index.ts, chooseStore's
@@ -294,4 +323,7 @@ Documented, not to fix casually or silently:
   then Replit -> Deployments -> Redeploy, manually. Never say "shipped" after a push.
 - Build: npm run build (vite client to dist/public, esbuild server to dist/index.cjs); the
   .replit postMerge hook runs npm install.
-- After redeploy, sanity-check /api/stack, /api/kpis, and /api/clusters/metrics.
+- After redeploy, run `npm run smoke -- https://gridtilt.com` (server/smoke.ts; add
+  SMOKE_ADMIN_KEY for the admin freshness report). FAIL = the deploy is wrong (broken page or
+  API, soft 404, GPU sweep on without permission); WARN = stale data, missing EIA key, slow
+  response. Exit code 1 on any FAIL.

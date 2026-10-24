@@ -27,7 +27,6 @@ export const ALIAS_REDIRECTS: Record<string, string> = {
   "/gpu-economics": "/neocloud-intel?tab=economics",
   "/power-deals": "/power-map?tab=deals",
   "/brief": "/blog",
-  "/supply-chain": "/stack?view=flow",
   "/trade": "/analyze?tab=scenario",
   "/portfolio": "/analyze?tab=portfolio",
   "/queue": "/power-map?tab=queue",
@@ -89,6 +88,11 @@ const STATIC_PAGES: Record<string, { title: string; description: string; slug: s
     description: "Live prices for public companies across nuclear, uranium, construction, utilities, data centers, and power hardware.",
     slug: "stack",
   },
+  "/supply-chain": {
+    title: "AI Power Supply Chain: Raw Materials to End Use | GridTilt",
+    description: "How uranium, copper, gas, generation, transformers, substations, cooling and data centers connect, with the public companies at each stage and where the chain is tightening.",
+    slug: "supply-chain",
+  },
   "/power-map": {
     title: "AI Data Center Map: Projects by Grid Region | GridTilt",
     description: "Tracked AI data center campuses of 400 MW and up, mapped by operator, grid region and capacity, with power agreements and the interconnection queue.",
@@ -103,6 +107,11 @@ const STATIC_PAGES: Record<string, { title: string; description: string; slug: s
     title: "Timeline: Power Deals, Clusters and Grid Events by Date | GridTilt",
     description: "Dated events from GridTilt's datasets in one feed: power agreements, compute cluster announcements, confirmed earnings dates, state actions, model releases and published corrections, each linked to its source.",
     slug: "timeline",
+  },
+  "/data-status": {
+    title: "Data Status | GridTilt",
+    description: "When each GridTilt dataset was last updated and last reviewed against its sources, and how often it is expected to change.",
+    slug: "data-status",
   },
   "/blog": {
     title: "Research | GridTilt",
@@ -648,6 +657,7 @@ export const CRAWLABLE_API_PREFIXES = [
   "/api/catalysts/",
   "/api/changes",
   "/api/clusters",
+  "/api/data-status",
   "/api/datacenters",
   "/api/deals/metrics",
   "/api/frontier-models",

@@ -225,7 +225,9 @@
       "firmness": "signed",
       "firmnessSource": "https://www.kairospower.com/updates/google-kairos-power-tva-collaborate-to-meet-americas-growing-energy-needs",
       "reviewed": "2026-09-28",
-      "asset": "new-build"
+      "asset": "new-build",
+      "announced": "2025-08-18",
+      "announcedSource": "https://www.kairospower.com/updates/google-kairos-power-tva-collaborate-to-meet-americas-growing-energy-needs"
     },
     {
       "id": "standard-power-nuscale-pa",
@@ -244,13 +246,16 @@
         "https://www.sec.gov/Archives/edgar/data/1822966/000182296623000242/a2023-10x06xstandardpowe.htm",
         "NuScale investor materials",
         "NuScale press release",
-        "DCD"
+        "DCD",
+        "https://www.sec.gov/Archives/edgar/data/1822966/000182296623000242/smr-20231006.htm"
       ],
       "notes": "An announced development plan, not a signed agreement: Standard Power said in October 2023 that it 'has chosen to work with' NuScale for two SMR sites in Ohio and Pennsylvania (24 x 77 MWe, 1,848 MWe) to power its own planned data centers. No hyperscaler or other buyer is named. NuScale's FY2025 10-K says it has no binding contract with any customer and does not mention Standard Power.",
       "firmness": "preliminary",
       "firmnessSource": "https://www.sec.gov/Archives/edgar/data/1822966/000182296623000242/a2023-10x06xstandardpowe.htm",
       "reviewed": "2026-09-28",
-      "asset": "new-build"
+      "asset": "new-build",
+      "announced": "2023-10-06",
+      "announcedSource": "https://www.sec.gov/Archives/edgar/data/1822966/000182296623000242/smr-20231006.htm"
     },
     {
       "id": "ms-brookfield-renewables",
@@ -296,13 +301,16 @@
         "Google press Dec 2024",
         "Reuters",
         "POWER Magazine",
-        "Intersect Power press release"
+        "Intersect Power press release",
+        "https://abc.xyz/investor/news/news-details/2025/Alphabet-Announces-Agreement-to-Acquire-Intersect-to-Advance-U-S--Energy-Innovation-2025-DVIuVDM9wW/default.aspx"
       ],
       "notes": "A completed acquisition, not a PPA: Alphabet closed its purchase of the developer Intersect on March 10, 2026 for $5.9 billion after purchase-price adjustments. Alphabet says the deal includes 'multiple gigawatts of energy and data center projects in development' and gives no capacity total, so none is shown here. Intersect's existing operating assets were excluded.",
       "firmness": "signed",
       "firmnessSource": "https://www.sec.gov/Archives/edgar/data/1652044/000165204426000048/R17.htm",
       "reviewed": "2026-09-28",
-      "asset": "new-build"
+      "asset": "new-build",
+      "announced": "2025-12-22",
+      "announcedSource": "https://abc.xyz/investor/news/news-details/2025/Alphabet-Announces-Agreement-to-Acquire-Intersect-to-Advance-U-S--Energy-Innovation-2025-DVIuVDM9wW/default.aspx"
     },
     {
       "id": "google-totalenergies-tx",
@@ -366,9 +374,12 @@
       "sources": [
         "OpenAI press July 2025",
         "Epoch AI",
-        "OpenAI press Sept 2025"
+        "OpenAI press Sept 2025",
+        "https://finance.yahoo.com/news/oracle-openai-add-4-5-104533543.html"
       ],
-      "notes": "4.5 GW additional Stargate capacity under the July 2025 Oracle agreement. US Stargate pipeline exceeded 9 GW across seven sites by April 2026 (Abilene, Shackelford Co TX, Dona Ana Co NM, Milam Co TX, Port Washington WI, Saline Township MI, Lordstown OH), six under construction. The Saline Township MI site (1.4 GW) is the load behind the DTE supply agreement tracked separately."
+      "notes": "4.5 GW additional Stargate capacity under the July 2025 Oracle agreement. US Stargate pipeline exceeded 9 GW across seven sites by April 2026 (Abilene, Shackelford Co TX, Dona Ana Co NM, Milam Co TX, Port Washington WI, Saline Township MI, Lordstown OH), six under construction. The Saline Township MI site (1.4 GW) is the load behind the DTE supply agreement tracked separately.",
+      "announced": "2025-07-22",
+      "announcedSource": "https://finance.yahoo.com/news/oracle-openai-add-4-5-104533543.html"
     },
     {
       "id": "meta-hyperion-la",
@@ -387,9 +398,12 @@
         "Meta press",
         "Data Center Frontier",
         "Meta Data Centers July 2026",
-        "CNBC"
+        "CNBC",
+        "https://opportunitylouisiana.gov/news/meta-selects-northeast-louisiana-as-site-of-10-billion-artificial-intelligence-optimized-data-center-governor-jeff-landry-calls-investment-a-new-chapter-for-state"
       ],
-      "notes": "Meta formally expanded Hyperion to 5 GW in July 2026, lifting investment above $50B. Under construction since Dec 2024. Powered in part by the Entergy electric service agreement tracked separately."
+      "notes": "Meta formally expanded Hyperion to 5 GW in July 2026, lifting investment above $50B. Under construction since Dec 2024. Powered in part by the Entergy electric service agreement tracked separately.",
+      "announced": "2024-12-04",
+      "announcedSource": "https://opportunitylouisiana.gov/news/meta-selects-northeast-louisiana-as-site-of-10-billion-artificial-intelligence-optimized-data-center-governor-jeff-landry-calls-investment-a-new-chapter-for-state"
     },
     {
       "id": "meta-prometheus-oh",
@@ -406,9 +420,12 @@
       "dcRelevant": true,
       "sources": [
         "Meta announcement",
-        "DCD"
+        "DCD",
+        "https://convergedigest.com/metas-prometheus-and-hyperion-superclusters-aim-for-multi-gigawatts/"
       ],
-      "notes": "First gigawatt-scale Meta supercluster at New Albany, publicly expected online in 2026. Booked at the announced ~1 GW; the earlier 1,020 MW / 500k-GPU figures were estimates without source support."
+      "notes": "First gigawatt-scale Meta supercluster at New Albany, publicly expected online in 2026. Booked at the announced ~1 GW; the earlier 1,020 MW / 500k-GPU figures were estimates without source support.",
+      "announced": "2025-07-14",
+      "announcedSource": "https://convergedigest.com/metas-prometheus-and-hyperion-superclusters-aim-for-multi-gigawatts/"
     },
     {
       "id": "meta-lebanon-in",
@@ -504,9 +521,12 @@
       "sources": [
         "Amazon press Feb 2026",
         "Amazon press Aug 2026",
-        "DCD"
+        "DCD",
+        "https://www.bossierparishla.gov/news/2026/02/23/amazon-announces-major-data-center-investment-in-northwest-louisiana"
       ],
-      "notes": "AWS program in Caddo and Bossier Parishes (northwest Louisiana) plus a third Shreveport campus, developed by STACK Infrastructure with SWEPCO as utility; investment raised from $12B (Feb 2026) to $18B on Aug 18, 2026. Campus MW undisclosed; the prior 1,500 MW estimate is not carried. Distinct from Meta's Richland Parish Hyperion."
+      "notes": "AWS program in Caddo and Bossier Parishes (northwest Louisiana) plus a third Shreveport campus, developed by STACK Infrastructure with SWEPCO as utility; investment raised from $12B (Feb 2026) to $18B on Aug 18, 2026. Campus MW undisclosed; the prior 1,500 MW estimate is not carried. Distinct from Meta's Richland Parish Hyperion.",
+      "announced": "2026-02-23",
+      "announcedSource": "https://www.bossierparishla.gov/news/2026/02/23/amazon-announces-major-data-center-investment-in-northwest-louisiana"
     },
     {
       "id": "xai-colossus-1",
@@ -526,9 +546,12 @@
         "DCD",
         "SELC documents",
         "WREG Memphis",
-        "Global Energy Monitor"
+        "Global Energy Monitor",
+        "https://memphischamber.com/blog/press-release/velocity-meets-potency-xai-announces-memphis-as-new-home/"
       ],
-      "notes": "TVA-approved grid power now ~300 MW (original 150 MW plus a second 150 MW tranche approved early 2026). The 15-turbine permit (~247 MW, through Jan 2027) stands, but observed turbine counts have exceeded permitted levels and xAI faces Clean Air Act litigation over unpermitted operation."
+      "notes": "TVA-approved grid power now ~300 MW (original 150 MW plus a second 150 MW tranche approved early 2026). The 15-turbine permit (~247 MW, through Jan 2027) stands, but observed turbine counts have exceeded permitted levels and xAI faces Clean Air Act litigation over unpermitted operation.",
+      "announced": "2024-06-05",
+      "announcedSource": "https://memphischamber.com/blog/press-release/velocity-meets-potency-xai-announces-memphis-as-new-home/"
     },
     {
       "id": "xai-colossus-2",
@@ -565,9 +588,12 @@
       "dcRelevant": true,
       "sources": [
         "Applied Digital 8-K",
-        "Applied Digital IR July 2026"
+        "Applied Digital IR July 2026",
+        "https://ir.applieddigital.com/news-events/press-releases/detail/123/"
       ],
-      "notes": "400 MW across three CoreWeave lease tranches (~$11B, 15-year terms). Building 1 (100 MW) in service ~Q4 2025; second building delivered July 1, 2026; third (150 MW) targets full capacity 2027. Campus engineered to scale to 1 GW."
+      "notes": "400 MW across three CoreWeave lease tranches (~$11B, 15-year terms). Building 1 (100 MW) in service ~Q4 2025; second building delivered July 1, 2026; third (150 MW) targets full capacity 2027. Campus engineered to scale to 1 GW.",
+      "announced": "2025-06-02",
+      "announcedSource": "https://ir.applieddigital.com/news-events/press-releases/detail/123/"
     },
     {
       "id": "applied-digital-delta-forge",
@@ -583,9 +609,12 @@
       "offtaker": "Undisclosed hyperscaler (15-year, $7.5B)",
       "dcRelevant": true,
       "sources": [
-        "Applied Digital 8-K Apr 2026"
+        "Applied Digital 8-K Apr 2026",
+        "https://ir.applieddigital.com/news-events/press-releases/detail/149/"
       ],
-      "notes": "300 MW critical IT on a 430 MW AI Factory campus for a US investment-grade hyperscaler (~$7.5B over ~15 years, April 2026); initial operations anticipated mid-2027. Applied Digital has not disclosed the state. A further 210 MW lease at Delta Forge 2 was announced June 8, 2026."
+      "notes": "300 MW critical IT on a 430 MW AI Factory campus for a US investment-grade hyperscaler (~$7.5B over ~15 years, April 2026); initial operations anticipated mid-2027. Applied Digital has not disclosed the state. A further 210 MW lease at Delta Forge 2 was announced June 8, 2026.",
+      "announced": "2026-04-23",
+      "announcedSource": "https://ir.applieddigital.com/news-events/press-releases/detail/149/"
     },
     {
       "id": "galaxy-helios-ercot",
@@ -621,9 +650,12 @@
       "dcRelevant": true,
       "sources": [
         "Cipher 8-K",
-        "Cipher Q3 2025 update"
+        "Cipher Q3 2025 update",
+        "https://www.sec.gov/Archives/edgar/data/1819989/000181998925000110/nov3_earningspressreleasex.htm"
       ],
-      "notes": "1 GW West Texas site announced Nov 2025 as a JV (Cipher ~95% equity); fully executed 1 GW Direct Connect Agreement with AEP pending ERCOT approval. Development pipeline, not near-term load; no HPC lease announced yet. The prior 2026 date was wrong at entry."
+      "notes": "1 GW West Texas site announced Nov 2025 as a JV (Cipher ~95% equity); fully executed 1 GW Direct Connect Agreement with AEP pending ERCOT approval. Development pipeline, not near-term load; no HPC lease announced yet. The prior 2026 date was wrong at entry.",
+      "announced": "2025-11-03",
+      "announcedSource": "https://www.sec.gov/Archives/edgar/data/1819989/000181998925000110/nov3_earningspressreleasex.htm"
     },
     {
       "id": "cipher-aws-lease",
@@ -639,9 +671,12 @@
       "offtaker": "Amazon Web Services (15-year, ~$5.5B)",
       "dcRelevant": true,
       "sources": [
-        "Cipher 8-K"
+        "Cipher 8-K",
+        "https://www.sec.gov/Archives/edgar/data/1819989/000181998925000110/nov3_earningspressreleasex.htm"
       ],
-      "notes": "Turnkey space + power for AI workloads."
+      "notes": "Turnkey space + power for AI workloads.",
+      "announced": "2025-11-03",
+      "announcedSource": "https://www.sec.gov/Archives/edgar/data/1819989/000181998925000110/nov3_earningspressreleasex.htm"
     },
     {
       "id": "iren-ms-9.7b",
@@ -658,9 +693,12 @@
       "dcRelevant": true,
       "sources": [
         "IREN press Nov 2025",
-        "The Block Aug 2026"
+        "The Block Aug 2026",
+        "https://www.sec.gov/Archives/edgar/data/1878848/000114036125040072/ef20058139_ex99-1.htm"
       ],
-      "notes": "$9.7B, 5-year Microsoft AI-cloud contract (GB300s, 20% prepayment): four 50 MW critical-IT Horizon data centers at the 750 MW Childress campus = 200 MW contract capacity (the prior 700 MW figure was an unsupported estimate). Horizon 1 delivered to and accepted by Microsoft Aug 13, 2026; Horizon 2-4 due later in 2026."
+      "notes": "$9.7B, 5-year Microsoft AI-cloud contract (GB300s, 20% prepayment): four 50 MW critical-IT Horizon data centers at the 750 MW Childress campus = 200 MW contract capacity (the prior 700 MW figure was an unsupported estimate). Horizon 1 delivered to and accepted by Microsoft Aug 13, 2026; Horizon 2-4 due later in 2026.",
+      "announced": "2025-11-03",
+      "announcedSource": "https://www.sec.gov/Archives/edgar/data/1878848/000114036125040072/ef20058139_ex99-1.htm"
     },
     {
       "id": "iep-pa-944mw",
@@ -685,7 +723,9 @@
       "firmness": "not-ai-offtake",
       "firmnessSource": "https://www.sec.gov/Archives/edgar/data/78128/000155278125000264/e25298_ex99-2.htm",
       "reviewed": "2026-09-28",
-      "asset": "new-build"
+      "asset": "new-build",
+      "announced": "2025-08-27",
+      "announcedSource": "https://www.sec.gov/Archives/edgar/data/78128/000155278125000264/e25298_ex99-2.htm"
     },
     {
       "id": "chevron-gevernova-multi",
@@ -754,7 +794,9 @@
       "firmness": "signed",
       "firmnessSource": "https://www.sec.gov/Archives/edgar/data/1680247/000168024725000139/propwrdatacenterannounceme.htm",
       "reviewed": "2026-09-28",
-      "asset": "new-build"
+      "asset": "new-build",
+      "announced": "2025-10-27",
+      "announcedSource": "https://www.sec.gov/Archives/edgar/data/1680247/000168024725000139/propwrdatacenterannounceme.htm"
     },
     {
       "id": "dte-mi-hyperscaler",
@@ -1101,13 +1143,16 @@
       "dcRelevant": true,
       "sources": [
         "https://www.sec.gov/Archives/edgar/data/1622536/000162253626000017/tln-20251231.htm",
-        "Utility Dive"
+        "Utility Dive",
+        "https://www.sec.gov/Archives/edgar/data/1622536/000162828025030559/a20250611pressreleasebusin.htm"
       ],
       "notes": "Not a separate contract: the pre-existing co-located AWS load moved into the single 1,920 MW amended Talen-AWS PPA of June 2025 (listed separately here and not added twice). Talen's FY2025 10-K: the amended PPA was entered 'to expand, and eventually replace, the existing PPA with AWS'; its Q2 2026 10-Q dates the transition to April 2026. The 300 MW figure is Utility Dive's; Talen's filings describe the original PPA as 'up to 960 MW'.",
       "firmness": "signed",
       "firmnessSource": "https://www.sec.gov/Archives/edgar/data/1622536/000162253626000017/tln-20251231.htm",
       "reviewed": "2026-09-28",
-      "asset": "existing"
+      "asset": "existing",
+      "announced": "2025-06-11",
+      "announcedSource": "https://www.sec.gov/Archives/edgar/data/1622536/000162828025030559/a20250611pressreleasebusin.htm"
     },
     {
       "id": "pjm-cifp-fast-track",
@@ -1291,13 +1336,16 @@
         "https://www.sec.gov/Archives/edgar/data/0000093410/000009341026000162/a06302026ex9918-k.htm",
         "Chevron press release June 2026",
         "Bloomberg",
-        "Data Center Knowledge"
+        "Data Center Knowledge",
+        "https://www.theregister.com/a/5259764"
       ],
       "notes": "Chevron's Q2 2026 8-K: a 20-year PPA to provide about 2.67 GW of behind-the-meter power to a Microsoft data center in West Texas (Reeves County, per the project site). First power expected 2028 and full capacity 2031. The plant's final investment decision is expected by the end of 2026, subject to remaining conditions.",
       "firmness": "signed",
       "firmnessSource": "https://www.sec.gov/Archives/edgar/data/0000093410/000009341026000162/a06302026ex9918-k.htm",
       "reviewed": "2026-09-28",
-      "asset": "new-build"
+      "asset": "new-build",
+      "announced": "2026-06-22",
+      "announcedSource": "https://www.theregister.com/a/5259764"
     },
     {
       "id": "openai-georgia-camellia",
@@ -1397,13 +1445,16 @@
         "https://www.globenewswire.com/news-release/2026/05/26/3301094/0/en/enlight-signs-200-mw-ac-solar-power-purchase-agreement-with-google-to-support-data-center-operations-in-oklahoma.html",
         "Enlight press release May 2026",
         "DCD",
-        "PV Tech"
+        "PV Tech",
+        "https://enlightenergy.com/wp-content/uploads/2026/07/Solstice-PPA_PR_Final.pdf"
       ],
       "notes": "200 MWac (250 MWdc) in LeFlore County with an 800 MWh BESS planned as phase 2; supports Google's Oklahoma data center operations. Enlight's first US commercial PPA.",
       "firmness": "signed",
       "firmnessSource": "https://www.globenewswire.com/news-release/2026/05/26/3301094/0/en/enlight-signs-200-mw-ac-solar-power-purchase-agreement-with-google-to-support-data-center-operations-in-oklahoma.html",
       "reviewed": "2026-09-28",
-      "asset": "new-build"
+      "asset": "new-build",
+      "announced": "2026-05-26",
+      "announcedSource": "https://enlightenergy.com/wp-content/uploads/2026/07/Solstice-PPA_PR_Final.pdf"
     },
     {
       "id": "google-linea-duffy",
@@ -1451,7 +1502,9 @@
       "firmness": "signed",
       "firmnessSource": "https://www.rwe.com/en/press/rwe-americas/2026-08-03-rwe-and-google-sign-ppa-for-oklahoma-solar-project/",
       "reviewed": "2026-09-28",
-      "asset": "new-build"
+      "asset": "new-build",
+      "announced": "2026-08-03",
+      "announcedSource": "https://www.rwe.com/en/press/rwe-americas/2026-08-03-rwe-and-google-sign-ppa-for-oklahoma-solar-project/"
     },
     {
       "id": "meta-zelestra-palmera",
@@ -1476,7 +1529,9 @@
       "firmness": "signed",
       "firmnessSource": "https://sg.finance.yahoo.com/news/zelestra-expands-us-partnership-meta-120000747.html",
       "reviewed": "2026-09-28",
-      "asset": "new-build"
+      "asset": "new-build",
+      "announced": "2026-06-09",
+      "announcedSource": "https://sg.finance.yahoo.com/news/zelestra-expands-us-partnership-meta-120000747.html"
     },
     {
       "id": "meta-rwe-rabbits-foot",
@@ -1498,7 +1553,9 @@
       "firmness": "signed",
       "firmnessSource": "https://www.rwe.com/en/press/rwe-americas/2026-06-11-meta-expands-partnership-with-rwe/",
       "reviewed": "2026-09-28",
-      "asset": "new-build"
+      "asset": "new-build",
+      "announced": "2026-06-11",
+      "announcedSource": "https://www.rwe.com/en/press/rwe-americas/2026-06-11-meta-expands-partnership-with-rwe/"
     },
     {
       "id": "meta-sabanci-tx",
@@ -1523,7 +1580,9 @@
       "firmness": "signed",
       "firmnessSource": "https://www.prnewswire.com/news-releases/sabanci-renewables-expands-us-growth-through-long-term-power-purchase-agreement-with-meta-302805655.html",
       "reviewed": "2026-09-28",
-      "asset": "new-build"
+      "asset": "new-build",
+      "announced": "2026-06-22",
+      "announcedSource": "https://www.prnewswire.com/news-releases/sabanci-renewables-expands-us-growth-through-long-term-power-purchase-agreement-with-meta-302805655.html"
     },
     {
       "id": "meta-lightsource-mowata",
@@ -1547,7 +1606,9 @@
       "firmness": "signed",
       "firmnessSource": "https://lightsourcebp.com/us/news/lightsource-bp-and-meta-expand-partnership-with-new-power-purchase-agreement-for-mowata-solar-in-louisiana/",
       "reviewed": "2026-09-28",
-      "asset": "new-build"
+      "asset": "new-build",
+      "announced": "2026-07-23",
+      "announcedSource": "https://lightsourcebp.com/us/news/lightsource-bp-and-meta-expand-partnership-with-new-power-purchase-agreement-for-mowata-solar-in-louisiana/"
     },
     {
       "id": "ms-avangrid-bluebird",
@@ -1571,7 +1632,9 @@
       "firmness": "signed",
       "firmnessSource": "https://finance.yahoo.com/sectors/energy/articles/avangrid-executes-ppa-microsoft-140-181200998.html",
       "reviewed": "2026-09-28",
-      "asset": "new-build"
+      "asset": "new-build",
+      "announced": "2026-05-27",
+      "announcedSource": "https://finance.yahoo.com/sectors/energy/articles/avangrid-executes-ppa-microsoft-140-181200998.html"
     },
     {
       "id": "crusoe-bergen-engines",
@@ -1666,9 +1729,12 @@
       "sources": [
         "DOE/NNSA press release July 2026",
         "World Nuclear News",
-        "Amentum press release"
+        "Amentum press release",
+        "https://www.energy.gov/nnsa/articles/nnsa-selects-amentum-ai-data-center-and-energy-project-savannah-river-site"
       ],
-      "notes": "NNSA selected Amentum (July 2026) to negotiate a phased lease for a 1 GW AI data center backed by ~2 GW of on-site generation, gas first with a planned transition to advanced nuclear. Selection only; not a final lease or PPA."
+      "notes": "NNSA selected Amentum (July 2026) to negotiate a phased lease for a 1 GW AI data center backed by ~2 GW of on-site generation, gas first with a planned transition to advanced nuclear. Selection only; not a final lease or PPA.",
+      "announced": "2026-07-20",
+      "announcedSource": "https://www.energy.gov/nnsa/articles/nnsa-selects-amentum-ai-data-center-and-energy-project-savannah-river-site"
     },
     {
       "id": "meta-nextera-portfolio",
@@ -1712,13 +1778,16 @@
       "sources": [
         "https://www.globenewswire.com/news-release/2026/01/15/3219382/0/en/Clearway-Signs-Portfolio-of-Power-Purchase-Agreements-with-Google-Totaling-Nearly-1-2-GW-Across-Three-States.html",
         "Clearway press release Jan 2026",
-        "DCD"
+        "DCD",
+        "https://www.utilitydive.com/press-release/20260115-clearway-signs-portfolio-of-power-purchase-agreements-with-google-totaling/"
       ],
       "notes": "Three executed PPAs totaling 1.17 GW, listed as one row: Goat Mountain Repower (Texas wind, 15 years, a repower of an operating wind farm), Catamount (West Virginia wind, 20 years) and Swan Solar (Missouri, 20 years). First sites expected online 2027 and 2028.",
       "firmness": "signed",
       "firmnessSource": "https://www.globenewswire.com/news-release/2026/01/15/3219382/0/en/Clearway-Signs-Portfolio-of-Power-Purchase-Agreements-with-Google-Totaling-Nearly-1-2-GW-Across-Three-States.html",
       "reviewed": "2026-09-28",
-      "asset": "mixed"
+      "asset": "mixed",
+      "announced": "2026-01-15",
+      "announcedSource": "https://www.utilitydive.com/press-release/20260115-clearway-signs-portfolio-of-power-purchase-agreements-with-google-totaling/"
     },
     {
       "id": "invenergy-meta-791",
@@ -1762,13 +1831,16 @@
       "sources": [
         "https://zanskargeothermal.substack.com/p/zanskar-inks-100-mw-power-purchase",
         "Zanskar announcement May 2026",
-        "Power Engineering"
+        "Power Engineering",
+        "https://www.aboutamazon.com/news/sustainability/amazon-renewable-energy-updates?p=amazon-invests-in-new-geothermal-and-solar-projects-to-power-future-nevada-data-centers"
       ],
       "notes": "Zanskar signed a 20-year, 100 MW PPA with NV Energy (through 2050) over a portfolio of Zanskar geothermal projects; Amazon ties the 100 MW to its Reno-area data centers. It takes effect when the Public Utilities Commission of Nevada approves NV Energy's 2026 resource plan, still pending as of 2026-09-28.",
       "firmness": "signed",
       "firmnessSource": "https://zanskargeothermal.substack.com/p/zanskar-inks-100-mw-power-purchase",
       "reviewed": "2026-09-28",
-      "asset": "new-build"
+      "asset": "new-build",
+      "announced": "2026-05-08",
+      "announcedSource": "https://www.aboutamazon.com/news/sustainability/amazon-renewable-energy-updates?p=amazon-invests-in-new-geothermal-and-solar-projects-to-power-future-nevada-data-centers"
     },
     {
       "id": "amazon-primergy-nv",
@@ -1784,14 +1856,17 @@
       "dcRelevant": true,
       "sources": [
         "https://www.nvenergy.com/publish/content/dam/nvenergy/brochures_arch/about-nvenergy/rates-regulatory/recent-regulatory-filings/2026-irp/NPC-SPPC-Volume-17.pdf",
-        "Power Engineering May 2026"
+        "Power Engineering May 2026",
+        "https://www.aboutamazon.com/news/sustainability/amazon-renewable-energy-updates?p=amazon-invests-in-new-geothermal-and-solar-projects-to-power-future-nevada-data-centers"
       ],
       "notes": "Two 20-year PPAs dated May 4, 2026 between NV Energy and Primergy's project companies, filed in NV Energy's 2026 resource plan: Hot Pot (350 MW solar plus 350 MW / 1,400 MWh storage, target Oct 31, 2029) and Iron Point (250 MW solar plus 250 MW / 1,000 MWh storage, target Dec 31, 2029). They serve Amazon's Reno-area load through a large-load service agreement the PPAs describe as 'to be entered into', and they take effect only with Nevada PUC approval and that agreement in force.",
       "expectedOnline": "Oct-Dec 2029 (target)",
       "firmness": "signed",
       "firmnessSource": "https://www.nvenergy.com/publish/content/dam/nvenergy/brochures_arch/about-nvenergy/rates-regulatory/recent-regulatory-filings/2026-irp/NPC-SPPC-Volume-17.pdf",
       "reviewed": "2026-09-28",
-      "asset": "new-build"
+      "asset": "new-build",
+      "announced": "2026-05-08",
+      "announcedSource": "https://www.aboutamazon.com/news/sustainability/amazon-renewable-energy-updates?p=amazon-invests-in-new-geothermal-and-solar-projects-to-power-future-nevada-data-centers"
     },
     {
       "id": "meta-xgs-geothermal",
@@ -1816,7 +1891,9 @@
       "firmness": "preliminary",
       "firmnessSource": "https://www.xgsenergy.com/xgs-energy-and-meta-to-partner-on-150-mw-advanced-geothermal-project/",
       "reviewed": "2026-09-28",
-      "asset": "new-build"
+      "asset": "new-build",
+      "announced": "2025-06-12",
+      "announcedSource": "https://www.xgsenergy.com/xgs-energy-and-meta-to-partner-on-150-mw-advanced-geothermal-project/"
     },
     {
       "id": "google-broadwing-ccs",
@@ -1917,7 +1994,9 @@
       "firmness": "signed",
       "firmnessSource": "https://www.prnewswire.com/news-releases/google-and-commonwealth-fusion-systems-sign-strategic-partnership-agreement-to-commercialize-fusion-energy-302494208.html",
       "reviewed": "2026-09-28",
-      "asset": "new-build"
+      "asset": "new-build",
+      "announced": "2025-06-30",
+      "announcedSource": "https://www.prnewswire.com/news-releases/google-and-commonwealth-fusion-systems-sign-strategic-partnership-agreement-to-commercialize-fusion-energy-302494208.html"
     },
     {
       "id": "crusoe-bergen-loi",

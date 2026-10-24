@@ -43,6 +43,10 @@ import {
 } from "./gpu-history";
 import { fetchLivePrices, type GpuSweepSummary } from "./gpu-live";
 import { buildTimeline, earningsDateStatus, type EarningsDate } from "./timeline";
+import { readThrough } from "./swr";
+import { durableDocs, notifyDocWritten, setActiveDurableDocs } from "./durable-docs";
+import { publicDataStatus } from "./data-status";
+import { buildSupplyChainPayload, type StagesFile } from "./supply-chain";
 import { getUraniumCorrelation } from "./uranium-correlation";
 import { footerBlockers, renderWeeklyEmail, renderWeeklyText, weeklyDateLabel, type NewsletterFooter } from "./weekly-digest";
 import { renderEditorialEmail, renderEditorialText } from "./editorial-issue";
@@ -106,16 +110,8 @@ import {
   type ClusterRoot,
 } from "./social-data";
 
-interface SupplyChainStage {
-  name: string;
-  tagline: string;
-  color: string;
-  bottleneckStatus: "Tightening" | "Bottlenecked" | "Flowing";
-  bottleneckDetail: string;
-  keyMetric: string;
-  tickers: string[];
-}
-const SUPPLY_CHAIN_STAGES: Record<string, SupplyChainStage> = JSON.parse(
+// Stage tickers and dated, sourced stage assessments (server/supply-chain.ts).
+const SUPPLY_CHAIN_STAGES: StagesFile = JSON.parse(
   readFileSync(join(process.cwd(), "server", "data", "supply-chain-stages.json"), "utf-8"),
 );
 
@@ -190,11 +186,11 @@ const STATIC_MARKET_DATA: Record<string, {
   ETN:  { name: "Eaton Corporation plc", price: 398.00, change: 0.00, changePercent: 0.00, pe: 39.1, revenueGrowth: 9.0, marketCapDisplay: "$155B" },
   NVT:  { name: "nVent Electric PLC", price: 88.00, change: 0.00, changePercent: 0.00, pe: 24.8, revenueGrowth: 22.4, marketCapDisplay: "$14B" },
   CARR: { name: "Carrier Global Corp", price: 74.00, change: 0.00, changePercent: 0.00, pe: 26.2, revenueGrowth: 9.8, marketCapDisplay: "$62B" },
-  ABB:  { name: "ABB Ltd", price: 56.00, change: 0.00, changePercent: 0.00, pe: 28.4, revenueGrowth: 8.2, marketCapDisplay: "$120B" },
+  ABBNY: { name: "ABB Ltd (ADR)", price: 91.05, change: 0.00, changePercent: 0.00, pe: 33.1, revenueGrowth: null, marketCapDisplay: "$165B" },
   EMR:  { name: "Emerson Electric Co", price: 126.00, change: 0.00, changePercent: 0.00, pe: 28.8, revenueGrowth: 7.4, marketCapDisplay: "$36B" },
   HUBB: { name: "Hubbell Inc", price: 388.00, change: 0.00, changePercent: 0.00, pe: 22.6, revenueGrowth: 8.8, marketCapDisplay: "$21B" },
   JCI:  { name: "Johnson Controls Int'l", price: 66.00, change: 0.00, changePercent: 0.00, pe: 22.4, revenueGrowth: 6.2, marketCapDisplay: "$44B" },
-  SIEGY:{ name: "Siemens Energy AG", price: 48.00, change: 0.00, changePercent: 0.00, pe: 32.8, revenueGrowth: 18.4, marketCapDisplay: "$60B" },
+  SMEGF: { name: "Siemens Energy AG", price: 150.00, change: 0.00, changePercent: 0.00, pe: 41.4, revenueGrowth: null, marketCapDisplay: "$128B" },
   BKR:  { name: "Baker Hughes Co", price: 41.00, change: 0.00, changePercent: 0.00, pe: 21.4, revenueGrowth: 8.8, marketCapDisplay: "$40B" },
   // Utilities
   D:    { name: "Dominion Energy Inc", price: 55.00, change: 0.00, changePercent: 0.00, pe: 18.6, revenueGrowth: 4.8, marketCapDisplay: "$47B" },
@@ -229,7 +225,6 @@ const STATIC_MARKET_DATA: Record<string, {
   NUE:  { name: "Nucor Corporation", price: 142.00, change: 0.00, changePercent: 0.00, pe: 11.2, revenueGrowth: -8.4, marketCapDisplay: "$33B" },
   STLD: { name: "Steel Dynamics Inc", price: 118.00, change: 0.00, changePercent: 0.00, pe: 9.8, revenueGrowth: -6.2, marketCapDisplay: "$18B" },
   CLF:  { name: "Cleveland-Cliffs Inc", price: 14.50, change: 0.00, changePercent: 0.00, pe: null, revenueGrowth: -12.4, marketCapDisplay: "$7.2B" },
-  X:    { name: "United States Steel Corp", price: 38.00, change: 0.00, changePercent: 0.00, pe: 18.6, revenueGrowth: -4.8, marketCapDisplay: "$8.5B" },
   MP:   { name: "MP Materials Corp", price: 18.00, change: 0.00, changePercent: 0.00, pe: null, revenueGrowth: 22.4, marketCapDisplay: "$3.0B" },
   BHP:  { name: "BHP Group Ltd", price: 56.00, change: 0.00, changePercent: 0.00, pe: 18.2, revenueGrowth: 4.8, marketCapDisplay: "$140B" },
   RIO:  { name: "Rio Tinto Group", price: 64.00, change: 0.00, changePercent: 0.00, pe: 9.4, revenueGrowth: 2.8, marketCapDisplay: "$105B" },
@@ -239,7 +234,7 @@ const STATIC_MARKET_DATA: Record<string, {
   AR:   { name: "Antero Resources Corp", price: 32.00, change: 0.00, changePercent: 0.00, pe: 8.4, revenueGrowth: 28.6, marketCapDisplay: "$9.2B" },
   EQT:  { name: "EQT Corporation", price: 42.00, change: 0.00, changePercent: 0.00, pe: 14.8, revenueGrowth: 32.4, marketCapDisplay: "$22B" },
   RRC:  { name: "Range Resources Corp", price: 34.00, change: 0.00, changePercent: 0.00, pe: 10.2, revenueGrowth: 18.8, marketCapDisplay: "$8.0B" },
-  SWN:  { name: "Southwestern Energy Co", price: 6.80, change: 0.00, changePercent: 0.00, pe: 8.6, revenueGrowth: 22.4, marketCapDisplay: "$7.5B" },
+  EXE:  { name: "Expand Energy Corp", price: 93.41, change: 0.00, changePercent: 0.00, pe: 8.1, revenueGrowth: null, marketCapDisplay: "$21.6B" },
   LNG:  { name: "Cheniere Energy Inc", price: 198.00, change: 0.00, changePercent: 0.00, pe: 12.8, revenueGrowth: 8.4, marketCapDisplay: "$45B" },
   // Renewable Generation
   FSLR: { name: "First Solar Inc", price: 178.00, change: 0.00, changePercent: 0.00, pe: 16.4, revenueGrowth: 28.2, marketCapDisplay: "$19B" },
@@ -247,10 +242,8 @@ const STATIC_MARKET_DATA: Record<string, {
   SEDG: { name: "SolarEdge Technologies", price: 16.00, change: 0.00, changePercent: 0.00, pe: null, revenueGrowth: -42.8, marketCapDisplay: "$920M" },
   AES:  { name: "AES Corporation", price: 18.00, change: 0.00, changePercent: 0.00, pe: 8.4, revenueGrowth: 4.8, marketCapDisplay: "$12B" },
   // Transmission & Grid Hardware
-  WIRE: { name: "Encore Wire Corp", price: 312.00, change: 0.00, changePercent: 0.00, pe: 18.6, revenueGrowth: 14.8, marketCapDisplay: "$6.2B" },
+  PRYMY: { name: "Prysmian S.p.A. (ADR)", price: 60.60, change: 0.00, changePercent: 0.00, pe: 22.1, revenueGrowth: null, marketCapDisplay: "$36.3B" },
   GNRC: { name: "Generac Holdings Inc", price: 148.00, change: 0.00, changePercent: 0.00, pe: 24.2, revenueGrowth: 8.4, marketCapDisplay: "$9.0B" },
-  AYI:  { name: "Acuity Brands Inc", price: 268.00, change: 0.00, changePercent: 0.00, pe: 22.8, revenueGrowth: 6.2, marketCapDisplay: "$8.5B" },
-  AOS:  { name: "A.O. Smith Corporation", price: 82.00, change: 0.00, changePercent: 0.00, pe: 20.4, revenueGrowth: 4.8, marketCapDisplay: "$11B" },
   IDA:  { name: "IDACORP Inc", price: 108.00, change: 0.00, changePercent: 0.00, pe: 21.6, revenueGrowth: 6.8, marketCapDisplay: "$5.8B" },
   // Crypto/AI DC Operators
   CLSK: { name: "CleanSpark Inc", price: 12.50, change: 0.00, changePercent: 0.00, pe: null, revenueGrowth: 145.2, marketCapDisplay: "$3.2B" },
@@ -342,14 +335,24 @@ const STACK_CACHE_TTL = 10 * 60 * 1000;
 // Fetch live quote + real historical sparkline for every tracked ticker.
 // Falls through to STATIC_MARKET_DATA on per-ticker Yahoo failure, with
 // sparkline left empty (UI shows nothing rather than fabricated data).
+// Served stale-while-revalidate (server/swr.ts): an expired timeframe returns
+// at once and refreshes once in the background. A refresh in which every
+// ticker fell back to static data (Yahoo down) does not replace live quotes.
 async function getCachedStockData(timeframe: string): Promise<Record<string, any>> {
-  const cacheKey = timeframe;
-  const now = Date.now();
-  const cached = stackCache[cacheKey];
-  if (cached && now - cached.timestamp < STACK_CACHE_TTL) {
-    return cached.data;
-  }
+  const c = stackCache[timeframe];
+  return readThrough({
+    key: `stack:${timeframe}`,
+    cached: c ? { value: c.data, at: c.timestamp } : null,
+    ttlMs: STACK_CACHE_TTL,
+    load: () => loadStockData(timeframe),
+    save: (data) => {
+      stackCache[timeframe] = { data, timestamp: Date.now() };
+    },
+    keep: (next, prev) => !prev || Object.values(next).some((row: any) => row && row.stale !== true),
+  });
+}
 
+async function loadStockData(timeframe: string): Promise<Record<string, any>> {
   const stockData: Record<string, any> = {};
   try {
     const YahooFinanceClass = (await import("yahoo-finance2")).default;
@@ -440,7 +443,6 @@ async function getCachedStockData(timeframe: string): Promise<Record<string, any
     }
   }
 
-  stackCache[cacheKey] = { data: stockData, timestamp: now };
   return stockData;
 }
 
@@ -632,6 +634,7 @@ function appendAutoUpdateLog(entry: BacklogAutoUpdateEntry): void {
   // Bounded to last 500 entries
   const trimmed = log.length > 500 ? log.slice(-500) : log;
   writeFileSync(AUTO_UPDATE_LOG, JSON.stringify(trimmed, null, 2) + "\n");
+  notifyDocWritten("backlog-auto-updates.json");
 }
 
 // Returns a count of applied + flagged updates after one pass.
@@ -1409,6 +1412,7 @@ function appendSocialLog(entry: SocialLogEntry): void {
   // Keep the last 500 entries to bound file size
   if (log.length > 500) log = log.slice(-500);
   writeFileSync(SOCIAL_LOG_FILE, JSON.stringify(log, null, 2));
+  notifyDocWritten("social-log.json");
 }
 
 // ─── KPI computation (shared by /api/kpis and the cron composer) ────────────
@@ -1900,36 +1904,11 @@ export async function registerRoutes(
     try {
       const stockData = await getCachedStockData("1D");
 
-      const stages = Object.entries(SUPPLY_CHAIN_STAGES).map(([key, stage]) => {
-        const stocks = stage.tickers
-          .map((t) => stockData[t])
-          .filter(Boolean);
-        // Stale tickers are excluded, not zeroed; see averageLiveChanges.
-        const avgChange = averageLiveChanges(stocks.map((st) => st.changePercent));
-        return {
-          key,
-          name: stage.name,
-          tagline: stage.tagline,
-          color: stage.color,
-          companyCount: stocks.length,
-          avgChange,
-          bottleneckStatus: stage.bottleneckStatus,
-          bottleneckDetail: stage.bottleneckDetail,
-          keyMetric: stage.keyMetric,
-          stocks: stocks.map((s) => ({
-            ticker: s.ticker,
-            name: s.name,
-            price: s.price,
-            change: s.change,
-            changePercent: s.changePercent,
-            marketCapDisplay: s.marketCapDisplay,
-            stale: s.stale ?? false,
-          })),
-        };
-      });
-
-      const tightest = stages.find((s) => s.bottleneckStatus === "Bottlenecked");
-      res.json({ stages, tightestBottleneck: tightest?.name ?? "Transmission" });
+      let clusters: Array<{ status: string }> = [];
+      try {
+        clusters = readDataJson("clusters.json").clusters ?? [];
+      } catch {}
+      res.json(buildSupplyChainPayload(SUPPLY_CHAIN_STAGES, stockData, clusters, averageLiveChanges));
     } catch (error) {
       console.error("Supply chain error:", error);
       res.status(500).json({ error: "Failed to fetch supply chain data" });
@@ -2024,6 +2003,26 @@ export async function registerRoutes(
     },
   );
   const subscriberStore = subscriberChoice.ok ? subscriberChoice.store : null;
+
+  // Recorded logs survive redeploys (server/durable-docs.ts): with a database,
+  // each append-only file is merged with its Postgres copy before any request
+  // can record, and every later write is mirrored back. A database failure
+  // here is logged and the site runs on the local files as before.
+  if (subscriberPool) {
+    const docs = durableDocs(subscriberPool);
+    try {
+      // Boot must not hang on an unreachable database (the pool has no
+      // connect timeout); after 20 s the site starts on its local files.
+      const report = await Promise.race([
+        docs.hydrate(),
+        new Promise<never>((_, reject) => setTimeout(() => reject(new Error("timed out after 20 s")), 20_000).unref()),
+      ]);
+      console.log(`[durable] ${report.map((r) => `${r.name} ${r.mergedRows} rows (file ${r.fileRows}, db ${r.dbRows})`).join("; ")}`);
+      setActiveDurableDocs(docs);
+    } catch (e) {
+      console.error("[durable] hydrate failed; recorded logs will not survive a redeploy:", e instanceof Error ? e.message : e);
+    }
+  }
   if (!subscriberChoice.ok) console.warn(`[subscribers] ${subscriberChoice.reason}`);
 
   const UNSUB_TOKEN_SECRET: string =
@@ -2096,6 +2095,17 @@ export async function registerRoutes(
   function freshnessReport() {
     return computeFreshness(readRegisteredDatasets(), Date.now(), DATASET_REGISTRY, readDatasetReviews());
   }
+
+  // Public view of the same report: dates and a plain status per dataset,
+  // without file names, mechanisms or failure details (server/data-status.ts).
+  app.get("/api/data-status", (_req, res) => {
+    try {
+      res.json(publicDataStatus(freshnessReport(), { gpuSweepEnabled: process.env.GPU_LIVE_SWEEP_ENABLED === "true" }));
+    } catch (err) {
+      console.error("Data status error:", err);
+      res.status(500).json({ error: "Failed to compute data status" });
+    }
+  });
 
   app.get("/api/admin/freshness", (req: Request, res) => {
     if (!requireAdmin(req, res)) return;
@@ -2279,12 +2289,23 @@ export async function registerRoutes(
     webhookSecret: () => process.env.RESEND_WEBHOOK_SECRET,
   });
 
-  async function refreshEarningsCache(): Promise<any[]> {
-    const now = Date.now();
-    if (earningsCache && (now - earningsCache.timestamp) < EARNINGS_CACHE_TTL) {
-      return earningsCache.items;
-    }
+  // Stale-while-revalidate (server/swr.ts); an empty Yahoo answer never
+  // replaces loaded dates.
+  function refreshEarningsCache(): Promise<any[]> {
+    return readThrough({
+      key: "earnings",
+      cached: earningsCache ? { value: earningsCache.items, at: earningsCache.timestamp } : null,
+      ttlMs: EARNINGS_CACHE_TTL,
+      load: loadEarningsDates,
+      save: (items) => {
+        earningsCache = { items, timestamp: Date.now() };
+      },
+      keep: (next) => next.length > 0,
+    });
+  }
 
+  async function loadEarningsDates(): Promise<any[]> {
+    const now = Date.now();
     const results: any[] = [];
     let idCounter = 1000;
 
@@ -2382,13 +2403,8 @@ export async function registerRoutes(
       return true;
     });
 
-    if (deduped.length > 0) {
-      earningsCache = { items: deduped, timestamp: now };
-    }
     return deduped;
   }
-
-  refreshEarningsCache().catch(() => {});
 
   // Earnings calendar endpoint - upcoming earnings dates for all stack tickers (4h cache)
   app.get("/api/earnings-calendar", async (_req, res) => {
@@ -2417,13 +2433,22 @@ export async function registerRoutes(
   });
 
   // Live news endpoint - priority: 1) NewsData.io  2) RSS feeds  3) empty array
-  app.get("/api/news", async (_req, res) => {
-    try {
-      const now = Date.now();
-      if (newsCache && (now - newsCache.timestamp) < NEWS_CACHE_TTL) {
-        return res.json(newsCache.items);
-      }
+  // Stale-while-revalidate (server/swr.ts); an empty fetch never replaces
+  // loaded headlines.
+  function getNews(): Promise<NewsItem[]> {
+    return readThrough({
+      key: "news",
+      cached: newsCache ? { value: newsCache.items, at: newsCache.timestamp } : null,
+      ttlMs: NEWS_CACHE_TTL,
+      load: loadNews,
+      save: (items) => {
+        newsCache = { items, timestamp: Date.now() };
+      },
+      keep: (next) => next.length > 0,
+    });
+  }
 
+  async function loadNews(): Promise<NewsItem[]> {
       // Priority 1: NewsData.io (if key configured)
       const apiKey = process.env.NEWSDATA_API_KEY;
       if (apiKey) {
@@ -2443,11 +2468,10 @@ export async function registerRoutes(
                 publishedAt: a.pubDate ?? new Date().toISOString(),
               }));
             if (items.length > 0) {
-              newsCache = { items, timestamp: now };
               // News-driven dataset writes (backlog + market-constant scanners,
               // LBNL check) run only from authenticated /api/admin/scan-news-now.
               // A public GET must never persist state (SEC-4).
-              return res.json(items);
+              return items;
             }
           }
         } catch (_e) {
@@ -2459,15 +2483,19 @@ export async function registerRoutes(
       try {
         const rssItems = await fetchRSSNews();
         if (rssItems.length >= 3) {
-          newsCache = { items: rssItems, timestamp: now };
           // Scanners run only via authenticated /api/admin/scan-news-now (SEC-4).
-          return res.json(rssItems);
+          return rssItems;
         }
       } catch (_e) {
         // No more sources available
       }
+      return [];
+  }
 
-      res.json([]);
+  // Live news endpoint - priority: 1) NewsData.io  2) RSS feeds  3) empty array
+  app.get("/api/news", async (_req, res) => {
+    try {
+      res.json(await getNews());
     } catch (error) {
       console.error("News error:", error);
       res.json([]);
@@ -2530,14 +2558,14 @@ export async function registerRoutes(
     TECK: 'Raw Materials', HBM: 'Raw Materials', NUE: 'Raw Materials', STLD: 'Raw Materials',
     CLF: 'Raw Materials', X: 'Raw Materials', MP: 'Raw Materials', USAR: 'Raw Materials', BHP: 'Raw Materials',
     RIO: 'Raw Materials', VALE: 'Raw Materials', AR: 'Raw Materials', EQT: 'Raw Materials',
-    RRC: 'Raw Materials', SWN: 'Raw Materials', LNG: 'Raw Materials',
+    RRC: 'Raw Materials', EXE: 'Raw Materials', LNG: 'Raw Materials',
     CEG: 'Generation', VST: 'Generation', TLN: 'Generation', NRG: 'Generation',
-    GEV: 'Generation', SIEGY: 'Generation', BKR: 'Generation', SMR: 'Generation',
+    GEV: 'Generation', SMEGF: 'Generation', BKR: 'Generation', SMR: 'Generation',
     OKLO: 'Generation', BWXT: 'Generation', NEE: 'Generation', AES: 'Generation',
     FSLR: 'Generation', ENPH: 'Generation', SEDG: 'Generation', SO: 'Generation',
     DUK: 'Generation', AEP: 'Generation',
-    ETN: 'Transmission', ABB: 'Transmission', PWR: 'Transmission', EMR: 'Transmission',
-    HUBB: 'Transmission', AYI: 'Transmission', WIRE: 'Transmission', GNRC: 'Transmission',
+    ETN: 'Transmission', ABBNY: 'Transmission', PWR: 'Transmission', EMR: 'Transmission',
+    HUBB: 'Transmission', PRYMY: 'Transmission', GNRC: 'Distribution',
     IDA: 'Transmission', NVT: 'Transmission',
     VRT: 'Distribution', CARR: 'Distribution', JCI: 'Distribution', EME: 'Distribution',
     MTZ: 'Distribution', STRL: 'Distribution', FLR: 'Distribution', J: 'Distribution', ACM: 'Distribution', PRIM: 'Distribution',
@@ -2840,6 +2868,20 @@ export async function registerRoutes(
 
   startDatacenterIngesterSchedule();
 
+  // Warm the quote, earnings and news caches at boot so the first visitors
+  // after a deploy or cold start do not wait on ~5 s of upstream calls. One
+  // after another, so the Yahoo fan-outs do not overlap. Off in tests and with
+  // DISABLE_CACHE_WARM=1.
+  if (process.env.NODE_ENV !== "test" && process.env.DISABLE_CACHE_WARM !== "1") {
+    void (async () => {
+      const t0 = Date.now();
+      await getCachedStockData("1D").catch(() => {});
+      await refreshEarningsCache().catch(() => {});
+      await getNews().catch(() => {});
+      console.log(`[warm] quote, earnings and news caches ready in ${((Date.now() - t0) / 1000).toFixed(1)}s`);
+    })();
+  }
+
   app.get("/api/catalysts", (_req, res) => {
     try {
       const filePath = join(process.cwd(), "server", "data", "catalysts.json");
@@ -2977,7 +3019,6 @@ Preferred-Languages: en
   app.get("/brief", (_req, res) => res.redirect(301, "/blog"));
   app.get("/portfolio", (_req, res) => res.redirect(301, "/analyze?tab=portfolio"));
   app.get("/trade", (_req, res) => res.redirect(301, "/analyze?tab=scenario"));
-  app.get("/supply-chain", (_req, res) => res.redirect(301, "/stack?view=flow"));
   app.get("/thesis-calculator", (_req, res) => res.redirect(301, "/trade"));
   app.get("/portfolio-overlay", (_req, res) => res.redirect(301, "/portfolio"));
 

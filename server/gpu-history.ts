@@ -12,6 +12,7 @@
 // series rebuilds forward.
 
 import { readFileSync, writeFileSync, existsSync } from "fs";
+import { notifyDocWritten } from "./durable-docs";
 import { join } from "path";
 import type { GpuHistoryAnchor } from "./gpu-index";
 import type { LiveModelPrice } from "./gpu-live";
@@ -97,6 +98,7 @@ export function recordDailyLivePrices(live: Record<string, LiveModelPrice>): voi
     }
     hist.push({ date: today, prices, meta, source: "live" });
     writeFileSync(FILE, JSON.stringify(hist, null, 2) + "\n", "utf-8");
+    notifyDocWritten("gpu-price-history.json");
   } catch (e) {
     console.error("gpu history record error:", e);
   }

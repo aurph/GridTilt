@@ -18,6 +18,7 @@ import {
   earningsDateStatus,
   inAppPath,
   isDay,
+  partyName,
   sourcedAnnouncement,
   tickersFor,
   type ClusterRecord,
@@ -108,6 +109,29 @@ test("deal events: undisclosed buyer, undisclosed MW, up-to ceilings and load ro
   assert.deepEqual(ceiling.magnitude, { unit: "MW", value: 835, qualifier: "up to" });
   const [load] = buildDealEvents([deal({ category: "load", type: "load" })]);
   assert.equal(load.sourceUrl, "/power-map?tab=queue");
+});
+
+test("deal events: aggregates, rulings and non-AI offtake never become deals, even when dated", () => {
+  assert.deepEqual(buildDealEvents([deal({ category: "aggregate" }), deal({ category: "regulatory" }), deal({ firmness: "not-ai-offtake" })]), []);
+});
+
+test("deal events: leases and projects are named by sponsor and project, buyer in the description", () => {
+  const [lease] = buildDealEvents([deal({ category: "load", projectName: "Polaris Forge 1", sponsor: "Applied Digital", offtaker: "CoreWeave (15-year)" })]);
+  assert.equal(lease.title, "Applied Digital announced Polaris Forge 1");
+  assert.equal(lease.description, "CoreWeave (15-year)");
+  const [gen] = buildDealEvents([deal({ category: "generation", projectName: "SRS AI campus", sponsor: "Amentum", offtaker: null })]);
+  assert.equal(gen.title, "Amentum announced SRS AI campus");
+  assert.equal(gen.description, undefined);
+});
+
+test("titles drop parenthetical notes from party names; project names keep theirs", () => {
+  assert.equal(partyName("Avangrid (Iberdrola)"), "Avangrid");
+  assert.equal(partyName("Standard Power (developer), NuScale (reactor technology)"), "Standard Power, NuScale");
+  assert.equal(partyName("(unnamed)"), "(unnamed)");
+  const [e] = buildDealEvents([deal({ sponsor: "Georgia Power (Southern Company)", offtaker: "OpenAI (Effingham County)" })]);
+  assert.equal(e.title, "OpenAI announced a power deal with Georgia Power");
+  const [lease] = buildDealEvents([deal({ category: "load", sponsor: "Amentum (NNSA phased lease)", projectName: "xAI Colossus 1 (Memphis)" })]);
+  assert.equal(lease.title, "Amentum announced xAI Colossus 1 (Memphis)");
 });
 
 test("deal events: rows without a sourced day produce nothing", () => {

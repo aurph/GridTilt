@@ -37,6 +37,8 @@ const SectorPage = lazy(() => import("@/pages/SectorPage"));
 const RegionPage = lazy(() => import("@/pages/RegionPage"));
 const OperatorPage = lazy(() => import("@/pages/OperatorPage"));
 const Timeline = lazy(() => import("@/pages/timeline"));
+const DataStatus = lazy(() => import("@/pages/data-status"));
+const SupplyChainPage = lazy(() => import("@/pages/SupplyChain"));
 const BlogIndex = lazy(() => import("@/pages/BlogIndex"));
 const BlogPost = lazy(() => import("@/pages/BlogPost"));
 const Subscribe = lazy(() => import("@/pages/Subscribe"));
@@ -51,12 +53,14 @@ const PAGE_TITLES: Record<string, string> = {
   "/": "GridTilt",
   "/overview": "Overview",
   "/stack": "Equities",
+  "/supply-chain": "Supply Chain",
   "/power-map": "Power",
   "/compute-frontier": "Compute Frontier",
   "/neocloud-intel": "GPU Prices",
   "/analyze": "Analyze",
   "/catalysts": "Catalyst Tracker",
   "/timeline": "Timeline",
+  "/data-status": "Data status",
   "/blog": "Research",
   "/subscribe": "Subscribe",
 };
@@ -145,12 +149,13 @@ function Router() {
       {/* Consolidation: Deals and Queue are tabs of Power; Brief lives in Analysis */}
       <Route path="/power-deals">{() => <Redirect to="/power-map?tab=deals" replace />}</Route>
       <Route path="/brief">{() => <Redirect to="/blog" replace />}</Route>
-      <Route path="/supply-chain">{() => <Redirect to="/stack?view=flow" replace />}</Route>
+      <Route path="/supply-chain" component={SupplyChainPage} />
       <Route path="/analyze" component={Analyze} />
       <Route path="/trade">{() => <Redirect to="/analyze?tab=scenario" replace />}</Route>
       <Route path="/portfolio">{() => <Redirect to="/analyze?tab=portfolio" replace />}</Route>
       <Route path="/catalysts" component={CatalystTracker} />
       <Route path="/timeline" component={Timeline} />
+      <Route path="/data-status" component={DataStatus} />
       <Route path="/queue">{() => <Redirect to="/power-map?tab=queue" replace />}</Route>
       <Route path="/stock/:ticker" component={StockPage} />
       <Route path="/sector/:slug" component={SectorPage} />
