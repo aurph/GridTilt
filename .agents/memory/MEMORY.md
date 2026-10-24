@@ -1,5 +1,5 @@
 - [Dev metadata plugin vs generic JSX](replit-dev-metadata-plugin-generic-jsx.md) — any `<Comp<T>` generic JSX breaks dev babel; strip type args after pulls.
 - [GitHub pull recurring patches](github-pull-recurring-patches.md) — after every pull re-apply the generic-JSX strip and the sector-pulse stale-ticker fix; skip .replit/post-merge.sh/runtime JSONs.
 - [Node 22 + ET snapshots](node22-and-tz-snapshots.md) — runtime is Node 22; TZ=America/New_York env var required for committed test snapshots.
-- [GitHub sync auth](github-push-auth.md) — platform gitPush/gitPull is the auth path; NEVER set a credential.helper (it breaks platform git); user mints no more PATs.
+- [GitHub sync auth](github-push-auth.md) — normal git push works through the GitHub App proxy; never add credential helpers or request PATs.
 - [Offline route tests](offline-route-tests.md) — isolate database selection and daily refresh clocks from workspace state; never delete recorded data to pass tests.
