@@ -22,7 +22,7 @@ M7  New capability 🔶     (LBNL deepening + AI track, Phase 4)
 
 ## M0 — Tell the truth, turn on CI
 **Scope:** Fix DOC-1/DOC-3/DOC-4 and the doc half of SEC-7; commit the existing `.github/workflows/ci.yml` (CI-1); fix PORT-1 so `npm run dev` works on macOS.
-**Files:** `README.md`, `CLAUDE.md`, `SECURITY.md`, `replit.md`, `HANDOFF.md`, `HOMEPAGE_HANDOFF.md`, `.github/workflows/ci.yml`, `server/index.ts`.
+**Files:** `README.md`, `AGENTS.md`, `SECURITY.md`, `replit.md`, `HANDOFF.md`, `HOMEPAGE_HANDOFF.md`, `.github/workflows/ci.yml`, `server/index.ts`.
 **Risk:** Negligible — docs + a CI file + one `listen()` option. **Verification:** `git add .github && push`, watch the Actions run go green; `npm run dev` boots locally. **Rollback:** revert commit.
 **Why first:** every future session reads these docs and acts on them; the phantom persistence layer is actively dangerous. Turning on CI protects everything after.
 

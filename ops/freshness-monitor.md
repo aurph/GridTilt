@@ -71,7 +71,7 @@ answered, records `lastCoverage` (feeds answered, items scanned), and records
 
 `writes` in the registry says it:
 
-- `repo`: the mechanism commits (the n8n flows for clusters and curated GPU prices).
+- `repo`: the mechanism commits (hand research refreshes for clusters and curated GPU prices, landed as PRs).
 - `instance`: the mechanism writes on the running Replit autoscale instance:
   the news scan (`interconnection-queue.json`), the GPU recorder
   (`gpu-price-history.json`), the data center ingester (`datacenters-pending.json`,
@@ -108,8 +108,8 @@ after about 60 days without repository activity; any commit re-arms them.
 
 All nine datasets need attention: clusters, the interconnection queue, curated GPU
 prices, the GPU recorder and the data center ingester are stale because their
-mechanisms are not running (the n8n flows were built but never mounted; see
-`ops/n8n/README.md`), and the hyperscaler capex, inference prices, frontier models
+mechanisms are not running (the clusters and curated GPU prices are refreshed by hand,
+so they age between research passes), and the hyperscaler capex, inference prices, frontier models
 and catalyst calendar have no recorded review. The power agreements' firmness
 review (2026-09-28) is recorded. The monitor does not fix staleness; it makes it
 loud and says what to do.

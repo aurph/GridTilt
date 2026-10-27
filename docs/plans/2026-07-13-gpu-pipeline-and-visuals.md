@@ -1,6 +1,5 @@
 # GPU Pipeline and Visuals Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Deliver observable GPU ingestion, recoverable raw history, an honest coverage-aware price chart, and deterministic GPU economics charts.
 
@@ -21,7 +20,7 @@
 - Never fabricate, smooth, or present interpolated values as observations.
 - `computeGpuIndex` period changes remain `null` without a nearby real point.
 - `server/data/gpu-rental-prices.json` schema is unchanged.
-- The `CLAUDE.md` do-not-touch list is unchanged.
+- The `AGENTS.md` do-not-touch list is unchanged.
 - The history chart remains visx-only. Recharts renders the economics charts.
 - Commits use imperative, area-prefixed subjects and no `Co-Authored-By` lines.
 
@@ -468,6 +467,6 @@ Verified on 2026-07-13 at commit `1887ae9` and the documentation closeout commit
 - `npm run check`: TypeScript exited 0.
 - `npm run build`: Vite client and esbuild server production bundles completed.
 - The n8n history backup parsed as importable JSON; all nine nodes and every connection target were validated; both Code nodes parsed; the workflow is inactive by default and scheduled for Sunday 04:30 America/New_York.
-- `gpu-rental-prices.json`, all whole-file `CLAUDE.md` protected files, and the protected route/security logic remained unchanged. The new admin route is an additive call to the existing `requireAdmin` boundary.
+- `gpu-rental-prices.json`, all whole-file `AGENTS.md` protected files, and the protected route/security logic remained unchanged. The new admin route is an additive call to the existing `requireAdmin` boundary.
 - The history chart is visx-only and carries explicit recorded, estimated-anchor, and recorded-spread evidence classes.
 - Browser QA covered the prices and economics tabs at 1440x1000 and 390x844, including grid/overlay, log/linear URL state, model and preset inputs, real-point tooltip provenance, chart labels, responsive stacking, and overflow checks. Browser console warnings/errors: none.

@@ -2,7 +2,7 @@
 //
 // One declared place for the question "how old is this dataset allowed to get
 // before something is wrong?". Before this file that expectation lived only in
-// ops/n8n/README.md and in the owner's head, which is how the interconnection
+// the ops notes and in the owner's head, which is how the interconnection
 // queue reached 77 days without anything noticing.
 //
 // Nothing here is public. The report this feeds is admin-gated: freshness is
@@ -70,8 +70,8 @@ const DAY = 24;
 
 /**
  * Cadences are set to roughly twice the mechanism's own period, so a single
- * missed run is tolerated and a stopped mechanism is not. The n8n flows and
- * their schedules are documented in ops/n8n/README.md.
+ * missed run is tolerated and a stopped mechanism is not. Hand-refreshed datasets
+ * get the cadence of the research pass that maintains them.
  */
 export const DATASET_REGISTRY: DatasetSpec[] = [
   {
@@ -79,8 +79,9 @@ export const DATASET_REGISTRY: DatasetSpec[] = [
     label: "Compute Frontier clusters",
     file: "clusters.json",
     read: { kind: "envelope", fields: ["lastRefreshed"] },
-    expectedMaxAgeHours: 2 * DAY,
-    mechanism: "n8n cluster-refresh, daily 06:30 (commits even on a zero-change pass)",
+    // A monthly research pass with one missed month tolerated.
+    expectedMaxAgeHours: 45 * DAY,
+    mechanism: "hand research refresh (Epoch cross-check), landed as a PR",
     writes: "repo",
   },
   {
@@ -99,8 +100,9 @@ export const DATASET_REGISTRY: DatasetSpec[] = [
     label: "GPU rental prices (curated)",
     file: "gpu-rental-prices.json",
     read: { kind: "envelope", fields: ["lastRefreshed"] },
-    expectedMaxAgeHours: 10 * DAY,
-    mechanism: "n8n gpu-price-refresh, weekly Mon 06:00",
+    // A monthly research pass with one missed month tolerated.
+    expectedMaxAgeHours: 45 * DAY,
+    mechanism: "hand research refresh (two-pass, adversarial check), landed as a PR",
     writes: "repo",
   },
   {

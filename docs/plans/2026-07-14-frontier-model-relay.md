@@ -1,6 +1,5 @@
 # Frontier Model Relay Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Add a citation-first Frontier tab to GPU Prices that shows major frontier-model releases from GPT-2 through GPT-5.6 Sol and permits only exact, benchmark-compatible comparisons.
 
@@ -39,7 +38,7 @@
 
 - `server/routes.ts`: import registry reader and add `GET /api/frontier-models`.
 - `client/src/pages/neocloud-intel.tsx`: add the third tab and embedded page branch.
-- `CLAUDE.md`: document the new endpoint, data custody, and tab.
+- `AGENTS.md`: document the new endpoint, data custody, and tab.
 
 ---
 
@@ -799,7 +798,7 @@ git commit -m "Frontier Models: add relay research tab"
 
 - Modify: `client/src/pages/neocloud-intel.tsx:25-111`
 - Modify: `client/src/pages/neocloud-intel.tsx:240-290`
-- Modify: `CLAUDE.md`
+- Modify: `AGENTS.md`
 
 **Interfaces:**
 
@@ -844,7 +843,7 @@ Do not move or refactor Prices content beyond the conditional wrapper.
 
 - [ ] **Step 3: Update project context**
 
-In `CLAUDE.md` update GPU Prices to state that it contains Prices, Economics, and Frontier tabs. Add `/api/frontier-models` to public read endpoints and `server/data/frontier-models.json` to hand-curated data custody. State that benchmark results require citations and exact comparability keys.
+In `AGENTS.md` update GPU Prices to state that it contains Prices, Economics, and Frontier tabs. Add `/api/frontier-models` to public read endpoints and `server/data/frontier-models.json` to hand-curated data custody. State that benchmark results require citations and exact comparability keys.
 
 - [ ] **Step 4: Run focused tests, full tests, typecheck, and build**
 
@@ -862,7 +861,7 @@ Expected: all tests PASS, TypeScript reports zero errors, and production build c
 - [ ] **Step 5: Commit integration**
 
 ```bash
-git add client/src/pages/neocloud-intel.tsx CLAUDE.md
+git add client/src/pages/neocloud-intel.tsx AGENTS.md
 git commit -m "GPU Prices: integrate frontier model relay"
 ```
 

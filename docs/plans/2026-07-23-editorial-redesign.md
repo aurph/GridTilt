@@ -1,8 +1,7 @@
 # GridTilt Editorial Redesign Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Rebuild GridTilt's UI/UX as a warm-paper editorial research publication (spec: `docs/superpowers/specs/2026-07-23-editorial-redesign-design.md`), removing the dark-terminal idiom entirely.
+**Goal:** Rebuild GridTilt's UI/UX as a warm-paper editorial research publication (spec: `docs/specs/2026-07-23-editorial-redesign-design.md`), removing the dark-terminal idiom entirely.
 
 **Architecture:** Token-level replacement first (the shadcn HSL vars + Lake-1 data tokens flip every existing component to paper in one move), then a new masthead shell replaces the sidebar/ticker chrome, then per-page conversion applying a fixed editorial grammar via shared primitives. Server untouched.
 
@@ -15,7 +14,7 @@
 - Brand orange `#F07800` graphic-only; orange text uses `#9E5000` (`--brand-ink`).
 - Light only. No `.dark` block, no forced dark, no mono identity type, no uppercase tracking-widest microcaps (exception: table column heads, Public Sans 11-12px, small-caps).
 - All 27 routes + redirects and G-chord shortcuts keep working; seo.ts copy edits only.
-- CLAUDE.md §5 do-not-touch respected (server modules, seo.ts structure, social-format.ts, security middleware, index math).
+- AGENTS.md §5 do-not-touch respected (server modules, seo.ts structure, social-format.ts, security middleware, index math).
 - shadcn `client/src/components/ui/*` is a house fork — restyle via tokens/classes, never regenerate.
 - Tests green at every commit (`npm test`, 265 passing baseline); `npm run check` gains zero NEW errors and Task 5 removes the 3 pre-existing PowerMap errors; `npm run build` green at every milestone commit.
 - Commits: imperative, area-prefixed, no Co-Authored-By. No em dashes in any product copy; plain voice.
@@ -250,7 +249,7 @@ export function PrintTable(props: React.TableHTMLAttributes<HTMLTableElement>) /
 
 ### Task 15: Sweep, copy, docs, final verification
 
-**Files:** Delete: `client/src/components/app-sidebar.tsx`, `client/src/components/NewsTicker.tsx` (if truly unmounted), `client/src/components/home/{Hero,FeaturesShowcase,FloatingScrollCue,Wordmark,DemandChart,HomeFooter}.tsx`, `client/src/styles/anchor.css`; Modify: `server/seo.ts` (copy strings only), `README.md` (design section), `CLAUDE.md` (§3 styling conventions rewritten to editorial system), `.claude`-adjacent docs untouched
+**Files:** Delete: `client/src/components/app-sidebar.tsx`, `client/src/components/NewsTicker.tsx` (if truly unmounted), `client/src/components/home/{Hero,FeaturesShowcase,FloatingScrollCue,Wordmark,DemandChart,HomeFooter}.tsx`, `client/src/styles/anchor.css`; Modify: `server/seo.ts` (copy strings only), `README.md` (design section), `AGENTS.md` (§3 styling conventions rewritten to editorial system), `.claude`-adjacent docs untouched
 
 - [ ] **Step 1: Grep gates** — each must return 0 in `client/src` (excluding ui/ fork internals where inert):
   - `grep -rn "font-mono" client/src --include="*.tsx"` (0)
@@ -258,7 +257,7 @@ export function PrintTable(props: React.TableHTMLAttributes<HTMLTableElement>) /
   - `grep -rn "JetBrains\|Inter\|Source Serif" client/ --include="*.html" --include="*.css" --include="*.tsx"` (0)
   - `grep -rn "gt-marketing\|anchor.css" client/src` (0)
 - [ ] **Step 2: Dead-file deletion** + import sweep; `npm run build` proves nothing referenced.
-- [ ] **Step 3: seo.ts copy pass** (publication framing; structure/slugs untouched) + README/CLAUDE.md design sections.
+- [ ] **Step 3: seo.ts copy pass** (publication framing; structure/slugs untouched) + README/AGENTS.md design sections.
 - [ ] **Step 4: Full verify**: `npm test` (all pass), `npm run check` (0 errors), `npm run build` (green).
 - [ ] **Step 5: Screenshot portfolio**: every section page + front page + one entity each, 1440px + 390px, saved to `docs/screenshots/redesign-2026-07/`; review against spec §4; declare any untested interactive path in the PR body.
 - [ ] **Step 6: Commit** `design: sweep terminal remnants; copy and docs pass` → push branch → draft PR (title "Editorial redesign: warm-paper publication system", body = spec summary + screenshot gallery + verification evidence + untested-paths declaration).

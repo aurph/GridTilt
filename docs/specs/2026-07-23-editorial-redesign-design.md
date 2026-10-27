@@ -205,7 +205,7 @@ the exact products GridTilt must not resemble.
 
 - #F07800 survives as the brand accent (graphic use; `--brand-ink` for orange text).
 - Stack unchanged: React 18 + Vite + Tailwind 3 + wouter + react-query; Recharts/D3/Leaflet.
-- Server/API untouched except serving existing pages; CLAUDE.md §5 do-not-touch respected.
+- Server/API untouched except serving existing pages; AGENTS.md §5 do-not-touch respected.
 - All tests green throughout; tokens.ts ↔ index.css sync test updated with the new tokens;
   the 3 pre-existing PowerMap tsc errors get fixed (leaflet.markercluster types).
 - shadcn/ui house fork: restyle via tokens + targeted class changes; do not regenerate.
@@ -227,7 +227,7 @@ the exact products GridTilt must not resemble.
 9. **M8 Analysis** (blog index/post) + subscribe + not-found.
 10. **M9 Entity pages** (4 templates).
 11. **M10 Sweep**: grep-kill remaining mono/uppercase/dark remnants, seo.ts copy pass,
-    README/CLAUDE.md design-section update, full-suite verification, screenshots of every
+    README/AGENTS.md design-section update, full-suite verification, screenshots of every
     page at 1440px + 390px reviewed against this spec.
 
 Out of scope: server/data features, monetization build, dark variant, admin redesign.
