@@ -181,8 +181,8 @@ export default function Queue({ embedded = false }: { embedded?: boolean; params
     else { setSortKey(key); setSortDir("desc"); }
   };
 
-  const isos = data?.projects ? Array.from(new Set(data.projects.map((p) => p.iso))).sort() : [];
-  const types = data?.projects ? Array.from(new Set(data.projects.map((p) => p.type))) : [];
+  const isos = data?.projects ? Array.from(new Set(data.projects.map((p) => p.iso).filter(Boolean))).sort() : [];
+  const types = data?.projects ? Array.from(new Set(data.projects.map((p) => p.type).filter(Boolean))) : [];
   const h = data?.headline;
   const isEst = (field: string) => !!data?.estimatedHeadline?.includes(field);
 

@@ -61,7 +61,7 @@ export default function DataStatus() {
         }
         right={data ? <span className="font-mono text-[11px] text-muted-foreground">checked {data.generatedAt.slice(0, 16).replace("T", " ")} UTC</span> : null}
       />
-      <div className="px-4 sm:px-6 py-4 max-w-5xl w-full">
+      <div className="px-4 sm:px-6 py-4 max-w-[1200px] mx-auto w-full">
         {isError ? (
           <ErrorState label="The data status failed to load." onRetry={() => refetch()} />
         ) : isLoading || !data ? (

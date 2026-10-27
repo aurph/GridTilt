@@ -96,7 +96,7 @@ export default function TimelinePage() {
         }
       />
 
-      <div className="px-4 sm:px-6 py-4 space-y-4 max-w-5xl w-full">
+      <div className="px-4 sm:px-6 py-4 space-y-4 max-w-[1200px] mx-auto w-full">
         {isError ? (
           <ErrorState label="The timeline failed to load." onRetry={() => refetch()} />
         ) : isLoading || !data ? (
