@@ -7,8 +7,6 @@ import { rm, readFile } from "fs/promises";
 const allowlist = [
   "express",
   "rss-parser",
-  "zod",
-  "zod-validation-error",
 ];
 
 async function buildAll() {
