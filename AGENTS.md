@@ -71,7 +71,7 @@ The G-chord list is maintained twice in App.tsx (display ~67-83, handler ~250-25
   are a house-modified fork (Replit elevate classes, custom tokens); do not regenerate from upstream.
 - Charts: recharts ^2.15.2 (9 pages), react-leaflet ^4.2.1 (Power Map, Compute Frontier),
   d3 ^7.9.0 (Supply Chain force graph only).
-- Server libs: yahoo-finance2 ^3.13.1, rss-parser, satori + @resvg/resvg-js (OG cards), zod,
+- Server libs: yahoo-finance2 ^3.13.1, rss-parser, satori + @resvg/resvg-js (OG cards),
   helmet, express-rate-limit.
 - Tests: Node's built-in runner. `npm test` = server/__tests__ + client/src/lib/__tests__ (300 tests). No component/DOM tests.
 - Scripts: `dev` (tsx), `build` (script/build.ts: vite client + esbuild server to dist/index.cjs),
