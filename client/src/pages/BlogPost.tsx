@@ -19,6 +19,14 @@ function slugify(text: string): string {
   return text.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 }
 
+/** One table row "| a | b |" -> ["a", "b"]. */
+function splitRow(line: string): string[] {
+  return line.trim().replace(/^\|/, "").replace(/\|$/, "").split("|").map((c) => c.trim());
+}
+
+const isTableLine = (l: string) => /^\s*\|.*\|\s*$/.test(l);
+const isSeparatorLine = (l: string) => /^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?\s*$/.test(l);
+
 function renderMarkdown(content: string) {
   const lines = content.split("\n");
   const elements: any[] = [];
@@ -27,7 +35,71 @@ function renderMarkdown(content: string) {
   while (i < lines.length) {
     const line = lines[i];
 
-    if (line.startsWith("## ")) {
+    if (isTableLine(line) && i + 1 < lines.length && isSeparatorLine(lines[i + 1])) {
+      // Pipe table: header row, separator, body rows until a non-table line.
+      const header = splitRow(line);
+      const rows: string[][] = [];
+      i += 2;
+      while (i < lines.length && isTableLine(lines[i])) {
+        rows.push(splitRow(lines[i]));
+        i++;
+      }
+      // "$386M", "$(2,980)M", "12.5%", "about 55,000": right-aligned, mono
+      const numeric = (s: string) => /^(about |~)?[-+$]?\(?[\d.,]+\)?\s*[%A-Za-z/]*$/.test(s.trim());
+      elements.push(
+        <div key={`table-${i}`} className="overflow-x-auto mb-5 -mx-1">
+          <table className="w-full text-sm border-collapse">
+            <thead>
+              <tr className="border-b border-border">
+                {header.map((h, j) => (
+                  <th key={j} className={`py-2 px-1.5 text-[11px] uppercase tracking-wide font-semibold text-muted-foreground ${j > 0 && rows.every((r) => !r[j] || numeric(r[j])) ? "text-right" : "text-left"}`}>
+                    {renderInlineText(h)}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r, k) => (
+                <tr key={k} className="border-b border-border/50">
+                  {header.map((_, j) => (
+                    <td key={j} className={`py-2 px-1.5 align-top text-muted-foreground ${j > 0 && rows.every((rr) => !rr[j] || numeric(rr[j])) ? "text-right font-mono text-foreground" : ""}`}>
+                      {renderInlineText(r[j] ?? "")}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      );
+      continue;
+    } else if (/^\s*[-*] /.test(line)) {
+      const items: string[] = [];
+      while (i < lines.length && /^\s*[-*] /.test(lines[i])) {
+        items.push(lines[i].replace(/^\s*[-*] /, ""));
+        i++;
+      }
+      elements.push(
+        <ul key={`ul-${i}`} className="list-disc list-outside space-y-2 text-15 text-muted-foreground mb-5 ml-5 leading-[1.7]">
+          {items.map((item, j) => <li key={j}>{renderInlineText(item)}</li>)}
+        </ul>
+      );
+      continue;
+    } else if (line.startsWith("> ")) {
+      const quote: string[] = [];
+      while (i < lines.length && lines[i].startsWith("> ")) {
+        quote.push(lines[i].slice(2));
+        i++;
+      }
+      elements.push(
+        <blockquote key={`q-${i}`} className="border-l-2 border-brand/60 pl-4 my-5 text-15 text-muted-foreground leading-[1.7] italic">
+          {quote.map((q, j) => <p key={j} className="mb-2 last:mb-0">{renderInlineText(q)}</p>)}
+        </blockquote>
+      );
+      continue;
+    } else if (/^\s*(---|\*\*\*)\s*$/.test(line)) {
+      elements.push(<hr key={i} className="my-8 border-border" />);
+    } else if (line.startsWith("## ")) {
       const text = line.slice(3);
       const id = slugify(text);
       elements.push(
@@ -96,11 +168,24 @@ function renderMarkdown(content: string) {
   return elements;
 }
 
+/** Bold and links inside one line. Off-site links open in a new tab; site paths route in-app. */
 function renderInlineText(text: string) {
-  const parts = text.split(/(\*\*[^*]+\*\*)/);
+  const parts = text.split(/(\*\*[^*]+\*\*|\[[^\]]+\]\([^)]+\))/);
   return parts.map((part, i) => {
     if (part.startsWith("**") && part.endsWith("**")) {
       return <strong key={i} className="text-foreground font-semibold">{part.slice(2, -2)}</strong>;
+    }
+    const linkMatch = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
+    if (linkMatch) {
+      const href = linkMatch[2];
+      if (/^https?:\/\//.test(href)) {
+        return (
+          <a key={i} href={href} target="_blank" rel="noopener noreferrer" className="text-brand hover:text-brand-2">
+            {linkMatch[1]}
+          </a>
+        );
+      }
+      return <Link key={i} href={href} className="text-brand hover:text-brand-2">{linkMatch[1]}</Link>;
     }
     return part;
   });
