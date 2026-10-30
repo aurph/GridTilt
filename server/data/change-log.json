@@ -257,6 +257,28 @@
         "url": "https://gridtilt.com/power-map?tab=queue",
         "why": "The original 60-day window was held in abeyance for 90 days; the row never caught up."
       }
+    },
+    {
+      "id": "2026-10-30-transformer-lead-time",
+      "kind": "update",
+      "entity": "supply-chain/transformers",
+      "field": "Transformer lead time shown on the Supply Chain page",
+      "before": "128 weeks for power transformers, Wood Mackenzie's Q2 2025 average",
+      "after": "Generator step-up transformer lead times above 160 weeks by Q1 2026 (143 weeks average in 2024), per Wood Mackenzie analyst Ben Boucher; the Q2 2025 averages are kept in the statement",
+      "source": "Reuters, quoting Wood Mackenzie's Ben Boucher (syndicated copy)",
+      "sourceUrl": "https://www.kitco.com/news/off-the-wire/2026-07-09/us-power-companies-scramble-secure-equipment-surging-data-center",
+      "sourceDate": "2026-07-09",
+      "reviewed": "2026-10-30",
+      "scope": "Supply Chain page, Transformers node",
+      "rationale": "The page was reviewed October 18 but its headline lead-time figures were sixteen months old. Wood Mackenzie has not published a 2026 average; its analyst's dated figure to Reuters is the newest numeric statement, and it covers generator step-up units rather than the Q2 2025 'power transformer' line, so the statement says both. The switchgear figure stays at 44 weeks because no newer published average exists; its statement now says so and carries the analyst's May 2026 reading.",
+      "short": {
+        "label": "Transformer lead time",
+        "before": "128 weeks (Q2 2025)",
+        "after": "160+ weeks for GSUs by Q1 2026",
+        "source": "Wood Mackenzie analyst via Reuters, July 9, 2026",
+        "url": "https://gridtilt.com/supply-chain",
+        "why": "The Q2 2025 average was sixteen months old; no 2026 published average exists, so the analyst's dated figure is used and labeled."
+      }
     }
   ]
 }
