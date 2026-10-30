@@ -35,17 +35,17 @@ const OPERATOR_META: Record<string, { name: string; description: string; strateg
   },
   "amazon": {
     name: "Amazon",
-    description: "AWS is the largest cloud infrastructure provider. It operates dozens of US data centers. AWS committed $105B in 2025 capex, driven by AI compute demand.",
+    description: "AWS is the largest cloud infrastructure provider. It operates dozens of US data centers.",
     strategy: "AWS clusters facilities in Northern Virginia, Oregon, and Ohio. Expansion into Mississippi and Indiana targets lower-cost power. AWS signed nuclear agreements with Talen Energy.",
   },
   "meta": {
     name: "Meta",
-    description: "Meta operates hyperscale data centers for AI training with $65B in 2025 capex. Meta issued a 6.6 GW nuclear RFP, the largest corporate nuclear procurement to date.",
+    description: "Meta operates hyperscale data centers for AI training. Meta issued a 6.6 GW nuclear RFP, the largest corporate nuclear procurement to date.",
     strategy: "Meta concentrates facilities in Iowa, Oregon, and Georgia near renewable sources. The 6.6 GW nuclear RFP marks a shift toward baseload procurement.",
   },
   "microsoft": {
     name: "Microsoft",
-    description: "Microsoft Azure has $83B in 2025 capex. Microsoft contracted with Constellation Energy to restart Three Mile Island Unit 1 for dedicated nuclear baseload power.",
+    description: "Microsoft contracted with Constellation Energy to restart Three Mile Island Unit 1 for dedicated nuclear baseload power.",
     strategy: "Microsoft's data centers span Virginia, Iowa, Arizona, and Texas. The TMI restart provides 835 MW of carbon-free baseload to Azure operations.",
   },
   "oracle": {
@@ -71,6 +71,21 @@ const OPERATOR_META: Record<string, { name: string; description: string; strateg
 };
 
 const ALL_OPERATORS = Object.keys(OPERATOR_META);
+
+/** /api/hyperscaler-capex: the four hyperscalers' stated capex guides, hand-curated each earnings cycle. */
+interface CapexComponent {
+  ticker: string;
+  company: string;
+  usdBillions: number;
+  guide?: string;
+  sourceUrl: string;
+  sourceLabel: string;
+  quarter?: { label: string; usdBillions: number; reportDate: string };
+}
+interface CapexFile {
+  fy2026?: { components: CapexComponent[]; asOf: string };
+  lastRefreshed: string;
+}
 
 // Slugs here match OPERATOR_META keys; values are the exact `company` string
 // used in server/data/datacenters.json (title case, "xAI"/"CoreWeave" casing).
@@ -152,6 +167,13 @@ export default function OperatorPage() {
     refetchInterval: 900000,
   });
 
+  // Only the four hyperscalers have a row; everyone else gets nothing, not a placeholder.
+  const { data: capex } = useQuery<CapexFile>({
+    queryKey: ["/api/hyperscaler-capex"],
+    enabled: !!ticker,
+  });
+  const capexRow = ticker ? capex?.fy2026?.components.find((c) => c.ticker === ticker) : undefined;
+
   if (!operator) {
     return (
       <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-6">
@@ -204,6 +226,17 @@ export default function OperatorPage() {
             <h1 className="text-2xl font-bold" data-testid="operator-heading">{operator.name} AI Data Centers</h1>
           </div>
           <p className="text-sm text-muted-foreground max-w-3xl">{operator.description}</p>
+          {capexRow && (
+            <p className="text-xs text-muted-foreground max-w-3xl mt-2" data-testid="operator-capex">
+              2026 capex guide: <span className="font-mono text-foreground">${capexRow.usdBillions}B</span>
+              {capexRow.guide ? ` (${capexRow.guide})` : ""}
+              {capexRow.quarter ? `; latest quarter ${capexRow.quarter.label}: $${capexRow.quarter.usdBillions}B` : ""}
+              {". "}
+              <a href={capexRow.sourceUrl} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-foreground">
+                {capexRow.sourceLabel}
+              </a>
+            </p>
+          )}
         </div>
         {ticker && (
           <Link href={`/stock/${ticker}`} data-testid="link-operator-ticker">

@@ -231,7 +231,7 @@ function TopMoversSection({ topMovers, pulse, isLoading, isError, updatedAt, onR
                   >
                     {SECTOR_LABEL_SHORT[m.sector] ?? m.sector}
                   </span>
-                  <span className="font-mono text-xs text-foreground flex-shrink-0 w-16 text-right">${m.price.toFixed(m.price < 10 ? 2 : m.price < 100 ? 2 : 2)}</span>
+                  <span className="font-mono text-xs text-foreground flex-shrink-0 w-16 text-right">${m.price.toFixed(2)}</span>
                   <div className={`flex items-center gap-0.5 font-mono font-semibold text-xs flex-shrink-0 w-14 justify-end ${isUp ? "text-positive" : "text-negative"}`}>
                     {isUp ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
                     {Math.abs(m.changePercent).toFixed(2)}%

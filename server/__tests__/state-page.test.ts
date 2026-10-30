@@ -31,7 +31,7 @@ import { STATE_GRID } from "../../client/src/data/state-grid";
 
 const data = (file: string) => JSON.parse(readFileSync(join(process.cwd(), "server", "data", file), "utf-8"));
 const shipped = data("state-pages.json") as CuratedStates;
-const TODAY = "2026-10-01";
+const TODAY = "2026-10-30";
 
 const input = (over: Partial<StatePageInput> = {}): StatePageInput => ({
   curated: shipped,
@@ -48,9 +48,9 @@ const page = () => {
 };
 
 describe("state pages: curated file", () => {
-  it("the shipped file is valid and publishes only Maryland", () => {
+  it("the shipped file is valid and publishes Maryland, Virginia and Texas", () => {
     assert.deepEqual(validateStatePages(shipped, TODAY), []);
-    assert.deepEqual(statePageSlugs(shipped).map((s) => s.slug), ["maryland"]);
+    assert.deepEqual(statePageSlugs(shipped).map((s) => s.slug), ["maryland", "virginia", "texas"]);
   });
 
   it("rejects unknown states, slugs that are not the state's name, undated or unlinked rows, and dates past the review", () => {
@@ -59,13 +59,13 @@ describe("state pages: curated file", () => {
     assert.match(validateStatePages({ states: [{ ...md, code: "VA" }] }).join(), /slug must be "virginia"/, "a slug publishes the state it names");
     assert.equal(slugForState("District of Columbia"), "district-of-columbia");
     assert.match(validateStatePages({ states: [{ ...md, documents: [{ ...md.documents[0], url: "http://example.com" }] }] }).join(), /https/);
-    assert.match(validateStatePages({ states: [{ ...md, documents: [{ ...md.documents[0], date: "2026-10-02" }] }] }).join(), /after the review/);
+    assert.match(validateStatePages({ states: [{ ...md, documents: [{ ...md.documents[0], date: "2026-10-31" }] }] }).join(), /after the review/);
     assert.match(validateStatePages({ states: [{ ...md, documents: [{ ...md.documents[0], kind: "rumor" as never }] }] }).join(), /kind must be/);
     assert.match(validateStatePages({ states: [{ ...md, nextDates: [{ ...md.nextDates[0], date: "soon" }] }] }).join(), /real YYYY-MM-DD/);
     assert.match(validateStatePages({ states: [{ ...md, nextDates: [{ ...md.nextDates[1], through: "2027-05-01" }] }] }).join(), /through must be/);
     assert.match(validateStatePages({ states: [{ ...md, bill: { explanation: "", source: "x", url: "https://x.test" } }] }).join(), /bill needs/);
     assert.match(validateStatePages({ states: [{ ...md, reviewed: "2026-02-30" }] }).join(), /real YYYY-MM-DD/);
-    assert.match(validateStatePages({ states: [{ ...md, reviewed: "2026-10-02" }] }, TODAY).join(), /after today/, "a review cannot be dated in the future");
+    assert.match(validateStatePages({ states: [{ ...md, reviewed: "2026-10-31" }] }, TODAY).join(), /after today/, "a review cannot be dated in the future");
   });
 
   it("the page's review date is the review the ledger records", () => {
@@ -117,19 +117,19 @@ describe("state pages: Maryland", () => {
   });
 
   it("answers absent for a slug that is not published", () => {
-    assert.equal(loadStatePage("virginia", TODAY).kind, "absent");
-    assert.equal(composeStatePage("virginia", input()), null);
+    assert.equal(loadStatePage("ohio", TODAY).kind, "absent");
+    assert.equal(composeStatePage("ohio", input()), null);
   });
 
   it("writes the same facts into the HTML, escaped, with scoped review dates and the limits", () => {
     const html = renderStateHtml(md);
     assert.match(html, /<h1>Maryland's grid<\/h1>/);
     assert.ok(html.includes(`anticipated reserve margin ${md.nerc!.margin.toFixed(1)}%`));
-    assert.ok(html.includes("Each checked against its document on October 1, 2026."));
+    assert.ok(html.includes("Each checked against its document on October 30, 2026."));
     assert.ok(html.includes("<strong>As of July 1, 2026, Frederick County: Approved data center site plans"));
     assert.ok(html.includes("May 11 to 21, 2027: Piedmont line evidentiary hearings"));
     assert.ok(html.includes("not yet reviewed field by field"), "projects keep their own review state");
-    assert.ok(!html.includes("Reviewed October 1, 2026."), "no page-wide review stamp");
+    assert.ok(!html.includes("Reviewed October 30, 2026."), "no page-wide review stamp");
     assert.ok(html.includes("a project missing here is not evidence that none exists"));
     assert.ok(html.includes("A statewide residential average blends every utility's residential customers"));
     for (const p of md.projects) assert.ok(html.includes(p.url), p.id);
@@ -211,12 +211,12 @@ describe("state pages: one canonical address, wired through", () => {
   });
 
   it("an unpublished state is a real 404, not a thin page", () => {
-    for (const path of ["/state/virginia", "/state/md", "/state/Maryland", "/state/"]) {
+    for (const path of ["/state/ohio", "/state/md", "/state/Maryland", "/state/"]) {
       const meta = getPageMeta(path);
       assert.equal(meta.status, 404, path);
       assert.equal(meta.canonical, null, path);
     }
-    assert.equal(statePagePrerender("/state/virginia", TODAY), null);
+    assert.equal(statePagePrerender("/state/ohio", TODAY), null);
   });
 
   it("the response carries the page's facts in its HTML; other pages' responses do not", () => {
@@ -227,7 +227,7 @@ describe("state pages: one canonical address, wired through", () => {
     assert.match(res.html, /<link rel="canonical" href="https:\/\/gridtilt\.com\/state\/maryland" \/>/);
     const tool = pageResponse(SHELL, "/power-map");
     assert.ok(!tool.html.includes("data-prerender"));
-    const missing = pageResponse(SHELL, "/state/virginia");
+    const missing = pageResponse(SHELL, "/state/ohio");
     assert.equal(missing.status, 404);
     assert.ok(!missing.html.includes("data-prerender"));
   });
@@ -242,7 +242,7 @@ describe("state pages: one canonical address, wired through", () => {
 
   it("is in the sitemap, dated by its review, and its data is crawlable", () => {
     const xml = buildSitemap({ tickers: [], clusters: [], articles: [], statePages: loadStatePageSlugs(TODAY) });
-    assert.match(xml, /<loc>https:\/\/gridtilt\.com\/state\/maryland<\/loc>\n    <lastmod>2026-10-01<\/lastmod>/);
+    assert.match(xml, /<loc>https:\/\/gridtilt\.com\/state\/maryland<\/loc>\n    <lastmod>2026-10-30<\/lastmod>/);
     assert.ok(robotsAllows("/api/state-pages"));
     assert.ok(robotsAllows("/api/state-pages/maryland"));
     assert.ok(robotsAllows("/state/maryland"));

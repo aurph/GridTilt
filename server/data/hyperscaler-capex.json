@@ -10,5 +10,52 @@
     "asOf": "Q1 2026 earnings cycle",
     "notes": "Total is the sum of disclosed FY2025 capex guides from the four largest US hyperscalers. Most of this spend lands in datacenters, GPUs, networking, and the power infrastructure to run it. Values are rounded; per-ticker breakdowns reflect publicly stated capex guides as of the most recent earnings cycle and are intended for explainer context, not precise accounting."
   },
-  "lastRefreshed": "2026-05-20"
+  "fy2026": {
+    "totalUsdBillions": 730,
+    "components": [
+      {
+        "ticker": "MSFT",
+        "company": "Microsoft",
+        "usdBillions": 170,
+        "guide": "about $170 billion for calendar 2026, including finance leases",
+        "basis": "point estimate; Microsoft's fiscal year ends in June, so this is its calendar-year figure, lowered from about $175 billion in July after third-party capacity deliveries slipped",
+        "sourceUrl": "https://www.microsoft.com/en-us/investor/events/fy-2027/earnings-fy-2027-q1",
+        "sourceLabel": "Microsoft FY27 Q1 earnings call, Oct 28, 2026",
+        "quarter": { "label": "FY2027 Q1 (Jul-Sep 2026)", "usdBillions": 45.2, "basis": "including $7.4 billion of finance leases", "reportDate": "2026-10-28" }
+      },
+      {
+        "ticker": "GOOGL",
+        "company": "Alphabet",
+        "usdBillions": 200,
+        "guide": "$195 to 205 billion for 2026, unchanged from July",
+        "basis": "midpoint of the stated range; cash purchases of property and equipment",
+        "sourceUrl": "https://abc.xyz/investor/events/event-details/2026/2026-Q3-Earnings-Call-2026-Ujou16CTw9/default.aspx",
+        "sourceLabel": "Alphabet Q3 2026 earnings call, Oct 28, 2026",
+        "quarter": { "label": "Q3 2026", "usdBillions": 51.4, "basis": "purchases of property and equipment, $51,355 million", "reportDate": "2026-10-28", "sourceUrl": "https://www.sec.gov/Archives/edgar/data/0001652044/000165204426000080/googexhibit991q32026.htm" }
+      },
+      {
+        "ticker": "META",
+        "company": "Meta",
+        "usdBillions": 140,
+        "guide": "$135 to 145 billion for 2026, narrowed from $130 to 145 billion",
+        "basis": "midpoint of the stated range; includes principal payments on finance leases",
+        "sourceUrl": "https://investor.atmeta.com/investor-news/press-release-details/2026/Meta-Reports-Third-Quarter-2026-Results/default.aspx",
+        "sourceLabel": "Meta Q3 2026 earnings release, Oct 21, 2026",
+        "quarter": { "label": "Q3 2026", "usdBillions": 34.91, "basis": "including principal payments on finance leases", "reportDate": "2026-10-21" }
+      },
+      {
+        "ticker": "AMZN",
+        "company": "Amazon",
+        "usdBillions": 220,
+        "guide": "approximately $220 billion of cash capital expenditures for 2026, unchanged",
+        "basis": "point estimate; cash capital expenditures",
+        "sourceUrl": "https://www.sec.gov/Archives/edgar/data/0001018724/000101872426000038/amzn-20260930xex991.htm",
+        "sourceLabel": "Amazon Q3 2026 earnings release (8-K exhibit 99.1), Oct 29, 2026",
+        "quarter": { "label": "Q3 2026", "usdBillions": 77.3, "basis": "purchases of property and equipment, $77,259 million, before $1,381 million of sale proceeds and incentives", "reportDate": "2026-10-29" }
+      }
+    ],
+    "asOf": "Q3 2026 earnings cycle",
+    "notes": "Total is the sum of the 2026 capex guides the four largest US hyperscalers stated in their Q3 2026 earnings releases and calls, with Alphabet and Meta at the midpoints of their ranges. The definitions differ: Microsoft and Meta count finance leases, Alphabet and Amazon report cash purchases of property and equipment, and Microsoft's figure is a calendar-year estimate because its fiscal year ends in June. Treat the total as directional. Alphabet said it expects capex to increase significantly in 2027; Meta said it is still developing its 2027 plans. Every figure was read from the cited primary document on 2026-10-30."
+  },
+  "lastRefreshed": "2026-10-30"
 }

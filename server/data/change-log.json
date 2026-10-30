@@ -129,6 +129,69 @@
         "source": "LBNL 2025 data center energy report update",
         "url": "https://gridtilt.com/analyze?tab=scenario"
       }
+    },
+    {
+      "id": "2026-10-30-hyperscaler-capex-2026-guides",
+      "kind": "update",
+      "entity": "site/hyperscaler-capex",
+      "field": "Combined capex guide of the four largest US hyperscalers",
+      "before": "$340B, FY2025 guides as of the Q1 2026 earnings cycle",
+      "after": "$730B, 2026 guides as of the Q3 2026 earnings cycle (Microsoft ~$170B calendar 2026, Alphabet $195-205B, Meta $135-145B, Amazon ~$220B)",
+      "source": "Microsoft FY27 Q1 call, Alphabet Q3 2026 call, Meta Q3 2026 release, Amazon Q3 2026 release",
+      "sourceUrl": "https://investor.atmeta.com/investor-news/press-release-details/2026/Meta-Reports-Third-Quarter-2026-Results/default.aspx",
+      "sourceDate": "2026-10-29",
+      "reviewed": "2026-10-30",
+      "scope": "/api/hyperscaler-capex and the operator pages for Microsoft, Alphabet, Meta and Amazon",
+      "rationale": "The file had not moved since May 2026 and was two earnings cycles behind. Definitions differ across the four companies, so the total is directional.",
+      "short": {
+        "label": "Big four hyperscaler capex guides",
+        "before": "$340B, FY2025 guides",
+        "after": "$730B, 2026 guides after Q3 reports",
+        "source": "Q3 2026 earnings releases and calls",
+        "url": "https://gridtilt.com/operator/microsoft"
+      }
+    },
+    {
+      "id": "2026-10-30-gpt-5-6-sol-promo-price",
+      "kind": "update",
+      "entity": "inference-prices/gpt-5-6-sol",
+      "field": "GPT-5.6 Sol list price per million tokens",
+      "before": "$5 input, $30 output",
+      "after": "$4 input, $20 output, promotional price listed as available at least through November 21, 2026",
+      "source": "OpenAI API pricing page and API changelog (Aug 21, 2026 entry)",
+      "sourceUrl": "https://developers.openai.com/api/docs/pricing",
+      "sourceDate": "2026-08-21",
+      "reviewed": "2026-10-30",
+      "scope": "GPU Economics, the price of a token",
+      "rationale": "The registry was last checked on 2026-07-30 and missed the August cut; the same pass added the newer flagship and efficient tiers from all three labs.",
+      "short": {
+        "label": "GPT-5.6 Sol API list price",
+        "before": "$5 in, $30 out per M tokens",
+        "after": "$4 in, $20 out, promo through Nov 21",
+        "source": "OpenAI API pricing page, Aug 21, 2026",
+        "url": "https://gridtilt.com/neocloud-intel?tab=economics"
+      }
+    },
+    {
+      "id": "2026-10-30-coreweave-ellendale-rated-power",
+      "kind": "update",
+      "entity": "clusters/coreweave-ellendale",
+      "field": "Rated power and status",
+      "before": "70 MW rated (Epoch satellite estimate), construction",
+      "after": "250 MW fully operational critical IT (Applied Digital, Oct 2, 2026), operational",
+      "source": "Applied Digital press release, October 2, 2026",
+      "sourceUrl": "https://ir.applieddigital.com/news-events/press-releases/detail/161/applied-digital-brings-an-additional-75-mw-of-ai",
+      "sourceDate": "2026-10-02",
+      "reviewed": "2026-10-30",
+      "scope": "Compute Frontier, Power Map AI Clusters view, cluster metrics",
+      "rationale": "The developer stated an operational figure after the September Epoch calibration; the company statement replaces the estimate and the estimate flag comes off.",
+      "short": {
+        "label": "CoreWeave Ellendale (Applied Digital) rated power",
+        "before": "70 MW, Epoch estimate",
+        "after": "250 MW operational, company stated",
+        "source": "Applied Digital release, Oct 2, 2026",
+        "url": "https://gridtilt.com/compute-frontier/coreweave-ellendale"
+      }
     }
   ]
 }

@@ -4,7 +4,7 @@
     {
       "code": "MD",
       "slug": "maryland",
-      "reviewed": "2026-10-01",
+      "reviewed": "2026-10-30",
       "bill": {
         "explanation": "A Maryland electric bill has a delivery part, for the utility's infrastructure and operating costs, with distribution rates the Public Service Commission sets in rate cases, and a supply part, for the electricity itself, which for customers on the utility's standard offer the utility buys on the open market and passes through without a profit on the energy",
         "source": "Maryland Office of People's Counsel, Utility Rates and Basics",
@@ -64,6 +64,130 @@
           "what": "Frederick County's Executive Order 05-2026 expires, unless superseded or terminated earlier",
           "source": "Frederick County Executive Order 05-2026",
           "url": "https://www.frederickcountymd.gov/ArchiveCenter/ViewFile/Item/17236"
+        }
+      ]
+    },
+    {
+      "code": "VA",
+      "slug": "virginia",
+      "reviewed": "2026-10-30",
+      "bill": {
+        "explanation": "Dominion's Virginia electric rates are set by the State Corporation Commission in rate cases. Base rates let the utility recover its reasonable and prudent operating costs plus a fair return on its rate base, which is its investment in things like generating stations and the distribution grid. Fuel costs can be recovered annually if they are proven reasonable. Transmission costs, and other costs such as environmental compliance and generation facilities, are recovered through separate rate surcharges, and the transmission surcharges may change annually",
+        "source": "Virginia State Corporation Commission, Electric Rates in Virginia: How are they determined by the State Corporation Commission?",
+        "url": "https://www.scc.virginia.gov/media/sccvirginiagov-home/regulated-industries/utility-regulation/energy-regulation/howerates.pdf"
+      },
+      "documents": [
+        {
+          "date": "2026-10-23",
+          "jurisdiction": "Virginia State Corporation Commission",
+          "title": "Dominion's large-load connection queue case continued after FERC ruling on PJM",
+          "summary": "In Case No. PUR-2026-00011, Dominion's application of February 2, 2026 for approval of its large-load connection queue process standards, the Commission takes judicial notice of FERC's October 9, 2026 order in Docket ER26-3515. That FERC order rejected PJM's proposed Interim Resource Adequacy Service and found that parts of PJM's large load proposal appear to intrude on retail rate regulation. The order recites that hearings began April 28, 2026 and that an interim order establishing an additional proceeding was entered May 25, 2026. It does not approve or reject Dominion's standards; it states that the matter is continued.",
+          "source": "Virginia SCC Order, Case No. PUR-2026-00011",
+          "url": "https://www.scc.virginia.gov/docketsearch/DOCS/8fc501!.PDF"
+        },
+        {
+          "date": "2026-10-15",
+          "jurisdiction": "Dominion Energy Virginia (filed with the Virginia SCC)",
+          "title": "Dominion files its 2026 resource plan update",
+          "summary": "Dominion's 2026 Integrated Resource Plan update, filed in Case No. PUR-2026-00163, presents 17 modeling scenarios for meeting customer demand over 20 years. The company states that the IRP is not a request to approve a specific project, resource portfolio, or cost recovery. It says demand forecasts for the Dominion Zone of PJM continue to increase. Its near-term plan includes a new gas-fired resource expected to enter service by June 2029 and a solicitation for up to 7.3 GW of dispatchable generation with potential in-service dates through 2036. It notes that PJM's 2028/2029 capacity auction left committed capacity more than 6,800 MW below PJM's reliability requirement.",
+          "source": "Dominion Energy, Report of Its 2026 Virginia Integrated Resource Plan (Update), Case No. PUR-2026-00163",
+          "url": "https://www.dominionenergy.com/-/media/content/about/our-company/irp/pdfs/2026-integrated-resource-plan-update.pdf"
+        },
+        {
+          "date": "2026-07-31",
+          "jurisdiction": "Virginia State Corporation Commission",
+          "title": "Transmission rider set; Dominion told to charge large loads up front for direct-connect facilities",
+          "summary": "The final order on Rider T1 approves the uncontested transmission revenue requirement of $1,538,974,037 for the rate year September 1, 2026 through August 31, 2027. The Commission states that it is without discretion to add to or subtract from these costs. It approves an amended allocation method that applies the new 85% minimum transmission charge for large-load customers beginning January 1, 2027. It says this reduces the projected Rider T1 monthly increase for a typical 1,000 kWh residential customer from $2.90 to $0.94. It directs Dominion to file, within 90 days and in a new docket, an amended line extension policy requiring a mandatory contribution in aid of construction for direct connect transmission facilities, generally substations and the lines connecting a new or expanding large-load customer to the bulk system. It takes a more deliberate approach to assigning higher-order transmission costs and says the new docket may consider that question.",
+          "source": "Virginia SCC Final Order, Case No. PUR-2026-00056",
+          "url": "https://www.scc.virginia.gov/docketsearch/DOCS/8dt001!.PDF"
+        },
+        {
+          "date": "2026-03-31",
+          "jurisdiction": "Court of Appeals of Virginia",
+          "title": "Prince William Digital Gateway rezonings held void",
+          "summary": "The Court of Appeals held that the Board of County Supervisors' advertising for its December 2023 public hearing violated Code 15.2-2204(A) and county Zoning Ordinance 32-700.60. It held that this renders the three data center rezonings known as Compass, Digital Gateway North and Digital Gateway South void ab initio. It affirmed the circuit court judgment that invalidated all three and held that at least one of the Oak Valley plaintiffs has standing to challenge them. It also held that the circuit court erred in dismissing the same claim in a companion case, Burke, but did not send that case back because this ruling makes further relief there unnecessary.",
+          "source": "Court of Appeals of Virginia, Board of County Supervisors of Prince William County v. Oak Valley Homeowners Association, Record Nos. 1590-25-4, 1584-25-4, 1592-25-4, 2025-24-4 (published opinion)",
+          "url": "https://www.vacourts.gov/static/opinions/opncavwp/1584254.pdf"
+        },
+        {
+          "date": "2025-11-25",
+          "jurisdiction": "Virginia State Corporation Commission",
+          "title": "Dominion base rates set; new GS-5 class for customers of 25 MW or more",
+          "summary": "The final order in Dominion's 2025 biennial review finds annual base rate revenue increases of $565.7 million for 2026 and $209.9 million for 2027. It says these mean approximate monthly increases for a typical 1,000 kWh residential customer of $11.24 in 2026 and an additional $2.36 in 2027. It creates Rate Schedule GS-5, effective January 1, 2027, for customers with a measured or contracted demand of 25 MW or more on a contiguous site and a load factor of at least 75%. For customers signing an electric service agreement on or after that date, the order sets a 14-year contract term, minimum charges of 85% of contracted demand for distribution and transmission and 60% for generation, collateral of $1.5 million per MW, and an exit fee covering outstanding minimum charges. The Commission did not address comprehensive transmission planning or transmission cost allocation in this case. It directed Dominion to propose alternative transmission cost allocations in its next transmission rider filing and to file its large-load interconnection queue process in a separate case by February 2, 2026.",
+          "source": "Virginia SCC Final Order, Case No. PUR-2025-00058",
+          "url": "https://www.scc.virginia.gov/docketsearch/DOCS/89g601!.PDF"
+        }
+      ],
+      "nextDates": [
+        {
+          "date": "2027-01-01",
+          "what": "Rate Schedule GS-5 takes effect; its 14-year contract, minimum demand charges and collateral terms apply to customers signing a service agreement on or after this date",
+          "source": "Virginia SCC Final Order, Case No. PUR-2025-00058",
+          "url": "https://www.scc.virginia.gov/docketsearch/DOCS/89g601!.PDF"
+        },
+        {
+          "date": "2027-08-31",
+          "what": "The rate year for the Rider T1 transmission rates approved in July 2026 ends",
+          "source": "Virginia SCC Final Order, Case No. PUR-2026-00056",
+          "url": "https://www.scc.virginia.gov/docketsearch/DOCS/8dt001!.PDF"
+        }
+      ]
+    },
+    {
+      "code": "TX",
+      "slug": "texas",
+      "reviewed": "2026-10-30",
+      "bill": {
+        "explanation": "In the competitive retail areas of the ERCOT region, a home buys electricity from a retail electric provider. The provider buys electricity from generation companies, and it buys delivery service from the transmission and distribution utility whose power lines serve the home, such as Oncor. The Public Utility Commission sets those utilities' transmission and distribution rates. Municipal utilities and electric cooperatives (with a few exceptions such as Lubbock), and utilities outside the ERCOT region, kept the older structure in which one utility provides generation, delivery and retail service",
+        "source": "Texas Sunset Advisory Commission, PUC and ERCOT Staff Report (November 2022), Introduction: Texas Electricity Primer",
+        "url": "https://www.ercot.com/files/docs/2023/01/20/PUC-ERCOT-OPUC-Staff-Report-with-Commission-Decisions_1-19-23.pdf"
+      },
+      "documents": [
+        {
+          "date": "2026-09-18",
+          "jurisdiction": "Public Utility Commission of Texas",
+          "title": "Large load interconnection standards adopted under Senate Bill 6",
+          "summary": "The Commission adopts new 16 TAC 25.194 under Project No. 58481, implementing PURA 37.0561 as enacted by Senate Bill 6, effective October 8, 2026. The rule applies to a large load customer not energized by that date that seeks a new interconnection of 75 MW or more at a single site, certain expansions, or co-location with a generation resource. Before being included in an ERCOT interconnection study, the customer must sign an intermediate agreement, make required disclosures, and post financial security of $50,000 per MW of requested peak demand. Under the later standard interconnection agreement, the security is the greater of $50,000 per MW of contracted peak demand or the costs allocated for system upgrades. The preamble leaves parts of the standard large load interconnection agreement, including the timeline for returning security, to a separate rulemaking, and says transmission cost recovery will be addressed in Project No. 58000.",
+          "source": "Texas Register, October 2, 2026, Adopted Rules, 16 TAC 25.194 (TRD-202604027)",
+          "url": "https://www.sos.state.tx.us/texreg/archive/October22026/Adopted%20Rules/16.ECONOMIC%20REGULATION.html"
+        },
+        {
+          "date": "2026-09-14",
+          "jurisdiction": "ERCOT",
+          "title": "Data center energizations paused pending state verification and audit",
+          "summary": "ERCOT's Batch Zero update to its Board says Governor Abbott's August 3, 2026 directive asked the Commission and ERCOT to complete a comprehensive verification and audit of data centers in the interconnection process. In response, ERCOT paused the Batch Zero study process and paused approvals to energize data centers and crypto mining facilities of 75 MW or more. Conditional classifications sent to transmission providers on September 3, 2026 included 204 projects (66.4 GW) as base load and 158 projects as studied load, and excluded 373 projects (302.2 GW). Final inclusion will follow the verification and audit, to be provided in December. ERCOT says it is still determining the impact on the study timeline, which PGRR 145 originally set to finish by April 9, 2027. The item was for information only, with no Board action requested.",
+          "source": "ERCOT Board of Directors, Item 14: Batch Zero Update (September 14-15, 2026)",
+          "url": "https://www.ercot.com/files/docs/2026/09/11/14-Batch-Zero-Update.pdf"
+        },
+        {
+          "date": "2026-08-03",
+          "jurisdiction": "ERCOT",
+          "title": "Batch Zero classification delayed after Governor's letter",
+          "summary": "ERCOT says it received a letter from Governor Greg Abbott directing it to conduct a verification process before advancing any data center large loads. As a result, it will not notify distribution and transmission service providers by August 7, 2026 of how any large load is classified in the Batch Zero Interconnection Study. Ahead of the Commission's August 20, 2026 open meeting, it will file a request for a good cause exception to the Batch Zero timelines and processes in its Planning Guide. The notice does not mention energization approvals; it says ERCOT will consult with the Commission on next steps.",
+          "source": "ERCOT Market Notice M-A080326-01, Update Regarding Batch Zero Timelines and Processes",
+          "url": "https://www.ercot.com/services/comm/mkt_notices/M-A080326-01"
+        },
+        {
+          "date": "2026-05-18",
+          "jurisdiction": "ERCOT",
+          "title": "ERCOT asks to adjust its 2026 long-term load forecast before using it",
+          "summary": "ERCOT filed with the Commission a proposal to adjust its 2026 preliminary long-term load forecast before using it in transmission planning and resource adequacy studies, including the 2026 Triennial Reliability Assessment. The preliminary forecast projects peak load of 278,003 MW in 2029 and 367,790 MW in 2032. ERCOT offers two options: an adjustment based on how many computational large loads actually energized when expected, or use of the Batch Zero load forecast. It recommends the Batch Zero option, which it says would not be finalized until mid-August 2026. The notice is a proposal; the Commission was scheduled to consider it at its June 18, 2026 open meeting, in Project No. 59772.",
+          "source": "ERCOT Market Notice M-B051826-01, Proposal to Adjust 2026 Long-Term Load Forecast",
+          "url": "https://www.ercot.com/services/comm/mkt_notices/M-B051826-01"
+        }
+      ],
+      "nextDates": [
+        {
+          "date": "2026-12-10",
+          "what": "ERCOT files its Batch Zero Eligibility Verification Report and its Community Impact Review Report with the Commission",
+          "source": "ERCOT Board of Directors, Item 14: Batch Zero Update (September 14-15, 2026)",
+          "url": "https://www.ercot.com/files/docs/2026/09/11/14-Batch-Zero-Update.pdf"
+        },
+        {
+          "date": "2026-12-31",
+          "what": "Senate Bill 6 deadline for the Commission to amend its rules so wholesale transmission charges appropriately assign costs for transmission investment (Project No. 58000)",
+          "source": "ERCOT, 89th Legislative Session: ERCOT Status (October 2026)",
+          "url": "https://www.ercot.com/files/docs/2025/09/15/89th-Legislative-Session-PPTX-ERCOT-Status-October-2026-Final-PDF.pdf"
         }
       ]
     }

@@ -473,7 +473,7 @@ function ThesisCatalysts({ catalysts }: { catalysts: CatalystItem[] }) {
                 {c.description}
               </p>
               <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-11" style={{ color: INK.faint }}>Affects:</span>
+                {c.affectedTickers.length > 0 && <span className="text-11" style={{ color: INK.faint }}>Affects:</span>}
                 {c.affectedTickers.map((t) => (
                   <span
                     key={t}
