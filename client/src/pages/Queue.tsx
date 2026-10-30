@@ -307,11 +307,11 @@ export default function Queue({ embedded = false }: { embedded?: boolean; params
             </div>
           ) : (
           <div className="overflow-x-auto">
-          <div className="min-w-[760px]">
+          <div className="min-w-[640px] sm:min-w-[760px]">
           <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-surface-base border-b border-border text-[11px] text-muted-foreground">
-            <SortHeader label="Project" sortKey="projectName" current={sortKey} dir={sortDir} onClick={toggleSort} className="col-span-4" />
+            <SortHeader label="Project" sortKey="projectName" current={sortKey} dir={sortDir} onClick={toggleSort} className="col-span-3 sm:col-span-4" />
             <SortHeader label="Type" sortKey="type" current={sortKey} dir={sortDir} onClick={toggleSort} className="col-span-1" />
-            <SortHeader label="MW" sortKey="capacityMW" current={sortKey} dir={sortDir} onClick={toggleSort} className="col-span-1 text-right" />
+            <SortHeader label="MW" sortKey="capacityMW" current={sortKey} dir={sortDir} onClick={toggleSort} className="col-span-2 text-right sm:col-span-1" />
             <SortHeader label="Region" sortKey="iso" current={sortKey} dir={sortDir} onClick={toggleSort} className="col-span-1" />
             <span className="col-span-1">State</span>
             <SortHeader label="Online" sortKey="expectedOnline" current={sortKey} dir={sortDir} onClick={toggleSort} className="col-span-2" />
@@ -336,7 +336,7 @@ export default function Queue({ embedded = false }: { embedded?: boolean; params
                       className={`grid grid-cols-12 gap-2 px-4 py-2.5 border-b border-border/30 last:border-0 text-xs hover:bg-brand/5 ${hasTooltip ? "cursor-help" : ""} ${isAggregate ? "bg-surface-sunken" : ""}`}
                       data-testid={`backlog-row-${p.id}`}
                     >
-                      <div className="col-span-4 min-w-0">
+                      <div className="col-span-3 min-w-0 sm:col-span-4">
                         <div className="font-medium text-foreground truncate flex items-center gap-1.5">
                           {p.projectName}
                           {p.status === "operational" && (
@@ -351,7 +351,7 @@ export default function Queue({ embedded = false }: { embedded?: boolean; params
                         <Icon className="h-3 w-3 flex-shrink-0" />
                         <span className="truncate">{p.type}</span>
                       </span>
-                      <span className="col-span-1 font-mono text-foreground text-right tabular-nums">
+                      <span className="col-span-2 font-mono text-foreground text-right tabular-nums whitespace-nowrap sm:col-span-1">
                         {p.capacityMW == null || p.capacityMW === 0 ? "—" : p.capacityMW.toLocaleString()}
                       </span>
                       <span className="col-span-1 font-mono text-foreground truncate">{p.iso}</span>

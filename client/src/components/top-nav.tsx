@@ -5,7 +5,9 @@ import logoPath from "@assets/logo-nav-80.png";
 /**
  * Top navigation bar: one sticky row across the screen, replacing the left
  * sidebar. Sections read left to right; the active one carries the orange
- * bar. Horizontal scroll below lg keeps every section reachable.
+ * bar. Below lg the section strip scrolls sideways behind a fade that says
+ * so; search and Subscribe sit outside the strip, so they are reachable on
+ * every width without scrolling it.
  */
 
 const SECTIONS: { label: string; href: string; match: (p: string) => boolean }[] = [
@@ -28,55 +30,71 @@ export function TopNav() {
       className="sticky top-0 z-50 flex-shrink-0 border-b border-border bg-sidebar"
       data-testid="top-nav"
     >
-      <div className="flex h-12 items-stretch gap-5 px-4 sm:gap-6 sm:px-6 overflow-x-auto [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        <Link
-          href="/"
-          className="flex shrink-0 items-center gap-2 no-underline"
-          data-testid="top-nav-wordmark"
-        >
-          <img src={logoPath} alt="" className="h-5 w-5 select-none" draggable={false} />
-          <span className="text-[15px] font-bold leading-none tracking-tight text-foreground">
-            Grid<span className="italic text-brand">Tilt</span>
-          </span>
-        </Link>
-        <nav className="flex items-stretch gap-4 sm:gap-5" aria-label="Sections" data-testid="top-nav-sections">
-          {SECTIONS.map((s) => {
-            const active = s.match(location);
-            return (
-              <Link
-                key={s.href}
-                href={s.href}
-                className={`relative flex shrink-0 items-center text-[13px] leading-none no-underline transition-colors ${
-                  active ? "font-semibold text-foreground" : "text-muted-foreground hover:text-foreground"
-                }`}
-                data-testid={`top-nav-${s.label.toLowerCase().replace(/\s+/g, "-")}`}
-              >
-                {s.label}
-                {active && <span aria-hidden className="absolute inset-x-0 bottom-0 h-[2px] bg-brand" />}
-              </Link>
-            );
-          })}
-        </nav>
-        <div className="flex-1" />
-        <button
-          type="button"
-          onClick={() => window.dispatchEvent(new Event("gt-open-palette"))}
-          aria-label="Search"
-          title={"Search (⌘K)"}
-          className="mr-3 md:mr-4 flex shrink-0 items-center gap-1.5 rounded p-1.5 md:p-0 text-muted-foreground hover:text-foreground transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
-          data-testid="top-nav-search"
-        >
-          {/* Visible on phones too: without it search needed a desktop shortcut. */}
-          <Search className="h-4 w-4" aria-hidden />
-          <kbd className="hidden md:inline rounded border border-border px-1 py-0.5 font-mono text-10 leading-none">{"⌘K"}</kbd>
-        </button>
-        <Link
-          href="/subscribe"
-          className="hidden md:flex shrink-0 items-center text-[13px] font-semibold leading-none no-underline text-muted-foreground hover:text-foreground transition-colors"
-          data-testid="top-nav-subscribe"
-        >
-          Subscribe
-        </Link>
+      <div className="flex h-12 items-stretch">
+        <div className="relative min-w-0 flex-1">
+          <div
+            className="flex h-full items-stretch gap-5 px-4 sm:gap-6 sm:px-6 overflow-x-auto [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            data-testid="top-nav-strip"
+          >
+            <Link
+              href="/"
+              className="flex shrink-0 items-center gap-2 no-underline"
+              data-testid="top-nav-wordmark"
+            >
+              <img src={logoPath} alt="" className="h-5 w-5 select-none" draggable={false} />
+              <span className="text-[15px] font-bold leading-none tracking-tight text-foreground">
+                Grid<span className="italic text-brand">Tilt</span>
+              </span>
+            </Link>
+            <nav className="flex items-stretch gap-4 sm:gap-5" aria-label="Sections" data-testid="top-nav-sections">
+              {SECTIONS.map((s) => {
+                const active = s.match(location);
+                return (
+                  <Link
+                    key={s.href}
+                    href={s.href}
+                    className={`relative flex shrink-0 items-center text-[13px] leading-none no-underline transition-colors ${
+                      active ? "font-semibold text-foreground" : "text-muted-foreground hover:text-foreground"
+                    }`}
+                    data-testid={`top-nav-${s.label.toLowerCase().replace(/\s+/g, "-")}`}
+                  >
+                    {s.label}
+                    {active && <span aria-hidden className="absolute inset-x-0 bottom-0 h-[2px] bg-brand" />}
+                  </Link>
+                );
+              })}
+            </nav>
+            {/* Lets the last section scroll clear of the fade. */}
+            <span aria-hidden className="w-8 shrink-0 lg:hidden" />
+          </div>
+          {/* The visible end of the strip: more sections are behind it. */}
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-sidebar to-transparent lg:hidden"
+            data-testid="top-nav-strip-fade"
+          />
+        </div>
+        <div className="flex shrink-0 items-center gap-3 pr-4 sm:gap-4 sm:pr-6">
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new Event("gt-open-palette"))}
+            aria-label="Search"
+            title={"Search (⌘K)"}
+            className="flex shrink-0 items-center gap-1.5 rounded p-1.5 md:p-0 text-muted-foreground hover:text-foreground transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
+            data-testid="top-nav-search"
+          >
+            {/* Visible on phones too: without it search needed a desktop shortcut. */}
+            <Search className="h-4 w-4" aria-hidden />
+            <kbd className="hidden md:inline rounded border border-border px-1 py-0.5 font-mono text-10 leading-none">{"⌘K"}</kbd>
+          </button>
+          <Link
+            href="/subscribe"
+            className="flex shrink-0 items-center text-[13px] font-semibold leading-none no-underline text-muted-foreground hover:text-foreground transition-colors"
+            data-testid="top-nav-subscribe"
+          >
+            Subscribe
+          </Link>
+        </div>
       </div>
     </header>
   );
