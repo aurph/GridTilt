@@ -873,6 +873,14 @@ function DetailPanel({
 export default function SupplyChain({ embedded = false }: { embedded?: boolean; params?: unknown }) {
   const [, navigate] = useLocation();
   const [activeNode, setActiveNode] = useState<string | null>(null);
+  useEffect(() => {
+    if (!activeNode) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setActiveNode(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [activeNode]);
   const [viewMode, setViewMode] = useState<"network" | "flow">(() => {
     try {
       const v = localStorage.getItem("gridtilt_sc_view");

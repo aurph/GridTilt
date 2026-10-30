@@ -26,7 +26,7 @@ const INPUT: BriefInput = {
 test("brief carries the headline numbers and four sections", () => {
   const b = composeBrief(INPUT);
   assert.equal(b.asOf, "2026-06-29");
-  assert.ok(b.title.includes("week of 2026-06-29"));
+  assert.equal(b.title, "The Buildout Brief, 2026-06-29");
   assert.ok(b.summary.includes("235") && b.summary.includes("125 GW") && b.summary.includes("77 operators"));
   assert.deepEqual(b.sections.map((s) => s.heading), ["Compute", "GPUs", "Power & grid", "Power agreements"]);
   // every section has at least one point

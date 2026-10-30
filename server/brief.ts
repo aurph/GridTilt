@@ -80,7 +80,7 @@ export function composeBrief(input: BriefInput): Brief {
       : `${d.signedCount} signed power agreements total ${gw(d.signedGW)}`;
 
   const summary =
-    `The US AI buildout we track now spans ${c.clusterCount} named compute clusters and ${gw(c.plannedGW)} of planned power ` +
+    `The US compute buildout we track now spans ${c.clusterCount} named clusters and ${gw(c.plannedGW)} of planned power ` +
     `across ${c.operatorCount} operators, with ${gw(c.operationalGW)} already live. ` +
     `${signedTotal}, and on-demand GPUs rent for an average of ${usd(g.fleetAvg)}/GPU-hr.`;
 
@@ -134,7 +134,7 @@ export function composeBrief(input: BriefInput): Brief {
     `while ${d.topSignedBuyer ?? "hyperscalers"} and peers sign for their own power.`;
 
   return {
-    title: `The AI Buildout: week of ${input.asOf}`,
+    title: `The Buildout Brief, ${input.asOf}`,
     asOf: input.asOf,
     summary,
     sections: [compute, gpu, grid, deals],
