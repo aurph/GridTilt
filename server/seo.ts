@@ -673,6 +673,7 @@ export const CRAWLABLE_API_PREFIXES = [
   "/api/og",
   "/api/physical/",
   "/api/queue",
+  "/api/site/contact",
   "/api/sector-pulse",
   "/api/sectors",
   "/api/stack",
