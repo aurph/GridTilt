@@ -2,7 +2,7 @@
 
 Research dashboard for the AI power economy: equities, infrastructure, and power data. Live at gridtilt.com.
 
-**See CLAUDE.md for working conventions, module map, data custody, and do-not-touch zones. When this file and CLAUDE.md disagree, CLAUDE.md wins; when CLAUDE.md and the code disagree, the code wins.**
+**See AGENTS.md for working conventions, module map, data custody, and do-not-touch zones. When this file and AGENTS.md disagree, AGENTS.md wins; when AGENTS.md and the code disagree, the code wins.**
 
 ## Stack
 

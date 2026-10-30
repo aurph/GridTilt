@@ -87,7 +87,7 @@ export function DemandChart() {
           <LegendItem color={DATA_MUTED} label="US electricity end use, TWh" />
         </div>
 
-        <div style={{ width: "100%", aspectRatio: "16 / 7", minHeight: 360 }}>
+        <div style={{ width: "100%", aspectRatio: "16 / 5", minHeight: 220, maxHeight: 300 }}>
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart data={electricityData} margin={{ top: 28, right: 16, bottom: 8, left: 16 }}>
               <CartesianGrid stroke={RULE} strokeDasharray="0" vertical={false} />
@@ -102,9 +102,10 @@ export function DemandChart() {
                 axisLine={false}
                 tickLine={false}
                 tick={{ fill: "#9C9A93", fontSize: 11, fontFamily: "JetBrains Mono, monospace" }}
-                tickFormatter={(v) => `${(v / 1000).toFixed(1)}k`}
-                domain={[3600, 4400]}
-                ticks={[3600, 3800, 4000, 4200, 4400]}
+                tickFormatter={(v) => (v === 0 ? "0" : `${(v / 1000).toFixed(1)}k`)}
+                // zero-based on purpose: a 3,600 floor turned a roughly flat decade into a climb
+                domain={[0, 4400]}
+                ticks={[0, 1000, 2000, 3000, 4000]}
               />
               <Tooltip
                 contentStyle={{

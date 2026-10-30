@@ -1,7 +1,7 @@
 {
-  "lastRefreshed": "2026-06-27",
+  "lastRefreshed": "2026-10-27",
   "unit": "USD per GPU per hour, on-demand",
-  "methodology": "Representative current on-demand rental price per GPU model, blended across major neoclouds and GPU marketplaces (Lambda, RunPod, Vast.ai, CoreWeave, Together, Hyperstack, TensorWave, Vultr, Nebius, DigitalOcean) and the getdeploying.com / Silicon Data / aimultiple trackers. Hyperscaler list prices (AWS, Azure, Oracle) are kept in the observed 'high' but de-weighted from the representative value, which targets neocloud/marketplace on-demand rates. 'low' and 'high' are the observed marketplace range. 'currentUsdPerHr' is a blended estimate flagged in estimated[]. Each price was cross-checked in June 2026 against a second, independent set of sources (adversarial pass); confidence reflects how many real single-GPU on-demand prints back it. historyAnchors are real sourced price points (not a fabricated smooth series); sources vary across anchors, so the historical line is sparse and approximate. A daily recorder appended live points from RunPod and Vast.ai until 2026-10; it is paused until both providers give written permission, and those recorded points remain in the history. Period changes are computed from the anchor+recorded series and read '-' until enough history accrues.",
+  "methodology": "Representative current on-demand rental price per GPU model, blended across major neoclouds and GPU marketplaces (Lambda, RunPod, Vast.ai, CoreWeave, Together, Hyperstack, TensorWave, Vultr, Nebius, DigitalOcean) and the getdeploying.com / Silicon Data / aimultiple trackers. Hyperscaler list prices (AWS, Azure, Oracle) are kept in the observed 'high' but de-weighted from the representative value, which targets neocloud/marketplace on-demand rates. 'low' and 'high' are the observed marketplace range. 'currentUsdPerHr' is a blended estimate flagged in estimated[]. Each price was cross-checked in June 2026 against a second, independent set of sources (adversarial pass); confidence reflects how many real single-GPU on-demand prints back it. historyAnchors are real sourced price points (not a fabricated smooth series); sources vary across anchors, so the historical line is sparse and approximate. A daily recorder appended live points from RunPod and Vast.ai until 2026-10; it is paused until both providers give written permission, and those recorded points remain in the history. Period changes are computed from the anchor+recorded series and read '-' until enough history accrues. The October 2026 refresh was web research against provider pricing pages and aggregator trackers (getdeploying.com, Silicon Data, aimultiple, savrn), done in two passes with an adversarial check of per-GPU vs per-node, on-demand vs reserved/spot, and any move over 25%.",
   "models": [
     {
       "model": "GB200",
@@ -13,13 +13,35 @@
       "tflopsBf16": 2250,
       "currentUsdPerHr": 13.0,
       "low": 10.5,
-      "high": 21.0,
-      "asOf": "2026-06",
+      "high": 27.04,
+      "asOf": "2026-10",
       "oneYearTrend": "Firm-to-up over the past year as rack-scale NVL72 supply stays tight, but thinly listed for true single-GPU on-demand: CoreWeave's NVL72 implies ~$10.50/GPU-hr, most neoclouds quote by reservation, and hyperscaler listings (Azure) reach ~$27.",
-      "historyAnchors": [{ "date": "2025-07", "price": 12.0 }, { "date": "2026-06", "price": 13.0 }],
-      "estimated": ["currentUsdPerHr", "historyAnchors"],
-      "confidence": "medium",
-      "sources": ["https://getdeploying.com/gpus/nvidia-gb200", "https://www.coreweave.com/pricing", "https://deploybase.ai/articles/nvidia-gb200-price", "https://www.thundercompute.com/blog/ai-gpu-rental-market-trends"]
+      "historyAnchors": [
+        {
+          "date": "2025-07",
+          "price": 12.0
+        },
+        {
+          "date": "2026-06",
+          "price": 13.0
+        },
+        {
+          "date": "2026-10",
+          "price": 13.0
+        }
+      ],
+      "estimated": [
+        "currentUsdPerHr",
+        "historyAnchors"
+      ],
+      "confidence": "low",
+      "sources": [
+        "https://getdeploying.com/gpus/nvidia-gb200",
+        "https://www.coreweave.com/pricing",
+        "https://www.gmicloud.ai/en/blog/gb200-nvl72-rental-price-reserve-vs-on-demand",
+        "https://www.gmicloud.ai/pricing",
+        "https://www.together.ai/pricing"
+      ]
     },
     {
       "model": "B300",
@@ -29,15 +51,37 @@
       "vramType": "HBM3e",
       "launchYear": 2025,
       "tflopsBf16": 2250,
-      "currentUsdPerHr": 8.0,
-      "low": 5.44,
-      "high": 18.0,
-      "asOf": "2026-06",
-      "oneYearTrend": "Up since its ~Nov 2025 launch (~$5 to ~$8/GPU-hr); Nebius lists $7.85 on-demand, marketplaces dip to ~$5.44 (Vast.ai), and hyperscalers (AWS, Oracle) reach $15-18.",
-      "historyAnchors": [{ "date": "2025-11", "price": 5.0 }, { "date": "2026-06", "price": 8.0 }],
-      "estimated": ["currentUsdPerHr"],
+      "currentUsdPerHr": 8.2,
+      "low": 6.33,
+      "high": 17.8,
+      "asOf": "2026-10",
+      "oneYearTrend": "Up since its ~Nov 2025 launch (~$5 to ~$8.20/GPU-hr); Silicon Data's neocloud index reads $7.56 and RunPod $6.94-8.99, while Nebius ($9.50) and Together ($9.99) list higher and hyperscalers (Oracle, AWS) reach $15-18.",
+      "historyAnchors": [
+        {
+          "date": "2025-11",
+          "price": 5.0
+        },
+        {
+          "date": "2026-06",
+          "price": 8.0
+        },
+        {
+          "date": "2026-10",
+          "price": 8.2
+        }
+      ],
+      "estimated": [
+        "currentUsdPerHr"
+      ],
       "confidence": "high",
-      "sources": ["https://getdeploying.com/gpus/nvidia-b300", "https://nebius.com/prices", "https://gpuperhour.com/rent/b300-sxm", "https://aimultiple.com/gpu-index"]
+      "sources": [
+        "https://getdeploying.com/gpus/nvidia-b300",
+        "https://www.silicondata.com/products/silicon-index/h100",
+        "https://www.runpod.io/pricing",
+        "https://nebius.com/prices",
+        "https://www.together.ai/pricing",
+        "https://aimultiple.com/gpu-index"
+      ]
     },
     {
       "model": "B200",
@@ -47,15 +91,43 @@
       "vramType": "HBM3e",
       "launchYear": 2024,
       "tflopsBf16": 2250,
-      "currentUsdPerHr": 6.11,
-      "low": 3.5,
-      "high": 16.11,
-      "asOf": "2026-06",
-      "oneYearTrend": "Up modestly over the past year (Silicon Data's index climbed ~24% in Q1 2026 to ~$5-6/hr); marketplace floors near $3.50, hyperscaler listings reach ~$16.",
-      "historyAnchors": [{ "date": "2025-06", "price": 5.84 }, { "date": "2025-07", "price": 5.99 }, { "date": "2026-06", "price": 6.11 }],
-      "estimated": ["currentUsdPerHr"],
+      "currentUsdPerHr": 7.0,
+      "low": 3.75,
+      "high": 14.24,
+      "asOf": "2026-10",
+      "oneYearTrend": "Up ~20% over the past year (~$5.84 to ~$7.00/GPU-hr) as Blackwell demand outran supply; Silicon Data's neocloud index reads $6.47, RunPod $5.98-7.99 and Lambda $6.69-6.99, while Nebius, Together and CoreWeave list $8.19-8.60 and AWS ~$14.",
+      "historyAnchors": [
+        {
+          "date": "2025-06",
+          "price": 5.84
+        },
+        {
+          "date": "2025-07",
+          "price": 5.99
+        },
+        {
+          "date": "2026-06",
+          "price": 6.11
+        },
+        {
+          "date": "2026-10",
+          "price": 7.0
+        }
+      ],
+      "estimated": [
+        "currentUsdPerHr"
+      ],
       "confidence": "high",
-      "sources": ["https://getdeploying.com/gpus/nvidia-b200", "https://aimultiple.com/gpu-index", "https://www.silicondata.com/blog/b200-rental-price-march-2026-update", "https://www.spheron.network/blog/nvidia-b200-cloud-pricing-2026/"]
+      "sources": [
+        "https://getdeploying.com/gpus/nvidia-b200",
+        "https://www.silicondata.com/products/silicon-index?gpu=b200",
+        "https://www.runpod.io/pricing",
+        "https://lambda.ai/pricing",
+        "https://nebius.com/prices",
+        "https://www.together.ai/pricing",
+        "https://www.coreweave.com/pricing",
+        "https://aimultiple.com/gpu-index"
+      ]
     },
     {
       "model": "H200",
@@ -65,15 +137,43 @@
       "vramType": "HBM3e",
       "launchYear": 2024,
       "tflopsBf16": 989.5,
-      "currentUsdPerHr": 3.85,
-      "low": 2.3,
+      "currentUsdPerHr": 4.25,
+      "low": 2.09,
       "high": 13.78,
-      "asOf": "2026-06",
-      "oneYearTrend": "Roughly flat YoY (~$3.82 to ~$3.85/GPU-hr) after falling from a ~$10 launch; now softening as B200 capacity comes online, while hyperscalers still list ~$10+.",
-      "historyAnchors": [{ "date": "2024-06", "price": 10.0 }, { "date": "2025-06", "price": 3.82 }, { "date": "2026-06", "price": 3.85 }],
-      "estimated": ["currentUsdPerHr"],
+      "asOf": "2026-10",
+      "oneYearTrend": "Up ~11% over the past year (~$3.82 to ~$4.25/GPU-hr), most of it since mid-2026; Silicon Data's neocloud index reads $3.47 while RunPod ($3.59-5.29), Nebius ($5.40) and Together ($5.99) list higher, and hyperscalers reach ~$8-14.",
+      "historyAnchors": [
+        {
+          "date": "2024-06",
+          "price": 10.0
+        },
+        {
+          "date": "2025-06",
+          "price": 3.82
+        },
+        {
+          "date": "2026-06",
+          "price": 3.85
+        },
+        {
+          "date": "2026-10",
+          "price": 4.25
+        }
+      ],
+      "estimated": [
+        "currentUsdPerHr"
+      ],
       "confidence": "high",
-      "sources": ["https://getdeploying.com/gpus/nvidia-h200", "https://www.thundercompute.com/blog/nvidia-h200-pricing", "https://www.gmicloud.ai/en/blog/h200-gpu-cloud-rental-guide", "https://jarvislabs.ai/blog/h200-price"]
+      "sources": [
+        "https://getdeploying.com/gpus/nvidia-h200",
+        "https://www.silicondata.com/products/silicon-index/h100",
+        "https://www.runpod.io/pricing",
+        "https://nebius.com/prices",
+        "https://www.together.ai/pricing",
+        "https://www.coreweave.com/pricing",
+        "https://docs.digitalocean.com/products/droplets/details/pricing/",
+        "https://aimultiple.com/gpu-index"
+      ]
     },
     {
       "model": "GH200",
@@ -83,15 +183,35 @@
       "vramType": "HBM3",
       "launchYear": 2023,
       "tflopsBf16": 989.5,
-      "currentUsdPerHr": 2.25,
-      "low": 1.88,
+      "currentUsdPerHr": 2.4,
+      "low": 2.29,
       "high": 6.5,
-      "asOf": "2026-06",
-      "oneYearTrend": "Drifted down over the past year toward a ~$1.88-2.29 neocloud floor (Spheron, Vultr, Lambda) as H200/B200 capacity arrived; listings are thin and often sold out, and CoreWeave still reaches ~$6.50.",
-      "historyAnchors": [{ "date": "2025-06", "price": 2.9 }, { "date": "2026-06", "price": 2.25 }],
-      "estimated": ["currentUsdPerHr", "historyAnchors"],
+      "asOf": "2026-10",
+      "oneYearTrend": "Thinly listed and roughly flat: Lambda's $2.29 single-GPU rate (often out of stock) and Sesterce's $2.52 set the floor, Vultr now lists it spot-only, Denvr sits at $3.87 and CoreWeave still reaches $6.50.",
+      "historyAnchors": [
+        {
+          "date": "2025-06",
+          "price": 2.9
+        },
+        {
+          "date": "2026-06",
+          "price": 2.25
+        },
+        {
+          "date": "2026-10",
+          "price": 2.4
+        }
+      ],
+      "estimated": [
+        "currentUsdPerHr",
+        "historyAnchors"
+      ],
       "confidence": "medium",
-      "sources": ["https://getdeploying.com/gpus/nvidia-gh200", "https://www.vultr.com/products/cloud-gpu/", "https://gpuperhour.com/rent/gh200", "https://www.spheron.network/gpu-rental/gh200/"]
+      "sources": [
+        "https://getdeploying.com/gpus/nvidia-gh200",
+        "https://lambda.ai/pricing",
+        "https://www.coreweave.com/pricing"
+      ]
     },
     {
       "model": "H100",
@@ -101,15 +221,53 @@
       "vramType": "HBM3",
       "launchYear": 2022,
       "tflopsBf16": 989.5,
-      "currentUsdPerHr": 2.79,
-      "low": 1.38,
-      "high": 6.98,
-      "asOf": "2026-06",
-      "oneYearTrend": "Fell from ~$7.76 at 2023 launch scarcity to a ~$2-4 neocloud reality; roughly flat over the past year as the market shifted to oversupply (AWS cut 30-44% in mid-2025), with hyperscaler listings still anchoring the top.",
-      "historyAnchors": [{ "date": "2023-10", "price": 7.76 }, { "date": "2024-09", "price": 2.58 }, { "date": "2025-06", "price": 2.9 }, { "date": "2025-11", "price": 1.95 }, { "date": "2026-06", "price": 2.79 }],
-      "estimated": ["currentUsdPerHr", "historyAnchors"],
+      "currentUsdPerHr": 3.2,
+      "low": 1.79,
+      "high": 10.0,
+      "asOf": "2026-10",
+      "oneYearTrend": "Fell from ~$7.76 at 2023 launch scarcity to a ~$2-4 neocloud range, then firmed over the past year (~$2.90 to ~$3.20/GPU-hr) after a late-2025 dip near $1.95; Silicon Data's neocloud index reads $2.89, Lambda, Together and RunPod Secure list $3.99, and hyperscalers sit ~$6-10.",
+      "historyAnchors": [
+        {
+          "date": "2023-10",
+          "price": 7.76
+        },
+        {
+          "date": "2024-09",
+          "price": 2.58
+        },
+        {
+          "date": "2025-06",
+          "price": 2.9
+        },
+        {
+          "date": "2025-11",
+          "price": 1.95
+        },
+        {
+          "date": "2026-06",
+          "price": 2.79
+        },
+        {
+          "date": "2026-10",
+          "price": 3.2
+        }
+      ],
+      "estimated": [
+        "currentUsdPerHr",
+        "historyAnchors"
+      ],
       "confidence": "high",
-      "sources": ["https://getdeploying.com/gpus/nvidia-h100", "https://www.silicondata.com/blog/h100-rental-price-over-time", "https://www.thundercompute.com/blog/nvidia-h100-pricing", "https://intuitionlabs.ai/articles/h100-rental-prices-cloud-comparison"]
+      "sources": [
+        "https://getdeploying.com/gpus/nvidia-h100",
+        "https://www.silicondata.com/products/silicon-index/h100",
+        "https://www.runpod.io/pricing",
+        "https://lambda.ai/pricing",
+        "https://nebius.com/prices",
+        "https://www.together.ai/pricing",
+        "https://docs.digitalocean.com/products/droplets/details/pricing/",
+        "https://aimultiple.com/gpu-index",
+        "https://cryptobriefing.com/cme-group-gpu-rental-forward-curve-pricing/"
+      ]
     },
     {
       "model": "MI355X",
@@ -122,12 +280,32 @@
       "currentUsdPerHr": 2.85,
       "low": 2.59,
       "high": 8.6,
-      "asOf": "2026-06",
-      "oneYearTrend": "AMD's newest Instinct, sparsely listed; neocloud on-demand sits ~$2.59-2.95 (TensorWave, Vultr) while Oracle's hyperscaler rate (~$8.60) pulls tracked blends much higher.",
-      "historyAnchors": [{ "date": "2025-10", "price": 2.59 }, { "date": "2026-06", "price": 2.85 }],
-      "estimated": ["currentUsdPerHr"],
-      "confidence": "medium",
-      "sources": ["https://getdeploying.com/gpus/amd-mi355x", "https://tensorwave.com/products/accelerators/amd-mi355x", "https://www.vpsbenchmarks.com/gpu_plans/vultr/mi355x-8-gpus", "https://www.amd.com/en/products/accelerators/instinct/mi350/mi355x.html"]
+      "asOf": "2026-10",
+      "oneYearTrend": "Still sparsely listed: Vultr (~$2.59-2.65, billing mode disputed) and TensorWave ($2.95 'starting at', contract-priced) are the only sub-$3 prints, Daytona lists $5.99 and Oracle $8.60; the June value is held until firmer single-GPU on-demand prints exist.",
+      "historyAnchors": [
+        {
+          "date": "2025-10",
+          "price": 2.59
+        },
+        {
+          "date": "2026-06",
+          "price": 2.85
+        },
+        {
+          "date": "2026-10",
+          "price": 2.85
+        }
+      ],
+      "estimated": [
+        "currentUsdPerHr"
+      ],
+      "confidence": "low",
+      "sources": [
+        "https://getdeploying.com/gpus/amd-mi355x",
+        "https://tensorwave.com/products/accelerators/amd-mi355x",
+        "https://savrn.com/ai-index/pricing/gpus/mi355x",
+        "https://docs.digitalocean.com/products/droplets/details/pricing/"
+      ]
     },
     {
       "model": "MI325X",
@@ -137,15 +315,34 @@
       "vramType": "HBM3e",
       "launchYear": 2024,
       "tflopsBf16": 1307.4,
-      "currentUsdPerHr": 2.1,
-      "low": 1.95,
-      "high": 3.31,
-      "asOf": "2026-06",
-      "oneYearTrend": "Down ~39% over the past year (~$3.43 in July 2025 to ~$2.10); DigitalOcean lists $2.10 on-demand, TensorWave dedicated from $1.95, Cyfuture up to $3.31.",
-      "historyAnchors": [{ "date": "2025-07", "price": 3.43 }, { "date": "2026-06", "price": 2.1 }],
-      "estimated": ["currentUsdPerHr"],
-      "confidence": "high",
-      "sources": ["https://getdeploying.com/gpus/amd-mi325x", "https://tensorwave.com/products/accelerators/amd-mi325x", "https://www.vultr.com/products/cloud-gpu/amd-mi325x-mi300x/", "https://computeprices.com/gpus/mi325x"]
+      "currentUsdPerHr": 3.05,
+      "low": 2.25,
+      "high": 3.8,
+      "asOf": "2026-10",
+      "oneYearTrend": "Re-based upward: the June ~$2.10 rested on DigitalOcean's 12-month reserved rate, and verified on-demand prints now run $3.04 (Cyfuture, 8x) to $3.80 (DigitalOcean), with Bentaus at $2.25 and TensorWave contract-only.",
+      "historyAnchors": [
+        {
+          "date": "2025-07",
+          "price": 3.43
+        },
+        {
+          "date": "2026-06",
+          "price": 2.1
+        },
+        {
+          "date": "2026-10",
+          "price": 3.05
+        }
+      ],
+      "estimated": [
+        "currentUsdPerHr"
+      ],
+      "confidence": "medium",
+      "sources": [
+        "https://getdeploying.com/gpus/amd-mi325x",
+        "https://docs.digitalocean.com/products/droplets/details/pricing/",
+        "https://savrn.com/ai-index/pricing/gpus"
+      ]
     },
     {
       "model": "MI300X",
@@ -155,15 +352,36 @@
       "vramType": "HBM3",
       "launchYear": 2023,
       "tflopsBf16": 1307.4,
-      "currentUsdPerHr": 2.1,
-      "low": 1.71,
+      "currentUsdPerHr": 2.7,
+      "low": 2.39,
       "high": 7.86,
-      "asOf": "2026-06",
-      "oneYearTrend": "On-demand floor fell to a sub-$2 price war (TensorWave $1.71, Vultr $1.85, DigitalOcean $1.99) even as getdeploying's blended median rose toward ~$3.25 on hyperscaler listings (Azure ~$7.86).",
-      "historyAnchors": [{ "date": "2025-06", "price": 2.35 }, { "date": "2026-06", "price": 2.1 }],
-      "estimated": ["currentUsdPerHr"],
+      "asOf": "2026-10",
+      "oneYearTrend": "The on-demand floor climbed out of the sub-$2 price war: DigitalOcean moved from $1.99 to $2.59, RunPod from $2.19 to $2.39, TensorWave and Vultr no longer post on-demand rates, and Silicon Data's index reads $2.76; Azure still lists ~$7.86.",
+      "historyAnchors": [
+        {
+          "date": "2025-06",
+          "price": 2.35
+        },
+        {
+          "date": "2026-06",
+          "price": 2.1
+        },
+        {
+          "date": "2026-10",
+          "price": 2.7
+        }
+      ],
+      "estimated": [
+        "currentUsdPerHr"
+      ],
       "confidence": "high",
-      "sources": ["https://getdeploying.com/gpus/amd-mi300x", "https://www.thundercompute.com/blog/amd-mi300x-pricing", "https://gpucost.org/gpu/mi300x", "https://www.runpod.io/gpu/mi300x"]
+      "sources": [
+        "https://getdeploying.com/gpus/amd-mi300x",
+        "https://docs.digitalocean.com/products/droplets/details/pricing/",
+        "https://www.silicondata.com/products/silicon-index/h100",
+        "https://aimultiple.com/gpu-index",
+        "https://savrn.com/ai-index/pricing/gpus"
+      ]
     },
     {
       "model": "A100",
@@ -173,15 +391,41 @@
       "vramType": "HBM2e",
       "launchYear": 2020,
       "tflopsBf16": 312,
-      "currentUsdPerHr": 1.65,
-      "low": 0.78,
-      "high": 4.03,
-      "asOf": "2026-06",
-      "oneYearTrend": "Down ~27% over the past year (~$2.27 to ~$1.65/GPU-hr blended across 29+ providers), part of a longer slide from ~$7-10 at 2020-2023 launch-era rates.",
-      "historyAnchors": [{ "date": "2025-06", "price": 2.27 }, { "date": "2026-03", "price": 2.06 }, { "date": "2026-06", "price": 1.65 }],
-      "estimated": ["currentUsdPerHr"],
+      "currentUsdPerHr": 1.69,
+      "low": 0.89,
+      "high": 3.92,
+      "asOf": "2026-10",
+      "oneYearTrend": "Down ~27% over the past year (~$2.27 to ~$1.69/GPU-hr blended across 29+ providers), part of a longer slide from ~$7-10 at 2020-2023 launch-era rates.",
+      "historyAnchors": [
+        {
+          "date": "2025-06",
+          "price": 2.27
+        },
+        {
+          "date": "2026-03",
+          "price": 2.06
+        },
+        {
+          "date": "2026-06",
+          "price": 1.65
+        },
+        {
+          "date": "2026-10",
+          "price": 1.69
+        }
+      ],
+      "estimated": [
+        "currentUsdPerHr"
+      ],
       "confidence": "high",
-      "sources": ["https://getdeploying.com/gpus/nvidia-a100", "https://computeprices.com/gpus/a100", "https://lambda.ai/pricing", "https://vast.ai/pricing"]
+      "sources": [
+        "https://getdeploying.com/gpus/nvidia-a100",
+        "https://www.silicondata.com/products/silicon-index?gpu=b200",
+        "https://www.runpod.io/pricing",
+        "https://lambda.ai/pricing",
+        "https://www.coreweave.com/pricing",
+        "https://aimultiple.com/gpu-index"
+      ]
     }
   ]
 }

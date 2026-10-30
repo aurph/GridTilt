@@ -2,6 +2,50 @@
   "about": "Corrections and documented changes to GridTilt's published facts. Hand-curated: one entry per actual change, with the value before and after, the source and its date, and when GridTilt reviewed it. Entries are added when a change ships; nothing is backfilled.",
   "changes": [
     {
+      "id": "2026-10-27-gpu-rental-prices-october-refresh",
+      "kind": "update",
+      "entity": "gpu-prices/curated",
+      "field": "Representative on-demand rental price, $/GPU/hr, all 10 tracked models",
+      "before": "June 2026 research pass: H100 $2.79, H200 $3.85, B200 $6.11, B300 $8.00, GB200 $13.00, GH200 $2.25, MI300X $2.10, MI325X $2.10, MI355X $2.85, A100 $1.65",
+      "after": "October 2026 research pass: H100 $3.20, H200 $4.25, B200 $7.00, B300 $8.20, GB200 $13.00 (held), GH200 $2.40, MI300X $2.70, MI325X $3.05, MI355X $2.85 (held), A100 $1.69",
+      "source": "Provider pricing pages and aggregator trackers (getdeploying.com, Silicon Data, aimultiple)",
+      "sourceUrl": "https://getdeploying.com/gpus/nvidia-h100",
+      "sourceDate": "2026-10-27",
+      "reviewed": "2026-10-27",
+      "scope": "GPU Prices page (cards, index table, history anchors), Overview fleet-average gauge, the weekly brief",
+      "rationale": "The curated values were four months old. Neocloud list prices for Hopper and Blackwell parts firmed over the summer (Lambda, Together and RunPod Secure all list the H100 at $3.99) while the Silicon Data index and the recorder sat lower, so the blend moved up by less than the list prices did. GB200 and MI355X stay at June values because the only single-GPU on-demand prints found are thin or disputed.",
+      "short": {
+        "label": "H100 on-demand rental, neocloud blend",
+        "before": "$2.79/GPU-hr (June 2026)",
+        "after": "$3.20/GPU-hr (October 2026)",
+        "source": "Provider pages, getdeploying, Silicon Data",
+        "url": "https://gridtilt.com/neocloud-intel",
+        "why": "Four-month-old curated prices re-researched against provider pages and aggregators; Hopper and Blackwell list prices firmed over the summer."
+      }
+    },
+    {
+      "id": "2026-10-27-mi325x-june-price-basis",
+      "kind": "correction",
+      "entity": "gpu-prices/MI325X",
+      "field": "Basis of the June 2026 representative price",
+      "before": "$2.10/GPU-hr, which rested on DigitalOcean's 12-month reserved rate and a TensorWave contract rate rather than on-demand prints",
+      "after": "$3.05/GPU-hr on-demand (DigitalOcean $3.80, Cyfuture $3.04, getdeploying median $3.08). The June anchor stays in the series as recorded, so the chart shows a step that is mostly a change of basis, not a market move",
+      "source": "DigitalOcean GPU Droplet pricing (docs, last verified 2026-10-26)",
+      "sourceUrl": "https://docs.digitalocean.com/products/droplets/details/pricing/",
+      "sourceDate": "2026-10-26",
+      "reviewed": "2026-10-27",
+      "scope": "GPU Prices page, MI325X card and history line",
+      "rationale": "The adversarial pass on the October refresh found that two of the three June prints were not on-demand rates. History anchors are append-only, so the correction is recorded here instead of rewriting June.",
+      "short": {
+        "label": "MI325X on-demand rental price",
+        "before": "$2.10/GPU-hr (reserved-rate basis)",
+        "after": "$3.05/GPU-hr (on-demand basis)",
+        "source": "DigitalOcean GPU Droplet pricing",
+        "url": "https://gridtilt.com/neocloud-intel",
+        "why": "June's figure used a 12-month reserved rate and a contract rate; the on-demand prints run $3.04 to $3.80."
+      }
+    },
+    {
       "id": "2026-09-29-nerc-reserve-margins",
       "kind": "correction",
       "entity": "grid/reserve-margins",
@@ -14,7 +58,14 @@
       "reviewed": "2026-09-29",
       "scope": "Overview grid headroom gauge, Power Map grid view, My Grid region card, region pages, weekly email",
       "rationale": "None of the old figures matched NERC's assessment, and the single 15% reference and the AI signal were not NERC's.",
-      "short": {"label": "MISO's summer 2026 reserve margin", "before": "13.4%", "after": "11.0%, against NERC's 8.1% reference", "source": "NERC 2025 LTRA", "url": "https://gridtilt.com/overview", "why": "The old figure did not match NERC's assessment, and GridTilt read it against a 15% line NERC does not use for MISO."}
+      "short": {
+        "label": "MISO's summer 2026 reserve margin",
+        "before": "13.4%",
+        "after": "11.0%, against NERC's 8.1% reference",
+        "source": "NERC 2025 LTRA",
+        "url": "https://gridtilt.com/overview",
+        "why": "The old figure did not match NERC's assessment, and GridTilt read it against a 15% line NERC does not use for MISO."
+      }
     },
     {
       "id": "2026-09-28-lbnl-queued-up-calendar",
@@ -29,7 +80,13 @@
       "reviewed": "2026-09-28",
       "scope": "Catalyst calendar, Overview and landing previews",
       "rationale": "The calendar listed an edition LBNL had already published as an upcoming December event.",
-      "short": {"label": "the date of LBNL's 2026 Queued Up report", "before": "expected Dec 15, 2026", "after": "published May 2026", "source": "LBNL Queued Up 2026", "url": "https://gridtilt.com/catalysts"}
+      "short": {
+        "label": "the date of LBNL's 2026 Queued Up report",
+        "before": "expected Dec 15, 2026",
+        "after": "published May 2026",
+        "source": "LBNL Queued Up 2026",
+        "url": "https://gridtilt.com/catalysts"
+      }
     },
     {
       "id": "2026-09-28-stargate-abilene-rated-power",
@@ -44,7 +101,13 @@
       "reviewed": "2026-09-28",
       "scope": "Compute Frontier record, cluster totals",
       "rationale": "The estimate was replaced by the operator's own disclosed figure.",
-      "short": {"label": "Stargate Abilene's delivered power", "before": "200 MW (a GridTilt estimate)", "after": "618 MW, per Oracle", "source": "Oracle Q1 FY2027 earnings call", "url": "https://gridtilt.com/compute-frontier/stargate-abilene"}
+      "short": {
+        "label": "Stargate Abilene's delivered power",
+        "before": "200 MW (a GridTilt estimate)",
+        "after": "618 MW, per Oracle",
+        "source": "Oracle Q1 FY2027 earnings call",
+        "url": "https://gridtilt.com/compute-frontier/stargate-abilene"
+      }
     },
     {
       "id": "2026-09-28-data-center-electricity-use",
@@ -59,7 +122,13 @@
       "reviewed": "2026-09-28",
       "scope": "Site search descriptions and FAQ, Analyze scenario baseline",
       "rationale": "The old figure matched no published estimate; the scenario now starts from LBNL's.",
-      "short": {"label": "US data center electricity use", "before": "about 288 TWh a year, 6.4%", "after": "192 TWh in 2024, 4.7%, per LBNL", "source": "LBNL 2025 data center energy report update", "url": "https://gridtilt.com/analyze?tab=scenario"}
+      "short": {
+        "label": "US data center electricity use",
+        "before": "about 288 TWh a year, 6.4%",
+        "after": "192 TWh in 2024, 4.7%, per LBNL",
+        "source": "LBNL 2025 data center energy report update",
+        "url": "https://gridtilt.com/analyze?tab=scenario"
+      }
     }
   ]
 }

@@ -23,7 +23,7 @@ Nine tools in the top navigation. Retired routes (`/supply-chain`, `/power-deals
 | **GPU Prices** | `/neocloud-intel` | GPU rental price index built from live marketplace observations, with per-model price history. The economics tab models the cost of AI compute. |
 | **Analyze** | `/analyze` | Portfolio tab scores any portfolio 0-100 on AI-power exposure; scenario tab models demand growth, nuclear capacity, and grid stress. |
 | **Catalyst Tracker** | `/catalysts` | Earnings dates (live from Yahoo, seeded fallback) plus curated thesis catalysts on a monthly calendar. |
-| **Analysis** | `/blog` | Research articles plus the daily Buildout Brief. |
+| **Research** | `/blog` | Research posts (filings, equities, power and data center analysis) plus the weekly Buildout Brief. |
 
 State pages (`/state/:slug`) are the indexable, maintained reference for a state: its grid facts, dated public decisions with their documents, next public dates, related project records and the limits of what a price can say about a bill. Only Maryland is published (`/state/maryland`, from `server/data/state-pages.json`); any other slug is a 404.
 

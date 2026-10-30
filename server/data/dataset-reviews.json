@@ -21,6 +21,13 @@
       "outcome": "changed",
       "scope": "Every stage status, node figure, company placement and ticker on the supply chain graph, against primary sources",
       "evidence": "feat/supply-chain-page commit ebc5ab2"
+    },
+    {
+      "dataset": "gpu-rental-prices",
+      "reviewed": "2026-10-27",
+      "outcome": "changed",
+      "scope": "Every curated representative price, observed low and high, source list and trend sentence for the 10 tracked models, against provider pricing pages and aggregator trackers; two-pass with an adversarial check of per-GPU vs per-node and on-demand vs reserved or spot",
+      "evidence": "worktree-improve-oct27: server/data/gpu-rental-prices.json, change-log entries 2026-10-27-gpu-rental-prices-october-refresh and 2026-10-27-mi325x-june-price-basis"
     }
   ]
 }

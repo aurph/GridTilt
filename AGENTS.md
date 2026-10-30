@@ -1,0 +1,330 @@
+# GridTilt - Working reference for agents
+
+Working reference for agents, derived from the code on main (2026-07-02). When this
+file and the code disagree, the code wins; fix this file in the same commit.
+
+## 1. Project
+
+Research dashboard tracking the financial and physical buildout of AI infrastructure:
+compute, data centers, generation, transmission, and the public companies positioned
+around them. Tagline: "Equities, infrastructure, and power data for the AI power
+economy." Live at gridtilt.com. Built and directed by Jack Schwartz (aurph). Audience:
+the citizen-investor researching the AI power economy, not fund analysts or day traders.
+
+14 sidebar modules, 29 routes (wouter, client/src/App.tsx; the table below predates the top nav):
+
+| Module | Route | Key |
+|---|---|---|
+| Tilt Overview | /overview | G+1 |
+| The Stack | /stack | G+2 |
+| Power Map | /power-map | G+3 |
+| Supply Chain | /supply-chain | G+4 |
+| Portfolio Overlay | /portfolio | G+5 |
+| Scenario Calculator | /trade | G+6 |
+| Catalyst Tracker | /catalysts | G+7 |
+| Analysis (blog) | /blog | G+8 |
+| Backlog | /queue | G+9 |
+| Compute Frontier | /compute-frontier (+ /:id, /compare, /methodology) | G+0 |
+| GPU Prices (Prices, Economics, Frontier tabs) | /neocloud-intel | G+N |
+| AI Power Deals | /power-deals | G+D |
+| The Buildout Brief | /brief | G+B |
+| GPU Economics | /gpu-economics | G+E |
+
+Timeline (/timeline, top nav, 2026-10): one newest-first feed of dated events built per request
+by server/timeline.ts (/api/timeline) from stored files only; filters live in the query string
+(client/src/lib/timeline-filters.ts). An event exists only where its record carries a real
+YYYY-MM-DD: deal and cluster rows with a sourced `announced` (see section 4), frontier model
+release dates, research post dates, state-page documents and next dates, token price points,
+change-log corrections, and Yahoo earnings dates Yahoo marks confirmed (estimates are listed
+apart, never as events). GPU price milestones read the RunPod/Vast history, so they stay off
+unless GPU_LIVE_SWEEP_ENABLED records written permission. Titles are templates; never generate
+them. Reverse links: deals tab ?deal=<id>, cluster pages and the catalyst detail link to
+/timeline?record=<kind>:<id>.
+
+Power Map (/power-map, Map tab) draws one Leaflet map in three views, round-tripped as `?view=`:
+DC Locations (the tracked facilities, >= 400 MW, /api/datacenters, with the operator, region and
+capacity filters), AI Clusters (2026-10: every /api/clusters row with coordinates, no size floor,
+the same records as /compute-frontier; marker area = planned MW, status chips filter, the detail
+card links to the record) and NERC Risk. The pure helpers (view param, region bucket, radius,
+filters, overlay sums) live in client/src/lib/power-map-clusters.ts and are tested; the two
+marker layers never draw at once.
+
+Off-nav: "/" (marketing landing, bare layout, lazy Home.tsx), /subscribe, /admin/datacenters,
+/admin/social, /stock/:ticker, /sector/:slug, /region/:slug, /operator/:slug, /blog/:slug,
+/state/:slug (published states only, from server/data/state-pages.json: maryland; any other
+slug is a real 404). /state/:slug is the one indexable address for a state. My Grid was retired
+(2026-10); /my-grid 301s to /power-map. server/state-page.ts composes the page once for
+the JSON (/api/state-pages/:slug), the metadata and the facts written into the HTML.
+Every route except "/" gets the dashboard shell (AppSidebar + header + NewsTicker).
+The seven aliases (/gpu-economics, /power-deals, /brief, /trade, /portfolio, /queue, /my-grid)
+are client <Redirect>s and server 301s to the same final address (seo.ts ALIAS_REDIRECTS).
+/supply-chain is a page again (2026-10-15, Jack's call): the standalone graph in the top nav after
+Equities; Equities keeps its Flow tab (the same component, embedded).
+The G-chord list is maintained twice in App.tsx (display ~67-83, handler ~250-254); keep in sync.
+
+## 2. Stack
+
+- React 18.3.1, TypeScript 5.6.3 (exact pin), Vite ^7.3.0, wouter ^3.3.5. NOT Next.js.
+- Express ^5.0.1, one process: Vite middleware in dev, static from dist/public in prod. Port 5000.
+- @tanstack/react-query ^5.60.5 is the only client data layer. No redux/zustand/app context.
+- Tailwind ^3.4.17 via PostCSS + shadcn/ui (new-york). The 12 files in client/src/components/ui
+  are a house-modified fork (Replit elevate classes, custom tokens); do not regenerate from upstream.
+- Charts: recharts ^2.15.2 (9 pages), react-leaflet ^4.2.1 (Power Map, Compute Frontier),
+  d3 ^7.9.0 (Supply Chain force graph only).
+- Server libs: yahoo-finance2 ^3.13.1, rss-parser, satori + @resvg/resvg-js (OG cards),
+  helmet, express-rate-limit.
+- Tests: Node's built-in runner. `npm test` = server/__tests__ + client/src/lib/__tests__ (300 tests). No component/DOM tests.
+- Scripts: `dev` (tsx), `build` (script/build.ts: vite client + esbuild server to dist/index.cjs),
+  `start`, `check` (tsc), `test`, `backtest:indices`.
+- Persistence: JSON in server/data/ plus content/blog/articles.json, except subscribers: Postgres
+  via DATABASE_URL (server/subscriber-store.ts, raw `pg`, no ORM). Production without DATABASE_URL
+  answers signups 503; the JSON file is development/test only. NO Drizzle, NO shared/ dir, NO
+  server/storage.ts.
+
+## 3. Conventions
+
+Derived from the code; starred rules confirmed by Jack 2026-07-02.
+
+- Aliases: `@/` = client/src (vite + tsconfig); `@assets` = attached_assets (vite only).
+- *New files: kebab-case (power-deals.tsx style). Existing PascalCase files stay; no renames.
+- *Reads: `useQuery({ queryKey: ["/api/x"] })`; the default queryFn (client/src/lib/queryClient.ts)
+  turns the key into the URL. Inline queryFn only to build query strings. Writes: the `apiRequest()`
+  helper, not raw fetch. Query defaults: staleTime Infinity, no refetch, no retry.
+- Types: each page re-declares the API payload shapes it consumes (local interfaces at top of
+  file). Nothing is shared with server/. Changing a response shape means updating consumers by
+  hand; grep first.
+- Pages keep small private subcomponents at the bottom of the same file; no per-page component
+  folders. data-testid on interactive elements.
+- Styling: dark mode only, forced (html class="dark", :root vars in index.css, no .dark block).
+  Warm charcoal + orange terminal theme. *Brand orange is the literal hex #F07800; keep using
+  the raw hex (211 existing uses; no Tailwind token). Amber #F0A500 is the secondary accent.
+  Fonts: Inter body, JetBrains Mono for data/branding (often inline style), Source Serif 4 on
+  marketing only. The landing has its own scoped tokens (.gt-marketing, client/src/styles/anchor.css).
+- Server layout: every route lives in server/routes.ts; math and fetching live in small pure
+  modules routes call (indices.ts, clusters.ts, deals.ts, gpu-index.ts, gpu-economics.ts,
+  gpu-history.ts, brief.ts, physical.ts, social-format.ts, social-data.ts, state-page.ts, og-card.ts). New module = pure module + thin
+  route + test. server/physical.ts is the house template: constant URL, in-memory TTL cache,
+  typed honest degradation ({configured:false} when keyless, 502 on failure), never fabricate.
+- Frontier model data is public at `/api/frontier-models`. Benchmark records require a cited
+  source, native unit, evaluation setting, and exact comparability key. Never connect or rank
+  results that only share a benchmark name.
+- Env: process.env direct. Required: UNSUB_TOKEN_SECRET (boot throws), ADMIN_API_KEY (admin 503s
+  without). Optional: DATABASE_URL (subscribers and the newsletter ledger; required in production
+  for signups), RESEND_API_KEY, RESEND_WEBHOOK_SECRET, NEWSLETTER_FROM, NEWSLETTER_REPLY_TO,
+  NEWSLETTER_POSTAL_ADDRESS, NEWSLETTER_PRIVACY_URL, NEWSLETTER_CONTACT_EMAIL (sending is
+  blocked, with reasons, until the provider key, webhook secret, sender, privacy notice and mailing address are
+  set; see docs/runbooks/newsletter-sending.md), EIA_API_KEY, NEWSDATA_API_KEY, CARTO_API, X_API_KEY,
+  X_API_SECRET, X_ACCESS_TOKEN, X_ACCESS_TOKEN_SECRET, X_POSTING_ENABLED,
+  DISABLE_DATACENTER_INGESTER (last two missing from .env.example).
+- CARTO_API is the one env var that reaches the browser. server/runtime-config.ts injects it into
+  index.html as a meta tag on every request; client/src/lib/basemap.ts reads it back. NOT a VITE_
+  build var (rotating would need a rebuild) and NOT an inline script (prod CSP is script-src
+  'self', which drops it silently while curl still shows correct HTML). Every map takes its tiles
+  from components/basemap-tiles.tsx; never hand-write a cartocdn URL.
+- Admin auth: x-admin-key header, timingSafeEqual; covers /api/admin/*, /api/newsletter/*,
+  /api/export/daily. Sending is two admin steps (server/newsletter-routes.ts): POST
+  /api/admin/newsletter/issues freezes an issue revision, then .../:id/:revision/send with
+  {"confirm": "<id>/<revision>"}. The old one-shot /api/newsletter/send answers 410.
+  /api/webhooks/resend is gated by its Svix signature (RESEND_WEBHOOK_SECRET), not the key.
+- Commits: imperative subject prefixed by area ("Social: ...", "docs: ..."). NO Co-Authored-By
+  lines, ever. Product copy and commits: plain voice, no em dashes, no marketing language.
+
+## 4. Data sources
+
+| Source | Key | Provides | Cache | Stale/keyless behavior |
+|---|---|---|---|---|
+| Yahoo Finance (yahoo-finance2) | none | quotes + sparklines (~100 tickers), earnings dates | 10 min stack, 4 h earnings | per-ticker fallback to STATIC_MARKET_DATA with stale:true, null change (UI shows "--"); indices fall back to static deltas labeled source:"static"; recorders refuse static values |
+| FRED CSV | none | monthly US electric output | 24 h | 502, never faked |
+| EIA v2 | EIA_API_KEY | US48 hourly demand (168 h) | 30 min | 503 + {configured:false, howTo} |
+| NewsData.io | NEWSDATA_API_KEY | news ticker tier 1 | 1 h | falls back to the 8 built-in RSS feeds |
+| RSS (8 news + 4 ingester feeds) | none | news fallback; datacenter discovery | ingester 6 h | items just absent |
+| Carto basemaps | CARTO_API | raster tiles for all three Leaflet maps | browser/CDN, 180 d | tiles still load, watermarked "API KEY REQUIRED" (HTTP 200, never an error) |
+| LBNL Queued Up page | none | new-edition flag only | 24 h throttle | manual XLSX ingest regardless |
+| Resend | RESEND_API_KEY (+ RESEND_WEBHOOK_SECRET) | newsletter send only, one email per call with an idempotency key; webhooks for delivery, bounces and complaints. No contact copies at the provider | on demand | sending answers 409 with the missing configuration; signups are still stored |
+| X API (OAuth 1.0a) | 4 creds + X_POSTING_ENABLED=true | weekday 8:30 ET post | external cron | dry-run, logged to social-log.json |
+
+Schedulers (no node-cron anywhere):
+- In-process: datacenter ingester setInterval every 6 h (off in tests; DISABLE_DATACENTER_INGESTER=1).
+- GitHub Actions .github/workflows/data-freshness.yml: news scan daily, recorder ping weekdays,
+  freshness deadman twice daily. Scheduled runs are OFF until the repository variable
+  FRESHNESS_SCHEDULES_ENABLED is "true" (secret GRIDTILT_ADMIN_KEY). The repo is public, so its
+  logs print status codes and dataset ids only. ops/freshness-monitor.md explains the statuses,
+  the review sidecar and which writes land on the instance (lost on redeploy).
+- External cron-job.org: POST /api/admin/cron/daily-tweet weekdays 8:30 ET. Rotation (Eastern
+  day): Mon buildout (clusters by status), Tue gpu_rental (observed medians), Wed
+  cluster_spotlight (one project, weekly by id), Thu grid_backlog (LBNL national total), Fri
+  documented_change (newest change-log entry with a `short` form, reviewed in the last 7 days).
+  A day is skipped, with the reason logged (`skipped` in social-log.json), when its data is
+  older than the freshness registry's expected age in whole days (GPU: the page's 2-day
+  serving rule), carries no valid or a future date, or cannot support its total; a project
+  without a recent review posts only from a fresh list. An unchanged post is not repeated.
+  Kill switch X_POSTING_ENABLED defaults OFF.
+- Curated GPU prices (gpu-rental-prices.json) are refreshed by hand: a research pass against
+  provider and aggregator pages, then an adversarial check of every number, then a PR. The
+  retired n8n model-API flows (2026-10-27) are gone; ops/n8n keeps only the history backup.
+- Request-piggybacked daily recorders: /api/kpis appends index-history.json (live data, weekdays,
+  after 10 AM ET only); /api/gpu-prices/metrics appends gpu-price-history.json.
+
+server/data custody (the fragility map):
+- Announcement dates (deal rows in interconnection-queue.json, rows in clusters.json): optional
+  `announced` (YYYY-MM-DD) + `announcedSource`, hand-entered from a source the row cites (the
+  announcing party's dated release or filing, or a source that states the day). A primary
+  release found for the purpose is added to the row's `sources` first. Never a year, month,
+  URL-implied, expansion, earnings-recap of an earlier deal, groundbreaking after an earlier
+  announcement, regulatory filing or inferred date. 91 rows carry one (52 deals, 39 clusters,
+  2026-10-15); timeline.test.ts fails on any row whose date is not a real day or whose source
+  the row does not cite. Deal titles: PPAs name buyer and seller; other rows read
+  "<sponsor> announced <project>". Aggregate, regulatory and not-ai-offtake rows never become
+  deal events.
+- Supply chain (2026-10-18 accuracy pass): every figure on /supply-chain is either live from
+  GridTilt's own data (end-use cluster counts) or a sourced, dated fact (node `fact` in
+  client/src/data/supply-chain-config.ts; stage `evidence` in supply-chain-stages.json, validated
+  by server/supply-chain.ts). Node descriptions state roles only, no figures. A stage status
+  follows the stated method (Bottlenecked: key equipment lead time two years or more; Tightening:
+  lead times past six months or backlogs growing over 25% a year); review every 90 days.
+  supply-chain.test.ts enforces sources, dates, stage-ticker parity with the graph, registry
+  membership for every graph ticker, and that retired tickers (ABB, SWN, WIRE, X, SIEGY, AYI,
+  AOS) never return. Before adding a ticker anywhere, confirm it trades (Yahoo quote with a
+  recent regularMarketTime) and names the right company.
+- Hand-curated, code never writes: catalysts.json, clusters.json, supply-chain-stages.json,
+  frontier-models.json, dataset-reviews.json (one entry per completed review; the freshness
+  report's claim-last-reviewed date), change-log.json (one entry per shipped correction, added in the same
+  change; validated by server/change-log.ts, served at /api/changes), state-pages.json (per
+  state: dated public documents and next dates with links, reviewed every 30 days by Jack;
+  validated by server/state-page.ts), hyperscaler-capex.json, content/blog/articles.json (admin blog CRUD can also write it; see debt).
+- Machine-written, never hand-edit: datacenters.json, datacenters-pending.json, index-history.json,
+  gpu-price-history.json, market-constants.json, social-log.json, backlog-auto-updates.json.
+  subscribers.json is the development store only (ignored by version control; personal data);
+  production subscribers live in Postgres, and a legacy list is imported only with
+  scripts/subscribers.ts.
+- Shared custody, be careful: interconnection-queue.json (curated projects; news scanner and
+  admin routes write into it). gpu-rental-prices.json is refreshed by hand (see Schedulers);
+  keep its schema stable because the page, the index math and the tests read it.
+
+## 4b. Social / OG cards
+
+server/og-card.ts owns the layout, fonts and map for every card (/api/og and the
+daily X post). server/social-data.ts decides what each card and post says from the
+data files; routes.ts reads the files. ogCardForTemplate returns an OgCard, or null
+for an unknown template or id (a 404, never a stand-in card). Share cards:
+`/api/og?template=state_fact&state=MD`, `template=project_status&id=<cluster id>`,
+`template=correction&id=<change-log id>`. The state card reads server/state-facts.ts,
+a copy of the client's state and NERC tables kept equal by a parity test.
+
+- Every card MUST carry `asOf` and `source`. They are required fields, not
+  optional decoration: the product claim is "tracked with sourced numbers", so a
+  card showing a number without a date and a provenance line contradicts it.
+  Missing asOf prints "AS OF —"; never substitute today's date.
+- Fonts: Inter-Regular.ttf (400), Inter-Bold.woff (700), JetBrainsMono-Bold.woff
+  (700), all in server/fonts/, all registered in og-card.ts. satori CANNOT
+  synthesize weights. Asking for a weight or family that is not registered
+  renders regular silently, which is how the pre-2026-08 card shipped flat for
+  months. server/__tests__/og-card.test.ts fails if a face goes missing.
+- satori silently TRUNCATES large inline SVG markup. The US outline must stay a
+  single concatenated path; per-state <path> elements exceeded the limit and
+  rendered a country missing most of its states with no error. Guarded by
+  assertMapPathIntact().
+- server/us-map.ts is GENERATED by scripts/generate-map-path.mjs. It carries the
+  outline path plus closed-form Albers constants, so the server projects
+  coordinates with plain arithmetic and never imports d3-geo, which is ESM-only
+  and would throw ERR_REQUIRE_ESM from the CJS bundle on older Node. d3-geo is a
+  devDependency used only by that script and the parity test.
+- `npx tsx scripts/preview-cards.ts` renders every template, share variant and a few
+  page cards to .card-preview/ for eyeballing. It posts nothing.
+- client/src/data/us-states.geo.json is the source geometry. The copy that
+  shipped on the elevate branch had Virginia's outer ring wound backwards, which
+  d3 reads as "the whole sphere minus Virginia". geoAlbersUsa's clipping hid it;
+  any non-composite projection does not. The committed copy is rewound, and the
+  generator rewinds + warns if a bad ring ever reappears. Client-side map work
+  should use this file, not the elevate copy.
+
+## 5. Do not touch
+
+- server/indices.ts constants (baselines, gains, clamps, NPI_BASE anchors, weights): published
+  methodology. Tests, scripts/backtest-indices.ts, and the committed index-history.json seed
+  assume exact values; changing them splices two methodologies into one public series.
+- index-history.ts recording guards and npiEquityLegsFrom: mirror the backtest exactly.
+- deriveSmrPolicyScore (routes.ts ~397): hand-anchored to preserve NPI continuity.
+- Security middleware block (server/index.ts ~15-112): trust proxy, helmet CSP with per-directive
+  rationale, limiters, 100 kb body cap. Security-reviewed; do not casually edit.
+- Unsub token + admin auth crypto (routes.ts ~2143-2171): unsub links in already-sent emails
+  depend on the exact HMAC derivation.
+- seo.ts: hand-written per-page meta, regex head surgery, buildSitemap. Fragile by design. An
+  address that names nothing (unknown ticker, sector, region, operator, cluster, article or path)
+  gets notFoundMeta: HTTP 404, noindex, no canonical; never the home page's meta on a 200.
+  Tickers are judged by server/company-registry.ts (the list the stock API answers from).
+  ALIAS_REDIRECTS mirrors App.tsx's <Redirect> routes and the server answers each with one 301.
+  server/__tests__/seo-truth.test.ts holds the client parity checks (sectors, regions,
+  operators, redirects); change both sides together.
+- social-format.ts: public tweet copy locked character-for-character by tests; change copy and
+  test in the same commit, on purpose.
+- News scanner regexes + sanity ranges (routes.ts ~659-741, ~866-871): they auto-write curated
+  data files; widening a range turns headline noise into data corruption.
+- Deal firmness (server/deals.ts): every agreement row was reviewed against primary documents on
+  2026-09-28 (signed / framework / option / preliminary / portfolio / not-ai-offtake). A status
+  counts only with firmnessSource (https) and a reviewed date; the admin route rejects firmness
+  without both, and a changed fact voids the review unless the same request carries the row's
+  first review or a newer one. Subtotals are per status and never added
+  across statuses. Do not invent classifications or infer one from a headline.
+- attached_assets/previews/*.svg: live code assets imported via @assets. The rest of
+  attached_assets is design-source archive.
+
+## 6. Known debt
+
+Documented, not to fix casually or silently:
+
+- Fake-data debt CLOSED on feat/live-gpu-prices (2026-07-04): the CCJ/CEG scatter now computes
+  from real SRUUF/CCJ/CEG weekly closes (server/uranium-correlation.ts, tested); fetch failure
+  serves empty + null r, never invented dots. PR #2's removal approach is obsolete.
+- PRs #1 and #2 CLOSED 2026-08-18. Their code was already in main (SEC-1..5 and the
+  auth-boundary test via feat/live-gpu-prices; the indices retirement via feat/real-gauges).
+  Their audit docs were salvaged to docs/ARCHITECTURE.md and docs/audit/, marked historical.
+  The automated news scan is in .github/workflows/data-freshness.yml, off until the owner sets
+  FRESHNESS_SCHEDULES_ENABLED (see ops/freshness-monitor.md).
+- GPU live sweep PAUSED 2026-10-12: Vast.ai's terms (2026-09-01) and RunPod's (2026-03-24) need
+  written permission for automated price collection and index use. The RunPod/Vast sweep in
+  server/gpu-live.ts runs only when GPU_LIVE_SWEEP_ENABLED is "true"; leave it unset until a
+  written yes is on file. While off, no new live points are recorded; once the newest recorded
+  point is more than 2 Eastern days old, GPU prices serve the curated values with the est. flag.
+  Already recorded days in gpu-price-history.json are kept and still chart.
+- Indices RESOLVED 2026-08-18: retired from the surface, kept as a recorded series. The Overview
+  shows the measured gauges; no client fetches /api/kpis. The route still computes and appends to
+  index-history.json on purpose, because the series is public, has a backtest and a committed
+  seed, and the indices.ts constants are do-not-touch. Rationale sits at the route.
+- CI runs on every push and PR (.github/workflows/ci.yml, Node 22): typecheck, tests, build, a
+  reporting-only slop scan, and `npm audit` which DOES fail the build on a new high advisory.
+- Durability (audit M2): subscribers moved to Postgres (T17: one row per address with a state,
+  suppressions kept as email hashes, explicit one-time imports, backup/restore in
+  scripts/subscribers.ts, runbook docs/runbooks/subscriber-storage.md). With DATABASE_URL set,
+  the append-only logs (index-history.json, gpu-price-history.json, social-log.json,
+  backlog-auto-updates.json) are mirrored in Postgres table gt_documents (server/durable-docs.ts):
+  merged with the database at boot (union by date/timestamp, 20 s cap, failure logged and the
+  site runs on local files), and every write calls notifyDocWritten(name). A new append-only
+  writer must call it too. Still on ephemeral disk: datacenters.json, datacenters-pending.json,
+  market-constants.json, admin edits to interconnection-queue.json, and admin blog CRUD in
+  content/. Mirroring those needs deletion tombstones and a rule for repo edits; not done.
+- Production detection: the deployment runs `node dist/index.cjs` with NO NODE_ENV at runtime.
+  Only the literal `process.env.NODE_ENV` is replaced at build time (script/build.ts define), so
+  code that must know it is in production reads that literal (server/index.ts, chooseStore's
+  caller, siteReferer), never NODE_ENV off a passed-in env object.
+- `npm run dev` on macOS works: reusePort is guarded by `process.platform === "linux"`.
+  Note port 5000 is taken by AirPlay Receiver on macOS; use PORT=5199 or turn AirPlay off.
+- routes.ts is a 3,913-line monolith (70 routes + OAuth client + OG renderer + 3 scanners +
+  static data tables).
+- README + replit.md rewritten from code truth (2026-07-04, feat/live-gpu-prices). HANDOFF.md and
+  HOMEPAGE_HANDOFF.md remain historical records, not current state.
+- Dead weight (mostly cleared 2026-07-04): date-fns, @tailwindcss/vite, @radix-ui/react-toggle,
+  dates.ts, ui/dialog.tsx, ui/toggle.tsx removed; package renamed "gridtilt". Still open:
+  EmailCapture's unused marketing branch (~200 lines), .replit's postgresql-16 and python-3.11
+  modules.
+
+## 7. Deploy (the gotcha that keeps biting)
+
+- Replit autoscale. A push to GitHub does NOT deploy, and autoscale does not auto-pull. Merge,
+  then Replit -> Deployments -> Redeploy, manually. Never say "shipped" after a push.
+- Build: npm run build (vite client to dist/public, esbuild server to dist/index.cjs); the
+  .replit postMerge hook runs npm install.
+- After redeploy, run `npm run smoke -- https://gridtilt.com` (server/smoke.ts; add
+  SMOKE_ADMIN_KEY for the admin freshness report). FAIL = the deploy is wrong (broken page or
+  API, soft 404, GPU sweep on without permission); WARN = stale data, missing EIA key, slow
+  response. Exit code 1 on any FAIL.

@@ -14,7 +14,7 @@ The implementation must preserve these invariants:
 - Curated monthly anchors remain estimates and are visually distinct from recorded daily observations.
 - Period changes remain `null` when no real point is near the lookback window.
 - `server/data/gpu-rental-prices.json` keeps its exact schema.
-- The existing do-not-touch boundaries in `CLAUDE.md` remain untouched.
+- The existing do-not-touch boundaries in `AGENTS.md` remain untouched.
 - The history chart uses one rendering library. visx remains the selected library; Recharts is used only for the economics charts.
 
 ## Approach Selection
@@ -27,7 +27,7 @@ Three implementation approaches were considered.
 
 ## Phase 0: Branch Adoption and Baseline
 
-Fast-forward `main` to `origin/feat/live-gpu-prices`. Read the resulting `CLAUDE.md` as binding. Install the locked dependencies and establish a clean baseline with `npm test` and `npm run check` before new changes.
+Fast-forward `main` to `origin/feat/live-gpu-prices`. Read the resulting `AGENTS.md` as binding. Install the locked dependencies and establish a clean baseline with `npm test` and `npm run check` before new changes.
 
 ## Phase 1: Pipeline Health and Recoverable History
 
@@ -147,7 +147,7 @@ Final verification requires:
 - `npm run check`
 - `npm run build`
 - visual inspection of the prices and economics tabs at desktop and narrow widths
-- confirmation that `gpu-rental-prices.json` and every `CLAUDE.md` do-not-touch file remain unmodified
+- confirmation that `gpu-rental-prices.json` and every `AGENTS.md` do-not-touch file remain unmodified
 - confirmation that only visx imports render the history chart
 
 ## Delivery and Owner Actions
