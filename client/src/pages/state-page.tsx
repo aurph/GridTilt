@@ -8,6 +8,7 @@
 import type { ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "wouter";
+import { StatePagesRow } from "@/components/StatePagesRow";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/Freshness";
@@ -151,8 +152,11 @@ export default function StatePage() {
   if (notFound) {
     return (
       <div className="p-6 text-sm text-muted-foreground" data-testid="state-page-missing">
-        There is no state page at this address. Every tracked project is on the{" "}
-        <Link href="/power-map" className="text-brand hover:text-brand-2" data-testid="state-page-missing-map">Power Map</Link>.
+        <p>
+          There is no state page at this address. Every tracked project is on the{" "}
+          <Link href="/power-map" className="text-brand hover:text-brand-2" data-testid="state-page-missing-map">Power Map</Link>.
+        </p>
+        <StatePagesRow className="mt-4" lead="The states that have one:" />
       </div>
     );
   }
