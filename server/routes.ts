@@ -2107,6 +2107,15 @@ export async function registerRoutes(
     }
   });
 
+  // Public contact details for the privacy page: the same values the email
+  // footer prints, so the page and the emails can never disagree. Nothing
+  // here is secret; it is what every sent email already carries.
+  app.get("/api/site/contact", (_req, res) => {
+    const footer = newsletterFooter();
+    res.set("Cache-Control", "public, max-age=300");
+    res.json({ contactEmail: footer.contactEmail, postalAddress: footer.postalAddress });
+  });
+
   app.get("/api/admin/freshness", (req: Request, res) => {
     if (!requireAdmin(req, res)) return;
     res.json(freshnessReport());
