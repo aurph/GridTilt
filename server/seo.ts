@@ -113,6 +113,11 @@ const STATIC_PAGES: Record<string, { title: string; description: string; slug: s
     description: "When each GridTilt dataset was last updated and last reviewed against its sources, and how often it is expected to change.",
     slug: "data-status",
   },
+  "/privacy": {
+    title: "Privacy | GridTilt",
+    description: "What gridtilt.com collects when you browse or subscribe to the email, why, and how to have it removed.",
+    slug: "privacy",
+  },
   "/blog": {
     title: "Research | GridTilt",
     description: "Research on data center power demand, nuclear energy, grid constraints, and the companies behind the buildout.",
@@ -669,6 +674,7 @@ export const CRAWLABLE_API_PREFIXES = [
   "/api/og",
   "/api/physical/",
   "/api/queue",
+  "/api/site/contact",
   "/api/sector-pulse",
   "/api/sectors",
   "/api/stack",

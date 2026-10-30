@@ -22,6 +22,7 @@ const DATA: [string, string][] = [
   ["Methodology", "/compute-frontier/methodology"],
   ["Data status", "/data-status"],
   ["The brief", "/subscribe"],
+  ["Privacy", "/privacy"],
 ];
 
 export function SiteFooter() {
