@@ -223,8 +223,8 @@ const MODULES: Module[] = [
 function useFacilityCaption(): string {
   const { data } = useQuery<Facility[]>({ queryKey: ["/api/datacenters"] });
   const suffix = "plotted by operator and grid region.";
-  if (!data) return `Tracked facilities, ${suffix}`;
-  return `${filterTrackedFacilities(data).length} tracked facilities, ${suffix}`;
+  if (!data) return `Campuses of 400 MW and up, ${suffix}`;
+  return `${filterTrackedFacilities(data).length} campuses of 400 MW and up, ${suffix}`;
 }
 
 export function FeaturesShowcase() {

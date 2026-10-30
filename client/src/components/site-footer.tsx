@@ -91,7 +91,11 @@ export function SiteFooter() {
           </div>
         </div>
         <div className="mt-8 flex flex-col gap-2 border-t border-border pt-5 text-[12px] text-muted-foreground/70 sm:flex-row sm:items-center sm:justify-between">
-          <span>© {year} GridTilt. Market data may be delayed.</span>
+          <span data-testid="footer-owner">
+            © {year} GridTilt. Run by Jack Schwartz, Baltimore.{" "}
+            <a href="mailto:gridtilt1@gmail.com" className="underline-offset-2 hover:underline">gridtilt1@gmail.com</a>.
+            {" "}Market data may be delayed.
+          </span>
           <span>Research and commentary, not investment advice.</span>
         </div>
       </div>

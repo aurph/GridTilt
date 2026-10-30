@@ -991,7 +991,7 @@ export default function TiltOverview() {
           <span className="hidden sm:block h-4 w-px bg-border" />
           {tracked && (
             <span className="flex items-baseline gap-2 font-mono" data-testid="header-tracked">
-              <span className="text-[11px] text-muted-foreground">Tracked AI Power</span>
+              <span className="text-[11px] text-muted-foreground">Tracked facility power</span>
               <span className="text-sm font-bold text-brand-2 tabular-nums">{fmtGW(tracked.trackedMW)}</span>
               <span className="text-11 tabular-nums text-muted-foreground">
                 +{fmtGW(tracked.constructionMW)} building
@@ -1165,7 +1165,7 @@ export default function TiltOverview() {
               value={tracked ? fmtGW(tracked.trackedMW) : null}
               // headline counts built or building only; the Power map header counts all tracked sites incl. announced - say both so the surfaces agree
               delta={tracked ? `${tracked.operationalCount + tracked.constructionCount} built or building of ${tracked.operationalCount + tracked.constructionCount + tracked.announcedCount} tracked` : null}
-              subtitle="Operational + under construction, verified facilities"
+              subtitle="Campuses of 400 MW and up, operational and under construction"
               methodology={`Sum of rated power across the verified US AI data center dataset (facilities >=400 MW). Operational plus under-construction only. Announced projects (${tracked ? fmtGW(tracked.announcedMW) : "-"}) are excluded from the headline until construction is confirmed. Same dataset as the Power map.`}
               isLoading={dcLoading}
               rows={tracked ? [
