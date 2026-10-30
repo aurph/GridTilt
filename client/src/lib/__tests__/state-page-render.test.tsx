@@ -16,7 +16,7 @@ import { loadStatePage } from "../../../../server/state-page";
 
 function render(rates?: unknown): string {
   const qc = new QueryClient();
-  const result = loadStatePage("maryland", "2026-10-01");
+  const result = loadStatePage("maryland", "2026-10-30");
   qc.setQueryData(["/api/state-pages/maryland"], result.kind === "page" ? result.page : null);
   if (rates !== undefined) qc.setQueryData(["/api/physical/retail-rates"], rates);
   return renderToStaticMarkup(
@@ -40,7 +40,7 @@ describe("state page render", () => {
   it("shows the grid facts, the dated decisions and the projects with their sources", () => {
     const html = render({ configured: false, howTo: "set EIA_API_KEY" });
     assert.match(html, /Maryland&#x27;s grid/);
-    assert.match(html, /Checked against the documents October 1, 2026/);
+    assert.match(html, /Checked against the documents October 30, 2026/);
     assert.match(html, /Where things stood/);
     assert.match(html, /As of July 1, 2026 · Frederick County/);
     assert.match(html, /not yet reviewed field by field/);
@@ -50,7 +50,7 @@ describe("state page render", () => {
     assert.match(html, /reference level of 18\.6%/);
     assert.match(html, /Order No\. 92606/);
     assert.match(html, /September 14, 2026 · Frederick County/);
-    assert.ok(!/Reviewed October 1, 2026/.test(html), "no page-wide review stamp over unreviewed records");
+    assert.ok(!/Reviewed October 30, 2026/.test(html), "no page-wide review stamp over unreviewed records");
     assert.match(html, /href="\/compute-frontier\/aligned-iad-quantum-frederick-md"/);
     assert.match(html, /264 MW planned/);
     assert.match(html, /est\./, "estimates stay flagged");

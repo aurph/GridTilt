@@ -231,7 +231,7 @@ function TopMoversSection({ topMovers, pulse, isLoading, isError, updatedAt, onR
                   >
                     {SECTOR_LABEL_SHORT[m.sector] ?? m.sector}
                   </span>
-                  <span className="font-mono text-xs text-foreground flex-shrink-0 w-16 text-right">${m.price.toFixed(m.price < 10 ? 2 : m.price < 100 ? 2 : 2)}</span>
+                  <span className="font-mono text-xs text-foreground flex-shrink-0 w-16 text-right">${m.price.toFixed(2)}</span>
                   <div className={`flex items-center gap-0.5 font-mono font-semibold text-xs flex-shrink-0 w-14 justify-end ${isUp ? "text-positive" : "text-negative"}`}>
                     {isUp ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
                     {Math.abs(m.changePercent).toFixed(2)}%
@@ -1079,7 +1079,7 @@ export default function TiltOverview() {
             </div>
           </div>
 
-          <ResponsiveContainer width="100%" height={340}>
+          <ResponsiveContainer width="100%" height={240}>
             <ComposedChart data={electricityData} margin={{ top: 10, right: 24, left: 10, bottom: 10 }}>
               <defs>
                 <linearGradient id="demandGrad" x1="0" y1="0" x2="0" y2="1">
@@ -1093,14 +1093,15 @@ export default function TiltOverview() {
                 dataKey="year"
                 interval={2}
               />
-              {/* explicit round ticks: recharts autos over these domains land on 5.1k/5.8k/6.6k noise */}
+              {/* zero-based with round ticks: a 3,600 TWh floor exaggerated a roughly flat decade,
+                  and recharts autos land on 5.1k/5.8k/6.6k noise */}
               <YAxis
                 {...axisProps}
                 yAxisId="total"
                 axisLine={false}
-                tickFormatter={(v) => `${(v / 1000).toFixed(1)}k`}
-                domain={[3600, 4400]}
-                ticks={[3600, 3800, 4000, 4200, 4400]}
+                tickFormatter={(v) => (v === 0 ? "0" : `${(v / 1000).toFixed(1)}k`)}
+                domain={[0, 4400]}
+                ticks={[0, 1000, 2000, 3000, 4000]}
                 width={42}
               />
               <Tooltip content={<CustomTooltip />} />

@@ -199,7 +199,7 @@ export default function ComputeFrontier() {
     if (!clusters) return [];
     const byYear = new Map<string, number>();
     for (const c of clusters) {
-      const m = c.onlineDate.match(/\d{4}/);
+      const m = (c.onlineDate ?? "").match(/\d{4}/);
       const year = m ? m[0] : "n/a";
       byYear.set(year, (byYear.get(year) ?? 0) + c.plannedPowerMW);
     }

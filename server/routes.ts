@@ -1932,7 +1932,7 @@ export async function registerRoutes(
     }
   });
 
-  // Hyperscaler capex aggregate for the homepage explainer. Public.
+  // Hyperscaler capex guides, hand-curated each earnings cycle; the operator pages read fy2026. Public.
   app.get("/api/hyperscaler-capex", (_req, res) => {
     try {
       const filePath = join(process.cwd(), "server", "data", "hyperscaler-capex.json");

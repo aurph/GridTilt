@@ -52,7 +52,7 @@ describe("validateFrontierRegistry", () => {
 
 test("shipped frontier registry satisfies the evidence contract", () => {
   const registry = readFrontierRegistry();
-  assert.equal(registry.asOf, "2026-07-14");
+  assert.equal(registry.asOf, "2026-10-30");
   assert.ok(registry.models.some((model) => model.id === "gpt-2"));
   assert.ok(registry.models.some((model) => model.id === "gpt-5-6-sol"));
   assert.ok(registry.labs.length >= 10);
@@ -70,5 +70,5 @@ test("shipped frontier registry satisfies the evidence contract", () => {
   assert.equal(summary.modelCount, registry.models.length);
   assert.equal(summary.labCount, registry.labs.length);
   assert.equal(summary.firstReleaseDate, "2019-02-14");
-  assert.equal(summary.lastReleaseDate, "2026-07-09");
+  assert.equal(summary.lastReleaseDate, "2026-10-13");
 });

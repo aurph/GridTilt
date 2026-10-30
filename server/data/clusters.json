@@ -1,5 +1,5 @@
 {
-  "lastRefreshed": "2026-09-01",
+  "lastRefreshed": "2026-10-30",
   "methodology": "Named AI training and inference superclusters compiled from public announcements (company press releases, Reuters, Tom's Hardware, Data Center Dynamics, SemiAnalysis, utility filings) plus cross-reference to GridTilt's own Power Map registry. Tracked, not exhaustive. Power in MW. 'estimated' lists the field names whose values are GridTilt estimates or announced forward targets not yet realized; sourced values are not listed there. gpuCount is null when the accelerator count is not disclosed; we do not invent one. linkedDeal references a deal id in interconnection-queue.json where a tracked nuclear-for-AI deal applies to the site. Where Epoch AI’s independent satellite-verified estimates cover a site (epoch.ai/data/ai-data-centers, CC-BY), rated IT power is calibrated to their figures and flagged estimated.",
   "clusters": [
     {
@@ -33,7 +33,9 @@
       ],
       "notes": "Stargate I. Oracle runs the campus as cloud capacity for OpenAI; Crusoe designs, builds and operates the eight buildings. On Sept 10, 2026 Oracle said 6 of 8 buildings, 618 MW and 75% of total capacity, had been delivered; the rest is due by the end of 2026. Rated is that delivered figure (Oracle does not say whether it is IT or facility power); planned is the 1.2 GW grid interconnection. The two use different bases, so rated divided by planned is not delivery progress; Oracle's own figure is 75%. GPU target: more than 450,000 GB200; no cumulative installed count has been disclosed. The on-site gas turbines are backup. A potential 600 MW expansion announced in September 2025 was dropped in March 2026. Crusoe's adjacent 900 MW campus for Microsoft is a separate site.",
       "reviewed": "2026-09-28",
-      "mapFacilityIds": [18],
+      "mapFacilityIds": [
+        18
+      ],
       "evidence": [
         {
           "field": "status",
@@ -260,9 +262,10 @@
         "https://www.oracle.com/news/announcement/oracle-borderplex-and-bloom-energy-to-power-project-jupiter-with-fuel-cell-technology-2026-04-27/",
         "https://oilprice.com/Latest-Energy-News/World-News/Oracles-165-Billion-Data-Center-Plan-Hits-a-Gas-Pipeline-Delay.html",
         "https://epoch.ai/data/ai-data-centers",
-        "https://group.softbank/en/news/press/20250924"
+        "https://group.softbank/en/news/press/20250924",
+        "https://www.krwg.org/krwg-news/2026-10-28/dona-ana-county-to-notify-project-jupiter-of-potential-irb-agreement-breach"
       ],
-      "notes": "Stargate NM / Project Jupiter: OpenAI/Oracle campus on ~1,400 acres in Santa Teresa, Dona Ana County, developed by STACK Infrastructure with BorderPlex Digital Assets; OCI 18-year lease, OpenAI primary client. OpenAI describes 'more than a gigawatt'; Epoch lists up to ~2.2 GW full build-out and Bloom fuel cells are contracted up to 2.45 GW under the Oracle MSA - we hold a conservative ~1 GW estimate. Powered behind-the-meter; the Transwestern gas pipeline serving it slipped to Feb 2027. Previously tracked twice (also as a STACK entry); merged Aug 2026. Epoch tracks the buildout at ~1,750 MW IT (~2,450 MW facility). Rated power calibrated to Epoch AI’s satellite-derived IT-power estimate (CC-BY, Sept 2026).",
+      "notes": "Stargate NM / Project Jupiter: OpenAI/Oracle campus on ~1,400 acres in Santa Teresa, Dona Ana County, developed by STACK Infrastructure with BorderPlex Digital Assets; OCI 18-year lease, OpenAI primary client. OpenAI describes 'more than a gigawatt'; Epoch lists up to ~2.2 GW full build-out and Bloom fuel cells are contracted up to 2.45 GW under the Oracle MSA - we hold a conservative ~1 GW estimate. Powered behind-the-meter; the Transwestern gas pipeline serving it slipped to Feb 2027. Previously tracked twice (also as a STACK entry); merged Aug 2026. Epoch tracks the buildout at ~1,750 MW IT (~2,450 MW facility). Rated power calibrated to Epoch AI’s satellite-derived IT-power estimate (CC-BY, Sept 2026). October 2026: Oracle proposed a 10-year energy service agreement with El Paso Electric at $10 million a year for backup and construction power while keeping up to 2.45 GW of Bloom fuel cells as the on-site supply; on October 28 the county commission voted unanimously to notify the project of a potential breach of its industrial revenue bond agreement, which requires all generation on site. The air quality permit hearing is set for December 7, 2026 in Sunland Park.",
       "announced": "2025-09-23",
       "announcedSource": "https://group.softbank/en/news/press/20250924"
     },
@@ -372,7 +375,7 @@
       },
       "gridRegion": "PJM",
       "gpuCount": null,
-      "chipType": "NVIDIA H100/GB200",
+      "chipType": "NVIDIA GB200 NVL72 / GB300 NVL72",
       "ratedPowerMW": 560,
       "plannedPowerMW": 1000,
       "energySource": "on-site gas + grid",
@@ -383,12 +386,13 @@
         "ratedPowerMW"
       ],
       "sources": [
+        "https://engineering.fb.com/2026/10/19/data-center-engineering/inside-prometheus-meta-gigawatt-scale-supercluster/",
         "https://techcrunch.com/2025/07/14/mark-zuckerberg-says-meta-is-building-a-5gw-ai-data-center",
         "https://www.datacenterfrontier.com/hyperscale/article/55310441/ownership-and-power-challenges-in-metas-hyperion-and-prometheus-data-centers",
         "https://epoch.ai/data/ai-data-centers",
         "https://www.upi.com/Top_News/US/2025/07/14/2026/3401752512520/"
       ],
-      "notes": "Meta's first ~1 GW supercluster, online 2026. Ohio Power Siting Board approved two 200 MW on-site gas plants targeting Q3 2026. First phases live per Epoch’s satellite-verified estimate; build continues. Rated power calibrated to Epoch AI’s satellite-derived IT-power estimate (CC-BY, Sept 2026).",
+      "notes": "Meta's first ~1 GW supercluster, online 2026. Ohio Power Siting Board approved two 200 MW on-site gas plants targeting Q3 2026. First phases live per Epoch’s satellite-verified estimate; build continues. Rated power calibrated to Epoch AI’s satellite-derived IT-power estimate (CC-BY, Sept 2026). Meta said on October 19, 2026 that the first phase is complete and was used to train its Muse models, that the site runs hundreds of thousands of GPUs across multiple interconnected buildings on GB200 NVL72 and GB300 NVL72 racks with Vera Rubin NVL72 next, and that full scale is roughly 1 million GPUs. No MW figure was given, so rated stays the Epoch estimate.",
       "announced": "2025-07-14",
       "announcedSource": "https://www.upi.com/Top_News/US/2025/07/14/2026/3401752512520/"
     },
@@ -766,7 +770,7 @@
       "id": "coreweave-ellendale",
       "name": "CoreWeave Ellendale (Applied Digital)",
       "operator": "CoreWeave",
-      "status": "construction",
+      "status": "operational",
       "location": {
         "city": "Ellendale",
         "state": "ND",
@@ -776,22 +780,21 @@
       "gridRegion": "MISO",
       "gpuCount": null,
       "chipType": "NVIDIA GB200",
-      "ratedPowerMW": 70,
+      "ratedPowerMW": 250,
       "plannedPowerMW": 400,
       "energySource": "grid",
       "workload": "mixed",
       "linkedDeal": null,
       "onlineDate": "2026",
-      "estimated": [
-        "ratedPowerMW"
-      ],
+      "estimated": [],
       "sources": [
+        "https://ir.applieddigital.com/news-events/press-releases/detail/161/applied-digital-brings-an-additional-75-mw-of-ai",
         "https://www.datacenterdynamics.com/en/news/applied-digital-signs-250mw-agreement-with-coreweave-for-capacity-at-ellendale-campus-north-dakota/",
         "https://www.coreweave.com/blog/our-capacity-plans-for-coreweave-data-centers",
         "https://ir.applieddigital.com/news-events/press-releases",
         "https://epoch.ai/data/ai-data-centers"
       ],
-      "notes": "CoreWeave leases now total 400 MW of critical IT at Applied Digital's Polaris Forge 1 (Ellendale ND) across three 15-year tranches (~$11B). Building 1 (100 MW) in service ~Q4 2025; building 2 delivered July 1, 2026 (rated 250 MW estimated on that basis); building 3 (150 MW) targets full capacity 2027. Campus engineered to scale to 1 GW. Epoch measures ~68 MW IT live; \"delivered\" buildings are not yet all energized, so the earlier 250 MW rated estimate was high. Rated power calibrated to Epoch AI’s satellite-derived IT-power estimate (CC-BY, Sept 2026)."
+      "notes": "CoreWeave leases total 400 MW of critical IT at Applied Digital's Polaris Forge 1 (Ellendale ND) across three 15-year tranches (~$11B). Applied Digital said on October 2, 2026 that three more 25 MW halls in Building 2 reached ready for service, bringing fully operational critical IT load at the campus to 250 MW; the campus is contracted for 400 MW at full buildout. Rated is that company-stated operational figure. Epoch's September 2026 satellite-derived estimate (about 68 MW IT) was lower, and the two bases differ; the row no longer carries the Epoch calibration. Building 3 (150 MW) targets 2027. Campus engineered to scale to 1 GW."
     },
     {
       "id": "coreweave-mebane",
@@ -7345,6 +7348,127 @@
         "https://epoch.ai/data/ai-data-centers"
       ],
       "notes": "Under construction; Epoch projects ~261 MW IT by 2027. Added via the Sept 2026 Epoch cross-validation (satellite-verified, CC-BY)."
+    },
+    {
+      "id": "aligned-project-phoenix-shippingport-pa",
+      "name": "Aligned Project Phoenix (Shippingport)",
+      "operator": "Aligned Data Centers",
+      "status": "construction",
+      "location": {
+        "city": "Shippingport",
+        "state": "PA",
+        "lat": 40.6262,
+        "lng": -80.4237
+      },
+      "gridRegion": "PJM",
+      "gpuCount": null,
+      "chipType": null,
+      "ratedPowerMW": 0,
+      "plannedPowerMW": 2000,
+      "energySource": "dedicated on-site power (fuel not stated by Aligned)",
+      "workload": "mixed",
+      "linkedDeal": null,
+      "onlineDate": "",
+      "estimated": [],
+      "sources": [
+        "https://aligneddc.com/press-release/project-phoenix-data-center-shippingport-pa/",
+        "https://www.datacenterdynamics.com/en/news/aligned-breaks-ground-on-gigawatt-scale-data-center-campus-in-pennsylvania/"
+      ],
+      "notes": "Groundbreaking on September 10, 2026 of a 2 GW campus spanning three facilities at the Shippingport Industrial Park in Beaver County. Aligned does not say whether 2 GW is IT or facility power, names no tenant and gives no completion date. Aligned says the campus will use its own dedicated on-site power source rather than the local grid, without naming the fuel; the neighboring Shippingport Power Station is being redeveloped as a natural gas energy campus. About $10B estimated regional investment. Map point is the borough centroid.",
+      "announced": "2026-09-10",
+      "announcedSource": "https://aligneddc.com/press-release/project-phoenix-data-center-shippingport-pa/"
+    },
+    {
+      "id": "digital-realty-kokomo-in",
+      "name": "Digital Realty Kokomo Campus",
+      "operator": "Digital Realty",
+      "status": "announced",
+      "location": {
+        "city": "Kokomo",
+        "state": "IN",
+        "lat": 40.4864,
+        "lng": -86.1336
+      },
+      "gridRegion": "MISO",
+      "gpuCount": null,
+      "chipType": null,
+      "ratedPowerMW": 0,
+      "plannedPowerMW": 1000,
+      "energySource": "grid (utility not named by Digital Realty)",
+      "workload": "mixed",
+      "linkedDeal": null,
+      "onlineDate": "2033",
+      "estimated": [
+        "onlineDate"
+      ],
+      "sources": [
+        "https://www.digitalrealty.com/about/projects/kokomo",
+        "https://www.insideindianabusiness.com/articles/kokomo-mayor-details-plans-for-data-center-campus",
+        "https://www.datacenterdynamics.com/en/news/digital-realty-eyes-gigawatt-scale-data-center-site-outside-indianapolis-indiana/"
+      ],
+      "notes": "Digital Realty's project page states approximately 1 GW of additional IT capacity at Industrial Park North in Kokomo, with local utility partners unnamed. The city announced the plan on October 4, 2026; trade press reports about 476 acres, three buildings and a full build-out target of 2033 with construction hoped to start in early 2027. Map point is the city centroid.",
+      "announced": "2026-10-04",
+      "announcedSource": "https://www.insideindianabusiness.com/articles/kokomo-mayor-details-plans-for-data-center-campus"
+    },
+    {
+      "id": "terrawatt-riverbend-alton-il",
+      "name": "TerraWatt Riverbend Technology Center (Alton)",
+      "operator": "TerraWatt",
+      "status": "announced",
+      "location": {
+        "city": "Alton",
+        "state": "IL",
+        "lat": 38.8906,
+        "lng": -90.1843
+      },
+      "gridRegion": "MISO",
+      "gpuCount": null,
+      "chipType": null,
+      "ratedPowerMW": 0,
+      "plannedPowerMW": 1000,
+      "energySource": "grid (new Ameren Illinois connection), diesel backup only",
+      "workload": "mixed",
+      "linkedDeal": null,
+      "onlineDate": "2031",
+      "estimated": [
+        "onlineDate"
+      ],
+      "sources": [
+        "https://www.riverbendalton.com/",
+        "https://www.datacenterdynamics.com/en/news/gigawatt-scale-data-center-proposed-for-steel-mill-in-illinois/"
+      ],
+      "notes": "Proposed on the 381-acre former Alton Steel mill on Cut Street, idle since January 2026. One 200 MW block first, up to five blocks (1 GW) only as Ameren confirms it can serve them; TerraWatt says 200 MW is the power the building would use. Demolition and site work in 2027, first-block construction late 2027 into early 2029, and the developer says the facility could be fully operating by 2031, all subject to approvals. No tenant and no lease signed. Map point is the city centroid.",
+      "announced": "2026-10-21",
+      "announcedSource": "https://www.riverbendalton.com/"
+    },
+    {
+      "id": "taylor-technology-campus-tx",
+      "name": "Taylor Technology Campus (Big Watt / PowerHouse)",
+      "operator": "Big Watt Digital / PowerHouse Data Centers",
+      "status": "announced",
+      "location": {
+        "city": "Taylor",
+        "state": "TX",
+        "lat": 30.5708,
+        "lng": -97.4092
+      },
+      "gridRegion": "ERCOT",
+      "gpuCount": null,
+      "chipType": null,
+      "ratedPowerMW": 0,
+      "plannedPowerMW": 1000,
+      "energySource": "behind-the-meter natural gas generation",
+      "workload": "mixed",
+      "linkedDeal": null,
+      "onlineDate": "2028",
+      "estimated": [],
+      "sources": [
+        "https://natlawreview.com/press-releases/co-development-partners-big-watt-digital-and-powerhouse-data-centers",
+        "https://www.datacenterdynamics.com/en/news/powerhouse-big-watt-secure-approval-for-1gw-behind-the-meter-campus-in-taylor-texas/"
+      ],
+      "notes": "About 664 acres east of Taylor in Williamson County, previously known as Project Mustang. The developers' October 9, 2026 release says the joint venture secured approval of its development agreement and that the site has the potential to deliver up to one gigawatt of hyperscale data center capacity, served by dedicated behind-the-meter natural gas generation; it does not say whether 1 GW is IT or facility power. Construction 2027 to 2029 with first power targeted for the first half of 2028. No tenant named. Map point is the city centroid.",
+      "announced": "2026-10-09",
+      "announcedSource": "https://natlawreview.com/press-releases/co-development-partners-big-watt-digital-and-powerhouse-data-centers"
     }
   ]
 }

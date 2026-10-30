@@ -1,6 +1,6 @@
 {
-  "lastRefreshed": "2026-09-28",
-  "lastChecked": "2026-08-25",
+  "lastRefreshed": "2026-10-30",
+  "lastChecked": "2026-10-30",
   "headline": {
     "trackedProjects": 70,
     "trackedCapacityGW": 91.5,
@@ -69,9 +69,11 @@
         "NRC 25-046",
         "Utility Dive",
         "NucNet",
-        "ANS Nuclear Newswire"
+        "ANS Nuclear Newswire",
+        "https://holtecinternational.com/hh-41-24/",
+        "https://www.world-nuclear-news.org/articles/fuel-loading-under-way-for-palisades-restart-holtec-announces"
       ],
-      "notes": "First plant authorized to return to operations after shutdown. Still offline as of Aug 2026: Holtec closed out the last major restart projects in July 2026 and moved to operational readiness, but has not announced a restart date. All of the plant's ~800 MW is contracted under 28-year PPAs with two rural cooperatives, Wolverine (up to two-thirds) and Hoosier (the balance), per Holtec's 2026 S-1; no data-center or AI buyer. Michigan's $300M is a restart grant, not an offtake.",
+      "notes": "First plant authorized to return to operations after shutdown. Still offline as of Aug 2026: Holtec closed out the last major restart projects in July 2026 and moved to operational readiness, but has not announced a restart date. All of the plant's ~800 MW is contracted under 28-year PPAs with two rural cooperatives, Wolverine (up to two-thirds) and Hoosier (the balance), per Holtec's 2026 S-1; no data-center or AI buyer. Michigan's $300M is a restart grant, not an offtake. Fuel loading began at the end of August 2026 and paused after a fuel assembly tilted in the core; the NRC approved a one-time license amendment on October 13, 2026 to move it to the spent fuel pool, and Holtec said on October 21, 2026 that it had recovered the assembly and was proceeding with fuel loading, testing, inspections and operational readiness, with no restart date given. The buyers are unchanged.",
       "firmness": "not-ai-offtake",
       "firmnessSource": "https://www.sec.gov/Archives/edgar/data/0002104277/000119312526301023/d40440ds1.htm",
       "reviewed": "2026-09-28",
@@ -122,9 +124,10 @@
       "sources": [
         "https://www.constellationenergy.com/news/2025/constellation-meta-sign-20-year-deal-for-clean-reliable-nuclear-energy-in-illinois.html",
         "Foley & Lardner client alert",
-        "Data Center Frontier"
+        "Data Center Frontier",
+        "https://www.constellationenergy.com/news/2026/10/constellation-secures-conditional-doe-loan-commitment-of-up-to-5-billion-to-expand-nuclear-output.html"
       ],
-      "notes": "20-year PPA for the output of the operating Clinton plant, 1,121 MW, beginning June 2027. It supports relicensing and continued operation after Illinois' zero-emission credit program ends. The 1,121 MW already includes an uprate of about 30 MW on a plant rated about 1,092 MW net, so most of this is existing output, not new generation.",
+      "notes": "20-year PPA for the output of the operating Clinton plant, 1,121 MW, beginning June 2027. It supports relicensing and continued operation after Illinois' zero-emission credit program ends. The 1,121 MW already includes an uprate of about 30 MW on a plant rated about 1,092 MW net, so most of this is existing output, not new generation. On October 27, 2026 DOE offered Constellation a conditional loan commitment of up to $5 billion for potential uprates at eight plants including Clinton; Constellation's release says it is not by itself a decision to proceed with any uprate.",
       "firmness": "signed",
       "firmnessSource": "https://www.constellationenergy.com/news/2025/constellation-meta-sign-20-year-deal-for-clean-reliable-nuclear-energy-in-illinois.html",
       "reviewed": "2026-09-28",
@@ -191,9 +194,10 @@
       "sources": [
         "https://oklo.com/newsroom/oklo-meta-announce-agreement-in-support-of-1-2-gw-nuclear-energy-development-in-southern-ohio",
         "Meta announcement Jan 2026",
-        "Oklo investor presentation"
+        "Oklo investor presentation",
+        "https://www.utilitydive.com/news/ferc-rejects-oklo-complaint-pjm-interconnection/831357/"
       ],
-      "notes": "January 2026 agreement under which Meta can prepay for power and fund fuel and first-phase work for a campus of up to 1.2 GW in Pike County, Ohio. The prepayment is binding; the power purchase is not yet: Oklo's 10-K (filed 2026-03-17) says it has no binding PPA with any customer. First phase targeted as early as 2030. Oklo's 750 MW interconnection request (150 MW nuclear, 300 MW fuel cells, 300 MW gas) was withdrawn from PJM's Cycle 01 on Aug 3, 2026 and Oklo filed a FERC complaint on Aug 28 (Utility Dive).",
+      "notes": "January 2026 agreement under which Meta can prepay for power and fund fuel and first-phase work for a campus of up to 1.2 GW in Pike County, Ohio. The prepayment is binding; the power purchase is not yet: Oklo's 10-K (filed 2026-03-17) says it has no binding PPA with any customer. First phase targeted as early as 2030. Oklo's 750 MW interconnection request (150 MW nuclear, 300 MW fuel cells, 300 MW gas) was withdrawn from PJM's Cycle 01 on Aug 3, 2026 and Oklo filed a FERC complaint on Aug 28 (Utility Dive). FERC rejected Oklo's complaint on September 24, 2026; the 750 MW request is for interconnection at two Dominion substations in Virginia, not the Pike County site, and Oklo can refile in PJM's next cycle or the Expedited Interconnection Track (Utility Dive).",
       "upTo": true,
       "firmness": "framework",
       "firmnessSource": "https://oklo.com/newsroom/oklo-meta-announce-agreement-in-support-of-1-2-gw-nuclear-energy-development-in-southern-ohio",
@@ -1230,9 +1234,10 @@
       "dcRelevant": true,
       "sources": [
         "https://www.sec.gov/Archives/edgar/data/1692819/000119312526008508/d20785d8k.htm",
-        "Vistra 8-K Jan 2026"
+        "Vistra 8-K Jan 2026",
+        "https://www.energy.gov/articles/energy-department-announces-42-billion-investment-boost-nuclear-power-and-help-lower"
       ],
-      "notes": "Vistra's January 2026 8-K: 20-year PPAs to supply Meta 2,609 MW, of which 2,176 MW is energy and capacity from the operating Perry (1,268 MW) and Davis-Besse (908 MW) plants and 433 MW is uprates (Perry 213, Davis-Besse 80, Beaver Valley 140) delivered 2031-2034. Delivery of the operating output starts late 2026. No SMR option is part of this agreement.",
+      "notes": "Vistra's January 2026 8-K: 20-year PPAs to supply Meta 2,609 MW, of which 2,176 MW is energy and capacity from the operating Perry (1,268 MW) and Davis-Besse (908 MW) plants and 433 MW is uprates (Perry 213, Davis-Besse 80, Beaver Valley 140) delivered 2031-2034. Delivery of the operating output starts late 2026. No SMR option is part of this agreement. On October 5, 2026 DOE announced a conditional loan commitment of up to $4.2 billion to Vistra for the Perry, Davis-Besse and Beaver Valley uprates (433 MW) and modernization; DOE's release names no buyer, and the loan had not closed.",
       "firmness": "signed",
       "firmnessSource": "https://www.sec.gov/Archives/edgar/data/1692819/000119312526008508/d20785d8k.htm",
       "reviewed": "2026-09-28",
@@ -1390,9 +1395,10 @@
         "https://www.sec.gov/Archives/edgar/data/1692819/000119312525221774/d43667d8k.htm",
         "Vistra 8-K",
         "World Nuclear News",
-        "Utility Dive"
+        "Utility Dive",
+        "https://www.energy.gov/articles/energy-department-announces-42-billion-investment-boost-nuclear-power-and-help-lower"
       ],
-      "notes": "20-year PPA (with options to extend up to 20 more years) for 1,200 MW from the operating Comanche Peak plant, signed Sept 29, 2025 with 'a large, investment grade company'; Vistra named AWS as the customer in its Feb 26, 2026 results. Delivery starts Q4 2027 and ramps to full capacity by 2032. Uprate and SMR options are options only and are not in the 1,200 MW.",
+      "notes": "20-year PPA (with options to extend up to 20 more years) for 1,200 MW from the operating Comanche Peak plant, signed Sept 29, 2025 with 'a large, investment grade company'; Vistra named AWS as the customer in its Feb 26, 2026 results. Delivery starts Q4 2027 and ramps to full capacity by 2032. Uprate and SMR options are options only and are not in the 1,200 MW. DOE's October 5, 2026 conditional loan commitment to Vistra includes an option to finance potential future uprates at Comanche Peak; nothing in this agreement changed.",
       "upTo": true,
       "firmness": "signed",
       "firmnessSource": "https://www.sec.gov/Archives/edgar/data/1692819/000119312525221774/d43667d8k.htm",
@@ -2047,6 +2053,222 @@
       "firmnessSource": "https://www.kairospower.com/updates/google-and-kairos-power-partner-to-deploy-500-mw-of-clean-electricity-generation",
       "reviewed": "2026-09-28",
       "asset": "new-build"
+    },
+    {
+      "id": "amazon-constellation-calvert-cliffs",
+      "projectName": "Calvert Cliffs PPA with 190 MW uprate (Amazon)",
+      "sponsor": "Constellation Energy",
+      "capacityMW": 690,
+      "type": "nuclear",
+      "iso": "PJM",
+      "state": "MD",
+      "status": "active",
+      "category": "ppa",
+      "expectedOnline": "Existing output now; uprate 2030-2032",
+      "offtaker": "Amazon (20-year PPA)",
+      "dcRelevant": true,
+      "sources": [
+        "https://www.constellationenergy.com/news/2026/09/constellation-and-amazon-announce-20-year-power-purchase-agreement-at-calvert-cliffs.html",
+        "https://www.constellationenergy.com/news/2026/10/constellation-secures-conditional-doe-loan-commitment-of-up-to-5-billion-to-expand-nuclear-output.html",
+        "World Nuclear News"
+      ],
+      "notes": "20-year agreement announced September 30, 2026 covering 690 MW, which includes an uprate of about 190 MW coming online between 2030 and 2032. Constellation says it supports more than $3 billion of Maryland investment and gives the revenue certainty to relicense the plant for another 20 years. The parties also entered a related retail supply agreement for Amazon operations in the 13-state PJM market (MW not disclosed). All of the plant's output keeps flowing to the PJM grid; it is not behind the meter, and Amazon has withdrawn its proposed data center at the site. On October 27, 2026 DOE offered Constellation a conditional loan commitment of up to $5 billion for potential uprates at eight plants including Calvert Cliffs; it is subject to due diligence and definitive documents.",
+      "firmness": "signed",
+      "firmnessSource": "https://www.constellationenergy.com/news/2026/09/constellation-and-amazon-announce-20-year-power-purchase-agreement-at-calvert-cliffs.html",
+      "reviewed": "2026-10-30",
+      "asset": "mixed",
+      "announced": "2026-09-30",
+      "announcedSource": "https://www.constellationenergy.com/news/2026/09/constellation-and-amazon-announce-20-year-power-purchase-agreement-at-calvert-cliffs.html"
+    },
+    {
+      "id": "google-constellation-uprates",
+      "projectName": "Constellation uprates at 11 PJM units (Google PPA)",
+      "sponsor": "Constellation Energy",
+      "capacityMW": 890,
+      "type": "nuclear",
+      "iso": "PJM",
+      "state": "IL/PA/NJ",
+      "status": "active",
+      "category": "ppa",
+      "expectedOnline": "First uprate by 2028",
+      "offtaker": "Google (20-year PPA)",
+      "dcRelevant": true,
+      "sources": [
+        "https://www.constellationenergy.com/news/2026/10/google-and-constellation-announce-landmark-agreement-to-bring-890-mw-of-new-nuclear-capacity-to-pjm-grid.html",
+        "https://www.constellationenergy.com/news/2026/10/constellation-secures-conditional-doe-loan-commitment-of-up-to-5-billion-to-expand-nuclear-output.html"
+      ],
+      "notes": "20-year power purchase agreement announced October 6, 2026 for 890 MW of new capacity from uprates at 11 Constellation nuclear units on six sites in Illinois, Pennsylvania and New Jersey; the release names no plants and gives timing only for the first uprate, expected by 2028. Separately the companies entered a 15-year energy supply agreement for a further 2,700 MW from Constellation's PJM fleet; that supply is tied to no named plant and is not counted in this row. On October 27, 2026 DOE offered Constellation a conditional loan commitment of up to $5 billion for potential uprates at eight plants; the release says it is not by itself a decision to proceed with any uprate.",
+      "firmness": "signed",
+      "firmnessSource": "https://www.constellationenergy.com/news/2026/10/google-and-constellation-announce-landmark-agreement-to-bring-890-mw-of-new-nuclear-capacity-to-pjm-grid.html",
+      "reviewed": "2026-10-30",
+      "asset": "uprate",
+      "announced": "2026-10-06",
+      "announcedSource": "https://www.constellationenergy.com/news/2026/10/google-and-constellation-announce-landmark-agreement-to-bring-890-mw-of-new-nuclear-capacity-to-pjm-grid.html"
+    },
+    {
+      "id": "duane-arnold-google",
+      "projectName": "Duane Arnold restart (NextEra, Google PPA)",
+      "sponsor": "NextEra Energy",
+      "capacityMW": 615,
+      "type": "nuclear",
+      "iso": "MISO",
+      "state": "IA",
+      "status": "active",
+      "category": "generation",
+      "expectedOnline": "By Q1 2029, pending NRC approvals",
+      "offtaker": "Google (25-year PPA)",
+      "dcRelevant": true,
+      "sources": [
+        "https://www.investor.nexteraenergy.com/news-and-events/news-releases/2025/10-27-2025-203948689",
+        "https://www.energy.gov/articles/energy-department-closes-19-billion-loan-restart-duane-arnold-nuclear-plant"
+      ],
+      "notes": "NextEra's October 27, 2025 release: Google's 25-year agreement to purchase the output of the 615 MW Duane Arnold plant in Iowa, shut in 2020, supports its restart, expected to be online and delivering to the grid by the first quarter of 2029 pending regulatory approvals. NextEra also signed definitive agreements to buy the 30% held by Central Iowa Power Cooperative and Corn Belt Power Cooperative. On September 8, 2026 DOE's Office of Energy Dominance Financing announced the financial close of a loan of up to $1.9 billion to NextEra for the restart; NRC licensing approvals were still pending at that date.",
+      "firmness": "signed",
+      "firmnessSource": "https://www.investor.nexteraenergy.com/news-and-events/news-releases/2025/10-27-2025-203948689",
+      "reviewed": "2026-10-30",
+      "asset": "restart",
+      "announced": "2025-10-27",
+      "announcedSource": "https://www.investor.nexteraenergy.com/news-and-events/news-releases/2025/10-27-2025-203948689"
+    },
+    {
+      "id": "google-fervo-cape-station",
+      "projectName": "Cape Station geothermal 396 MW (Google PPA)",
+      "sponsor": "Fervo Energy",
+      "capacityMW": 396,
+      "type": "geothermal",
+      "iso": "WECC",
+      "state": "UT",
+      "status": "active",
+      "category": "ppa",
+      "expectedOnline": "2028",
+      "offtaker": "Google (PPA; term not disclosed)",
+      "dcRelevant": true,
+      "sources": [
+        "https://www.sec.gov/Archives/edgar/data/0001853868/000162828026059707/exhibit991pressrelease9126.htm"
+      ],
+      "notes": "Fervo's September 1, 2026 release (filed as an 8-K exhibit): a 396 MW power purchase agreement with Google to support the Cape Station GeoCluster in Beaver County, Utah, expected online in 2028, as a building block for a potential Google data center in Utah. Google holds an option to add about 600 MW by June 2030; the option is not counted. The data center plans are subject to engineering feasibility, approvals and commercial conditions, and direct-to-load contracting under Utah SB132 is subject to regulatory approval.",
+      "firmness": "signed",
+      "firmnessSource": "https://www.sec.gov/Archives/edgar/data/0001853868/000162828026059707/exhibit991pressrelease9126.htm",
+      "reviewed": "2026-10-30",
+      "asset": "new-build",
+      "announced": "2026-09-01",
+      "announcedSource": "https://www.sec.gov/Archives/edgar/data/0001853868/000162828026059707/exhibit991pressrelease9126.htm"
+    },
+    {
+      "id": "ms-nisource-genco",
+      "projectName": "NiSource GenCo supply for Microsoft's northwest Indiana campus",
+      "sponsor": "NiSource (NIPSCO and NiSource Generation Company)",
+      "capacityMW": 1100,
+      "type": "utility",
+      "iso": "MISO",
+      "state": "IN",
+      "status": "active",
+      "category": "ppa",
+      "expectedOnline": "2028",
+      "offtaker": "Microsoft (20-year electric service)",
+      "dcRelevant": true,
+      "sources": [
+        "https://investors.nisource.com/financial-news/news-details/2026/NiSource-announces-long-term-agreement-with-Microsoft-expected-to-increase-customer-savings-and-support-Indianas-economic-growth/default.aspx"
+      ],
+      "notes": "NiSource's October 16, 2026 release announces a new long-term energy agreement with Microsoft for its previously announced northwest Indiana campus: approximately 1,100 MW of new generation resources under a 20-year agreement beginning in 2028, with Microsoft expected to begin taking service in 2028. GenCo has contracted 600 MW of battery storage under a long-term tolling agreement with an AGP Group affiliate. The release uses the word announced, not executed; NiSource's Q3 2026 10-Q lists the Microsoft contract among its current data center contracts. Regulatory approvals are a listed risk.",
+      "firmness": "signed",
+      "firmnessSource": "https://investors.nisource.com/financial-news/news-details/2026/NiSource-announces-long-term-agreement-with-Microsoft-expected-to-increase-customer-savings-and-support-Indianas-economic-growth/default.aspx",
+      "reviewed": "2026-10-30",
+      "asset": "new-build",
+      "announced": "2026-10-16",
+      "announcedSource": "https://investors.nisource.com/financial-news/news-details/2026/NiSource-announces-long-term-agreement-with-Microsoft-expected-to-increase-customer-savings-and-support-Indianas-economic-growth/default.aspx"
+    },
+    {
+      "id": "newera-vistra-odessa",
+      "projectName": "Texas Critical Data Centers Phase 1 (Vistra Odessa PPA)",
+      "sponsor": "Vistra (Luminant ET Services)",
+      "capacityMW": 207,
+      "upTo": true,
+      "type": "gas",
+      "iso": "ERCOT",
+      "state": "TX",
+      "status": "active",
+      "category": "ppa",
+      "expectedOnline": "Q3 2027",
+      "offtaker": "New Era Energy & Digital (TCDC PowerCo, 20-year PPA)",
+      "dcRelevant": true,
+      "sources": [
+        "https://www.sec.gov/Archives/edgar/data/0002028336/000121390026101642/ea030571601ex99-1.htm"
+      ],
+      "notes": "New Era's September 21, 2026 release (8-K exhibit): its subsidiary TCDC PowerCo entered into a 20-year power purchase agreement with Luminant ET Services under which Vistra supplies a minimum of 200 MW and up to 207 MW from its 1,180 MW gas plant in Odessa for Phase 1 of the 493-acre Texas Critical Data Centers site in the Permian Basin, built for AI training and inference. Power is expected to be available in Q3 2027. Once deliveries begin Vistra receives a 5% non-voting interest in the portion of the project it powers. No tenant is named.",
+      "firmness": "signed",
+      "firmnessSource": "https://www.sec.gov/Archives/edgar/data/0002028336/000121390026101642/ea030571601ex99-1.htm",
+      "reviewed": "2026-10-30",
+      "asset": "existing",
+      "announced": "2026-09-21",
+      "announcedSource": "https://www.sec.gov/Archives/edgar/data/0002028336/000121390026101642/ea030571601ex99-1.htm"
+    },
+    {
+      "id": "terawulf-muskie-kypower",
+      "projectName": "Muskie Data Campus electric service, 1 GW (Kentucky Power)",
+      "sponsor": "Kentucky Power (AEP)",
+      "capacityMW": 1000,
+      "type": "utility",
+      "iso": "PJM",
+      "state": "KY",
+      "status": "active",
+      "category": "ppa",
+      "expectedOnline": "First 500 MW ramps 2028; second 500 MW 2029",
+      "offtaker": "TeraWulf (amended and restated electric service agreement)",
+      "dcRelevant": true,
+      "sources": [
+        "https://www.sec.gov/Archives/edgar/data/1083301/000162828026064757/muskieexpansionpr.htm"
+      ],
+      "notes": "TeraWulf's October 5, 2026 release (8-K exhibit): an amended and restated electric service agreement executed with Kentucky Power raises contracted capacity at the Muskie campus in eastern Kentucky from 500 MW to 1 GW. The first 500 MW is targeted to begin ramping in 2028; the second 500 MW moves from 2030 to 2029, subject to Kentucky PSC approval and Kentucky Power's construction schedule. The campus is described as AI and high-performance computing; no tenant is named. The original agreement's date is not in the release, so no announcement date is recorded.",
+      "firmness": "signed",
+      "firmnessSource": "https://www.sec.gov/Archives/edgar/data/1083301/000162828026064757/muskieexpansionpr.htm",
+      "reviewed": "2026-10-30",
+      "asset": "mixed"
+    },
+    {
+      "id": "aep-xenergy-amazon-indiana",
+      "projectName": "Xe-100 plant at the former Breed station (AEP, X-energy, Amazon)",
+      "sponsor": "AEP (Indiana Michigan Power) and X-energy",
+      "capacityMW": 960,
+      "type": "nuclear",
+      "iso": "PJM",
+      "state": "IN",
+      "status": "active",
+      "category": "ppa",
+      "expectedOnline": "Not stated; subject to a final investment decision",
+      "offtaker": "Amazon (development funding; intends to buy the power under a long-term contract if the project reaches a final investment decision)",
+      "dcRelevant": true,
+      "sources": [
+        "https://www.aep.com/news/stories/view/12330/"
+      ],
+      "notes": "AEP's October 19, 2026 release: a joint development agreement with X-energy to evaluate the feasibility of a 960 MW plant, 12 Xe-100 units of 80 MW each, at the former Breed Generating Station in Sullivan County, Indiana. Amazon supports development through a funding agreement and intends to buy the power under a long-term contract if the project reaches a final investment decision. No target date and no named data center.",
+      "firmness": "preliminary",
+      "firmnessSource": "https://www.aep.com/news/stories/view/12330/",
+      "reviewed": "2026-10-30",
+      "asset": "new-build",
+      "announced": "2026-10-19",
+      "announcedSource": "https://www.aep.com/news/stories/view/12330/"
+    },
+    {
+      "id": "google-aep-cheyenne-fuel-cell",
+      "projectName": "Cheyenne Fuel Cell 702 MW (AEP and Bloom, Google PPA)",
+      "sponsor": "AEP (Cheyenne Fuel Cell LLC)",
+      "capacityMW": 702,
+      "type": "gas",
+      "iso": "WECC",
+      "state": "WY",
+      "status": "active",
+      "category": "ppa",
+      "expectedOnline": "Fully operational by end of 2028",
+      "offtaker": "Google (20-year PPA)",
+      "dcRelevant": true,
+      "sources": [
+        "https://www.aep.com/news/stories/view/12314/"
+      ],
+      "notes": "AEP's October 14, 2026 release: a new 702 MW fuel cell generation project near Cheyenne, Wyoming, using Bloom Energy solid oxide fuel cells, about $4 billion of AEP investment, with plans to integrate carbon capture, expected to be fully operational by the end of 2028. Under a 20-year power purchase agreement Google will acquire the power. The release does not say the PPA is executed, so no status is recorded until a document does.",
+      "asset": "new-build",
+      "announced": "2026-10-14",
+      "announcedSource": "https://www.aep.com/news/stories/view/12314/"
     }
   ]
 }

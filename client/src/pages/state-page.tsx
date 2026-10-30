@@ -123,7 +123,7 @@ function monthLabel(month: string): string {
   return MONTHS[m - 1] ? `${MONTHS[m - 1]} ${y}` : month;
 }
 
-const shortDay = (iso: string) => new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+const shortDay = (iso: string) => new Date(/^\d{4}-\d{2}-\d{2}$/.test(iso) ? `${iso}T12:00:00` : iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 
 export default function StatePage() {
   const { slug } = useParams<{ slug: string }>();

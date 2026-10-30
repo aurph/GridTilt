@@ -1,4 +1,4 @@
- # GridTilt — Handoff for Claude / Replit / future-you
+ # GridTilt — Handoff for agents / Replit / future-you
 
 Last updated: 2026-05-21
 Repo: `aurph/GridTilt` (main)
@@ -55,7 +55,7 @@ curl -s https://gridtilt.com/api/queue | python3 -c "import json,sys; d=json.loa
 **Replit autoscale/reserved-VM deployments do NOT auto-pull from GitHub on push.** Manual redeploy is required. Don't say "shipped" after a push — say "pushed to main; redeploy on Replit to ship." Several user complaints this session ("isnt fixed at all", "ENTIRELY BROKEN") were because production was a build or more behind main, not because the code was wrong.
 
 ### Untracked files
-- `CLAUDE.md` at repo root (untracked). Decide whether to commit or `.gitignore`.
+- `AGENTS.md` at repo root (untracked). Decide whether to commit or `.gitignore`.
 
 ---
 

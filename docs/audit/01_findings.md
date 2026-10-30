@@ -10,7 +10,7 @@
 | ID | Severity | One-line |
 |---|---|---|
 | DATA-1 | **Critical** | Subscriber list lives only in instance-local JSON; lost on every Replit redeploy unless Resend is configured |
-| DOC-1 | **Critical** | README/CLAUDE.md describe a Drizzle/Postgres/`storage.ts`/`shared/` persistence layer that does not exist |
+| DOC-1 | **Critical** | README/AGENTS.md describe a Drizzle/Postgres/`storage.ts`/`shared/` persistence layer that does not exist |
 | SEC-1 | **High** | `/api/newsletter/preview` is unauthenticated and leaks the subscriber count ✓verified |
 | SEC-2 | **High** | `/api/social/generate` is unauthenticated; burns Yahoo quota and leaks pre-publish copy ✓verified |
 | SEC-3 | **High** | `/api/stack?timeframe=` is unvalidated → cache-bypass Yahoo-quota amplification ✓verified |
@@ -33,7 +33,7 @@
 | A11Y-2 | Medium | Keyboard-shortcuts modal is a hand-rolled div with no dialog semantics/focus trap |
 | QUERY-1 | Medium | `retry:false` + `staleTime:Infinity` + no refetch traps pages in a permanent error/stale state |
 | DOC-3 | Medium | README module/stack counts wrong (8→13 layers, 21/44→24/52 nodes/links); replit.md is a fossil |
-| DOC-4 | Medium | HANDOFF/HOMEPAGE_HANDOFF/CLAUDE.md describe shipped work as open roadmap |
+| DOC-4 | Medium | HANDOFF/HOMEPAGE_HANDOFF/AGENTS.md describe shipped work as open roadmap |
 | DEAD-1 | Medium | Stale market claims baked into the client bundle (`supply-chain-config.ts`) |
 | DESIGN-1 | Medium | 534 hardcoded hex literals; `#F07800` is not a Tailwind token |
 | DEP-1 | Low | Tailwind v4 vite plugin sits unused alongside active Tailwind 3; unused deps; misplaced `@types` |
@@ -50,7 +50,7 @@
 **Fix:** introduce a real durable store. Recommended: a small Postgres (Neon free tier) or SQLite-on-a-volume behind a genuine `IStorage` interface — which also makes the phantom DOC-1 abstraction real. Minimum viable: make Resend the source of truth and treat the JSON as a cache; fail loudly if neither is configured in production.
 
 ### DOC-1 — Phantom persistence layer
-**`README.md:58,91,104-107`; `CLAUDE.md:7,13-14`; `HOMEPAGE_HANDOFF.md:27`.** All three claim Drizzle ORM, optional Postgres via `DATABASE_URL`, `server/storage.ts` with an `IStorage` interface, and a `shared/` directory of Drizzle schemas. ✓verified absent: `shared/` and `server/storage.ts` do not exist; `package.json` has 0 drizzle/pg refs; 0 `DATABASE_URL` references anywhere in code. `HANDOFF.md:139` already admits "the drizzle/users scaffolding was deleted." A future engineer/agent told `DATABASE_URL` makes subscribers durable will lose data by trusting it.
+**`README.md:58,91,104-107`; `AGENTS.md:7,13-14`; `HOMEPAGE_HANDOFF.md:27`.** All three claim Drizzle ORM, optional Postgres via `DATABASE_URL`, `server/storage.ts` with an `IStorage` interface, and a `shared/` directory of Drizzle schemas. ✓verified absent: `shared/` and `server/storage.ts` do not exist; `package.json` has 0 drizzle/pg refs; 0 `DATABASE_URL` references anywhere in code. `HANDOFF.md:139` already admits "the drizzle/users scaffolding was deleted." A future engineer/agent told `DATABASE_URL` makes subscribers durable will lose data by trusting it.
 **Fix:** either build the real abstraction (preferred, pairs with DATA-1) or delete every claim. The docs must match the code before anything else, because agents act on them.
 
 ---
@@ -142,8 +142,8 @@
 **Fix:** allow 1–2 retries, add modest `refetchInterval` to live pages, handle `isError` everywhere, route all fetches through `apiRequest` (which checks `res.ok`).
 
 ### DOC-3 / DOC-4 — Documentation drift
-**README.md:16,18; replit.md (whole file); HANDOFF.md; HOMEPAGE_HANDOFF.md; CLAUDE.md:27-28.** README says "8 layers / 60+ tickers" (actual 13 layers / 100 tickers, ✓counted) and "21 nodes / 44 links" (actual 24 / 52, ✓counted in `supply-chain-config.ts`). `replit.md` (May 18) still references react-simple-maps, an org-chart supply chain, SESSION_SECRET for unsubscribe, and 4 RSS feeds — all wrong. HANDOFF/HOMEPAGE_HANDOFF/CLAUDE.md present the LBNL queue, the homepage redesign, and the May 21 blocker as open when all shipped weeks ago; CLAUDE.md still calls the redesign "active" and the anchor "Swiss" after Swiss was explicitly torn out.
-**Fix:** correct README counts; delete or rewrite replit.md; stamp both handoffs "historical — superseded"; fix CLAUDE.md's redesign section and the G+1–G+9 shortcut count.
+**README.md:16,18; replit.md (whole file); HANDOFF.md; HOMEPAGE_HANDOFF.md; AGENTS.md:27-28.** README says "8 layers / 60+ tickers" (actual 13 layers / 100 tickers, ✓counted) and "21 nodes / 44 links" (actual 24 / 52, ✓counted in `supply-chain-config.ts`). `replit.md` (May 18) still references react-simple-maps, an org-chart supply chain, SESSION_SECRET for unsubscribe, and 4 RSS feeds — all wrong. HANDOFF/HOMEPAGE_HANDOFF/AGENTS.md present the LBNL queue, the homepage redesign, and the May 21 blocker as open when all shipped weeks ago; AGENTS.md still calls the redesign "active" and the anchor "Swiss" after Swiss was explicitly torn out.
+**Fix:** correct README counts; delete or rewrite replit.md; stamp both handoffs "historical — superseded"; fix AGENTS.md's redesign section and the G+1–G+9 shortcut count.
 
 ### DEAD-1 — Stale claims in the bundle
 **`client/src/data/supply-chain-config.ts:35-62`.** Point-in-time figures ("Spot at $93/lb", "$14,200/ton", "Sold out HBM3E 2026", "$200B+ GEV backlog") are hardcoded into the client bundle and go stale silently. They belong server-side next to `/api/supply-chain`, which already carries live bottleneck status.

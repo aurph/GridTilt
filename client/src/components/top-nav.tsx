@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { Search } from "lucide-react";
-import logoPath from "@assets/Image_[Vectorized]_(2)_1773890483514.png";
+import logoPath from "@assets/logo-nav-80.png";
 
 /**
  * Top navigation bar: one sticky row across the screen, replacing the left

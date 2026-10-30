@@ -1,4 +1,4 @@
-# GridTilt Homepage Redesign — Handoff for a Fresh Claude Code Session
+# GridTilt Homepage Redesign — Handoff for a fresh agent session
 
 Created: 2026-05-21
 Owner: Jack Schwartz / aurph
@@ -9,14 +9,14 @@ Estimated scope: one page (`/`) + one route change + one new stylesheet. Do not 
 
 ## 0. Before you start: prerequisites
 
-Confirm these are installed (run `/plugin list` and `ls ~/.claude/skills/`):
+Design skill references used at the time (editor-side, not part of this repo):
 
 | Skill | Source | Triggers in |
 |---|---|---|
-| `frontend-design` | `/plugin install frontend-design@claude-plugins-official` | Phase D (implementation) |
-| `aesthetic-anchors` | `~/.claude/skills/aesthetic-anchors/` (git) | Phase B (anchor lock) |
-| `landing-page-design` | `/plugin install landing-page-design@2389-research` | Phase A (Vibe Discovery sanity check) |
-| `mckinsey-style-visualization` | `~/.claude/skills/mckinsey-style-visualization/` (git) | Phase D (one chart only) |
+| `frontend-design` | editor plugin | Phase D (implementation) |
+| `aesthetic-anchors` | local skill (git) | Phase B (anchor lock) |
+| `landing-page-design` | editor plugin | Phase A (Vibe Discovery sanity check) |
+| `mckinsey-style-visualization` | local skill (git) | Phase D (one chart only) |
 
 If any are missing, install them before continuing. Don't proceed without all four loaded.
 
@@ -148,7 +148,7 @@ Use a Plan subagent for Phases A, B, C. Do not write code until Phase D.
 
 ### Phase A — Discovery (Plan subagent, no code)
 
-1. Read `CLAUDE.md`, `replit.md`, `HANDOFF.md`, `README.md`. Re-read the owner's mission paragraph in §1 of this file.
+1. Read `AGENTS.md`, `replit.md`, `HANDOFF.md`, `README.md`. Re-read the owner's mission paragraph in §1 of this file.
 2. Read `client/src/pages/TiltOverview.tsx` (the current `/` page, 1,282 lines).
 3. Read `client/src/App.tsx` (route registration).
 4. Read `tailwind.config.ts` to know what's available.
@@ -207,7 +207,7 @@ Output of Phase C is the **contract** the implementation honors. If Phase D want
 3. **Use the `code-review` skill** on the diff. Specifically check for:
    - **Token drift.** No rounded cards >4px on `/`. No `box-shadow` other than `none` on `/`. No gradient backgrounds on `/`. No mono fonts in body text on `/`. No second accent color on `/`.
    - **Content discipline.** No fabricated tickers, no fake percentages, no themed UI copy, no Unicode-glyph icons, no `//` kicker comments. Every string on screen names real information or is authored copy that knows what it is.
-   - **Anchor fidelity.** Open `~/.claude/skills/aesthetic-anchors/SKILL.md` §3 (the Swiss anchor) and walk the "Breaks if:" list. If any break appears, the anchor didn't hold — fix it before merging.
+   - **Anchor fidelity.** Open the aesthetic-anchors skill reference §3 (the Swiss anchor) and walk the "Breaks if:" list. If any break appears, the anchor didn't hold — fix it before merging.
 4. Push the branch and open a PR on GitHub. **Do not merge to main yet.**
 
 ### Phase F — Ship (owner-gated)
@@ -221,7 +221,7 @@ Output of Phase C is the **contract** the implementation honors. If Phase D want
    curl -s -I https://gridtilt.com/overview                                # 200 OK, dashboard moved successfully
    curl -s https://gridtilt.com/api/kpis | head -c 200                     # hero data source still live
    ```
-5. Update `HANDOFF.md` with what shipped. Update `CLAUDE.md` to add a one-line note: "Front page (`/`) is Swiss-anchored marketing; dashboard lives at `/overview`."
+5. Update `HANDOFF.md` with what shipped. Update `AGENTS.md` to add a one-line note: "Front page (`/`) is Swiss-anchored marketing; dashboard lives at `/overview`."
 
 ---
 
@@ -263,7 +263,7 @@ Output of Phase C is the **contract** the implementation honors. If Phase D want
 
 ## 9. The kickoff prompt to run after reading this
 
-Paste this into the fresh Claude session (after confirming all four skills are loaded):
+Paste this into the fresh agent session (after confirming all four skills are loaded):
 
 > Read `/Users/jackschwartz/gridtilt/HOMEPAGE_HANDOFF.md` in full. Then begin Phase A: spawn a Plan subagent to perform discovery — read the codebase files listed in §6 Phase A, run the Vibe Discovery sanity check from the `landing-page-design` skill, and produce a written discovery report. Do not write any code until Phases A, B, and C are complete and you have a section-by-section contract.
 

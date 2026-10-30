@@ -21,6 +21,55 @@
       "outcome": "changed",
       "scope": "Every stage status, node figure, company placement and ticker on the supply chain graph, against primary sources",
       "evidence": "feat/supply-chain-page commit ebc5ab2"
+    },
+    {
+      "dataset": "gpu-rental-prices",
+      "reviewed": "2026-10-27",
+      "outcome": "changed",
+      "scope": "Every curated representative price, observed low and high, source list and trend sentence for the 10 tracked models, against provider pricing pages and aggregator trackers; two-pass with an adversarial check of per-GPU vs per-node and on-demand vs reserved or spot",
+      "evidence": "worktree-improve-oct27: server/data/gpu-rental-prices.json, change-log entries 2026-10-27-gpu-rental-prices-october-refresh and 2026-10-27-mi325x-june-price-basis"
+    },
+    {
+      "dataset": "hyperscaler-capex",
+      "reviewed": "2026-10-30",
+      "outcome": "changed",
+      "scope": "Each company's latest quarter capex and full-year 2026 guide against its Q3 2026 earnings release, 8-K exhibit or official call transcript (Microsoft FY27 Q1, Alphabet, Meta, Amazon)",
+      "evidence": "improve-oct29: server/data/hyperscaler-capex.json fy2026 block, change-log entry 2026-10-30-hyperscaler-capex-2026-guides"
+    },
+    {
+      "dataset": "inference-prices",
+      "reviewed": "2026-10-30",
+      "outcome": "changed",
+      "scope": "Every listed price against the provider's official pricing page on 2026-10-30; GPT-5.6 Sol repriced, nine current models added across the three labs, Gemini 3.5 Flash removed after Google deprecated it on 2026-10-08, trajectory and events extended",
+      "evidence": "improve-oct29: server/data/inference-prices.json, change-log entry 2026-10-30-gpt-5-6-sol-promo-price"
+    },
+    {
+      "dataset": "frontier-models",
+      "reviewed": "2026-10-30",
+      "outcome": "changed",
+      "scope": "Releases from 2026-07-14 to 2026-10-30 checked against each lab's own announcement; six added (Claude Opus 5 and 5.5, GPT-6 Astra, Gemini 4 Argon, Mistral Large 4, DeepSeek-V4.1-Flash) with release facts only, no benchmark rows; no existing row changed",
+      "evidence": "improve-oct29: server/data/frontier-models.json"
+    },
+    {
+      "dataset": "catalysts",
+      "reviewed": "2026-10-30",
+      "outcome": "changed",
+      "scope": "Every row against its source: six past events marked completed with a sourced outcome, the Order 1920 and NVIDIA rows re-dated to their next confirmed dates, the Texas SB6 study-fee figure corrected to the adopted rule, and ten dated events added through March 2027",
+      "evidence": "improve-oct29: server/data/catalysts.json"
+    },
+    {
+      "dataset": "clusters",
+      "reviewed": "2026-10-30",
+      "outcome": "changed",
+      "scope": "Status sweep of the 25 largest tracked clusters plus new US announcements of 300 MW or more between 2026-09-01 and 2026-10-30, from company releases, filings and local records; Ellendale, Prometheus and Dona Ana updated, four campuses added. Epoch AI directory pages were unreachable, so no Epoch calibration changed",
+      "evidence": "improve-oct29: server/data/clusters.json, change-log entry 2026-10-30-coreweave-ellendale-rated-power"
+    },
+    {
+      "dataset": "state-pages",
+      "reviewed": "2026-10-30",
+      "outcome": "changed",
+      "scope": "Maryland's four documents, three next dates and bill source re-opened and unchanged; Virginia (five documents, two next dates) and Texas (four documents, two next dates) added, each document read in the original",
+      "evidence": "improve-oct29: server/data/state-pages.json"
     }
   ]
 }
