@@ -192,6 +192,27 @@
         "source": "Applied Digital release, Oct 2, 2026",
         "url": "https://gridtilt.com/compute-frontier/coreweave-ellendale"
       }
+    },
+    {
+      "id": "2026-10-30-power-deals-august-october-refresh",
+      "kind": "update",
+      "entity": "site/power-deals",
+      "field": "Signed AI power agreements tracked",
+      "before": "33 signed agreements, 30,939 MW with a disclosed size; newest announcement August 4, 2026",
+      "after": "40 signed agreements, 35,837 MW with a disclosed size; newest announcement October 19, 2026",
+      "source": "Constellation, NextEra, Fervo, NiSource, New Era, TeraWulf and AEP releases and 8-K exhibits, August 5 to October 30, 2026",
+      "sourceUrl": "https://www.constellationenergy.com/news/2026/10/google-and-constellation-announce-landmark-agreement-to-bring-890-mw-of-new-nuclear-capacity-to-pjm-grid.html",
+      "sourceDate": "2026-10-06",
+      "reviewed": "2026-10-30",
+      "scope": "AI Power Deals, the brief's power agreements section, the Timeline and cluster deal links",
+      "rationale": "The registry's news check stopped on August 25, 2026. Nine agreements were added from the parties' own documents (Amazon and Google with Constellation, Google with Fervo and AEP, Microsoft with NiSource, New Era with Vistra, TeraWulf with Kentucky Power, Amazon with AEP and X-energy, and the NextEra and Google Duane Arnold restart, which had no row), and five existing rows gained dated notes on Palisades fuel loading, the DOE conditional loan commitments and FERC's Oklo ruling. No existing row's status changed; the 90-day firmness review of every row remains dated September 28, 2026.",
+      "short": {
+        "label": "Signed AI power agreements tracked",
+        "before": "33 agreements, 30.9 GW disclosed",
+        "after": "40 agreements, 35.8 GW disclosed",
+        "source": "Party releases and 8-K exhibits, Aug 5 to Oct 30, 2026",
+        "url": "https://gridtilt.com/power-deals"
+      }
     }
   ]
 }
