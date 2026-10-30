@@ -213,6 +213,50 @@
         "source": "Party releases and 8-Ks, Aug to Oct 2026",
         "url": "https://gridtilt.com/power-deals"
       }
+    },
+    {
+      "id": "2026-10-30-research-posts-retracted-figures",
+      "kind": "correction",
+      "entity": "site/research-posts",
+      "field": "Figures in three March 2026 research posts",
+      "before": "The March 10 post and its card said 288 TWh and 6.4%; the March 2 post said 48 facilities and a 13.4% MISO margin; the March 4 PJM post said 250 GW, 4+ years and $270/MW-day with no sources",
+      "after": "192 TWh in 2024 and 4.7% per LBNL; the March 2 post marked as a dated snapshot with MISO at 11.0% per NERC; the PJM post refreshed to $269.92 (2025/26) and $329.17 (2026/27) per PJM's auction reports, 220 GW in PJM's reopened queue and LBNL's 61-month median, each linked",
+      "source": "PJM 2026/2027 Base Residual Auction report",
+      "sourceUrl": "https://www.pjm.com/-/media/DotCom/markets-ops/rpm/rpm-auction-info/2026-2027/2026-2027-bra-report.pdf",
+      "sourceDate": "2025-07-22",
+      "reviewed": "2026-10-30",
+      "scope": "Research index cards and three post bodies",
+      "rationale": "The September 28 and 29 corrections changed the site's figures but not the posts that first published them, so the Research page still showed retracted numbers. The posts now carry the corrected figures, their sources, and a dated note saying what changed.",
+      "short": {
+        "label": "Research posts' data center electricity use",
+        "before": "288 TWh, 6.4% (retracted Sept 28)",
+        "after": "192 TWh in 2024, 4.7%, per LBNL",
+        "source": "LBNL 2025 update; PJM auction reports",
+        "url": "https://gridtilt.com/blog/ai-data-center-power-demand",
+        "why": "The corrections of September 28 and 29 never reached the posts that first carried the old figures."
+      }
+    },
+    {
+      "id": "2026-10-30-ferc-large-load-response-date",
+      "kind": "correction",
+      "entity": "interconnection-queue/ferc-large-load-anopr",
+      "field": "Date RTO responses to FERC's large-load show-cause orders are due",
+      "before": "RTO responses due ~mid-Aug 2026",
+      "after": "November 16, 2026, with answers due December 16, after a 90-day abeyance",
+      "source": "PJM notice to the Large Load Members Committee consultation",
+      "sourceUrl": "https://www.pjm.com/-/media/DotCom/committees-groups/workshops/cllsco/2026/20261026/20261026-item-04---pjm-to-large-load-mc-consultation-notice.pdf",
+      "sourceDate": "2026-10-26",
+      "reviewed": "2026-10-30",
+      "scope": "Queue tab regulatory row, the Timeline",
+      "rationale": "The row kept the original 60-day window in future tense ten weeks after it passed; the catalysts calendar already carried the November 16 date from PJM's notice. The Alphabet and Intersect row's source label was also corrected from 'Google press Dec 2024' to the December 22, 2025 announcement it already linked.",
+      "short": {
+        "label": "FERC large-load responses due",
+        "before": "~mid-August 2026",
+        "after": "November 16, 2026",
+        "source": "PJM notice, October 26, 2026",
+        "url": "https://gridtilt.com/power-map?tab=queue",
+        "why": "The original 60-day window was held in abeyance for 90 days; the row never caught up."
+      }
     }
   ]
 }
