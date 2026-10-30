@@ -25,7 +25,7 @@ test("frontier endpoint returns the validated registry and summary", async () =>
       summary: { modelCount: number; labCount: number };
       models: Array<{ id: string }>;
     };
-    assert.equal(body.asOf, "2026-07-14");
+    assert.equal(body.asOf, "2026-10-30");
     assert.equal(body.summary.modelCount, body.models.length);
     assert.ok(body.summary.labCount >= 10);
     assert.ok(body.models.some((model) => model.id === "gpt-5-6-sol"));

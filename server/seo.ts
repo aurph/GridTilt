@@ -99,8 +99,8 @@ const STATIC_PAGES: Record<string, { title: string; description: string; slug: s
     slug: "power-map",
   },
   "/catalysts": {
-    title: "AI Power Earnings Calendar and Catalyst Events \u2014 GridTilt",
-    description: "Upcoming earnings dates, regulatory decisions, and policy events for AI infrastructure stocks. Auto-updated catalyst calendar.",
+    title: "Earnings Calendar and Power Catalysts | GridTilt",
+    description: "Confirmed earnings dates for the tracked companies, with dated regulatory, grid and nuclear events, each linked to its source.",
     slug: "catalysts",
   },
   "/timeline": {
@@ -663,6 +663,7 @@ export const CRAWLABLE_API_PREFIXES = [
   "/api/frontier-models",
   "/api/gpu-economics",
   "/api/gpu-prices/metrics",
+  "/api/hyperscaler-capex",
   "/api/inference-prices",
   "/api/news",
   "/api/og",

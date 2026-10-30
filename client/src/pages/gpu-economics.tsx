@@ -472,7 +472,7 @@ function TokenPriceCard({ q }: { q: UseQueryResult<InfPriceView> }) {
   const view = q.data;
   const rows = view?.rows ?? [];
   const maxBlended = rows.reduce((m, r) => Math.max(m, r.blendedPerMTok), 0) || 1;
-  const event = view?.events?.[0];
+  const event = [...(view?.events ?? [])].sort((a, b) => b.date.localeCompare(a.date))[0];
   const srcById = new Map((view?.sources ?? []).map((s) => [s.id, s] as const));
   const modelSourceIds = new Set(rows.map((r) => r.sourceId));
 
@@ -584,13 +584,14 @@ function TrajectoryChart({ traj, sources }: { traj?: InfPriceView["trajectory"];
   const data = Array.from(byX.values()).sort((a, b) => (a.x as number) - (b.x as number));
   const flagshipFirst = pts.find((p) => p.tier !== "efficient");
   const efficientLast = [...pts].reverse().find((p) => p.tier === "efficient");
+  const flagshipLast = [...pts].reverse().find((p) => p.tier !== "efficient");
   const srcIds = Array.from(new Set(pts.map((p) => p.sourceId)));
   const srcById = new Map(sources.map((src) => [src.id, src] as const));
 
   return (
     <div className="mb-4" data-testid="token-trajectory">
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 mb-1">
-        <div className="text-[13px] font-semibold text-foreground">Since GPT-4, the price has collapsed</div>
+        <div className="text-[13px] font-semibold text-foreground">Since GPT-4, the efficient tier has collapsed</div>
         <div className="flex items-center gap-3 text-10 text-muted-foreground">
           <span className="inline-flex items-center gap-1"><span className="h-0.5 w-3 inline-block" style={{ background: NVIDIA_COLOR }} />flagship</span>
           <span className="inline-flex items-center gap-1"><span className="h-0 w-3 inline-block border-t border-dashed" style={{ borderColor: AMBER }} />efficient</span>
@@ -599,7 +600,7 @@ function TrajectoryChart({ traj, sources }: { traj?: InfPriceView["trajectory"];
       {flagshipFirst && efficientLast && (
         <p className="text-xs text-muted-foreground leading-relaxed mb-2">
           {flagshipFirst.name} cost {fmtTraj(flagshipFirst.inputPerMTok)} per million input tokens at launch. Today the efficient
-          tier is {fmtTraj(efficientLast.inputPerMTok)}. OpenAI list price, input tokens, log scale.
+          tier is {fmtTraj(efficientLast.inputPerMTok)}{flagshipLast && flagshipLast !== flagshipFirst ? ` and the newest flagship, ${flagshipLast.name}, lists at ${fmtTraj(flagshipLast.inputPerMTok)}` : ""}. OpenAI list price, input tokens, log scale.
         </p>
       )}
       <div role="img" aria-label="Line chart of OpenAI input token price per million from 2023 to 2026, flagship and efficient tiers, log scale.">

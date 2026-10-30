@@ -1,11 +1,17 @@
 [
   {
-    "id": 10,
-    "date": "2026-06-01",
-    "title": "FERC Order 1920 Implementation",
-    "category": "Regulatory",
-    "thesisImpact": "FERC Order 1920 (issued May 2024) requires regional transmission organizations to conduct 20-year forward-looking planning. Compliance filings and planning studies are ongoing through 2026.",
-    "tickers": ["GEV", "ETN", "PWR", "EMR"]
+    "id": 18,
+    "date": "2026-05",
+    "status": "completed",
+    "title": "LBNL Queued Up 2026 Edition published",
+    "category": "Industry",
+    "thesisImpact": "Lawrence Berkeley National Lab published the 2026 edition in May 2026, covering interconnection queues through the end of 2025: about 8,200 active projects, 1,312 GW of generation and about 749 GW of storage.",
+    "tickers": [
+      "GEV",
+      "PWR",
+      "ETN"
+    ],
+    "sourceUrl": "https://eta-publications.lbl.gov/publications/queued-2026-edition-characteristics"
   },
   {
     "id": 11,
@@ -13,7 +19,15 @@
     "title": "DOE Loan Programs Office Disbursements",
     "category": "Policy",
     "thesisImpact": "The DOE Loan Programs Office has authority to issue loans and loan guarantees for nuclear, grid, and clean energy projects. Disbursement decisions affect project financing timelines.",
-    "tickers": ["OKLO", "BWXT", "CEG", "CCJ"]
+    "tickers": [
+      "OKLO",
+      "BWXT",
+      "CEG",
+      "CCJ"
+    ],
+    "status": "completed",
+    "outcome": "DOE's loan office, renamed the Office of Energy Dominance Financing, closed a loan of up to $1.9 billion to NextEra on September 8, 2026 to restart Duane Arnold, then issued conditional commitments of up to $4.2 billion to Vistra on October 5 and up to $5 billion to Constellation on October 27 for nuclear uprates.",
+    "outcomeSource": "https://www.energy.gov/articles/energy-department-closes-19-billion-loan-restart-duane-arnold-nuclear-plant"
   },
   {
     "id": 14,
@@ -21,15 +35,15 @@
     "title": "FERC large-load interconnection ANOPR decision",
     "category": "Regulatory",
     "thesisImpact": "FERC must act by end of June 2026 on the DOE-initiated Advance Notice of Proposed Rulemaking for large-load interconnection. Outcome shapes how datacenter loads connect to the grid and how cost is allocated.",
-    "tickers": ["VST", "CEG", "GEV", "ETN"]
-  },
-  {
-    "id": 15,
-    "date": "2026-07-31",
-    "title": "PJM Expedited Interconnection Track (EIT) effective",
-    "category": "Regulatory",
-    "thesisImpact": "PJM's Expedited Interconnection Track targets July 31, 2026 effective date. Up to 10 fast-track approvals per year for large new or uprated capacity resources.",
-    "tickers": ["GEV", "CEG", "VST", "TLN"]
+    "tickers": [
+      "VST",
+      "CEG",
+      "GEV",
+      "ETN"
+    ],
+    "status": "completed",
+    "outcome": "On June 18, 2026 FERC issued section 206 show cause orders to the six RTOs and ISOs instead of a final rule, defining a large load as 50 MW or more connected above 69 kV. Docket RM26-4 stays open; responses are due November 16, 2026.",
+    "outcomeSource": "https://www.ferc.gov/news-events/news/ferc-launches-aggressive-targeted-action-speed-large-load-integration"
   },
   {
     "id": 12,
@@ -37,41 +51,228 @@
     "title": "Large Power Transformer Trade Policy Review",
     "category": "Market",
     "thesisImpact": "US trade policy on large power transformer imports affects domestic supply availability. The US imports a significant share of LPTs, and tariff changes impact grid equipment procurement timelines.",
-    "tickers": ["ETN", "ABBNY", "PWR"]
+    "tickers": [
+      "ETN",
+      "ABBNY",
+      "PWR"
+    ],
+    "status": "completed",
+    "outcome": "No transformer-specific Section 232 action was taken. The April 2, 2026 proclamation on steel, aluminum and copper set a combined 15 percent rate on the goods listed in its Annex III through December 31, 2027; whether large power transformers fall under that annex is not confirmed here.",
+    "outcomeSource": "https://www.whitehouse.gov/presidential-actions/2026/04/strengthening-actions-taken-to-adjust-imports-of-aluminum-steel-and-copper-into-the-united-states/"
+  },
+  {
+    "id": 15,
+    "date": "2026-07-31",
+    "title": "PJM Expedited Interconnection Track (EIT) effective",
+    "category": "Regulatory",
+    "thesisImpact": "PJM's Expedited Interconnection Track targets July 31, 2026 effective date. Up to 10 fast-track approvals per year for large new or uprated capacity resources.",
+    "tickers": [
+      "GEV",
+      "CEG",
+      "VST",
+      "TLN"
+    ],
+    "status": "completed",
+    "outcome": "FERC accepted PJM's Expedited Interconnection Track on June 9, 2026 (ER26-1563). PJM accepted the first three projects, about 2,115 MW across two batteries and a gas uprate, on October 8, 2026.",
+    "outcomeSource": "https://www.pjm.com/-/media/DotCom/documents/ferc/orders/2026/20260609-er26-1563-000.PDF"
   },
   {
     "id": 13,
     "date": "2026-08-01",
     "title": "Three Mile Island Unit 1 Restart Progress",
     "category": "Infrastructure",
-    "thesisImpact": "Constellation Energy is pursuing restart of TMI Unit 1 (837 MW) under a power purchase agreement with Microsoft. NRC review and regulatory approvals continue toward a 2027-2028 target restart.",
-    "tickers": ["CEG", "MSFT"]
-  },
-  {
-    "id": 16,
-    "date": "2026-08-27",
-    "dateKind": "estimated",
-    "title": "NVIDIA Q2 FY2027 earnings (typical reporting week)",
-    "category": "Earnings",
-    "thesisImpact": "NVIDIA's quarterly print is the dominant signal for AI-infra demand. Guidance on Blackwell ramps, datacenter mix, and capex absorption sets the tone for the entire stack.",
-    "tickers": ["NVDA", "TSM", "AVGO", "MU"]
+    "thesisImpact": "Constellation Energy is pursuing restart of TMI Unit 1, now the Crane Clean Energy Center (837 MW), under a power purchase agreement with Microsoft. NRC review continues toward a restart Constellation targets for the second half of 2027.",
+    "tickers": [
+      "CEG",
+      "MSFT"
+    ],
+    "status": "completed",
+    "outcome": "The NRC issued its final environmental assessment and finding of no significant impact for the Crane restart in September 2026. The NRC says its restart decision is expected in 2027; Constellation targets the second half of 2027.",
+    "outcomeSource": "https://www.nrc.gov/docs/ML2623/ML26231A018.pdf"
   },
   {
     "id": 17,
-    "date": "2026-09-15",
-    "title": "Texas SB6 large-load interconnection rules effective",
+    "date": "2026-10-08",
+    "title": "Texas SB6 large-load interconnection rule (16 TAC 25.194) effective",
     "category": "Regulatory",
-    "thesisImpact": "PUCT-issued rules under SB6 set interconnection standards for ERCOT loads of 75 MW or more. Study fees of $100k-$300k. Slows speculative interconnection requests; shifts cost discovery up-front.",
-    "tickers": ["VST", "NRG", "CEG"]
+    "thesisImpact": "PUCT rules under SB6 set interconnection standards for ERCOT loads of 75 MW or more. A customer posts financial security of $50,000 per MW of requested peak demand before an ERCOT study, and the greater of $50,000 per MW or its allocated upgrade costs at the standard interconnection agreement. Slows speculative interconnection requests; shifts cost discovery up front.",
+    "tickers": [
+      "VST",
+      "NRG",
+      "CEG"
+    ],
+    "dateKind": "confirmed",
+    "status": "completed",
+    "outcome": "The PUCT adopted 16 TAC 25.194 under Project 58481. The adoption was filed with the Secretary of State on September 18, 2026 and took effect October 8, 2026; transmission cost recovery was left to Project 58000.",
+    "outcomeSource": "https://www.sos.state.tx.us/texreg/archive/October22026/Adopted%20Rules/16.ECONOMIC%20REGULATION.html",
+    "sourceUrl": "https://www.sos.state.tx.us/texreg/archive/October22026/Adopted%20Rules/16.ECONOMIC%20REGULATION.html"
   },
   {
-    "id": 18,
-    "date": "2026-05",
-    "status": "completed",
-    "title": "LBNL Queued Up 2026 Edition published",
+    "id": 28,
+    "date": "2026-11",
+    "dateKind": "estimated",
+    "title": "NRC final safety evaluation for Long Mott (X-energy Xe-100) construction permit",
+    "category": "Infrastructure",
+    "thesisImpact": "NRC staff target November 2026 for the final safety evaluation on Dow's four-unit Xe-100 project in Texas. The environmental assessment was issued May 18, 2026 and the mandatory hearing was held September 22. The permit decision date itself is listed as to be determined.",
+    "tickers": [],
+    "sourceUrl": "https://www.nrc.gov/reactors/new-reactors/advanced/who-were-working-with/applicant-projects/long-mott"
+  },
+  {
+    "id": 19,
+    "date": "2026-11-14",
+    "dateKind": "confirmed",
+    "title": "DOE emergency order for the J.H. Campbell coal plant expires",
+    "category": "Policy",
+    "thesisImpact": "DOE Order 202-26-39 keeps the Campbell plant in Michigan running through November 14, 2026. On September 11 the DC Circuit vacated the first Campbell order, so a seventh 90-day order would test how far DOE's section 202(c) authority still reaches. The outcome bears on how much aging capacity stays online to meet load growth.",
+    "tickers": [
+      "CEG",
+      "VST",
+      "NRG"
+    ],
+    "sourceUrl": "https://www.energy.gov/ceser/federal-power-act-section-202c-midcontinent-independent-system-operator-miso-order-no-202-1"
+  },
+  {
+    "id": 20,
+    "date": "2026-11-16",
+    "dateKind": "confirmed",
+    "title": "Large-load show cause responses and PJM co-location compliance due at FERC",
+    "category": "Regulatory",
+    "thesisImpact": "After a 90-day abeyance, the RTO responses to FERC's June 18 large-load show cause orders are due November 16, with answers due December 16. PJM also plans to file its co-located load compliance and a section 205 large-load filing on or before that date. These filings set the tariff terms for data center interconnection and cost allocation.",
+    "tickers": [
+      "CEG",
+      "TLN",
+      "VST",
+      "GEV",
+      "ETN"
+    ],
+    "sourceUrl": "https://www.pjm.com/-/media/DotCom/committees-groups/workshops/cllsco/2026/20261026/20261026-item-04---pjm-to-large-load-mc-consultation-notice.pdf"
+  },
+  {
+    "id": 16,
+    "date": "2026-11-17",
+    "dateKind": "confirmed",
+    "title": "NVIDIA Q3 FY2027 earnings",
     "category": "Industry",
-    "thesisImpact": "Lawrence Berkeley National Lab published the 2026 edition in May 2026, covering interconnection queues through the end of 2025: about 8,200 active projects, 1,312 GW of generation and about 749 GW of storage.",
-    "tickers": ["GEV", "PWR", "ETN"],
-    "sourceUrl": "https://eta-publications.lbl.gov/publications/queued-2026-edition-characteristics"
+    "thesisImpact": "NVIDIA reports after the close on Tuesday, November 17. Data center revenue and guidance are the most direct read on AI accelerator demand and on the power and cooling buildout behind it.",
+    "tickers": [
+      "NVDA",
+      "AVGO",
+      "VRT"
+    ],
+    "sourceUrl": "https://investor.nvidia.com/news/press-release-details/2026/NVIDIA-Sets-Conference-Call-for-Third-Quarter-Financial-Results/default.aspx"
+  },
+  {
+    "id": 21,
+    "date": "2026-11-19",
+    "dateKind": "confirmed",
+    "title": "FERC November open meeting",
+    "category": "Regulatory",
+    "thesisImpact": "FERC's scheduled November open meeting is the next chance for Commission action on large-load, co-location and interconnection items before the large-load responses are briefed.",
+    "tickers": [
+      "GEV",
+      "ETN",
+      "PWR"
+    ],
+    "sourceUrl": "https://www.ferc.gov/news-events/news/ferc-announces-2026-commission-meeting-schedule"
+  },
+  {
+    "id": 22,
+    "date": "2026-11-20",
+    "dateKind": "confirmed",
+    "title": "DOE emergency order for Eddystone Units 3 and 4 expires",
+    "category": "Policy",
+    "thesisImpact": "DOE Order 202-26-40 keeps Constellation's Eddystone units in Pennsylvania available through November 20, 2026. Whether DOE renews it heading into winter shows how PJM reliability gaps are being handled outside the capacity market.",
+    "tickers": [
+      "CEG"
+    ],
+    "sourceUrl": "https://www.energy.gov/ceser/federal-power-act-section-202c-pjm-interconnection-llc-pjm-order-no-202-26-40"
+  },
+  {
+    "id": 23,
+    "date": "2026-12-09",
+    "dateKind": "confirmed",
+    "title": "PJM 2029/2030 Base Residual Auction opens",
+    "category": "Infrastructure",
+    "thesisImpact": "PJM's capacity auction for the 2029/2030 delivery year is scheduled to open December 9, 2026, with planning parameters due November 9. The 2028/2029 auction cleared at the $325 per MW-day cap and came in 6,831 MW short of the reliability requirement. This auction shows whether new supply is catching up with data center load.",
+    "tickers": [
+      "VST",
+      "CEG",
+      "TLN",
+      "NRG",
+      "EXC"
+    ],
+    "sourceUrl": "https://www.pjm.com/-/media/DotCom/markets-ops/large-load/large-load-registry-and-byonc-schedule.pdf"
+  },
+  {
+    "id": 10,
+    "date": "2026-12-12",
+    "title": "FERC Order 1920: Southeast (SERTP) regional compliance filing due",
+    "category": "Regulatory",
+    "thesisImpact": "Order 1920 compliance is still running. PJM missed its September 10, 2026 deadline for its cost-allocation compliance filing while its transmission owners and the state committee negotiate, and the rule remains on appeal in the Fourth Circuit. The Southeastern Regional Transmission Planning sponsors face a December 12, 2026 deadline for their long-term planning compliance filing, with the interregional filing due February 12, 2027.",
+    "tickers": [
+      "SO",
+      "DUK",
+      "GEV",
+      "PWR",
+      "MTZ"
+    ],
+    "dateKind": "confirmed",
+    "sourceUrl": "https://www.pjm.com/-/media/DotCom/documents/ferc/filings/2026/20260618-rm21-17-000.pdf"
+  },
+  {
+    "id": 24,
+    "date": "2026-12-17",
+    "dateKind": "confirmed",
+    "title": "FERC December open meeting",
+    "category": "Regulatory",
+    "thesisImpact": "FERC's last scheduled open meeting of 2026 falls one day after answers to the large-load show cause responses are due.",
+    "tickers": [
+      "GEV",
+      "ETN",
+      "PWR"
+    ],
+    "sourceUrl": "https://www.ferc.gov/news-events/news/ferc-announces-2026-commission-meeting-schedule"
+  },
+  {
+    "id": 25,
+    "date": "2027-01-01",
+    "dateKind": "confirmed",
+    "title": "Dominion GS-5 large-load rate class takes effect in Virginia",
+    "category": "Regulatory",
+    "thesisImpact": "The Virginia SCC's new GS-5 class for customers of 25 MW or more takes effect January 1, 2027. It brings minimum charges of 85 percent of contracted transmission and distribution demand and 60 percent of generation demand, with 14-year contracts. It is the first full test of making data centers carry their own grid costs in the largest US data center market.",
+    "tickers": [
+      "D"
+    ],
+    "sourceUrl": "https://www.scc.virginia.gov/about-the-scc/newsreleases/release/scc-issues-order-on-dev-biennial-review-2025/scc-rules-in-dev-biennial-review-case.html"
+  },
+  {
+    "id": 26,
+    "date": "2027-01-12",
+    "dateKind": "confirmed",
+    "title": "EIA January Short-Term Energy Outlook",
+    "category": "Market",
+    "thesisImpact": "EIA's January STEO usually extends its forecast by a year; the January 2026 edition was the first to cover 2027. The 2027 edition is the first official federal read on 2028 electricity demand and generation.",
+    "tickers": [
+      "NEE",
+      "SO",
+      "DUK",
+      "AEP"
+    ],
+    "sourceUrl": "https://www.eia.gov/outlooks/steo/release_schedule.php"
+  },
+  {
+    "id": 27,
+    "date": "2027-03-15",
+    "dateKind": "confirmed",
+    "title": "NVIDIA GTC 2027 begins in San Jose",
+    "category": "Industry",
+    "thesisImpact": "GTC 2027 runs March 15 to 18 in San Jose. NVIDIA uses the keynote to lay out its next accelerator and rack roadmap, which drives per-rack power density and cooling needs for new data centers.",
+    "tickers": [
+      "NVDA",
+      "VRT",
+      "ETN",
+      "AVGO"
+    ],
+    "sourceUrl": "https://www.nvidia.com/en-zz/gtc/faq/"
   }
 ]
