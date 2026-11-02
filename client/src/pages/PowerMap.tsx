@@ -1877,12 +1877,15 @@ export default function PowerMap() {
         </div>
       </div>
 
-      {/* All five read payloads the page already fetches. */}
-      <BiggestDataCenters />
-      <StateBuildout />
-      <CompanyBuildout />
-      <BuildoutTimeline />
-      <PowerSourceMix />
+      {/* All five read payloads the page already fetches. Two columns on desktop
+          so the stack reads in about one screen; the source mix spans both. */}
+      <div className="lg:grid lg:grid-cols-2" data-testid="map-explainers">
+        <BiggestDataCenters />
+        <CompanyBuildout />
+        <StateBuildout />
+        <BuildoutTimeline />
+        <PowerSourceMix />
+      </div>
 
       <div className="border-t border-border px-4 sm:px-6 py-4" data-testid="upcoming-projects-section">
         <div className="flex items-center gap-2 mb-3">

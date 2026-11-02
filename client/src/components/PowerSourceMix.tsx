@@ -13,6 +13,7 @@ import {
   ENERGY_NOTES,
   type EnergySource,
 } from "@/lib/energy-source";
+import { BarRow, ExplainerSection } from "@/components/BarRow";
 
 /**
  * Power sources across the tracked compute clusters.
@@ -68,22 +69,26 @@ export function PowerSourceMix() {
   }, [all, open]);
 
   return (
-    <div className="border-t border-border px-4 sm:px-6 py-5" data-testid="power-source-mix">
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-1">
-        <span className="flex items-center gap-2">
-          <Zap className="h-4 w-4 text-brand" />
-          <h2 className="text-sm font-semibold text-foreground">What actually powers them?</h2>
+    <ExplainerSection
+      icon={<Zap />}
+      title="What actually powers them?"
+      testid="power-source-mix"
+      span
+      aside={
+        <span className="text-11 text-muted-foreground/70">
+          {classified > 0
+            ? `Sources named on ${classified} tracked compute clusters. Sites often use more than one, so counts overlap. Tap a source for examples.`
+            : "Tap a source for examples"}
         </span>
-        <span className="text-11 text-muted-foreground/70">Tap a source for examples</span>
-      </div>
-
+      }
+    >
       {isError ? (
         <ErrorState label="Cluster data failed to load." onRetry={() => refetch()} className="py-4" />
       ) : isLoading ? (
-        <div className="space-y-2 mt-3" aria-hidden="true">
-          <Skeleton className="h-9 w-full rounded" />
-          <Skeleton className="h-9 w-full rounded" />
-          <Skeleton className="h-9 w-full rounded" />
+        <div className="space-y-2" aria-hidden="true">
+          <Skeleton className="h-7 w-full rounded" />
+          <Skeleton className="h-7 w-full rounded" />
+          <Skeleton className="h-7 w-full rounded" />
         </div>
       ) : tally.length === 0 ? (
         <p className="text-xs text-muted-foreground py-4">
@@ -91,91 +96,68 @@ export function PowerSourceMix() {
         </p>
       ) : (
         <>
-          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-            Of the{" "}
-            <span className="font-mono text-foreground tabular-nums">{classified}</span> tracked
-            compute clusters with a recorded power source, this is how many draw on each. Sites
-            often use more than one, so these do not add up to {classified}.
-          </p>
-
-          <ul className="mt-3 space-y-1">
+          <ul className="grid gap-x-10 sm:grid-cols-2">
             {tally.map((t) => {
               const expanded = open === t.source;
               return (
-                <li key={t.source}>
-                  <button
-                    type="button"
-                    onClick={() => setOpen(expanded ? null : t.source)}
-                    aria-expanded={expanded}
-                    className="w-full rounded-md px-2 py-1.5 text-left transition-colors hover:bg-surface-raised"
-                    data-testid={`source-row-${t.source}`}
-                  >
-                    <span className="flex items-baseline justify-between gap-3">
-                      <span className="truncate text-xs text-foreground">
-                        {ENERGY_LABELS[t.source]}
-                      </span>
-                      <span className="shrink-0 font-mono text-xs tabular-nums text-foreground">
+                <li key={t.source} className={expanded ? "sm:col-span-2" : undefined}>
+                  <BarRow
+                    label={ENERGY_LABELS[t.source]}
+                    segments={[{ pct: max > 0 ? (t.siteCount / max) * 100 : 0, color: SOURCE_COLOR[t.source] }]}
+                    value={
+                      <>
                         {t.siteCount}
                         <span className="text-muted-foreground/60"> sites</span>
-                      </span>
-                    </span>
-                    <span className="mt-1 block h-2 w-full rounded-full bg-surface-base" aria-hidden>
-                      <span
-                        className="block h-full rounded-full"
-                        style={{
-                          width: `${max > 0 ? (t.siteCount / max) * 100 : 0}%`,
-                          backgroundColor: SOURCE_COLOR[t.source],
-                        }}
-                      />
-                    </span>
-                    <span className="mt-1 block text-10 leading-snug text-muted-foreground/70">
-                      {ENERGY_NOTES[t.source]}
-                    </span>
-                  </button>
+                      </>
+                    }
+                    onClick={() => setOpen(expanded ? null : t.source)}
+                    expanded={expanded}
+                    title={ENERGY_NOTES[t.source]}
+                    testid={`source-row-${t.source}`}
+                  />
 
                   {expanded && (
-                    <ul
-                      className="mb-1 ml-2 space-y-1 border-l border-subtle pl-3"
-                      data-testid={`source-examples-${t.source}`}
-                    >
-                      {examples.map((c) => {
-                        const place = placeOf(c);
-                        const { mw, basis } = clusterPowerMW(c);
-                        return (
-                          <li key={c.id} className="flex items-baseline justify-between gap-3">
-                            <span className="min-w-0 truncate text-11 text-muted-foreground">
-                              {c.name}
-                              {place ? (
-                                <span className="text-muted-foreground/60"> · {place}</span>
-                              ) : null}
-                            </span>
-                            <span
-                              className="shrink-0 font-mono text-10 tabular-nums"
-                              style={{ color: INK.muted }}
-                            >
-                              {basis === null
-                                ? "MW not published"
-                                : `${mw.toLocaleString()} MW${basis === "planned" ? " planned" : ""}`}
-                            </span>
-                          </li>
-                        );
-                      })}
-                    </ul>
+                    <div className="mb-2 ml-2 border-l border-subtle pl-3" data-testid={`source-examples-${t.source}`}>
+                      <p className="mb-1 text-10 text-muted-foreground/70">{ENERGY_NOTES[t.source]}</p>
+                      <ul className="space-y-0.5">
+                        {examples.map((c) => {
+                          const place = placeOf(c);
+                          const { mw, basis } = clusterPowerMW(c);
+                          return (
+                            <li key={c.id} className="flex items-baseline justify-between gap-3">
+                              <span className="min-w-0 truncate text-11 text-muted-foreground">
+                                {c.name}
+                                {place ? (
+                                  <span className="text-muted-foreground/60"> · {place}</span>
+                                ) : null}
+                              </span>
+                              <span
+                                className="shrink-0 font-mono text-10 tabular-nums"
+                                style={{ color: INK.muted }}
+                              >
+                                {basis === null
+                                  ? "MW not published"
+                                  : `${mw.toLocaleString()} MW${basis === "planned" ? " planned" : ""}`}
+                              </span>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
                   )}
                 </li>
               );
             })}
           </ul>
 
-          <p className="mt-3 text-10 leading-relaxed text-muted-foreground/70">
-            Read from the curated power description on each tracked compute cluster. This is the
-            wider cluster dataset behind Compute Frontier, not the 400 MW and above facilities
-            mapped above, so the counts are larger. A site counts once for every source its
-            description mentions, which is why the counts overlap. Nuclear includes small reactors
-            that are contracted but not yet built.
+          <p className="mt-2 text-10 leading-relaxed text-muted-foreground/70">
+            Read from the curated power description on each tracked compute cluster, the wider
+            dataset behind Compute Frontier, not only the 400 MW and above facilities mapped above.
+            A site counts once for every source its description mentions. Nuclear includes small
+            reactors that are contracted but not yet built.
           </p>
         </>
       )}
-    </div>
+    </ExplainerSection>
   );
 }

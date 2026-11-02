@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { BRAND } from "@/lib/tokens";
 import { byYear, parseOpenYear, type FacilityLike } from "@/lib/facility-aggregates";
 import { filterTrackedFacilities } from "@/lib/real-gauges";
+import { ExplainerSection } from "@/components/BarRow";
 
 /**
  * Tracked capacity by opening year.
@@ -53,20 +54,17 @@ export function BuildoutTimeline() {
   );
 
   return (
-    <div className="border-t border-border px-4 sm:px-6 py-5" data-testid="buildout-timeline">
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-1">
-        <span className="flex items-center gap-2">
-          <CalendarClock className="h-4 w-4 text-brand" />
-          <h2 className="text-sm font-semibold text-foreground">When does it all arrive?</h2>
-        </span>
-        <span className="text-11 text-muted-foreground/70">Tap a year</span>
-      </div>
-
+    <ExplainerSection
+      icon={<CalendarClock />}
+      title="When does it all arrive?"
+      testid="buildout-timeline"
+      aside={<span className="text-11 text-muted-foreground/70">Tap a year</span>}
+    >
       {isError ? (
         <ErrorState label="Facility data failed to load." onRetry={() => refetch()} className="py-4" />
       ) : isLoading ? (
-        <div className="space-y-2 mt-3" aria-hidden="true">
-          <Skeleton className="h-24 w-full rounded" />
+        <div className="space-y-2" aria-hidden="true">
+          <Skeleton className="h-16 w-full rounded" />
           <Skeleton className="h-20 w-full rounded-lg" />
         </div>
       ) : years.length === 0 || !active ? (
@@ -76,7 +74,7 @@ export function BuildoutTimeline() {
       ) : (
         <>
           {/* Full-height buttons: the bar itself is a few pixels wide on a phone. */}
-          <div className="mt-3 flex h-24 items-end gap-px" role="group" aria-label="Pick a year">
+          <div className="flex h-16 items-end gap-px" role="group" aria-label="Pick a year">
             {years.map((y) => {
               const selected = y.year === active.year;
               return (
@@ -108,9 +106,9 @@ export function BuildoutTimeline() {
             <span>{years[years.length - 1].year}</span>
           </div>
 
-          <div className="mt-3 rounded-lg border border-subtle bg-surface-raised p-4" data-testid="year-panel">
+          <div className="mt-2 rounded-lg border border-subtle bg-surface-raised px-3 py-2" data-testid="year-panel">
             <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-              <span className="font-mono text-[26px] font-bold leading-none text-brand tabular-nums">
+              <span className="font-mono text-[22px] font-bold leading-none text-brand tabular-nums">
                 {active.year}
               </span>
               <span className="text-xs text-muted-foreground">
@@ -125,17 +123,17 @@ export function BuildoutTimeline() {
                   target
                 </span>
               )}
-            </div>
-            <p className="mt-2 text-xs text-muted-foreground">
-              Tracked capacity open by the end of {active.year}:{" "}
-              <span className="font-mono text-foreground tabular-nums">
-                {Math.round(active.cumulativeMW).toLocaleString()} MW
+              <span className="ml-auto text-11 text-muted-foreground">
+                open by end of {active.year}:{" "}
+                <span className="font-mono text-foreground tabular-nums">
+                  {Math.round(active.cumulativeMW).toLocaleString()} MW
+                </span>
               </span>
-            </p>
+            </div>
 
             {sites.length > 0 && (
-              <ul className="mt-3 space-y-1 border-t border-subtle pt-3" data-testid="year-sites">
-                {sites.slice(0, 4).map((f) => (
+              <ul className="mt-2 space-y-0.5 border-t border-subtle pt-2" data-testid="year-sites">
+                {sites.slice(0, 3).map((f) => (
                   <li key={f.id} className="flex items-baseline justify-between gap-3">
                     <span className="min-w-0 truncate text-xs text-foreground">
                       {f.name}
@@ -149,22 +147,22 @@ export function BuildoutTimeline() {
                     </span>
                   </li>
                 ))}
-                {sites.length > 4 && (
+                {sites.length > 3 && (
                   <li className="text-11 text-muted-foreground/60">
-                    and {sites.length - 4} more opening in {active.year}
+                    and {sites.length - 3} more opening in {active.year}
                   </li>
                 )}
               </ul>
             )}
           </div>
 
-          <p className="mt-3 text-10 leading-relaxed text-muted-foreground/70">
+          <p className="mt-2 text-10 leading-relaxed text-muted-foreground/70">
             Grouped by the year each tracked site opened or is expected to. Amber years are targets
-            drawn from announced and under-construction schedules, so they move. Cumulative totals
-            cover only the sites GridTilt tracks at 400 MW and above, not all US capacity.
+            drawn from announced and under-construction schedules, so they move. Totals cover only
+            the sites GridTilt tracks at 400 MW and above.
           </p>
         </>
       )}
-    </div>
+    </ExplainerSection>
   );
 }
