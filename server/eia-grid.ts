@@ -121,8 +121,14 @@ export type GridLiveResult =
       /** Newest hour reported anywhere in the demand response. */
       latestPeriodUtc: string | null;
       demand: Record<string, OperatorDemand>;
-      /** Null when the fuel call failed or returned nothing usable; demand still serves. */
+      /**
+       * Lower 48, newest complete hour. EIA's fuel data runs many hours behind
+       * its demand data, so this is never "right now": show its own hour.
+       * Null when the fuel call failed or returned nothing usable; demand still serves.
+       */
       mix: GenerationMix | null;
+      /** The same, per operator. Empty when the fuel call failed. */
+      mixByOperator: Record<string, GenerationMix>;
     };
 
 interface EiaRow {
@@ -222,40 +228,90 @@ export function composeOperators(byRespondent: Record<string, HourPoint[]>): Rec
   return out;
 }
 
-/**
- * Exported for unit tests: the generation mix for the newest hour that at
- * least `minFuels` fuel types reported. EIA posts fuels for an hour as they
- * arrive, so the very latest period can hold one or two fuels; taking the
- * newest complete-enough hour keeps shares honest.
- */
-export function latestMix(rows: EiaRow[], minFuels = 4): GenerationMix | null {
+function fuelsByPeriod(rows: EiaRow[]): Map<string, Map<string, number>> {
   const byPeriod = new Map<string, Map<string, number>>();
   for (const r of rows) {
     if (typeof r.fueltype !== "string" || !r.fueltype) continue;
     if (typeof r.period !== "string" || !PERIOD.test(r.period)) continue;
+    // Batteries and pumped storage report negative while charging. That is load,
+    // not generation, so readMw drops it and shares are of what is generating.
     const mw = readMw(r.value);
     if (mw === null) continue;
     const fuels = byPeriod.get(r.period) ?? new Map<string, number>();
     if (!fuels.has(r.fueltype)) fuels.set(r.fueltype, mw);
     byPeriod.set(r.period, fuels);
   }
-  const periods = Array.from(byPeriod.keys()).sort().reverse();
-  for (const period of periods) {
+  return byPeriod;
+}
+
+/**
+ * EIA posts an hour's fuels as they arrive, so the newest hour can hold a
+ * fraction of them, and shares computed from it would be wrong. An hour counts
+ * only with at least `minFuels` fuels and 80% of the most this respondent reports.
+ */
+function isComplete(fuels: Map<string, number> | undefined, most: number, minFuels: number): boolean {
+  return Boolean(fuels) && fuels!.size >= Math.max(minFuels, Math.floor(most * 0.8));
+}
+
+function buildMix(period: string, fuels: Map<string, number>): GenerationMix | null {
+  const totalMw = Array.from(fuels.values()).reduce((s, v) => s + v, 0);
+  if (totalMw <= 0) return null;
+  const list: FuelShare[] = Array.from(fuels.entries())
+    .map(([code, mw]) => ({
+      code,
+      label: FUEL_LABELS[code] ?? code,
+      mw,
+      sharePct: Math.round((mw / totalMw) * 1000) / 10,
+    }))
+    .sort((a, b) => b.mw - a.mw);
+  return { periodUtc: period, totalMw, fuels: list };
+}
+
+/** Exported for unit tests: the mix for the newest complete hour of one respondent's rows. */
+export function latestMix(rows: EiaRow[], minFuels = 4): GenerationMix | null {
+  const byPeriod = fuelsByPeriod(rows);
+  const most = Math.max(0, ...Array.from(byPeriod.values()).map((f) => f.size));
+  for (const period of Array.from(byPeriod.keys()).sort().reverse()) {
     const fuels = byPeriod.get(period)!;
-    if (fuels.size < minFuels) continue;
-    const totalMw = Array.from(fuels.values()).reduce((s, v) => s + v, 0);
-    if (totalMw <= 0) continue;
-    const list: FuelShare[] = Array.from(fuels.entries())
-      .map(([code, mw]) => ({
-        code,
-        label: FUEL_LABELS[code] ?? code,
-        mw,
-        sharePct: Math.round((mw / totalMw) * 1000) / 10,
-      }))
-      .sort((a, b) => b.mw - a.mw);
-    return { periodUtc: period, totalMw, fuels: list };
+    if (!isComplete(fuels, most, minFuels)) continue;
+    const mix = buildMix(period, fuels);
+    if (mix) return mix;
   }
   return null;
+}
+
+/**
+ * Exported for unit tests: each operator's mix. A composed operator uses the
+ * newest hour every member region has complete, so a late region cannot shift
+ * the shares.
+ */
+export function operatorMixes(rows: EiaRow[], minFuels = 3): Record<string, GenerationMix> {
+  const byRespondent = new Map<string, EiaRow[]>();
+  for (const r of rows) {
+    if (typeof r.respondent !== "string" || !r.respondent) continue;
+    const list = byRespondent.get(r.respondent) ?? [];
+    list.push(r);
+    byRespondent.set(r.respondent, list);
+  }
+  const out: Record<string, GenerationMix> = {};
+  for (const [name, spec] of Object.entries(OPERATOR_RESPONDENTS)) {
+    const members = spec.respondents.map((r) => fuelsByPeriod(byRespondent.get(r) ?? []));
+    if (members.some((m) => m.size === 0)) continue;
+    const most = members.map((m) => Math.max(...Array.from(m.values()).map((f) => f.size)));
+    for (const period of Array.from(members[0].keys()).sort().reverse()) {
+      if (!members.every((m, i) => isComplete(m.get(period), most[i], minFuels))) continue;
+      const sum = new Map<string, number>();
+      for (const m of members) {
+        m.get(period)!.forEach((mw, fuel) => sum.set(fuel, (sum.get(fuel) ?? 0) + mw));
+      }
+      const mix = buildMix(period, sum);
+      if (mix) {
+        out[name] = mix;
+        break;
+      }
+    }
+  }
+  return out;
 }
 
 const CACHE_MS = 30 * 60 * 1000;
@@ -301,7 +357,7 @@ type FetchLike = (url: URL) => Promise<{ ok: boolean; status: number; json(): Pr
  * EIA's v2 API root. Overridable only so a local mock can stand in during
  * development; production never sets it.
  */
-function eiaBase(): string {
+export function eiaBase(): string {
   const base = process.env.EIA_API_BASE || "https://api.eia.gov/v2/";
   return base.endsWith("/") ? base : `${base}/`;
 }
@@ -327,11 +383,14 @@ function fuelUrl(key: string): URL {
   url.searchParams.set("api_key", key);
   url.searchParams.set("frequency", "hourly");
   url.searchParams.set("data[0]", "value");
-  url.searchParams.set("facets[respondent][]", "US48");
+  const respondents = new Set<string>();
+  for (const spec of Object.values(OPERATOR_RESPONDENTS)) spec.respondents.forEach((r) => respondents.add(r));
+  respondents.forEach((r) => url.searchParams.append("facets[respondent][]", r));
   url.searchParams.set("sort[0][column]", "period");
   url.searchParams.set("sort[0][direction]", "desc");
-  // every fuel for the last day or so is plenty to find one complete hour
-  url.searchParams.set("length", "400");
+  // EIA's cap. About a day and a half of every fuel for every respondent, enough
+  // to find one complete hour even with the lag on fuel rows.
+  url.searchParams.set("length", "5000");
   return url;
 }
 
@@ -371,14 +430,15 @@ export async function getGridLive(
       // No lower-48 series means the answer is unusable, whatever else came back.
       if (!demand.US48) throw new Error("EIA returned no usable US48 demand rows");
 
-      let mix: GenerationMix | null = null;
+      let mixByOperator: Record<string, GenerationMix> = {};
       try {
-        mix = latestMix(await readRows(fetchImpl, fuelUrl(key)));
+        mixByOperator = operatorMixes(await readRows(fetchImpl, fuelUrl(key)));
       } catch {
         // Demand still serves; the mix card says it has nothing rather than
         // the whole block going dark.
-        mix = cache?.payload.mix ?? null;
+        mixByOperator = cache?.payload.mixByOperator ?? {};
       }
+      const mix = mixByOperator.US48 ?? null;
 
       const latestPeriodUtc = Object.values(demand).reduce<string | null>(
         (best, d) => (best === null || d.latestPeriodUtc > best ? d.latestPeriodUtc : best),
@@ -393,6 +453,7 @@ export async function getGridLive(
         latestPeriodUtc,
         demand,
         mix,
+        mixByOperator,
       };
       cache = { at: now(), payload };
       lastFailureAt = null;

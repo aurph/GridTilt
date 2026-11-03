@@ -27,6 +27,7 @@ import { recordDailyIndexValues, readIndexHistory } from "./index-history";
 import { getElectricityOutputMonthly, getHourlyDemandUS48 } from "./physical";
 import { getRetailRatesByState } from "./retail-rates";
 import { getGridLive, gridLiveStamp } from "./eia-grid";
+import { electricityUseStamp, getElectricityUse } from "./eia-electricity";
 import { Pool as PgPool } from "pg";
 import { chooseStore, postgresStore, sslFor, type PoolLike } from "./subscriber-store";
 import { registerSubscriberRoutes } from "./subscriber-routes";
@@ -1791,6 +1792,17 @@ export async function registerRoutes(
       res.status(502).json({ error: "Upstream EIA fetch failed. Try again later." });
     }
   });
+  // US electricity use and retail sales by sector (server/eia-electricity.ts).
+  app.get("/api/physical/electricity-use", async (_req, res) => {
+    try {
+      const result = await getElectricityUse();
+      if (!result.configured) return res.status(503).json(result);
+      res.setHeader("Cache-Control", "public, max-age=3600");
+      res.json(result);
+    } catch {
+      res.status(502).json({ error: "Upstream EIA fetch failed. Try again later." });
+    }
+  });
   // Live grid (server/eia-grid.ts): hourly demand for the lower 48 and each
   // grid operator, plus generation by fuel for the latest hour. Same contract.
   app.get("/api/physical/grid-live", async (_req, res) => {
@@ -2084,6 +2096,7 @@ export async function registerRoutes(
   /** Live feeds have no file; their stamp comes from the module's cache. */
   const LIVE_READERS: Record<string, () => unknown> = {
     "eia-grid-live": gridLiveStamp,
+    "eia-electricity-use": electricityUseStamp,
   };
   function readRegisteredDatasets(): FileContents {
     const contents: FileContents = {};
