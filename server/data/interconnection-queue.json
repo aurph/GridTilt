@@ -302,7 +302,7 @@
       "dcRelevant": true,
       "sources": [
         "https://www.sec.gov/Archives/edgar/data/1652044/000165204426000048/R17.htm",
-        "Google press Dec 2024",
+        "Alphabet announcement, December 22, 2025",
         "Reuters",
         "POWER Magazine",
         "Intersect Power press release",
@@ -1209,15 +1209,15 @@
       "state": "US",
       "status": "active",
       "category": "regulatory",
-      "expectedOnline": "RTO responses due ~mid-Aug 2026",
+      "expectedOnline": "RTO responses due November 16, 2026; answers December 16",
       "offtaker": null,
       "dcRelevant": true,
       "sources": [
-        "FERC announcement",
-        "FERC June 2026",
+        "https://www.ferc.gov/news-events/news/ferc-launches-aggressive-targeted-action-speed-large-load-integration",
+        "https://www.pjm.com/-/media/DotCom/committees-groups/workshops/cllsco/2026/20261026/20261026-item-04---pjm-to-large-load-mc-consultation-notice.pdf",
         "McGuireWoods"
       ],
-      "notes": "FERC acted on its June 2026 deadline: Section 206 show-cause orders issued June 18, 2026 to all six RTOs/ISOs, directing them to justify existing tariffs or file reforms for large-load/data-center interconnection within 60 days, including expedited studies for co-located large loads. Earlier steps: PJM co-location transparency order (Dec 2025), SPP HILL process approved (Jan 2026)."
+      "notes": "FERC acted on its June 2026 deadline: Section 206 show-cause orders issued June 18, 2026 to all six RTOs/ISOs, directing them to justify existing tariffs or file reforms for large-load/data-center interconnection, including expedited studies for co-located large loads; a large load is 50 MW or more connected above 69 kV. The original 60-day response window was held in abeyance for 90 days; responses are now due November 16, 2026, with answers due December 16, and PJM plans to file its co-located load compliance and a section 205 large-load filing on or before that date. Earlier steps: PJM co-location transparency order (Dec 2025), SPP HILL process approved (Jan 2026)."
     },
     {
       "id": "vistra-meta-existing-fleet",
