@@ -3520,6 +3520,18 @@ ${rssItems}
     // stackCache stores a flat { TICKER: stockObject } dict.
     const stockData: any = cached?.data?.[ticker] ?? null;
 
+    // The 1D sparkline is two days of 5-minute bars, which on a page-width
+    // chart reads as noise with a y axis of 208/208/207/207. The page chart
+    // takes the month of daily closes the Equities 1M view already loads.
+    let priceHistory: { closes: number[]; label: string } | null = null;
+    try {
+      const month = await getCachedStockData("1M");
+      const closes: number[] = month?.[ticker]?.sparkline ?? [];
+      if (closes.length >= 5) priceHistory = { closes, label: "past month, daily closes" };
+    } catch {
+      // Yahoo down: the page falls back to the 1D sparkline, labelled as such.
+    }
+
     const sectorStocks = layerKey ? STACK_TICKERS[layerKey as keyof typeof STACK_TICKERS] : [];
     const relatedTickers = sectorStocks.filter((t) => t !== ticker).slice(0, 6);
 
@@ -3546,6 +3558,7 @@ ${rssItems}
       thesisScore: score,
       layerKey,
       stockData,
+      priceHistory,
       relatedTickers,
       relatedCatalysts,
     });

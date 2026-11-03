@@ -390,32 +390,8 @@ export default function ComputeFrontier() {
             <p className="text-10 text-muted-foreground/50 mt-1">y axis in GW</p>
           </ChartCard>
 
-          <ChartCard title="Planned MW by status">
-            {metricsError ? (
-              <ErrorState label="Cluster metrics failed to load." onRetry={() => refetchMetrics()} className="h-[220px]" />
-            ) : metrics ? (
-              <ResponsiveContainer width="100%" height={220}>
-                <BarChart data={metrics.byStatus} margin={{ left: 0, right: 8, top: 4, bottom: 4 }}>
-                  <CartesianGrid {...gridProps} />
-                  <XAxis {...axisProps} dataKey="status" />
-                  <YAxis {...axisProps} tickFormatter={(v) => `${(v / 1000).toFixed(0)}`} />
-                  <RTooltip formatter={(v: number, _n, p: any) => [`${v.toLocaleString()} MW`, `${p.payload.count} clusters`]} cursor={{ fill: BRAND.glow }} contentStyle={tooltipContentStyle} labelStyle={tooltipLabelStyle} itemStyle={tooltipItemStyle} />
-                  <Bar {...seriesMotion()} dataKey="plannedMW" radius={[2, 2, 0, 0]}>
-                    {metrics.byStatus.map((s) => <Cell key={s.status} fill={STATUS_COLOR[s.status] ?? INK.muted} />)}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            ) : <ChartSkeleton />}
-            {metrics && (
-              <SrChartTable
-                caption="Planned MW by build status"
-                columns={["Status", "Planned MW"]}
-                rows={metrics.byStatus.map((s) => [s.status, s.plannedMW.toLocaleString()])}
-              />
-            )}
-            <p className="text-10 text-muted-foreground/50 mt-1">y axis in GW</p>
-          </ChartCard>
-
+          {/* "Planned MW by status" came off: the buildout-reality card above
+              already carries the same split as a segmented bar with figures. */}
           <ChartCard title="Build timeline (planned GW online by year)">
             {isError ? (
               <ErrorState label="Cluster dataset failed to load." onRetry={() => refetch()} className="h-[220px]" />
