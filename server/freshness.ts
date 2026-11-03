@@ -222,7 +222,10 @@ function evaluate(spec: DatasetSpec, contents: unknown, nowMs: number, reviews: 
   const ageHours = ageHoursOf(jobLastSuccess, nowMs);
 
   if (contents === undefined) {
-    issues.push({ status: "unknown", detail: `server/data/${spec.file} is missing or unreadable` });
+    issues.push({
+      status: "unknown",
+      detail: spec.source === "live" ? "no fetch has completed since boot" : `server/data/${spec.file} is missing or unreadable`,
+    });
   } else if (spec.expectedMaxAgeHours != null) {
     if (spec.read.kind === "none") {
       issues.push({ status: "unknown", detail: "a cadence is declared but the file carries no timestamp to check it against" });

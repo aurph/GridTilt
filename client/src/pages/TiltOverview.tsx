@@ -9,7 +9,6 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  ReferenceLine,
 } from "recharts";
 import { Link } from "wouter";
 import { Card } from "@/components/ui/card";
@@ -23,6 +22,7 @@ import {
 import { Zap, TrendingUp, Activity, AlertTriangle, Info, ArrowUp, ArrowDown, Calendar, ChevronRight, ExternalLink, Cpu, Calculator, Layers, Map, Link2, CalendarDays, LineChart } from "lucide-react";
 import { EmailCapture, ScrollTriggeredBanner } from "@/components/EmailCapture";
 import { AsOf, ErrorState, SrChartTable } from "@/components/Freshness";
+import { GridLiveCard } from "@/components/GridLiveCard";
 import {
   BRAND, CATEGORY_COLORS as TOKEN_CATEGORY_COLORS, CHART_CHROME, DATA_QUALITY, FONT, INK, SEMANTIC, SERIES,
 } from "@/lib/tokens";
@@ -955,6 +955,14 @@ export default function TiltOverview() {
     () => (trough && latest ? pctChange(trough.twh, latest.twh) : null),
     [trough, latest],
   );
+  // Sparkline range, rounded out to the nearest 100 TWh and printed under
+  // the line so a non-zero axis is declared rather than hidden.
+  const demandAxis = useMemo(() => {
+    const vals = electricityData.map((d) => d.demand).filter((v): v is number => typeof v === "number");
+    const lo = Math.min(...vals);
+    const hi = Math.max(...vals);
+    return { min: Math.floor((lo - 50) / 100) * 100, max: Math.ceil((hi + 50) / 100) * 100 };
+  }, []);
   // Next-smallest cushions after the headline, each with its own reference.
   const headroomRows = useMemo(
     () =>
@@ -1029,12 +1037,19 @@ export default function TiltOverview() {
           </div>
         </div>
 
-        {/* Main demand chart */}
-        <Card id="demand-chart" className="p-6 border-card-border scroll-mt-20">
-          <div className="flex flex-wrap items-start justify-between gap-4 mb-5">
+        {/* What the grid is carrying this hour, from EIA. Sits above the annual
+            series so the live number is read before the decade of context. */}
+        <GridLiveCard />
+
+        {/* US electricity use as a stat, not a 240px chart. The measured series
+            is flat for a decade and only turns up after 2020: a zero-based line
+            showed nothing, and a tight axis exaggerated it. The sparkline is
+            drawn on its own range and that range is printed under it. */}
+        <Card id="demand-chart" className="p-5 border-card-border scroll-mt-20" data-testid="us-electricity-use">
+          <div className="grid gap-4 lg:grid-cols-2 lg:items-center">
             <div>
-              <div className="flex items-center gap-2 mb-1">
-                <h2 className="text-base font-semibold text-foreground">US Electricity Use</h2>
+              <div className="flex items-center gap-2 mb-2">
+                <h2 className="text-sm font-semibold text-foreground">US Electricity Use</h2>
                 <UITooltip>
                   <TooltipTrigger>
                     <Info className="h-3.5 w-3.5 text-muted-foreground" />
@@ -1047,22 +1062,25 @@ export default function TiltOverview() {
                   </TooltipContent>
                 </UITooltip>
               </div>
-              <p className="text-xs text-muted-foreground">
-                US electricity end use (TWh),{" "}
-                <a
-                  href={US_END_USE_SOURCE.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-brand hover:text-brand-2"
-                >
-                  {US_END_USE_SOURCE.label}
-                </a>
-                , {electricityData[0]?.year} to {electricityData[electricityData.length - 1]?.year}.
-                Data-center estimates:{" "}
+              {latest && trough && (
+                <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                  <span className="font-mono text-[28px] font-bold leading-none text-foreground tabular-nums">
+                    {latest.twh.toLocaleString()} TWh
+                  </span>
+                  <span className="text-xs text-muted-foreground">in {latest.year}</span>
+                  {troughRise !== null && (
+                    <span className="font-mono text-xs text-brand-2 tabular-nums">
+                      +{troughRise.toFixed(0)}% from the {trough.year} low
+                    </span>
+                  )}
+                </div>
+              )}
+              <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                Flat for a decade, rising since 2020. Data centers:{" "}
                 {DATA_CENTER_ANCHORS.map((a, i) => (
                   <span key={a.year}>
-                    {i > 0 ? "; " : ""}
-                    {a.twh} TWh in {a.year} (
+                    {i > 0 ? " · " : ""}
+                    <span className="font-mono text-foreground tabular-nums">{a.twh} TWh</span> in {a.year} (
                     <a
                       href={a.sourceUrl}
                       target="_blank"
@@ -1076,70 +1094,47 @@ export default function TiltOverview() {
                 ))}
                 .
               </p>
+              <p className="mt-1.5 text-10 text-muted-foreground/70">
+                <a
+                  href={US_END_USE_SOURCE.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-brand hover:text-brand-2"
+                >
+                  {US_END_USE_SOURCE.label}
+                </a>
+                , {electricityData[0]?.year} to {electricityData[electricityData.length - 1]?.year}, retrieved{" "}
+                {US_END_USE_SOURCE.retrieved}.
+              </p>
+            </div>
+
+            <div>
+              <ResponsiveContainer width="100%" height={72}>
+                <ComposedChart data={electricityData} margin={{ top: 4, right: 4, left: 4, bottom: 0 }}>
+                  <XAxis dataKey="year" hide />
+                  <YAxis yAxisId="total" hide domain={[demandAxis.min, demandAxis.max]} />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Line {...seriesMotion()}
+                    yAxisId="total"
+                    type="linear"
+                    dataKey="demand"
+                    name="End use (EIA)"
+                    stroke={SERIES[0]}
+                    strokeWidth={2}
+                    dot={false}
+                    activeDot={{ r: 3, fill: SERIES[0] }}
+                  />
+                </ComposedChart>
+              </ResponsiveContainer>
+              <div className="mt-1 flex justify-between font-mono text-10 text-muted-foreground/60 tabular-nums">
+                <span>{electricityData[0]?.year}</span>
+                <span>
+                  axis {demandAxis.min.toLocaleString()} to {demandAxis.max.toLocaleString()} TWh, not zero
+                </span>
+                <span>{electricityData[electricityData.length - 1]?.year}</span>
+              </div>
             </div>
           </div>
-
-          <ResponsiveContainer width="100%" height={240}>
-            <ComposedChart data={electricityData} margin={{ top: 10, right: 24, left: 10, bottom: 10 }}>
-              <defs>
-                <linearGradient id="demandGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={SERIES[0]} stopOpacity={0.25} />
-                  <stop offset="95%" stopColor={SERIES[0]} stopOpacity={0.02} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid {...gridProps} />
-              <XAxis
-                {...axisProps}
-                dataKey="year"
-                interval={2}
-              />
-              {/* zero-based with round ticks: a 3,600 TWh floor exaggerated a roughly flat decade,
-                  and recharts autos land on 5.1k/5.8k/6.6k noise */}
-              <YAxis
-                {...axisProps}
-                yAxisId="total"
-                axisLine={false}
-                tickFormatter={(v) => (v === 0 ? "0" : `${(v / 1000).toFixed(1)}k`)}
-                domain={[0, 4400]}
-                ticks={[0, 1000, 2000, 3000, 4000]}
-                width={42}
-              />
-              <Tooltip content={<CustomTooltip />} />
-
-              {/* The "Grid Capacity ~5,100 TWh" reference line was removed: no
-                  source, no methodology, and it only ever intersected the
-                  invented projection that has also been removed. */}
-
-              {/* Event annotations */}
-              {annotations.map((a) => (
-                <ReferenceLine
-                  key={a.year}
-                  yAxisId="total"
-                  x={a.year}
-                  stroke={a.color}
-                  strokeDasharray="3 3"
-                />
-              ))}
-
-              <Area {...seriesMotion()}
-                yAxisId="total"
-                type="linear"
-                dataKey="demand"
-                name="End use (EIA)"
-                stroke={SERIES[0]} // series slot 1
-                strokeWidth={2.5}
-                fill="url(#demandGrad)"
-                dot={false}
-                activeDot={{ r: 4, fill: SERIES[0] }}
-                connectNulls={false}
-              />
-              {/* Data-center estimates are listed above rather than plotted. On
-                  a second axis, 176 TWh drew above the 4,000 TWh total, and the
-                  2023 and 2024 figures come from report editions with different
-                  baselines, so a line between them would show a change nobody
-                  measured. */}
-            </ComposedChart>
-          </ResponsiveContainer>
           <SrChartTable
             caption="US electricity end use by year (TWh) from EIA, with LBNL data-center estimates for the years a report covers"
             columns={["Year", "End use TWh", "Data centers TWh (estimate)"]}

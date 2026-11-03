@@ -26,6 +26,7 @@ import {
 import { recordDailyIndexValues, readIndexHistory } from "./index-history";
 import { getElectricityOutputMonthly, getHourlyDemandUS48 } from "./physical";
 import { getRetailRatesByState } from "./retail-rates";
+import { getGridLive, gridLiveStamp } from "./eia-grid";
 import { Pool as PgPool } from "pg";
 import { chooseStore, postgresStore, sslFor, type PoolLike } from "./subscriber-store";
 import { registerSubscriberRoutes } from "./subscriber-routes";
@@ -1790,6 +1791,18 @@ export async function registerRoutes(
       res.status(502).json({ error: "Upstream EIA fetch failed. Try again later." });
     }
   });
+  // Live grid (server/eia-grid.ts): hourly demand for the lower 48 and each
+  // grid operator, plus generation by fuel for the latest hour. Same contract.
+  app.get("/api/physical/grid-live", async (_req, res) => {
+    try {
+      const result = await getGridLive();
+      if (!result.configured) return res.status(503).json(result);
+      res.setHeader("Cache-Control", "public, max-age=300");
+      res.json(result);
+    } catch {
+      res.status(502).json({ error: "Upstream EIA fetch failed. Try again later." });
+    }
+  });
 
   // Stack endpoint - 8 layers, 10-min cache
   app.get("/api/stack", async (req, res) => {
@@ -2068,9 +2081,18 @@ export async function registerRoutes(
   // advertises the bare minimum.
 
   /** Read every registered dataset off disk. Unreadable files stay absent. */
+  /** Live feeds have no file; their stamp comes from the module's cache. */
+  const LIVE_READERS: Record<string, () => unknown> = {
+    "eia-grid-live": gridLiveStamp,
+  };
   function readRegisteredDatasets(): FileContents {
     const contents: FileContents = {};
     for (const spec of DATASET_REGISTRY) {
+      if (spec.source === "live") {
+        const read = LIVE_READERS[spec.id];
+        if (read) contents[spec.id] = read();
+        continue;
+      }
       try {
         const path = join(process.cwd(), "server", "data", spec.file);
         contents[spec.id] = JSON.parse(readFileSync(path, "utf-8"));
@@ -3529,6 +3551,18 @@ ${rssItems}
     // stackCache stores a flat { TICKER: stockObject } dict.
     const stockData: any = cached?.data?.[ticker] ?? null;
 
+    // The 1D sparkline is two days of 5-minute bars, which on a page-width
+    // chart reads as noise with a y axis of 208/208/207/207. The page chart
+    // takes the month of daily closes the Equities 1M view already loads.
+    let priceHistory: { closes: number[]; label: string } | null = null;
+    try {
+      const month = await getCachedStockData("1M");
+      const closes: number[] = month?.[ticker]?.sparkline ?? [];
+      if (closes.length >= 5) priceHistory = { closes, label: "past month, daily closes" };
+    } catch {
+      // Yahoo down: the page falls back to the 1D sparkline, labelled as such.
+    }
+
     const sectorStocks = layerKey ? STACK_TICKERS[layerKey as keyof typeof STACK_TICKERS] : [];
     const relatedTickers = sectorStocks.filter((t) => t !== ticker).slice(0, 6);
 
@@ -3555,6 +3589,7 @@ ${rssItems}
       thesisScore: score,
       layerKey,
       stockData,
+      priceHistory,
       relatedTickers,
       relatedCatalysts,
     });

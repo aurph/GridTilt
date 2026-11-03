@@ -28,6 +28,8 @@ interface StockInfo {
     sparkline: number[];
     stale?: boolean;
   } | null;
+  /** Month of daily closes for the page chart; null when Yahoo had none. */
+  priceHistory: { closes: number[]; label: string } | null;
   relatedTickers: string[];
   relatedCatalysts: Array<{ id: number; date: string; dateLabel?: string; title: string; category: string; thesisImpact: string }>;
 }
@@ -117,7 +119,16 @@ export default function StockPage() {
   const hasLiveChg = typeof data.stockData?.changePercent === "number" && Number.isFinite(data.stockData.changePercent);
   const isUp = hasLiveChg && (data.stockData!.changePercent as number) >= 0;
   const isStale = !!data.stockData?.stale;
-  const chartData = data.stockData?.sparkline?.map((v, i) => ({ i, price: v })) || [];
+  // A month of daily closes when the server has it; the two-day 5-minute
+  // sparkline only as a labelled fallback.
+  const closes = data.priceHistory?.closes ?? data.stockData?.sparkline ?? [];
+  const chartLabel = data.priceHistory?.label ?? "past 2 days, 5-min closes";
+  const chartData = closes.map((v, i) => ({ i, price: v }));
+  // Tick precision follows the span, so a tight range never prints the same
+  // rounded price on four ticks.
+  const span = closes.length ? Math.max(...closes) - Math.min(...closes) : 0;
+  const priceTick = (v: number) => v.toFixed(span < 2 ? 2 : span < 20 ? 1 : 0);
+  const chartUp = closes.length >= 2 ? closes[closes.length - 1] >= closes[0] : isUp;
   const sectorLabel = SECTOR_LABELS[data.layerKey] || data.layerKey;
   const sectorSlug = SECTOR_SLUG_MAP[data.layerKey] || data.layerKey;
 
@@ -229,25 +240,26 @@ export default function StockPage() {
             <Card className="p-5 border-card-border" data-testid="price-chart">
               <div className="flex items-baseline justify-between gap-3 mb-3">
                 <h2 className="text-[13px] font-semibold text-foreground">Price History</h2>
-                <span className="text-[11px] text-muted-foreground/70">past 2 days, 5-min closes</span>
+                <span className="text-[11px] text-muted-foreground/70">{chartLabel}</span>
               </div>
-              <ResponsiveContainer width="100%" height={220}>
+              <ResponsiveContainer width="100%" height={160}>
                 <LineChart data={chartData} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
-                  {/* Sparkline payload carries closes only (no timestamps), so the
-                      x axis stays a bare baseline and the label above names the range. */}
+                  {/* Payload carries closes only (no timestamps), so the x axis
+                      stays a bare baseline and the label above names the range. */}
                   <XAxis dataKey="i" {...axisProps} tick={false} height={6} />
                   <YAxis
                     {...axisProps}
                     domain={["auto", "auto"]}
                     width={52}
-                    tickFormatter={(v: number) => (v >= 100 ? `${Math.round(v)}` : `${v.toFixed(2)}`)}
+                    tickCount={4}
+                    tickFormatter={priceTick}
                   />
                   <RTooltip
                     contentStyle={tooltipContentStyle}
                     labelStyle={{ display: "none" }}
-                    formatter={(val: number) => [`$${val.toFixed(2)}`, "Price"]}
+                    formatter={(val: number) => [`$${val.toFixed(2)}`, "Close"]}
                   />
-                  <Line {...seriesMotion()} type="monotone" dataKey="price" stroke={isUp ? SEMANTIC.positiveDeep : SEMANTIC.negativeDeep} strokeWidth={2} dot={false} />
+                  <Line {...seriesMotion()} type="monotone" dataKey="price" stroke={chartUp ? SEMANTIC.positiveDeep : SEMANTIC.negativeDeep} strokeWidth={2} dot={false} />
                 </LineChart>
               </ResponsiveContainer>
             </Card>

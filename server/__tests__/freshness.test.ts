@@ -169,7 +169,7 @@ test("every registered dataset points at a file that exists", () => {
   // A typo in the registry would otherwise show up as a permanent "unknown",
   // which reads as an instrumentation gap rather than the mistake it is.
   const missing = DATASET_REGISTRY.filter(
-    (d) => !existsSync(join(process.cwd(), "server", "data", d.file)),
+    (d) => d.source !== "live" && !existsSync(join(process.cwd(), "server", "data", d.file)),
   ).map((d) => `${d.id} -> server/data/${d.file}`);
   assert.deepEqual(missing, [], `registry points at files that do not exist:\n${missing.join("\n")}`);
 });

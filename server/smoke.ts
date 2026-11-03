@@ -180,6 +180,7 @@ export const CHECKS: Check[] = [
   jsonCheck("Maryland state data", "/api/state-pages/maryland", (j) => (j?.code === "MD" ? ok() : fail("no MD payload"))),
   keyedFeed("retail electricity rates (EIA)", "/api/physical/retail-rates"),
   keyedFeed("hourly demand (EIA)", "/api/physical/load-hourly"),
+  keyedFeed("live grid by operator (EIA)", "/api/physical/grid-live"),
   {
     name: "share card renders",
     path: "/api/og?template=state_fact&state=MD",
