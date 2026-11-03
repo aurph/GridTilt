@@ -1,12 +1,14 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "wouter";
 import { MapPin } from "lucide-react";
 import { ErrorState } from "@/components/Freshness";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BRAND, INK } from "@/lib/tokens";
 import { STATE_GRID } from "@/data/state-grid";
 import { homesEquivalent } from "@/lib/scale-compare";
-import { byState, totalTrackedMW, shareOfTotal, type FacilityLike } from "@/lib/facility-aggregates";
+import { byState, totalTrackedMW, shareOfTotal, type FacilityLike, type Rollup } from "@/lib/facility-aggregates";
+import { statePagesByCode, type PublishedStatePage } from "@/lib/state-pages";
 import { filterTrackedFacilities } from "@/lib/real-gauges";
 
 /**
@@ -25,8 +27,21 @@ export function StateBuildout() {
   });
 
   const all = useMemo(() => filterTrackedFacilities(data ?? []), [data]);
-  const rows = useMemo(() => byState(all), [all]);
+  const facilityRows = useMemo(() => byState(all), [all]);
   const total = useMemo(() => totalTrackedMW(all), [all]);
+
+  // A state with a published page but no campus at the 400 MW floor still
+  // gets a chip: the page is what a reader from that state came for, and
+  // leaving it out read as "not tracked" (Maryland, October 2026).
+  const { data: pageList } = useQuery<PublishedStatePage[]>({ queryKey: ["/api/state-pages"] });
+  const pages = useMemo(() => statePagesByCode(pageList, STATE_GRID), [pageList]);
+  const rows = useMemo<Rollup[]>(() => {
+    const extra = Object.keys(pages)
+      .filter((code) => !facilityRows.some((r) => r.key === code))
+      .sort()
+      .map((code) => ({ key: code, totalMW: 0, runningMW: 0, buildingMW: 0, count: 0, unknownPower: 0, largest: null }));
+    return [...facilityRows, ...extra];
+  }, [facilityRows, pages]);
 
   const [picked, setPicked] = useState<string | null>(null);
   // Default to the biggest state rather than an empty panel, so the section
@@ -43,9 +58,9 @@ export function StateBuildout() {
     [all, active],
   );
 
-  const share = active ? shareOfTotal(active.totalMW, total) : null;
+  const share = active && active.totalMW > 0 ? shareOfTotal(active.totalMW, total) : null;
   const grid = active ? STATE_GRID[active.key] : undefined;
-  const homes = active ? homesEquivalent(sites.reduce((s, f) => s + (f.annualMWh || 0), 0)) : null;
+  const homes = active && sites.length > 0 ? homesEquivalent(sites.reduce((s, f) => s + (f.annualMWh || 0), 0)) : null;
 
   return (
     <div className="border-t border-border px-4 sm:px-6 py-5" data-testid="state-buildout">
@@ -54,8 +69,9 @@ export function StateBuildout() {
           <MapPin className="h-4 w-4 text-brand" />
           <h2 className="text-sm font-semibold text-foreground">Is your state in it?</h2>
         </span>
-        <span className="text-11 text-muted-foreground/70">
-          {rows.length > 0 ? `${rows.length} states have a tracked site` : ""}
+        <span className="basis-full text-11 text-muted-foreground/70 sm:basis-auto">
+          {facilityRows.length > 0 ? `${facilityRows.length} states with a tracked site` : ""}
+          {Object.keys(pages).length > 0 ? `${facilityRows.length > 0 ? ", " : ""}${Object.keys(pages).length} with a state page` : ""}
         </span>
       </div>
 
@@ -102,6 +118,21 @@ export function StateBuildout() {
               {active.count} tracked {active.count === 1 ? "site" : "sites"}
               {grid ? ` on ${grid.operatorLabel}` : ""}
             </p>
+            {pages[active.key] && (
+              <Link
+                href={pages[active.key].href}
+                className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-brand no-underline hover:text-brand-2"
+                data-testid={`state-page-open-${active.key}`}
+              >
+                Open {pages[active.key].name}'s page →
+              </Link>
+            )}
+            {active.count === 0 && (
+              <p className="mt-2 text-xs text-muted-foreground" data-testid="state-panel-no-campus">
+                No campus of 400 MW or more is recorded here. The state page carries the
+                decisions, the next public dates and the smaller projects on record.
+              </p>
+            )}
 
             <div className="mt-3 flex flex-wrap items-baseline gap-x-4 gap-y-1">
               <span className="font-mono text-[26px] font-bold leading-none text-brand tabular-nums">

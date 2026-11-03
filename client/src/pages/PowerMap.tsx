@@ -211,6 +211,19 @@ const POWER_SUBTITLES: Record<string, string> = {
  * The flag now decides whether to show that summary card, not whether the map
  * mounts. The map mounts everywhere.
  */
+/**
+ * Contiguous US. A phone opened on center/zoom 4 showed the central plains
+ * and neither coast, which is where most tracked campuses are.
+ */
+const CONUS_BOUNDS: [[number, number], [number, number]] = [[24.4, -124.8], [49.4, -66.9]];
+function FitContiguousUsOnPhones() {
+  const map = useMap();
+  useEffect(() => {
+    if (window.matchMedia("(max-width: 639px)").matches) map.fitBounds(CONUS_BOUNDS, { padding: [8, 8] });
+  }, [map]);
+  return null;
+}
+
 function useBelowSm(): boolean {
   const [below, setBelow] = useState<boolean>(
     () => typeof window !== "undefined" && window.matchMedia("(max-width: 639px)").matches,
@@ -1232,15 +1245,19 @@ export default function PowerMap() {
               <Skeleton className="h-5 w-56" aria-hidden="true" />
             ) : (
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-11 font-mono">
-                {/* Numeric stats stay one non-breaking group with their "|"
-                    separators; the dot legend is its own flex item with no
-                    leading pipe, so wrapping never strands a trailing "|". */}
-                <span className="flex items-center gap-3 whitespace-nowrap">
-                  <span className="text-muted-foreground">{dataCenters.length} facilities</span>
-                  <span className="text-muted-foreground/30">|</span>
-                  <span className="text-brand-2 font-bold" title={`operational + construction; announced (+${(announcedMW / 1000).toFixed(1)} GW) excluded`}>{(totalMW / 1000).toFixed(1)} GW</span>
-                  <span className="text-muted-foreground/30">|</span>
-                  <span className="text-muted-foreground">{totalTWh} TWh/yr</span>
+                {/* Each stat carries its own leading "|", so the group can wrap
+                    on a phone without ever stranding a separator at a line end;
+                    the dot legend is its own flex item with no pipe. */}
+                <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <span className="whitespace-nowrap text-muted-foreground">{dataCenters.length} campuses of 400 MW and up</span>
+                  <span className="whitespace-nowrap">
+                    <span className="mr-3 text-muted-foreground/30">|</span>
+                    <span className="text-brand-2 font-bold" title={`operational + construction; announced (+${(announcedMW / 1000).toFixed(1)} GW) excluded`}>{(totalMW / 1000).toFixed(1)} GW tracked</span>
+                  </span>
+                  <span className="whitespace-nowrap">
+                    <span className="mr-3 text-muted-foreground/30">|</span>
+                    <span className="text-muted-foreground">{totalTWh} TWh/yr</span>
+                  </span>
                 </span>
                 <div className="flex items-center gap-1.5">
                   <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full inline-block" style={{ backgroundColor: STATUS_COLORS.operational }} /><span className="text-muted-foreground">{opCount}</span></span>
@@ -1283,12 +1300,12 @@ export default function PowerMap() {
                   </TooltipContent>
                 </UITooltip>
                 <span className="text-10 font-mono text-white/40">
-                  {dcLoading ? "loading…" : dcError ? "load failed" : `${dataCenters.length} facilities`}
+                  {dcLoading ? "loading…" : dcError ? "load failed" : `${dataCenters.length} campuses of 400 MW and up`}
                 </span>
                 <AsOf updatedAt={dataUpdatedAt} intervalMs={900_000} />
               </div>
               <div className="flex items-center gap-3 text-11 font-mono">
-                <span className="text-brand-2 font-bold" title={`operational + construction; announced (+${(announcedMW / 1000).toFixed(1)} GW) excluded`}>{(totalMW / 1000).toFixed(1)} GW</span>
+                <span className="text-brand-2 font-bold" title={`operational + construction; announced (+${(announcedMW / 1000).toFixed(1)} GW) excluded`}>{(totalMW / 1000).toFixed(1)} GW tracked</span>
                 <span className="text-white/20">|</span>
                 <span className="text-white/50">{totalTWh} TWh/yr</span>
                 <span className="text-white/20">|</span>
@@ -1627,6 +1644,7 @@ export default function PowerMap() {
             className="rounded-none"
           >
             <BasemapTiles maxZoom={19} />
+            <FitContiguousUsOnPhones />
             <RTORegions viewMode={viewMode} />
             {isClusterView ? (
               <>

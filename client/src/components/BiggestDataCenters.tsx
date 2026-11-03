@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "wouter";
 import { Trophy } from "lucide-react";
 import { ErrorState } from "@/components/Freshness";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -111,6 +112,10 @@ export function BiggestDataCenters() {
                 </span>
               )}
             </div>
+            <p className="mt-2 text-10 text-muted-foreground/70" data-testid="biggest-source">
+              Source: GridTilt's facility registry, campuses of 400 MW and up with a published rating.{" "}
+              <Link href="/data-status" className="underline-offset-2 hover:underline">Data status</Link>.
+            </p>
           </div>
 
           <ol className="mt-3 space-y-1.5" data-testid="biggest-ranked">

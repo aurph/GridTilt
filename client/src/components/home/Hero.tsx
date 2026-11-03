@@ -6,6 +6,7 @@ import { Zap, Handshake, Cpu, MapPin } from "lucide-react";
 import { Wordmark } from "./Wordmark";
 import { GridPulse } from "./grid-pulse";
 import { MarketTape } from "./market-tape";
+import { StatePagesRow } from "@/components/StatePagesRow";
 
 // The wordmark leads, then one statement of purpose and the state-first
 // journey. Each stat is read from the API that serves it; nothing is
@@ -110,7 +111,7 @@ export function Hero() {
   const stats: HeroStat[] = [
     {
       icon: Zap,
-      label: "Operational power for compute",
+      label: "Operational power at named clusters",
       value: opGw ? `${opGw} GW` : "--",
       sub: clusters ? `${(clusters.totalPlannedMW / 1000).toFixed(1)} GW planned` : undefined,
       asOf: shortDate(clusters?.lastRefreshed),
@@ -136,11 +137,13 @@ export function Hero() {
     },
     {
       icon: MapPin,
-      label: "Tracked clusters",
+      // The count is the Compute Frontier registry (named clusters), not the
+      // Power Map's campuses of 400 MW and up, so it links where it is defined.
+      label: "Named compute clusters",
       value: clusterCount ?? "--",
       sub: clusters?.byOperator ? `${clusters.byOperator.length} operators` : undefined,
       asOf: shortDate(clusters?.lastRefreshed),
-      href: "/power-map",
+      href: "/compute-frontier",
     },
   ];
 
@@ -230,6 +233,12 @@ export function Hero() {
                 </motion.div>
               </Link>
             ))}
+          </motion.div>
+
+          {/* The entry to the state pages. Read from the registry, so the row
+              lists exactly the states that have a page today. */}
+          <motion.div variants={fadeUp} className="mt-8 w-full text-left" data-testid="hero-state-pages">
+            <StatePagesRow lead="What is being decided and built on your state's grid, with the documents and the next public dates." />
           </motion.div>
         </motion.div>
       </div>
