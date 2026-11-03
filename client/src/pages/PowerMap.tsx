@@ -10,6 +10,8 @@ import { AsOf, ErrorState } from "@/components/Freshness";
 import { BasemapTiles } from "@/components/basemap-tiles";
 import { BiggestDataCenters } from "@/components/BiggestDataCenters";
 import { StateBuildout } from "@/components/StateBuildout";
+import { SourceFooter } from "@/components/SourceFooter";
+import { aiSharePct, fmtGW, fmtPeriodET, useGridLive } from "@/lib/grid-live";
 import { CompanyBuildout } from "@/components/CompanyBuildout";
 import { BuildoutTimeline } from "@/components/BuildoutTimeline";
 import { PowerSourceMix } from "@/components/PowerSourceMix";
@@ -1027,6 +1029,10 @@ export default function PowerMap() {
 
   const ALL_RTOS = ["PJM", "MISO", "ERCOT", "WECC", "SERC", "SPP", "NPCC"] as const;
 
+  // EIA hourly demand per operator, for the load table: tracked AI nameplate
+  // next to what the grid is actually carrying this hour.
+  const { live: gridLive, isLoading: gridLiveLoading } = useGridLive();
+
   const capacityLabels: Record<string, string> = {
     small: "400-600 MW",
     medium: "600-1000 MW",
@@ -1980,11 +1986,13 @@ export default function PowerMap() {
           )}
         </div>
         <div className="overflow-x-auto rto-table-scroll">
-          <table className="w-full min-w-[520px] text-xs font-mono">
+          <table className="w-full min-w-[760px] text-xs font-mono">
             <thead>
               <tr className="border-b border-border/60 font-sans">
                 <th className="text-left text-muted-foreground/60 font-normal pb-2 pr-6">RTO / ISO</th>
                 <th className="text-right text-muted-foreground/60 font-normal pb-2 pr-6">Tracked AI Load</th>
+                <th className="text-right text-muted-foreground/60 font-normal pb-2 pr-6">Demand now (EIA)</th>
+                <th className="text-right text-muted-foreground/60 font-normal pb-2 pr-6">AI load / demand</th>
                 <th className="text-right text-muted-foreground/60 font-normal pb-2 pr-6">Reserve margin (reference)</th>
                 <th className="text-left text-muted-foreground/60 font-normal pb-2">NERC risk, 2026</th>
               </tr>
@@ -1993,6 +2001,8 @@ export default function PowerMap() {
               {(["ERCOT", "MISO", "PJM", "SERC", "WECC", "SPP", "NPCC"] as const).map((rto) => {
                 const areas = areasForRegion(rto);
                 const loadMW = rtoLoadMW[rto] ?? 0;
+                const demand = gridLive?.demand[rto] ?? null;
+                const share = demand ? aiSharePct(loadMW, demand.latestMw) : null;
                 const sColor = RISK_COLOR[regionRisk(rto) ?? "unassigned"];
                 const active = rtoFocus === rto;
                 return (
@@ -2011,6 +2021,30 @@ export default function PowerMap() {
                     </td>
                     <td className="py-2 pr-6 text-right text-foreground">
                       {dcLoading ? <Skeleton className="h-3 w-16 ml-auto inline-block" aria-hidden="true" /> : dcError ? "—" : `${loadMW.toLocaleString()} MW`}
+                    </td>
+                    <td className="py-2 pr-6 text-right text-foreground whitespace-nowrap" data-testid={`rto-demand-${rto.toLowerCase()}`}>
+                      {gridLiveLoading ? (
+                        <Skeleton className="h-3 w-16 ml-auto inline-block" aria-hidden="true" />
+                      ) : demand ? (
+                        <span title={`${demand.note} Latest hour ${fmtPeriodET(demand.latestPeriodUtc)}; 7-day peak ${fmtGW(demand.peakMw)} GW.`}>
+                          {fmtGW(demand.latestMw)} GW
+                          {demand.composed && <span className="text-muted-foreground/60 font-sans text-9"> sum</span>}
+                          <span className="block text-9 font-sans text-muted-foreground/60">peak {fmtGW(demand.peakMw)} GW, 7d</span>
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground/50">—</span>
+                      )}
+                    </td>
+                    <td className="py-2 pr-6 text-right text-foreground">
+                      {gridLiveLoading || dcLoading ? (
+                        <Skeleton className="h-3 w-10 ml-auto inline-block" aria-hidden="true" />
+                      ) : share !== null && !dcError ? (
+                        <span title="Tracked nameplate MW divided by this hour's demand: what the sites would draw at full rating, not metered load.">
+                          {share.toFixed(1)}%
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground/50">—</span>
+                      )}
                     </td>
                     <td className="py-2 pr-6 text-right text-foreground">
                       {/* One area: its margin and reference. SERC, WECC and NPCC are
@@ -2033,6 +2067,15 @@ export default function PowerMap() {
             </tbody>
           </table>
         </div>
+        <SourceFooter
+          className="mt-2"
+          source="EIA Hourly Electric Grid Monitor"
+          href={gridLive?.sourceUrl ?? "https://www.eia.gov/electricity/gridmonitor/"}
+          asOf={gridLive?.latestPeriodUtc ? fmtPeriodET(gridLive.latestPeriodUtc) : null}
+          cadence="demand is the latest reported hour; WECC, SERC and NPCC are sums of EIA regions"
+          stale={gridLive?.stale ?? false}
+          testid="grid-stress-source"
+        />
       </div>
 
       {mobileFiltersOpen && (

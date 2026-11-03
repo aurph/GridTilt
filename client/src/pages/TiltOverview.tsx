@@ -22,6 +22,7 @@ import {
 import { Zap, TrendingUp, Activity, AlertTriangle, Info, ArrowUp, ArrowDown, Calendar, ChevronRight, ExternalLink, Cpu, Calculator, Layers, Map, Link2, CalendarDays, LineChart } from "lucide-react";
 import { EmailCapture, ScrollTriggeredBanner } from "@/components/EmailCapture";
 import { AsOf, ErrorState, SrChartTable } from "@/components/Freshness";
+import { GridLiveCard } from "@/components/GridLiveCard";
 import {
   BRAND, CATEGORY_COLORS as TOKEN_CATEGORY_COLORS, CHART_CHROME, DATA_QUALITY, FONT, INK, SEMANTIC, SERIES,
 } from "@/lib/tokens";
@@ -1035,6 +1036,10 @@ export default function TiltOverview() {
             <XFollowCard />
           </div>
         </div>
+
+        {/* What the grid is carrying this hour, from EIA. Sits above the annual
+            series so the live number is read before the decade of context. */}
+        <GridLiveCard />
 
         {/* US electricity use as a stat, not a 240px chart. The measured series
             is flat for a decade and only turns up after 2020: a zero-based line

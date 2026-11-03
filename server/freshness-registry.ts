@@ -41,8 +41,14 @@ export interface DatasetSpec {
   id: string;
   /** Human label for the admin report. */
   label: string;
-  /** Path under server/data/. */
+  /** Path under server/data/, or a display name for a live feed. */
   file: string;
+  /**
+   * "file" (default): the stamp is read from server/data/<file>. "live": the
+   * feed is fetched on demand and cached in memory; routes.ts reads its
+   * stamp from the module instead of the disk.
+   */
+  source?: "file" | "live";
   /** Job last success: when the mechanism last completed a run. */
   read: ReadStrategy;
   /** Data last observed, where it is recorded apart from the job stamp. */
@@ -74,6 +80,18 @@ const DAY = 24;
  * get the cadence of the research pass that maintains them.
  */
 export const DATASET_REGISTRY: DatasetSpec[] = [
+  {
+    id: "eia-grid-live",
+    label: "Live grid demand and generation (EIA)",
+    file: "EIA API (in-memory cache)",
+    source: "live",
+    read: { kind: "envelope", fields: ["lastChecked"] },
+    dataRead: { kind: "envelope", fields: ["lastRefreshed"] },
+    // Refetched every 30 min on request; EIA's hourly data posts 1-2 h late.
+    expectedMaxAgeHours: 6,
+    mechanism: "GET /api/physical/grid-live refreshes the cache on request (server/eia-grid.ts); needs EIA_API_KEY",
+    writes: "none",
+  },
   {
     id: "clusters",
     label: "Compute Frontier clusters",

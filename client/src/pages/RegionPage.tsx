@@ -11,6 +11,8 @@ import { ErrorState } from "@/components/Freshness";
 import { SortableTh } from "@/components/sortable-table";
 import { nextSort, sortBy, type SortState } from "@/lib/table-sort";
 import { filterTrackedFacilities } from "@/lib/real-gauges";
+import { SourceFooter } from "@/components/SourceFooter";
+import { aiSharePct, fmtGW, fmtPeriodET, useGridLive } from "@/lib/grid-live";
 
 // Descriptions say what each organization is, as it describes itself (PJM's
 // and MISO's own pages, checked 2026-10-01). Dated figures do not go here:
@@ -130,6 +132,7 @@ export default function RegionPage() {
   const { data: datacenters, isLoading, isError, refetch } = useQuery<Datacenter[]>({
     queryKey: ["/api/datacenters"],
   });
+  const { live: gridLive, isLoading: gridLiveLoading } = useGridLive();
 
   if (!region) {
     return (
@@ -156,6 +159,8 @@ export default function RegionPage() {
     {} as Record<string, number>,
   );
   const nercAreas = areasForRegion(region.name);
+  const regionDemand = gridLive?.demand[region.name] ?? null;
+  const trackedShare = regionDemand && !isLoading ? aiSharePct(trackedMW, regionDemand.latestMw) : null;
 
   const regionCounts: Record<string, number> = {};
   for (const d of all) {
@@ -182,7 +187,24 @@ export default function RegionPage() {
         <p className="text-sm text-muted-foreground max-w-3xl">{region.description}</p>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+        <Card className="p-4 border-card-border col-span-2 sm:col-span-1" data-testid="stat-demand-now">
+          <p className="text-[11px] text-muted-foreground mb-1">Demand now (EIA)</p>
+          {gridLiveLoading ? <Skeleton className="h-7 w-16" /> : regionDemand ? (
+            <>
+              <p className="text-xl font-bold font-mono text-foreground" title={regionDemand.note}>
+                {fmtGW(regionDemand.latestMw)} GW
+                {regionDemand.composed && <span className="ml-1 text-11 font-sans font-normal text-muted-foreground">sum</span>}
+              </p>
+              <p className="text-10 text-muted-foreground leading-snug mt-0.5">
+                {fmtPeriodET(regionDemand.latestPeriodUtc)} · 7-day peak {fmtGW(regionDemand.peakMw)} GW
+                {trackedShare !== null && <> · tracked AI {trackedShare}% of demand</>}
+              </p>
+            </>
+          ) : (
+            <p className="text-xs text-muted-foreground">not available</p>
+          )}
+        </Card>
         <Card className="p-4 border-card-border" data-testid="stat-facility-count">
           <p className="text-[11px] text-muted-foreground mb-1">Tracked Facilities</p>
           {isLoading ? <Skeleton className="h-7 w-12" /> : (
@@ -219,6 +241,17 @@ export default function RegionPage() {
         <a href={NERC_LTRA.url} target="_blank" rel="noopener noreferrer" className="underline decoration-dotted underline-offset-2">{NERC_LTRA.label}</a>.
         NERC rates each area against its own reference margin.
       </p>
+      {regionDemand && (
+        <SourceFooter
+          className="-mt-4"
+          source="EIA Hourly Electric Grid Monitor"
+          href={gridLive?.sourceUrl}
+          asOf={fmtPeriodET(regionDemand.latestPeriodUtc)}
+          cadence={regionDemand.composed ? regionDemand.note : "tracked AI share is nameplate over this hour's demand, not metered load"}
+          stale={gridLive?.stale ?? false}
+          testid="region-demand-source"
+        />
+      )}
 
       <Card className="p-5 border-card-border" data-testid="region-facilities">
         <div className="flex items-baseline justify-between gap-3 mb-3 flex-wrap">
