@@ -12,6 +12,7 @@ import { SortableTh } from "@/components/sortable-table";
 import { nextSort, sortBy, type SortState } from "@/lib/table-sort";
 import { filterTrackedFacilities } from "@/lib/real-gauges";
 import { SourceFooter } from "@/components/SourceFooter";
+import { FuelMixBars } from "@/components/GridLiveCard";
 import { aiSharePct, fmtGW, fmtPeriodET, useGridLive } from "@/lib/grid-live";
 
 // Descriptions say what each organization is, as it describes itself (PJM's
@@ -160,6 +161,7 @@ export default function RegionPage() {
   );
   const nercAreas = areasForRegion(region.name);
   const regionDemand = gridLive?.demand[region.name] ?? null;
+  const regionMix = gridLive?.mixByOperator?.[region.name] ?? null;
   const trackedShare = regionDemand && !isLoading ? aiSharePct(trackedMW, regionDemand.latestMw) : null;
 
   const regionCounts: Record<string, number> = {};
@@ -251,6 +253,26 @@ export default function RegionPage() {
           stale={gridLive?.stale ?? false}
           testid="region-demand-source"
         />
+      )}
+
+      {regionMix && (
+        <Card className="p-5 border-card-border" data-testid="region-fuel-mix">
+          <div className="mb-2 flex flex-wrap items-baseline gap-x-2">
+            <h2 className="text-[13px] font-semibold text-foreground">Generation by fuel in {region.name}</h2>
+            <span className="font-mono text-10 text-muted-foreground/70 tabular-nums">
+              {fmtGW(regionMix.totalMw, 0)} GW at {fmtPeriodET(regionMix.periodUtc)}
+            </span>
+          </div>
+          <FuelMixBars fuels={regionMix.fuels} limit={6} />
+          <SourceFooter
+            className="mt-2"
+            source="EIA Hourly Electric Grid Monitor"
+            href={gridLive?.sourceUrl}
+            cadence="fuel data posts later than demand"
+            stale={gridLive?.stale ?? false}
+            testid="region-fuel-source"
+          />
+        </Card>
       )}
 
       <Card className="p-5 border-card-border" data-testid="region-facilities">

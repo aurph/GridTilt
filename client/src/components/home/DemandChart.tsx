@@ -8,7 +8,8 @@ import {
   ResponsiveContainer,
   ReferenceLine,
 } from "recharts";
-import { electricityData, demandAnnotations, US_END_USE_SOURCE } from "@/data/electricity-demand";
+import { demandAnnotations } from "@/data/electricity-demand";
+import { useElectricityUse } from "@/lib/electricity-live";
 import { DATA_CENTER_LOAD, demandTrough, latestDemand, pctChange } from "@/lib/sector-demand";
 import { seriesMotion } from "@/lib/chart-theme";
 
@@ -20,11 +21,6 @@ const RULE_BRIGHT = "rgba(255, 255, 255, 0.14)";
 // The heading is computed from the series so it cannot drift from the line
 // under it. The old one promised 1,500 TWh of new data-center load by 2030 and
 // compared it with the UK, whose 2024 electricity demand was 319 TWh.
-const FIRST_YEAR = electricityData[0]?.year;
-const LATEST = latestDemand(electricityData);
-const TROUGH = demandTrough(electricityData);
-const RISE = TROUGH && LATEST ? pctChange(TROUGH.twh, LATEST.twh) : null;
-
 const LINK_STYLE = { color: "var(--mkt-ink-muted)", textDecoration: "underline", textUnderlineOffset: 2 };
 
 // One measured series on one axis. Data-center use used to share the plot on a
@@ -32,6 +28,12 @@ const LINK_STYLE = { color: "var(--mkt-ink-muted)", textDecoration: "underline",
 // now sits in the text with its source; the Overview chart plots it with room
 // to explain the two report editions.
 export function DemandChart() {
+  const electricity = useElectricityUse();
+  const electricityData = electricity.series;
+  const FIRST_YEAR = electricityData[0]?.year;
+  const LATEST = latestDemand(electricityData);
+  const TROUGH = demandTrough(electricityData);
+  const RISE = TROUGH && LATEST ? pctChange(TROUGH.twh, LATEST.twh) : null;
   return (
     <section
       style={{
@@ -189,10 +191,10 @@ export function DemandChart() {
           data-testid="home-demand-sources"
         >
           source:{" "}
-          <a href={US_END_USE_SOURCE.url} target="_blank" rel="noopener noreferrer" style={LINK_STYLE}>
-            {US_END_USE_SOURCE.label}
+          <a href={electricity.sourceUrl} target="_blank" rel="noopener noreferrer" style={LINK_STYLE}>
+            {electricity.sourceLabel}
           </a>
-          , electricity end use (retail sales plus direct use), retrieved {US_END_USE_SOURCE.retrieved}.
+          , electricity end use (retail sales plus direct use), {electricity.asOf}.
           Data centers:{" "}
           <a href={DATA_CENTER_LOAD.sourceUrl} target="_blank" rel="noopener noreferrer" style={LINK_STYLE}>
             {DATA_CENTER_LOAD.source}

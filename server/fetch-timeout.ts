@@ -35,3 +35,42 @@ export async function fetchWithTimeout(
     clearTimeout(timer);
   }
 }
+
+/** Long enough for EIA's largest response, which normally takes 1-3 s. */
+export const BODY_DEADLINE_MS = 15_000;
+
+/**
+ * Deadline on a whole fetch, body included. fetchWithTimeout's timer stops once
+ * headers arrive, so a response that stalls mid-body (seen from EIA: 8 KB, then
+ * nothing for three minutes) would hang forever. Behind a single-flight cache
+ * that hangs every visitor, not just one. Runs `load`, and once more if the
+ * first try missed the deadline; any other failure is passed straight through.
+ */
+export async function withDeadline<T>(load: () => Promise<T>, ms: number = BODY_DEADLINE_MS): Promise<T> {
+  const attempt = () =>
+    new Promise<T>((resolve, reject) => {
+      const timer = setTimeout(() => reject(new DeadlineError()), ms);
+      load().then(
+        (v) => {
+          clearTimeout(timer);
+          resolve(v);
+        },
+        (e) => {
+          clearTimeout(timer);
+          reject(e);
+        },
+      );
+    });
+  try {
+    return await attempt();
+  } catch (error) {
+    if (!(error instanceof DeadlineError)) throw error;
+    return attempt();
+  }
+}
+
+class DeadlineError extends Error {
+  constructor() {
+    super("upstream response missed its deadline");
+  }
+}

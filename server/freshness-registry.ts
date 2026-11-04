@@ -93,6 +93,18 @@ export const DATASET_REGISTRY: DatasetSpec[] = [
     writes: "none",
   },
   {
+    id: "eia-electricity-use",
+    label: "US electricity use and retail sales (EIA)",
+    file: "EIA API (in-memory cache)",
+    source: "live",
+    read: { kind: "envelope", fields: ["lastChecked"] },
+    dataRead: { kind: "envelope", fields: ["lastRefreshed"] },
+    // Refetched daily on request; EIA itself publishes monthly, about three months behind.
+    expectedMaxAgeHours: 3 * DAY,
+    mechanism: "GET /api/physical/electricity-use refreshes the cache on request (server/eia-electricity.ts); needs EIA_API_KEY",
+    writes: "none",
+  },
+  {
     id: "clusters",
     label: "Compute Frontier clusters",
     file: "clusters.json",
