@@ -1,4 +1,4 @@
-import { fetchWithTimeout } from "./fetch-timeout";
+import { fetchWithTimeout, withDeadline } from "./fetch-timeout";
 import { eiaBase } from "./eia-grid";
 // ─── US electricity use from the Monthly Energy Review API ───────────────
 //
@@ -226,11 +226,13 @@ function totalEnergyUrl(key: string, frequency: "annual" | "monthly", start: str
   return url;
 }
 
-async function readRows(fetchImpl: FetchLike, url: URL): Promise<EiaRow[]> {
-  const res = await fetchImpl(url);
-  if (!res.ok) throw new Error(`EIA responded ${res.status}`);
-  const body = (await res.json()) as { response?: { data?: EiaRow[] } };
-  return Array.isArray(body?.response?.data) ? body.response!.data! : [];
+function readRows(fetchImpl: FetchLike, url: URL): Promise<EiaRow[]> {
+  return withDeadline(async () => {
+    const res = await fetchImpl(url);
+    if (!res.ok) throw new Error(`EIA responded ${res.status}`);
+    const body = (await res.json()) as { response?: { data?: EiaRow[] } };
+    return Array.isArray(body?.response?.data) ? body.response!.data! : [];
+  });
 }
 
 export async function getElectricityUse(
