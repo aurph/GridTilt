@@ -23,3 +23,6 @@ encode() {
 encode "02 State heroes/Graded/MD-3-ac0af29c-graded.png" state/md-3-ac0af29c.webp 1920 92
 encode "02 State heroes/Graded/VA-2-c34faa21-graded.png" state/va-2-c34faa21.webp 1920 92
 encode "02 State heroes/Graded/TX-1-ac1949bb-graded.png" state/tx-1-ac1949bb.webp 1920 92
+
+# The Buildout Brief's masthead: Research and Subscribe.
+encode "03 Brief/Graded/MH-1-72737b63-graded.png" brief/mh-1-72737b63.webp 1920 92

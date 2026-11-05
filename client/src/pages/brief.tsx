@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AsOf, ErrorState } from "@/components/Freshness";
+import { BriefMasthead } from "@/components/brief-masthead";
 import { Newspaper, Copy, Check, ChevronDown, ChevronUp } from "lucide-react";
 
 interface BriefSection { heading: string; points: string[]; }
@@ -98,7 +99,9 @@ export default function BriefPage({ embedded = false }: { embedded?: boolean; pa
   // single self-contained card — today's read above the long-form archive.
   if (embedded) {
     return (
-      <Card className="border-brand/30 p-5 sm:p-6" data-testid="brief-embedded">
+      <Card className="border-brand/30 overflow-hidden" data-testid="brief-embedded">
+        <BriefMasthead className="border-b border-border" />
+        <div className="p-5 sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 mb-4">
           <div className="flex items-center gap-2">
             <Newspaper className="h-4 w-4 text-brand" />
@@ -145,6 +148,7 @@ export default function BriefPage({ embedded = false }: { embedded?: boolean; pa
             )}
           </>
         )}
+        </div>
       </Card>
     );
   }
