@@ -79,6 +79,14 @@ describe("explainers page", () => {
     assert.ok(buildSitemap({ tickers: [], clusters: [], articles: [] }).includes("<loc>https://gridtilt.com/explainers</loc>"));
   });
 
+  it("shares with a picture that is on disk, at the size link previews expect", () => {
+    const { ogImage } = getPageMeta("/explainers");
+    assert.ok(ogImage.startsWith("https://gridtilt.com/media/share/"), ogImage);
+    const buf = readFileSync(onDisk(ogImage.replace("https://gridtilt.com", "")));
+    assert.equal(buf[0], 0xff, "a JPEG, which every link preview reads");
+    assert.ok(buf.length <= 300_000, `${buf.length} bytes`);
+  });
+
   it("every poster and captions file is in client/public", () => {
     for (const e of EXPLAINERS) {
       for (const f of [e.poster, e.captions]) assert.ok(existsSync(onDisk(f)), f);

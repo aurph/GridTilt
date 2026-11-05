@@ -72,7 +72,7 @@ export function notFoundMeta(): PageMeta {
 
 const BASE_URL = "https://gridtilt.com";
 
-const STATIC_PAGES: Record<string, { title: string; description: string; slug: string }> = {
+const STATIC_PAGES: Record<string, { title: string; description: string; slug: string; ogImage?: string }> = {
   "/": {
     title: "GridTilt: Power projects, grid conditions, electricity costs",
     description: "GridTilt shows what is being built on your power grid, who is behind it, and what is known about the cost. Choose your state, or explore projects, power agreements and the companies behind them.",
@@ -152,6 +152,7 @@ const STATIC_PAGES: Record<string, { title: string; description: string; slug: s
     title: "Explainers | GridTilt",
     description: "Short videos on who runs your power grid, why one data center can have three megawatt numbers, and what the interconnection queue is.",
     slug: "explainers",
+    ogImage: "/media/share/explainers-e1-v1.jpg",
   },
   "/subscribe": {
     title: "The Brief: Power Projects and Grid Changes | GridTilt",
@@ -388,7 +389,7 @@ export function getPageMeta(pathname: string): PageMeta {
       title: staticPage.title,
       description: staticPage.description,
       canonical: `${BASE_URL}/${staticPage.slug}`,
-      ogImage: `${BASE_URL}/api/og?page=${staticPage.slug || "home"}`,
+      ogImage: staticPage.ogImage ? `${BASE_URL}${staticPage.ogImage}` : `${BASE_URL}/api/og?page=${staticPage.slug || "home"}`,
       ogType: "website",
       jsonLd,
     };

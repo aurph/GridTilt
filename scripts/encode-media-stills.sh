@@ -26,3 +26,26 @@ encode "02 State heroes/Graded/TX-1-ac1949bb-graded.png" state/tx-1-ac1949bb.web
 
 # The Buildout Brief's masthead: Research and Subscribe.
 encode "03 Brief/Graded/MH-1-72737b63-graded.png" brief/mh-1-72737b63.webp 1920 92
+
+# share <source png> <output path under media/> : a 1200 x 630 JPEG, center cropped.
+share() {
+  python3 - "$LIB/$1" "$OUT/$2" <<'PY'
+import sys
+from PIL import Image
+im = Image.open(sys.argv[1]).convert("RGB")
+w, h = im.size
+target = 1200 / 630
+if w / h > target:
+    nw = round(h * target)
+    box = ((w - nw) // 2, 0, (w - nw) // 2 + nw, h)
+else:
+    nh = round(w / target)
+    box = (0, (h - nh) // 2, w, (h - nh) // 2 + nh)
+im.crop(box).resize((1200, 630), Image.LANCZOS).save(sys.argv[2], quality=84, optimize=True, progressive=True)
+PY
+  printf '%8d  %s\n' "$(wc -c < "$OUT/$2")" "$2"
+}
+mkdir -p "$OUT/share"
+
+# Share images, for pages whose text card or fallback says less than a picture would.
+share "04 Explainers/E1/E1-thumbnail-DRAFT.png" share/explainers-e1-v1.jpg
