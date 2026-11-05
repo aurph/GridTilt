@@ -13,6 +13,8 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/Freshness";
 import { PageHeader } from "@/components/PageHeader";
+import { VideoTrigger } from "@/components/video-trigger";
+import { WHO_RUNS_YOUR_GRID } from "@/data/explainers";
 import { STATE_HEROES } from "@/data/state-heroes";
 import { monthsBefore, yearOnYearChange } from "@/lib/rates";
 
@@ -193,7 +195,9 @@ export default function StatePage() {
         ) : (
           <>
             <Card className="border-card-border" data-testid="state-page-grid">
-              <SectionTitle>Grid operator and reliability</SectionTitle>
+              <SectionTitle right={<VideoTrigger video={WHO_RUNS_YOUR_GRID} className="text-brand hover:text-brand-2" testId="state-page-explainer" />}>
+                Grid operator and reliability
+              </SectionTitle>
               <div className="p-4 space-y-2 text-sm">
                 <p className="text-foreground">
                   {data.operatorLabel}.{data.operatorNote ? <span className="text-muted-foreground"> {data.operatorNote}</span> : null}

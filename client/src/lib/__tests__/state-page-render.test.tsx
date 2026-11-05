@@ -64,6 +64,12 @@ describe("state page hero", () => {
     assert.match(html, new RegExp(`<img[^>]*src="${src}"[^>]*width="${width}"[^>]*height="${height}"`));
     assert.match(html, /alt="Illustration: /);
   });
+
+  it("offers the explainer on who runs the grid as a trigger, with no player on the page", () => {
+    const html = render({ configured: false, howTo: "set EIA_API_KEY" });
+    assert.match(html, /Who runs your grid\?/);
+    assert.ok(!html.includes("<video"));
+  });
 });
 
 describe("state page render", () => {
