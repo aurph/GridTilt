@@ -1,6 +1,4 @@
 import { Hero } from "@/components/home/Hero";
-import { FilmSection } from "@/components/home/film-section";
-import { GridGearBand } from "@/components/home/grid-gear-band";
 import { FeaturesShowcase } from "@/components/home/FeaturesShowcase";
 import { DemandChart } from "@/components/home/DemandChart";
 import { FloatingScrollCue } from "@/components/home/FloatingScrollCue";
@@ -13,9 +11,7 @@ export default function Home() {
   return (
     <div className="gt-marketing min-h-screen w-full">
       <Hero />
-      <FilmSection />
       <FeaturesShowcase />
-      <GridGearBand />
       <DemandChart />
       <FloatingScrollCue />
     </div>

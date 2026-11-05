@@ -1,6 +1,6 @@
 /**
- * The explainer videos and the sources behind their narration. Files live in
- * client/public/media/explainers.
+ * The explainer videos and the sources behind their narration, and the launch
+ * film. Files live in client/public/media.
  *
  * Everything under /media is served with a one-year immutable cache
  * (server/static.ts), so a re-cut must use a new file name: move the -v1 suffix
@@ -101,3 +101,14 @@ export const WHAT_IS_THE_QUEUE: Explainer = {
 };
 
 export const EXPLAINERS: Explainer[] = [WHO_RUNS_YOUR_GRID, THREE_MEGAWATT_NUMBERS, WHAT_IS_THE_QUEUE];
+
+/** The launch film. It makes no figures or named claims, so it lists no sources. */
+export const LAUNCH_FILM: Explainer = {
+  id: "launch-film",
+  title: "The film",
+  duration: "0:34",
+  video: "/media/film/gridtilt-film-v1.mp4",
+  poster: "/media/film/gridtilt-film-v1.jpg",
+  captions: "/media/film/gridtilt-film-v1.vtt",
+  sources: [],
+};
