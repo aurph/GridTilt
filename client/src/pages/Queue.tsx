@@ -4,6 +4,8 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AsOf, ErrorState } from "@/components/Freshness";
+import { ExplainerCard } from "@/components/explainer-card";
+import { WHAT_IS_THE_QUEUE } from "@/data/explainers";
 import {
   Tooltip as UITooltip,
   TooltipContent,
@@ -278,6 +280,8 @@ export default function Queue({ embedded = false }: { embedded?: boolean; params
             <span>Stargate Abilene: <span className="text-foreground">{h.stargateAbileneGW} GW</span><Est on={isEst("stargateAbileneGW")} /></span>
           </div>
         )}
+
+        {embedded && <ExplainerCard explainer={WHAT_IS_THE_QUEUE} layout="row" />}
 
         {/* Filters — compact chip row */}
         <div className="flex flex-wrap items-center gap-2 text-xs" data-testid="backlog-filters">

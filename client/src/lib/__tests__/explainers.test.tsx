@@ -12,8 +12,9 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Router, Route } from "wouter";
 import { TooltipProvider } from "../../components/ui/tooltip";
-import { EXPLAINERS } from "../../data/explainers";
+import { EXPLAINERS, WHAT_IS_THE_QUEUE } from "../../data/explainers";
 import Explainers from "../../pages/explainers";
+import Queue from "../../pages/Queue";
 import { buildSitemap, getPageMeta } from "../../../../server/seo";
 
 function render(): string {
@@ -56,6 +57,19 @@ describe("explainers page", () => {
         assert.ok(html.includes(`href="${s.url}"`), s.url);
       }
     }
+  });
+
+  it("the queue explainer plays on the Queue tab, with its sources", () => {
+    const html = renderToStaticMarkup(
+      <QueryClientProvider client={new QueryClient()}>
+        <TooltipProvider>
+          <Queue embedded />
+        </TooltipProvider>
+      </QueryClientProvider>,
+    );
+    assert.ok(html.includes(`src="${WHAT_IS_THE_QUEUE.video}"`));
+    assert.match(html, /preload="none"/);
+    for (const s of WHAT_IS_THE_QUEUE.sources) assert.ok(html.includes(`href="${s.url}"`), s.url);
   });
 
   it("is a real page: it has metadata and is in the sitemap", () => {
