@@ -35,4 +35,4 @@ copy "06 Launch film/Web/FILM-launch-poster.jpg" film/gridtilt-film-v1.jpg
 copy "06 Launch film/Web/FILM-launch.vtt"        film/gridtilt-film-v1.vtt
 
 total="$(find "$OUT" -name '*.mp4' -exec wc -c {} + 2>/dev/null | awk 'END {print $1+0}')"
-printf 'MP4 total under media/: %.1f MB (limit 60)\n' "$(echo "$total / 1048576" | bc -l)"
+printf 'MP4 total under media/: %.2f MB (limit 60)\n' "$(echo "$total / 1000000" | bc -l)"

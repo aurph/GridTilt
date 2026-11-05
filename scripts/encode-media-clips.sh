@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
-# Encodes the silent rotation clips to 720p H.264 at 2 Mbps, no audio, fast start,
-# and writes each clip's first frame as its poster, so nothing jumps when it starts.
-# Originals stay in the library. Needs swiftc, cwebp and python3 with opencv.
+# Encodes the library's silent web rotation clips (05 Rotation/Web) down to 720p
+# H.264 at 1.85 Mbps, no audio, fast start, because the web files at 5.3 MB each
+# would put the site's video over the 60 MB limit. Writes each clip's first frame as
+# its poster, so nothing jumps when it starts. Needs swiftc, cwebp and python3 with
+# opencv.
 #
 #   scripts/encode-media-clips.sh [library-folder]
 #
@@ -21,9 +23,9 @@ mkdir -p "$OUT"
 
 swiftc -O -suppress-warnings ${SWIFT_SDK:+-sdk "$SWIFT_SDK"} "$ROOT/scripts/encode-clip.swift" -o "$TMP/encode-clip"
 
-# clip <name in the library's 05 Rotation folder>
+# clip <name in the library's 05 Rotation/Web folder>
 clip() {
-  "$TMP/encode-clip" "$LIB/05 Rotation/$1-16x9.mp4" "$TMP/$1.mp4" 1280 720 2000000 >/dev/null
+  "$TMP/encode-clip" "$LIB/05 Rotation/Web/$1.mp4" "$TMP/$1.mp4" 1280 720 1850000 >/dev/null
   cp "$TMP/$1.mp4" "$OUT/$1-v1.mp4"
   python3 -c 'import cv2, sys; ok, f = cv2.VideoCapture(sys.argv[1]).read(); assert ok; cv2.imwrite(sys.argv[2], f)' "$TMP/$1.mp4" "$TMP/$1.png"
   cwebp -quiet -q 88 -m 6 -sharp_yuv -metadata none "$TMP/$1.png" -o "$OUT/$1-v1.webp"

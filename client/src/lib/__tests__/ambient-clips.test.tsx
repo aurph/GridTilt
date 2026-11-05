@@ -34,12 +34,12 @@ describe("ambient clips", () => {
 
   it("the file has no sound track and is light", () => {
     const buf = readFileSync(join(PUBLIC, video));
-    assert.ok(buf.length <= 4 * 1024 * 1024, `${video} is ${buf.length} bytes`);
+    assert.ok(buf.length <= 3_000_000, `${video} is ${buf.length} bytes`);
     assert.equal(buf.indexOf("soun"), -1, "no audio track");
   });
 
   it("the site's video files stay under the repo's 60 MB limit", () => {
     const bytes = mp4s(join(PUBLIC, "media")).reduce((sum, f) => sum + statSync(f).size, 0);
-    assert.ok(bytes <= 60 * 1024 * 1024, `${(bytes / 1048576).toFixed(1)} MB of video`);
+    assert.ok(bytes <= 60_000_000, `${(bytes / 1_000_000).toFixed(2)} MB of video`);
   });
 });
