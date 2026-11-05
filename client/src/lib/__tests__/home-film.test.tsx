@@ -26,8 +26,11 @@ describe("home film", () => {
     assert.ok(readFileSync(join(PUBLIC, vtt), "utf-8").startsWith("WEBVTT"));
   });
 
-  const video = /<source src="([^"]+)"/.exec(html)?.[1] ?? "";
-  it("its video is in client/public", { skip: existsSync(join(PUBLIC, video)) ? false : "waiting on the re-cut: the film is not committed yet" }, () => {
-    assert.ok(existsSync(join(PUBLIC, video)));
+  it("its video is in client/public as H.264 with sound, fast start", () => {
+    const video = /<source src="([^"]+)"/.exec(html)?.[1] ?? "";
+    const buf = readFileSync(join(PUBLIC, video));
+    assert.ok(buf.includes("avc1"));
+    assert.ok(buf.includes("soun"));
+    assert.ok(buf.indexOf("moov") < buf.indexOf("mdat"));
   });
 });

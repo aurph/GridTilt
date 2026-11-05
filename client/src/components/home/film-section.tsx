@@ -28,7 +28,8 @@ export function FilmSection() {
           data-testid="home-film-video"
         >
           <source src={FILM.video} type="video/mp4" />
-          <track kind="captions" src={FILM.captions} srcLang="en" label="English" />
+          {/* On by default: the re-cut has no captions burned in. */}
+          <track kind="captions" src={FILM.captions} srcLang="en" label="English" default />
         </video>
       </div>
     </section>
