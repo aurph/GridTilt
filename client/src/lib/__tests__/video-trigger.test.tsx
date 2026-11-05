@@ -5,12 +5,16 @@
  */
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { statSync } from "node:fs";
+import { join } from "node:path";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Router } from "wouter";
 import { TooltipProvider } from "../../components/ui/tooltip";
 import { VideoTrigger } from "../../components/video-trigger";
-import { WHAT_IS_THE_QUEUE } from "../../data/explainers";
+import { EXPLAINERS, WHAT_IS_THE_QUEUE } from "../../data/explainers";
+import BlogIndex from "../../pages/BlogIndex";
 import Queue from "../../pages/Queue";
 
 describe("video trigger", () => {
@@ -41,5 +45,23 @@ describe("video trigger", () => {
     );
     assert.ok(html.includes(WHAT_IS_THE_QUEUE.title));
     assert.ok(!html.includes("<video"));
+  });
+
+  it("Research offers the three explainers with small thumbnails and no player", () => {
+    const html = renderToStaticMarkup(
+      <QueryClientProvider client={new QueryClient()}>
+        <TooltipProvider>
+          <Router ssrPath="/blog">
+            <BlogIndex />
+          </Router>
+        </TooltipProvider>
+      </QueryClientProvider>,
+    );
+    assert.ok(!html.includes("<video"));
+    for (const e of EXPLAINERS) {
+      assert.ok(html.includes(e.title), e.id);
+      assert.ok(e.thumb && html.includes(`src="${e.thumb}"`), e.id);
+      assert.ok(statSync(join(process.cwd(), "client", "public", e.thumb!)).size <= 20_000, `${e.id}: a thumbnail, not a poster`);
+    }
   });
 });

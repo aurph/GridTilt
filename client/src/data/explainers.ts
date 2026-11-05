@@ -20,6 +20,8 @@ export interface Explainer {
   video: string;
   poster: string;
   captions: string;
+  /** A small image for a row of triggers. */
+  thumb?: string;
   sources: ExplainerSource[];
 }
 
@@ -27,6 +29,7 @@ const files = (name: string) => ({
   video: `/media/explainers/${name}-v1.mp4`,
   poster: `/media/explainers/${name}-v1.jpg`,
   captions: `/media/explainers/${name}-v1.vtt`,
+  thumb: `/media/explainers/${name}-thumb-v1.webp`,
 });
 
 const AEP_OHIO = { label: "AEP Ohio, Data Center Tariff", url: "https://www.aepohio.com/company/about/rates/data-center-tariff/" };

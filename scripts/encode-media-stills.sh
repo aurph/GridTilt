@@ -49,3 +49,8 @@ mkdir -p "$OUT/share"
 
 # A share image, for a page whose text card says less than a picture would.
 share "03 Brief/Graded/MH-1-72737b63-graded.png" share/subscribe-mh-1-v1.jpg
+
+# Small thumbnails for the explainer triggers on Research.
+encode "04 Explainers/Web/E1-who-runs-your-grid-poster.jpg" explainers/e1-who-runs-your-grid-thumb-v1.webp 192 72
+encode "04 Explainers/Web/E2-three-megawatt-numbers-poster.jpg" explainers/e2-three-megawatt-numbers-thumb-v1.webp 192 72
+encode "04 Explainers/Web/E3-what-is-the-queue-poster.jpg" explainers/e3-what-is-the-queue-thumb-v1.webp 192 72
