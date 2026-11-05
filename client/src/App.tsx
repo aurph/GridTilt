@@ -43,6 +43,7 @@ const BlogIndex = lazy(() => import("@/pages/BlogIndex"));
 const BlogPost = lazy(() => import("@/pages/BlogPost"));
 const Subscribe = lazy(() => import("@/pages/Subscribe"));
 const Privacy = lazy(() => import("@/pages/Privacy"));
+const Explainers = lazy(() => import("@/pages/explainers"));
 const AdminDatacenters = lazy(() => import("@/pages/AdminDatacenters"));
 const AdminSocial = lazy(() => import("@/pages/AdminSocial"));
 
@@ -63,6 +64,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/timeline": "Timeline",
   "/data-status": "Data status",
   "/blog": "Research",
+  "/explainers": "Explainers",
   "/subscribe": "Subscribe",
   "/privacy": "Privacy",
 };
@@ -167,6 +169,7 @@ function Router() {
       <Route path="/blog/:slug" component={BlogPost} />
       <Route path="/subscribe" component={Subscribe} />
       <Route path="/privacy" component={Privacy} />
+      <Route path="/explainers" component={Explainers} />
       <Route path="/admin/datacenters" component={AdminDatacenters} />
       <Route path="/admin/social" component={AdminSocial} />
       <Route component={NotFound} />

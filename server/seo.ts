@@ -148,6 +148,11 @@ const STATIC_PAGES: Record<string, { title: string; description: string; slug: s
     description: "On-demand GPU rental prices ($/GPU/hr) for H100, H200, GB200, B200, B300, MI300X and more, blended across the major neoclouds and marketplaces. Sourced blended estimates with marketplace ranges and 1W/1M/YTD/1Y changes.",
     slug: "neocloud-intel",
   },
+  "/explainers": {
+    title: "Explainers | GridTilt",
+    description: "Short videos on who runs your power grid, why one data center can have three megawatt numbers, and what the interconnection queue is.",
+    slug: "explainers",
+  },
   "/subscribe": {
     title: "The Brief: Power Projects and Grid Changes | GridTilt",
     description: "New power projects, grid conditions and the companies behind them, by email.",
