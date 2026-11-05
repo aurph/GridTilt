@@ -21,7 +21,6 @@ const SECTIONS: { label: string; href: string; match: (p: string) => boolean }[]
   { label: "Catalysts", href: "/catalysts", match: (p) => p === "/catalysts" },
   { label: "Timeline", href: "/timeline", match: (p) => p === "/timeline" },
   { label: "Research", href: "/blog", match: (p) => p.startsWith("/blog") || p === "/brief" },
-  { label: "Explainers", href: "/explainers", match: (p) => p === "/explainers" },
 ];
 
 export function TopNav() {

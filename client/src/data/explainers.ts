@@ -13,7 +13,6 @@ export interface ExplainerSource {
 }
 
 export interface Explainer {
-  /** Also the anchor on /explainers. */
   id: string;
   title: string;
   /** Printed beside the title, as the player prints it: it shows no length until it has loaded. */

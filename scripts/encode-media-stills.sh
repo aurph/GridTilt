@@ -47,6 +47,5 @@ PY
 }
 mkdir -p "$OUT/share"
 
-# Share images, for pages whose text card or fallback says less than a picture would.
-share "04 Explainers/E1/E1-thumbnail-DRAFT.png" share/explainers-e1-v1.jpg
+# A share image, for a page whose text card says less than a picture would.
 share "03 Brief/Graded/MH-1-72737b63-graded.png" share/subscribe-mh-1-v1.jpg
