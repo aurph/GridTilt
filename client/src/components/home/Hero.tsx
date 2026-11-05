@@ -7,6 +7,8 @@ import { Wordmark } from "./Wordmark";
 import { GridPulse } from "./grid-pulse";
 import { MarketTape } from "./market-tape";
 import { StatePagesRow } from "@/components/StatePagesRow";
+import { VideoTrigger } from "@/components/video-trigger";
+import { LAUNCH_FILM } from "@/data/explainers";
 
 // The wordmark leads, then one statement of purpose and the state-first
 // journey. Each stat is read from the API that serves it; nothing is
@@ -175,7 +177,7 @@ export function Hero() {
             GridTilt shows what is being built on your power grid, who is behind it, and what is
             known about the cost.
           </motion.p>
-          <motion.div variants={fadeUp} className="mt-8 flex flex-wrap items-center justify-center gap-4">
+          <motion.div variants={fadeUp} className="relative mt-8 flex flex-wrap items-center justify-center gap-4">
             <Link
               href="/overview"
               className="rounded bg-brand px-6 py-3 text-[14px] font-semibold text-black no-underline transition-opacity hover:opacity-90"
@@ -190,6 +192,14 @@ export function Hero() {
             >
               Explore the map
             </Link>
+            {/* In the gap above the stats and out of the flow, so the buttons and
+                the stats stay exactly where they were. */}
+            <VideoTrigger
+              video={LAUNCH_FILM}
+              label="Watch the film"
+              className="absolute left-1/2 top-full mt-3 -translate-x-1/2 text-[13px] text-muted-foreground transition-colors hover:text-foreground"
+              testId="hero-film"
+            />
           </motion.div>
 
           {/* The ledger. Each figure links to the module that shows its working
