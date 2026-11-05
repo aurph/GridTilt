@@ -24,7 +24,7 @@ encode "02 State heroes/Graded/MD-3-ac0af29c-graded.png" state/md-3-ac0af29c.web
 encode "02 State heroes/Graded/VA-2-c34faa21-graded.png" state/va-2-c34faa21.webp 1920 92
 encode "02 State heroes/Graded/TX-1-ac1949bb-graded.png" state/tx-1-ac1949bb.webp 1920 92
 
-# The Buildout Brief's masthead: Research and Subscribe.
+# The Buildout Brief's masthead, at the head of the signup card on Subscribe.
 encode "03 Brief/Graded/MH-1-72737b63-graded.png" brief/mh-1-72737b63.webp 1920 92
 
 # share <source png> <output path under media/> : a 1200 x 630 JPEG, center cropped.
@@ -51,6 +51,6 @@ mkdir -p "$OUT/share"
 share "03 Brief/Graded/MH-1-72737b63-graded.png" share/subscribe-mh-1-v1.jpg
 
 # Small thumbnails for the explainer triggers on Research.
-encode "04 Explainers/Web/E1-who-runs-your-grid-poster.jpg" explainers/e1-who-runs-your-grid-thumb-v1.webp 192 72
-encode "04 Explainers/Web/E2-three-megawatt-numbers-poster.jpg" explainers/e2-three-megawatt-numbers-thumb-v1.webp 192 72
-encode "04 Explainers/Web/E3-what-is-the-queue-poster.jpg" explainers/e3-what-is-the-queue-thumb-v1.webp 192 72
+encode "04 Explainers/Web/E1-who-runs-your-grid-poster.jpg" explainers/e1-who-runs-your-grid-thumb-v1.webp 192 85
+encode "04 Explainers/Web/E2-three-megawatt-numbers-poster.jpg" explainers/e2-three-megawatt-numbers-thumb-v1.webp 192 85
+encode "04 Explainers/Web/E3-what-is-the-queue-poster.jpg" explainers/e3-what-is-the-queue-thumb-v1.webp 192 85
