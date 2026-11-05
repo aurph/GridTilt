@@ -31,7 +31,8 @@ export function ExplainerCard({ explainer, layout = "stack" }: { explainer: Expl
       data-testid={`explainer-video-${id}`}
     >
       <source src={video} type="video/mp4" />
-      <track kind="captions" src={captions} srcLang="en" label="English" />
+      {/* On by default: the re-cut has no captions burned in, so this is the only text. */}
+      <track kind="captions" src={captions} srcLang="en" label="English" default />
     </video>
   );
   const sourceLine = (

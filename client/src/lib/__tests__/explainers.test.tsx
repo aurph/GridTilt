@@ -5,7 +5,7 @@
  */
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -31,7 +31,6 @@ function render(): string {
 
 const PUBLIC = join(process.cwd(), "client", "public");
 const onDisk = (f: string) => join(PUBLIC, f);
-const videosAreIn = EXPLAINERS.some((e) => existsSync(onDisk(e.video)));
 
 describe("explainers page", () => {
   it("offers three videos with a poster and captions, and downloads nothing until play", () => {
@@ -86,7 +85,12 @@ describe("explainers page", () => {
     }
   });
 
-  it("every video is in client/public", { skip: videosAreIn ? false : "waiting on the re-cut: no explainer video is committed yet" }, () => {
-    for (const e of EXPLAINERS) assert.ok(statSync(onDisk(e.video)).size > 0, e.video);
+  it("every video is in client/public as H.264 with sound, fast start", () => {
+    for (const e of EXPLAINERS) {
+      const buf = readFileSync(onDisk(e.video));
+      assert.ok(buf.includes("avc1"), `${e.video}: H.264 plays everywhere`);
+      assert.ok(buf.includes("soun"), `${e.video}: has narration`);
+      assert.ok(buf.indexOf("moov") < buf.indexOf("mdat"), `${e.video}: index before data, so it starts while downloading`);
+    }
   });
 });
