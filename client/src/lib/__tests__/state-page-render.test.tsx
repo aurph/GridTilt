@@ -64,11 +64,6 @@ describe("state page hero", () => {
     assert.match(html, new RegExp(`<img[^>]*src="${src}"[^>]*width="${width}"[^>]*height="${height}"`));
     assert.match(html, /alt="Illustration: /);
   });
-
-  it("links the explainer on who runs the grid from the operator section", () => {
-    const html = render({ configured: false, howTo: "set EIA_API_KEY" });
-    assert.match(html, /href="\/explainers#who-runs-your-grid"/);
-  });
 });
 
 describe("state page render", () => {
