@@ -94,8 +94,7 @@ export default function Subscribe() {
 
   return (
     <div data-testid="subscribe-page">
-      <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-6 md:py-8">
-        <BriefMasthead className="mb-8 md:mb-10 rounded-xl border border-card-border" />
+      <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-12 md:py-16">
         <div className="grid lg:grid-cols-[1fr_380px] gap-10 lg:gap-14 items-start">
           <div className="space-y-8">
             <div className="space-y-3">
@@ -175,7 +174,9 @@ export default function Subscribe() {
                 <div className="text-sm text-white/70">{errorMsg}</div>
               </div>
             ) : (
-              <form onSubmit={handleSubmit} className="bg-surface-raised/60 border border-subtle rounded-xl p-5 space-y-3" data-testid="subscribe-form">
+              <form onSubmit={handleSubmit} className="bg-surface-raised/60 border border-subtle rounded-xl overflow-hidden" data-testid="subscribe-form">
+                <BriefMasthead className="border-b border-subtle" />
+                <div className="p-5 space-y-3">
                 <div>
                   <label htmlFor="subscribe-email" className="block text-11 font-semibold text-white/70 mb-1.5">
                     Email address
@@ -204,6 +205,7 @@ export default function Subscribe() {
                 <p className="text-10 text-white/25 text-center pt-1">
                   Free. One email per week. Unsubscribe anytime.
                 </p>
+                </div>
               </form>
             )}
           </div>
