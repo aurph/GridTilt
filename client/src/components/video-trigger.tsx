@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Play, X } from "lucide-react";
 import type { Explainer } from "@/data/explainers";
 
@@ -10,6 +11,8 @@ import type { Explainer } from "@/data/explainers";
  *
  * Native <dialog>: the browser handles the focus trap, Esc and the top layer. The
  * player only exists while open, which is what keeps a closed one from downloading.
+ * It renders under <body>: moving focus into it from inside a clipped section, like
+ * the home hero, scrolled that section and left the page's content out of place.
  */
 export function VideoTrigger({
   video,
@@ -35,13 +38,13 @@ export function VideoTrigger({
     if (!open) return;
     dialog.current?.showModal();
     // So Space starts it. The browser would otherwise focus the close button.
-    player.current?.focus();
+    player.current?.focus({ preventScroll: true });
   }, [open]);
 
   const closed = () => {
     player.current?.pause();
     setOpen(false);
-    trigger.current?.focus();
+    trigger.current?.focus({ preventScroll: true });
   };
 
   return (
@@ -76,7 +79,7 @@ export function VideoTrigger({
         )}
       </button>
 
-      {open && (
+      {open && createPortal(
         <dialog
           ref={dialog}
           onClose={closed}
@@ -130,7 +133,8 @@ export function VideoTrigger({
               ))}
             </p>
           )}
-        </dialog>
+        </dialog>,
+        document.body,
       )}
     </>
   );
