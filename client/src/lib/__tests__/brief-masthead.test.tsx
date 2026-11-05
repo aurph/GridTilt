@@ -10,6 +10,7 @@ import { Router } from "wouter";
 import { TooltipProvider } from "../../components/ui/tooltip";
 import { BRIEF_MASTHEAD_SRC } from "../../components/brief-masthead";
 import BlogIndex from "../../pages/BlogIndex";
+import Subscribe from "../../pages/Subscribe";
 
 function render(page: React.ReactElement, path: string): string {
   return renderToStaticMarkup(
@@ -30,5 +31,9 @@ describe("Brief masthead", () => {
     const html = render(<BlogIndex />, "/blog");
     assert.ok(html.includes(`src="${BRIEF_MASTHEAD_SRC}"`));
     assert.match(html, /alt="Illustration: /);
+  });
+
+  it("shows on Subscribe", () => {
+    assert.ok(render(<Subscribe />, "/subscribe").includes(`src="${BRIEF_MASTHEAD_SRC}"`));
   });
 });

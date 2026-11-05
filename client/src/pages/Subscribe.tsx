@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { CheckCircle2, Mail, TrendingUp, Map, BarChart3, TrendingDown } from "lucide-react";
+import { BriefMasthead } from "@/components/brief-masthead";
 import { Button } from "@/components/ui/button";
 import { apiRequest } from "@/lib/queryClient";
 import { signupErrorMessage, signupResult } from "@/lib/signup";
@@ -93,7 +94,8 @@ export default function Subscribe() {
 
   return (
     <div data-testid="subscribe-page">
-      <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-12 md:py-16">
+      <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-6 md:py-8">
+        <BriefMasthead className="mb-8 md:mb-10 rounded-xl border border-card-border" />
         <div className="grid lg:grid-cols-[1fr_380px] gap-10 lg:gap-14 items-start">
           <div className="space-y-8">
             <div className="space-y-3">
