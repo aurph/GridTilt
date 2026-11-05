@@ -88,7 +88,7 @@ export function VideoTrigger({
             if (e.target === dialog.current) dialog.current?.close();
           }}
           aria-label={video.title}
-          className="m-auto w-[min(1000px,calc(100vw-2rem),calc((100dvh-8rem)*16/9))] max-w-none overflow-hidden rounded-xl border border-card-border bg-card p-0 text-left text-foreground backdrop:bg-black/80"
+          className="m-auto w-[min(1000px,calc(100vw-2rem),calc((100dvh-8rem)*16/9))] max-w-none overflow-y-auto rounded-xl border border-card-border bg-card p-0 text-left text-foreground backdrop:bg-black/80"
           data-testid={`${testId}-dialog`}
         >
           <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-2">
