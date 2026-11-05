@@ -16,6 +16,7 @@ const SECTIONS: [string, string][] = [
   ["Catalysts", "/catalysts"],
   ["Timeline", "/timeline"],
   ["Research", "/blog"],
+  ["Explainers", "/explainers"],
 ];
 
 const DATA: [string, string][] = [
