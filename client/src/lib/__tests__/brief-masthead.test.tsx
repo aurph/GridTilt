@@ -1,7 +1,7 @@
 /** The Brief's masthead shows on Research with its size and alt text, and its file is web weight. */
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { statSync } from "node:fs";
+import { readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -11,6 +11,7 @@ import { TooltipProvider } from "../../components/ui/tooltip";
 import { BRIEF_MASTHEAD_SRC } from "../../components/brief-masthead";
 import BlogIndex from "../../pages/BlogIndex";
 import Subscribe from "../../pages/Subscribe";
+import { getPageMeta } from "../../../../server/seo";
 
 function render(page: React.ReactElement, path: string): string {
   return renderToStaticMarkup(
@@ -35,5 +36,13 @@ describe("Brief masthead", () => {
 
   it("shows on Subscribe", () => {
     assert.ok(render(<Subscribe />, "/subscribe").includes(`src="${BRIEF_MASTHEAD_SRC}"`));
+  });
+
+  it("Subscribe shares with the masthead, as a JPEG on disk", () => {
+    const { ogImage } = getPageMeta("/subscribe");
+    assert.ok(ogImage.startsWith("https://gridtilt.com/media/share/"), ogImage);
+    const buf = readFileSync(join(process.cwd(), "client", "public", ogImage.replace("https://gridtilt.com", "")));
+    assert.equal(buf[0], 0xff);
+    assert.ok(buf.length <= 300_000, `${buf.length} bytes`);
   });
 });

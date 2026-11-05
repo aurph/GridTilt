@@ -158,6 +158,7 @@ const STATIC_PAGES: Record<string, { title: string; description: string; slug: s
     title: "The Brief: Power Projects and Grid Changes | GridTilt",
     description: "New power projects, grid conditions and the companies behind them, by email.",
     slug: "subscribe",
+    ogImage: "/media/share/subscribe-mh-1-v1.jpg",
   },
 };
 
