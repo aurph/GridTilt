@@ -13,6 +13,7 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/Freshness";
 import { PageHeader } from "@/components/PageHeader";
+import { STATE_HEROES } from "@/data/state-heroes";
 import { monthsBefore, yearOnYearChange } from "@/lib/rates";
 
 interface StateDocument {
@@ -182,6 +183,7 @@ export default function StatePage() {
       />
 
       <div className="flex-1 w-full max-w-[1000px] mx-auto p-4 sm:p-6 space-y-4">
+        <StateHeroImage slug={slug} />
         {isError ? (
           <ErrorState label="This state's page failed to load." onRetry={() => refetch()} />
         ) : isLoading || !data ? (
@@ -356,6 +358,23 @@ export default function StatePage() {
         )}
       </div>
     </div>
+  );
+}
+
+/** Keyed by the address, so it holds its space while the page's data loads. */
+function StateHeroImage({ slug }: { slug: string }) {
+  const hero = STATE_HEROES[slug];
+  if (!hero) return null;
+  return (
+    <img
+      src={hero.src}
+      alt={hero.alt}
+      width={hero.width}
+      height={hero.height}
+      decoding="async"
+      className="block h-auto w-full rounded-xl border border-card-border bg-card"
+      data-testid="state-page-hero"
+    />
   );
 }
 
