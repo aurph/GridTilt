@@ -44,6 +44,7 @@ describe("explainers page", () => {
       assert.ok(html.includes(`poster="${e.poster}"`), e.id);
       assert.match(html, new RegExp(`<track[^>]*kind="captions"[^>]*src="${e.captions}"`));
       assert.ok(html.includes(`>${e.title}</h2>`), e.id);
+      assert.ok(html.includes(`aria-label="Play ${e.title}"`), `${e.id}: the poster starts the player`);
     }
   });
 

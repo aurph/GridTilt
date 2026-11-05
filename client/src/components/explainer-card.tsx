@@ -1,11 +1,11 @@
 import { Fragment } from "react";
+import { PosterVideo } from "@/components/poster-video";
 import { Card } from "@/components/ui/card";
 import type { Explainer } from "@/data/explainers";
 
 /**
  * One explainer: its title and length, the video, and the sources behind the
- * narration. Nothing downloads until the reader presses play. The aspect class
- * holds the player's space, so the page does not move when the poster arrives.
+ * narration.
  *
  * `row` is for a page whose data comes first: from lg up the player sits beside
  * the title and sources, so the card costs the page one short band.
@@ -21,19 +21,14 @@ export function ExplainerCard({ explainer, layout = "stack" }: { explainer: Expl
     </div>
   );
   const player = (
-    <video
-      controls
-      preload="none"
-      playsInline
+    <PosterVideo
+      video={video}
       poster={poster}
-      aria-label={title}
-      className={`block aspect-video w-full bg-background ${row ? "lg:border-r lg:border-border" : ""}`}
-      data-testid={`explainer-video-${id}`}
-    >
-      <source src={video} type="video/mp4" />
-      {/* On by default: the re-cut has no captions burned in, so this is the only text. */}
-      <track kind="captions" src={captions} srcLang="en" label="English" default />
-    </video>
+      captions={captions}
+      title={title}
+      className={row ? "lg:border-r lg:border-border" : ""}
+      testId={`explainer-video-${id}`}
+    />
   );
   const sourceLine = (
     <p className="px-4 py-2 text-10 leading-relaxed text-muted-foreground/70" data-testid={`explainer-sources-${id}`}>

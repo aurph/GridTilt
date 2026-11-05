@@ -1,3 +1,5 @@
+import { PosterVideo } from "@/components/poster-video";
+
 /**
  * The launch film, under the hero. The reader starts it, and nothing downloads
  * until then. Files under /media are cached for a year (server/static.ts), so a
@@ -18,19 +20,14 @@ export function FilmSection() {
           <h2 className="text-[28px] font-bold leading-tight tracking-tight text-foreground sm:text-[36px]">The film</h2>
           <span className="font-mono text-[13px] tabular-nums text-muted-foreground">{FILM.duration}</span>
         </div>
-        <video
-          controls
-          preload="none"
-          playsInline
+        <PosterVideo
+          video={FILM.video}
           poster={FILM.poster}
-          aria-label="The film"
-          className="mt-8 block aspect-video w-full rounded-md border border-border bg-card"
-          data-testid="home-film-video"
-        >
-          <source src={FILM.video} type="video/mp4" />
-          {/* On by default: the re-cut has no captions burned in. */}
-          <track kind="captions" src={FILM.captions} srcLang="en" label="English" default />
-        </video>
+          captions={FILM.captions}
+          title="The film"
+          className="mt-8 overflow-hidden rounded-md border border-border bg-card"
+          testId="home-film-video"
+        />
       </div>
     </section>
   );
