@@ -7,6 +7,8 @@ import { Wordmark } from "./Wordmark";
 import { GridPulse } from "./grid-pulse";
 import { MarketTape } from "./market-tape";
 import { StatePagesRow } from "@/components/StatePagesRow";
+import { VideoTrigger } from "@/components/video-trigger";
+import { LAUNCH_FILM } from "@/data/explainers";
 
 // The wordmark leads, then one statement of purpose and the state-first
 // journey. Each stat is read from the API that serves it; nothing is
@@ -190,6 +192,12 @@ export function Hero() {
             >
               Explore the map
             </Link>
+            <VideoTrigger
+              video={LAUNCH_FILM}
+              label="Watch the film"
+              className="text-[13px] text-muted-foreground transition-colors hover:text-foreground"
+              testId="hero-film"
+            />
           </motion.div>
 
           {/* The ledger. Each figure links to the module that shows its working
