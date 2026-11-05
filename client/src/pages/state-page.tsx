@@ -365,7 +365,7 @@ export default function StatePage() {
   );
 }
 
-/** Keyed by the address, so it holds its space while the page's data loads. */
+/** A slim banner, so the data stays above the fold. Keyed by the address, so it holds its space while the page's data loads. */
 function StateHeroImage({ slug }: { slug: string }) {
   const hero = STATE_HEROES[slug];
   if (!hero) return null;
@@ -376,7 +376,8 @@ function StateHeroImage({ slug }: { slug: string }) {
       width={hero.width}
       height={hero.height}
       decoding="async"
-      className="block h-auto w-full rounded-xl border border-card-border bg-card"
+      style={{ objectPosition: hero.position }}
+      className="block h-[120px] w-full rounded-xl border border-card-border bg-card object-cover sm:h-[180px]"
       data-testid="state-page-hero"
     />
   );
