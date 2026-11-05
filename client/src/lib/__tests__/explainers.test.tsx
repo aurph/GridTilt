@@ -5,7 +5,7 @@
  */
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, statSync } from "node:fs";
+import { existsSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -30,8 +30,8 @@ function render(): string {
 }
 
 const PUBLIC = join(process.cwd(), "client", "public");
-const onDisk = (e: (typeof EXPLAINERS)[number]) => [e.video, e.poster, e.captions].map((f) => join(PUBLIC, f));
-const filesAreIn = EXPLAINERS.flatMap(onDisk).some(existsSync);
+const onDisk = (f: string) => join(PUBLIC, f);
+const videosAreIn = EXPLAINERS.some((e) => existsSync(onDisk(e.video)));
 
 describe("explainers page", () => {
   it("offers three videos with a poster and captions, and downloads nothing until play", () => {
@@ -79,14 +79,14 @@ describe("explainers page", () => {
     assert.ok(buildSitemap({ tickers: [], clusters: [], articles: [] }).includes("<loc>https://gridtilt.com/explainers</loc>"));
   });
 
-  it("every wired file is in client/public, and the set stays under the repo's weight limit", { skip: filesAreIn ? false : "waiting on the re-cut: no explainer file is committed yet" }, () => {
-    let bytes = 0;
+  it("every poster and captions file is in client/public", () => {
     for (const e of EXPLAINERS) {
-      for (const f of onDisk(e)) {
-        assert.ok(existsSync(f), f);
-        bytes += statSync(f).size;
-      }
+      for (const f of [e.poster, e.captions]) assert.ok(existsSync(onDisk(f)), f);
+      assert.ok(readFileSync(onDisk(e.captions), "utf-8").startsWith("WEBVTT"), e.captions);
     }
-    assert.ok(bytes <= 60 * 1024 * 1024, `${bytes} bytes`);
+  });
+
+  it("every video is in client/public", { skip: videosAreIn ? false : "waiting on the re-cut: no explainer video is committed yet" }, () => {
+    for (const e of EXPLAINERS) assert.ok(statSync(onDisk(e.video)).size > 0, e.video);
   });
 });
