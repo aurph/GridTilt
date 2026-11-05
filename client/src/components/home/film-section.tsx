@@ -9,7 +9,7 @@ const FILM = {
   video: "/media/film/gridtilt-film-v1.mp4",
   poster: "/media/film/gridtilt-film-v1.jpg",
   captions: "/media/film/gridtilt-film-v1.vtt",
-  duration: "0:35",
+  duration: "0:34",
 };
 
 export function FilmSection() {

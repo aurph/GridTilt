@@ -16,7 +16,7 @@ export interface Explainer {
   /** Also the anchor on /explainers. */
   id: string;
   title: string;
-  /** Printed beside the title: the player shows no length until it has loaded. */
+  /** Printed beside the title, as the player prints it: it shows no length until it has loaded. */
   duration: string;
   video: string;
   poster: string;
@@ -44,7 +44,7 @@ const FERC_SHOW_CAUSE = { label: "FERC, June 2026 show cause orders", url: "http
 export const WHO_RUNS_YOUR_GRID: Explainer = {
   id: "who-runs-your-grid",
   title: "Who runs your grid?",
-  duration: "1:04",
+  duration: "1:03",
   ...files("e1-who-runs-your-grid"),
   sources: [
     { label: "EIA, interconnections and balancing authorities", url: "https://www.eia.gov/todayinenergy/detail.php?id=27152" },
@@ -67,7 +67,7 @@ export const WHO_RUNS_YOUR_GRID: Explainer = {
 export const THREE_MEGAWATT_NUMBERS: Explainer = {
   id: "three-megawatt-numbers",
   title: "Three megawatt numbers",
-  duration: "1:04",
+  duration: "1:03",
   ...files("e2-three-megawatt-numbers"),
   sources: [
     {
@@ -87,7 +87,7 @@ export const THREE_MEGAWATT_NUMBERS: Explainer = {
 export const WHAT_IS_THE_QUEUE: Explainer = {
   id: "what-is-the-queue",
   title: "What is the queue?",
-  duration: "1:04",
+  duration: "1:03",
   ...files("e3-what-is-the-queue"),
   sources: [
     { label: "LBNL, Queued Up", url: "https://emp.lbl.gov/queues" },
