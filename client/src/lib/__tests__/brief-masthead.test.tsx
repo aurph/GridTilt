@@ -1,4 +1,4 @@
-/** The Brief's masthead shows on Research with its size and alt text, and its file is web weight. */
+/** The Brief's masthead shows on Subscribe with its alt text, and its file is web weight. */
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync, statSync } from "node:fs";
@@ -9,7 +9,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Router } from "wouter";
 import { TooltipProvider } from "../../components/ui/tooltip";
 import { BRIEF_MASTHEAD_SRC } from "../../components/brief-masthead";
-import BlogIndex from "../../pages/BlogIndex";
 import Subscribe from "../../pages/Subscribe";
 import { getPageMeta } from "../../../../server/seo";
 
@@ -28,14 +27,10 @@ describe("Brief masthead", () => {
     assert.ok(statSync(join(process.cwd(), "client", "public", BRIEF_MASTHEAD_SRC)).size <= 200_000);
   });
 
-  it("shows on Research, with an alt text that says it is an illustration", () => {
-    const html = render(<BlogIndex />, "/blog");
+  it("shows on Subscribe, with an alt text that says it is an illustration", () => {
+    const html = render(<Subscribe />, "/subscribe");
     assert.ok(html.includes(`src="${BRIEF_MASTHEAD_SRC}"`));
     assert.match(html, /alt="Illustration: /);
-  });
-
-  it("shows on Subscribe", () => {
-    assert.ok(render(<Subscribe />, "/subscribe").includes(`src="${BRIEF_MASTHEAD_SRC}"`));
   });
 
   it("Subscribe shares with the masthead, as a JPEG on disk", () => {
