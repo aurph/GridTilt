@@ -50,7 +50,7 @@ export default function BlogIndex() {
                 key={e.id}
                 video={e}
                 thumb={e.thumb}
-                className="w-[240px] shrink-0 rounded-lg border border-card-border bg-card p-2 transition-colors hover:border-brand/50 md:w-auto"
+                className="w-[240px] shrink-0 rounded-lg border border-card-border bg-card p-2 transition-colors hover:border-brand/50 md:w-auto lg:h-[81px]"
                 testId={`research-explainer-${e.id}`}
               />
             ))}
