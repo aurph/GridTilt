@@ -12,6 +12,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Router } from "wouter";
 import { TooltipProvider } from "../../components/ui/tooltip";
+import { Hero } from "../../components/home/Hero";
 import { VideoTrigger } from "../../components/video-trigger";
 import { EXPLAINERS, WHAT_IS_THE_QUEUE } from "../../data/explainers";
 import BlogIndex from "../../pages/BlogIndex";
@@ -63,5 +64,17 @@ describe("video trigger", () => {
       assert.ok(e.thumb && html.includes(`src="${e.thumb}"`), e.id);
       assert.ok(statSync(join(process.cwd(), "client", "public", e.thumb!)).size <= 20_000, `${e.id}: a thumbnail, not a poster`);
     }
+  });
+
+  it("Home's hero offers the film as one quiet trigger, with no player", () => {
+    const html = renderToStaticMarkup(
+      <QueryClientProvider client={new QueryClient()}>
+        <Router ssrPath="/">
+          <Hero />
+        </Router>
+      </QueryClientProvider>,
+    );
+    assert.ok(html.includes("Watch the film"));
+    assert.ok(!html.includes("<video"));
   });
 });
