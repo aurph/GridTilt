@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { compactCatalystLabel } from "@/lib/catalyst-compact-label";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, Link } from "wouter";
 import {
@@ -322,7 +323,7 @@ function UpcomingTimeline({ items }: { items: MergedItem[] }) {
           const days = daysUntil(item.sortDate);
           let timeLabel = `${formatDateShort(item.sortDate)}`;
           let timeLabelColor: string = INK.muted;
-          if (item.type === "catalyst" && item.exactDay === false) { timeLabel = item.dateLabel; }
+          if (item.type === "catalyst" && item.exactDay === false) { timeLabel = compactCatalystLabel(item.dateLabel); }
           // A reader ahead of Eastern time can see an event dated today ET as -1 day.
           else if (days <= 0) { timeLabel = "Today"; timeLabelColor = BRAND.primary; }
           else if (days === 1) { timeLabel = "Tomorrow"; timeLabelColor = BRAND.secondary; }

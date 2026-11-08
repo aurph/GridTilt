@@ -134,8 +134,8 @@ export function GridLiveCard({ className = "" }: { className?: string }) {
             </p>
           ) : (
             <p className="text-xs text-muted-foreground" data-testid="grid-live-unconfigured">
-              Live grid data is not configured on this server.
-              {data && !data.configured ? ` ${data.howTo}` : ""}
+              Live grid data is unavailable right now. The latest hourly figures are on{" "}
+              <a href="https://www.eia.gov/electricity/gridmonitor/" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-foreground">EIA's grid monitor</a>.
             </p>
           )}
         </div>

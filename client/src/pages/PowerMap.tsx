@@ -195,7 +195,7 @@ const POWER_TABS = [
 ];
 
 const POWER_SUBTITLES: Record<string, string> = {
-  map: "US Datacenter Map",
+  map: "US Data Center Map",
   deals: "Power agreements",
   queue: "Interconnection Backlog",
 };

@@ -59,7 +59,7 @@ export function DemandChart() {
               <>
                 <br />
                 <span style={{ color: "var(--mkt-accent)", fontStyle: "italic" }}>
-                  {LATEST.twh.toLocaleString()} TWh in {LATEST.year}, up {RISE.toFixed(0)}% from {TROUGH.year}.
+                  {LATEST.twh.toLocaleString()} TWh in {LATEST.year}, up {RISE.toFixed(0)}% from its {TROUGH.year} low.
                 </span>
               </>
             )}

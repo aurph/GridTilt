@@ -187,7 +187,7 @@ export const DATASET_REGISTRY: DatasetSpec[] = [
   },
   {
     id: "state-pages",
-    label: "State pages (Maryland pilot)",
+    label: "State pages",
     file: "state-pages.json",
     read: { kind: "none" },
     expectedMaxAgeHours: null,

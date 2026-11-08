@@ -618,7 +618,7 @@ export default function TheStack() {
         title="Equity Heatmap"
         testId="stack-header"
         about="Public companies across the layers of the AI power supply chain, with intraday prices from Yahoo Finance. Cards, table, heatmap, and supply-chain flow views."
-        stats={<HeaderStat label="Equities" value="100" valueClass="text-foreground" />}
+        stats={<HeaderStat label="Equities" value={data ? String(Object.entries(data).reduce((n, [k, v]) => (k !== "correlation" && Array.isArray(v) ? n + v.length : n), 0)) : "-"} valueClass="text-foreground" />}
         right={
           <>
             {majorityState && majorityState !== "REGULAR" && (
