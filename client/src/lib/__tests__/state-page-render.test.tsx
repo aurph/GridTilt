@@ -6,13 +6,16 @@
  */
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Router, Route } from "wouter";
 import { TooltipProvider } from "../../components/ui/tooltip";
+import { STATE_HEROES } from "../../data/state-heroes";
 import StatePage from "../../pages/state-page";
-import { loadStatePage } from "../../../../server/state-page";
+import { loadStatePage, loadStatePageSlugs } from "../../../../server/state-page";
 
 function render(rates?: unknown): string {
   const qc = new QueryClient();
@@ -34,6 +37,39 @@ function render(rates?: unknown): string {
 const MD_SERIES = Array.from({ length: 13 }, (_, i) => {
   const month = new Date(Date.UTC(2025, 6 + i, 1)).toISOString().slice(0, 7);
   return { month, centsPerKwh: i === 0 ? 18.83 : i === 12 ? 21.41 : 20 };
+});
+
+describe("state page hero", () => {
+  /** Width and height from a lossy WebP's own header. */
+  function webpSize(buf: Buffer): { width: number; height: number } {
+    assert.equal(buf.toString("ascii", 0, 4), "RIFF");
+    assert.equal(buf.toString("ascii", 12, 16), "VP8 ", "lossy WebP");
+    return { width: buf.readUInt16LE(26) & 0x3fff, height: buf.readUInt16LE(28) & 0x3fff };
+  }
+
+  it("each hero is for a published page, and its file matches what the page declares", () => {
+    const published = new Set(loadStatePageSlugs("2026-10-30").map((s) => s.slug));
+    for (const [slug, hero] of Object.entries(STATE_HEROES)) {
+      assert.ok(published.has(slug), `${slug} has no published page`);
+      const buf = readFileSync(join(process.cwd(), "client", "public", hero.src));
+      assert.deepEqual(webpSize(buf), { width: hero.width, height: hero.height }, slug);
+      assert.ok(buf.length <= 200_000, `${slug} is ${buf.length} bytes`);
+      assert.match(hero.alt, /^Illustration: /, "the alt text says it is an illustration");
+    }
+  });
+
+  it("renders with its size and alt text, so nothing shifts when it loads", () => {
+    const html = render({ configured: false, howTo: "set EIA_API_KEY" });
+    const { src, width, height } = STATE_HEROES.maryland;
+    assert.match(html, new RegExp(`<img[^>]*src="${src}"[^>]*width="${width}"[^>]*height="${height}"`));
+    assert.match(html, /alt="Illustration: /);
+  });
+
+  it("offers the explainer on who runs the grid as a trigger, with no player on the page", () => {
+    const html = render({ configured: false, howTo: "set EIA_API_KEY" });
+    assert.match(html, /Who runs your grid\?/);
+    assert.ok(!html.includes("<video"));
+  });
 });
 
 describe("state page render", () => {

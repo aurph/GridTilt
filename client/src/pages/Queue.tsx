@@ -4,6 +4,8 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AsOf, ErrorState } from "@/components/Freshness";
+import { VideoTrigger } from "@/components/video-trigger";
+import { WHAT_IS_THE_QUEUE } from "@/data/explainers";
 import {
   Tooltip as UITooltip,
   TooltipContent,
@@ -199,9 +201,12 @@ export default function Queue({ embedded = false }: { embedded?: boolean; params
           </>
         )}
       </p>
-      <div className="text-11 text-muted-foreground/70 font-mono tracking-wide text-right space-y-0.5" data-testid="backlog-sources">
-        <div><AsOf updatedAt={dataUpdatedAt} intervalMs={24 * 60 * 60 * 1000} /></div>
-        {data && <FreshnessChip lastRefreshed={data.lastRefreshed} />}
+      <div className="flex items-start gap-3">
+        <VideoTrigger video={WHAT_IS_THE_QUEUE} className="text-11 text-brand hover:text-brand-2" testId="queue-explainer" />
+        <div className="text-11 text-muted-foreground/70 font-mono tracking-wide text-right space-y-0.5" data-testid="backlog-sources">
+          <div><AsOf updatedAt={dataUpdatedAt} intervalMs={24 * 60 * 60 * 1000} /></div>
+          {data && <FreshnessChip lastRefreshed={data.lastRefreshed} />}
+        </div>
       </div>
     </div>
   ) : (

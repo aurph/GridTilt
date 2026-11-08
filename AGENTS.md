@@ -126,6 +126,10 @@ Derived from the code; starred rules confirmed by Jack 2026-07-02.
   /api/admin/newsletter/issues freezes an issue revision, then .../:id/:revision/send with
   {"confirm": "<id>/<revision>"}. The old one-shot /api/newsletter/send answers 410.
   /api/webhooks/resend is gated by its Svix signature (RESEND_WEBHOOK_SECRET), not the key.
+- Site media lives in client/public/media and is served with a one-year immutable cache
+  (server/static.ts), so a changed file needs a new name, never an overwrite. Video opens through
+  components/video-trigger.tsx: a page adds one small line and nothing downloads until it is opened.
+  Video files stay under 60 MB in total (client/src/lib/__tests__/explainer-files.test.ts).
 - Commits: imperative subject prefixed by area ("Social: ...", "docs: ..."). NO Co-Authored-By
   lines, ever. Product copy and commits: plain voice, no em dashes, no marketing language.
 
