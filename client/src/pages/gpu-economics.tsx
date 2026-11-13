@@ -164,7 +164,7 @@ export default function GpuEconomics({ embedded = false }: { embedded?: boolean 
             </h1>
           </div>
           <p className="text-muted-foreground text-sm leading-relaxed">
-            What the <Link href="/neocloud-intel" className="text-brand hover:text-brand-2">rental prices</Link> actually
+            What the <Link href="/buildout?tab=gpu-prices" className="text-brand hover:text-brand-2">rental prices</Link> actually
             cost you. Hourly rates rolled out to a year, and normalized by compute so you can see which GPU is cheapest
             per unit of work, not just per hour. The calculator below estimates what a training run costs. Compute specs
             are vendor peak BF16 (dense); training figures are public estimates. Every assumption is shown and adjustable.
@@ -436,7 +436,7 @@ export default function GpuEconomics({ embedded = false }: { embedded?: boolean 
         <p className="text-11 text-muted-foreground/60 leading-relaxed px-1">
           GPU-hours = training FLOPs ÷ (peak BF16 × MFU). This is the standard first-order estimate; it ignores
           communication overhead, restarts, and data-loading stalls, so treat it as a floor. Prices come from
-          <Link href="/neocloud-intel" className="text-brand hover:text-brand-2"> Neocloud Intel</Link>.
+          <Link href="/buildout?tab=gpu-prices" className="text-brand hover:text-brand-2"> Neocloud Intel</Link>.
         </p>
       </div>
     </div>

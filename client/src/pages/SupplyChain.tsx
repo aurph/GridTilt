@@ -1,3 +1,4 @@
+import { SectionHeading } from "@/components/section-heading";
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
@@ -958,7 +959,7 @@ export default function SupplyChain({ embedded = false }: { embedded?: boolean; 
     <div className={embedded ? "sc-page sc-page-embedded" : "sc-page"} data-testid="supply-chain-page" onClick={() => setActiveNode(null)}>
       <div className="sc-topbar" data-testid="sc-summary-bar">
         <div className="sc-topbar-left">
-          <span className="text-13 font-semibold" style={{ color: BRAND.primary }}>Supply Chain</span>
+          <SectionHeading className="text-13 font-semibold text-brand">Supply Chain</SectionHeading>
           <span className="sc-topbar-sep">|</span>
           <span className="text-11 text-ink">AI Power Infrastructure</span>
         </div>

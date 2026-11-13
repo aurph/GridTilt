@@ -1,3 +1,4 @@
+import { SUB_PARAM } from "@/lib/sections";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
@@ -144,7 +145,7 @@ export default function NeocloudIntel() {
   const { data, isLoading, isError, refetch, dataUpdatedAt } = useQuery<GpuMetrics>({ queryKey: ["/api/gpu-prices/metrics"] });
   const [sortKey, setSortKey] = useState<SortKey>("current");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
-  const [tab, setTab] = useToolTabs(GPU_TABS, "prices");
+  const [tab, setTab] = useToolTabs(GPU_TABS, "prices", SUB_PARAM);
 
   const rows = data?.rows ?? [];
   const now = useMemo(() => Date.now(), [data?.asOf]);
@@ -271,7 +272,7 @@ export default function NeocloudIntel() {
           <>
             {data?.lastRefreshed && <span className="text-11 font-mono text-muted-foreground/60">source data {data.lastRefreshed}</span>}
             <AsOf updatedAt={dataUpdatedAt} />
-            <Link href="/compute-frontier" className="text-11 text-brand hover:text-brand-2 font-medium">Compute Frontier →</Link>
+            <Link href="/buildout" className="text-11 text-brand hover:text-brand-2 font-medium">Compute Frontier →</Link>
           </>
         }
         controls={<ToolTabs tabs={GPU_TABS} active={tab} onChange={setTab} />}

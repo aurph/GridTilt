@@ -22,8 +22,8 @@ export interface ToolTab {
 }
 
 /** The tab a search string names, or the fallback for none or an unknown id. */
-export function tabFromSearch(tabs: ToolTab[], fallback: string, search: string): string {
-  const t = new URLSearchParams(search.startsWith("?") ? search.slice(1) : search).get("tab");
+export function tabFromSearch(tabs: ToolTab[], fallback: string, search: string, param = "tab"): string {
+  const t = new URLSearchParams(search.startsWith("?") ? search.slice(1) : search).get(param);
   return tabs.some((x) => x.id === t) ? (t as string) : fallback;
 }
 
@@ -31,20 +31,25 @@ export function readTabParam(tabs: ToolTab[], fallback: string): string {
   return tabFromSearch(tabs, fallback, window.location.search);
 }
 
-export function useToolTabs(tabs: ToolTab[], fallback: string): [string, (id: string) => void] {
+/**
+ * `param` is the query key the tabs live in. A feature that sits inside a
+ * section (lib/sections.ts) passes SUB_PARAM, because the section's own chip
+ * row owns `tab`.
+ */
+export function useToolTabs(tabs: ToolTab[], fallback: string, param = "tab"): [string, (id: string) => void] {
   const search = useSearch();
-  const fromUrl = useMemo(() => tabFromSearch(tabs, fallback, search), [tabs, fallback, search]);
+  const fromUrl = useMemo(() => tabFromSearch(tabs, fallback, search, param), [tabs, fallback, search, param]);
   const [active, setActive] = useState(fromUrl);
   // A navigation that changes only ?tab= (the search palette, a link) keeps
   // the page mounted, so the initial state alone would ignore it.
   useEffect(() => setActive(fromUrl), [fromUrl]);
   useEffect(() => {
     const sp = new URLSearchParams(window.location.search);
-    if (active === fallback) sp.delete("tab");
-    else sp.set("tab", active);
+    if (active === fallback) sp.delete(param);
+    else sp.set(param, active);
     const qs = sp.toString();
     window.history.replaceState(null, "", `${window.location.pathname}${qs ? `?${qs}` : ""}`);
-  }, [active, fallback]);
+  }, [active, fallback, param]);
   return [active, setActive];
 }
 

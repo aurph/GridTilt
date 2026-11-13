@@ -106,6 +106,6 @@ describe("page entries", () => {
   it("name the agreements page the way the site does", () => {
     const deals = PAGE_ENTRIES.find((e) => e.id === "page-deals");
     assert.equal(deals?.label, "Power agreements");
-    assert.equal(deals?.href, "/power-map?tab=deals");
+    assert.equal(deals?.href, "/grid?tab=deals");
   });
 });

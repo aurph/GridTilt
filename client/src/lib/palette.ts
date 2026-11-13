@@ -29,19 +29,21 @@ const CATEGORY_RANK: Record<PaletteCategory, number> = {
 };
 
 export const PAGE_ENTRIES: PaletteEntry[] = [
-  { id: "page-overview", label: "Overview", category: "page", href: "/overview", keywords: "dashboard tilt home" },
-  { id: "page-stack", label: "Equities", hint: "The Stack", category: "page", href: "/stack", keywords: "stocks tickers heatmap supply" },
-  { id: "page-power-map", label: "Power Map", hint: "facilities on the grid", category: "page", href: "/power-map", keywords: "data centers map facilities" },
-  { id: "page-compute", label: "Compute Frontier", hint: "supercluster tracker", category: "page", href: "/compute-frontier", keywords: "clusters gpu superclusters" },
-  { id: "page-gpu", label: "GPU Prices", hint: "rental index", category: "page", href: "/neocloud-intel", keywords: "neocloud rental h100 economics" },
-  { id: "page-analyze", label: "Analyze", hint: "baskets and scenarios", category: "page", href: "/analyze", keywords: "portfolio basket scenario calculator" },
-  { id: "page-catalysts", label: "Catalysts", hint: "earnings and policy", category: "page", href: "/catalysts", keywords: "earnings calendar events" },
-  { id: "page-timeline", label: "Timeline", hint: "dated events", category: "page", href: "/timeline", keywords: "events history deals announcements what happened" },
-  { id: "page-data-status", label: "Data status", hint: "freshness of each dataset", category: "page", href: "/data-status", keywords: "freshness updated stale last updated sources" },
+  { id: "page-states", label: "States", hint: "state pages", category: "page", href: "/states", keywords: "state pages decisions public dates maryland virginia texas" },
+  { id: "page-power-map", label: "Power Map", hint: "Grid", category: "page", href: "/grid", keywords: "data centers map facilities campuses grid" },
+  { id: "page-queue", label: "Interconnection queue", hint: "Grid", category: "page", href: "/grid?tab=queue", keywords: "backlog interconnection queue lbnl" },
+  { id: "page-deals", label: "Power agreements", hint: "Grid", category: "page", href: "/grid?tab=deals", keywords: "deals nuclear ppa agreements" },
+  { id: "page-live-grid", label: "Live grid", hint: "Grid", category: "page", href: "/grid?tab=live", keywords: "eia demand hourly fuel mix generation operator" },
+  { id: "page-timeline", label: "Timeline", hint: "Grid", category: "page", href: "/grid?tab=timeline", keywords: "events history deals announcements what happened dated" },
+  { id: "page-compute", label: "Compute Frontier", hint: "Buildout", category: "page", href: "/buildout", keywords: "clusters gpu superclusters compute" },
+  { id: "page-supply-chain", label: "Supply Chain", hint: "Buildout", category: "page", href: "/buildout?tab=supply-chain", keywords: "graph flow stages network bottleneck raw materials" },
+  { id: "page-gpu", label: "GPU Prices", hint: "Buildout", category: "page", href: "/buildout?tab=gpu-prices", keywords: "neocloud rental h100 economics" },
+  { id: "page-overview", label: "Overview", hint: "Markets", category: "page", href: "/markets", keywords: "dashboard tilt markets" },
+  { id: "page-stack", label: "Equities", hint: "Markets", category: "page", href: "/markets?tab=equities", keywords: "stocks tickers heatmap the stack" },
+  { id: "page-analyze", label: "Analyze", hint: "Markets", category: "page", href: "/markets?tab=analyze", keywords: "portfolio basket scenario calculator" },
+  { id: "page-catalysts", label: "Catalysts", hint: "Markets", category: "page", href: "/markets?tab=catalysts", keywords: "earnings calendar events policy" },
   { id: "page-research", label: "Research", hint: "analysis and the Brief", category: "page", href: "/blog", keywords: "blog articles brief" },
-  { id: "page-queue", label: "Interconnection queue", hint: "Power Map tab", category: "page", href: "/power-map?tab=queue", keywords: "backlog interconnection queue lbnl" },
-  { id: "page-deals", label: "Power agreements", hint: "Power Map tab", category: "page", href: "/power-map?tab=deals", keywords: "deals nuclear ppa agreements" },
-  { id: "page-supply-chain", label: "Supply Chain", hint: "raw materials to end use", category: "page", href: "/supply-chain", keywords: "graph flow stages network bottleneck" },
+  { id: "page-data-status", label: "Data status", hint: "freshness of each dataset", category: "page", href: "/data-status", keywords: "freshness updated stale last updated sources" },
 ];
 
 export interface StateLike {
@@ -148,7 +150,7 @@ function score(entry: PaletteEntry, q: string): number {
  */
 export function rankEntries(entries: PaletteEntry[], query: string, limit = 12): PaletteEntry[] {
   const q = query.trim().toLowerCase();
-  if (!q) return entries.filter((e) => e.category === "page").slice(0, limit);
+  if (!q) return entries.filter((e) => e.category === "page");
   return entries
     .map((e) => ({ e, s: score(e, q) }))
     .filter((r) => r.s > 0)

@@ -14,7 +14,7 @@ import { previousPage, trackEvent } from "@/lib/analytics";
 function entrySurface(): "map" | "internal" | "direct" {
   const prior = previousPage();
   if (!prior) return "direct";
-  if (prior.startsWith("/power-map")) return "map";
+  if (prior.startsWith("/grid")) return "map";
   return "internal";
 }
 
@@ -94,7 +94,7 @@ export default function ComputeFrontierDetail() {
           ) : undefined
         }
         right={
-          <Link href="/compute-frontier" className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground" data-testid="cfd-back">
+          <Link href="/buildout" className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground" data-testid="cfd-back">
             <ArrowLeft className="h-3.5 w-3.5" /> Compute Frontier
           </Link>
         }
@@ -104,7 +104,7 @@ export default function ComputeFrontierDetail() {
         {isError || (!isLoading && !cluster) ? (
           <p className="text-sm text-muted-foreground" data-testid="cfd-error">
             No cluster matches this id. Back to the{" "}
-            <Link href="/compute-frontier" className="text-brand hover:text-brand-2">Compute Frontier</Link>.
+            <Link href="/buildout" className="text-brand hover:text-brand-2">Compute Frontier</Link>.
           </p>
         ) : isLoading ? (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">{Array(8).fill(null).map((_, i) => <Skeleton key={i} className="h-16" />)}</div>
@@ -125,7 +125,7 @@ export default function ComputeFrontierDetail() {
                     {cluster.announced}
                   </a>
                   {" · "}
-                  <Link href={`/timeline?record=cluster:${cluster.id}`} className="text-brand hover:text-brand-2" data-testid="cfd-timeline">
+                  <Link href={`/grid?tab=timeline&record=cluster:${cluster.id}`} className="text-brand hover:text-brand-2" data-testid="cfd-timeline">
                     View on timeline
                   </Link>
                 </Fact>
@@ -148,7 +148,7 @@ export default function ComputeFrontierDetail() {
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   This cluster's power is tied to a tracked nuclear-for-AI deal,{" "}
                   <span className="text-foreground font-mono">{cluster.linkedDeal}</span>. See it on the{" "}
-                  <Link href="/queue" className="text-brand hover:text-brand-2">Backlog</Link> page.
+                  <Link href="/grid?tab=queue" className="text-brand hover:text-brand-2">Backlog</Link> page.
                 </p>
               ) : (
                 <p className="text-sm text-muted-foreground leading-relaxed">

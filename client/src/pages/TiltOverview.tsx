@@ -1,3 +1,4 @@
+import { SectionHeading } from "@/components/section-heading";
 import { useQuery } from "@tanstack/react-query";
 import { compactCatalystLabel } from "@/lib/catalyst-compact-label";
 import { useMemo, useState } from "react";
@@ -601,7 +602,7 @@ function CatalystCalendarSection({ className = "" }: { className?: string }) {
           <AsOf updatedAt={dataUpdatedAt} intervalMs={900_000} />
         </div>
         <Link
-          href="/catalysts"
+          href="/markets?tab=catalysts"
           className="flex items-center gap-1 text-xs text-brand hover:text-brand-2 transition-colors font-medium"
           data-testid="link-all-catalysts"
         >
@@ -834,7 +835,7 @@ const FEATURE_SLIDES = [
     icon: Layers,
     title: "Equities",
     description: "Public companies across the supply chain: compute, nuclear, uranium, power hardware, utilities, construction, and more.",
-    href: "/stack",
+    href: "/markets?tab=equities",
     accent: BRAND.primary,
     preview: stackPreview,
   },
@@ -842,7 +843,7 @@ const FEATURE_SLIDES = [
     icon: Link2,
     title: "Supply Chain Flow",
     description: "Interactive network of supply relationships, staged from raw materials to end-use compute. Lives inside Equities.",
-    href: "/stack?view=flow",
+    href: "/markets?tab=equities&view=flow",
     accent: BRAND.secondary,
     preview: supplyChainPreview,
   },
@@ -850,7 +851,7 @@ const FEATURE_SLIDES = [
     icon: Map,
     title: "Power",
     description: "US data center map, corporate power deals, and the interconnection queue. See where the load is landing.",
-    href: "/power-map",
+    href: "/grid",
     accent: SERIES[9], // series slot 10 (copper accent)
     preview: powerMapPreview,
   },
@@ -858,7 +859,7 @@ const FEATURE_SLIDES = [
     icon: Cpu,
     title: "Compute Frontier",
     description: "Named AI superclusters by GPUs, chips, and power, tied to the nuclear-for-AI deals that feed them.",
-    href: "/compute-frontier",
+    href: "/buildout",
     accent: BRAND.primary,
     preview: powerMapPreview,
   },
@@ -866,7 +867,7 @@ const FEATURE_SLIDES = [
     icon: CalendarDays,
     title: "Catalyst Tracker",
     description: "Earnings dates from Yahoo Finance, plus dated policy and grid events.",
-    href: "/catalysts",
+    href: "/markets?tab=catalysts",
     accent: DATA_QUALITY.estimateFlag,
     preview: catalystPreview,
   },
@@ -874,7 +875,7 @@ const FEATURE_SLIDES = [
     icon: LineChart,
     title: "GPU Prices",
     description: "GPU rental price index across the neoclouds, plus cost-of-compute and training-run economics.",
-    href: "/neocloud-intel",
+    href: "/buildout?tab=gpu-prices",
     accent: BRAND.secondary,
     preview: calculatorPreview,
   },
@@ -882,7 +883,7 @@ const FEATURE_SLIDES = [
     icon: Calculator,
     title: "Analyze",
     description: "Score any portfolio for AI power exposure, and model buildout scenarios across demand, nuclear, and grid variables.",
-    href: "/analyze",
+    href: "/markets?tab=analyze",
     accent: BRAND.primary,
     preview: portfolioPreview,
   },
@@ -997,7 +998,7 @@ export default function TiltOverview() {
       {/* Compact header strip - data starts above the fold (Lake 4A) */}
       <div className="border-b border-border px-4 sm:px-6 py-3">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
-          <h1 className="text-sm font-semibold text-foreground tracking-tight">Overview</h1>
+          <SectionHeading className="text-sm font-semibold text-foreground tracking-tight">Overview</SectionHeading>
           <span className="hidden sm:block h-4 w-px bg-border" />
           {tracked && (
             <span className="flex items-baseline gap-2 font-mono" data-testid="header-tracked">
@@ -1176,7 +1177,7 @@ export default function TiltOverview() {
                 { label: "Construction", value: `${fmtGW(tracked.constructionMW)} · ${tracked.constructionCount} sites` },
                 { label: "Announced (excl.)", value: `${fmtGW(tracked.announcedMW)} · ${tracked.announcedCount} sites` },
               ] : []}
-              href="/power-map"
+              href="/grid"
               updatedAt={dcUpdatedAt}
             />
             <RealGaugeCard
@@ -1189,7 +1190,7 @@ export default function TiltOverview() {
               methodology="Mean on-demand rental price across the tracked GPU fleet, blended from public neocloud and marketplace listings (sourced estimates, flagged per model on the GPU Prices page). Falling prices mean compute supply is catching demand."
               isLoading={gpuLoading}
               rows={gpuData ? gpuTopRows : []}
-              href="/neocloud-intel"
+              href="/buildout?tab=gpu-prices"
               updatedAt={gpuUpdatedAt}
             />
             <RealGaugeCard
@@ -1202,7 +1203,7 @@ export default function TiltOverview() {
               methodology={`Anticipated reserve margins for summer 2026 from the ${NERC_LTRA.label}. NERC judges each area against its own reference margin level (7.8% to 20.3% across areas), so the headline is the area with the smallest cushion above its own level, not the lowest raw margin. NERC's risk ratings also weigh extreme weather and fuel limits, so a smaller cushion is not by itself a higher risk.`}
               isLoading={false}
               rows={headroomRows}
-              href="/power-map"
+              href="/grid"
             />
           </div>
         </div>

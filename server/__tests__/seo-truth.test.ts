@@ -2,6 +2,7 @@
 // and 200; an address that names nothing is a 404 with noindex, never the
 // home page's metadata on a 200. The sitemap lists only real pages, and the
 // same content gives the same sitemap tomorrow.
+import { LEGACY_ROUTES, SECTIONS, chipHref, legacyRedirect } from "../../client/src/lib/sections";
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -142,13 +143,36 @@ describe("parity with the client", () => {
     assert.deepEqual(keysOf("OperatorPage.tsx", "OPERATOR_META"), Object.keys(OPERATOR_SLUGS).sort());
   });
 
-  it("every client redirect is a server 301 to the same place, and every client page resolves", () => {
+  it("every old address is a server 301 to where the client forwards it, and every client page resolves", () => {
     const app = read("client", "src", "App.tsx");
-    const redirects = Object.fromEntries(
-      Array.from(app.matchAll(/<Route path="([^"]+)">\{\(\) => <Redirect to="([^"]+)"/g)).map((m) => [m[1], m[2]]),
-    );
-    assert.deepEqual(redirects, ALIAS_REDIRECTS);
-    const pages = Array.from(app.matchAll(/<Route path="([^":]+)" component=/g)).map((m) => m[1]);
+    // The client forwards exactly the site map's old routes (LegacyRedirect).
+    assert.match(app, /Object\.keys\(LEGACY_ROUTES\)\.map\(\(path\) => \(\s*<Route key=\{path\} path=\{path\} component=\{LegacyRedirect\} \/>/);
+    assert.deepEqual(Object.keys(ALIAS_REDIRECTS).sort(), Object.keys(LEGACY_ROUTES).sort());
+    for (const [from, to] of Object.entries(ALIAS_REDIRECTS)) assert.equal(to, legacyRedirect(from), from);
+    const pages = [
+      ...Array.from(app.matchAll(/<Route path="([^":]+)" component=/g)).map((m) => m[1]),
+      ...Array.from(app.matchAll(/<Route path="([^":]+)">\{\(\) => <SectionPage/g)).map((m) => m[1]),
+    ];
+    assert.ok(pages.includes("/grid") && pages.includes("/states"), "the section routes are visible to this test");
     for (const p of pages) assert.notEqual(getPageMeta(p).status, 404, p);
+  });
+
+  it("every chip has its own title, description and canonical address", () => {
+    const seen = new Map<string, string>();
+    for (const section of SECTIONS) {
+      for (const chip of section.chips) {
+        const href = chipHref(section.id, chip.id);
+        const [path, query] = href.split("?");
+        const meta = getPageMeta(path, query ? `?${query}` : "");
+        assert.equal(meta.status, undefined, href);
+        assert.equal(meta.canonical, `https://gridtilt.com${href}`, href);
+        assert.ok(!seen.has(meta.title), `${href} shares a title with ${seen.get(meta.title)}`);
+        seen.set(meta.title, href);
+      }
+    }
+    assert.equal(getPageMeta("/states").canonical, "https://gridtilt.com/states");
+    // An old address describes the page it forwards to.
+    assert.equal(getPageMeta("/queue").canonical, "https://gridtilt.com/grid?tab=queue");
+    assert.equal(getPageMeta("/analyze", "?tab=scenario").canonical, "https://gridtilt.com/markets?tab=analyze");
   });
 });

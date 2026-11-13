@@ -205,16 +205,16 @@ function PreviewSkeleton() {
 
 interface Module { number: string; name: string; caption: string; cta: string; route: string; preview: () => JSX.Element; }
 const MODULES: Module[] = [
-  { number: "01", name: "Equity Heatmap", caption: "Public companies behind the buildout, priced live.", cta: "Open the heatmap", route: "/stack", preview: SectorHeatStrip },
+  { number: "01", name: "Equity Heatmap", caption: "Public companies behind the buildout, priced live.", cta: "Open the heatmap", route: "/markets?tab=equities", preview: SectorHeatStrip },
   // Caption is filled in from /api/datacenters at render; see facilityCaption.
   // A hardcoded count cannot survive here: the datacenter ingester appends new
   // facilities every 6 hours, which is how this card came to claim 33 while the
   // map directly beneath it plotted 58.
-  { number: "02", name: "Power Map", caption: "", cta: "Open the map", route: "/power-map", preview: RealUSMap },
-  { number: "03", name: "Supply Chain Flow", caption: "Where the buildout can get stuck, mapped to the companies exposed.", cta: "Trace the chain", route: "/stack?view=flow", preview: SupplyChainMini },
-  { number: "04", name: "Catalyst Tracker", caption: "Earnings dates, rule changes, and policy votes. One calendar.", cta: "See what's next", route: "/catalysts", preview: CatalystRows },
-  { number: "05", name: "Analyze: Baskets", caption: "Compare how GridTilt classifies a set of tickers across five sectors.", cta: "Compare tickers", route: "/analyze?tab=portfolio", preview: PortfolioPentagon },
-  { number: "06", name: "Analyze: Scenario", caption: "Set your own growth and build assumptions and see the 2030 arithmetic.", cta: "Run a scenario", route: "/analyze?tab=scenario", preview: DemandSparkline },
+  { number: "02", name: "Power Map", caption: "", cta: "Open the map", route: "/grid", preview: RealUSMap },
+  { number: "03", name: "Supply Chain Flow", caption: "Where the buildout can get stuck, mapped to the companies exposed.", cta: "Trace the chain", route: "/markets?tab=equities&view=flow", preview: SupplyChainMini },
+  { number: "04", name: "Catalyst Tracker", caption: "Earnings dates, rule changes, and policy votes. One calendar.", cta: "See what's next", route: "/markets?tab=catalysts", preview: CatalystRows },
+  { number: "05", name: "Analyze: Baskets", caption: "Compare how GridTilt classifies a set of tickers across five sectors.", cta: "Compare tickers", route: "/markets?tab=analyze&sub=portfolio", preview: PortfolioPentagon },
+  { number: "06", name: "Analyze: Scenario", caption: "Set your own growth and build assumptions and see the 2030 arithmetic.", cta: "Run a scenario", route: "/markets?tab=analyze&sub=scenario", preview: DemandSparkline },
 ];
 
 /**
