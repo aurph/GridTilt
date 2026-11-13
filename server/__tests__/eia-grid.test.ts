@@ -6,6 +6,7 @@ import {
   gridLiveStamp,
   groupByRespondent,
   latestMix,
+  operatorMixes,
   resetGridLiveCache,
 } from "../eia-grid";
 
@@ -123,6 +124,30 @@ describe("latestMix", () => {
   });
 });
 
+describe("operatorMixes", () => {
+  const hour = (period: string, respondent: string, fuels: Record<string, number>) =>
+    Object.entries(fuels).map(([fueltype, value]) => ({ period, respondent, fueltype, value }));
+
+  it("sums member regions at the newest hour they all have complete", () => {
+    const mixes = operatorMixes([
+      ...hour("2026-11-03T04", "NE", { NG: 100, NUC: 100, WAT: 100 }),
+      ...hour("2026-11-03T04", "NY", { NG: 100, NUC: 100 }), // NY's newest is partial
+      ...hour("2026-11-03T03", "NE", { NG: 100, NUC: 100, WAT: 100 }),
+      ...hour("2026-11-03T03", "NY", { NG: 300, NUC: 100, WAT: 100 }),
+    ]);
+    assert.equal(mixes.NPCC.periodUtc, "2026-11-03T03");
+    assert.equal(mixes.NPCC.totalMw, 800);
+    assert.deepEqual(mixes.NPCC.fuels[0], { code: "NG", label: "Natural gas", mw: 400, sharePct: 50 });
+  });
+
+  it("leaves negative charging out of generation and omits an operator with no rows", () => {
+    const mixes = operatorMixes(hour("2026-11-03T04", "PJM", { NG: 300, NUC: 100, COL: 100, BAT: -50 }));
+    assert.equal(mixes.PJM.totalMw, 500);
+    assert.ok(!mixes.PJM.fuels.some((f) => f.code === "BAT"));
+    assert.equal(mixes.MISO, undefined);
+  });
+});
+
 describe("getGridLive", () => {
   beforeEach(() => resetGridLiveCache());
 
@@ -142,6 +167,9 @@ describe("getGridLive", () => {
         { period: "2026-11-03T16", respondent: "US48", fueltype: "NUC", value: 90000 },
         { period: "2026-11-03T16", respondent: "US48", fueltype: "COL", value: 60000 },
         { period: "2026-11-03T16", respondent: "US48", fueltype: "WND", value: 40000 },
+        { period: "2026-11-03T16", respondent: "PJM", fueltype: "NG", value: 40000 },
+        { period: "2026-11-03T16", respondent: "PJM", fueltype: "NUC", value: 30000 },
+        { period: "2026-11-03T16", respondent: "PJM", fueltype: "COL", value: 20000 },
       ],
     },
   };
@@ -172,6 +200,7 @@ describe("getGridLive", () => {
     assert.equal(r.demand.PJM.latestMw, 95000);
     assert.equal(r.latestPeriodUtc, "2026-11-03T16");
     assert.equal(r.mix?.fuels[0].code, "NG");
+    assert.equal(r.mixByOperator.PJM.totalMw, 90000);
     assert.equal(r.stale, false);
     assert.equal(urls.length, 2);
     const demandReq = urls.find((u) => u.pathname.includes("region-data"))!;
@@ -219,6 +248,7 @@ describe("getGridLive", () => {
     assert.equal(r.configured, true);
     if (!r.configured) return;
     assert.equal(r.mix, null);
+    assert.deepEqual(r.mixByOperator, {});
     assert.equal(r.demand.US48.latestMw, 459058);
   });
 

@@ -9,7 +9,7 @@ import { STAGE_LABELS, supplyNodes } from "@/data/supply-chain-config";
 import statesGeoRaw from "@/data/us-states.geo.json";
 import { Skeleton } from "@/components/ui/skeleton";
 import { filterTrackedFacilities } from "@/lib/real-gauges";
-import { electricityData } from "@/data/electricity-demand";
+import { useElectricityUse } from "@/lib/electricity-live";
 
 /**
  * Module directory: six cards, each carrying a LIVE micro-preview drawn from
@@ -173,10 +173,11 @@ function PortfolioPentagon() {
 // -- Preview 6: the measured US demand curve ---------------------------------
 // The same EIA series as the landing and Overview charts. It used to end in a
 // dashed "2030 proj." line to 6,210 TWh that no source supported.
-const DEMAND = electricityData
-  .filter((d): d is typeof d & { demand: number } => d.demand !== null)
-  .map((d) => ({ year: Number(d.year), twh: d.demand }));
 function DemandSparkline() {
+  const { series } = useElectricityUse();
+  const DEMAND = series
+    .filter((d): d is typeof d & { demand: number } => d.demand !== null)
+    .map((d) => ({ year: Number(d.year), twh: d.demand }));
   const W = 260, H = 96, PAD = 6;
   if (DEMAND.length < 2) return <PreviewSkeleton />;
   const xs = DEMAND.map((d) => d.year);

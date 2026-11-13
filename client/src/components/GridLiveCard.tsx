@@ -26,6 +26,24 @@ const FUEL_COLOR: Record<string, string> = {
 
 const fuelColor = (f: FuelShare) => FUEL_COLOR[f.code] ?? INK.muted;
 
+/** One BarRow per fuel, largest first, with the MW on hover. */
+export function FuelMixBars({ fuels, limit = 8 }: { fuels: FuelShare[]; limit?: number }) {
+  return (
+    <div data-testid="fuel-mix">
+      {fuels.slice(0, limit).map((f) => (
+        <BarRow
+          key={f.code}
+          label={f.label}
+          segments={[{ pct: f.sharePct, color: fuelColor(f) }]}
+          value={`${f.sharePct.toFixed(1)}%`}
+          title={`${f.label}: ${f.mw.toLocaleString()} MW`}
+          testid={`fuel-${f.code.toLowerCase()}`}
+        />
+      ))}
+    </div>
+  );
+}
+
 /**
  * What the lower-48 grid is carrying this hour and what is generating it,
  * straight from EIA's Hourly Electric Grid Monitor. The number the rest of
@@ -123,14 +141,16 @@ export function GridLiveCard({ className = "" }: { className?: string }) {
         </div>
 
         <div>
+          {(isLoading || live) && (
           <h3 className="mb-2 text-xs font-semibold text-foreground">
-            Generating this hour
+            Generation by fuel
             {live?.mix && (
               <span className="ml-2 font-mono text-10 font-normal text-muted-foreground/70 tabular-nums">
                 {fmtGW(live.mix.totalMw, 0)} GW at {fmtPeriodET(live.mix.periodUtc)}
               </span>
             )}
           </h3>
+          )}
           {isLoading ? (
             <div className="space-y-1.5">
               {Array.from({ length: 6 }).map((_, i) => (
@@ -138,18 +158,12 @@ export function GridLiveCard({ className = "" }: { className?: string }) {
               ))}
             </div>
           ) : live?.mix ? (
-            <div data-testid="grid-live-mix">
-              {live.mix.fuels.slice(0, 8).map((f) => (
-                <BarRow
-                  key={f.code}
-                  label={f.label}
-                  segments={[{ pct: f.sharePct, color: fuelColor(f) }]}
-                  value={`${f.sharePct.toFixed(1)}%`}
-                  title={`${f.label}: ${f.mw.toLocaleString()} MW`}
-                  testid={`grid-live-fuel-${f.code.toLowerCase()}`}
-                />
-              ))}
-            </div>
+            <>
+              <FuelMixBars fuels={live.mix.fuels} />
+              <p className="mt-1 text-10 text-muted-foreground/60">
+                EIA posts fuel data later than demand, so this is an earlier hour than the demand figure.
+              </p>
+            </>
           ) : live ? (
             <p className="text-xs text-muted-foreground">EIA has not posted a complete fuel breakdown for the latest hour.</p>
           ) : null}

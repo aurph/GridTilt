@@ -48,7 +48,9 @@ export type GridLive =
       stale: boolean;
       latestPeriodUtc: string | null;
       demand: Record<string, OperatorDemand>;
+      /** Newest complete hour; EIA's fuel data runs hours behind its demand data. */
       mix: GenerationMix | null;
+      mixByOperator: Record<string, GenerationMix>;
     };
 
 export type GridLiveConfigured = Extract<GridLive, { configured: true }>;

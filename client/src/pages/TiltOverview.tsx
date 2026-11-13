@@ -23,22 +23,22 @@ import { Zap, TrendingUp, Activity, AlertTriangle, Info, ArrowUp, ArrowDown, Cal
 import { EmailCapture, ScrollTriggeredBanner } from "@/components/EmailCapture";
 import { AsOf, ErrorState, SrChartTable } from "@/components/Freshness";
 import { GridLiveCard } from "@/components/GridLiveCard";
+import { SourceFooter } from "@/components/SourceFooter";
+import { useElectricityUse } from "@/lib/electricity-live";
 import {
   BRAND, CATEGORY_COLORS as TOKEN_CATEGORY_COLORS, CHART_CHROME, DATA_QUALITY, FONT, INK, SEMANTIC, SERIES,
 } from "@/lib/tokens";
 import { axisProps, gridProps, seriesMotion, timeTicks, tooltipContentStyle, tooltipItemStyle, tooltipLabelStyle } from "@/lib/chart-theme";
 import {
-  US_SECTOR_DEMAND,
   US_SECTOR_SOURCE,
   DATA_CENTER_LOAD,
   DATA_CENTER_2030,
-  sectorTotalTWh,
   sectorShare,
   demandTrough,
   latestDemand,
   pctChange,
 } from "@/lib/sector-demand";
-import { electricityData, DATA_CENTER_ANCHORS, US_END_USE_SOURCE } from "@/data/electricity-demand";
+import { DATA_CENTER_ANCHORS } from "@/data/electricity-demand";
 import { bucketFor, signedBuyersForType, asGW, type BucketLite, type DealRowLite } from "@/lib/deal-rollups";
 import { NERC_AREAS, NERC_LTRA } from "@/data/nerc-reserve-margins";
 import { byCushion, cushion, tightestArea } from "@/lib/reserve-margins";
@@ -948,9 +948,10 @@ export default function TiltOverview() {
   );
   // Derived from electricityData so the copy cannot drift from the chart above,
   // as the previous "up 15% from the 2022 low" line had.
-  const sectorTotal = useMemo(() => sectorTotalTWh(), []);
-  const trough = useMemo(() => demandTrough(electricityData), []);
-  const latest = useMemo(() => latestDemand(electricityData), []);
+  const electricity = useElectricityUse();
+  const { series: electricityData, sectorTotal } = electricity;
+  const trough = useMemo(() => demandTrough(electricityData), [electricityData]);
+  const latest = useMemo(() => latestDemand(electricityData), [electricityData]);
   const troughRise = useMemo(
     () => (trough && latest ? pctChange(trough.twh, latest.twh) : null),
     [trough, latest],
@@ -962,7 +963,7 @@ export default function TiltOverview() {
     const lo = Math.min(...vals);
     const hi = Math.max(...vals);
     return { min: Math.floor((lo - 50) / 100) * 100, max: Math.ceil((hi + 50) / 100) * 100 };
-  }, []);
+  }, [electricityData]);
   // Next-smallest cushions after the headline, each with its own reference.
   const headroomRows = useMemo(
     () =>
@@ -1075,6 +1076,16 @@ export default function TiltOverview() {
                   )}
                 </div>
               )}
+              {electricity.rolling && (
+                <p className="mt-1.5 font-mono text-xs text-foreground tabular-nums" data-testid="electricity-rolling">
+                  {Math.round(electricity.rolling.endUseTwh).toLocaleString()} TWh
+                  <span className="font-sans text-muted-foreground"> {electricity.sectorPeriod}, </span>
+                  <span className={electricity.rolling.endUseYoy >= 0 ? "text-brand-2" : "text-negative"}>
+                    {electricity.rolling.endUseYoy >= 0 ? "+" : ""}{electricity.rolling.endUseYoy}%
+                  </span>
+                  <span className="font-sans text-muted-foreground"> on the prior 12</span>
+                </p>
+              )}
               <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
                 Flat for a decade, rising since 2020. Data centers:{" "}
                 {DATA_CENTER_ANCHORS.map((a, i) => (
@@ -1094,18 +1105,14 @@ export default function TiltOverview() {
                 ))}
                 .
               </p>
-              <p className="mt-1.5 text-10 text-muted-foreground/70">
-                <a
-                  href={US_END_USE_SOURCE.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-brand hover:text-brand-2"
-                >
-                  {US_END_USE_SOURCE.label}
-                </a>
-                , {electricityData[0]?.year} to {electricityData[electricityData.length - 1]?.year}, retrieved{" "}
-                {US_END_USE_SOURCE.retrieved}.
-              </p>
+              <SourceFooter
+                className="mt-1.5"
+                source={electricity.sourceLabel}
+                href={electricity.sourceUrl}
+                cadence={`${electricity.asOf} · ${electricity.live ? "EIA publishes monthly, refreshed daily" : "EIA feed unavailable, showing the saved table"}`}
+                stale={electricity.stale}
+                testid="electricity-source"
+              />
             </div>
 
             <div>
@@ -1248,7 +1255,7 @@ export default function TiltOverview() {
         <Card className="p-5 border-card-border">
           <div className="flex items-center gap-2 mb-4">
             <h2 className="text-[13px] font-semibold text-foreground">
-              {US_SECTOR_SOURCE.year} US Retail Electricity Sales by Sector
+              US Retail Electricity Sales by Sector, {electricity.sectorPeriod}
             </h2>
             <UITooltip>
               <TooltipTrigger>
@@ -1266,7 +1273,7 @@ export default function TiltOverview() {
           <div className="divide-y divide-border">
             {/* Bar sits below the label rather than between fixed-width columns,
                 which left it no room on a phone and rendered the sectors as dots. */}
-            {US_SECTOR_DEMAND.map((s) => {
+            {electricity.sectors.map((s) => {
               const share = sectorShare(s.twh, sectorTotal);
               return (
                 <div key={s.sector} className="py-2.5">
@@ -1322,7 +1329,7 @@ export default function TiltOverview() {
             </div>
             <p className="text-[11px] leading-relaxed text-muted-foreground/70 mt-1.5">
               Counted inside {DATA_CENTER_LOAD.containedIn} above rather than added to them, and for{" "}
-              {DATA_CENTER_LOAD.year} rather than the 2025 the sector rows cover. A modelled estimate,
+              {DATA_CENTER_LOAD.year} rather than the period the sector rows cover. A modelled estimate,
               not a metered total: EIA's end-use accounting has no data-center category.{" "}
               <a
                 href={DATA_CENTER_LOAD.sourceUrl}
@@ -1336,7 +1343,7 @@ export default function TiltOverview() {
           </div>
 
           <p className="text-xs text-muted-foreground mt-3 pt-3 border-t border-border">
-            Retail sales total {Math.round(sectorTotal).toLocaleString()} TWh (
+            Retail sales total {Math.round(sectorTotal).toLocaleString()} TWh, {electricity.sectorPeriod} (
             <a
               href={US_SECTOR_SOURCE.url}
               target="_blank"

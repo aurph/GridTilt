@@ -181,6 +181,7 @@ export const CHECKS: Check[] = [
   keyedFeed("retail electricity rates (EIA)", "/api/physical/retail-rates"),
   keyedFeed("hourly demand (EIA)", "/api/physical/load-hourly"),
   keyedFeed("live grid by operator (EIA)", "/api/physical/grid-live"),
+  keyedFeed("US electricity use (EIA)", "/api/physical/electricity-use"),
   {
     name: "share card renders",
     path: "/api/og?template=state_fact&state=MD",
