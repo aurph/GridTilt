@@ -17,6 +17,7 @@ import {
   type GpuObservedInput,
   type ProjectInput,
   type QueueInput,
+  type StateDecisionInput,
 } from "./social-format";
 import { NERC_LTRA, STATES, STATE_GRID_SOURCE, STATE_NERC_NOTE, REGION_AREAS, NERC_AREAS, areaForState, cushion } from "./state-facts";
 
@@ -409,6 +410,36 @@ export function unchangedSince(log: LoggedPost[], template: string, text: string
     return e.text === text ? `unchanged since the post on ${e.timestamp.slice(0, 10)}` : null;
   }
   return null;
+}
+
+// ── Tuesday: one state decision ─────────────────────────────────────────────
+
+export interface CuratedStateLike {
+  code: string;
+  slug: string;
+  reviewed: string;
+  documents: Array<{ kind?: "decision" | "status"; date: string; title: string; url: string }>;
+}
+
+/**
+ * The newest dated decision across the published state pages, or null when
+ * there is none. Status snapshots decide nothing and are never posted. A tie
+ * on the date goes to the state named first alphabetically, so the pick is
+ * the same on every run.
+ */
+export function latestStateDecision(
+  states: CuratedStateLike[] | undefined,
+  names: Record<string, { name: string }>,
+): StateDecisionInput | null {
+  const rows = (states ?? [])
+    .filter((s) => names[s.code])
+    .flatMap((s) =>
+      (s.documents ?? [])
+        .filter((d) => (d.kind ?? "decision") === "decision")
+        .map((d) => ({ state: names[s.code].name, slug: s.slug, date: d.date, title: d.title, documentUrl: d.url, reviewed: s.reviewed })),
+    )
+    .sort((a, b) => (a.date === b.date ? a.state.localeCompare(b.state) : a.date < b.date ? 1 : -1));
+  return rows[0] ?? null;
 }
 
 // ── Friday: one documented change ───────────────────────────────────────────

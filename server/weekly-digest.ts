@@ -20,7 +20,7 @@ export interface WeeklyDigestInput {
   fleetAvg1yChange: number | null;
   /** The NERC area with the smallest cushion above its own reference margin. */
   tightestRTO: { label: string; marginPct: number; referencePct: number } | null;
-  /** e.g. "Week of June 29 - July 4, 2026" */
+  /** The issue date, e.g. "July 4, 2026". */
   dateLabel: string;
   siteUrl: string; // no trailing slash
   /** When the figures were taken ("October 1, 2026"): the issue is frozen at this point. */
@@ -219,7 +219,7 @@ ${moversHtml}
 <tr><td style="padding:20px 32px;">
 <div style="font-size:13px;line-height:1.6;color:${C.inkMuted};border-top:1px solid ${C.border};padding-top:16px;">${esc(brief.takeaway)}</div>
 <div style="padding:18px 0 6px;">
-<a href="${siteUrl}/overview" style="display:inline-block;background:${C.brand};color:#ffffff;text-decoration:none;font-size:13px;font-weight:700;padding:10px 18px;border-radius:6px;">Open the dashboard</a>
+<a href="${siteUrl}/states" style="display:inline-block;background:${C.brand};color:#ffffff;text-decoration:none;font-size:13px;font-weight:700;padding:10px 18px;border-radius:6px;">Open the state pages</a>
 </div>
 </td></tr>
 
@@ -262,7 +262,7 @@ export function renderWeeklyText(input: WeeklyDigestInput): string {
     for (const m of input.movers) lines.push(`${m.ticker} ${m.name}: ${m.changePercent > 0 ? "+" : ""}${m.changePercent.toFixed(2)}%`);
     lines.push(`Percent moves as of ${input.asOf}.`);
   }
-  lines.push("", input.brief.takeaway, "", `Open the dashboard: ${input.siteUrl}/overview`, "");
+  lines.push("", input.brief.takeaway, "", `State pages: ${input.siteUrl}/states`, "");
   if (input.figureSources.length > 0) {
     lines.push(`Sources and dates: ${input.figureSources.map((f) => `${f.figure}: ${f.source}, ${f.asOf}`).join("; ")}.`, "");
   }
@@ -270,10 +270,7 @@ export function renderWeeklyText(input: WeeklyDigestInput): string {
   return lines.join("\n") + "\n";
 }
 
-/** "Week of June 29 - July 4, 2026" from a given end date (US-Eastern day). */
+/** The issue's date as it prints: "July 4, 2026" (US-Eastern day). Never a week range. */
 export function weeklyDateLabel(end: Date): string {
-  const start = new Date(end.getTime() - 6 * 86_400_000);
-  const f = (d: Date, withYear: boolean) =>
-    d.toLocaleDateString("en-US", { month: "long", day: "numeric", ...(withYear ? { year: "numeric" } : {}), timeZone: "America/New_York" });
-  return `Week of ${f(start, false)} - ${f(end, true)}`;
+  return end.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "America/New_York" });
 }

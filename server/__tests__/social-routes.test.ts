@@ -52,7 +52,7 @@ const generate = (template: string) =>
   });
 
 test("each template answers with a post that fits, or a reason it skips", async () => {
-  for (const template of ["buildout", "gpu_rental", "cluster_spotlight", "grid_backlog", "documented_change", "top_movers", "catalyst_preview"]) {
+  for (const template of ["buildout", "state_decision", "cluster_spotlight", "grid_backlog", "documented_change", "gpu_rental", "top_movers", "catalyst_preview"]) {
     const res = await generate(template);
     assert.equal(res.status, 200, template);
     const body = (await res.json()) as { template: string; text?: string; length?: number; skipped?: boolean; reason?: string };

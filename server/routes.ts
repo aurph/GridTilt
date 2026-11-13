@@ -77,7 +77,8 @@ import {
   ASSET_VALUES,
   type DealProject,
 } from "./deals";
-import { composeBrief, renderBriefText, type BriefInput } from "./brief";
+import { addDays, buildBriefRecord, composeBrief, renderBriefText, type BriefInput } from "./brief";
+import { STATES as STATE_FACTS } from "./state-facts";
 import { computeGpuEconomics, TRAINING_PRESETS } from "./gpu-economics";
 import { readFrontierRegistry, summarizeFrontierRegistry, type FrontierRegistryResponse } from "./frontier-models";
 import { readInferencePrices, buildInferencePriceView } from "./inference-prices";
@@ -86,6 +87,7 @@ import { DATASET_REGISTRY } from "./freshness-registry";
 import {
   buildBuildoutPost,
   buildGpuObservedPost,
+  buildStateDecisionPost,
   buildProjectPost,
   buildQueuePost,
   buildChangePost,
@@ -102,6 +104,8 @@ import {
   changeInputFrom,
   gpuCard,
   gpuObservedInputFrom,
+  latestStateDecision,
+  type CuratedStateLike,
   latestChange,
   projectCard,
   projectInputFrom,
@@ -1105,6 +1109,13 @@ export async function ogCardForTemplate(template: string, params: CardParams = {
       const c = ((readDataJson("change-log.json").changes ?? []) as ChangeRecord[]).find((x) => x.id === params.id);
       return c ? changeCard(c) : null;
     }
+    case "state_decision": {
+      // The decision's state, on the existing state card.
+      const states = (readDataJson("state-pages.json").states ?? []) as CuratedStateLike[];
+      const newest = latestStateDecision(states, STATE_FACTS);
+      const code = newest ? states.find((s) => s.slug === newest.slug)?.code : undefined;
+      return code ? stateCard(code) : null;
+    }
     case "state_fact":
       return params.state ? stateCard(params.state) : null;
     case "top_movers":
@@ -1582,6 +1593,11 @@ function composeGpuRentalPost(today: string): PostResult {
   return buildGpuObservedPost(gpuObservedInputFrom(readGpuHistory(), today, GPU_SERVED_MAX_AGE_DAYS));
 }
 
+function composeStateDecisionPost(today: string): PostResult {
+  const states = (readDataJson("state-pages.json").states ?? []) as CuratedStateLike[];
+  return buildStateDecisionPost(latestStateDecision(states, STATE_FACTS), today, registryMaxAgeDays("state-pages", 30));
+}
+
 function composeProjectPost(today: string): PostResult {
   const root = readDataJson("clusters.json") as ClusterRoot;
   const c = weeklyProject(root.clusters ?? [], today);
@@ -1664,7 +1680,7 @@ type Composer = (today: string) => PostResult | Promise<PostResult>;
 
 const ROTATING_TEMPLATES: Record<number, { name: string; compose: Composer }> = {
   1: { name: "buildout",          compose: composeBuildoutPost },  // Mon
-  2: { name: "gpu_rental",        compose: composeGpuRentalPost }, // Tue
+  2: { name: "state_decision",    compose: composeStateDecisionPost }, // Tue
   3: { name: "cluster_spotlight", compose: composeProjectPost },   // Wed
   4: { name: "grid_backlog",      compose: composeQueuePost },     // Thu
   5: { name: "documented_change", compose: composeChangePost },    // Fri
@@ -1674,6 +1690,8 @@ const ROTATING_TEMPLATES: Record<number, { name: string; compose: Composer }> = 
 // deliberately NOT in the Mon-Fri auto-posting rotation above. These pull live
 // market/earnings data and are kept for manual use.
 const ON_DEMAND_TEMPLATES: Record<string, Composer> = {
+  // Tuesday's post until 2026-11; it skips while the live price sweep is off.
+  gpu_rental: composeGpuRentalPost,
   top_movers: composeTopMoversPost,
   catalyst_preview: composeCatalystPreviewPost,
 };
@@ -2224,7 +2242,10 @@ export async function registerRoutes(
       .filter((s: any) => typeof s?.changePercent === "number" && s.changePercent !== 0)
       .sort((a: any, b: any) => Math.abs(b.changePercent) - Math.abs(a.changePercent))
       .slice(0, 5)
-      .map((s: any) => ({ ticker: s.ticker, name: s.name, changePercent: s.changePercent }));
+      .map((s: any) => ({ ticker: s.ticker, name: s.name, changePercent: s.changePercent }))
+      // Stock movers stay out of an issue unless switched on: an issue can be
+      // forwarded to a buyer, and the brief is the record, not a market wrap.
+      .filter(() => process.env.BRIEF_INCLUDE_MOVERS === "true");
 
     // Tracked power from the facility dataset, same >=400 MW floor and
     // operational+construction definition as the dashboard.
@@ -2285,7 +2306,7 @@ export async function registerRoutes(
       footer,
     };
     return {
-      subject: `The GridTilt Weekly: ${dateLabel}`,
+      subject: brief.title,
       html: renderWeeklyEmail(input),
       text: renderWeeklyText(input),
       blockers: footerBlockers(footer),
@@ -3940,7 +3961,20 @@ ${rssItems}
   });
 
   // Weekly Buildout Brief: one synthesized read across every module.
-  function buildBriefInput(): BriefInput {
+  /**
+   * The previous issue's day: what the brief counts as "since". An explicit
+   * day wins (the admin preview, or BRIEF_SINCE while the first issues are
+   * dated by hand); otherwise seven days before the issue day.
+   */
+  function briefSince(asOf: string, explicit?: string): string {
+    const day = /^\d{4}-\d{2}-\d{2}$/;
+    if (explicit && day.test(explicit) && explicit < asOf) return explicit;
+    const env = process.env.BRIEF_SINCE;
+    if (env && day.test(env) && env < asOf) return env;
+    return addDays(asOf, -7);
+  }
+
+  function buildBriefInput(sinceDay?: string): BriefInput {
     const cwd = process.cwd();
     const clustersRoot = JSON.parse(readFileSync(join(cwd, "server", "data", "clusters.json"), "utf-8"));
     const clusters = (clustersRoot.clusters ?? []) as ClusterLite[];
@@ -3995,12 +4029,51 @@ ${rssItems}
         topSignedTypeGW: +((dm.signedByType[0]?.mw ?? 0) / 1000).toFixed(1),
       },
     };
+
+    // The record: read from the same stored files the site serves. A file
+    // that cannot be read contributes no rows; it never blocks the rollups.
+    const readOr = <T,>(file: string, fallback: T): T => {
+      try {
+        return JSON.parse(readFileSync(join(cwd, "server", "data", file), "utf-8")) as T;
+      } catch {
+        return fallback;
+      }
+    };
+    const changeLog = readOr<{ changes?: any[] }>("change-log.json", {});
+    const statePages = readOr<{ states?: any[] }>("state-pages.json", {});
+    const catalysts = readOr<any[]>("catalysts.json", []);
+    const changes = Array.isArray(changeLog.changes) && validateChangeLog(changeLog.changes).length === 0 ? changeLog.changes : [];
+    input.record = buildBriefRecord({
+      asOf: input.asOf,
+      since: briefSince(input.asOf, sinceDay),
+      changes,
+      states: (statePages.states ?? [])
+        .filter((s) => (STATE_FACTS as Record<string, { name: string }>)[s.code])
+        .map((s) => ({
+          name: (STATE_FACTS as Record<string, { name: string }>)[s.code].name,
+          documents: s.documents ?? [],
+          nextDates: s.nextDates ?? [],
+        })),
+      agreements: dm.rows.map((row) => ({
+        name: row.name,
+        firmness: row.firmness,
+        capacityMW: row.capacityMW,
+        announced: row.announced,
+        reviewed: row.reviewed,
+      })),
+      catalysts: Array.isArray(catalysts)
+        ? catalysts.filter((c) => typeof c?.date === "string" && typeof c?.title === "string").map((c) => ({ date: c.date, title: c.title, status: c.status ?? null }))
+        : [],
+    });
     return input;
   }
 
-  app.get("/api/brief", (_req, res) => {
+  // ?since=YYYY-MM-DD names the previous issue's day; without it the brief
+  // covers the seven days before today.
+  app.get("/api/brief", (req, res) => {
     try {
-      const brief = composeBrief(buildBriefInput());
+      const since = typeof req.query.since === "string" ? req.query.since : undefined;
+      const brief = composeBrief(buildBriefInput(since));
       res.json({ ...brief, text: renderBriefText(brief) });
     } catch (err) {
       console.error("Brief error:", err);
