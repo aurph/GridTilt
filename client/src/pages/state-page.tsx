@@ -157,7 +157,7 @@ export default function StatePage() {
       <div className="p-6 text-sm text-muted-foreground" data-testid="state-page-missing">
         <p>
           There is no state page at this address. Every tracked project is on the{" "}
-          <Link href="/power-map" className="text-brand hover:text-brand-2" data-testid="state-page-missing-map">Power Map</Link>.
+          <Link href="/grid" className="text-brand hover:text-brand-2" data-testid="state-page-missing-map">Power Map</Link>.
         </p>
         <StatePagesRow className="mt-4" lead="The states that have one:" />
       </div>
@@ -177,7 +177,7 @@ export default function StatePage() {
         about="One state's grid operator and reliability outlook, recent public decisions with their documents, where things stood on dated status records, the next public dates, and the projects GridTilt records there. Decisions and dates carry their documents and the day GridTilt checked them; project figures come from Compute Frontier records, each with its own sources."
         right={
           data ? (
-            <Link href="/power-map" className="text-11 text-brand hover:text-brand-2" data-testid="state-page-map">
+            <Link href="/grid" className="text-11 text-brand hover:text-brand-2" data-testid="state-page-map">
               Open the Power Map →
             </Link>
           ) : undefined

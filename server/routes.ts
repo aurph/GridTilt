@@ -16,7 +16,8 @@ import {
   rejectPending as rejectPendingDatacenter,
   stampFreshness as stampDatacenterFreshness,
 } from "./datacenter-ingester";
-import { ALIAS_REDIRECTS, BASE_URL, buildSitemap, robotsTxt, ogNameKnown } from "./seo";
+import { ALIAS_REDIRECTS, BASE_URL, buildSitemap, getPageMeta, robotsTxt, ogNameKnown } from "./seo";
+import { currentAddress, legacyRedirect } from "../client/src/lib/sections";
 import {
   computeAiPowerIndex,
   computeGridStress,
@@ -53,7 +54,7 @@ import { getUraniumCorrelation } from "./uranium-correlation";
 import { footerBlockers, renderWeeklyEmail, renderWeeklyText, weeklyDateLabel, type NewsletterFooter } from "./weekly-digest";
 import { renderEditorialEmail, renderEditorialText } from "./editorial-issue";
 import { sortChanges, validateChangeLog, type ChangeRecord } from "./change-log";
-import { loadStatePage, loadStatePageSlugs } from "./state-page";
+import { loadStatePage, loadStatePageIndex, loadStatePageSlugs } from "./state-page";
 import { fractionToPercent, getCachedFundamentals, refreshFundamentalsIfStale } from "./fundamentals";
 import { normalizeTickerInput, scoreBasket } from "./portfolio-score";
 import {
@@ -76,7 +77,8 @@ import {
   ASSET_VALUES,
   type DealProject,
 } from "./deals";
-import { composeBrief, renderBriefText, type BriefInput } from "./brief";
+import { addDays, buildBriefRecord, composeBrief, renderBriefText, type BriefInput } from "./brief";
+import { STATES as STATE_FACTS } from "./state-facts";
 import { computeGpuEconomics, TRAINING_PRESETS } from "./gpu-economics";
 import { readFrontierRegistry, summarizeFrontierRegistry, type FrontierRegistryResponse } from "./frontier-models";
 import { readInferencePrices, buildInferencePriceView } from "./inference-prices";
@@ -85,6 +87,7 @@ import { DATASET_REGISTRY } from "./freshness-registry";
 import {
   buildBuildoutPost,
   buildGpuObservedPost,
+  buildStateDecisionPost,
   buildProjectPost,
   buildQueuePost,
   buildChangePost,
@@ -101,6 +104,8 @@ import {
   changeInputFrom,
   gpuCard,
   gpuObservedInputFrom,
+  latestStateDecision,
+  type CuratedStateLike,
   latestChange,
   projectCard,
   projectInputFrom,
@@ -1104,6 +1109,13 @@ export async function ogCardForTemplate(template: string, params: CardParams = {
       const c = ((readDataJson("change-log.json").changes ?? []) as ChangeRecord[]).find((x) => x.id === params.id);
       return c ? changeCard(c) : null;
     }
+    case "state_decision": {
+      // The decision's state, on the existing state card.
+      const states = (readDataJson("state-pages.json").states ?? []) as CuratedStateLike[];
+      const newest = latestStateDecision(states, STATE_FACTS);
+      const code = newest ? states.find((s) => s.slug === newest.slug)?.code : undefined;
+      return code ? stateCard(code) : null;
+    }
     case "state_fact":
       return params.state ? stateCard(params.state) : null;
     case "top_movers":
@@ -1581,6 +1593,11 @@ function composeGpuRentalPost(today: string): PostResult {
   return buildGpuObservedPost(gpuObservedInputFrom(readGpuHistory(), today, GPU_SERVED_MAX_AGE_DAYS));
 }
 
+function composeStateDecisionPost(today: string): PostResult {
+  const states = (readDataJson("state-pages.json").states ?? []) as CuratedStateLike[];
+  return buildStateDecisionPost(latestStateDecision(states, STATE_FACTS), today, registryMaxAgeDays("state-pages", 30));
+}
+
 function composeProjectPost(today: string): PostResult {
   const root = readDataJson("clusters.json") as ClusterRoot;
   const c = weeklyProject(root.clusters ?? [], today);
@@ -1663,7 +1680,7 @@ type Composer = (today: string) => PostResult | Promise<PostResult>;
 
 const ROTATING_TEMPLATES: Record<number, { name: string; compose: Composer }> = {
   1: { name: "buildout",          compose: composeBuildoutPost },  // Mon
-  2: { name: "gpu_rental",        compose: composeGpuRentalPost }, // Tue
+  2: { name: "state_decision",    compose: composeStateDecisionPost }, // Tue
   3: { name: "cluster_spotlight", compose: composeProjectPost },   // Wed
   4: { name: "grid_backlog",      compose: composeQueuePost },     // Thu
   5: { name: "documented_change", compose: composeChangePost },    // Fri
@@ -1673,6 +1690,8 @@ const ROTATING_TEMPLATES: Record<number, { name: string; compose: Composer }> = 
 // deliberately NOT in the Mon-Fri auto-posting rotation above. These pull live
 // market/earnings data and are kept for manual use.
 const ON_DEMAND_TEMPLATES: Record<string, Composer> = {
+  // Tuesday's post until 2026-11; it skips while the live price sweep is off.
+  gpu_rental: composeGpuRentalPost,
   top_movers: composeTopMoversPost,
   catalyst_preview: composeCatalystPreviewPost,
 };
@@ -1971,7 +1990,7 @@ export async function registerRoutes(
 
   // ─── State pages (T25 pilot; server/state-page.ts) ───────────────────
   app.get("/api/state-pages", (_req, res) => {
-    res.json(loadStatePageSlugs());
+    res.json(loadStatePageIndex());
   });
 
   // 404 when no page is published under the slug; 503 when the data behind a
@@ -2223,7 +2242,10 @@ export async function registerRoutes(
       .filter((s: any) => typeof s?.changePercent === "number" && s.changePercent !== 0)
       .sort((a: any, b: any) => Math.abs(b.changePercent) - Math.abs(a.changePercent))
       .slice(0, 5)
-      .map((s: any) => ({ ticker: s.ticker, name: s.name, changePercent: s.changePercent }));
+      .map((s: any) => ({ ticker: s.ticker, name: s.name, changePercent: s.changePercent }))
+      // Stock movers stay out of an issue unless switched on: an issue can be
+      // forwarded to a buyer, and the brief is the record, not a market wrap.
+      .filter(() => process.env.BRIEF_INCLUDE_MOVERS === "true");
 
     // Tracked power from the facility dataset, same >=400 MW floor and
     // operational+construction definition as the dashboard.
@@ -2284,7 +2306,7 @@ export async function registerRoutes(
       footer,
     };
     return {
-      subject: `The GridTilt Weekly: ${dateLabel}`,
+      subject: brief.title,
       html: renderWeeklyEmail(input),
       text: renderWeeklyText(input),
       blockers: footerBlockers(footer),
@@ -2660,16 +2682,6 @@ export async function registerRoutes(
     }));
   }
 
-  app.get("/api/catalysts/earnings", async (_req, res) => {
-    await refreshEarningsCache().catch(() => {});
-    const items = getEarningsData();
-    res.json({ earnings: items });
-  });
-
-  app.get("/api/catalysts/manual", (_req, res) => {
-    res.json(loadManualCatalysts());
-  });
-
   app.get("/api/catalysts/all", async (_req, res) => {
     await refreshEarningsCache().catch(() => {});
     const earnings = getEarningsData();
@@ -2725,7 +2737,7 @@ export async function registerRoutes(
         dateStatus: e.dateStatus,
       }));
       const articles = JSON.parse(readFileSync(join(process.cwd(), "content", "blog", "articles.json"), "utf-8"));
-      const events = buildTimeline({
+      const built = buildTimeline({
         deals: readDataJson("interconnection-queue.json").projects ?? [],
         clusters: readDataJson("clusters.json").clusters ?? [],
         earnings,
@@ -2737,6 +2749,9 @@ export async function registerRoutes(
         statePages: readDataJson("state-pages.json"),
         changeLog: readDataJson("change-log.json"),
       });
+      // The builders name each record's page by its route of record; the
+      // response carries the address that page has today (lib/sections.ts).
+      const events = built.map((e) => ({ ...e, sourceUrl: currentAddress(e.sourceUrl) }));
       const estimatedEarnings = earnings
         .filter((e) => e.dateStatus !== "confirmed")
         .map((e) => ({ ticker: e.ticker, company: e.company, date: e.date }))
@@ -2959,23 +2974,34 @@ export async function registerRoutes(
     res.set("Content-Type", "application/xml").send(xml);
   });
 
+  // The title and description of a page, for the browser tab after a client
+  // navigation. The server writes them into the HTML on a full load; without
+  // this the tab kept the first page's title for the whole visit. Same
+  // source as the HTML (seo.ts getPageMeta), so the two cannot disagree.
+  app.get("/api/page-meta", (req, res) => {
+    const raw = typeof req.query.path === "string" ? req.query.path : "";
+    if (!raw.startsWith("/") || raw.startsWith("//") || raw.length > 300) {
+      return res.status(400).json({ error: "path must be a site path" });
+    }
+    const i = raw.indexOf("?");
+    const meta = getPageMeta(i >= 0 ? raw.slice(0, i) : raw, i >= 0 ? raw.slice(i) : "");
+    res.set("Cache-Control", "public, max-age=300").json({ title: meta.title, description: meta.description });
+  });
+
   // Tickers with a stock page, for links built on the client (the search
   // palette): a ticker outside this list would open "not tracked".
   app.get("/api/stock-tickers", (_req, res) => {
     res.json({ tickers: Object.keys(COMPANY_DATABASE).sort() });
   });
 
-  // Aliases answer with one 301 to the final address (seo.ts ALIAS_REDIRECTS),
-  // carrying any other query parameters along (a campaign tag, for one).
-  for (const [from, to] of Object.entries(ALIAS_REDIRECTS)) {
+  // Old addresses answer with one 301 to the section and chip that hold the
+  // page now (client/src/lib/sections.ts), carrying the rest of the query
+  // string along (a map view, a deal id, a campaign tag).
+  for (const from of Object.keys(ALIAS_REDIRECTS)) {
     app.get(from, (req, res) => {
-      const [path, query] = to.split("?");
-      const params = new URLSearchParams(query ?? "");
-      for (const [k, v] of Object.entries(req.query)) {
-        if (typeof v === "string" && !params.has(k)) params.set(k, v);
-      }
-      const qs = params.toString();
-      res.redirect(301, `${path}${qs ? `?${qs}` : ""}`);
+      const i = req.originalUrl.indexOf("?");
+      const to = legacyRedirect(from, i >= 0 ? req.originalUrl.slice(i) : "");
+      res.redirect(301, to ?? ALIAS_REDIRECTS[from]);
     });
   }
 
@@ -3038,7 +3064,7 @@ Preferred-Languages: en
       name: "GridTilt \u2014 AI Power Infrastructure Dashboard",
       short_name: "GridTilt",
       description: "Track the AI power buildout",
-      start_url: "/overview",
+      start_url: "/",
       display: "standalone",
       background_color: "#121110",
       theme_color: "#F07800",
@@ -3050,21 +3076,19 @@ Preferred-Languages: en
   });
 
   // ─── SEO: URL Redirects ─────────────────────────────────────────────────
-  app.get("/stocks", (_req, res) => res.redirect(301, "/stack"));
-  app.get("/map", (_req, res) => res.redirect(301, "/power-map"));
-  app.get("/calculator", (_req, res) => res.redirect(301, "/trade"));
-  app.get("/score", (_req, res) => res.redirect(301, "/portfolio"));
-  app.get("/catalyst-tracker", (_req, res) => res.redirect(301, "/catalysts"));
-  app.get("/the-stack", (_req, res) => res.redirect(301, "/stack"));
-  // Consolidation (Plan B): folded tools 301 into their host tool's tab
-  app.get("/gpu-economics", (_req, res) => res.redirect(301, "/neocloud-intel?tab=economics"));
-  app.get("/power-deals", (_req, res) => res.redirect(301, "/power-map?tab=deals"));
-  app.get("/queue", (_req, res) => res.redirect(301, "/power-map?tab=queue"));
-  app.get("/brief", (_req, res) => res.redirect(301, "/blog"));
-  app.get("/portfolio", (_req, res) => res.redirect(301, "/analyze?tab=portfolio"));
-  app.get("/trade", (_req, res) => res.redirect(301, "/analyze?tab=scenario"));
-  app.get("/thesis-calculator", (_req, res) => res.redirect(301, "/trade"));
-  app.get("/portfolio-overlay", (_req, res) => res.redirect(301, "/portfolio"));
+  // Older short links answer with one hop to the address the page has now.
+  for (const [from, was] of Object.entries({
+    "/stocks": "/stack",
+    "/the-stack": "/stack",
+    "/map": "/power-map",
+    "/calculator": "/trade",
+    "/thesis-calculator": "/trade",
+    "/score": "/portfolio",
+    "/portfolio-overlay": "/portfolio",
+    "/catalyst-tracker": "/catalysts",
+  })) {
+    app.get(from, (_req, res) => res.redirect(301, currentAddress(was)));
+  }
 
   // ─── Content Export APIs ────────────────────────────────────────────────
   // Admin-gated so scheduled cron is the only caller. The shape is stable so
@@ -3927,7 +3951,20 @@ ${rssItems}
   });
 
   // Weekly Buildout Brief: one synthesized read across every module.
-  function buildBriefInput(): BriefInput {
+  /**
+   * The previous issue's day: what the brief counts as "since". An explicit
+   * day wins (the admin preview, or BRIEF_SINCE while the first issues are
+   * dated by hand); otherwise seven days before the issue day.
+   */
+  function briefSince(asOf: string, explicit?: string): string {
+    const day = /^\d{4}-\d{2}-\d{2}$/;
+    if (explicit && day.test(explicit) && explicit < asOf) return explicit;
+    const env = process.env.BRIEF_SINCE;
+    if (env && day.test(env) && env < asOf) return env;
+    return addDays(asOf, -7);
+  }
+
+  function buildBriefInput(sinceDay?: string): BriefInput {
     const cwd = process.cwd();
     const clustersRoot = JSON.parse(readFileSync(join(cwd, "server", "data", "clusters.json"), "utf-8"));
     const clusters = (clustersRoot.clusters ?? []) as ClusterLite[];
@@ -3982,12 +4019,51 @@ ${rssItems}
         topSignedTypeGW: +((dm.signedByType[0]?.mw ?? 0) / 1000).toFixed(1),
       },
     };
+
+    // The record: read from the same stored files the site serves. A file
+    // that cannot be read contributes no rows; it never blocks the rollups.
+    const readOr = <T,>(file: string, fallback: T): T => {
+      try {
+        return JSON.parse(readFileSync(join(cwd, "server", "data", file), "utf-8")) as T;
+      } catch {
+        return fallback;
+      }
+    };
+    const changeLog = readOr<{ changes?: any[] }>("change-log.json", {});
+    const statePages = readOr<{ states?: any[] }>("state-pages.json", {});
+    const catalysts = readOr<any[]>("catalysts.json", []);
+    const changes = Array.isArray(changeLog.changes) && validateChangeLog(changeLog.changes).length === 0 ? changeLog.changes : [];
+    input.record = buildBriefRecord({
+      asOf: input.asOf,
+      since: briefSince(input.asOf, sinceDay),
+      changes,
+      states: (statePages.states ?? [])
+        .filter((s) => (STATE_FACTS as Record<string, { name: string }>)[s.code])
+        .map((s) => ({
+          name: (STATE_FACTS as Record<string, { name: string }>)[s.code].name,
+          documents: s.documents ?? [],
+          nextDates: s.nextDates ?? [],
+        })),
+      agreements: dm.rows.map((row) => ({
+        name: row.name,
+        firmness: row.firmness,
+        capacityMW: row.capacityMW,
+        announced: row.announced,
+        reviewed: row.reviewed,
+      })),
+      catalysts: Array.isArray(catalysts)
+        ? catalysts.filter((c) => typeof c?.date === "string" && typeof c?.title === "string").map((c) => ({ date: c.date, title: c.title, status: c.status ?? null }))
+        : [],
+    });
     return input;
   }
 
-  app.get("/api/brief", (_req, res) => {
+  // ?since=YYYY-MM-DD names the previous issue's day; without it the brief
+  // covers the seven days before today.
+  app.get("/api/brief", (req, res) => {
     try {
-      const brief = composeBrief(buildBriefInput());
+      const since = typeof req.query.since === "string" ? req.query.since : undefined;
+      const brief = composeBrief(buildBriefInput(since));
       res.json({ ...brief, text: renderBriefText(brief) });
     } catch (err) {
       console.error("Brief error:", err);

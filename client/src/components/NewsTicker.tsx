@@ -75,7 +75,7 @@ export function NewsTicker() {
           onClick={() => setPinnedPause((p) => !p)}
           aria-label={pinnedPause ? "Resume news ticker" : "Pause news ticker"}
           aria-pressed={pinnedPause}
-          className="ml-1 text-brand/60 hover:text-brand transition-colors"
+          className="-my-[15px] -mr-2 ml-0 p-[15px] text-brand/60 hover:text-brand transition-colors sm:m-0 sm:ml-1 sm:p-0"
           data-testid="ticker-pause"
         >
           {pinnedPause ? <Play className="h-2.5 w-2.5" /> : <Pause className="h-2.5 w-2.5" />}

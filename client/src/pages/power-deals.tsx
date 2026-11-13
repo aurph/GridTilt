@@ -1,3 +1,5 @@
+import { RegistrySourceFooter, SourceFooter } from "@/components/SourceFooter";
+import { SectionHeading } from "@/components/section-heading";
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
@@ -172,7 +174,6 @@ export default function PowerDeals({ embedded = false }: { embedded?: boolean; p
   // Shared by both intros: the freshness / headline chip column.
   const asOfChip = (
     <div className="text-11 text-muted-foreground/70 font-mono tracking-wide text-right space-y-0.5" data-testid="deals-sync">
-      <div><AsOf updatedAt={dataUpdatedAt} intervalMs={900_000} /></div>
       {data?.lastRefreshed && <div className="text-muted-foreground/60">data as of {data.lastRefreshed}</div>}
     </div>
   );
@@ -186,6 +187,9 @@ export default function PowerDeals({ embedded = false }: { embedded?: boolean; p
   // render a slim intro row instead of the full-page header.
   const intro = embedded ? (
     <div className="flex flex-wrap items-start justify-between gap-3 px-1">
+      <SectionHeading className="w-full text-sm font-semibold text-foreground tracking-tight" testId="deals-heading">
+        Power agreements
+      </SectionHeading>
       <p className="text-muted-foreground text-xs leading-relaxed max-w-3xl">{introText}</p>
       {asOfChip}
     </div>
@@ -201,7 +205,7 @@ export default function PowerDeals({ embedded = false }: { embedded?: boolean; p
           </div>
           <p className="text-muted-foreground text-sm leading-relaxed">
             {introText} The data-center sites themselves live in{" "}
-            <Link href="/compute-frontier" className="text-brand hover:text-brand-2">Compute Frontier</Link>.
+            <Link href="/compute" className="text-brand hover:text-brand-2">Compute Frontier</Link>.
           </p>
         </div>
         {asOfChip}
@@ -290,6 +294,14 @@ export default function PowerDeals({ embedded = false }: { embedded?: boolean; p
               rows={byBuyer.map((b) => [b.buyer, b.gw, b.count])}
             />
           )}
+          <SourceFooter
+            source="GridTilt power agreements record"
+            asOf={data?.lastRefreshed ?? null}
+            className="mt-2"
+            testid="deals-chart-source"
+          >
+            {" "}· signed agreements only; each row links its documents
+          </SourceFooter>
         </Card>
 
         {/* Energy type filter row */}
@@ -418,7 +430,7 @@ export default function PowerDeals({ embedded = false }: { embedded?: boolean; p
                         <div>
                           <span className="text-muted-foreground/60">Announced: </span>
                           {r.announced} ·{" "}
-                          <Link href={`/timeline?record=deal:${r.id}`} className="text-brand hover:text-brand-2" data-testid={`deal-timeline-${r.id}`}>
+                          <Link href={`/grid?tab=timeline&record=deal:${r.id}`} className="text-brand hover:text-brand-2" data-testid={`deal-timeline-${r.id}`}>
                             View on timeline
                           </Link>
                         </div>

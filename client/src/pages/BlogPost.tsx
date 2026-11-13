@@ -310,10 +310,10 @@ export default function BlogPost() {
         <Card className="p-5 border-card-border" data-testid="article-cta">
           <h2 className="text-[13px] font-semibold text-foreground mb-2">Track this on GridTilt</h2>
           <div className="flex flex-wrap gap-3 text-sm">
-            <Link href="/overview" className="text-brand hover:text-brand-2">Dashboard</Link>
-            <Link href="/stack" className="text-brand hover:text-brand-2">Equities</Link>
-            <Link href="/power-map" className="text-brand hover:text-brand-2">Power Map</Link>
-            <Link href="/trade" className="text-brand hover:text-brand-2">Scenario Calculator</Link>
+            <Link href="/markets" className="text-brand hover:text-brand-2">Dashboard</Link>
+            <Link href="/markets?tab=equities" className="text-brand hover:text-brand-2">Equities</Link>
+            <Link href="/grid" className="text-brand hover:text-brand-2">Power Map</Link>
+            <Link href="/markets?tab=analyze&sub=scenario" className="text-brand hover:text-brand-2">Scenario Calculator</Link>
           </div>
         </Card>
 

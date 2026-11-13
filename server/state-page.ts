@@ -176,6 +176,33 @@ export function statePageSlugs(curated: CuratedStates): Array<{ slug: string; co
   return curated.states.map((s) => ({ slug: s.slug, code: s.code, reviewed: s.reviewed }));
 }
 
+/** One row of the /states index: a published page with its counts from the registry. */
+export interface StateIndexRow {
+  slug: string;
+  code: string;
+  reviewed: string;
+  /** Dated decisions on the page (status snapshots are not decisions). */
+  decisions: number;
+  /** The earliest public date still ahead, or null when none is listed. */
+  nextDate: { date: string; through?: string; what: string } | null;
+}
+
+/** The published pages with what the index lists for each, in registry order. */
+export function statePageIndex(curated: CuratedStates, today: string): StateIndexRow[] {
+  return curated.states.map((s) => {
+    const ahead = s.nextDates
+      .filter((d) => (d.through ?? d.date) >= today)
+      .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0))[0];
+    return {
+      slug: s.slug,
+      code: s.code,
+      reviewed: s.reviewed,
+      decisions: s.documents.filter((d) => (d.kind ?? "decision") === "decision").length,
+      nextDate: ahead ? { date: ahead.date, ...(ahead.through ? { through: ahead.through } : {}), what: ahead.what } : null,
+    };
+  });
+}
+
 export interface StatePageInput {
   curated: CuratedStates;
   clusters: Array<{
@@ -414,6 +441,12 @@ function readCurated(today: string): CuratedStates | null {
 export function loadStatePageSlugs(today: string = easternToday()): Array<{ slug: string; code: string; reviewed: string }> {
   const curated = readCurated(today);
   return curated ? statePageSlugs(curated) : [];
+}
+
+/** The published pages with their decision counts and next dates, for /states. */
+export function loadStatePageIndex(today: string = easternToday()): StateIndexRow[] {
+  const curated = readCurated(today);
+  return curated ? statePageIndex(curated, today) : [];
 }
 
 /**

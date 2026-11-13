@@ -38,7 +38,7 @@ export function StatePagesRow({
           <li key={s.slug}>
             <Link
               href={s.href}
-              className="inline-flex items-center gap-1.5 rounded border border-border bg-card/70 px-3 py-1.5 text-[13px] font-semibold text-foreground no-underline transition-colors hover:border-brand/60 hover:text-brand"
+              className="inline-flex min-h-[40px] items-center gap-1.5 rounded border border-border bg-card/70 px-3 py-1.5 text-[13px] font-semibold text-foreground no-underline transition-colors hover:border-brand/60 hover:text-brand"
               data-testid={`state-page-link-${s.slug}`}
             >
               {s.name}

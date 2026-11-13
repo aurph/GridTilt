@@ -11,6 +11,26 @@ around them. Tagline: "Equities, infrastructure, and power data for the AI power
 economy." Live at gridtilt.com. Built and directed by Jack Schwartz (aurph). Audience:
 the citizen-investor researching the AI power economy, not fund analysts or day traders.
 
+Site map (2026-11): four sections in the top bar, each holding several features as chips. The one
+source is client/src/lib/sections.ts (SECTIONS, LEGACY_ROUTES); the top bar, phone menu, footer, 404,
+search palette, client redirects, server 301s (seo.ts ALIAS_REDIRECTS) and page metadata all read it.
+It is the one client module the server imports.
+
+| Section | Route | Chips (`?tab=`, default first) |
+|---|---|---|
+| States | /states | the published state pages, from the registry |
+| Grid | /grid | map, queue, deals, live, timeline |
+| Compute | /compute | clusters, supply-chain, gpu-prices |
+| Markets | /markets | overview, equities, analyze, catalysts |
+
+A feature with views of its own (Analyze, GPU Prices) keeps them in `?sub=`. Every old page address
+(/overview, /stack, /power-map, /compute-frontier, /timeline and the rest, plus the seven older
+aliases) forwards to its section and chip with the rest of the query string; /compute-frontier/:id,
+/methodology and /compare keep their paths. A feature that rewrites the address bar must keep the
+chip (withSectionParams). Page metadata is filed by chip address (seo.ts pageKey), so each chip has
+its own title and canonical. Research and the Brief sit behind Get the Brief, the footer and the
+phone menu. The module table below is the pre-2026-11 map, kept for the old names.
+
 14 sidebar modules, 29 routes (wouter, client/src/App.tsx; the table below predates the top nav):
 
 | Module | Route | Key |
@@ -316,7 +336,7 @@ Documented, not to fix casually or silently:
 - routes.ts is a 3,913-line monolith (70 routes + OAuth client + OG renderer + 3 scanners +
   static data tables).
 - README + replit.md rewritten from code truth (2026-07-04, feat/live-gpu-prices). HANDOFF.md and
-  HOMEPAGE_HANDOFF.md remain historical records, not current state.
+  HOMEPAGE_HANDOFF.md were removed 2026-11 (historical, long out of date).
 - Dead weight (mostly cleared 2026-07-04): date-fns, @tailwindcss/vite, @radix-ui/react-toggle,
   dates.ts, ui/dialog.tsx, ui/toggle.tsx removed; package renamed "gridtilt". Still open:
   EmailCapture's unused marketing branch (~200 lines), .replit's postgresql-16 and python-3.11

@@ -257,7 +257,7 @@ function DayDetailCard({ item }: { item: MergedItem }) {
           <button
             className="flex items-center gap-1 mt-1 text-xs transition-colors"
             style={{ color: INK.muted }}
-            onClick={() => navigate(`/timeline?record=ticker:${e.ticker}`)}
+            onClick={() => navigate(`/grid?tab=timeline&record=ticker:${e.ticker}`)}
             data-testid={`timeline-link-${e.ticker}`}
           >
             View on timeline <ArrowRight style={{ width: 12, height: 12 }} />

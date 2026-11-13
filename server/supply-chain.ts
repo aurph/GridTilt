@@ -63,7 +63,7 @@ export function endUseLive(clusters: ClusterLike[]): { value: string; label: str
   return {
     value: clusters.length.toLocaleString("en-US"),
     label: `AI clusters tracked, ${operational.toLocaleString("en-US")} operational`,
-    href: "/compute-frontier",
+    href: "/compute",
   };
 }
 

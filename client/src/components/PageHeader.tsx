@@ -9,6 +9,7 @@
  */
 import type { ReactNode } from "react";
 import { Info } from "lucide-react";
+import { SectionHeading } from "@/components/section-heading";
 import {
   Tooltip as UITooltip,
   TooltipContent,
@@ -36,12 +37,12 @@ export function PageHeader({
     <div className="border-b border-border px-4 sm:px-6 py-3" data-testid={testId}>
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         <span className="flex items-center gap-1.5">
-          <h1 className="text-sm font-semibold text-foreground tracking-tight">{title}</h1>
+          <SectionHeading className="text-sm font-semibold text-foreground tracking-tight">{title}</SectionHeading>
           {about && (
             <UITooltip>
               <TooltipTrigger asChild>
                 <button
-                  className="text-muted-foreground/60 hover:text-foreground transition-colors"
+                  className="-m-[13px] p-[13px] text-muted-foreground/60 hover:text-foreground transition-colors sm:m-0 sm:p-0"
                   aria-label={`About ${title}`}
                   data-testid={testId ? `${testId}-about` : undefined}
                 >

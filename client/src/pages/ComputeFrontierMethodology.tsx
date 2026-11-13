@@ -21,7 +21,7 @@ export default function ComputeFrontierMethodology() {
         testId="cfm-header"
         about="How the supercluster data is built, what is sourced, what is estimated, and exactly how each headline number is computed."
         right={
-          <Link href="/compute-frontier" className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground" data-testid="cfm-back">
+          <Link href="/compute" className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground" data-testid="cfm-back">
             <ArrowLeft className="h-3.5 w-3.5" /> Compute Frontier
           </Link>
         }
@@ -70,7 +70,7 @@ export default function ComputeFrontierMethodology() {
             carries its status (signed, framework, option, letter of intent, or not yet reviewed); only reviewed, signed
             agreements count as secured. Most clusters run on the grid or on-site gas and carry no nuclear link, which the
             data states plainly rather than implying coverage that does not exist. Linked agreements are listed on the{" "}
-            <Link href="/power-map?tab=deals" className="text-brand hover:text-brand-2">Power agreements</Link> tab.
+            <Link href="/grid?tab=deals" className="text-brand hover:text-brand-2">Power agreements</Link> tab.
           </p>
         </Section>
 
@@ -92,7 +92,7 @@ export default function ComputeFrontierMethodology() {
         </Section>
 
         <p className="text-11 text-muted-foreground/60">
-          Back to the <Link href="/compute-frontier" className="text-brand hover:text-brand-2">Compute Frontier</Link>.
+          Back to the <Link href="/compute" className="text-brand hover:text-brand-2">Compute Frontier</Link>.
         </p>
       </div>
     </div>

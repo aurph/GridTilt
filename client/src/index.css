@@ -799,3 +799,30 @@ html {
     animation: gt-tl-pop 1s cubic-bezier(0.22, 0.9, 0.35, 1);
   }
 }
+
+/* Section chips and their popovers (components/section-chips.tsx). The only
+   motion the navigation adds: about 150ms, ease-out, and none at all for a
+   visitor who asked for reduced motion. */
+.gt-chip {
+  transition: color 150ms ease-out, background-color 150ms ease-out, border-color 150ms ease-out;
+}
+.gt-pop {
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-4px);
+  transition: opacity 150ms ease-out, transform 150ms ease-out, visibility 0s linear 150ms;
+}
+.gt-pop[data-open="true"] {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition: opacity 150ms ease-out, transform 150ms ease-out, visibility 0s;
+}
+@media (prefers-reduced-motion: reduce) {
+  .gt-chip,
+  .gt-pop,
+  .gt-pop[data-open="true"] {
+    transition: none !important;
+    transform: none;
+  }
+}

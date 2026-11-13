@@ -1,22 +1,23 @@
 /**
  * Consolidation: Analyze = Portfolio Overlay + Scenario Calculator.
  * Both tools score user inputs against the AI power buildout, so they share
- * one screen with URL-persisted tabs (?tab=scenario shareable; old routes
- * can redirect into a tab). Same pattern as GPU Prices (ToolTabs).
+ * one screen with URL-persisted views (?sub=scenario shareable; old routes
+ * redirect into a view). Same pattern as GPU Prices (ToolTabs).
  */
 import { ToolTabs, useToolTabs, type ToolTab } from "@/components/ToolTabs";
 import { PageHeader } from "@/components/PageHeader";
+import { SUB_PARAM } from "@/lib/sections";
 import PortfolioOverlay from "@/pages/PortfolioOverlay";
 import TheTrade from "@/pages/TheTrade";
 
 export const ANALYZE_TABS: ToolTab[] = [
-  // The id stays "portfolio" so shared ?tab=portfolio links keep working.
+  // The id stays "portfolio" so old /analyze?tab=portfolio links keep landing here.
   { id: "portfolio", label: "Baskets" },
   { id: "scenario", label: "Scenario" },
 ];
 
 export default function Analyze() {
-  const [tab, setTab] = useToolTabs(ANALYZE_TABS, "portfolio");
+  const [tab, setTab] = useToolTabs(ANALYZE_TABS, "portfolio", SUB_PARAM);
 
   return (
     <div className="flex flex-col h-full overflow-y-auto">

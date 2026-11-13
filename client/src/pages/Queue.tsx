@@ -1,3 +1,4 @@
+import { SectionHeading } from "@/components/section-heading";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
@@ -192,6 +193,9 @@ export default function Queue({ embedded = false }: { embedded?: boolean; params
   // render a slim intro row instead of the narrative header.
   const intro = embedded ? (
     <div className="flex flex-wrap items-start justify-between gap-3 px-1">
+      <SectionHeading className="w-full text-sm font-semibold text-foreground tracking-tight" testId="queue-heading">
+        Interconnection queue
+      </SectionHeading>
       <p className="text-muted-foreground text-xs leading-relaxed max-w-3xl">
         The named US power projects and hyperscaler campuses waiting on the grid, plus the ISO totals that contain them.
         {h && (
@@ -204,7 +208,6 @@ export default function Queue({ embedded = false }: { embedded?: boolean; params
       <div className="flex items-start gap-3">
         <VideoTrigger video={WHAT_IS_THE_QUEUE} className="text-11 text-brand hover:text-brand-2" testId="queue-explainer" />
         <div className="text-11 text-muted-foreground/70 font-mono tracking-wide text-right space-y-0.5" data-testid="backlog-sources">
-          <div><AsOf updatedAt={dataUpdatedAt} intervalMs={24 * 60 * 60 * 1000} /></div>
           {data && <FreshnessChip lastRefreshed={data.lastRefreshed} />}
         </div>
       </div>
@@ -239,7 +242,6 @@ export default function Queue({ embedded = false }: { embedded?: boolean; params
           </div>
           {data && (
             <div className="text-11 text-muted-foreground/70 font-mono tracking-wide text-right space-y-0.5" data-testid="backlog-sources">
-              <div><AsOf updatedAt={dataUpdatedAt} intervalMs={24 * 60 * 60 * 1000} /></div>
               <FreshnessChip lastRefreshed={data.lastRefreshed} />
               <div className="text-muted-foreground/50">queue totals · {h?.queueOverallAsOf}</div>
               <div className="text-muted-foreground/50">PJM cycle · {h?.pjmReopenedAsOf}</div>

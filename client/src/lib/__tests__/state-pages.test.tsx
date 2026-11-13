@@ -12,8 +12,11 @@ import { TooltipProvider } from "../../components/ui/tooltip";
 import { StatePagesRow } from "../../components/StatePagesRow";
 import StatePage from "../../pages/state-page";
 import { STATE_GRID } from "../../data/state-grid";
-import { statePageLinks, statePagesByCode } from "../state-pages";
-import { loadStatePageSlugs } from "../../../../server/state-page";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { longDay, stateIndexRows, statePageLinks, statePagesByCode } from "../state-pages";
+import { StatesIndex, namesSentence } from "../../pages/states";
+import { loadStatePageIndex, loadStatePageSlugs } from "../../../../server/state-page";
 
 const TODAY = "2026-10-30";
 const REGISTRY = loadStatePageSlugs(TODAY);
@@ -71,6 +74,55 @@ describe("StatePagesRow", () => {
   it("renders nothing while the registry has not answered or is empty", () => {
     assert.equal(render(undefined), "");
     assert.equal(render([]), "");
+  });
+});
+
+describe("/states index", () => {
+  const INDEX = loadStatePageIndex(TODAY);
+  const curated = JSON.parse(readFileSync(join(process.cwd(), "server", "data", "state-pages.json"), "utf-8")) as {
+    states: Array<{ slug: string; documents: Array<{ kind?: string }>; nextDates: Array<{ date: string; through?: string }> }>;
+  };
+
+  it("the server's rows carry each state's decision count and next public date from the registry", () => {
+    assert.deepEqual(INDEX.map((r) => r.slug).sort(), REGISTRY.map((r) => r.slug).sort());
+    for (const row of INDEX) {
+      const state = curated.states.find((s) => s.slug === row.slug)!;
+      assert.equal(row.decisions, state.documents.filter((d) => (d.kind ?? "decision") === "decision").length, row.slug);
+      const ahead = state.nextDates.filter((d) => (d.through ?? d.date) >= TODAY).map((d) => d.date).sort()[0] ?? null;
+      assert.equal(row.nextDate?.date ?? null, ahead, row.slug);
+    }
+  });
+
+  it("renders exactly one row per published state, with its count and dates", () => {
+    const rows = stateIndexRows(INDEX, STATE_GRID);
+    const html = renderToStaticMarkup(
+      <Router ssrPath="/states">
+        <StatesIndex rows={rows} />
+      </Router>,
+    );
+    assert.deepEqual(hrefsIn(html).sort(), REGISTRY.map((r) => `/state/${r.slug}`).sort());
+    for (const row of rows) {
+      assert.match(html, new RegExp(`data-testid="states-row-${row.slug}"`));
+      assert.match(html, new RegExp(`>${row.decisions}</span> dated decision`));
+      if (row.nextDate) assert.ok(html.includes(longDay(row.nextDate.date)), `${row.slug} shows its next date`);
+      assert.ok(html.includes(`Last reviewed ${longDay(row.reviewed as string)}`));
+    }
+    assert.match(html, /reviewed against its documents every 30 days; last review /);
+    assert.ok(html.includes(namesSentence(rows.map((r) => r.name))));
+  });
+
+  it("is honest about a state with no date ahead and a registry with no counts", () => {
+    const rows = stateIndexRows([{ slug: "maryland", code: "MD", reviewed: "2026-10-30" }], STATE_GRID);
+    assert.equal(rows[0].decisions, null);
+    const html = renderToStaticMarkup(
+      <Router ssrPath="/states">
+        <StatesIndex rows={rows} />
+      </Router>,
+    );
+    assert.match(html, /No public date listed/);
+    assert.doesNotMatch(html, /dated decision/);
+    assert.equal(namesSentence(["Maryland"]), "Maryland");
+    assert.equal(namesSentence(["Maryland", "Texas", "Virginia"]), "Maryland, Texas and Virginia");
   });
 });
 

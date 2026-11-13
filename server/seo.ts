@@ -3,6 +3,9 @@ import { readFileSync } from "fs";
 import { join } from "path";
 import { COMPANY_DATABASE, knownTicker } from "./company-registry";
 import { loadStatePage, stateDescription, stateTitle } from "./state-page";
+// The one module the server shares with the client: the site map is pure
+// data plus pure functions, and two copies of a redirect table drift.
+import { LEGACY_ROUTES, SECTIONS, chipFromSearch, chipHref, legacyRedirect } from "../client/src/lib/sections";
 
 export interface PageMeta {
   title: string;
@@ -19,19 +22,26 @@ export interface PageMeta {
 }
 
 /**
- * Client routes that only forward somewhere else (client/src/App.tsx). The
- * server answers them with one 301 to the final address, so a crawler never
- * indexes an alias or follows two hops.
+ * Addresses that used to be a page or an alias (client/src/lib/sections.ts
+ * LEGACY_ROUTES). The server answers each with one 301 to the section and
+ * chip that hold it now, so a crawler never indexes an old address or follows
+ * two hops. This map is the bare-address form; routes.ts calls legacyRedirect
+ * with the request's query string so a tab, a deal id or a campaign tag
+ * rides along.
  */
-export const ALIAS_REDIRECTS: Record<string, string> = {
-  "/gpu-economics": "/neocloud-intel?tab=economics",
-  "/power-deals": "/power-map?tab=deals",
-  "/brief": "/blog",
-  "/trade": "/analyze?tab=scenario",
-  "/portfolio": "/analyze?tab=portfolio",
-  "/queue": "/power-map?tab=queue",
-  "/my-grid": "/power-map",
-};
+export const ALIAS_REDIRECTS: Record<string, string> = Object.fromEntries(
+  Object.keys(LEGACY_ROUTES).map((from) => [from, legacyRedirect(from) as string]),
+);
+
+/**
+ * The key a page's metadata is filed under. A section address resolves to
+ * its chip ("/grid?tab=queue"; the default chip is the bare section), so
+ * every chip has its own title, description and canonical address.
+ */
+export function pageKey(pathname: string, search = ""): string {
+  const section = SECTIONS.find((x) => x.href === pathname && x.chips.length > 0);
+  return section ? chipHref(section.id, chipFromSearch(section, search)) : pathname;
+}
 
 /** Admin screens: served, never indexed. */
 const ADMIN_PAGES = new Set(["/admin/datacenters", "/admin/social"]);
@@ -72,38 +82,62 @@ export function notFoundMeta(): PageMeta {
 
 const BASE_URL = "https://gridtilt.com";
 
+/**
+ * Filed by address (see pageKey). `slug` is the share-card key (/api/og?page=),
+ * which keeps the names the cards were built under.
+ */
 const STATIC_PAGES: Record<string, { title: string; description: string; slug: string; ogImage?: string }> = {
   "/": {
     title: "GridTilt: Power projects, grid conditions, electricity costs",
     description: "GridTilt shows what is being built on your power grid, who is behind it, and what is known about the cost. Choose your state, or explore projects, power agreements and the companies behind them.",
     slug: "",
   },
-  "/overview": {
-    title: "Tilt Overview | GridTilt",
+  "/states": {
+    title: "State Pages: Grid Decisions and Public Dates by State | GridTilt",
+    description: "The states GridTilt covers, each with its dated grid decisions, the documents behind them, and the next public dates.",
+    slug: "",
+  },
+  "/grid?tab=queue": {
+    title: "Interconnection Queue: Power Projects Waiting on the Grid | GridTilt",
+    description: "Named US power projects and data center campuses waiting for a grid connection, with the queue totals by grid operator from Lawrence Berkeley National Laboratory.",
+    slug: "power-map",
+  },
+  "/grid?tab=deals": {
+    title: "Power Agreements for Data Centers, by Firmness | GridTilt",
+    description: "Power agreements between data center operators and generators, each classified as signed, framework, option or preliminary, with capacity and source documents.",
+    slug: "power-map",
+  },
+  "/grid?tab=live": {
+    title: "Live US Grid: Hourly Demand and Fuel Mix by Operator | GridTilt",
+    description: "Hourly electricity demand for the Lower 48 and generation by fuel for each grid operator, from the EIA.",
+    slug: "power-map",
+  },
+  "/markets": {
+    title: "Markets Overview: The Companies Behind the Power Buildout | GridTilt",
     description: "US electricity use, grid conditions, power agreements, market movers and upcoming events for the AI power buildout.",
     slug: "overview",
   },
-  "/stack": {
+  "/markets?tab=equities": {
     title: "AI Power Stocks by Sector | GridTilt",
     description: "Live prices for public companies across nuclear, uranium, construction, utilities, data centers, and power hardware.",
     slug: "stack",
   },
-  "/supply-chain": {
+  "/compute?tab=supply-chain": {
     title: "AI Power Supply Chain: Raw Materials to End Use | GridTilt",
     description: "How uranium, copper, gas, generation, transformers, substations, cooling and data centers connect, with the public companies at each stage and where the chain is tightening.",
     slug: "supply-chain",
   },
-  "/power-map": {
+  "/grid": {
     title: "AI Data Center Map: Projects by Grid Region | GridTilt",
     description: "Tracked AI data center campuses of 400 MW and up, mapped by operator, grid region and capacity, with power agreements and the interconnection queue.",
     slug: "power-map",
   },
-  "/catalysts": {
+  "/markets?tab=catalysts": {
     title: "Earnings Calendar and Power Catalysts | GridTilt",
     description: "Confirmed earnings dates for the tracked companies, with dated regulatory, grid and nuclear events, each linked to its source.",
     slug: "catalysts",
   },
-  "/timeline": {
+  "/grid?tab=timeline": {
     title: "Timeline: Power Deals, Clusters and Grid Events by Date | GridTilt",
     description: "Dated events from GridTilt's datasets in one feed: power agreements, compute cluster announcements, confirmed earnings dates, state actions, model releases and published corrections, each linked to its source.",
     slug: "timeline",
@@ -123,7 +157,7 @@ const STATIC_PAGES: Record<string, { title: string; description: string; slug: s
     description: "Research on data center power demand, nuclear energy, grid constraints, and the companies behind the buildout.",
     slug: "blog",
   },
-  "/compute-frontier": {
+  "/compute": {
     title: "Compute Frontier \u00b7 AI Supercluster Tracker \u00b7 GridTilt",
     description: "Named US AI training and inference superclusters by GPUs, chip type, rated and planned power, grid region, and energy source, tied to the nuclear-for-AI deals that feed them. Sourced figures vs labeled estimates.",
     slug: "compute-frontier",
@@ -138,13 +172,13 @@ const STATIC_PAGES: Record<string, { title: string; description: string; slug: s
     description: "Put two or three named AI superclusters side by side: GPUs, chips, rated and planned power, grid region, energy source, and linked nuclear deals.",
     slug: "compute-frontier/compare",
   },
-  "/analyze": {
-    title: "Analyze - Illustrative Baskets and Buildout Scenarios | GridTilt",
+  "/markets?tab=analyze": {
+    title: "Analyze: Illustrative Baskets and Buildout Scenarios | GridTilt",
     description: "Compare the editorial sector classifications of a basket of tickers, and model buildout scenarios across demand growth, generation mix, and grid variables.",
     slug: "analyze",
   },
-  "/neocloud-intel": {
-    title: "Neocloud Intel \u00b7 GPU Rental Price Index \u00b7 GridTilt",
+  "/compute?tab=gpu-prices": {
+    title: "GPU Rental Prices by Model, with Marketplace Ranges | GridTilt",
     description: "On-demand GPU rental prices ($/GPU/hr) for H100, H200, GB200, B200, B300, MI300X and more, blended across the major neoclouds and marketplaces. Sourced blended estimates with marketplace ranges and 1W/1M/YTD/1Y changes.",
     slug: "neocloud-intel",
   },
@@ -229,7 +263,7 @@ function datasetJsonLd(): object {
     "@type": "Dataset",
     "name": "AI Data Center Locations: United States",
     "description": "Tracked AI data center campuses of 400 MW and up, mapped by operator, grid region, capacity, and status",
-    "url": `${BASE_URL}/power-map`,
+    "url": `${BASE_URL}/grid`,
     "creator": { "@type": "Organization", "name": "GridTilt" },
     "temporalCoverage": "2024/..",
     "spatialCoverage": "United States",
@@ -252,7 +286,7 @@ function clusterDatasetJsonLd(): object {
     "@type": "Dataset",
     "name": "Compute Frontier: AI Superclusters",
     "description": "Named US AI training and inference superclusters by GPUs, chip type, rated and planned power, grid region, energy source, and linked nuclear-for-AI deals.",
-    "url": `${BASE_URL}/compute-frontier`,
+    "url": `${BASE_URL}/compute`,
     "creator": { "@type": "Organization", "name": "GridTilt" },
     "temporalCoverage": "2024/..",
     "spatialCoverage": "United States",
@@ -312,11 +346,15 @@ export function ogNameKnown(kind: "sector" | "region" | "operator", name: string
   return Object.values(OPERATOR_SLUGS).some((n) => n === name);
 }
 
-export function getPageMeta(pathname: string): PageMeta {
+export function getPageMeta(pathname: string, search = ""): PageMeta {
   // Reached only where the server's 301 did not run (the dev server's own
   // routing); describe the destination, never a separate page.
-  const alias = ALIAS_REDIRECTS[pathname];
-  if (alias) return getPageMeta(alias.split("?")[0]);
+  const moved = legacyRedirect(pathname, search);
+  if (moved) {
+    const [to, query] = moved.split("?");
+    return getPageMeta(to, query ? `?${query}` : "");
+  }
+  const key = pageKey(pathname, search);
 
   if (ADMIN_PAGES.has(pathname)) {
     return {
@@ -330,48 +368,48 @@ export function getPageMeta(pathname: string): PageMeta {
     };
   }
 
-  const staticPage = STATIC_PAGES[pathname];
+  const staticPage = STATIC_PAGES[key];
   if (staticPage) {
     const jsonLd: object[] = [];
 
     if (pathname === "/") {
       jsonLd.push(websiteJsonLd(), organizationJsonLd(), faqJsonLd(HOME_FAQS));
-    } else if (pathname === "/power-map") {
+    } else if (key === "/grid") {
       jsonLd.push(datasetJsonLd(), breadcrumbJsonLd([
         { name: "GridTilt", url: BASE_URL },
-        { name: "Power Map", url: `${BASE_URL}/power-map` },
+        { name: "Power Map", url: `${BASE_URL}/grid` },
       ]));
-    } else if (pathname === "/compute-frontier") {
+    } else if (key === "/compute") {
       jsonLd.push(clusterDatasetJsonLd(), breadcrumbJsonLd([
         { name: "GridTilt", url: BASE_URL },
-        { name: "Compute Frontier", url: `${BASE_URL}/compute-frontier` },
+        { name: "Compute Frontier", url: `${BASE_URL}/compute` },
       ]));
     } else if (pathname === "/compute-frontier/methodology") {
       jsonLd.push(breadcrumbJsonLd([
         { name: "GridTilt", url: BASE_URL },
-        { name: "Compute Frontier", url: `${BASE_URL}/compute-frontier` },
+        { name: "Compute Frontier", url: `${BASE_URL}/compute` },
         { name: "Methodology", url: `${BASE_URL}/compute-frontier/methodology` },
       ]));
     } else if (pathname === "/compute-frontier/compare") {
       jsonLd.push(breadcrumbJsonLd([
         { name: "GridTilt", url: BASE_URL },
-        { name: "Compute Frontier", url: `${BASE_URL}/compute-frontier` },
+        { name: "Compute Frontier", url: `${BASE_URL}/compute` },
         { name: "Compare", url: `${BASE_URL}/compute-frontier/compare` },
       ]));
-    } else if (pathname === "/analyze") {
+    } else if (key === "/markets?tab=analyze") {
       jsonLd.push(faqJsonLd(TRADE_FAQS), breadcrumbJsonLd([
         { name: "GridTilt", url: BASE_URL },
-        { name: "Analyze", url: `${BASE_URL}/analyze` },
+        { name: "Analyze", url: `${BASE_URL}/markets?tab=analyze` },
       ]));
-    } else if (pathname === "/stack") {
+    } else if (key === "/markets?tab=equities") {
       jsonLd.push(breadcrumbJsonLd([
         { name: "GridTilt", url: BASE_URL },
-        { name: "Equities", url: `${BASE_URL}/stack` },
+        { name: "Equities", url: `${BASE_URL}/markets?tab=equities` },
       ]));
-    } else if (pathname === "/catalysts") {
+    } else if (key === "/markets?tab=catalysts") {
       jsonLd.push(breadcrumbJsonLd([
         { name: "GridTilt", url: BASE_URL },
-        { name: "Catalyst Tracker", url: `${BASE_URL}/catalysts` },
+        { name: "Catalyst Tracker", url: `${BASE_URL}/markets?tab=catalysts` },
       ]));
     } else if (pathname === "/blog") {
       jsonLd.push(breadcrumbJsonLd([
@@ -383,7 +421,7 @@ export function getPageMeta(pathname: string): PageMeta {
     return {
       title: staticPage.title,
       description: staticPage.description,
-      canonical: `${BASE_URL}/${staticPage.slug}`,
+      canonical: key === "/" ? `${BASE_URL}/` : `${BASE_URL}${key}`,
       ogImage: staticPage.ogImage ? `${BASE_URL}${staticPage.ogImage}` : `${BASE_URL}/api/og?page=${staticPage.slug || "home"}`,
       ogType: "website",
       jsonLd,
@@ -416,7 +454,7 @@ export function getPageMeta(pathname: string): PageMeta {
         },
         breadcrumbJsonLd([
           { name: "GridTilt", url: BASE_URL },
-          { name: "Equities", url: `${BASE_URL}/stack` },
+          { name: "Equities", url: `${BASE_URL}/markets?tab=equities` },
           { name: ticker, url: `${BASE_URL}/stock/${ticker}` },
         ]),
       ],
@@ -436,7 +474,7 @@ export function getPageMeta(pathname: string): PageMeta {
         ogType: "website",
         jsonLd: [breadcrumbJsonLd([
           { name: "GridTilt", url: BASE_URL },
-          { name: "Equities", url: `${BASE_URL}/stack` },
+          { name: "Equities", url: `${BASE_URL}/markets?tab=equities` },
           { name: sector.name, url: `${BASE_URL}/sector/${slug}` },
         ])],
       };
@@ -457,7 +495,7 @@ export function getPageMeta(pathname: string): PageMeta {
         ogType: "website",
         jsonLd: [breadcrumbJsonLd([
           { name: "GridTilt", url: BASE_URL },
-          { name: "Power Map", url: `${BASE_URL}/power-map` },
+          { name: "Power Map", url: `${BASE_URL}/grid` },
           { name: region.name, url: `${BASE_URL}/region/${slug}` },
         ])],
       };
@@ -478,7 +516,7 @@ export function getPageMeta(pathname: string): PageMeta {
         ogType: "website",
         jsonLd: [breadcrumbJsonLd([
           { name: "GridTilt", url: BASE_URL },
-          { name: "Power Map", url: `${BASE_URL}/power-map` },
+          { name: "Power Map", url: `${BASE_URL}/grid` },
           { name: name, url: `${BASE_URL}/operator/${slug}` },
         ])],
       };
@@ -577,7 +615,7 @@ export function getPageMeta(pathname: string): PageMeta {
           },
           breadcrumbJsonLd([
             { name: "GridTilt", url: BASE_URL },
-            { name: "Compute Frontier", url: `${BASE_URL}/compute-frontier` },
+            { name: "Compute Frontier", url: `${BASE_URL}/compute` },
             { name: cluster.name, url: `${BASE_URL}/compute-frontier/${slug}` },
           ]),
         ],
@@ -601,7 +639,7 @@ export function getPageMeta(pathname: string): PageMeta {
       ogType: "website",
       jsonLd: [breadcrumbJsonLd([
         { name: "GridTilt", url: BASE_URL },
-        { name: "Power", url: `${BASE_URL}/power-map` },
+        { name: "Power", url: `${BASE_URL}/grid` },
         { name: page.name, url: page.canonical },
       ])],
     };
@@ -673,6 +711,7 @@ export const CRAWLABLE_API_PREFIXES = [
   "/api/inference-prices",
   "/api/news",
   "/api/og",
+  "/api/page-meta",
   "/api/physical/",
   "/api/queue",
   "/api/site/contact",

@@ -1,3 +1,4 @@
+import { RegistrySourceFooter, SourceFooter } from "@/components/SourceFooter";
 import { useMemo, useState, useEffect } from "react";
 import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 import { Link } from "wouter";
@@ -150,7 +151,6 @@ export default function GpuEconomics({ embedded = false }: { embedded?: boolean 
       </p>
       <div className="text-11 text-muted-foreground/70 font-mono text-right space-y-0.5">
         {data?.lastRefreshed && <div>prices as of {data.lastRefreshed}</div>}
-        <div><AsOf updatedAt={dataUpdatedAt} intervalMs={900_000} /></div>
       </div>
     </div>
   ) : (
@@ -164,7 +164,7 @@ export default function GpuEconomics({ embedded = false }: { embedded?: boolean 
             </h1>
           </div>
           <p className="text-muted-foreground text-sm leading-relaxed">
-            What the <Link href="/neocloud-intel" className="text-brand hover:text-brand-2">rental prices</Link> actually
+            What the <Link href="/compute?tab=gpu-prices" className="text-brand hover:text-brand-2">rental prices</Link> actually
             cost you. Hourly rates rolled out to a year, and normalized by compute so you can see which GPU is cheapest
             per unit of work, not just per hour. The calculator below estimates what a training run costs. Compute specs
             are vendor peak BF16 (dense); training figures are public estimates. Every assumption is shown and adjustable.
@@ -172,7 +172,6 @@ export default function GpuEconomics({ embedded = false }: { embedded?: boolean 
         </div>
         <div className="text-11 text-muted-foreground/70 font-mono text-right space-y-0.5">
           {data?.lastRefreshed && <div>prices as of {data.lastRefreshed}</div>}
-          <div><AsOf updatedAt={dataUpdatedAt} intervalMs={900_000} /></div>
         </div>
       </div>
     </div>
@@ -260,6 +259,13 @@ export default function GpuEconomics({ embedded = false }: { embedded?: boolean 
               </ResponsiveContainer>
             </div>
           )}
+          <RegistrySourceFooter
+            dataset="gpu-rental-prices"
+            source="GridTilt curated GPU rental prices; chip makers' published throughput"
+            est="rental prices are curated estimates"
+            className="px-4 pb-2"
+            testid="efficiency-source"
+          />
           <div className="px-4 py-2 text-10 text-muted-foreground/50 border-t border-border">
             Bars use published dense BF16 peak throughput. They compare rental compute economics, not realized application performance.
           </div>
@@ -433,10 +439,17 @@ export default function GpuEconomics({ embedded = false }: { embedded?: boolean 
           )}
         </Card>
 
+        <RegistrySourceFooter
+          dataset="gpu-rental-prices"
+          source="GridTilt curated GPU rental prices"
+          est="training cost is a first-order model from the inputs above"
+          className="px-1"
+          testid="training-cost-source"
+        />
         <p className="text-11 text-muted-foreground/60 leading-relaxed px-1">
           GPU-hours = training FLOPs ÷ (peak BF16 × MFU). This is the standard first-order estimate; it ignores
           communication overhead, restarts, and data-loading stalls, so treat it as a floor. Prices come from
-          <Link href="/neocloud-intel" className="text-brand hover:text-brand-2"> Neocloud Intel</Link>.
+          <Link href="/compute?tab=gpu-prices" className="text-brand hover:text-brand-2"> Neocloud Intel</Link>.
         </p>
       </div>
     </div>

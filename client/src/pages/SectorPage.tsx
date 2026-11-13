@@ -109,7 +109,7 @@ export default function SectorPage() {
           <AlertTriangle className="h-8 w-8 text-negative mx-auto mb-3" />
           <h1 className="text-lg font-semibold mb-2">Sector Not Found</h1>
           <p className="text-sm text-muted-foreground">
-            <Link href="/stack" className="text-brand">Browse Equities</Link> to see all sectors.
+            <Link href="/markets?tab=equities" className="text-brand">Browse Equities</Link> to see all sectors.
           </p>
         </Card>
       </div>
@@ -139,7 +139,7 @@ export default function SectorPage() {
       <nav className="flex items-center gap-2 text-xs text-muted-foreground" data-testid="breadcrumb">
         <Link href="/" className="hover:text-foreground">GridTilt</Link>
         <span>/</span>
-        <Link href="/stack" className="hover:text-foreground">Equities</Link>
+        <Link href="/markets?tab=equities" className="hover:text-foreground">Equities</Link>
         <span>/</span>
         <span className="text-foreground font-medium">{sector.name}</span>
       </nav>
@@ -180,11 +180,11 @@ export default function SectorPage() {
         </Card>
         <Card className="p-4 border-card-border text-center" data-testid="stat-best">
           <p className="text-[11px] text-muted-foreground mb-1">Best Performer</p>
-          <p className="text-sm font-bold font-mono text-positive">{best ? `${best.ticker} +${best.changePercent.toFixed(2)}%` : "N/A"}</p>
+          <p className="text-sm font-bold font-mono text-positive">{best ? `${best.ticker} +${best.changePercent.toFixed(2)}%` : "--"}</p>
         </Card>
         <Card className="p-4 border-card-border text-center" data-testid="stat-worst">
           <p className="text-[11px] text-muted-foreground mb-1">Worst Performer</p>
-          <p className="text-sm font-bold font-mono text-negative">{worst ? `${worst.ticker} ${worst.changePercent.toFixed(2)}%` : "N/A"}</p>
+          <p className="text-sm font-bold font-mono text-negative">{worst ? `${worst.ticker} ${worst.changePercent.toFixed(2)}%` : "--"}</p>
         </Card>
       </div>
 
@@ -222,7 +222,7 @@ export default function SectorPage() {
                       </div>
                     </div>
                     <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-10 text-muted-foreground">
-                      <span>P/E {s.pe?.toFixed(1) || "N/A"}</span>
+                      {s.pe ? <span>P/E {s.pe.toFixed(1)}</span> : null}
                       {s.marketCapDisplay && <span>{s.marketCapDisplay}</span>}
                       {s.revenueGrowth != null && (
                         <span className={s.revenueGrowth >= 0 ? "text-positive" : "text-negative"}>
@@ -250,7 +250,7 @@ export default function SectorPage() {
               </Badge>
             </Link>
           ))}
-          <Link href="/stack">
+          <Link href="/markets?tab=equities">
             <Badge className="bg-muted/50 text-muted-foreground hover:bg-muted/70 cursor-pointer">View All Sectors</Badge>
           </Link>
         </div>

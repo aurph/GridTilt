@@ -2,13 +2,14 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { motion, type Variants } from "framer-motion";
-import { Zap, Handshake, Cpu, MapPin } from "lucide-react";
+import { Zap, Handshake, Landmark, MapPin } from "lucide-react";
 import { Wordmark } from "./Wordmark";
 import { GridPulse } from "./grid-pulse";
-import { MarketTape } from "./market-tape";
 import { StatePagesRow } from "@/components/StatePagesRow";
+import { SourceFooter } from "@/components/SourceFooter";
 import { VideoTrigger } from "@/components/video-trigger";
 import { LAUNCH_FILM } from "@/data/explainers";
+import type { PublishedStatePage } from "@/lib/state-pages";
 
 // The wordmark leads, then one statement of purpose and the state-first
 // journey. Each stat is read from the API that serves it; nothing is
@@ -29,14 +30,6 @@ interface DealMetrics {
   signed: { count: number; mw: number };
   lastRefreshed: string | null;
 }
-interface GpuMetrics {
-  fleetAvg: number;
-  fleetAvg1yChange: number;
-  modelCount: number;
-  lastRefreshed: string | null;
-  asOf: string | null;
-}
-
 /** rAF count-up toward a target once it arrives; honest "--" before data. */
 function useCountUp(target: number | null, decimals = 1, ms = 1100): string | null {
   const [display, setDisplay] = useState<string | null>(null);
@@ -103,11 +96,17 @@ interface HeroStat {
 export function Hero() {
   const { data: clusters } = useQuery<ClusterMetrics>({ queryKey: ["/api/clusters/metrics"] });
   const { data: deals } = useQuery<DealMetrics>({ queryKey: ["/api/deals/metrics"] });
-  const { data: gpu } = useQuery<GpuMetrics>({ queryKey: ["/api/gpu-prices/metrics"] });
+  const { data: statePages } = useQuery<PublishedStatePage[]>({ queryKey: ["/api/state-pages"] });
 
   const opGw = useCountUp(clusters ? clusters.operationalMW / 1000 : null);
   const dealGw = useCountUp(deals?.signed ? deals.signed.mw / 1000 : null);
-  const gpuHr = useCountUp(gpu ? gpu.fleetAvg : null, 2);
+  // Summed from the registry rows the server serves; null until every row
+  // carries its count, so a partial answer never prints a low number.
+  const decisionTotal =
+    statePages && statePages.length > 0 && statePages.every((p) => typeof p.decisions === "number")
+      ? statePages.reduce((n, p) => n + (p.decisions as number), 0)
+      : null;
+  const decisions = useCountUp(decisionTotal, 0);
   const clusterCount = useCountUp(clusters ? clusters.clusterCount : null, 0);
 
   const stats: HeroStat[] = [
@@ -117,7 +116,7 @@ export function Hero() {
       value: opGw ? `${opGw} GW` : "--",
       sub: clusters ? `${(clusters.totalPlannedMW / 1000).toFixed(1)} GW planned` : undefined,
       asOf: shortDate(clusters?.lastRefreshed),
-      href: "/compute-frontier",
+      href: "/compute",
     },
     {
       // Signed agreements only. It read "Contracted power deals" over a sum
@@ -127,15 +126,15 @@ export function Hero() {
       value: dealGw ? `${dealGw} GW` : "--",
       sub: deals?.signed ? `${deals.signed.count} signed of ${deals.rowCount} listed` : undefined,
       asOf: shortDate(deals?.lastRefreshed),
-      href: "/power-map?tab=deals",
+      href: "/grid?tab=deals",
     },
     {
-      icon: Cpu,
-      label: "Cost of compute",
-      value: gpuHr ? `$${gpuHr}/hr` : "--",
-      sub: gpu ? `${gpu.fleetAvg1yChange}% over a year` : undefined,
-      asOf: shortDate(gpu?.asOf ?? gpu?.lastRefreshed),
-      href: "/neocloud-intel",
+      icon: Landmark,
+      label: "Dated state decisions",
+      value: decisions ?? "--",
+      sub: statePages?.length ? `across ${statePages.length} state pages` : undefined,
+      asOf: shortDate(statePages?.map((p) => p.reviewed ?? "").sort()[0] || null),
+      href: "/states",
     },
     {
       icon: MapPin,
@@ -145,7 +144,7 @@ export function Hero() {
       value: clusterCount ?? "--",
       sub: clusters?.byOperator ? `${clusters.byOperator.length} operators` : undefined,
       asOf: shortDate(clusters?.lastRefreshed),
-      href: "/compute-frontier",
+      href: "/compute",
     },
   ];
 
@@ -179,14 +178,14 @@ export function Hero() {
           </motion.p>
           <motion.div variants={fadeUp} className="relative mt-8 flex flex-wrap items-center justify-center gap-4">
             <Link
-              href="/overview"
+              href="/states"
               className="rounded bg-brand px-6 py-3 text-[14px] font-semibold text-black no-underline transition-opacity hover:opacity-90"
-              data-testid="hero-cta-dashboard"
+              data-testid="hero-cta-states"
             >
-              Open the dashboard
+              Find your state
             </Link>
             <Link
-              href="/power-map"
+              href="/grid"
               className="rounded border border-border bg-card/60 px-6 py-3 text-[14px] font-semibold text-foreground no-underline transition-colors hover:border-brand/50"
               data-testid="hero-cta-map"
             >
@@ -202,12 +201,18 @@ export function Hero() {
             />
           </motion.div>
 
+          {/* The entry to the state pages. Read from the registry, so the row
+              lists exactly the states that have a page today. */}
+          <motion.div variants={fadeUp} className="mt-14 w-full text-left" data-testid="hero-state-pages">
+            <StatePagesRow lead="What is being decided and built on your state's grid, with the documents and the next public dates." />
+          </motion.div>
+
           {/* The ledger. Each figure links to the module that shows its working
               and prints the date its own dataset was last refreshed, so a stale
               number is visible as stale instead of reading as today's. */}
           <motion.div
             variants={fadeUp}
-            className="mt-14 grid w-full grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4"
+            className="mt-6 grid w-full grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4"
             data-testid="hero-stats"
           >
             {stats.map(({ icon: Icon, label, value, sub, asOf, href }, i) => (
@@ -244,15 +249,20 @@ export function Hero() {
               </Link>
             ))}
           </motion.div>
-
-          {/* The entry to the state pages. Read from the registry, so the row
-              lists exactly the states that have a page today. */}
-          <motion.div variants={fadeUp} className="mt-8 w-full text-left" data-testid="hero-state-pages">
-            <StatePagesRow lead="What is being decided and built on your state's grid, with the documents and the next public dates." />
+          {/* One source line for the four figures. Each is a count or sum of
+              GridTilt's own registry rows; the per-dataset dates live on Data
+              status until the per-tile dates are switched on (SHOW_REFRESH_DATES). */}
+          <motion.div variants={fadeUp} className="mt-3 w-full text-left">
+            <SourceFooter
+              source="GridTilt registries: named clusters, power agreements, state pages"
+              href="/data-status"
+              testid="hero-stats-source"
+            >
+              {" "}· the date of each is on Data status
+            </SourceFooter>
           </motion.div>
         </motion.div>
       </div>
-      <MarketTape />
     </section>
   );
 }

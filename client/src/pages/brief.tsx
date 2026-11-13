@@ -5,6 +5,8 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AsOf, ErrorState } from "@/components/Freshness";
+import { STATE_GRID } from "@/data/state-grid";
+import { statePageLinks, type PublishedStatePage } from "@/lib/state-pages";
 import { Newspaper, Copy, Check, ChevronDown, ChevronUp } from "lucide-react";
 
 interface BriefSection { heading: string; points: string[]; }
@@ -18,10 +20,15 @@ interface Brief {
 }
 
 const SECTION_LINK: Record<string, string> = {
-  Compute: "/compute-frontier",
-  GPUs: "/neocloud-intel",
-  "Power & grid": "/power-map?tab=queue",
-  "Power agreements": "/power-map?tab=deals",
+  Compute: "/compute",
+  GPUs: "/compute?tab=gpu-prices",
+  "Power & grid": "/grid?tab=queue",
+  "Power agreements": "/grid?tab=deals",
+  // The record's sections (server/brief.ts recordSections).
+  // A state's section links to its page through the registry, not this map.
+  "What changed": "/grid?tab=timeline",
+  Agreements: "/grid?tab=deals",
+  "Next public dates": "/states",
 };
 
 // `params` keeps the signature compatible with wouter's RouteComponentProps:
@@ -29,6 +36,12 @@ const SECTION_LINK: Record<string, string> = {
 // while the Analysis page renders <BriefPage embedded />.
 export default function BriefPage({ embedded = false }: { embedded?: boolean; params?: unknown }) {
   const { data, isLoading, isError, refetch, dataUpdatedAt } = useQuery<Brief>({ queryKey: ["/api/brief"] });
+  // A section named for a state links to that state's page, when the
+  // registry publishes one.
+  const { data: statePages } = useQuery<PublishedStatePage[]>({ queryKey: ["/api/state-pages"] });
+  const stateLinks = statePageLinks(statePages, STATE_GRID);
+  const sectionHref = (heading: string): string | null =>
+    SECTION_LINK[heading] ?? stateLinks.find((l) => l.name === heading)?.href ?? null;
   const [copied, setCopied] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [clipped, setClipped] = useState(false);
@@ -72,8 +85,8 @@ export default function BriefPage({ embedded = false }: { embedded?: boolean; pa
           <section key={s.heading} data-testid={`brief-section-${s.heading}`}>
             <div className="flex items-center justify-between mb-1.5">
               <h3 className="text-[13px] font-semibold text-brand">{s.heading}</h3>
-              {SECTION_LINK[s.heading] && (
-                <Link href={SECTION_LINK[s.heading]} className="text-[11px] text-muted-foreground/50 hover:text-brand">open →</Link>
+              {sectionHref(s.heading) && (
+                <Link href={sectionHref(s.heading) as string} className="text-[11px] text-muted-foreground/50 hover:text-brand">open →</Link>
               )}
             </div>
             <ul className="space-y-1">

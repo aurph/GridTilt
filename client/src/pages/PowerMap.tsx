@@ -1,4 +1,7 @@
+import { RegistryDate } from "@/components/Freshness";
 import { useState, useMemo, useRef, useCallback, useEffect } from "react";
+import { SectionHeading } from "@/components/section-heading";
+import { withSectionParams } from "@/lib/sections";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { MapContainer, ZoomControl, useMap, useMapEvents } from "react-leaflet";
@@ -27,7 +30,6 @@ import {
 import {
   BRAND, BORDER, FONT, INK, SEMANTIC, SERIES, STATUS_COLORS, SURFACE,
 } from "@/lib/tokens";
-import { ToolTabs, useToolTabs } from "@/components/ToolTabs";
 import {
   CLUSTER_STATUSES,
   clusterLabelMinMW,
@@ -45,8 +47,6 @@ import {
   type ClusterStatus,
   type PowerMapView,
 } from "@/lib/power-map-clusters";
-import PowerDeals from "@/pages/power-deals";
-import Queue from "@/pages/Queue";
 
 /** Token hex + alpha -> rgba() string, so composed tints stay on token values. */
 function alpha(hex: string, a: number): string {
@@ -166,7 +166,7 @@ function pushFiltersToURL(companies: string[], rtos: string[], capacity: string,
     if (rtos.length) params.set("rtos", rtos.join(","));
     if (capacity !== "all") params.set("capacity", capacity);
     const qs = params.toString();
-    window.history.replaceState(null, "", qs ? `?${qs}` : window.location.pathname);
+    window.history.replaceState(null, "", `${window.location.pathname}${withSectionParams(window.location.search, qs)}`);
   } catch {}
 }
 
@@ -183,22 +183,6 @@ function escapeHtml(str: string): string {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
 }
-
-// Power tool tabs (consolidation): one subject, three views — where the AI
-// load sits (map), who agreed to buy the power and how firmly (deals), what's
-// still waiting on the grid (queue). ?tab= round-trips so each view stays
-// shareable; the "deals" id stays so existing links keep working.
-const POWER_TABS = [
-  { id: "map", label: "Map" },
-  { id: "deals", label: "Agreements" },
-  { id: "queue", label: "Queue" },
-];
-
-const POWER_SUBTITLES: Record<string, string> = {
-  map: "US Data Center Map",
-  deals: "Power agreements",
-  queue: "Interconnection Backlog",
-};
 
 /**
  * True below Tailwind's `sm` breakpoint (640px).
@@ -919,7 +903,6 @@ export default function PowerMap() {
   }, [mobileFiltersOpen]);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
   const mapContainerRef = useRef<HTMLDivElement>(null);
-  const [tab, setTab] = useToolTabs(POWER_TABS, "map");
 
   function toggleCompany(c: string) {
     const next = filterCompanies.includes(c)
@@ -1192,31 +1175,15 @@ export default function PowerMap() {
         }
       `}</style>
 
-      {/* Power tool header: title + view tabs. Sits above the map's own
-          control cluster (DC Locations / Grid Stress) so tabs stay put when
-          the map view is swapped out for Deals or Queue. */}
-      <div
-        className="border-b border-border px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3"
-        data-testid="power-header"
-      >
-        <h1 className="text-base sm:text-lg font-semibold text-foreground tracking-tight">
-          Power <span className="text-muted-foreground/50 font-normal">/ {POWER_SUBTITLES[tab]}</span>
-        </h1>
-        <ToolTabs tabs={POWER_TABS} active={tab} onChange={setTab} />
+      {/* The feature's own heading. Agreements and the queue are their own
+          chips in the Grid section (lib/sections.ts). */}
+      <div className="border-b border-border px-4 sm:px-6 py-3" data-testid="power-header">
+        <SectionHeading className="text-sm font-semibold text-foreground tracking-tight">
+          US data center map
+        </SectionHeading>
       </div>
 
-      {tab === "deals" && (
-        <div className="flex-1 p-4 sm:p-6">
-          <PowerDeals embedded />
-        </div>
-      )}
-      {tab === "queue" && (
-        <div className="flex-1 p-4 sm:p-6">
-          <Queue embedded />
-        </div>
-      )}
-
-      {tab === "map" && (<>
+      <>
       {belowSm && (
         /* The Leaflet map is desktop-only. On phones this honest card takes
            its place; the headline numbers, upcoming projects, and operator
@@ -1226,7 +1193,7 @@ export default function PowerMap() {
             <div className="flex items-center gap-2 mb-1.5">
               <Zap className="h-4 w-4 text-brand" />
               <span className="text-sm font-semibold text-foreground">{isClusterView ? "AI Clusters" : "Power Map"}</span>
-              <AsOf updatedAt={isClusterView ? clUpdatedAt : dataUpdatedAt} intervalMs={900_000} className="ml-auto" />
+              <RegistryDate dataset={isClusterView ? "clusters" : "datacenters"} className="ml-auto" />
             </div>
             <div className="flex items-start gap-2 mb-3">
               <MonitorSmartphone className="h-3.5 w-3.5 text-muted-foreground/60 mt-0.5 flex-shrink-0" />
@@ -1301,14 +1268,14 @@ export default function PowerMap() {
                   <TooltipContent side="bottom" align="start" className="max-w-xs z-[1200] p-3">
                     <p className="text-[11px] font-semibold text-brand mb-1.5">&ge; 400 MW only</p>
                     <p className="text-11 leading-snug text-white/70">
-                      We track hyperscale AI campuses. Smaller sites exist by the thousands. Sources like <span className="text-white/90 font-medium">DC Map</span> and <span className="text-white/90 font-medium">Data Center Knowledge</span> cover them better. For the compute layer (GPUs, chips, secured power) see <Link href="/compute-frontier" className="text-brand hover:text-brand-2">Compute Frontier</Link>.
+                      We track hyperscale AI campuses. Smaller sites exist by the thousands. Sources like <span className="text-white/90 font-medium">DC Map</span> and <span className="text-white/90 font-medium">Data Center Knowledge</span> cover them better. For the compute layer (GPUs, chips, secured power) see <Link href="/compute" className="text-brand hover:text-brand-2">Compute Frontier</Link>.
                     </p>
                   </TooltipContent>
                 </UITooltip>
                 <span className="text-10 font-mono text-white/40">
                   {dcLoading ? "loading…" : dcError ? "load failed" : `${dataCenters.length} campuses of 400 MW and up`}
                 </span>
-                <AsOf updatedAt={dataUpdatedAt} intervalMs={900_000} />
+                <RegistryDate dataset="datacenters" />
               </div>
               <div className="flex items-center gap-3 text-11 font-mono">
                 <span className="text-brand-2 font-bold" title={`operational + construction; announced (+${(announcedMW / 1000).toFixed(1)} GW) excluded`}>{(totalMW / 1000).toFixed(1)} GW tracked</span>
@@ -1344,14 +1311,14 @@ export default function PowerMap() {
                   <TooltipContent side="bottom" align="start" className="max-w-xs z-[1200] p-3">
                     <p className="text-[11px] font-semibold text-brand mb-1.5">Every tracked AI cluster</p>
                     <p className="text-11 leading-snug text-white/70">
-                      The <Link href="/compute-frontier" className="text-brand hover:text-brand-2">Compute Frontier</Link> record set with no size floor. Marker size is planned MW, an estimate for most sites. Energized is rated MW at operational sites. Click a site for its record and sources.
+                      The <Link href="/compute" className="text-brand hover:text-brand-2">Compute Frontier</Link> record set with no size floor. Marker size is planned MW, an estimate for most sites. Energized is rated MW at operational sites. Click a site for its record and sources.
                     </p>
                   </TooltipContent>
                 </UITooltip>
                 <span className="text-10 font-mono text-white/40">
                   {clLoading ? "loading…" : clError ? "load failed" : `${clusters.length} clusters`}
                 </span>
-                <AsOf updatedAt={clUpdatedAt} intervalMs={900_000} />
+                <RegistryDate dataset="clusters" />
               </div>
               <ClusterStatsRow
                 all={allClusterStats}
@@ -1788,7 +1755,7 @@ export default function PowerMap() {
                       </Link>
                     )}
                     <a
-                      href="/stack"
+                      href="/markets?tab=equities"
                       className="text-11 text-brand hover:text-brand-2 transition-colors pointer-events-auto"
                       data-testid="link-view-in-stack"
                     >
@@ -2203,7 +2170,7 @@ export default function PowerMap() {
           </div>
         </div>
       )}
-      </>)}
+      </>
     </div>
   );
 }

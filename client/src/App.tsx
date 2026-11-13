@@ -3,7 +3,7 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { TopNav } from "@/components/top-nav";
+import { MobileBar, TopNav } from "@/components/top-nav";
 import NotFound from "@/pages/not-found";
 import { Skeleton } from "@/components/ui/skeleton";
 import { NewsTicker } from "@/components/NewsTicker";
@@ -11,8 +11,9 @@ import { CommandPalette } from "@/components/command-palette";
 import { SiteFooter } from "@/components/site-footer";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { initAnalytics, trackPageview } from "@/lib/analytics";
-import { useLocation } from "wouter";
-import { useState, useEffect, lazy, Suspense } from "react";
+import { useLocation, useSearch } from "wouter";
+import { LEGACY_ROUTES, legacyRedirect, metaAddress } from "@/lib/sections";
+import { useState, useEffect, useRef, lazy, Suspense } from "react";
 import { X, Keyboard } from "lucide-react";
 
 // Every route is its own chunk. Importing them eagerly meant the first page
@@ -21,24 +22,17 @@ import { X, Keyboard } from "lucide-react";
 // NotFound stays eager: it is the fallback, so it must never be the thing
 // that fails to load.
 const Home = lazy(() => import("@/pages/Home"));
-const TiltOverview = lazy(() => import("@/pages/TiltOverview"));
-const TheStack = lazy(() => import("@/pages/TheStack"));
-const PowerMap = lazy(() => import("@/pages/PowerMap"));
+const SectionPage = lazy(() => import("@/pages/section-page"));
+const States = lazy(() => import("@/pages/states"));
 const StatePage = lazy(() => import("@/pages/state-page"));
-const ComputeFrontier = lazy(() => import("@/pages/compute-frontier"));
 const ComputeFrontierMethodology = lazy(() => import("@/pages/ComputeFrontierMethodology"));
 const ComputeFrontierCompare = lazy(() => import("@/pages/ComputeFrontierCompare"));
 const ComputeFrontierDetail = lazy(() => import("@/pages/ComputeFrontierDetail"));
-const NeocloudIntel = lazy(() => import("@/pages/neocloud-intel"));
-const Analyze = lazy(() => import("@/pages/Analyze"));
-const CatalystTracker = lazy(() => import("@/pages/CatalystTracker"));
 const StockPage = lazy(() => import("@/pages/StockPage"));
 const SectorPage = lazy(() => import("@/pages/SectorPage"));
 const RegionPage = lazy(() => import("@/pages/RegionPage"));
 const OperatorPage = lazy(() => import("@/pages/OperatorPage"));
-const Timeline = lazy(() => import("@/pages/timeline"));
 const DataStatus = lazy(() => import("@/pages/data-status"));
-const SupplyChainPage = lazy(() => import("@/pages/SupplyChain"));
 const BlogIndex = lazy(() => import("@/pages/BlogIndex"));
 const BlogPost = lazy(() => import("@/pages/BlogPost"));
 const Subscribe = lazy(() => import("@/pages/Subscribe"));
@@ -50,35 +44,27 @@ const AdminSocial = lazy(() => import("@/pages/AdminSocial"));
 // no news ticker). Currently just the marketing landing at /.
 const MARKETING_ROUTES: string[] = [];
 
-const PAGE_TITLES: Record<string, string> = {
-  "/": "GridTilt",
-  "/overview": "Overview",
-  "/stack": "Equities",
-  "/supply-chain": "Supply Chain",
-  "/power-map": "Power",
-  "/compute-frontier": "Compute Frontier",
-  "/neocloud-intel": "GPU Prices",
-  "/analyze": "Analyze",
-  "/catalysts": "Catalyst Tracker",
-  "/timeline": "Timeline",
-  "/data-status": "Data status",
-  "/blog": "Research",
-  "/subscribe": "Subscribe",
-  "/privacy": "Privacy",
-};
-
 const SHORTCUTS = [
-  { keys: ["G", "1"], description: "Go to Overview", path: "/overview" },
-  { keys: ["G", "2"], description: "Go to Equities", path: "/stack" },
-  { keys: ["G", "3"], description: "Go to Power", path: "/power-map" },
-  { keys: ["G", "4"], description: "Go to Compute Frontier", path: "/compute-frontier" },
-  { keys: ["G", "5"], description: "Go to GPU Prices", path: "/neocloud-intel" },
-  { keys: ["G", "6"], description: "Go to Catalyst Tracker", path: "/catalysts" },
-  { keys: ["G", "7"], description: "Go to Analyze", path: "/analyze" },
-  { keys: ["G", "8"], description: "Go to Research", path: "/blog" },
+  { keys: ["G", "1"], description: "Go to States", path: "/states" },
+  { keys: ["G", "2"], description: "Go to Grid", path: "/grid" },
+  { keys: ["G", "3"], description: "Go to Compute", path: "/compute" },
+  { keys: ["G", "4"], description: "Go to Markets", path: "/markets" },
+  { keys: ["G", "5"], description: "Go to Research", path: "/blog" },
   { keys: ["⌘", "K"], description: "Search pages, states, tickers, clusters", path: null },
   { keys: ["?"], description: "Show this keyboard shortcuts panel", path: null },
 ];
+
+/**
+ * An address that used to be a page of its own. Forwards to the section and
+ * chip that hold it now (lib/sections.ts), carrying the rest of the query
+ * string. The server answers the same addresses with one 301 (seo.ts).
+ */
+function LegacyRedirect() {
+  const [location] = useLocation();
+  const search = useSearch();
+  const to = legacyRedirect(location, search);
+  return to ? <Redirect to={to} replace /> : <NotFound />;
+}
 
 function KeyboardShortcutsModal({ onClose }: { onClose: () => void }) {
   return (
@@ -135,30 +121,20 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
-      <Route path="/overview" component={TiltOverview} />
-      <Route path="/stack" component={TheStack} />
-      <Route path="/power-map" component={PowerMap} />
-      {/* My Grid was retired; the server 301s /my-grid to Power (seo.ts ALIAS_REDIRECTS) */}
-      <Route path="/my-grid">{() => <Redirect to="/power-map" replace />}</Route>
+      <Route path="/states" component={States} />
       <Route path="/state/:slug" component={StatePage} />
-      <Route path="/compute-frontier" component={ComputeFrontier} />
+      <Route path="/grid">{() => <SectionPage id="grid" />}</Route>
+      <Route path="/compute">{() => <SectionPage id="compute" />}</Route>
+      <Route path="/markets">{() => <SectionPage id="markets" />}</Route>
+      {/* Cluster pages keep their addresses; they light up Buildout. */}
       <Route path="/compute-frontier/methodology" component={ComputeFrontierMethodology} />
       <Route path="/compute-frontier/compare" component={ComputeFrontierCompare} />
       <Route path="/compute-frontier/:id" component={ComputeFrontierDetail} />
-      <Route path="/neocloud-intel" component={NeocloudIntel} />
-      {/* Consolidation: GPU Economics is now the economics tab of GPU Prices */}
-      <Route path="/gpu-economics">{() => <Redirect to="/neocloud-intel?tab=economics" replace />}</Route>
-      {/* Consolidation: Deals and Queue are tabs of Power; Brief lives in Analysis */}
-      <Route path="/power-deals">{() => <Redirect to="/power-map?tab=deals" replace />}</Route>
-      <Route path="/brief">{() => <Redirect to="/blog" replace />}</Route>
-      <Route path="/supply-chain" component={SupplyChainPage} />
-      <Route path="/analyze" component={Analyze} />
-      <Route path="/trade">{() => <Redirect to="/analyze?tab=scenario" replace />}</Route>
-      <Route path="/portfolio">{() => <Redirect to="/analyze?tab=portfolio" replace />}</Route>
-      <Route path="/catalysts" component={CatalystTracker} />
-      <Route path="/timeline" component={Timeline} />
+      {/* Every address that used to be a page or an alias (LEGACY_ROUTES). */}
+      {Object.keys(LEGACY_ROUTES).map((path) => (
+        <Route key={path} path={path} component={LegacyRedirect} />
+      ))}
       <Route path="/data-status" component={DataStatus} />
-      <Route path="/queue">{() => <Redirect to="/power-map?tab=queue" replace />}</Route>
       <Route path="/stock/:ticker" component={StockPage} />
       <Route path="/sector/:slug" component={SectorPage} />
       <Route path="/region/:slug" component={RegionPage} />
@@ -252,6 +228,29 @@ function App() {
     trackPageview(location);
   }, [location]);
 
+  // The tab title follows the address. The server writes the title into the
+  // HTML on a full load, so the first render is skipped; after that each new
+  // page or chip asks the same source for its title (/api/page-meta).
+  const search = useSearch();
+  const address = metaAddress(location, search);
+  const firstAddress = useRef(true);
+  useEffect(() => {
+    if (firstAddress.current) {
+      firstAddress.current = false;
+      return;
+    }
+    let live = true;
+    fetch(`/api/page-meta?path=${encodeURIComponent(address)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((meta: { title?: string } | null) => {
+        if (live && meta?.title) document.title = meta.title;
+      })
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [address]);
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
@@ -274,9 +273,7 @@ function App() {
       }
       if (gPressed) {
         const routes: Record<string, string> = {
-          "1": "/overview", "2": "/stack", "3": "/power-map",
-          "4": "/compute-frontier", "5": "/neocloud-intel", "6": "/catalysts",
-          "7": "/analyze", "8": "/blog",
+          "1": "/states", "2": "/grid", "3": "/compute", "4": "/markets", "5": "/blog",
         };
         if (routes[e.key]) {
           navigate(routes[e.key]);
@@ -319,7 +316,11 @@ function App() {
           <ErrorBoundary silent>
             <NewsTicker />
           </ErrorBoundary>
-          <main className="flex-1 overflow-auto">
+          {/* isolate: the map's layers carry z-indexes in the hundreds; kept
+              inside main they cannot rise over the phone bar or a menu.
+              pb-20: the phone bar floats over the bottom of the screen, so
+              the page ends above it. */}
+          <main className="isolate flex-1 overflow-auto pb-20 sm:pb-0">
             <ErrorBoundary label="This page failed to render." resetKey={location}>
               <Suspense fallback={<RouteLoading />}>
                 <Router />
@@ -328,6 +329,7 @@ function App() {
             <SiteFooter />
           </main>
         </div>
+        <MobileBar />
         <CommandPalette />
         {showShortcuts && (
           <KeyboardShortcutsModal onClose={() => setShowShortcuts(false)} />

@@ -150,7 +150,7 @@ export function buildBuildoutPost(i: BuildoutInput): PostResult {
   return post([
     `GridTilt tracks ${withCommas(i.clusterCount)} AI compute clusters: ${i.operational.count} operating, ${i.construction.count} under construction and ${i.announced.count} announced. Their planned power, the full announced build: ${gwFromMw(i.operational.plannedMW)} GW, ${gwFromMw(i.construction.plannedMW)} GW and ${gwFromMw(i.announced.plannedMW)} GW. Data as of ${shortDate(i.asOf as string)}.`,
     "",
-    "https://gridtilt.com/compute-frontier",
+    "https://gridtilt.com/compute",
   ]);
 }
 
@@ -190,7 +190,43 @@ export function buildGpuObservedPost(i: GpuObservedInput): PostResult {
   return post([
     `On-demand GPU rental prices observed ${shortDate(i.observedOn as string)}, each the median of the provider prices seen for that model: ${parts.join("; ")}, per GPU-hour.`,
     "",
-    "https://gridtilt.com/neocloud-intel",
+    "https://gridtilt.com/compute?tab=gpu-prices",
+  ]);
+}
+
+// ── Tuesday: one state decision (the state pages) ──────────────────────────
+//
+// The newest dated decision on a published state page, with the document it
+// comes from. Observed GPU prices held this day and skipped every week while
+// the live price sweep was off; they stay available on demand (gpu_rental).
+
+export interface StateDecisionInput {
+  /** The state's name: "Maryland". */
+  state: string;
+  /** The state page's slug: "maryland". */
+  slug: string;
+  /** The decision's own date, YYYY-MM-DD. */
+  date: string;
+  title: string;
+  /** The document the row cites. */
+  documentUrl: string;
+  /** The day the state's rows were last checked against their documents. */
+  reviewed: string;
+}
+
+export function buildStateDecisionPost(i: StateDecisionInput | null, today: string, maxReviewAgeDays: number): PostResult {
+  if (!i) return skip("no dated decision is on a published state page");
+  if (!isDay(i.date)) return skip(`the newest state decision's date (${i.date}) is not a valid day`);
+  const stale = staleReason(`${i.state}'s state page review`, i.reviewed, today, maxReviewAgeDays, "for its rows to be posted as checked");
+  if (stale) return skip(stale);
+  const age = daysBetween(i.date, today);
+  if (age === null || age < 0) return skip(`the newest state decision is dated ${i.date}, after today`);
+  if (!/^https:\/\//.test(i.documentUrl)) return skip("the decision's document link is not https");
+  return post([
+    `${i.state}, ${shortDate(i.date)}: ${i.title.replace(/[.\s]+$/, "")}.`,
+    `Document: ${i.documentUrl}`,
+    "",
+    `https://gridtilt.com/state/${i.slug}`,
   ]);
 }
 
@@ -272,7 +308,7 @@ export function buildQueuePost(i: QueueInput | null, todayYear: number): PostRes
   return post([
     `${i.edition}: about ${withCommas(i.gw)} GW of generation and storage was waiting to connect to the US grid at ${i.asOf}${projects}. A queue request is not a commitment to build.`,
     "",
-    "https://gridtilt.com/power-map?tab=queue",
+    "https://gridtilt.com/grid?tab=queue",
   ]);
 }
 
@@ -350,7 +386,7 @@ export function buildTopMoversTweet(movers: MoverLite[]): string {
     "",
     line,
     "",
-    "https://gridtilt.com/stack",
+    "https://gridtilt.com/markets?tab=equities",
   ].join("\n");
 }
 
@@ -371,7 +407,7 @@ export function buildCatalystTweet(upcoming: CatalystLite[]): string {
       "",
       "nothing scheduled. quiet docket.",
       "",
-      "https://gridtilt.com/catalysts",
+      "https://gridtilt.com/markets?tab=catalysts",
     ].join("\n");
   }
 
@@ -397,6 +433,6 @@ export function buildCatalystTweet(upcoming: CatalystLite[]): string {
     "",
     tail,
     "",
-    "https://gridtilt.com/catalysts",
+    "https://gridtilt.com/markets?tab=catalysts",
   ].join("\n");
 }

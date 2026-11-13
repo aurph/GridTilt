@@ -1,3 +1,4 @@
+import { RegistrySourceFooter, SourceFooter } from "@/components/SourceFooter";
 import { useQuery } from "@tanstack/react-query";
 import { Profiler, Suspense, lazy, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useSearch } from "wouter";
@@ -890,6 +891,12 @@ export default function TheStack() {
                     />
                   </ScatterChart>
                 </ResponsiveContainer>
+                <SourceFooter
+                  source="Yahoo Finance weekly closes"
+                  est="the trend line and channel are fitted by GridTilt to those closes"
+                  className="mt-2"
+                  testid="correlation-source"
+                />
                 <div className="flex items-center gap-5 text-xs text-muted-foreground mt-1 mb-1">
                   <div className="flex items-center gap-1.5">
                     <div className="h-2 w-2 rounded-full bg-brand-2 opacity-70" />

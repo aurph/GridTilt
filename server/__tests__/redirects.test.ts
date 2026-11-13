@@ -43,12 +43,34 @@ test("aliases, API 404s, the ticker list and the sitemap", async () => {
   try {
     let r = await fetch(`${url}/trade?utm_source=newsletter`, { redirect: "manual" });
     assert.equal(r.status, 301);
-    assert.equal(r.headers.get("location"), "/analyze?tab=scenario&utm_source=newsletter");
+    assert.equal(r.headers.get("location"), "/markets?tab=analyze&sub=scenario&utm_source=newsletter");
     r = await fetch(`${url}/queue`, { redirect: "manual" });
     assert.equal(r.status, 301);
-    assert.equal(r.headers.get("location"), "/power-map?tab=queue");
+    assert.equal(r.headers.get("location"), "/grid?tab=queue");
     r = await fetch(`${url}/power-deals?tab=queue`, { redirect: "manual" });
-    assert.equal(r.headers.get("location"), "/power-map?tab=deals", "the alias's own parameter wins");
+    assert.equal(r.headers.get("location"), "/grid?tab=deals", "the alias's own parameter wins");
+    r = await fetch(`${url}/power-map?tab=deals&deal=abc`, { redirect: "manual" });
+    assert.equal(r.status, 301);
+    assert.equal(r.headers.get("location"), "/grid?tab=deals&deal=abc", "an old tab becomes the chip and the deal id rides along");
+    r = await fetch(`${url}/neocloud-intel?tab=economics`, { redirect: "manual" });
+    assert.equal(r.headers.get("location"), "/compute?tab=gpu-prices&sub=economics", "an old tab of a feature becomes its view");
+    r = await fetch(`${url}/overview`, { redirect: "manual" });
+    assert.equal(r.status, 301);
+    assert.equal(r.headers.get("location"), "/markets");
+    r = await fetch(`${url}/compute-frontier/methodology`, { redirect: "manual" });
+    assert.notEqual(r.status, 301, "cluster pages keep their addresses");
+    assert.equal(r.headers.get("location"), null);
+
+    // The tab title a client navigation asks for is the one the HTML carries.
+    r = await fetch(`${url}/api/page-meta?path=${encodeURIComponent("/grid?tab=queue")}`);
+    assert.equal(r.status, 200);
+    assert.match(((await r.json()) as { title: string }).title, /^Interconnection Queue/);
+    r = await fetch(`${url}/api/page-meta?path=${encodeURIComponent("/markets?tab=catalysts&type=earnings")}`);
+    assert.match(((await r.json()) as { title: string }).title, /Catalysts/);
+    r = await fetch(`${url}/api/page-meta?path=${encodeURIComponent("//evil.example")}`);
+    assert.equal(r.status, 400);
+    r = await fetch(`${url}/api/page-meta`);
+    assert.equal(r.status, 400);
 
     r = await fetch(`${url}/api/stock/NOPE`);
     assert.equal(r.status, 404);

@@ -1,3 +1,4 @@
+import { RegistrySourceFooter, SourceFooter } from "@/components/SourceFooter";
 import { useParams, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
@@ -102,14 +103,14 @@ export default function StockPage() {
   if (isError || !data) {
     return (
       <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-6">
-        <Link href="/stack" className="flex items-center gap-1 text-sm text-brand mb-6" data-testid="link-back-stack">
+        <Link href="/markets?tab=equities" className="flex items-center gap-1 text-sm text-brand mb-6" data-testid="link-back-stack">
           <ArrowLeft className="h-4 w-4" /> Back to Equities
         </Link>
         <Card className="p-8 border-card-border text-center">
           <AlertTriangle className="h-8 w-8 text-negative mx-auto mb-3" />
           <h1 className="text-lg font-semibold mb-2">Ticker Not Found</h1>
           <p className="text-sm text-muted-foreground">
-            ${upperTicker} is not tracked on GridTilt. <Link href="/stack" className="text-brand">Browse Equities</Link> to see all 100+ tracked equities.
+            ${upperTicker} is not tracked on GridTilt. <Link href="/markets?tab=equities" className="text-brand">Browse Equities</Link> to see all 100+ tracked equities.
           </p>
         </Card>
       </div>
@@ -156,7 +157,7 @@ export default function StockPage() {
       <nav className="flex items-center gap-2 text-xs text-muted-foreground" data-testid="breadcrumb">
         <Link href="/" className="hover:text-foreground">GridTilt</Link>
         <span>/</span>
-        <Link href="/stack" className="hover:text-foreground">Equities</Link>
+        <Link href="/markets?tab=equities" className="hover:text-foreground">Equities</Link>
         <span>/</span>
         <Link href={`/sector/${sectorSlug}`} className="hover:text-foreground">{sectorLabel}</Link>
         <span>/</span>
@@ -262,6 +263,14 @@ export default function StockPage() {
                   <Line {...seriesMotion()} type="monotone" dataKey="price" stroke={chartUp ? SEMANTIC.positiveDeep : SEMANTIC.negativeDeep} strokeWidth={2} dot={false} />
                 </LineChart>
               </ResponsiveContainer>
+              <SourceFooter
+                source="Yahoo Finance"
+                href={`https://finance.yahoo.com/quote/${encodeURIComponent(data.ticker)}`}
+                className="mt-2"
+                testid="stock-chart-source"
+              >
+                {" "}· {chartLabel}; prices may be delayed
+              </SourceFooter>
             </Card>
           )}
 
@@ -290,7 +299,7 @@ export default function StockPage() {
               <div className="space-y-3">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Market Cap</span>
-                  <span className="font-mono font-semibold">{data.stockData.marketCapDisplay || "N/A"}</span>
+                  <span className="font-mono font-semibold">{data.stockData.marketCapDisplay || "--"}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">P/E Ratio</span>

@@ -1,3 +1,5 @@
+import { RegistrySourceFooter, SourceFooter } from "@/components/SourceFooter";
+import { withSectionParams } from "@/lib/sections";
 import { useState, useEffect, useMemo } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { Link } from "wouter";
@@ -71,7 +73,7 @@ function parseTickers(value: string): string[] {
 
 /** What the tool is and is not. Shown under the heading in both layouts. */
 const BASKET_NOTE =
-  "Equal-weight comparison of editorial sector classifications. It does not measure your invested dollars, risk, or suitability.";
+  "Illustrative, on an equal-weight model basket: it compares GridTilt's editorial sector classifications. It does not measure your invested dollars, risk, or suitability.";
 
 /** The radar axes, which are exactly the keys of a result's `sectors`. */
 const RADAR_AXES = ["Compute", "Infrastructure", "Power", "Cooling", "Grid"] as const;
@@ -206,7 +208,7 @@ export default function PortfolioOverlay({ embedded = false }: { embedded?: bool
     // Embedded (Analyze tool): keep the host route in the URL bar instead of
     // rewriting it to /portfolio out from under the tab.
     const path = embedded ? window.location.pathname : "/portfolio";
-    window.history.replaceState(null, "", `${path}?tickers=${encoded}`);
+    window.history.replaceState(null, "", `${path}${embedded ? withSectionParams(window.location.search, `tickers=${encoded}`) : `?tickers=${encoded}`}`);
     mutate(tickers);
   };
 
@@ -215,7 +217,7 @@ export default function PortfolioOverlay({ embedded = false }: { embedded?: bool
     if (tickers.length === 0) return;
     const encoded = encodeURIComponent(tickers.join(","));
     const sharePath = embedded ? window.location.pathname : "/portfolio";
-    const url = `${window.location.origin}${sharePath}?tickers=${encoded}`;
+    const url = `${window.location.origin}${sharePath}${embedded ? withSectionParams(window.location.search, `tickers=${encoded}`) : `?tickers=${encoded}`}`;
     try {
       await navigator.clipboard.writeText(url);
       setCopied(true);
@@ -548,6 +550,12 @@ export default function PortfolioOverlay({ embedded = false }: { embedded?: bool
                     />
                   </RadarChart>
                 </ResponsiveContainer>
+                <SourceFooter
+                  source="GridTilt editorial sector classifications"
+                  est="illustrative scores on an equal-weight model basket"
+                  className="mt-2"
+                  testid="basket-radar-source"
+                />
               </Card>
 
               <Card className="p-4 border-card-border bg-muted/10">

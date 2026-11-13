@@ -1,38 +1,33 @@
 import { Link } from "wouter";
+import { SECTIONS } from "@/lib/sections";
 
 /**
  * Site footer: brand, section index, data provenance, and the standing
  * disclaimer. Renders at the bottom of every page's scroll.
  */
 
-const SECTIONS: [string, string][] = [
-  ["Overview", "/overview"],
-  ["Equities", "/stack"],
-  ["Supply Chain", "/supply-chain"],
-  ["Power", "/power-map"],
-  ["Compute", "/compute-frontier"],
-  ["GPU Prices", "/neocloud-intel"],
-  ["Analyze", "/analyze"],
-  ["Catalysts", "/catalysts"],
-  ["Timeline", "/timeline"],
+// The four sections come from the site map (lib/sections.ts), so the footer
+// cannot drift from the top bar.
+const SECTION_LINKS: [string, string][] = [
+  ...SECTIONS.map((s): [string, string] => [s.label, s.href]),
   ["Research", "/blog"],
+  ["Get the Brief", "/subscribe"],
 ];
 
 const DATA: [string, string][] = [
-  ["Methodology", "/compute-frontier/methodology"],
   ["Data status", "/data-status"],
-  ["The brief", "/subscribe"],
+  ["Methodology", "/compute-frontier/methodology"],
   ["Privacy", "/privacy"],
 ];
 
 export function SiteFooter() {
   const year = new Date().getFullYear();
   return (
-    <footer className="border-t border-border bg-sidebar" data-testid="site-footer">
+    <footer className="border-t border-dashed border-border bg-sidebar" data-testid="site-footer">
       <div className="mx-auto max-w-[1200px] px-6 py-10">
         <div className="grid grid-cols-2 gap-8 sm:grid-cols-4">
           <div className="col-span-2 sm:col-span-1">
-            <Link href="/" className="inline-flex items-center gap-2 no-underline" data-testid="footer-wordmark">
+            <Link href="/" className="inline-flex min-h-[40px] items-center gap-2 no-underline" data-testid="footer-wordmark">
               <span className="text-[15px] font-bold tracking-tight text-foreground">
                 Grid<span className="italic text-brand">Tilt</span>
               </span>
@@ -44,7 +39,7 @@ export function SiteFooter() {
           <nav aria-label="Sections">
             <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/70">Sections</p>
             <ul className="mt-2.5 space-y-1.5">
-              {SECTIONS.map(([label, href]) => (
+              {SECTION_LINKS.map(([label, href]) => (
                 <li key={href}>
                   <Link href={href} className="text-[13px] text-muted-foreground no-underline transition-colors hover:text-foreground">
                     {label}

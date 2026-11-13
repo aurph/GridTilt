@@ -64,7 +64,7 @@ export default function ComputeFrontierCompare() {
     { label: "Energy", render: (c) => c.energySource },
     { label: "Workload", render: (c) => c.workload },
     { label: "Online", render: (c) => `${c.onlineDate}${est(c, "onlineDate")}` },
-    { label: "Nuclear deal", render: (c) => (c.linkedDeal ? <Link href="/queue" className="text-brand hover:text-brand-2">{c.linkedDeal}</Link> : "none") },
+    { label: "Nuclear deal", render: (c) => (c.linkedDeal ? <Link href="/grid?tab=queue" className="text-brand hover:text-brand-2">{c.linkedDeal}</Link> : "none") },
   ];
 
   return (
@@ -76,7 +76,7 @@ export default function ComputeFrontierCompare() {
           <>Put two or three superclusters side by side. Values marked <span className="text-brand-2">est.</span> are GridTilt estimates or announced targets.</>
         }
         right={
-          <Link href="/compute-frontier" className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground" data-testid="cfc-back">
+          <Link href="/compute" className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground" data-testid="cfc-back">
             <ArrowLeft className="h-3.5 w-3.5" /> Compute Frontier
           </Link>
         }
@@ -140,7 +140,7 @@ export default function ComputeFrontierCompare() {
         )}
 
         <p className="text-11 text-muted-foreground/60">
-          Back to the <Link href="/compute-frontier" className="text-brand hover:text-brand-2">Compute Frontier</Link> or read the{" "}
+          Back to the <Link href="/compute" className="text-brand hover:text-brand-2">Compute Frontier</Link> or read the{" "}
           <Link href="/compute-frontier/methodology" className="text-brand hover:text-brand-2">methodology</Link>.
         </p>
       </div>
