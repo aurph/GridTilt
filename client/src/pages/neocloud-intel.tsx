@@ -245,7 +245,7 @@ export default function NeocloudIntel() {
         about={
           <>
             On-demand GPU rental prices ($/GPU/hr) blended across the major neoclouds and marketplaces (Lambda,
-            RunPod, Vast.ai, CoreWeave, TensorWave, Vultr, Nebius) and the getdeploying.com / Silicon Data trackers.
+            RunPod, Vast.ai, CoreWeave, TensorWave, Vultr, Nebius) and the getdeploying.com / Silicon Data trackers.{" "}
             {data?.health?.sweepEnabled === false
               ? "The live provider price sweep is paused, so prices are curated, source-verified estimates flagged est."
               : "Models covered by live provider prices (RunPod, Vast.ai marketplace) show an observed daily price and drop the est. flag; the rest are curated, source-verified estimates flagged est."}
@@ -553,7 +553,7 @@ export default function NeocloudIntel() {
                       {r.sources.slice(0, 4).map((s) => <div key={s} className="font-mono">{s.replace(/^https?:\/\//, "")}</div>)}
                     </div>
                   )}
-                  <p className="text-10 text-muted-foreground/50 mt-1.5">1W/1M/YTD read "—" until the daily recorder accrues history; 1Y is from sourced anchors.</p>
+                  <p className="text-10 text-muted-foreground/50 mt-1.5">1W, 1M and YTD fill in as daily history builds. 1Y uses sourced anchor prices.</p>
                 </TooltipContent>
               </UITooltip>
             ))
@@ -574,17 +574,18 @@ export default function NeocloudIntel() {
 function PipelineHealthLine({ health }: { health: GpuPipelineHealth }) {
   const sweep = health.lastSweep;
   const failed = sweep ? sweep.perProvider.runpod.failed + sweep.perProvider.vast.failed : 0;
+  const repriced = health.curatedLastRefreshed ? ` Estimates last repriced ${health.curatedLastRefreshed}.` : "";
   return (
     <p className="mt-1 max-w-3xl text-10 leading-relaxed text-muted-foreground" data-testid="ni-pipeline-health">
-      Live observations: {health.recordedDays} days, last {health.lastRecordedDate ?? "none"}. Curated reprice: {health.curatedLastRefreshed ?? "unknown"}.
-      {health.sweepEnabled === false ? (
-        <span className="text-muted-foreground/70"> Live sweep paused; prices shown are curated estimates.</span>
-      ) : sweep ? (
-        <span className={failed > 0 ? "text-warning" : "text-muted-foreground/70"}>
-          {` Last sweep ${sweep.date}: ${failed > 0 ? `${failed} provider request${failed === 1 ? "" : "s"} failed` : `${sweep.usableModels} models recorded`} (RunPod ${sweep.perProvider.runpod.succeeded}/${sweep.perProvider.runpod.requests}, Vast ${sweep.perProvider.vast.succeeded}/${sweep.perProvider.vast.requests}).`}
-        </span>
+      {health.sweepEnabled === false || !health.lastRecordedDate ? (
+        <>Prices shown are curated estimates.{repriced}</>
       ) : (
-        <span className="text-muted-foreground/60"> Live prices update shortly.</span>
+        <>
+          Observed daily prices: {health.recordedDays} days on record, latest {health.lastRecordedDate}.{repriced}
+          {failed > 0 && sweep && (
+            <span className="text-warning">{` Some provider prices did not update on ${sweep.date}.`}</span>
+          )}
+        </>
       )}
     </p>
   );
