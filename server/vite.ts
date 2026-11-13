@@ -55,7 +55,7 @@ export async function setupVite(server: Server, app: Express) {
         `src="/src/main.tsx?v=${randomUUID()}"`,
       );
       const pathname = req.originalUrl.split("?")[0] || "/";
-      const meta = getPageMeta(pathname);
+      const meta = getPageMeta(pathname, req.originalUrl.includes("?") ? req.originalUrl.slice(req.originalUrl.indexOf("?")) : "");
       template = injectMetaTags(template, meta);
       template = injectRuntimeConfig(template);
       const stateBody = meta.status ? null : statePagePrerender(pathname);

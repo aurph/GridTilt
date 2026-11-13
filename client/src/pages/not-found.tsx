@@ -1,19 +1,11 @@
 import { Link } from "wouter";
 import { Zap } from "lucide-react";
+import { StatePagesRow } from "@/components/StatePagesRow";
+import { SECTIONS } from "@/lib/sections";
 
-// Mirrors top-nav.tsx's SECTIONS (each page re-declares per house convention)
-// plus one-line descriptions pulled from each page's own PageHeader `about`
-// copy, so a wrong URL still lands somewhere useful instead of a dead end.
-const SECTIONS: { label: string; href: string; desc: string }[] = [
-  { label: "Overview", href: "/overview", desc: "Tilt score, top movers, and the buildout timeline" },
-  { label: "Equities", href: "/stack", desc: "100+ tracked stocks across 13 sectors" },
-  { label: "Power", href: "/power-map", desc: "US data center map, deals, and interconnection queue" },
-  { label: "Compute", href: "/compute-frontier", desc: "Named AI training superclusters, tracked by GPU and MW" },
-  { label: "GPU Prices", href: "/neocloud-intel", desc: "On-demand GPU rental pricing across neoclouds" },
-  { label: "Analyze", href: "/analyze", desc: "Portfolio exposure and buildout scenario modeling" },
-  { label: "Catalysts", href: "/catalysts", desc: "Earnings dates and dated thesis catalysts" },
-  { label: "Research", href: "/blog", desc: "Data-driven analysis on the AI power buildout" },
-];
+// The four sections, from the site map the top bar reads (lib/sections.ts),
+// so a wrong address still lands somewhere useful.
+const LINKS = SECTIONS.map((s) => ({ label: s.label, href: s.href, desc: s.dek }));
 
 export default function NotFound() {
   return (
@@ -34,19 +26,19 @@ export default function NotFound() {
         for keyboard shortcuts.
       </p>
       <Link
-        href="/overview"
+        href="/"
         className="px-5 py-2.5 bg-brand/15 hover:bg-brand/25 border border-brand/30 rounded-md text-sm font-medium text-brand transition-colors"
         data-testid="link-home"
       >
-        Back to the dashboard
+        Back to the front page
       </Link>
 
       <div className="mt-14 w-full max-w-3xl">
         <p className="text-10 uppercase tracking-widest text-muted-foreground/50 font-mono mb-3">
           Jump to a section
         </p>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5" data-testid="not-found-sections">
-          {SECTIONS.map((s) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5" data-testid="not-found-sections">
+          {LINKS.map((s) => (
             <Link
               key={s.href}
               href={s.href}
@@ -58,6 +50,7 @@ export default function NotFound() {
             </Link>
           ))}
         </div>
+        <StatePagesRow className="mt-8 text-left" testId="not-found-state-pages" />
       </div>
     </div>
   );

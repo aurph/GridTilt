@@ -17,6 +17,7 @@ import {
   stampFreshness as stampDatacenterFreshness,
 } from "./datacenter-ingester";
 import { ALIAS_REDIRECTS, BASE_URL, buildSitemap, robotsTxt, ogNameKnown } from "./seo";
+import { legacyRedirect } from "../client/src/lib/sections";
 import {
   computeAiPowerIndex,
   computeGridStress,
@@ -53,7 +54,7 @@ import { getUraniumCorrelation } from "./uranium-correlation";
 import { footerBlockers, renderWeeklyEmail, renderWeeklyText, weeklyDateLabel, type NewsletterFooter } from "./weekly-digest";
 import { renderEditorialEmail, renderEditorialText } from "./editorial-issue";
 import { sortChanges, validateChangeLog, type ChangeRecord } from "./change-log";
-import { loadStatePage, loadStatePageSlugs } from "./state-page";
+import { loadStatePage, loadStatePageIndex, loadStatePageSlugs } from "./state-page";
 import { fractionToPercent, getCachedFundamentals, refreshFundamentalsIfStale } from "./fundamentals";
 import { normalizeTickerInput, scoreBasket } from "./portfolio-score";
 import {
@@ -1971,7 +1972,7 @@ export async function registerRoutes(
 
   // ─── State pages (T25 pilot; server/state-page.ts) ───────────────────
   app.get("/api/state-pages", (_req, res) => {
-    res.json(loadStatePageSlugs());
+    res.json(loadStatePageIndex());
   });
 
   // 404 when no page is published under the slug; 503 when the data behind a
@@ -2965,17 +2966,14 @@ export async function registerRoutes(
     res.json({ tickers: Object.keys(COMPANY_DATABASE).sort() });
   });
 
-  // Aliases answer with one 301 to the final address (seo.ts ALIAS_REDIRECTS),
-  // carrying any other query parameters along (a campaign tag, for one).
-  for (const [from, to] of Object.entries(ALIAS_REDIRECTS)) {
+  // Old addresses answer with one 301 to the section and chip that hold the
+  // page now (client/src/lib/sections.ts), carrying the rest of the query
+  // string along (a map view, a deal id, a campaign tag).
+  for (const from of Object.keys(ALIAS_REDIRECTS)) {
     app.get(from, (req, res) => {
-      const [path, query] = to.split("?");
-      const params = new URLSearchParams(query ?? "");
-      for (const [k, v] of Object.entries(req.query)) {
-        if (typeof v === "string" && !params.has(k)) params.set(k, v);
-      }
-      const qs = params.toString();
-      res.redirect(301, `${path}${qs ? `?${qs}` : ""}`);
+      const i = req.originalUrl.indexOf("?");
+      const to = legacyRedirect(from, i >= 0 ? req.originalUrl.slice(i) : "");
+      res.redirect(301, to ?? ALIAS_REDIRECTS[from]);
     });
   }
 

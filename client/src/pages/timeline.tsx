@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/Freshness";
 import { PageHeader, HeaderStat } from "@/components/PageHeader";
 import { BRAND } from "@/lib/tokens";
+import { withSectionParams } from "@/lib/sections";
 import {
   DEFAULT_FILTERS,
   EVENT_TYPES,
@@ -43,7 +44,7 @@ export default function TimelinePage() {
 
   const setFilters = (next: Filters) => {
     const qs = serializeFilters(next);
-    window.history.replaceState(null, "", `${window.location.pathname}${qs}`);
+    window.history.replaceState(null, "", `${window.location.pathname}${withSectionParams(window.location.search, qs)}`);
   };
 
   const today = data?.today ?? "";

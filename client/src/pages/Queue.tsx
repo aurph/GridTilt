@@ -1,3 +1,4 @@
+import { SectionHeading } from "@/components/section-heading";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
@@ -192,6 +193,9 @@ export default function Queue({ embedded = false }: { embedded?: boolean; params
   // render a slim intro row instead of the narrative header.
   const intro = embedded ? (
     <div className="flex flex-wrap items-start justify-between gap-3 px-1">
+      <SectionHeading className="w-full text-sm font-semibold text-foreground tracking-tight" testId="queue-heading">
+        Interconnection queue
+      </SectionHeading>
       <p className="text-muted-foreground text-xs leading-relaxed max-w-3xl">
         The named US power projects and hyperscaler campuses waiting on the grid, plus the ISO totals that contain them.
         {h && (

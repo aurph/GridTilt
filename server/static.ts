@@ -13,7 +13,7 @@ import { injectRuntimeConfig } from "./runtime-config";
  */
 export function pageResponse(indexHtml: string, originalUrl: string): { status: number; robots: string; html: string } {
   const pathname = originalUrl.split("?")[0] || "/";
-  const meta = getPageMeta(pathname);
+  const meta = getPageMeta(pathname, originalUrl.includes("?") ? originalUrl.slice(originalUrl.indexOf("?")) : "");
   let html = injectRuntimeConfig(injectMetaTags(indexHtml, meta));
   // A published state page carries its facts in the response itself.
   const body = meta.status ? null : statePagePrerender(pathname);

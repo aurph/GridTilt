@@ -262,8 +262,8 @@ export default function ComputeFrontier() {
           <>
             {metrics?.lastRefreshed && <span className="text-11 font-mono text-muted-foreground/60">refreshed {metrics.lastRefreshed}</span>}
             <AsOf updatedAt={dataUpdatedAt} intervalMs={900_000} />
-            <Link href="/power-map" className="text-11 text-brand hover:text-brand-2 font-medium">Power Map →</Link>
-            <Link href="/queue" className="text-11 text-brand hover:text-brand-2 font-medium">Nuclear deals →</Link>
+            <Link href="/grid" className="text-11 text-brand hover:text-brand-2 font-medium">Power Map →</Link>
+            <Link href="/grid?tab=queue" className="text-11 text-brand hover:text-brand-2 font-medium">Nuclear deals →</Link>
           </>
         }
       />
@@ -453,7 +453,7 @@ export default function ComputeFrontier() {
               <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ background: STATUS_COLOR.operational }} />operational</span>
               <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ background: STATUS_COLOR.construction }} />construction</span>
               <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ background: STATUS_COLOR.announced }} />announced</span>
-              <Link href="/power-map?view=clusters" className="text-brand hover:text-brand-2 transition-colors" data-testid="link-power-map-clusters">
+              <Link href="/grid?view=clusters" className="text-brand hover:text-brand-2 transition-colors" data-testid="link-power-map-clusters">
                 Open on the Power Map &rarr;
               </Link>
             </div>
@@ -554,7 +554,7 @@ export default function ComputeFrontier() {
                     <span className="col-span-1 font-mono text-muted-foreground truncate">{c.gridRegion}</span>
                     <span className="col-span-1 font-mono text-muted-foreground text-10 truncate">{c.onlineDate}<Est on={c.estimated.includes("onlineDate")} /></span>
                     <span className="col-span-1 text-center text-10">
-                      {c.linkedDeal ? <Link href="/queue" className="text-brand hover:text-brand-2">★</Link> : <span className="text-muted-foreground/30">—</span>}
+                      {c.linkedDeal ? <Link href="/grid?tab=queue" className="text-brand hover:text-brand-2">★</Link> : <span className="text-muted-foreground/30">--</span>}
                     </span>
                   </div>
                 </TooltipTrigger>
@@ -613,10 +613,10 @@ export default function ComputeFrontier() {
         <p className="text-11 text-muted-foreground/60 leading-relaxed px-1" data-testid="cf-methodology">
           Compiled from public announcements (company press releases, Reuters, Tom's Hardware, Data Center Dynamics,
           SemiAnalysis, utility filings) and cross-referenced against GridTilt's{" "}
-          <Link href="/power-map" className="text-brand hover:text-brand-2">Power Map</Link> registry. The{" "}
+          <Link href="/grid" className="text-brand hover:text-brand-2">Power Map</Link> registry. The{" "}
           <span className="text-brand-2">est.</span> tag marks GridTilt estimates and announced targets not yet realized;
           GPU counts read "—" where an operator has not disclosed one. Nuclear links point to the tracked deals on the{" "}
-          <Link href="/queue" className="text-brand hover:text-brand-2">Backlog</Link> page. Tracked, not exhaustive.
+          <Link href="/grid?tab=queue" className="text-brand hover:text-brand-2">Backlog</Link> page. Tracked, not exhaustive.
           Full <Link href="/compute-frontier/methodology" className="text-brand hover:text-brand-2">methodology</Link>, or{" "}
           <Link href="/compute-frontier/compare" className="text-brand hover:text-brand-2">compare clusters side by side</Link>.
         </p>

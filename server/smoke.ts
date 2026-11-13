@@ -126,7 +126,26 @@ function keyedFeed(name: string, path: string): Check {
 }
 
 export const CHECKS: Check[] = [
-  ...["/", "/overview", "/stack", "/supply-chain", "/power-map", "/compute-frontier", "/neocloud-intel", "/analyze", "/catalysts", "/timeline", "/blog", "/data-status"].map(page),
+  // The four sections and every chip (client/src/lib/sections.ts). Old
+  // addresses are 301s, covered by server/__tests__/redirects.test.ts.
+  ...[
+    "/",
+    "/states",
+    "/grid",
+    "/grid?tab=queue",
+    "/grid?tab=deals",
+    "/grid?tab=live",
+    "/grid?tab=timeline",
+    "/buildout",
+    "/buildout?tab=supply-chain",
+    "/buildout?tab=gpu-prices",
+    "/markets",
+    "/markets?tab=equities",
+    "/markets?tab=analyze",
+    "/markets?tab=catalysts",
+    "/blog",
+    "/data-status",
+  ].map(page),
   {
     name: "state page /state/maryland",
     path: "/state/maryland",

@@ -181,7 +181,7 @@ export default function OperatorPage() {
           <AlertTriangle className="h-8 w-8 text-negative mx-auto mb-3" />
           <h1 className="text-lg font-semibold mb-2">Operator Not Found</h1>
           <p className="text-sm text-muted-foreground">
-            <Link href="/power-map" className="text-brand">View Power</Link> to see all operators.
+            <Link href="/grid" className="text-brand">View Power</Link> to see all operators.
           </p>
         </Card>
       </div>
@@ -214,7 +214,7 @@ export default function OperatorPage() {
       <nav className="flex items-center gap-2 text-xs text-muted-foreground" data-testid="breadcrumb">
         <Link href="/" className="hover:text-foreground">GridTilt</Link>
         <span>/</span>
-        <Link href="/power-map" className="hover:text-foreground">Power</Link>
+        <Link href="/grid" className="hover:text-foreground">Power</Link>
         <span>/</span>
         <span className="text-foreground font-medium">{operator.name}</span>
       </nav>
@@ -369,7 +369,7 @@ export default function OperatorPage() {
           View every {operator.name} facility plotted on the interactive Power map.
         </p>
         <Link
-          href={`/power-map?companies=${encodeURIComponent(company ?? operator.name)}`}
+          href={`/grid?companies=${encodeURIComponent(company ?? operator.name)}`}
           className="inline-flex items-center gap-1.5 text-sm text-brand hover:text-brand-2 font-medium"
           data-testid="link-filtered-map"
         >
@@ -394,9 +394,9 @@ export default function OperatorPage() {
       <Card className="p-5 border-card-border">
         <h2 className="text-[13px] font-semibold text-foreground mb-3">Related Tools</h2>
         <div className="space-y-2 text-sm">
-          <Link href="/power-map" className="block text-brand hover:text-brand-2">Power</Link>
-          <Link href="/analyze?tab=scenario" className="block text-brand hover:text-brand-2">Analyze</Link>
-          <Link href="/catalysts" className="block text-brand hover:text-brand-2">Catalyst Tracker</Link>
+          <Link href="/grid" className="block text-brand hover:text-brand-2">Power</Link>
+          <Link href="/markets?tab=analyze&sub=scenario" className="block text-brand hover:text-brand-2">Analyze</Link>
+          <Link href="/markets?tab=catalysts" className="block text-brand hover:text-brand-2">Catalyst Tracker</Link>
         </div>
       </Card>
     </div>
