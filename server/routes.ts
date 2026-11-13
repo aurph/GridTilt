@@ -17,7 +17,7 @@ import {
   stampFreshness as stampDatacenterFreshness,
 } from "./datacenter-ingester";
 import { ALIAS_REDIRECTS, BASE_URL, buildSitemap, robotsTxt, ogNameKnown } from "./seo";
-import { legacyRedirect } from "../client/src/lib/sections";
+import { currentAddress, legacyRedirect } from "../client/src/lib/sections";
 import {
   computeAiPowerIndex,
   computeGridStress,
@@ -2726,7 +2726,7 @@ export async function registerRoutes(
         dateStatus: e.dateStatus,
       }));
       const articles = JSON.parse(readFileSync(join(process.cwd(), "content", "blog", "articles.json"), "utf-8"));
-      const events = buildTimeline({
+      const built = buildTimeline({
         deals: readDataJson("interconnection-queue.json").projects ?? [],
         clusters: readDataJson("clusters.json").clusters ?? [],
         earnings,
@@ -2738,6 +2738,9 @@ export async function registerRoutes(
         statePages: readDataJson("state-pages.json"),
         changeLog: readDataJson("change-log.json"),
       });
+      // The builders name each record's page by its route of record; the
+      // response carries the address that page has today (lib/sections.ts).
+      const events = built.map((e) => ({ ...e, sourceUrl: currentAddress(e.sourceUrl) }));
       const estimatedEarnings = earnings
         .filter((e) => e.dateStatus !== "confirmed")
         .map((e) => ({ ticker: e.ticker, company: e.company, date: e.date }))
@@ -3036,7 +3039,7 @@ Preferred-Languages: en
       name: "GridTilt \u2014 AI Power Infrastructure Dashboard",
       short_name: "GridTilt",
       description: "Track the AI power buildout",
-      start_url: "/overview",
+      start_url: "/",
       display: "standalone",
       background_color: "#121110",
       theme_color: "#F07800",
@@ -3048,21 +3051,19 @@ Preferred-Languages: en
   });
 
   // ─── SEO: URL Redirects ─────────────────────────────────────────────────
-  app.get("/stocks", (_req, res) => res.redirect(301, "/stack"));
-  app.get("/map", (_req, res) => res.redirect(301, "/power-map"));
-  app.get("/calculator", (_req, res) => res.redirect(301, "/trade"));
-  app.get("/score", (_req, res) => res.redirect(301, "/portfolio"));
-  app.get("/catalyst-tracker", (_req, res) => res.redirect(301, "/catalysts"));
-  app.get("/the-stack", (_req, res) => res.redirect(301, "/stack"));
-  // Consolidation (Plan B): folded tools 301 into their host tool's tab
-  app.get("/gpu-economics", (_req, res) => res.redirect(301, "/neocloud-intel?tab=economics"));
-  app.get("/power-deals", (_req, res) => res.redirect(301, "/power-map?tab=deals"));
-  app.get("/queue", (_req, res) => res.redirect(301, "/power-map?tab=queue"));
-  app.get("/brief", (_req, res) => res.redirect(301, "/blog"));
-  app.get("/portfolio", (_req, res) => res.redirect(301, "/analyze?tab=portfolio"));
-  app.get("/trade", (_req, res) => res.redirect(301, "/analyze?tab=scenario"));
-  app.get("/thesis-calculator", (_req, res) => res.redirect(301, "/trade"));
-  app.get("/portfolio-overlay", (_req, res) => res.redirect(301, "/portfolio"));
+  // Older short links answer with one hop to the address the page has now.
+  for (const [from, was] of Object.entries({
+    "/stocks": "/stack",
+    "/the-stack": "/stack",
+    "/map": "/power-map",
+    "/calculator": "/trade",
+    "/thesis-calculator": "/trade",
+    "/score": "/portfolio",
+    "/portfolio-overlay": "/portfolio",
+    "/catalyst-tracker": "/catalysts",
+  })) {
+    app.get(from, (_req, res) => res.redirect(301, currentAddress(was)));
+  }
 
   // ─── Content Export APIs ────────────────────────────────────────────────
   // Admin-gated so scheduled cron is the only caller. The shape is stable so

@@ -191,6 +191,17 @@ export function legacyRedirect(pathname: string, search = ""): string | null {
 }
 
 /**
+ * Today's address for an in-app link: an old route becomes its section and
+ * chip, anything else comes back unchanged. For links built from stored
+ * records (timeline events, the web manifest) that still name old routes.
+ */
+export function currentAddress(href: string): string {
+  const i = href.indexOf("?");
+  const path = i >= 0 ? href.slice(0, i) : href;
+  return legacyRedirect(path, i >= 0 ? href.slice(i) : "") ?? href;
+}
+
+/**
  * A feature's own query string with the section's chip and view kept in
  * front. Features that rewrite the address bar (Timeline filters, a basket's
  * tickers) call this so they do not drop the chip they are sitting in.
