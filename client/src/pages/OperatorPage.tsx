@@ -281,14 +281,14 @@ export default function OperatorPage() {
         <Card className="p-4 border-card-border" data-testid="stat-grid-regions">
           <p className="text-[11px] text-muted-foreground mb-1">Grid Regions</p>
           {isLoading ? <Skeleton className="h-7 w-10" /> : (
-            <p className="text-xl font-bold font-mono text-foreground">{gridRegions.length || "N/A"}</p>
+            <p className="text-xl font-bold font-mono text-foreground">{gridRegions.length || "--"}</p>
           )}
         </Card>
         <Card className="p-4 border-card-border" data-testid="stat-largest-facility">
           <p className="text-[11px] text-muted-foreground mb-1">Largest Facility</p>
           {isLoading ? <Skeleton className="h-7 w-20" /> : (
             <p className="text-sm font-bold font-mono text-foreground truncate" title={largest?.name}>
-              {largest ? `${largest.powerMW.toLocaleString()} MW` : "N/A"}
+              {largest ? `${largest.powerMW.toLocaleString()} MW` : "--"}
             </p>
           )}
         </Card>

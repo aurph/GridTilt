@@ -290,7 +290,7 @@ export default function StockPage() {
               <div className="space-y-3">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Market Cap</span>
-                  <span className="font-mono font-semibold">{data.stockData.marketCapDisplay || "N/A"}</span>
+                  <span className="font-mono font-semibold">{data.stockData.marketCapDisplay || "--"}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">P/E Ratio</span>

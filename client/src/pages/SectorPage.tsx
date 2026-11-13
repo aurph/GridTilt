@@ -180,11 +180,11 @@ export default function SectorPage() {
         </Card>
         <Card className="p-4 border-card-border text-center" data-testid="stat-best">
           <p className="text-[11px] text-muted-foreground mb-1">Best Performer</p>
-          <p className="text-sm font-bold font-mono text-positive">{best ? `${best.ticker} +${best.changePercent.toFixed(2)}%` : "N/A"}</p>
+          <p className="text-sm font-bold font-mono text-positive">{best ? `${best.ticker} +${best.changePercent.toFixed(2)}%` : "--"}</p>
         </Card>
         <Card className="p-4 border-card-border text-center" data-testid="stat-worst">
           <p className="text-[11px] text-muted-foreground mb-1">Worst Performer</p>
-          <p className="text-sm font-bold font-mono text-negative">{worst ? `${worst.ticker} ${worst.changePercent.toFixed(2)}%` : "N/A"}</p>
+          <p className="text-sm font-bold font-mono text-negative">{worst ? `${worst.ticker} ${worst.changePercent.toFixed(2)}%` : "--"}</p>
         </Card>
       </div>
 
@@ -222,7 +222,7 @@ export default function SectorPage() {
                       </div>
                     </div>
                     <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-10 text-muted-foreground">
-                      <span>P/E {s.pe?.toFixed(1) || "N/A"}</span>
+                      {s.pe ? <span>P/E {s.pe.toFixed(1)}</span> : null}
                       {s.marketCapDisplay && <span>{s.marketCapDisplay}</span>}
                       {s.revenueGrowth != null && (
                         <span className={s.revenueGrowth >= 0 ? "text-positive" : "text-negative"}>
