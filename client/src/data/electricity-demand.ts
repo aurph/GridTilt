@@ -71,8 +71,8 @@ const DOE_2024_REPORT_URL =
  */
 export const DATA_CENTER_ANCHORS: DataCenterAnchor[] = [
   // DOE, December 20, 2024: "climbed from 58 TWh in 2014 to 176 TWh in 2023".
-  { year: "2014", twh: 58, source: "LBNL 2024 report (DOE summary)", sourceUrl: DOE_2024_REPORT_URL },
-  { year: "2023", twh: 176, source: "LBNL 2024 report (DOE summary)", sourceUrl: DOE_2024_REPORT_URL },
+  { year: "2014", twh: 58, source: "LBNL 2024 report, DOE summary", sourceUrl: DOE_2024_REPORT_URL },
+  { year: "2023", twh: 176, source: "LBNL 2024 report, DOE summary", sourceUrl: DOE_2024_REPORT_URL },
   // LBNL-2001758, published 2026-06-18: 192 TWh in 2024, 4.7% of US use.
   { year: "2024", twh: 192, source: "LBNL 2025 Update", sourceUrl: "https://escholarship.org/uc/item/33m6w3x0" },
 ];

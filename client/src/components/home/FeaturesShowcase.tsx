@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { compactCatalystLabel } from "@/lib/catalyst-compact-label";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { geoAlbersUsa, geoPath } from "d3";
@@ -133,8 +134,8 @@ function CatalystRows() {
     <div className="flex h-full flex-col justify-center gap-1.5" data-testid="preview-catalysts">
       {next.map((c) => (
         <div key={c.id} className="flex items-center gap-2.5">
-          <span className="w-11 shrink-0 font-mono text-[10px] tabular-nums text-brand">
-            {c.type === "catalyst" && c.exactDay === false && c.dateLabel ? c.dateLabel : fmtDay(c.sortDate)}
+          <span className="w-[4.5rem] shrink-0 whitespace-nowrap font-mono text-[10px] tabular-nums text-brand">
+            {c.type === "catalyst" && c.exactDay === false && c.dateLabel ? compactCatalystLabel(c.dateLabel) : fmtDay(c.sortDate)}
           </span>
           <span className="truncate text-[11px] text-foreground">
             {c.ticker ? <span className="font-semibold">{c.ticker}</span> : null}{" "}

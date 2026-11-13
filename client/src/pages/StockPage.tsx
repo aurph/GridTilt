@@ -294,18 +294,18 @@ export default function StockPage() {
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">P/E Ratio</span>
-                  <span className="font-mono font-semibold">{data.stockData.pe?.toFixed(1) || "N/A"}</span>
+                  <span className="font-mono font-semibold">{data.stockData.pe?.toFixed(1) || "-"}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Rev Growth YoY</span>
-                  <span className={`font-mono font-semibold ${(data.stockData.revenueGrowth ?? 0) > 0 ? "text-positive" : "text-negative"}`}>
-                    {data.stockData.revenueGrowth != null ? `${data.stockData.revenueGrowth > 0 ? "+" : ""}${data.stockData.revenueGrowth.toFixed(1)}%` : "N/A"}
+                  <span className={`font-mono font-semibold ${data.stockData.revenueGrowth == null ? "text-muted-foreground" : data.stockData.revenueGrowth > 0 ? "text-positive" : "text-negative"}`}>
+                    {data.stockData.revenueGrowth != null ? `${data.stockData.revenueGrowth > 0 ? "+" : ""}${data.stockData.revenueGrowth.toFixed(1)}%` : "-"}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Daily Change</span>
                   <span className={`font-mono font-semibold ${isUp ? "text-positive" : "text-negative"}`}>
-                    {data.stockData.change != null ? `${data.stockData.change < 0 ? "-" : "+"}${Math.abs(data.stockData.change).toFixed(2)}` : "--"}
+                    {data.stockData.change != null ? `${data.stockData.change < 0 ? "-" : "+"}$${Math.abs(data.stockData.change).toFixed(2)}` : "-"}
                   </span>
                 </div>
               </div>

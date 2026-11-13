@@ -594,7 +594,7 @@ export default function TheTrade({ embedded = false }: { embedded?: boolean; par
                       </BarChart>
                     </ResponsiveContainer>
                     <SrChartTable
-                      caption="Annual buildout timeline: GW of new AI datacenter capacity added per year, by power source"
+                      caption="Annual buildout timeline: GW of new AI data center capacity added per year, by power source"
                       columns={["Year", "Gas", "Nuclear", "Renewables", "Grid"]}
                       rows={buildoutChart.map((r) => [r.year, r.gas, r.nuclear, r.renewables, r.grid])}
                     />

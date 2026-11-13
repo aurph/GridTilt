@@ -134,7 +134,7 @@ export default function Subscribe() {
                 {trackedGW !== null && (
                   <div>
                     <div className="text-lg font-mono font-bold text-white/85">{trackedGW.toFixed(1)} GW</div>
-                    <div className="text-10 text-white/35">datacenter capacity tracked</div>
+                    <div className="text-10 text-white/35">data center capacity tracked</div>
                   </div>
                 )}
                 {topMover && (

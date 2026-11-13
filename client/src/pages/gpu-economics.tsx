@@ -492,7 +492,7 @@ function TokenPriceCard({ q }: { q: UseQueryResult<InfPriceView> }) {
         <p className="text-xs text-muted-foreground leading-relaxed max-w-3xl mb-3">
           This is the demand side of the buildout. As inference gets cheaper, work that was not worth running becomes
           worth running, so total compute keeps climbing even as unit prices fall. That rising compute is what shows up
-          downstream as datacenter load and power demand.
+          downstream as data center load and power demand.
         </p>
 
         {event && (

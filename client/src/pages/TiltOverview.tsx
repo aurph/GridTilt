@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { compactCatalystLabel } from "@/lib/catalyst-compact-label";
 import { useMemo, useState } from "react";
 import {
   ComposedChart,
@@ -746,9 +747,9 @@ function CatalystCalendarSection({ className = "" }: { className?: string }) {
                 const cc = getItemColor(item);
                 return (
                   <div key={item.id} className="flex items-center gap-2" data-testid={`upcoming-catalyst-${item.id}`}>
-                    <span className="text-10 font-mono text-muted-foreground w-8 flex-shrink-0">
+                    <span className="text-10 font-mono text-muted-foreground min-w-8 whitespace-nowrap flex-shrink-0">
                       {item.type === "catalyst" && item.exactDay === false
-                        ? item.dateLabel
+                        ? compactCatalystLabel(item.dateLabel ?? "")
                         : days <= 0 ? "TODAY" : `${days}d`}
                     </span>
                     <div className="h-1 w-1 rounded-full flex-shrink-0" style={{ backgroundColor: cc }} />
