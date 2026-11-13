@@ -1,3 +1,4 @@
+import { RegistryDate } from "@/components/Freshness";
 import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import { SectionHeading } from "@/components/section-heading";
 import { withSectionParams } from "@/lib/sections";
@@ -1192,7 +1193,7 @@ export default function PowerMap() {
             <div className="flex items-center gap-2 mb-1.5">
               <Zap className="h-4 w-4 text-brand" />
               <span className="text-sm font-semibold text-foreground">{isClusterView ? "AI Clusters" : "Power Map"}</span>
-              <AsOf updatedAt={isClusterView ? clUpdatedAt : dataUpdatedAt} intervalMs={900_000} className="ml-auto" />
+              <RegistryDate dataset={isClusterView ? "clusters" : "datacenters"} className="ml-auto" />
             </div>
             <div className="flex items-start gap-2 mb-3">
               <MonitorSmartphone className="h-3.5 w-3.5 text-muted-foreground/60 mt-0.5 flex-shrink-0" />
@@ -1274,7 +1275,7 @@ export default function PowerMap() {
                 <span className="text-10 font-mono text-white/40">
                   {dcLoading ? "loading…" : dcError ? "load failed" : `${dataCenters.length} campuses of 400 MW and up`}
                 </span>
-                <AsOf updatedAt={dataUpdatedAt} intervalMs={900_000} />
+                <RegistryDate dataset="datacenters" />
               </div>
               <div className="flex items-center gap-3 text-11 font-mono">
                 <span className="text-brand-2 font-bold" title={`operational + construction; announced (+${(announcedMW / 1000).toFixed(1)} GW) excluded`}>{(totalMW / 1000).toFixed(1)} GW tracked</span>
@@ -1317,7 +1318,7 @@ export default function PowerMap() {
                 <span className="text-10 font-mono text-white/40">
                   {clLoading ? "loading…" : clError ? "load failed" : `${clusters.length} clusters`}
                 </span>
-                <AsOf updatedAt={clUpdatedAt} intervalMs={900_000} />
+                <RegistryDate dataset="clusters" />
               </div>
               <ClusterStatsRow
                 all={allClusterStats}

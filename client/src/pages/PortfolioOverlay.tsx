@@ -1,3 +1,4 @@
+import { RegistrySourceFooter, SourceFooter } from "@/components/SourceFooter";
 import { withSectionParams } from "@/lib/sections";
 import { useState, useEffect, useMemo } from "react";
 import { useMutation } from "@tanstack/react-query";
@@ -549,6 +550,12 @@ export default function PortfolioOverlay({ embedded = false }: { embedded?: bool
                     />
                   </RadarChart>
                 </ResponsiveContainer>
+                <SourceFooter
+                  source="GridTilt editorial sector classifications"
+                  est="illustrative scores on an equal-weight model basket"
+                  className="mt-2"
+                  testid="basket-radar-source"
+                />
               </Card>
 
               <Card className="p-4 border-card-border bg-muted/10">

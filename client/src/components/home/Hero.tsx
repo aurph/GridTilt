@@ -6,6 +6,7 @@ import { Zap, Handshake, Landmark, MapPin } from "lucide-react";
 import { Wordmark } from "./Wordmark";
 import { GridPulse } from "./grid-pulse";
 import { StatePagesRow } from "@/components/StatePagesRow";
+import { SourceFooter } from "@/components/SourceFooter";
 import { VideoTrigger } from "@/components/video-trigger";
 import { LAUNCH_FILM } from "@/data/explainers";
 import type { PublishedStatePage } from "@/lib/state-pages";
@@ -247,6 +248,18 @@ export function Hero() {
                 </motion.div>
               </Link>
             ))}
+          </motion.div>
+          {/* One source line for the four figures. Each is a count or sum of
+              GridTilt's own registry rows; the per-dataset dates live on Data
+              status until the per-tile dates are switched on (SHOW_REFRESH_DATES). */}
+          <motion.div variants={fadeUp} className="mt-3 w-full text-left">
+            <SourceFooter
+              source="GridTilt registries: named clusters, power agreements, state pages"
+              href="/data-status"
+              testid="hero-stats-source"
+            >
+              {" "}· the date of each is on Data status
+            </SourceFooter>
           </motion.div>
         </motion.div>
       </div>

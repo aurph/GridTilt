@@ -113,7 +113,7 @@ const STATIC_PAGES: Record<string, { title: string; description: string; slug: s
     slug: "power-map",
   },
   "/markets": {
-    title: "Tilt Overview | GridTilt",
+    title: "Markets Overview: The Companies Behind the Power Buildout | GridTilt",
     description: "US electricity use, grid conditions, power agreements, market movers and upcoming events for the AI power buildout.",
     slug: "overview",
   },
@@ -173,12 +173,12 @@ const STATIC_PAGES: Record<string, { title: string; description: string; slug: s
     slug: "compute-frontier/compare",
   },
   "/markets?tab=analyze": {
-    title: "Analyze - Illustrative Baskets and Buildout Scenarios | GridTilt",
+    title: "Analyze: Illustrative Baskets and Buildout Scenarios | GridTilt",
     description: "Compare the editorial sector classifications of a basket of tickers, and model buildout scenarios across demand growth, generation mix, and grid variables.",
     slug: "analyze",
   },
   "/buildout?tab=gpu-prices": {
-    title: "Neocloud Intel \u00b7 GPU Rental Price Index \u00b7 GridTilt",
+    title: "GPU Rental Prices by Model, with Marketplace Ranges | GridTilt",
     description: "On-demand GPU rental prices ($/GPU/hr) for H100, H200, GB200, B200, B300, MI300X and more, blended across the major neoclouds and marketplaces. Sourced blended estimates with marketplace ranges and 1W/1M/YTD/1Y changes.",
     slug: "neocloud-intel",
   },
@@ -711,6 +711,7 @@ export const CRAWLABLE_API_PREFIXES = [
   "/api/inference-prices",
   "/api/news",
   "/api/og",
+  "/api/page-meta",
   "/api/physical/",
   "/api/queue",
   "/api/site/contact",

@@ -1,3 +1,4 @@
+import { RegistrySourceFooter, SourceFooter } from "@/components/SourceFooter";
 import { useMemo, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
@@ -261,7 +262,6 @@ export default function ComputeFrontier() {
         right={
           <>
             {metrics?.lastRefreshed && <span className="text-11 font-mono text-muted-foreground/60">refreshed {metrics.lastRefreshed}</span>}
-            <AsOf updatedAt={dataUpdatedAt} intervalMs={900_000} />
             <Link href="/grid" className="text-11 text-brand hover:text-brand-2 font-medium">Power Map →</Link>
             <Link href="/grid?tab=queue" className="text-11 text-brand hover:text-brand-2 font-medium">Nuclear deals →</Link>
           </>
@@ -642,6 +642,14 @@ function ChartCard({ title, children }: { title: string; children: ReactNode }) 
     <Card className="border-card-border p-3">
       <div className="text-[13px] font-semibold text-foreground mb-2">{title}</div>
       {children}
+      <RegistrySourceFooter
+        dataset="clusters"
+        source="GridTilt cluster registry"
+        href="/compute-frontier/methodology"
+        est="planned capacity is as announced; estimates are flagged on each cluster"
+        className="mt-2"
+        testid="cf-chart-source"
+      />
     </Card>
   );
 }

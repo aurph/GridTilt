@@ -106,6 +106,17 @@ export function chipFromSearch(section: Section, search: string): string {
 }
 
 /**
+ * The address a page's title and description are filed under: a section
+ * resolves to its chip, every other page to its path. A feature's own
+ * filters do not change it, so moving a filter does not ask for the title
+ * again.
+ */
+export function metaAddress(pathname: string, search = ""): string {
+  const section = SECTIONS.find((s) => s.href === pathname && s.chips.length > 0);
+  return section ? chipHref(section.id, chipFromSearch(section, search)) : pathname;
+}
+
+/**
  * Which section an address belongs to, for the top bar's active mark.
  * Entity pages light up the section they are reached from.
  */

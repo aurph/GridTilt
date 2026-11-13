@@ -30,7 +30,7 @@ export function TopNav() {
     >
       <div className="grid h-14 grid-cols-[1fr_auto] items-center gap-3 px-4 sm:grid-cols-[1fr_auto_1fr] sm:px-6">
         <div className="flex min-w-0 items-center gap-6">
-          <Link href="/" className="flex shrink-0 items-center gap-2 no-underline" data-testid="top-nav-wordmark">
+          <Link href="/" className="flex h-10 shrink-0 items-center gap-2 no-underline" data-testid="top-nav-wordmark">
             <img src={logoPath} alt="" className="h-5 w-5 select-none" draggable={false} />
             <span className="text-[15px] font-bold leading-none tracking-tight text-foreground">
               Grid<span className="italic text-brand">Tilt</span>
@@ -53,7 +53,7 @@ export function TopNav() {
         <div className="flex items-center justify-end">
           <Link
             href="/subscribe"
-            className="flex h-9 shrink-0 items-center rounded-full bg-[#F07800] px-4 text-[13px] font-semibold leading-none text-[#101010] no-underline transition-colors hover:bg-[#ff8a14]"
+            className="flex h-10 shrink-0 items-center rounded-full bg-[#F07800] px-4 sm:h-9 text-[13px] font-semibold leading-none text-[#101010] no-underline transition-colors hover:bg-[#ff8a14]"
             data-testid="top-nav-brief"
           >
             Get the Brief

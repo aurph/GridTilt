@@ -27,7 +27,7 @@ export function SiteFooter() {
       <div className="mx-auto max-w-[1200px] px-6 py-10">
         <div className="grid grid-cols-2 gap-8 sm:grid-cols-4">
           <div className="col-span-2 sm:col-span-1">
-            <Link href="/" className="inline-flex items-center gap-2 no-underline" data-testid="footer-wordmark">
+            <Link href="/" className="inline-flex min-h-[40px] items-center gap-2 no-underline" data-testid="footer-wordmark">
               <span className="text-[15px] font-bold tracking-tight text-foreground">
                 Grid<span className="italic text-brand">Tilt</span>
               </span>

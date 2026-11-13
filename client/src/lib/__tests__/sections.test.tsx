@@ -21,6 +21,7 @@ import {
   chipHref,
   fitCount,
   legacyRedirect,
+  metaAddress,
   sectionById,
   sectionForPath,
   splitChips,
@@ -79,6 +80,15 @@ describe("the four sections", () => {
     ]);
     assert.equal((html.match(/aria-current="page"/g) ?? []).length, 1);
     assert.match(html, /aria-current="page"[^>]*data-testid="top-nav-grid"|data-testid="top-nav-grid"[^>]*aria-current="page"/);
+  });
+
+  it("file a page's title under its chip, whatever the feature's own filters say", () => {
+    assert.equal(metaAddress("/grid", ""), "/grid");
+    assert.equal(metaAddress("/grid", "?tab=timeline&range=90d&type=deal"), "/grid?tab=timeline");
+    assert.equal(metaAddress("/markets", "tab=analyze&sub=scenario"), "/markets?tab=analyze");
+    assert.equal(metaAddress("/grid", "?tab=nope"), "/grid");
+    assert.equal(metaAddress("/states", "?x=1"), "/states");
+    assert.equal(metaAddress("/state/maryland", ""), "/state/maryland");
   });
 
   it("light up for the pages reached from them", () => {

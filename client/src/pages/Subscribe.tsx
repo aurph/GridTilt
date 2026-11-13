@@ -194,7 +194,7 @@ export default function Subscribe() {
                 <Button
                   type="submit"
                   disabled={status === "loading"}
-                  className="w-full bg-brand hover:bg-brand/90 text-black font-semibold"
+                  className="w-full min-h-[40px] bg-brand hover:bg-brand/90 text-black font-semibold"
                   data-testid="button-subscribe"
                 >
                   {status === "loading" ? "..." : "Subscribe"}

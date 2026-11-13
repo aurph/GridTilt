@@ -1,3 +1,4 @@
+import { RegistrySourceFooter, SourceFooter } from "@/components/SourceFooter";
 import { useParams, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
@@ -262,6 +263,14 @@ export default function StockPage() {
                   <Line {...seriesMotion()} type="monotone" dataKey="price" stroke={chartUp ? SEMANTIC.positiveDeep : SEMANTIC.negativeDeep} strokeWidth={2} dot={false} />
                 </LineChart>
               </ResponsiveContainer>
+              <SourceFooter
+                source="Yahoo Finance"
+                href={`https://finance.yahoo.com/quote/${encodeURIComponent(data.ticker)}`}
+                className="mt-2"
+                testid="stock-chart-source"
+              >
+                {" "}· {chartLabel}; prices may be delayed
+              </SourceFooter>
             </Card>
           )}
 

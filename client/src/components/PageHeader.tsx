@@ -42,7 +42,7 @@ export function PageHeader({
             <UITooltip>
               <TooltipTrigger asChild>
                 <button
-                  className="text-muted-foreground/60 hover:text-foreground transition-colors"
+                  className="-m-[13px] p-[13px] text-muted-foreground/60 hover:text-foreground transition-colors sm:m-0 sm:p-0"
                   aria-label={`About ${title}`}
                   data-testid={testId ? `${testId}-about` : undefined}
                 >

@@ -25,7 +25,7 @@ export interface ChipItem {
 }
 
 const CHIP_BASE =
-  "gt-chip inline-flex h-8 shrink-0 items-center whitespace-nowrap rounded-full border px-3.5 text-[13px] font-semibold leading-none no-underline";
+  "gt-chip inline-flex h-10 shrink-0 items-center sm:h-8 whitespace-nowrap rounded-full border px-3.5 text-[13px] font-semibold leading-none no-underline";
 const CHIP_ON = "border-[#F07800] bg-[#F07800] text-[#101010]";
 const CHIP_OFF = "border-border text-muted-foreground hover:border-foreground/40 hover:text-foreground";
 const GAP = 8;

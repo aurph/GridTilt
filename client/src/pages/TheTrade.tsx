@@ -1,3 +1,4 @@
+import { RegistrySourceFooter, SourceFooter } from "@/components/SourceFooter";
 import { useState, useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -597,6 +598,12 @@ export default function TheTrade({ embedded = false }: { embedded?: boolean; par
                       caption="Annual buildout timeline: GW of new AI data center capacity added per year, by power source"
                       columns={["Year", "Gas", "Nuclear", "Renewables", "Grid"]}
                       rows={buildoutChart.map((r) => [r.year, r.gas, r.nuclear, r.renewables, r.grid])}
+                    />
+                    <SourceFooter
+                      source="GridTilt scenario model"
+                      est="computed from the assumptions set above; illustrative"
+                      className="mt-1"
+                      testid="scenario-chart-source"
                     />
                     <div className="flex flex-wrap gap-4 text-xs mt-1">
                       {[

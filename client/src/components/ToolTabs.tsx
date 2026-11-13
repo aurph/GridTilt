@@ -123,7 +123,7 @@ export function ToolTabs({
               refs.current[i] = el;
             }}
             onClick={() => onChange(t.id)}
-            className={`px-3 py-1 rounded border text-xs font-mono font-semibold transition-colors ${
+            className={`min-h-[40px] px-3 py-1 rounded border text-xs font-mono font-semibold transition-colors sm:min-h-0 ${
               selected
                 ? "border-brand/60 text-brand bg-brand/10"
                 : "border-subtle text-muted-foreground hover:text-foreground"
