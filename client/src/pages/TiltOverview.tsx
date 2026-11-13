@@ -1,3 +1,5 @@
+import { RegistrySourceFooter, SourceFooter } from "@/components/SourceFooter";
+import { RegistryDate } from "@/components/Freshness";
 import { SectionHeading } from "@/components/section-heading";
 import { useQuery } from "@tanstack/react-query";
 import { compactCatalystLabel } from "@/lib/catalyst-compact-label";
@@ -25,7 +27,6 @@ import { Zap, TrendingUp, Activity, AlertTriangle, Info, ArrowUp, ArrowDown, Cal
 import { EmailCapture, ScrollTriggeredBanner } from "@/components/EmailCapture";
 import { AsOf, ErrorState, SrChartTable } from "@/components/Freshness";
 import { GridLiveCard } from "@/components/GridLiveCard";
-import { SourceFooter } from "@/components/SourceFooter";
 import { useElectricityUse } from "@/lib/electricity-live";
 import {
   BRAND, CATEGORY_COLORS as TOKEN_CATEGORY_COLORS, CHART_CHROME, DATA_QUALITY, FONT, INK, SEMANTIC, SERIES,
@@ -285,7 +286,10 @@ function RealGaugeCard({
   isLoading,
   href,
   updatedAt,
+  dataset,
 }: {
+  /** A registry dataset id (/api/data-status): shows the data's own date, not the fetch time. */
+  dataset?: string;
   icon: typeof Zap;
   title: string;
   value: string | null;
@@ -341,7 +345,7 @@ function RealGaugeCard({
         <Link href={href} className="text-11 text-brand hover:text-brand-2 font-medium">
           Full data <ChevronRight className="h-3 w-3 inline" />
         </Link>
-        {updatedAt !== undefined && <AsOf updatedAt={updatedAt} intervalMs={900000} />}
+        {dataset ? <RegistryDate dataset={dataset} /> : updatedAt !== undefined && <AsOf updatedAt={updatedAt} intervalMs={900000} />}
       </div>
     </Card>
   );
@@ -537,6 +541,13 @@ function BuildoutHistoryCard({
               ((p.online ?? p.pipeline ?? 0) / 1000).toFixed(2),
               p.online !== null ? "operational" : "pipeline",
             ])}
+          />
+          <RegistrySourceFooter
+            dataset="datacenters"
+            source="GridTilt facility registry, campuses of 400 MW and up"
+            est="construction dates are as announced"
+            className="mt-2"
+            testid="buildout-chart-source"
           />
         </>
       )}
@@ -1010,8 +1021,7 @@ export default function TiltOverview() {
             </span>
           )}
           <div className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
-            <div className="h-1.5 w-1.5 rounded-full bg-brand-2" />
-            <span className="font-mono text-11 tracking-wide" data-testid="last-updated">Updated {relativeTime(dcUpdatedAt)}</span>
+            <span data-testid="last-updated"><RegistryDate dataset="datacenters" className="!text-11 tracking-wide" /></span>
           </div>
         </div>
       </div>
@@ -1178,7 +1188,7 @@ export default function TiltOverview() {
                 { label: "Announced (excl.)", value: `${fmtGW(tracked.announcedMW)} · ${tracked.announcedCount} sites` },
               ] : []}
               href="/grid"
-              updatedAt={dcUpdatedAt}
+              dataset="datacenters"
             />
             <RealGaugeCard
               icon={Cpu}
@@ -1191,7 +1201,7 @@ export default function TiltOverview() {
               isLoading={gpuLoading}
               rows={gpuData ? gpuTopRows : []}
               href="/buildout?tab=gpu-prices"
-              updatedAt={gpuUpdatedAt}
+              dataset="gpu-rental-prices"
             />
             <RealGaugeCard
               icon={AlertTriangle}

@@ -12,8 +12,8 @@ import { SiteFooter } from "@/components/site-footer";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { initAnalytics, trackPageview } from "@/lib/analytics";
 import { useLocation, useSearch } from "wouter";
-import { LEGACY_ROUTES, legacyRedirect } from "@/lib/sections";
-import { useState, useEffect, lazy, Suspense } from "react";
+import { LEGACY_ROUTES, legacyRedirect, metaAddress } from "@/lib/sections";
+import { useState, useEffect, useRef, lazy, Suspense } from "react";
 import { X, Keyboard } from "lucide-react";
 
 // Every route is its own chunk. Importing them eagerly meant the first page
@@ -227,6 +227,29 @@ function App() {
   useEffect(() => {
     trackPageview(location);
   }, [location]);
+
+  // The tab title follows the address. The server writes the title into the
+  // HTML on a full load, so the first render is skipped; after that each new
+  // page or chip asks the same source for its title (/api/page-meta).
+  const search = useSearch();
+  const address = metaAddress(location, search);
+  const firstAddress = useRef(true);
+  useEffect(() => {
+    if (firstAddress.current) {
+      firstAddress.current = false;
+      return;
+    }
+    let live = true;
+    fetch(`/api/page-meta?path=${encodeURIComponent(address)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((meta: { title?: string } | null) => {
+        if (live && meta?.title) document.title = meta.title;
+      })
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [address]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {

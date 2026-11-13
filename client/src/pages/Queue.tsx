@@ -208,7 +208,6 @@ export default function Queue({ embedded = false }: { embedded?: boolean; params
       <div className="flex items-start gap-3">
         <VideoTrigger video={WHAT_IS_THE_QUEUE} className="text-11 text-brand hover:text-brand-2" testId="queue-explainer" />
         <div className="text-11 text-muted-foreground/70 font-mono tracking-wide text-right space-y-0.5" data-testid="backlog-sources">
-          <div><AsOf updatedAt={dataUpdatedAt} intervalMs={24 * 60 * 60 * 1000} /></div>
           {data && <FreshnessChip lastRefreshed={data.lastRefreshed} />}
         </div>
       </div>
@@ -243,7 +242,6 @@ export default function Queue({ embedded = false }: { embedded?: boolean; params
           </div>
           {data && (
             <div className="text-11 text-muted-foreground/70 font-mono tracking-wide text-right space-y-0.5" data-testid="backlog-sources">
-              <div><AsOf updatedAt={dataUpdatedAt} intervalMs={24 * 60 * 60 * 1000} /></div>
               <FreshnessChip lastRefreshed={data.lastRefreshed} />
               <div className="text-muted-foreground/50">queue totals · {h?.queueOverallAsOf}</div>
               <div className="text-muted-foreground/50">PJM cycle · {h?.pjmReopenedAsOf}</div>

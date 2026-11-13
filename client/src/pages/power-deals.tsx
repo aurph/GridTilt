@@ -1,3 +1,4 @@
+import { RegistrySourceFooter, SourceFooter } from "@/components/SourceFooter";
 import { SectionHeading } from "@/components/section-heading";
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -173,7 +174,6 @@ export default function PowerDeals({ embedded = false }: { embedded?: boolean; p
   // Shared by both intros: the freshness / headline chip column.
   const asOfChip = (
     <div className="text-11 text-muted-foreground/70 font-mono tracking-wide text-right space-y-0.5" data-testid="deals-sync">
-      <div><AsOf updatedAt={dataUpdatedAt} intervalMs={900_000} /></div>
       {data?.lastRefreshed && <div className="text-muted-foreground/60">data as of {data.lastRefreshed}</div>}
     </div>
   );
@@ -294,6 +294,14 @@ export default function PowerDeals({ embedded = false }: { embedded?: boolean; p
               rows={byBuyer.map((b) => [b.buyer, b.gw, b.count])}
             />
           )}
+          <SourceFooter
+            source="GridTilt power agreements record"
+            asOf={data?.lastRefreshed ?? null}
+            className="mt-2"
+            testid="deals-chart-source"
+          >
+            {" "}· signed agreements only; each row links its documents
+          </SourceFooter>
         </Card>
 
         {/* Energy type filter row */}

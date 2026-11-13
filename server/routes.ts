@@ -16,7 +16,7 @@ import {
   rejectPending as rejectPendingDatacenter,
   stampFreshness as stampDatacenterFreshness,
 } from "./datacenter-ingester";
-import { ALIAS_REDIRECTS, BASE_URL, buildSitemap, robotsTxt, ogNameKnown } from "./seo";
+import { ALIAS_REDIRECTS, BASE_URL, buildSitemap, getPageMeta, robotsTxt, ogNameKnown } from "./seo";
 import { currentAddress, legacyRedirect } from "../client/src/lib/sections";
 import {
   computeAiPowerIndex,
@@ -2961,6 +2961,20 @@ export async function registerRoutes(
     } catch {}
     const xml = buildSitemap({ tickers: Object.keys(COMPANY_DATABASE), clusters, articles, statePages: loadStatePageSlugs() });
     res.set("Content-Type", "application/xml").send(xml);
+  });
+
+  // The title and description of a page, for the browser tab after a client
+  // navigation. The server writes them into the HTML on a full load; without
+  // this the tab kept the first page's title for the whole visit. Same
+  // source as the HTML (seo.ts getPageMeta), so the two cannot disagree.
+  app.get("/api/page-meta", (req, res) => {
+    const raw = typeof req.query.path === "string" ? req.query.path : "";
+    if (!raw.startsWith("/") || raw.startsWith("//") || raw.length > 300) {
+      return res.status(400).json({ error: "path must be a site path" });
+    }
+    const i = raw.indexOf("?");
+    const meta = getPageMeta(i >= 0 ? raw.slice(0, i) : raw, i >= 0 ? raw.slice(i) : "");
+    res.set("Cache-Control", "public, max-age=300").json({ title: meta.title, description: meta.description });
   });
 
   // Tickers with a stock page, for links built on the client (the search

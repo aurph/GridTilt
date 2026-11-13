@@ -61,6 +61,17 @@ test("aliases, API 404s, the ticker list and the sitemap", async () => {
     assert.notEqual(r.status, 301, "cluster pages keep their addresses");
     assert.equal(r.headers.get("location"), null);
 
+    // The tab title a client navigation asks for is the one the HTML carries.
+    r = await fetch(`${url}/api/page-meta?path=${encodeURIComponent("/grid?tab=queue")}`);
+    assert.equal(r.status, 200);
+    assert.match(((await r.json()) as { title: string }).title, /^Interconnection Queue/);
+    r = await fetch(`${url}/api/page-meta?path=${encodeURIComponent("/markets?tab=catalysts&type=earnings")}`);
+    assert.match(((await r.json()) as { title: string }).title, /Catalysts/);
+    r = await fetch(`${url}/api/page-meta?path=${encodeURIComponent("//evil.example")}`);
+    assert.equal(r.status, 400);
+    r = await fetch(`${url}/api/page-meta`);
+    assert.equal(r.status, 400);
+
     r = await fetch(`${url}/api/stock/NOPE`);
     assert.equal(r.status, 404);
     assert.match(r.headers.get("content-type") ?? "", /application\/json/);

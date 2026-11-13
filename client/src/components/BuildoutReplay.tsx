@@ -8,6 +8,7 @@
  * honesty rules live in lib/buildout-timeline.ts; this file is
  * choreography.
  */
+import { RegistrySourceFooter, SourceFooter } from "@/components/SourceFooter";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { MapContainer, CircleMarker, Tooltip as MapTooltip, ZoomControl } from "react-leaflet";
 import { BasemapTiles } from "@/components/basemap-tiles";
@@ -255,6 +256,14 @@ export default function BuildoutReplay({ clusters }: { clusters: TimelineCluster
           caption="Cumulative buildout by year"
           columns={["Year", "Live MW", "Targeted MW"]}
           rows={frames.map((f) => [f.year, Math.round(f.liveMW).toLocaleString(), Math.round(f.targetMW).toLocaleString()])}
+        />
+        <RegistrySourceFooter
+          dataset="clusters"
+          source="GridTilt cluster registry"
+          href="/compute-frontier/methodology"
+          est="targeted MW is as announced, placed in each cluster's stated year"
+          className="px-4 pb-2"
+          testid="replay-source"
         />
       </div>
 

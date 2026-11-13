@@ -6,6 +6,7 @@
  */
 import * as React from "react";
 import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, RotateCw } from "lucide-react";
 
 function fmtClock(ts: number): string {
@@ -55,6 +56,45 @@ export function AsOf({
       data-testid="asof"
     >
       {fmtAge(age)}
+    </span>
+  );
+}
+
+export interface DatasetStatusLike {
+  id: string;
+  lastUpdated: string | null;
+  lastReviewed: string | null;
+}
+
+/**
+ * The day a registry dataset can claim: its newest data date, else the day it
+ * was last reviewed against sources, else null. Never the time the browser
+ * fetched it.
+ */
+export function registryDay(datasets: DatasetStatusLike[] | undefined, id: string): string | null {
+  const d = datasets?.find((x) => x.id === id);
+  return d?.lastUpdated ?? d?.lastReviewed ?? null;
+}
+
+/** registryDay for a dataset id, from /api/data-status; null until it answers. */
+export function useRegistryDay(dataset: string): string | null {
+  const { data } = useQuery<{ datasets: DatasetStatusLike[] }>({ queryKey: ["/api/data-status"] });
+  return registryDay(data?.datasets, dataset);
+}
+
+/**
+ * "data as of 2026-10-30" for a curated dataset (clusters, facilities, the
+ * queue), read from /api/data-status. AsOf prints how long ago the browser
+ * fetched, which is right for quotes and wrong for a registry reviewed weeks
+ * ago: there it read "just now" over data that had not changed. Renders
+ * nothing when the dataset carries no date.
+ */
+export function RegistryDate({ dataset, className = "" }: { dataset: string; className?: string }) {
+  const day = useRegistryDay(dataset);
+  if (!day) return null;
+  return (
+    <span className={`text-9 font-mono text-muted-foreground/60 ${className}`} data-testid="registry-date">
+      data as of {day}
     </span>
   );
 }

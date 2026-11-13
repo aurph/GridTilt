@@ -1,3 +1,4 @@
+import { RegistrySourceFooter, SourceFooter } from "@/components/SourceFooter";
 import { SUB_PARAM } from "@/lib/sections";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -271,7 +272,6 @@ export default function NeocloudIntel() {
         right={
           <>
             {data?.lastRefreshed && <span className="text-11 font-mono text-muted-foreground/60">source data {data.lastRefreshed}</span>}
-            <AsOf updatedAt={dataUpdatedAt} />
             <Link href="/buildout" className="text-11 text-brand hover:text-brand-2 font-medium">Compute Frontier →</Link>
           </>
         }
@@ -460,6 +460,13 @@ export default function NeocloudIntel() {
               />
             )}
           </div>
+          <RegistrySourceFooter
+            dataset="gpu-rental-prices"
+            source="Public neocloud and marketplace listings, curated by GridTilt"
+            est="prices are blended estimates unless a row shows an observed daily price"
+            className="mt-1"
+            testid="price-history-source"
+          />
           <p className="text-10 text-muted-foreground/50 mt-1">
             Only plotted points are data. Dashed spans connect unobserved time and are never treated as recorded price action.
           </p>
