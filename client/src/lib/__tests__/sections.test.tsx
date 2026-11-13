@@ -31,13 +31,13 @@ import {
 const read = (...p: string[]) => readFileSync(join(process.cwd(), ...p), "utf-8");
 
 describe("the four sections", () => {
-  it("are States, Grid, Buildout, Markets, in that order, at these addresses", () => {
+  it("are States, Grid, Compute, Markets, in that order, at these addresses", () => {
     assert.deepEqual(
       SECTIONS.map((s) => [s.label, s.href]),
       [
         ["States", "/states"],
         ["Grid", "/grid"],
-        ["Buildout", "/buildout"],
+        ["Compute", "/compute"],
         ["Markets", "/markets"],
       ],
     );
@@ -50,7 +50,7 @@ describe("the four sections", () => {
         // The States chips are the published state pages, read from the registry.
         states: [],
         grid: ["map:Map", "queue:Queue", "deals:Deals", "live:Live grid", "timeline:Timeline"],
-        buildout: ["compute:Compute", "supply-chain:Supply Chain", "gpu-prices:GPU Prices"],
+        compute: ["clusters:Clusters", "supply-chain:Supply Chain", "gpu-prices:GPU Prices"],
         markets: ["overview:Overview", "equities:Equities", "analyze:Analyze", "catalysts:Catalysts"],
       },
     );
@@ -62,7 +62,7 @@ describe("the four sections", () => {
     assert.equal(chipHref("markets", "analyze", "scenario"), "/markets?tab=analyze&sub=scenario");
     assert.equal(chipFromSearch(sectionById("grid"), "?tab=deals&deal=x"), "deals");
     assert.equal(chipFromSearch(sectionById("grid"), "?tab=nope"), "map");
-    assert.equal(chipFromSearch(sectionById("buildout"), ""), "compute");
+    assert.equal(chipFromSearch(sectionById("compute"), ""), "clusters");
   });
 
   it("render in the top bar with those labels and addresses", () => {
@@ -75,7 +75,7 @@ describe("the four sections", () => {
     assert.deepEqual(links, [
       ["States", "/states"],
       ["Grid", "/grid"],
-      ["Buildout", "/buildout"],
+      ["Compute", "/compute"],
       ["Markets", "/markets"],
     ]);
     assert.equal((html.match(/aria-current="page"/g) ?? []).length, 1);
@@ -93,7 +93,7 @@ describe("the four sections", () => {
 
   it("light up for the pages reached from them", () => {
     assert.equal(sectionForPath("/state/maryland"), "states");
-    assert.equal(sectionForPath("/compute-frontier/some-cluster"), "buildout");
+    assert.equal(sectionForPath("/compute-frontier/some-cluster"), "compute");
     assert.equal(sectionForPath("/stock/CEG"), "markets");
     assert.equal(sectionForPath("/region/pjm"), "grid");
     assert.equal(sectionForPath("/blog"), null);
@@ -123,10 +123,10 @@ describe("old addresses", () => {
     "/queue": "/grid?tab=queue",
     "/my-grid": "/grid",
     "/timeline": "/grid?tab=timeline",
-    "/compute-frontier": "/buildout",
-    "/supply-chain": "/buildout?tab=supply-chain",
-    "/neocloud-intel": "/buildout?tab=gpu-prices",
-    "/gpu-economics": "/buildout?tab=gpu-prices&sub=economics",
+    "/compute-frontier": "/compute",
+    "/supply-chain": "/compute?tab=supply-chain",
+    "/neocloud-intel": "/compute?tab=gpu-prices",
+    "/gpu-economics": "/compute?tab=gpu-prices&sub=economics",
     "/brief": "/blog",
   };
 
@@ -140,8 +140,8 @@ describe("old addresses", () => {
     assert.equal(legacyRedirect("/power-map", "?tab=queue"), "/grid?tab=queue");
     assert.equal(legacyRedirect("/power-map", "?view=clusters"), "/grid?view=clusters");
     assert.equal(legacyRedirect("/analyze", "?tab=scenario"), "/markets?tab=analyze&sub=scenario");
-    assert.equal(legacyRedirect("/neocloud-intel", "?tab=economics"), "/buildout?tab=gpu-prices&sub=economics");
-    assert.equal(legacyRedirect("/neocloud-intel", "?tab=frontier&family=coding"), "/buildout?tab=gpu-prices&sub=frontier&family=coding");
+    assert.equal(legacyRedirect("/neocloud-intel", "?tab=economics"), "/compute?tab=gpu-prices&sub=economics");
+    assert.equal(legacyRedirect("/neocloud-intel", "?tab=frontier&family=coding"), "/compute?tab=gpu-prices&sub=frontier&family=coding");
     assert.equal(legacyRedirect("/timeline", "?record=deal:x"), "/grid?tab=timeline&record=deal%3Ax");
     assert.equal(legacyRedirect("/stack", "?view=flow"), "/markets?tab=equities&view=flow");
     assert.equal(legacyRedirect("/trade", "?utm_source=newsletter"), "/markets?tab=analyze&sub=scenario&utm_source=newsletter");

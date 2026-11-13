@@ -17,7 +17,7 @@ export interface SectionChip {
 }
 
 export interface Section {
-  id: "states" | "grid" | "buildout" | "markets";
+  id: "states" | "grid" | "compute" | "markets";
   label: string;
   href: string;
   /** The line above the section's content. Names the data, nothing else. */
@@ -55,13 +55,13 @@ export const SECTIONS: Section[] = [
     ],
   },
   {
-    id: "buildout",
-    label: "Buildout",
-    href: "/buildout",
+    id: "compute",
+    label: "Compute",
+    href: "/compute",
     statement: "Named compute clusters, the supply chain behind them, and GPU rental prices.",
     dek: "Sourced figures, with estimates labeled.",
     chips: [
-      { id: "compute", label: "Compute" },
+      { id: "clusters", label: "Clusters" },
       { id: "supply-chain", label: "Supply Chain" },
       { id: "gpu-prices", label: "GPU Prices" },
     ],
@@ -123,7 +123,7 @@ export function metaAddress(pathname: string, search = ""): string {
 export function sectionForPath(pathname: string): Section["id"] | null {
   if (pathname === "/states" || pathname.startsWith("/state/")) return "states";
   if (pathname === "/grid" || pathname.startsWith("/region/") || pathname.startsWith("/operator/")) return "grid";
-  if (pathname === "/buildout" || pathname.startsWith("/compute-frontier")) return "buildout";
+  if (pathname === "/compute" || pathname.startsWith("/compute-frontier")) return "compute";
   if (pathname === "/markets" || pathname.startsWith("/stock/") || pathname.startsWith("/sector/")) return "markets";
   return null;
 }
@@ -157,10 +157,10 @@ export const LEGACY_ROUTES: Record<string, LegacyRoute> = {
   "/queue": { section: "grid", chip: "queue" },
   "/my-grid": { section: "grid", chip: "map" },
   "/timeline": { section: "grid", chip: "timeline" },
-  "/compute-frontier": { section: "buildout", chip: "compute" },
-  "/supply-chain": { section: "buildout", chip: "supply-chain" },
-  "/neocloud-intel": { section: "buildout", chip: "gpu-prices", tabToSub: ["prices", "economics", "frontier"] },
-  "/gpu-economics": { section: "buildout", chip: "gpu-prices", sub: "economics" },
+  "/compute-frontier": { section: "compute", chip: "clusters" },
+  "/supply-chain": { section: "compute", chip: "supply-chain" },
+  "/neocloud-intel": { section: "compute", chip: "gpu-prices", tabToSub: ["prices", "economics", "frontier"] },
+  "/gpu-economics": { section: "compute", chip: "gpu-prices", sub: "economics" },
   "/brief": { section: null, to: "/blog" },
 };
 

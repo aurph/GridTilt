@@ -122,7 +122,7 @@ const STATIC_PAGES: Record<string, { title: string; description: string; slug: s
     description: "Live prices for public companies across nuclear, uranium, construction, utilities, data centers, and power hardware.",
     slug: "stack",
   },
-  "/buildout?tab=supply-chain": {
+  "/compute?tab=supply-chain": {
     title: "AI Power Supply Chain: Raw Materials to End Use | GridTilt",
     description: "How uranium, copper, gas, generation, transformers, substations, cooling and data centers connect, with the public companies at each stage and where the chain is tightening.",
     slug: "supply-chain",
@@ -157,7 +157,7 @@ const STATIC_PAGES: Record<string, { title: string; description: string; slug: s
     description: "Research on data center power demand, nuclear energy, grid constraints, and the companies behind the buildout.",
     slug: "blog",
   },
-  "/buildout": {
+  "/compute": {
     title: "Compute Frontier \u00b7 AI Supercluster Tracker \u00b7 GridTilt",
     description: "Named US AI training and inference superclusters by GPUs, chip type, rated and planned power, grid region, and energy source, tied to the nuclear-for-AI deals that feed them. Sourced figures vs labeled estimates.",
     slug: "compute-frontier",
@@ -177,7 +177,7 @@ const STATIC_PAGES: Record<string, { title: string; description: string; slug: s
     description: "Compare the editorial sector classifications of a basket of tickers, and model buildout scenarios across demand growth, generation mix, and grid variables.",
     slug: "analyze",
   },
-  "/buildout?tab=gpu-prices": {
+  "/compute?tab=gpu-prices": {
     title: "GPU Rental Prices by Model, with Marketplace Ranges | GridTilt",
     description: "On-demand GPU rental prices ($/GPU/hr) for H100, H200, GB200, B200, B300, MI300X and more, blended across the major neoclouds and marketplaces. Sourced blended estimates with marketplace ranges and 1W/1M/YTD/1Y changes.",
     slug: "neocloud-intel",
@@ -286,7 +286,7 @@ function clusterDatasetJsonLd(): object {
     "@type": "Dataset",
     "name": "Compute Frontier: AI Superclusters",
     "description": "Named US AI training and inference superclusters by GPUs, chip type, rated and planned power, grid region, energy source, and linked nuclear-for-AI deals.",
-    "url": `${BASE_URL}/buildout`,
+    "url": `${BASE_URL}/compute`,
     "creator": { "@type": "Organization", "name": "GridTilt" },
     "temporalCoverage": "2024/..",
     "spatialCoverage": "United States",
@@ -379,21 +379,21 @@ export function getPageMeta(pathname: string, search = ""): PageMeta {
         { name: "GridTilt", url: BASE_URL },
         { name: "Power Map", url: `${BASE_URL}/grid` },
       ]));
-    } else if (key === "/buildout") {
+    } else if (key === "/compute") {
       jsonLd.push(clusterDatasetJsonLd(), breadcrumbJsonLd([
         { name: "GridTilt", url: BASE_URL },
-        { name: "Compute Frontier", url: `${BASE_URL}/buildout` },
+        { name: "Compute Frontier", url: `${BASE_URL}/compute` },
       ]));
     } else if (pathname === "/compute-frontier/methodology") {
       jsonLd.push(breadcrumbJsonLd([
         { name: "GridTilt", url: BASE_URL },
-        { name: "Compute Frontier", url: `${BASE_URL}/buildout` },
+        { name: "Compute Frontier", url: `${BASE_URL}/compute` },
         { name: "Methodology", url: `${BASE_URL}/compute-frontier/methodology` },
       ]));
     } else if (pathname === "/compute-frontier/compare") {
       jsonLd.push(breadcrumbJsonLd([
         { name: "GridTilt", url: BASE_URL },
-        { name: "Compute Frontier", url: `${BASE_URL}/buildout` },
+        { name: "Compute Frontier", url: `${BASE_URL}/compute` },
         { name: "Compare", url: `${BASE_URL}/compute-frontier/compare` },
       ]));
     } else if (key === "/markets?tab=analyze") {
@@ -615,7 +615,7 @@ export function getPageMeta(pathname: string, search = ""): PageMeta {
           },
           breadcrumbJsonLd([
             { name: "GridTilt", url: BASE_URL },
-            { name: "Compute Frontier", url: `${BASE_URL}/buildout` },
+            { name: "Compute Frontier", url: `${BASE_URL}/compute` },
             { name: cluster.name, url: `${BASE_URL}/compute-frontier/${slug}` },
           ]),
         ],

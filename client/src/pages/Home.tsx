@@ -9,9 +9,7 @@ import { DemandChart } from "@/components/home/DemandChart";
 //
 // The first screen leads with the state pages and the map. Below it sit
 // three lists read from the records themselves (HomeRecord), then the
-// electricity use chart. The module directory (FeaturesShowcase), the scroll
-// cue and the stock tape no longer render here; their files stay until the
-// owner decides on them.
+// electricity use chart.
 export default function Home() {
   return (
     <div className="gt-marketing min-h-screen w-full">

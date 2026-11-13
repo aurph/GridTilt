@@ -20,8 +20,8 @@ interface Brief {
 }
 
 const SECTION_LINK: Record<string, string> = {
-  Compute: "/buildout",
-  GPUs: "/buildout?tab=gpu-prices",
+  Compute: "/compute",
+  GPUs: "/compute?tab=gpu-prices",
   "Power & grid": "/grid?tab=queue",
   "Power agreements": "/grid?tab=deals",
   // The record's sections (server/brief.ts recordSections).

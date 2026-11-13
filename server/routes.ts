@@ -2682,16 +2682,6 @@ export async function registerRoutes(
     }));
   }
 
-  app.get("/api/catalysts/earnings", async (_req, res) => {
-    await refreshEarningsCache().catch(() => {});
-    const items = getEarningsData();
-    res.json({ earnings: items });
-  });
-
-  app.get("/api/catalysts/manual", (_req, res) => {
-    res.json(loadManualCatalysts());
-  });
-
   app.get("/api/catalysts/all", async (_req, res) => {
     await refreshEarningsCache().catch(() => {});
     const earnings = getEarningsData();

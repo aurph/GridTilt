@@ -20,7 +20,7 @@ It is the one client module the server imports.
 |---|---|---|
 | States | /states | the published state pages, from the registry |
 | Grid | /grid | map, queue, deals, live, timeline |
-| Buildout | /buildout | compute, supply-chain, gpu-prices |
+| Compute | /compute | clusters, supply-chain, gpu-prices |
 | Markets | /markets | overview, equities, analyze, catalysts |
 
 A feature with views of its own (Analyze, GPU Prices) keeps them in `?sub=`. Every old page address
@@ -336,7 +336,7 @@ Documented, not to fix casually or silently:
 - routes.ts is a 3,913-line monolith (70 routes + OAuth client + OG renderer + 3 scanners +
   static data tables).
 - README + replit.md rewritten from code truth (2026-07-04, feat/live-gpu-prices). HANDOFF.md and
-  HOMEPAGE_HANDOFF.md remain historical records, not current state.
+  HOMEPAGE_HANDOFF.md were removed 2026-11 (historical, long out of date).
 - Dead weight (mostly cleared 2026-07-04): date-fns, @tailwindcss/vite, @radix-ui/react-toggle,
   dates.ts, ui/dialog.tsx, ui/toggle.tsx removed; package renamed "gridtilt". Still open:
   EmailCapture's unused marketing branch (~200 lines), .replit's postgresql-16 and python-3.11

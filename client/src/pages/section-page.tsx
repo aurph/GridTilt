@@ -29,8 +29,8 @@ const FEATURES: Record<Exclude<Section["id"], "states">, Record<string, Feature>
     live: lazy(() => import("@/pages/grid-live")),
     timeline: lazy(() => import("@/pages/timeline")),
   },
-  buildout: {
-    compute: lazy(() => import("@/pages/compute-frontier")),
+  compute: {
+    clusters: lazy(() => import("@/pages/compute-frontier")),
     "supply-chain": lazy(() => import("@/pages/SupplyChain")),
     "gpu-prices": lazy(() => import("@/pages/neocloud-intel")),
   },

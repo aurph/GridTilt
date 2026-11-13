@@ -47,7 +47,7 @@ const MARKETING_ROUTES: string[] = [];
 const SHORTCUTS = [
   { keys: ["G", "1"], description: "Go to States", path: "/states" },
   { keys: ["G", "2"], description: "Go to Grid", path: "/grid" },
-  { keys: ["G", "3"], description: "Go to Buildout", path: "/buildout" },
+  { keys: ["G", "3"], description: "Go to Compute", path: "/compute" },
   { keys: ["G", "4"], description: "Go to Markets", path: "/markets" },
   { keys: ["G", "5"], description: "Go to Research", path: "/blog" },
   { keys: ["⌘", "K"], description: "Search pages, states, tickers, clusters", path: null },
@@ -124,7 +124,7 @@ function Router() {
       <Route path="/states" component={States} />
       <Route path="/state/:slug" component={StatePage} />
       <Route path="/grid">{() => <SectionPage id="grid" />}</Route>
-      <Route path="/buildout">{() => <SectionPage id="buildout" />}</Route>
+      <Route path="/compute">{() => <SectionPage id="compute" />}</Route>
       <Route path="/markets">{() => <SectionPage id="markets" />}</Route>
       {/* Cluster pages keep their addresses; they light up Buildout. */}
       <Route path="/compute-frontier/methodology" component={ComputeFrontierMethodology} />
@@ -273,7 +273,7 @@ function App() {
       }
       if (gPressed) {
         const routes: Record<string, string> = {
-          "1": "/states", "2": "/grid", "3": "/buildout", "4": "/markets", "5": "/blog",
+          "1": "/states", "2": "/grid", "3": "/compute", "4": "/markets", "5": "/blog",
         };
         if (routes[e.key]) {
           navigate(routes[e.key]);

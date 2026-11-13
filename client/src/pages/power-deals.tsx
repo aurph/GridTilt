@@ -205,7 +205,7 @@ export default function PowerDeals({ embedded = false }: { embedded?: boolean; p
           </div>
           <p className="text-muted-foreground text-sm leading-relaxed">
             {introText} The data-center sites themselves live in{" "}
-            <Link href="/buildout" className="text-brand hover:text-brand-2">Compute Frontier</Link>.
+            <Link href="/compute" className="text-brand hover:text-brand-2">Compute Frontier</Link>.
           </p>
         </div>
         {asOfChip}

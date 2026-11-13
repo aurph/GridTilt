@@ -150,7 +150,7 @@ export function buildBuildoutPost(i: BuildoutInput): PostResult {
   return post([
     `GridTilt tracks ${withCommas(i.clusterCount)} AI compute clusters: ${i.operational.count} operating, ${i.construction.count} under construction and ${i.announced.count} announced. Their planned power, the full announced build: ${gwFromMw(i.operational.plannedMW)} GW, ${gwFromMw(i.construction.plannedMW)} GW and ${gwFromMw(i.announced.plannedMW)} GW. Data as of ${shortDate(i.asOf as string)}.`,
     "",
-    "https://gridtilt.com/buildout",
+    "https://gridtilt.com/compute",
   ]);
 }
 
@@ -190,7 +190,7 @@ export function buildGpuObservedPost(i: GpuObservedInput): PostResult {
   return post([
     `On-demand GPU rental prices observed ${shortDate(i.observedOn as string)}, each the median of the provider prices seen for that model: ${parts.join("; ")}, per GPU-hour.`,
     "",
-    "https://gridtilt.com/buildout?tab=gpu-prices",
+    "https://gridtilt.com/compute?tab=gpu-prices",
   ]);
 }
 

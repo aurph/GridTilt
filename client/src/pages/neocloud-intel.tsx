@@ -272,7 +272,7 @@ export default function NeocloudIntel() {
         right={
           <>
             {data?.lastRefreshed && <span className="text-11 font-mono text-muted-foreground/60">source data {data.lastRefreshed}</span>}
-            <Link href="/buildout" className="text-11 text-brand hover:text-brand-2 font-medium">Compute Frontier →</Link>
+            <Link href="/compute" className="text-11 text-brand hover:text-brand-2 font-medium">Compute Frontier →</Link>
           </>
         }
         controls={<ToolTabs tabs={GPU_TABS} active={tab} onChange={setTab} />}

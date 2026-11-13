@@ -870,7 +870,7 @@ const FEATURE_SLIDES = [
     icon: Cpu,
     title: "Compute Frontier",
     description: "Named AI superclusters by GPUs, chips, and power, tied to the nuclear-for-AI deals that feed them.",
-    href: "/buildout",
+    href: "/compute",
     accent: BRAND.primary,
     preview: powerMapPreview,
   },
@@ -886,7 +886,7 @@ const FEATURE_SLIDES = [
     icon: LineChart,
     title: "GPU Prices",
     description: "GPU rental price index across the neoclouds, plus cost-of-compute and training-run economics.",
-    href: "/buildout?tab=gpu-prices",
+    href: "/compute?tab=gpu-prices",
     accent: BRAND.secondary,
     preview: calculatorPreview,
   },
@@ -1200,7 +1200,7 @@ export default function TiltOverview() {
               methodology="Mean on-demand rental price across the tracked GPU fleet, blended from public neocloud and marketplace listings (sourced estimates, flagged per model on the GPU Prices page). Falling prices mean compute supply is catching demand."
               isLoading={gpuLoading}
               rows={gpuData ? gpuTopRows : []}
-              href="/buildout?tab=gpu-prices"
+              href="/compute?tab=gpu-prices"
               dataset="gpu-rental-prices"
             />
             <RealGaugeCard

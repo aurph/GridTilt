@@ -94,7 +94,7 @@ export default function ComputeFrontierDetail() {
           ) : undefined
         }
         right={
-          <Link href="/buildout" className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground" data-testid="cfd-back">
+          <Link href="/compute" className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground" data-testid="cfd-back">
             <ArrowLeft className="h-3.5 w-3.5" /> Compute Frontier
           </Link>
         }
@@ -104,7 +104,7 @@ export default function ComputeFrontierDetail() {
         {isError || (!isLoading && !cluster) ? (
           <p className="text-sm text-muted-foreground" data-testid="cfd-error">
             No cluster matches this id. Back to the{" "}
-            <Link href="/buildout" className="text-brand hover:text-brand-2">Compute Frontier</Link>.
+            <Link href="/compute" className="text-brand hover:text-brand-2">Compute Frontier</Link>.
           </p>
         ) : isLoading ? (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">{Array(8).fill(null).map((_, i) => <Skeleton key={i} className="h-16" />)}</div>

@@ -1268,7 +1268,7 @@ export default function PowerMap() {
                   <TooltipContent side="bottom" align="start" className="max-w-xs z-[1200] p-3">
                     <p className="text-[11px] font-semibold text-brand mb-1.5">&ge; 400 MW only</p>
                     <p className="text-11 leading-snug text-white/70">
-                      We track hyperscale AI campuses. Smaller sites exist by the thousands. Sources like <span className="text-white/90 font-medium">DC Map</span> and <span className="text-white/90 font-medium">Data Center Knowledge</span> cover them better. For the compute layer (GPUs, chips, secured power) see <Link href="/buildout" className="text-brand hover:text-brand-2">Compute Frontier</Link>.
+                      We track hyperscale AI campuses. Smaller sites exist by the thousands. Sources like <span className="text-white/90 font-medium">DC Map</span> and <span className="text-white/90 font-medium">Data Center Knowledge</span> cover them better. For the compute layer (GPUs, chips, secured power) see <Link href="/compute" className="text-brand hover:text-brand-2">Compute Frontier</Link>.
                     </p>
                   </TooltipContent>
                 </UITooltip>
@@ -1311,7 +1311,7 @@ export default function PowerMap() {
                   <TooltipContent side="bottom" align="start" className="max-w-xs z-[1200] p-3">
                     <p className="text-[11px] font-semibold text-brand mb-1.5">Every tracked AI cluster</p>
                     <p className="text-11 leading-snug text-white/70">
-                      The <Link href="/buildout" className="text-brand hover:text-brand-2">Compute Frontier</Link> record set with no size floor. Marker size is planned MW, an estimate for most sites. Energized is rated MW at operational sites. Click a site for its record and sources.
+                      The <Link href="/compute" className="text-brand hover:text-brand-2">Compute Frontier</Link> record set with no size floor. Marker size is planned MW, an estimate for most sites. Energized is rated MW at operational sites. Click a site for its record and sources.
                     </p>
                   </TooltipContent>
                 </UITooltip>

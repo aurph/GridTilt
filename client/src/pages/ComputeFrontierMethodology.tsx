@@ -21,7 +21,7 @@ export default function ComputeFrontierMethodology() {
         testId="cfm-header"
         about="How the supercluster data is built, what is sourced, what is estimated, and exactly how each headline number is computed."
         right={
-          <Link href="/buildout" className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground" data-testid="cfm-back">
+          <Link href="/compute" className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground" data-testid="cfm-back">
             <ArrowLeft className="h-3.5 w-3.5" /> Compute Frontier
           </Link>
         }
@@ -92,7 +92,7 @@ export default function ComputeFrontierMethodology() {
         </Section>
 
         <p className="text-11 text-muted-foreground/60">
-          Back to the <Link href="/buildout" className="text-brand hover:text-brand-2">Compute Frontier</Link>.
+          Back to the <Link href="/compute" className="text-brand hover:text-brand-2">Compute Frontier</Link>.
         </p>
       </div>
     </div>

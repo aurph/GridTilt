@@ -67,7 +67,7 @@ test("buildout: counts and planned power by status, one basis, dated", () => {
     [
       "GridTilt tracks 237 AI compute clusters: 81 operating, 108 under construction and 48 announced. Their planned power, the full announced build: 29.4 GW, 62 GW and 70.4 GW. Data as of Sep 30, 2026.",
       "",
-      "https://gridtilt.com/buildout",
+      "https://gridtilt.com/compute",
     ].join("\n"),
   );
   assert.ok(!/index|gauge|today/i.test(t), "no index, gauge or 'today' language");
@@ -106,7 +106,7 @@ test("gpu: observed medians with their date, each naming only its own providers"
     [
       "On-demand GPU rental prices observed Sep 30, 2026, each the median of the provider prices seen for that model: H100 $2.87, H200 $3.94 and B200 $5.98 (RunPod, Vast.ai); B300 $7.42 (RunPod), per GPU-hour.",
       "",
-      "https://gridtilt.com/buildout?tab=gpu-prices",
+      "https://gridtilt.com/compute?tab=gpu-prices",
     ].join("\n"),
   );
   noPadding(t);

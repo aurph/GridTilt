@@ -53,7 +53,7 @@ test("aliases, API 404s, the ticker list and the sitemap", async () => {
     assert.equal(r.status, 301);
     assert.equal(r.headers.get("location"), "/grid?tab=deals&deal=abc", "an old tab becomes the chip and the deal id rides along");
     r = await fetch(`${url}/neocloud-intel?tab=economics`, { redirect: "manual" });
-    assert.equal(r.headers.get("location"), "/buildout?tab=gpu-prices&sub=economics", "an old tab of a feature becomes its view");
+    assert.equal(r.headers.get("location"), "/compute?tab=gpu-prices&sub=economics", "an old tab of a feature becomes its view");
     r = await fetch(`${url}/overview`, { redirect: "manual" });
     assert.equal(r.status, 301);
     assert.equal(r.headers.get("location"), "/markets");

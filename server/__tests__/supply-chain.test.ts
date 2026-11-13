@@ -87,7 +87,7 @@ test("end use shows live registry counts; no tightest stage is invented", () => 
   assert.deepEqual(endUseLive([{ status: "operational" }, { status: "construction" }, { status: "operational" }]), {
     value: "3",
     label: "AI clusters tracked, 2 operational",
-    href: "/buildout",
+    href: "/compute",
   });
   assert.equal(endUseLive([]), null);
   const calm: StagesFile = { reviewed: "2026-10-18", method: "m", stages: { a: { name: "A", tagline: "", status: null, evidence: [], tickers: ["GEV"] } } };

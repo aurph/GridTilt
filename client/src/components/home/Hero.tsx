@@ -116,7 +116,7 @@ export function Hero() {
       value: opGw ? `${opGw} GW` : "--",
       sub: clusters ? `${(clusters.totalPlannedMW / 1000).toFixed(1)} GW planned` : undefined,
       asOf: shortDate(clusters?.lastRefreshed),
-      href: "/buildout",
+      href: "/compute",
     },
     {
       // Signed agreements only. It read "Contracted power deals" over a sum
@@ -144,7 +144,7 @@ export function Hero() {
       value: clusterCount ?? "--",
       sub: clusters?.byOperator ? `${clusters.byOperator.length} operators` : undefined,
       asOf: shortDate(clusters?.lastRefreshed),
-      href: "/buildout",
+      href: "/compute",
     },
   ];
 
