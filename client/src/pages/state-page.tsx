@@ -13,6 +13,9 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/Freshness";
 import { PageHeader } from "@/components/PageHeader";
+import { VideoTrigger } from "@/components/video-trigger";
+import { WHO_RUNS_YOUR_GRID } from "@/data/explainers";
+import { STATE_HEROES } from "@/data/state-heroes";
 import { monthsBefore, yearOnYearChange } from "@/lib/rates";
 
 interface StateDocument {
@@ -182,6 +185,7 @@ export default function StatePage() {
       />
 
       <div className="flex-1 w-full max-w-[1000px] mx-auto p-4 sm:p-6 space-y-4">
+        <StateHeroImage slug={slug} />
         {isError ? (
           <ErrorState label="This state's page failed to load." onRetry={() => refetch()} />
         ) : isLoading || !data ? (
@@ -191,7 +195,9 @@ export default function StatePage() {
         ) : (
           <>
             <Card className="border-card-border" data-testid="state-page-grid">
-              <SectionTitle>Grid operator and reliability</SectionTitle>
+              <SectionTitle right={<VideoTrigger video={WHO_RUNS_YOUR_GRID} className="text-brand hover:text-brand-2" testId="state-page-explainer" />}>
+                Grid operator and reliability
+              </SectionTitle>
               <div className="p-4 space-y-2 text-sm">
                 <p className="text-foreground">
                   {data.operatorLabel}.{data.operatorNote ? <span className="text-muted-foreground"> {data.operatorNote}</span> : null}
@@ -356,6 +362,24 @@ export default function StatePage() {
         )}
       </div>
     </div>
+  );
+}
+
+/** A slim banner, so the data stays above the fold. Keyed by the address, so it holds its space while the page's data loads. */
+function StateHeroImage({ slug }: { slug: string }) {
+  const hero = STATE_HEROES[slug];
+  if (!hero) return null;
+  return (
+    <img
+      src={hero.src}
+      alt={hero.alt}
+      width={hero.width}
+      height={hero.height}
+      decoding="async"
+      style={{ objectPosition: hero.position }}
+      className="block h-[120px] w-full rounded-xl border border-card-border bg-card object-cover sm:h-[180px]"
+      data-testid="state-page-hero"
+    />
   );
 }
 

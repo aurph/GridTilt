@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { CheckCircle2, Mail, TrendingUp, Map, BarChart3, TrendingDown } from "lucide-react";
+import { BriefMasthead } from "@/components/brief-masthead";
 import { Button } from "@/components/ui/button";
 import { apiRequest } from "@/lib/queryClient";
 import { signupErrorMessage, signupResult } from "@/lib/signup";
@@ -173,7 +174,9 @@ export default function Subscribe() {
                 <div className="text-sm text-white/70">{errorMsg}</div>
               </div>
             ) : (
-              <form onSubmit={handleSubmit} className="bg-surface-raised/60 border border-subtle rounded-xl p-5 space-y-3" data-testid="subscribe-form">
+              <form onSubmit={handleSubmit} className="bg-surface-raised/60 border border-subtle rounded-xl overflow-hidden" data-testid="subscribe-form">
+                <BriefMasthead className="border-b border-subtle" />
+                <div className="p-5 space-y-3">
                 <div>
                   <label htmlFor="subscribe-email" className="block text-11 font-semibold text-white/70 mb-1.5">
                     Email address
@@ -202,6 +205,7 @@ export default function Subscribe() {
                 <p className="text-10 text-white/25 text-center pt-1">
                   Free. One email per week. Unsubscribe anytime.
                 </p>
+                </div>
               </form>
             )}
           </div>

@@ -6,6 +6,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Calendar, ArrowRight } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import BriefPage from "@/pages/brief";
+import { VideoTrigger } from "@/components/video-trigger";
+import { EXPLAINERS } from "@/data/explainers";
 import { ErrorState } from "@/components/Freshness";
 
 interface BlogArticle {
@@ -32,8 +34,28 @@ export default function BlogIndex() {
 
       <div className="max-w-[1200px] mx-auto w-full px-4 md:px-8 py-6 space-y-8">
         {/* Today's read: the daily brief, self-contained (own loading/error state),
-            so it can never blank the post list below. */}
-        <BriefPage embedded />
+            so it can never blank the post list below. From lg up the explainers
+            take the third of the posts' three columns beside it, so the posts stay
+            where they were. Below lg they are one short row. */}
+        <div className="grid gap-4 lg:grid-cols-3 lg:items-start">
+          <div className="min-w-0 lg:col-span-2">
+            <BriefPage embedded />
+          </div>
+          <div
+            className="flex gap-3 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:grid md:grid-cols-3 md:overflow-visible lg:grid-cols-1"
+            data-testid="research-explainers"
+          >
+            {EXPLAINERS.map((e) => (
+              <VideoTrigger
+                key={e.id}
+                video={e}
+                thumb={e.thumb}
+                className="w-[240px] shrink-0 rounded-lg border border-card-border bg-card p-2 transition-colors hover:border-brand/50 md:w-auto lg:h-[81px]"
+                testId={`research-explainer-${e.id}`}
+              />
+            ))}
+          </div>
+        </div>
 
         <div>
           <h2 className="text-[13px] font-semibold text-foreground mb-4" data-testid="blog-archive-heading">
