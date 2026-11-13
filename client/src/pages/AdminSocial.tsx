@@ -16,10 +16,11 @@ const TWEET_MAX = 280;
 // (ROTATING_TEMPLATES and ON_DEMAND_TEMPLATES in server/routes.ts).
 const TEMPLATES = [
   { name: "buildout", label: "Mon: clusters by status" },
-  { name: "gpu_rental", label: "Tue: GPU prices" },
+  { name: "state_decision", label: "Tue: a state decision" },
   { name: "cluster_spotlight", label: "Wed: one project" },
   { name: "grid_backlog", label: "Thu: the queue" },
   { name: "documented_change", label: "Fri: a documented change" },
+  { name: "gpu_rental", label: "GPU prices (on demand)" },
   { name: "top_movers", label: "Top movers" },
   { name: "catalyst_preview", label: "Catalyst preview" },
 ];

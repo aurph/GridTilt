@@ -33,7 +33,7 @@ const INPUT: WeeklyDigestInput = {
   fleetAvg: 4.31,
   fleetAvg1yChange: -14.2,
   tightestRTO: { label: "MISO", marginPct: 11.0, referencePct: 8.1 },
-  dateLabel: "Week of June 28 - July 4, 2026",
+  dateLabel: "July 4, 2026",
   siteUrl: "https://gridtilt.com",
   asOf: "July 4, 2026",
   figureSources: [
@@ -94,9 +94,11 @@ describe("renderWeeklyEmail", () => {
 });
 
 describe("weeklyDateLabel", () => {
-  it("spans the six days before the end date, Eastern", () => {
+  it("is the issue's day, Eastern, and never a week range", () => {
     const label = weeklyDateLabel(new Date(Date.UTC(2026, 6, 4, 16, 0, 0))); // Jul 4 noon ET
-    assert.equal(label, "Week of June 28 - July 4, 2026");
+    assert.equal(label, "July 4, 2026");
+    // 02:00 UTC is still the evening before in New York.
+    assert.equal(weeklyDateLabel(new Date(Date.UTC(2026, 10, 18, 2, 0, 0))), "November 17, 2026");
   });
 });
 
