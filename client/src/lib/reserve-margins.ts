@@ -33,30 +33,43 @@ export function byCushion(areas: NercArea[] = Object.values(NERC_AREAS)): NercAr
   return areas.filter((a) => a.season === "summer 2026").sort((a, b) => cushion(a) - cushion(b) || a.key.localeCompare(b.key));
 }
 
-/** A region's NERC risk: its one area's level, or null when its areas differ. */
-export function regionRisk(region: string): NercRisk | null {
-  const levels = new Set(areasForRegion(region).map((a) => a.risk));
+/** The one risk level a set of areas shares, or null when they differ (or there are none). */
+export function riskForAreas(areas: NercArea[]): NercRisk | null {
+  const levels = new Set(areas.map((a) => a.risk));
   return levels.size === 1 ? Array.from(levels)[0] : null;
 }
 
-/** How a region's risk reads in a table cell, naming the areas that differ. */
-export function regionRiskText(region: string): string {
-  const areas = areasForRegion(region);
+/** How a set of areas' risk reads in a table cell, naming the areas that differ. */
+export function riskTextForAreas(areas: NercArea[]): string {
   if (areas.length === 0) return "not assessed";
-  const uniform = regionRisk(region);
+  const uniform = riskForAreas(areas);
   if (areas.length === 1) return uniform ?? "not assessed";
   if (uniform) return `${uniform} in all ${areas.length} areas`;
   const raised = areas.filter((a) => a.risk !== "Normal").map((a) => `${a.risk} in ${a.label}`);
   return `${raised.join("; ")}; Normal elsewhere`;
 }
 
-/** "29.7%" for one area; "18.3% to 22.3% across 2 areas" for a multi-area region. */
-export function regionMarginText(region: string): string {
-  const areas = areasForRegion(region);
+/** "29.7%" for one area; "18.3% to 22.3% across 2 areas" for several. */
+export function marginTextForAreas(areas: NercArea[]): string {
   if (areas.length === 0) return "not assessed";
   if (areas.length === 1) return `${areas[0].margin.toFixed(1)}%`;
   const ms = areas.map((a) => a.margin);
   return `${Math.min(...ms).toFixed(1)}% to ${Math.max(...ms).toFixed(1)}% across ${areas.length} areas`;
+}
+
+/** A region's NERC risk: its one area's level, or null when its areas differ. */
+export function regionRisk(region: string): NercRisk | null {
+  return riskForAreas(areasForRegion(region));
+}
+
+/** How a region's risk reads in a table cell, naming the areas that differ. */
+export function regionRiskText(region: string): string {
+  return riskTextForAreas(areasForRegion(region));
+}
+
+/** "29.7%" for one area; "18.3% to 22.3% across 2 areas" for a multi-area region. */
+export function regionMarginText(region: string): string {
+  return marginTextForAreas(areasForRegion(region));
 }
 
 /**
