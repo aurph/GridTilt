@@ -1175,21 +1175,19 @@ export default function PowerMap() {
         }
       `}</style>
 
-      {/* The feature's own heading. Agreements and the queue are their own
-          chips in the Grid section (lib/sections.ts). */}
-      <div className="border-b border-border px-4 sm:px-6 py-3" data-testid="power-header">
-        <SectionHeading className="text-sm font-semibold text-foreground tracking-tight">
-          US data center map
-        </SectionHeading>
-      </div>
+      {/* The Map chip already names this view, so the heading is kept for the
+          document outline only: the map starts right under the chip row. */}
+      <SectionHeading className="sr-only" testId="power-header">
+        US data center map
+      </SectionHeading>
 
       <>
       {belowSm && (
         /* The Leaflet map is desktop-only. On phones this honest card takes
            its place; the headline numbers, upcoming projects, and operator
            table below stay fully usable. */
-        <div className="border-b border-border px-4 py-5" data-testid="map-mobile-card">
-          <div className="rounded-lg border border-subtle bg-surface-raised p-4">
+        <div className="border-b border-border px-4 py-3" data-testid="map-mobile-card">
+          <div className="rounded-lg border border-subtle bg-surface-raised p-3">
             <div className="flex items-center gap-2 mb-1.5">
               <Zap className="h-4 w-4 text-brand" />
               <span className="text-sm font-semibold text-foreground">{isClusterView ? "AI Clusters" : "Power Map"}</span>

@@ -31,6 +31,12 @@ chip (withSectionParams). Page metadata is filed by chip address (seo.ts pageKey
 its own title and canonical. Research and the Brief sit behind Get the Brief, the footer and the
 phone menu. The module table below is the pre-2026-11 map, kept for the old names.
 
+Section header (client/src/pages/section-page.tsx SectionStatement): one left-aligned line on the
+chips' edge, the dek beside it from 640px up, chips right under it. Keep it short: the feature
+should start near the top of the screen (the map's top edge is about 180px down at 1440x900). A
+feature whose chip already names it keeps its heading for the outline only (`sr-only`: the map,
+Live grid); a feature strip that carries stats or controls (PageHeader) stays.
+
 14 sidebar modules, 29 routes (wouter, client/src/App.tsx; the table below predates the top nav):
 
 | Module | Route | Key |

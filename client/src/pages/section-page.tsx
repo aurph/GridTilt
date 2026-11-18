@@ -1,12 +1,13 @@
 /**
- * Grid, Buildout and Markets: one section page holding several features.
+ * Grid, Compute and Markets: one section page holding several features.
  *
- * Anatomy: a centered statement naming the section's data, the chip row, then
- * the selected feature's existing page. Each feature is its own chunk, so a
- * section downloads only the feature being read; data already fetched stays
- * cached by react-query, so switching chips does not refetch it. The feature
- * keeps its own heading (one level below the section's) so a deep link reads
- * right on arrival.
+ * Anatomy: one tight line naming the section's data, the chip row right under
+ * it, then the selected feature's existing page. The header stays small on
+ * purpose so the feature (the map, a table) starts near the top of the
+ * screen. Each feature is its own chunk, so a section downloads only the
+ * feature being read; data already fetched stays cached by react-query, so
+ * switching chips does not refetch it. The feature keeps its own heading (one
+ * level below the section's) so a deep link reads right on arrival.
  */
 import { lazy, Suspense, useMemo, type ComponentType, type LazyExoticComponent } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -42,14 +43,20 @@ const FEATURES: Record<Exclude<Section["id"], "states">, Record<string, Feature>
   },
 };
 
-/** The centered line above a section's content: one bold line and one dek. */
+/**
+ * The line above a section's chips: the statement as the page's h1, with the
+ * dek as one quiet line beside it on a wide screen. Left-aligned on the chips'
+ * edge and short, so the content below starts high on the page. The dek is
+ * dropped on phones, where the chips already say it.
+ */
 export function SectionStatement({ statement, dek }: { statement: string; dek: string }) {
   return (
-    <div className="mx-auto max-w-[640px] px-4 pb-6 pt-9 text-center sm:pt-12" data-testid="section-statement">
-      <h1 className="text-balance text-[22px] font-bold leading-tight tracking-tight text-foreground sm:text-[26px]">
-        {statement}
-      </h1>
-      <p className="mx-auto mt-2.5 max-w-[52ch] text-[14px] leading-relaxed text-muted-foreground">{dek}</p>
+    <div
+      className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 px-4 pb-2.5 pt-3.5 sm:px-6 sm:pt-4"
+      data-testid="section-statement"
+    >
+      <h1 className="text-[17px] font-bold leading-snug tracking-tight text-foreground sm:text-[19px]">{statement}</h1>
+      <p className="hidden text-[13px] leading-snug text-muted-foreground sm:block">{dek}</p>
     </div>
   );
 }
@@ -97,7 +104,7 @@ export default function SectionPage({ id }: { id: Exclude<Section["id"], "states
   return (
     <div data-testid={`section-${id}`}>
       <SectionStatement statement={section.statement} dek={section.dek} />
-      <div className="border-b border-dashed border-border px-4 pb-4 sm:px-6">
+      <div className="border-b border-dashed border-border px-4 pb-3 sm:px-6">
         <SectionChips
           chips={chips}
           active={active}
