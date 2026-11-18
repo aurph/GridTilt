@@ -9,6 +9,7 @@
  */
 import { GRID_REGION_IDS, REGION_SLUG_ALIASES, gridRegion, type GridRegionId } from "../data/grid-regions";
 import { NERC_AREAS, type NercArea, type NercRisk } from "../data/nerc-reserve-margins";
+import { STATE_GRID } from "../data/state-grid";
 import { MIN_TRACKED_MW } from "./real-gauges";
 import { marginTextForAreas, riskForAreas, riskTextForAreas } from "./reserve-margins";
 
@@ -220,4 +221,48 @@ const DEAL_ISO: Record<string, GridRegionId> = {
  */
 export function dealRegion(iso: string | null | undefined): GridRegionId | null {
   return DEAL_ISO[(iso ?? "").trim()] ?? null;
+}
+
+const STATE_REGION: Record<string, GridRegionId> = { PJM: "pjm", MISO: "miso", SPP: "spp", ERCOT: "ercot", SERC: "southeast" };
+
+/**
+ * The region that runs most of a state, from the site's per-state table
+ * (data/state-grid.ts). California is CAISO, New York NYISO, the rest of the
+ * old Northeast bucket ISO-NE and the rest of the old Western bucket West.
+ * Null for Alaska, Hawaii and anything that is not a state.
+ */
+export function regionForState(code: string): GridRegionId | null {
+  const old = STATE_GRID[code]?.region;
+  if (!old) return null;
+  if (old === "WECC") return code === "CA" ? "caiso" : "west";
+  if (old === "NPCC") return code === "NY" ? "nyiso" : "isone";
+  return STATE_REGION[old] ?? null;
+}
+
+export interface DealLike {
+  id: string;
+  capacityMW: number | null;
+  firmness: string;
+  iso: string | null;
+  aggregate?: boolean;
+  includes?: string[];
+}
+
+/**
+ * A region's signed power agreements: how many, and their megawatts where a
+ * capacity is disclosed. Same care as the Deals page (server/deals.ts): an
+ * aggregate row is not an agreement, and a row nested inside another (a plant
+ * inside its framework) is not counted twice.
+ */
+export function regionDeals(rows: DealLike[] | undefined, id: GridRegionId): { count: number; mw: number; undisclosed: number } {
+  const signed = (rows ?? []).filter((r) => r.firmness === "signed" && !r.aggregate && dealRegion(r.iso) === id);
+  const nested = new Set(signed.flatMap((r) => r.includes ?? []));
+  const unique = signed.filter((r) => !nested.has(r.id));
+  let mw = 0;
+  let undisclosed = 0;
+  for (const r of unique) {
+    if (typeof r.capacityMW === "number" && Number.isFinite(r.capacityMW) && r.capacityMW > 0) mw += r.capacityMW;
+    else undisclosed += 1;
+  }
+  return { count: unique.length, mw, undisclosed };
 }

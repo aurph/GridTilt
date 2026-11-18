@@ -16,6 +16,8 @@ import {
   pointInGeometry,
   regionAt,
   regionBounds,
+  regionDeals,
+  regionForState,
   regionIdForSlug,
   regionNercAreas,
   regionRiskLevel,
@@ -232,5 +234,33 @@ describe("what is in a region", () => {
     assert.deepEqual(stats.ercot.clusters, { count: 2, plannedMw: 1000 });
     assert.deepEqual(stats.west.plants, { count: 3, mw: 5009.6, byFuel: { NUC: 1, NG: 2 } });
     assert.deepEqual(stats.pjm.plants, { count: 0, mw: 0, byFuel: {} });
+  });
+});
+
+describe("states and agreements by region", () => {
+  it("files a state under the operator that runs most of it", () => {
+    const want: Record<string, string | null> = {
+      MD: "pjm", VA: "pjm", TX: "ercot", CA: "caiso", NY: "nyiso", MA: "isone", ME: "isone",
+      GA: "southeast", FL: "southeast", AZ: "west", WA: "west", MN: "miso", OK: "spp", AK: null, HI: null, ZZ: null,
+    };
+    for (const [code, region] of Object.entries(want)) assert.equal(regionForState(code), region, code);
+  });
+
+  it("counts a region's signed agreements once each, leaving out aggregates and rows nested in another", () => {
+    const row = (v: Record<string, unknown>) => ({ id: "x", capacityMW: 100, firmness: "signed", iso: "PJM", aggregate: false, includes: [] as string[], ...v });
+    const rows = [
+      row({ id: "a", capacityMW: 835 }),
+      row({ id: "b", capacityMW: null }),
+      row({ id: "framework", capacityMW: 2000, includes: ["inside"] }),
+      row({ id: "inside", capacityMW: 500 }),
+      row({ id: "agg", capacityMW: 9000, aggregate: true }),
+      row({ id: "prelim", capacityMW: 300, firmness: "preliminary" }),
+      row({ id: "texas", capacityMW: 1200, iso: "ERCOT" }),
+      row({ id: "multi", capacityMW: 700, iso: "Multi" }),
+    ];
+    assert.deepEqual(regionDeals(rows, "pjm"), { count: 3, mw: 2835, undisclosed: 1 });
+    assert.deepEqual(regionDeals(rows, "ercot"), { count: 1, mw: 1200, undisclosed: 0 });
+    assert.deepEqual(regionDeals(rows, "west"), { count: 0, mw: 0, undisclosed: 0 });
+    assert.deepEqual(regionDeals(undefined, "pjm"), { count: 0, mw: 0, undisclosed: 0 });
   });
 });
