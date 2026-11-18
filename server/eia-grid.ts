@@ -4,11 +4,13 @@ import { fetchWithTimeout, withDeadline } from "./fetch-timeout";
 // Two calls to EIA's Hourly Electric Grid Monitor (API v2), cached together:
 //
 // 1. electricity/rto/region-data, type D (demand), for the lower 48 and
-//    for every grid operator the site names. PJM, MISO, ERCOT and SPP are
-//    balancing authorities in EIA's data, so they come back exactly. WECC,
-//    SERC and NPCC are NERC regions, which EIA does not report as one
-//    respondent; they are summed from EIA's regional aggregates and labelled
-//    as such on every surface that shows them.
+//    for every grid region the site names. The seven market operators (PJM,
+//    MISO, ERCOT, SPP, CAISO, NYISO, ISO-NE) are balancing authorities in
+//    EIA's data, so they come back exactly. The Southeast and the West
+//    outside CAISO have no single operator; they are summed from EIA's
+//    regional aggregates and the utilities those leave out, and labelled as
+//    sums on every surface that shows them. WECC, SERC and NPCC (NERC
+//    regions) are kept for the older region pages, summed the same way.
 // 2. electricity/rto/fuel-type-data for the lower 48: what was generating
 //    in the latest reported hour, by fuel.
 //
@@ -38,6 +40,21 @@ export const OPERATOR_RESPONDENTS: Record<
   MISO: { label: "MISO", respondents: ["MISO"], composed: false, note: "EIA balancing authority MISO." },
   ERCOT: { label: "ERCOT", respondents: ["ERCO"], composed: false, note: "EIA balancing authority ERCO." },
   SPP: { label: "SPP", respondents: ["SWPP"], composed: false, note: "EIA balancing authority SWPP." },
+  CAISO: { label: "CAISO", respondents: ["CISO"], composed: false, note: "EIA balancing authority CISO." },
+  NYISO: { label: "NYISO", respondents: ["NYIS"], composed: false, note: "EIA balancing authority NYIS." },
+  "ISO-NE": { label: "ISO-NE", respondents: ["ISNE"], composed: false, note: "EIA balancing authority ISNE." },
+  SOUTHEAST: {
+    label: "Southeast",
+    respondents: ["SE", "CAR", "FLA", "TEN", "LGEE", "AECI"],
+    composed: true,
+    note: "Sum of EIA regions Southeast, Carolinas, Florida and Tennessee, plus LG&E and KU and Associated Electric Cooperative.",
+  },
+  WEST: {
+    label: "West",
+    respondents: ["NW", "SW", "BANC", "LDWP", "IID", "TIDC"],
+    composed: true,
+    note: "Sum of EIA regions Northwest and Southwest, plus California's utilities outside CAISO (LADWP, BANC, IID, TID).",
+  },
   NPCC: {
     label: "NPCC",
     respondents: ["NE", "NY"],
@@ -249,8 +266,12 @@ function fuelsByPeriod(rows: EiaRow[]): Map<string, Map<string, number>> {
  * fraction of them, and shares computed from it would be wrong. An hour counts
  * only with at least `minFuels` fuels and 80% of the most this respondent reports.
  */
-function isComplete(fuels: Map<string, number> | undefined, most: number, minFuels: number): boolean {
-  return Boolean(fuels) && fuels!.size >= Math.max(minFuels, Math.floor(most * 0.8));
+function isComplete(fuels: Map<string, number> | undefined, most: number, minFuels: number, memberOfSum = false): boolean {
+  const needed = Math.max(minFuels, Math.floor(most * 0.8));
+  // One member of a summed region may be a small utility that never reports
+  // as many as `minFuels` fuels (gas and hydro only). It is complete when all
+  // of its own are in. A respondent standing alone keeps the floor.
+  return Boolean(fuels) && fuels!.size >= (memberOfSum ? Math.min(most, needed) : needed);
 }
 
 function buildMix(period: string, fuels: Map<string, number>): GenerationMix | null {
@@ -299,7 +320,7 @@ export function operatorMixes(rows: EiaRow[], minFuels = 3): Record<string, Gene
     if (members.some((m) => m.size === 0)) continue;
     const most = members.map((m) => Math.max(...Array.from(m.values()).map((f) => f.size)));
     for (const period of Array.from(members[0].keys()).sort().reverse()) {
-      if (!members.every((m, i) => isComplete(m.get(period), most[i], minFuels))) continue;
+      if (!members.every((m, i) => isComplete(m.get(period), most[i], minFuels, members.length > 1))) continue;
       const sum = new Map<string, number>();
       for (const m of members) {
         m.get(period)!.forEach((mw, fuel) => sum.set(fuel, (sum.get(fuel) ?? 0) + mw));

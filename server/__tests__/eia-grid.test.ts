@@ -1,6 +1,7 @@
 import { describe, it, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import {
+  OPERATOR_RESPONDENTS,
   composeOperators,
   getGridLive,
   gridLiveStamp,
@@ -124,6 +125,39 @@ describe("latestMix", () => {
   });
 });
 
+describe("the nine grid regions", () => {
+  it("each have a live key: operators as their own balancing authority, the rest as named sums", () => {
+    const spec = (k: string) => ({ respondents: OPERATOR_RESPONDENTS[k]?.respondents, composed: OPERATOR_RESPONDENTS[k]?.composed });
+    assert.deepEqual(spec("CAISO"), { respondents: ["CISO"], composed: false });
+    assert.deepEqual(spec("NYISO"), { respondents: ["NYIS"], composed: false });
+    assert.deepEqual(spec("ISO-NE"), { respondents: ["ISNE"], composed: false });
+    assert.deepEqual(spec("SOUTHEAST"), { respondents: ["SE", "CAR", "FLA", "TEN", "LGEE", "AECI"], composed: true });
+    assert.deepEqual(spec("WEST"), { respondents: ["NW", "SW", "BANC", "LDWP", "IID", "TIDC"], composed: true });
+    for (const k of ["PJM", "MISO", "ERCOT", "SPP"]) assert.equal(OPERATOR_RESPONDENTS[k].composed, false, k);
+    // The note is shown beside a summed figure, so it has to name what was summed.
+    assert.match(OPERATOR_RESPONDENTS.SOUTHEAST.note, /Southeast, Carolinas, Florida and Tennessee/);
+    assert.match(OPERATOR_RESPONDENTS.WEST.note, /Northwest and Southwest/);
+    assert.match(OPERATOR_RESPONDENTS.WEST.note, /outside CAISO/);
+  });
+
+  it("stay under EIA's 5,000-row cap for a week of hourly demand", () => {
+    const respondents = new Set(Object.values(OPERATOR_RESPONDENTS).flatMap((s) => s.respondents));
+    assert.ok(respondents.size * 168 <= 5000, `${respondents.size} respondents need ${respondents.size * 168} rows`);
+  });
+
+  it("sum the West only when every part of it reported the hour", () => {
+    const at = (mw: number) => [{ t: "2026-11-03T16", mw }];
+    const parts = { NW: at(40000), SW: at(20000), BANC: at(2000), LDWP: at(3000), IID: at(500), TIDC: at(300), CISO: at(25000) };
+    const ops = composeOperators(parts);
+    assert.equal(ops.WEST.latestMw, 65800);
+    assert.equal(ops.WEST.composed, true);
+    assert.equal(ops.CAISO.latestMw, 25000);
+    assert.equal(ops.CAISO.composed, false);
+    const { TIDC: _missing, ...partial } = parts;
+    assert.equal(composeOperators(partial).WEST, undefined, "a missing utility never reads as lower demand");
+  });
+});
+
 describe("operatorMixes", () => {
   const hour = (period: string, respondent: string, fuels: Record<string, number>) =>
     Object.entries(fuels).map(([fueltype, value]) => ({ period, respondent, fueltype, value }));
@@ -138,6 +172,22 @@ describe("operatorMixes", () => {
     assert.equal(mixes.NPCC.periodUtc, "2026-11-03T03");
     assert.equal(mixes.NPCC.totalMw, 800);
     assert.deepEqual(mixes.NPCC.fuels[0], { code: "NG", label: "Natural gas", mw: 400, sharePct: 50 });
+  });
+
+  it("counts a small utility that only ever reports two fuels as complete when both are in", () => {
+    // Without this the West's mix could never be built: one member (a small
+    // irrigation district) reports fewer fuels than the three-fuel floor.
+    const west = (period: string, tidc: Record<string, number>) => [
+      ...hour(period, "NW", { WAT: 500, NG: 200, WND: 100 }),
+      ...hour(period, "SW", { NG: 300, SUN: 200, NUC: 100 }),
+      ...hour(period, "BANC", { NG: 30, WAT: 20, SUN: 10 }),
+      ...hour(period, "LDWP", { NG: 40, SUN: 30, WAT: 10 }),
+      ...hour(period, "IID", { NG: 5, SUN: 5, GEO: 5 }),
+      ...hour(period, "TIDC", tidc),
+    ];
+    const mixes = operatorMixes([...west("2026-11-03T05", { NG: 4 }), ...west("2026-11-03T04", { NG: 4, WAT: 6 })]);
+    assert.equal(mixes.WEST.periodUtc, "2026-11-03T04", "the newer hour is missing one of that utility's two fuels");
+    assert.equal(mixes.WEST.totalMw, 1565);
   });
 
   it("leaves negative charging out of generation and omits an operator with no rows", () => {
@@ -207,6 +257,10 @@ describe("getGridLive", () => {
     assert.deepEqual(demandReq.searchParams.getAll("facets[type][]"), ["D"]);
     assert.ok(demandReq.searchParams.getAll("facets[respondent][]").includes("US48"));
     assert.ok(demandReq.searchParams.getAll("facets[respondent][]").includes("ERCO"));
+    const asked = demandReq.searchParams.getAll("facets[respondent][]");
+    for (const r of ["CISO", "NYIS", "ISNE", "BANC", "LDWP", "IID", "TIDC", "LGEE", "AECI"]) assert.ok(asked.includes(r), `${r} is requested`);
+    assert.equal(new Set(asked).size, asked.length, "each respondent is asked for once");
+    assert.equal(demandReq.searchParams.get("length"), String(asked.length * 168));
 
     t += 5 * 60 * 1000;
     await getGridLive(opts);
