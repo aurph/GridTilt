@@ -86,6 +86,17 @@ describe("renderWeeklyEmail", () => {
     assert.ok(bare.includes("Tracked clusters now total 118 GW"));
   });
 
+  it("its one button opens the map, and neither part links the retired States index", () => {
+    assert.ok(html.includes('<a href="https://gridtilt.com/grid"'), "the button goes to the map");
+    assert.ok(html.includes(">Open the map</a>"));
+    const text = renderWeeklyText(INPUT);
+    assert.ok(text.includes("The map: https://gridtilt.com/grid\n"));
+    for (const part of [html, text]) {
+      assert.ok(!part.includes("/states"), "no link to the retired index");
+      assert.ok(!/state pages/i.test(part));
+    }
+  });
+
   it("is a complete standalone html document with no external resources", () => {
     assert.ok(html.startsWith("<!DOCTYPE html>"));
     assert.ok(!/src=/.test(html));
