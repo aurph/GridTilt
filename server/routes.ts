@@ -49,6 +49,9 @@ import { buildTimeline, earningsDateStatus, type EarningsDate } from "./timeline
 import { readThrough } from "./swr";
 import { durableDocs, notifyDocWritten, setActiveDurableDocs } from "./durable-docs";
 import { publicDataStatus } from "./data-status";
+import { loadDcSites, sitesPayload } from "./dc-sites";
+import { loadPowerPlants, plantsPayload } from "./power-plants";
+import { acceptsGzip, jsonGzipCache } from "./json-gzip";
 import { buildSupplyChainPayload, type StagesFile } from "./supply-chain";
 import { getUraniumCorrelation } from "./uranium-correlation";
 import { footerBlockers, renderWeeklyEmail, renderWeeklyText, weeklyDateLabel, type NewsletterFooter } from "./weekly-digest";
@@ -2840,6 +2843,45 @@ export async function registerRoutes(
       /* no links is fine; the facilities still render */
     }
     res.json(loadDatacenters().map((d) => (links.has(d.id) ? { ...d, clusterId: links.get(d.id) } : d)));
+  });
+
+  // ─── Map layers: mapped data center sites and power plants ────────────────
+  // Public, read from server/data. Sites are location-only dots from PNNL's
+  // IM3 atlas (OpenStreetMap, ODbL); the ones that are a tracked campus right
+  // now are left out, because datacenters.json changes at runtime
+  // (server/dc-sites.ts). Plants are EIA-860M (server/power-plants.ts). The
+  // files change only with a commit, so an hour of caching is safe. The host
+  // does not compress API responses, so these two send gzip themselves, built
+  // once per content key (server/json-gzip.ts).
+  const mapLayerJson = jsonGzipCache();
+  function sendMapLayer(req: Request, res: Response, name: string, key: string, build: () => unknown): void {
+    const body = mapLayerJson(name, key, build);
+    res.set("Cache-Control", "public, max-age=3600").set("Vary", "Accept-Encoding").type("application/json");
+    if (acceptsGzip(req.headers["accept-encoding"])) res.set("Content-Encoding", "gzip").send(body.gz);
+    else res.send(body.json);
+  }
+
+  app.get("/api/map/sites", (req, res) => {
+    try {
+      const file = loadDcSites();
+      const tracked = loadDatacenters();
+      // The payload changes when the atlas file or the tracked list does.
+      const key = `${file.retrieved}:${file.sites.length}:${tracked.map((t) => `${t.id},${t.lat},${t.lng},${t.company},${t.status}`).join(";")}`;
+      sendMapLayer(req, res, "sites", key, () => sitesPayload(file, tracked));
+    } catch (err) {
+      console.error("Map sites error:", err);
+      res.status(500).json({ error: "Failed to load mapped data center sites" });
+    }
+  });
+
+  app.get("/api/map/plants", (req, res) => {
+    try {
+      const file = loadPowerPlants();
+      sendMapLayer(req, res, "plants", `${file.dataMonth}:${file.retrieved}:${file.plants.length}`, () => plantsPayload(file));
+    } catch (err) {
+      console.error("Map plants error:", err);
+      res.status(500).json({ error: "Failed to load power plants" });
+    }
   });
 
   app.post("/api/admin/datacenters", (req, res) => {

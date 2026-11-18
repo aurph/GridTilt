@@ -212,6 +212,19 @@ export const CHECKS: Check[] = [
   }),
   jsonCheck("frontier models", "/api/frontier-models", (j) => (Array.isArray(j?.models) && j.models.length > 0 ? ok() : fail("no models"))),
   jsonCheck("Maryland state data", "/api/state-pages/maryland", (j) => (j?.code === "MD" ? ok() : fail("no MD payload"))),
+  jsonCheck("mapped data center sites", "/api/map/sites", (j) => {
+    const n = Array.isArray(j?.sites) ? j.sites.length : 0;
+    if (n < 1000) return fail(`${n} sites, expected over 1,000`);
+    if (!/OpenStreetMap contributors/.test(String(j?.attribution))) return fail("the OpenStreetMap credit is missing (ODbL)");
+    if (j.sites.some((s: any) => "mw" in s || "powerMW" in s || "status" in s)) return fail("a mapped site carries a size or status; sites are locations only");
+    return ok(`${n} sites, atlas ${j?.source?.version ?? "version unknown"}`);
+  }),
+  jsonCheck("power plants", "/api/map/plants", (j) => {
+    const n = Array.isArray(j?.plants) ? j.plants.length : 0;
+    if (n < 800 || n > 1500) return fail(`${n} plants, expected 800 to 1,500`);
+    if (!/^\d{4}-\d{2}$/.test(String(j?.dataMonth))) return fail("no data month");
+    return ok(`${n} plants, EIA-860M ${j.dataMonth}`);
+  }),
   keyedFeed("retail electricity rates (EIA)", "/api/physical/retail-rates"),
   keyedFeed("hourly demand (EIA)", "/api/physical/load-hourly"),
   keyedFeed("live grid by operator (EIA)", "/api/physical/grid-live"),

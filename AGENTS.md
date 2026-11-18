@@ -178,6 +178,27 @@ Derived from the code; starred rules confirmed by Jack 2026-07-02.
 | LBNL Queued Up page | none | new-edition flag only | 24 h throttle | manual XLSX ingest regardless |
 | Resend | RESEND_API_KEY (+ RESEND_WEBHOOK_SECRET) | newsletter send only, one email per call with an idempotency key; webhooks for delivery, bounces and complaints. No contact copies at the provider | on demand | sending answers 409 with the missing configuration; signups are still stored |
 | X API (OAuth 1.0a) | 4 creds + X_POSTING_ENABLED=true | weekday 8:30 ET post | external cron | dry-run, logged to social-log.json |
+| PNNL IM3 Open Source Data Center Atlas (OpenStreetMap, ODbL 1.0) | none | mapped data center sites for the map: location, name and operator only (/api/map/sites) | committed file, refreshed by script | served as committed; a load error answers 500 |
+| EIA-860M (public domain) | none | power plants of 250 MW and up plus all nuclear (/api/map/plants) | committed file, refreshed by script | served as committed; a load error answers 500 |
+
+Map layer data (2026-11): two files written by scripts from one named source each, never by hand.
+- datacenter-sites.json: `npx tsx scripts/ingest-dc-sites.ts` reads the IM3 atlas version pinned in
+  the script (PNNL's public app repository at a pinned commit; the dataset's own record cannot be
+  fetched by a script) and folds its features into one site per place (server/dc-sites.ts). A site
+  is a location, with a name and operator where OpenStreetMap has them. It has NO megawatts, status
+  or date and never enters a MW or TWh total; validateSitesFile rejects any other field. The file
+  is derived from OpenStreetMap, so it stays under the ODbL: keep datacenter-sites.LICENSE.md
+  beside it and show the file's `attribution` ("© OpenStreetMap contributors") wherever the dots
+  are drawn. Sites that are a tracked campus are left out when the file is served, against
+  datacenters.json as it is at that moment (it changes at runtime), so a tracked campus is never
+  drawn twice; tracked coordinates are city-level, so the rule is proximity plus operator
+  (dropTrackedCampusSites).
+- power-plants.json: `npx tsx scripts/ingest-power-plants.ts` finds the current EIA-860M release
+  on EIA's page, reads its "Operating" sheet with server/xlsx-lite.ts (a small reader, because the
+  spreadsheet libraries carry advisories and CI fails on a new high one) and rolls generators up to
+  plants (server/power-plants.ts). Fuel codes are the live grid card's. A technology name the
+  mapping does not know is filed as Other and printed by the script; add it to TECHNOLOGY_FUEL.
+- Both are in the freshness registry (quarterly) and on /data-status, and smoke checks both.
 
 Schedulers (no node-cron anywhere):
 - In-process: datacenter ingester setInterval every 6 h (off in tests; DISABLE_DATACENTER_INGESTER=1).
@@ -233,6 +254,8 @@ server/data custody (the fragility map):
   subscribers.json is the development store only (ignored by version control; personal data);
   production subscribers live in Postgres, and a legacy list is imported only with
   scripts/subscribers.ts.
+- Script-written from a named source, never hand-edit: datacenter-sites.json, power-plants.json
+  (see "Map layer data" above). Refresh by rerunning the script and reviewing its printed report.
 - Shared custody, be careful: interconnection-queue.json (curated projects; news scanner and
   admin routes write into it). gpu-rental-prices.json is refreshed by hand (see Schedulers);
   keep its schema stable because the page, the index math and the tests read it.

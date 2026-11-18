@@ -206,6 +206,28 @@ export const DATASET_REGISTRY: DatasetSpec[] = [
     writes: "none",
   },
   {
+    id: "datacenter-sites",
+    label: "Mapped data center sites (PNNL atlas, OpenStreetMap)",
+    file: "datacenter-sites.json",
+    read: { kind: "envelope", fields: ["retrieved"] },
+    // PNNL publishes a new atlas version a few times a year; refreshed
+    // quarterly, with one missed quarter tolerated.
+    expectedMaxAgeHours: 185 * DAY,
+    mechanism: "npx tsx scripts/ingest-dc-sites.ts against the current IM3 atlas version, landed as a PR",
+    writes: "repo",
+  },
+  {
+    id: "power-plants",
+    label: "Power plants (EIA-860M)",
+    file: "power-plants.json",
+    read: { kind: "envelope", fields: ["retrieved"] },
+    // EIA releases a month near the 24th; the map is refreshed quarterly,
+    // with one missed quarter tolerated.
+    expectedMaxAgeHours: 185 * DAY,
+    mechanism: "npx tsx scripts/ingest-power-plants.ts after an EIA-860M release, landed as a PR",
+    writes: "repo",
+  },
+  {
     // datacenters.json is a bare array whose consumers expect that shape, so
     // the ingester stamps a sidecar envelope instead of the data file itself.
     id: "datacenters",
