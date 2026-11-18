@@ -72,6 +72,27 @@ test("API checks pass on this build: deals, clusters, GPU switch, robots, sitema
   }
 });
 
+test("the retired States index must answer one 301 to /grid, and a page there is a failure", async () => {
+  const check = CHECKS.filter((c) => c.name === "retired /states forwards to /grid");
+  assert.equal(check.length, 1, "the smoke list carries the redirect check");
+  assert.equal(CHECKS.some((c) => c.name === "page /states"), false, "/states is no longer checked as a page");
+  const { base, close } = await start();
+  try {
+    const [live] = await runSmoke({ base, today: "2026-11-18" }, check);
+    assert.equal(live.level, "pass", live.detail);
+  } finally {
+    await close();
+  }
+  const answer = (status: number, location?: string) =>
+    (async () => new Response("<div id=\"root\"></div>", { status, headers: { "content-type": "text/html", ...(location ? { location } : {}) } })) as unknown as typeof fetch;
+  const [page] = await runSmoke({ base: "http://x", today: "2026-11-18", fetchFn: answer(200) }, check);
+  assert.equal(page.level, "fail", "a 200 at /states means the old page is back");
+  const [elsewhere] = await runSmoke({ base: "http://x", today: "2026-11-18", fetchFn: answer(301, "/markets") }, check);
+  assert.equal(elsewhere.level, "fail", "a redirect to the wrong place fails");
+  const [temporary] = await runSmoke({ base: "http://x", today: "2026-11-18", fetchFn: answer(302, "/grid") }, check);
+  assert.equal(temporary.level, "fail", "a temporary redirect fails: crawlers keep the old address");
+});
+
 test("the GPU check fails when the sweep is on without permission, passes when permitted", async () => {
   process.env.GPU_LIVE_SWEEP_ENABLED = "true";
   const { base, close } = await start();

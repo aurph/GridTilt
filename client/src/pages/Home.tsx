@@ -7,7 +7,8 @@ import { DemandChart } from "@/components/home/DemandChart";
 // two footers: two brand lockups, two copyright lines, two source lists. The
 // GitHub and contact links that only HomeFooter carried moved into SiteFooter.
 //
-// The first screen leads with the state pages and the map. Below it sit
+// The first screen leads with the map (the States section was retired
+// 2026-11-18). Below it sit
 // three lists read from the records themselves (HomeRecord), then the
 // electricity use chart.
 export default function Home() {

@@ -2,7 +2,7 @@ import { Link } from "wouter";
 import { SECTIONS, type Section } from "@/lib/sections";
 
 /**
- * The four section links of the top bar. Its own file (no image import) so
+ * The three section links of the top bar. Its own file (no image import) so
  * the render test can lock the labels, order and addresses.
  */
 export function SectionLinks({ active }: { active: Section["id"] | null }) {

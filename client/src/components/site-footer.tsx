@@ -6,7 +6,7 @@ import { SECTIONS } from "@/lib/sections";
  * disclaimer. Renders at the bottom of every page's scroll.
  */
 
-// The four sections come from the site map (lib/sections.ts), so the footer
+// The three sections come from the site map (lib/sections.ts), so the footer
 // cannot drift from the top bar.
 const SECTION_LINKS: [string, string][] = [
   ...SECTIONS.map((s): [string, string] => [s.label, s.href]),

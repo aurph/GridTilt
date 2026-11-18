@@ -57,6 +57,9 @@ test("aliases, API 404s, the ticker list and the sitemap", async () => {
     r = await fetch(`${url}/overview`, { redirect: "manual" });
     assert.equal(r.status, 301);
     assert.equal(r.headers.get("location"), "/markets");
+    r = await fetch(`${url}/states?utm_source=brief`, { redirect: "manual" });
+    assert.equal(r.status, 301, "the retired States index forwards");
+    assert.equal(r.headers.get("location"), "/grid?utm_source=brief");
     r = await fetch(`${url}/compute-frontier/methodology`, { redirect: "manual" });
     assert.notEqual(r.status, 301, "cluster pages keep their addresses");
     assert.equal(r.headers.get("location"), null);
@@ -91,6 +94,8 @@ test("aliases, API 404s, the ticker list and the sitemap", async () => {
     const xml = await r.text();
     assert.ok(xml.includes("<loc>https://gridtilt.com/sector/natural-gas</loc>"));
     assert.ok(!xml.includes("/stock/NLR<"));
+    assert.ok(!xml.includes("<loc>https://gridtilt.com/states</loc>"), "the retired index is not listed");
+    assert.ok(xml.includes("<loc>https://gridtilt.com/state/maryland</loc>"), "the state pages stay listed");
   } finally {
     await close();
   }

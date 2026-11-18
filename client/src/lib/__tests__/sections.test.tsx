@@ -1,5 +1,5 @@
 /**
- * The site map: four sections, their chips, and where every old address
+ * The site map: three sections, their chips, and where every old address
  * lands. Old routes are permalinks someone may have bookmarked or linked,
  * and both the chip reader and the view reader fall back silently on an
  * unknown id, so a renamed chip would keep answering 200 on the wrong view.
@@ -30,12 +30,11 @@ import {
 
 const read = (...p: string[]) => readFileSync(join(process.cwd(), ...p), "utf-8");
 
-describe("the four sections", () => {
-  it("are States, Grid, Compute, Markets, in that order, at these addresses", () => {
+describe("the three sections", () => {
+  it("are Grid, Compute, Markets, in that order, at these addresses", () => {
     assert.deepEqual(
       SECTIONS.map((s) => [s.label, s.href]),
       [
-        ["States", "/states"],
         ["Grid", "/grid"],
         ["Compute", "/compute"],
         ["Markets", "/markets"],
@@ -47,8 +46,6 @@ describe("the four sections", () => {
     assert.deepEqual(
       Object.fromEntries(SECTIONS.map((s) => [s.id, s.chips.map((c) => `${c.id}:${c.label}`)])),
       {
-        // The States chips are the published state pages, read from the registry.
-        states: [],
         grid: ["map:Map", "queue:Queue", "deals:Deals", "live:Live grid", "timeline:Timeline"],
         compute: ["clusters:Clusters", "supply-chain:Supply Chain", "gpu-prices:GPU Prices"],
         markets: ["overview:Overview", "equities:Equities", "analyze:Analyze", "catalysts:Catalysts"],
@@ -73,7 +70,6 @@ describe("the four sections", () => {
     );
     const links = Array.from(html.matchAll(/<a[^>]*href="([^"]+)"[^>]*>([^<]+)/g)).map((m) => [m[2], m[1]]);
     assert.deepEqual(links, [
-      ["States", "/states"],
       ["Grid", "/grid"],
       ["Compute", "/compute"],
       ["Markets", "/markets"],
@@ -87,12 +83,13 @@ describe("the four sections", () => {
     assert.equal(metaAddress("/grid", "?tab=timeline&range=90d&type=deal"), "/grid?tab=timeline");
     assert.equal(metaAddress("/markets", "tab=analyze&sub=scenario"), "/markets?tab=analyze");
     assert.equal(metaAddress("/grid", "?tab=nope"), "/grid");
-    assert.equal(metaAddress("/states", "?x=1"), "/states");
     assert.equal(metaAddress("/state/maryland", ""), "/state/maryland");
   });
 
   it("light up for the pages reached from them", () => {
-    assert.equal(sectionForPath("/state/maryland"), "states");
+    // State pages left the top bar with the States section (2026-11); they are reached from Grid.
+    assert.equal(sectionForPath("/state/maryland"), "grid");
+    assert.equal(sectionForPath("/states"), null, "the old index is a redirect, not a page");
     assert.equal(sectionForPath("/compute-frontier/some-cluster"), "compute");
     assert.equal(sectionForPath("/stock/CEG"), "markets");
     assert.equal(sectionForPath("/region/pjm"), "grid");
@@ -128,6 +125,8 @@ describe("old addresses", () => {
     "/neocloud-intel": "/compute?tab=gpu-prices",
     "/gpu-economics": "/compute?tab=gpu-prices&sub=economics",
     "/brief": "/blog",
+    // The States index was retired 2026-11-18; the state pages keep their own addresses.
+    "/states": "/grid",
   };
 
   it("each land on the right section and chip", () => {
@@ -147,6 +146,7 @@ describe("old addresses", () => {
     assert.equal(legacyRedirect("/trade", "?utm_source=newsletter"), "/markets?tab=analyze&sub=scenario&utm_source=newsletter");
     assert.equal(legacyRedirect("/power-deals", "?tab=queue"), "/grid?tab=deals", "a fixed alias keeps its own target");
     assert.equal(legacyRedirect("/brief", "?utm_source=x"), "/blog?utm_source=x");
+    assert.equal(legacyRedirect("/states", "?utm_source=brief"), "/grid?utm_source=brief");
   });
 
   it("are not invented for addresses that never were pages", () => {

@@ -1,9 +1,8 @@
 import { Link } from "wouter";
 import { Zap } from "lucide-react";
-import { StatePagesRow } from "@/components/StatePagesRow";
 import { SECTIONS } from "@/lib/sections";
 
-// The four sections, from the site map the top bar reads (lib/sections.ts),
+// The three sections, from the site map the top bar reads (lib/sections.ts),
 // so a wrong address still lands somewhere useful.
 const LINKS = SECTIONS.map((s) => ({ label: s.label, href: s.href, desc: s.dek }));
 
@@ -37,7 +36,7 @@ export default function NotFound() {
         <p className="text-10 uppercase tracking-widest text-muted-foreground/50 font-mono mb-3">
           Jump to a section
         </p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5" data-testid="not-found-sections">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5" data-testid="not-found-sections">
           {LINKS.map((s) => (
             <Link
               key={s.href}
@@ -50,7 +49,6 @@ export default function NotFound() {
             </Link>
           ))}
         </div>
-        <StatePagesRow className="mt-8 text-left" testId="not-found-state-pages" />
       </div>
     </div>
   );

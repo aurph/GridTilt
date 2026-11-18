@@ -17,13 +17,13 @@ export interface PublishedStatePage {
   nextDate?: { date: string; through?: string; what: string } | null;
 }
 
-/** One row of the /states index. */
+/** A published page with its counts: the home page's "Next public dates" rows. */
 export interface StateIndexRow extends StatePageLink {
   decisions: number | null;
   nextDate: { date: string; through?: string; what: string } | null;
 }
 
-/** The /states rows: exactly the registry's published pages, alphabetical. */
+/** One row per published page, exactly the registry's, alphabetical. */
 export function stateIndexRows(
   pages: PublishedStatePage[] | undefined | null,
   states: Record<string, StateNameLike>,
@@ -46,12 +46,6 @@ export function longDay(day: string): string {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(day);
   if (!m) return day;
   return `${MONTHS[Number(m[2]) - 1]} ${Number(m[3])}, ${m[1]}`;
-}
-
-/** The oldest review date among the rows: the date the whole index can claim. */
-export function oldestReview(rows: { reviewed: string | null }[]): string | null {
-  const days = rows.map((r) => r.reviewed).filter((d): d is string => Boolean(d)).sort();
-  return days[0] ?? null;
 }
 
 export interface StateNameLike {

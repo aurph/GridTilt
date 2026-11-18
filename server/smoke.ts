@@ -39,6 +39,8 @@ interface Got {
   text: string;
   ms: number;
   json?: any;
+  /** The Location header of a redirect; redirects are never followed. */
+  location?: string | null;
 }
 
 const SLOW_MS = 3000;
@@ -68,7 +70,7 @@ async function get(o: SmokeOptions, path: string, headers: Record<string, string
         json = JSON.parse(text);
       } catch {}
     }
-    return { status: res.status, type, text, ms: Date.now() - t0, json };
+    return { status: res.status, type, text, ms: Date.now() - t0, json, location: res.headers.get("location") };
   } finally {
     clearTimeout(t);
   }
@@ -90,6 +92,18 @@ function page(path: string): Check {
       : !g.type.includes("text/html") ? fail(`content-type ${g.type}`)
       : !g.text.includes('id="root"') ? fail("no app root in the HTML")
       : /<meta name="robots"[^>]*noindex/.test(g.text) ? fail("page is marked noindex")
+      : ok(),
+  };
+}
+
+/** A retired address: one permanent redirect to where it lives now, never a page. */
+function movedCheck(name: string, path: string, to: string): Check {
+  return {
+    name,
+    path,
+    judge: (g) =>
+      g.status !== 301 ? fail(`HTTP ${g.status}, expected a 301 to ${to}`)
+      : g.location !== to ? fail(`redirects to ${g.location ?? "nowhere"}, expected ${to}`)
       : ok(),
   };
 }
@@ -126,11 +140,10 @@ function keyedFeed(name: string, path: string): Check {
 }
 
 export const CHECKS: Check[] = [
-  // The four sections and every chip (client/src/lib/sections.ts). Old
+  // The three sections and every chip (client/src/lib/sections.ts). Old
   // addresses are 301s, covered by server/__tests__/redirects.test.ts.
   ...[
     "/",
-    "/states",
     "/grid",
     "/grid?tab=queue",
     "/grid?tab=deals",
@@ -146,6 +159,8 @@ export const CHECKS: Check[] = [
     "/blog",
     "/data-status",
   ].map(page),
+  // The States index was retired 2026-11-18. A 200 here means an old build.
+  movedCheck("retired /states forwards to /grid", "/states", "/grid"),
   {
     name: "state page /state/maryland",
     path: "/state/maryland",

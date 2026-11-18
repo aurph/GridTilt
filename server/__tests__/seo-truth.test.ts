@@ -111,6 +111,7 @@ describe("sitemap", () => {
     }
     assert.ok(locs.includes("https://gridtilt.com/sector/natural-gas"));
     assert.ok(!locs.includes("https://gridtilt.com/stock/NLR"));
+    assert.ok(!locs.includes("https://gridtilt.com/states"), "the retired States index is a redirect and stays out of the sitemap");
   });
 
   it("dates only what has a known change date, never today's", () => {
@@ -153,7 +154,8 @@ describe("parity with the client", () => {
       ...Array.from(app.matchAll(/<Route path="([^":]+)" component=/g)).map((m) => m[1]),
       ...Array.from(app.matchAll(/<Route path="([^":]+)">\{\(\) => <SectionPage/g)).map((m) => m[1]),
     ];
-    assert.ok(pages.includes("/grid") && pages.includes("/states"), "the section routes are visible to this test");
+    assert.ok(pages.includes("/grid") && pages.includes("/markets"), "the section routes are visible to this test");
+    assert.ok(!pages.includes("/states"), "the States index is a redirect now, not a page");
     for (const p of pages) assert.notEqual(getPageMeta(p).status, 404, p);
   });
 
@@ -170,7 +172,8 @@ describe("parity with the client", () => {
         seen.set(meta.title, href);
       }
     }
-    assert.equal(getPageMeta("/states").canonical, "https://gridtilt.com/states");
+    // The retired States index describes the page it forwards to.
+    assert.equal(getPageMeta("/states").canonical, "https://gridtilt.com/grid");
     // An old address describes the page it forwards to.
     assert.equal(getPageMeta("/queue").canonical, "https://gridtilt.com/grid?tab=queue");
     assert.equal(getPageMeta("/analyze", "?tab=scenario").canonical, "https://gridtilt.com/markets?tab=analyze");

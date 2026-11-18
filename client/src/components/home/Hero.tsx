@@ -2,17 +2,15 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { motion, type Variants } from "framer-motion";
-import { Zap, Handshake, Landmark, MapPin } from "lucide-react";
+import { Zap, Handshake, Hourglass, MapPin } from "lucide-react";
 import { Wordmark } from "./Wordmark";
 import { GridPulse } from "./grid-pulse";
-import { StatePagesRow } from "@/components/StatePagesRow";
 import { SourceFooter } from "@/components/SourceFooter";
 import { VideoTrigger } from "@/components/video-trigger";
 import { LAUNCH_FILM } from "@/data/explainers";
-import type { PublishedStatePage } from "@/lib/state-pages";
 
-// The wordmark leads, then one statement of purpose and the state-first
-// journey. Each stat is read from the API that serves it; nothing is
+// The wordmark leads, then one statement of purpose and the way in: the map.
+// Each stat is read from the API that serves it; nothing is
 // hardcoded. Refresh dates are fetched but hidden until the refresh pipeline
 // runs (SHOW_REFRESH_DATES below), and a stat with no date would say so rather
 // than borrow today's.
@@ -29,6 +27,15 @@ interface DealMetrics {
   /** Reviewed, signed agreements only; see server/deals.ts. */
   signed: { count: number; mw: number };
   lastRefreshed: string | null;
+}
+/** The national queue totals the queue file carries (LBNL Queued Up), with their own date. */
+interface QueueTotals {
+  headline?: {
+    queueOverallGW?: number;
+    queueOverallProjects?: number;
+    queueOverallAsOf?: string;
+  };
+  lastRefreshed?: string | null;
 }
 /** rAF count-up toward a target once it arrives; honest "--" before data. */
 function useCountUp(target: number | null, decimals = 1, ms = 1100): string | null {
@@ -96,17 +103,16 @@ interface HeroStat {
 export function Hero() {
   const { data: clusters } = useQuery<ClusterMetrics>({ queryKey: ["/api/clusters/metrics"] });
   const { data: deals } = useQuery<DealMetrics>({ queryKey: ["/api/deals/metrics"] });
-  const { data: statePages } = useQuery<PublishedStatePage[]>({ queryKey: ["/api/state-pages"] });
+  // The same address the Queue chip reads, so opening it from here is instant.
+  const { data: queue } = useQuery<QueueTotals>({ queryKey: ["/api/queue"] });
 
   const opGw = useCountUp(clusters ? clusters.operationalMW / 1000 : null);
   const dealGw = useCountUp(deals?.signed ? deals.signed.mw / 1000 : null);
-  // Summed from the registry rows the server serves; null until every row
-  // carries its count, so a partial answer never prints a low number.
-  const decisionTotal =
-    statePages && statePages.length > 0 && statePages.every((p) => typeof p.decisions === "number")
-      ? statePages.reduce((n, p) => n + (p.decisions as number), 0)
-      : null;
-  const decisions = useCountUp(decisionTotal, 0);
+  const queueTotals = queue?.headline;
+  const queueGw = useCountUp(
+    typeof queueTotals?.queueOverallGW === "number" && queueTotals.queueOverallGW > 0 ? queueTotals.queueOverallGW : null,
+    0,
+  );
   const clusterCount = useCountUp(clusters ? clusters.clusterCount : null, 0);
 
   const stats: HeroStat[] = [
@@ -129,12 +135,18 @@ export function Hero() {
       href: "/grid?tab=deals",
     },
     {
-      icon: Landmark,
-      label: "Dated state decisions",
-      value: decisions ?? "--",
-      sub: statePages?.length ? `across ${statePages.length} state pages` : undefined,
-      asOf: shortDate(statePages?.map((p) => p.reviewed ?? "").sort()[0] || null),
-      href: "/states",
+      // The whole US queue as Lawrence Berkeley National Laboratory counts it
+      // (generation and storage waiting for a grid connection), not a GridTilt
+      // tally. Its own date is printed in the source line under the cards.
+      icon: Hourglass,
+      label: "Waiting in the interconnection queue",
+      value: queueGw ? `${Number(queueGw).toLocaleString("en-US")} GW` : "--",
+      sub:
+        typeof queueTotals?.queueOverallProjects === "number"
+          ? `${queueTotals.queueOverallProjects.toLocaleString("en-US")} projects nationwide`
+          : undefined,
+      asOf: shortDate(queue?.lastRefreshed),
+      href: "/grid?tab=queue",
     },
     {
       icon: MapPin,
@@ -178,18 +190,18 @@ export function Hero() {
           </motion.p>
           <motion.div variants={fadeUp} className="relative mt-8 flex flex-wrap items-center justify-center gap-4">
             <Link
-              href="/states"
-              className="rounded bg-brand px-6 py-3 text-[14px] font-semibold text-black no-underline transition-opacity hover:opacity-90"
-              data-testid="hero-cta-states"
-            >
-              Find your state
-            </Link>
-            <Link
               href="/grid"
-              className="rounded border border-border bg-card/60 px-6 py-3 text-[14px] font-semibold text-foreground no-underline transition-colors hover:border-brand/50"
+              className="rounded bg-brand px-6 py-3 text-[14px] font-semibold text-black no-underline transition-opacity hover:opacity-90"
               data-testid="hero-cta-map"
             >
               Explore the map
+            </Link>
+            <Link
+              href="/grid?tab=live"
+              className="rounded border border-border bg-card/60 px-6 py-3 text-[14px] font-semibold text-foreground no-underline transition-colors hover:border-brand/50"
+              data-testid="hero-cta-live"
+            >
+              See the live grid
             </Link>
             {/* In the gap above the stats and out of the flow, so the buttons and
                 the stats stay exactly where they were. */}
@@ -201,18 +213,12 @@ export function Hero() {
             />
           </motion.div>
 
-          {/* The entry to the state pages. Read from the registry, so the row
-              lists exactly the states that have a page today. */}
-          <motion.div variants={fadeUp} className="mt-14 w-full text-left" data-testid="hero-state-pages">
-            <StatePagesRow lead="What is being decided and built on your state's grid, with the documents and the next public dates." />
-          </motion.div>
-
           {/* The ledger. Each figure links to the module that shows its working
               and prints the date its own dataset was last refreshed, so a stale
               number is visible as stale instead of reading as today's. */}
           <motion.div
             variants={fadeUp}
-            className="mt-6 grid w-full grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4"
+            className="mt-14 grid w-full grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4"
             data-testid="hero-stats"
           >
             {stats.map(({ icon: Icon, label, value, sub, asOf, href }, i) => (
@@ -249,16 +255,19 @@ export function Hero() {
               </Link>
             ))}
           </motion.div>
-          {/* One source line for the four figures. Each is a count or sum of
-              GridTilt's own registry rows; the per-dataset dates live on Data
-              status until the per-tile dates are switched on (SHOW_REFRESH_DATES). */}
+          {/* One source line for the four figures. Three are counts or sums of
+              GridTilt's own registry rows; the queue total is Lawrence Berkeley
+              National Laboratory's, with the period it covers. The per-dataset
+              dates live on Data status until the per-tile dates are switched on
+              (SHOW_REFRESH_DATES). */}
           <motion.div variants={fadeUp} className="mt-3 w-full text-left">
             <SourceFooter
-              source="GridTilt registries: named clusters, power agreements, state pages"
+              source="GridTilt registries: named clusters, power agreements"
               href="/data-status"
               testid="hero-stats-source"
             >
-              {" "}· the date of each is on Data status
+              {" "}· the date of each is on Data status · queue total:{" "}
+              {queueTotals?.queueOverallAsOf ?? "LBNL Queued Up"}
             </SourceFooter>
           </motion.div>
         </motion.div>

@@ -11,14 +11,13 @@ around them. Tagline: "Equities, infrastructure, and power data for the AI power
 economy." Live at gridtilt.com. Built and directed by Jack Schwartz (aurph). Audience:
 the citizen-investor researching the AI power economy, not fund analysts or day traders.
 
-Site map (2026-11): four sections in the top bar, each holding several features as chips. The one
+Site map (2026-11): three sections in the top bar, each holding several features as chips. The one
 source is client/src/lib/sections.ts (SECTIONS, LEGACY_ROUTES); the top bar, phone menu, footer, 404,
 search palette, client redirects, server 301s (seo.ts ALIAS_REDIRECTS) and page metadata all read it.
 It is the one client module the server imports.
 
 | Section | Route | Chips (`?tab=`, default first) |
 |---|---|---|
-| States | /states | the published state pages, from the registry |
 | Grid | /grid | map, queue, deals, live, timeline |
 | Compute | /compute | clusters, supply-chain, gpu-prices |
 | Markets | /markets | overview, equities, analyze, catalysts |
@@ -30,6 +29,12 @@ aliases) forwards to its section and chip with the rest of the query string; /co
 chip (withSectionParams). Page metadata is filed by chip address (seo.ts pageKey), so each chip has
 its own title and canonical. Research and the Brief sit behind Get the Brief, the footer and the
 phone menu. The module table below is the pre-2026-11 map, kept for the old names.
+
+The States section was retired 2026-11-18 (owner's call: three states is not a section). /states is
+a 301 to /grid (a LEGACY_ROUTES row, so the client forwards it too) and is out of the sitemap. The
+published state pages keep /state/:slug, their prerender and their sitemap rows, and still feed the
+timeline, the brief and the OG cards; nothing in the navigation links them (search does). Smoke
+expects the 301 (`retired /states forwards to /grid`).
 
 Section header (client/src/pages/section-page.tsx SectionStatement): one left-aligned line on the
 chips' edge, the dek beside it from 640px up, chips right under it. Keep it short: the feature
@@ -77,16 +82,17 @@ marker layers never draw at once.
 
 Off-nav: "/" (marketing landing, bare layout, lazy Home.tsx), /subscribe, /admin/datacenters,
 /admin/social, /stock/:ticker, /sector/:slug, /region/:slug, /operator/:slug, /blog/:slug,
-/state/:slug (published states only, from server/data/state-pages.json: maryland; any other
-slug is a real 404). /state/:slug is the one indexable address for a state. My Grid was retired
+/state/:slug (published states only, from server/data/state-pages.json: maryland, virginia, texas;
+any other slug is a real 404). /state/:slug is the one indexable address for a state. My Grid was retired
 (2026-10); /my-grid 301s to /power-map. server/state-page.ts composes the page once for
 the JSON (/api/state-pages/:slug), the metadata and the facts written into the HTML.
 Every route except "/" gets the dashboard shell (AppSidebar + header + NewsTicker).
-The seven aliases (/gpu-economics, /power-deals, /brief, /trade, /portfolio, /queue, /my-grid)
+The aliases (/gpu-economics, /power-deals, /brief, /trade, /portfolio, /queue, /my-grid, /states)
 are client <Redirect>s and server 301s to the same final address (seo.ts ALIAS_REDIRECTS).
 /supply-chain is a page again (2026-10-15, Jack's call): the standalone graph in the top nav after
 Equities; Equities keeps its Flow tab (the same component, embedded).
-The G-chord list is maintained twice in App.tsx (display ~67-83, handler ~250-254); keep in sync.
+The G-chord list is maintained twice in App.tsx (SHORTCUTS for display, `routes` in the key
+handler); keep in sync. G+1 Grid, G+2 Compute, G+3 Markets, G+4 Research.
 
 ## 2. Stack
 

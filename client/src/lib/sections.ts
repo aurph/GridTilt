@@ -1,5 +1,5 @@
 /**
- * The site map: four sections, each holding several features as chips.
+ * The site map: three sections, each holding several features as chips.
  *
  * One source for the top bar, the phone menu, the footer, the 404, the search
  * palette and the old-route redirects. A feature's address is its section plus
@@ -7,8 +7,9 @@
  * parameter. A feature that has views of its own (Analyze, GPU Prices) keeps
  * them one level down in `?sub=`, so the two never collide.
  *
- * States is the one section whose chips are not listed here: they are the
- * published state pages, read from the registry at /api/state-pages.
+ * The States section was retired 2026-11-18: /states forwards to /grid, and
+ * the published state pages keep their own addresses (/state/:slug) outside
+ * the navigation.
  */
 
 export interface SectionChip {
@@ -17,7 +18,7 @@ export interface SectionChip {
 }
 
 export interface Section {
-  id: "states" | "grid" | "compute" | "markets";
+  id: "grid" | "compute" | "markets";
   label: string;
   href: string;
   /** The line above the section's content. Names the data, nothing else. */
@@ -32,14 +33,6 @@ export const CHIP_PARAM = "tab";
 export const SUB_PARAM = "sub";
 
 export const SECTIONS: Section[] = [
-  {
-    id: "states",
-    label: "States",
-    href: "/states",
-    statement: "What gets decided and built on each state's power grid.",
-    dek: "Dated decisions, the documents behind them, and the next public dates.",
-    chips: [],
-  },
   {
     id: "grid",
     label: "Grid",
@@ -121,8 +114,14 @@ export function metaAddress(pathname: string, search = ""): string {
  * Entity pages light up the section they are reached from.
  */
 export function sectionForPath(pathname: string): Section["id"] | null {
-  if (pathname === "/states" || pathname.startsWith("/state/")) return "states";
-  if (pathname === "/grid" || pathname.startsWith("/region/") || pathname.startsWith("/operator/")) return "grid";
+  if (
+    pathname === "/grid" ||
+    pathname.startsWith("/region/") ||
+    pathname.startsWith("/operator/") ||
+    pathname.startsWith("/state/")
+  ) {
+    return "grid";
+  }
   if (pathname === "/compute" || pathname.startsWith("/compute-frontier")) return "compute";
   if (pathname === "/markets" || pathname.startsWith("/stock/") || pathname.startsWith("/sector/")) return "markets";
   return null;
@@ -162,6 +161,8 @@ export const LEGACY_ROUTES: Record<string, LegacyRoute> = {
   "/neocloud-intel": { section: "compute", chip: "gpu-prices", tabToSub: ["prices", "economics", "frontier"] },
   "/gpu-economics": { section: "compute", chip: "gpu-prices", sub: "economics" },
   "/brief": { section: null, to: "/blog" },
+  // The States index (retired 2026-11-18). State pages keep /state/:slug.
+  "/states": { section: "grid", chip: "map" },
 };
 
 /**

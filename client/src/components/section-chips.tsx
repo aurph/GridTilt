@@ -5,8 +5,8 @@
  * a visitor can share and a crawler can follow. The active chip is filled
  * brand orange with dark text; the rest are outlined. Chips that do not fit
  * the row collapse into a "+N more" chip that opens a short list; the active
- * chip always stays on the row. A scope control (a state, a range) can sit at
- * the right end as a small dropdown pill.
+ * chip always stays on the row. A scope control can sit at the right end of
+ * the row (`right`).
  *
  * Keyboard: the row is a tablist with a roving tab stop; arrows, Home and End
  * move between the chips on the row. The overflow list closes on Escape and
@@ -190,57 +190,6 @@ export function SectionChips({
         )}
       </div>
       {right && <div className="flex shrink-0 items-center gap-2">{right}</div>}
-    </div>
-  );
-}
-
-/** A small dropdown pill of links for the right end of the chip row. */
-export function ChipMenu({
-  label,
-  items,
-  testId = "chip-menu",
-}: {
-  label: string;
-  items: { label: string; href: string; hint?: string }[];
-  testId?: string;
-}) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [open, setOpen] = useState(false);
-  useDismiss(open, ref, () => setOpen(false));
-  if (items.length === 0) return null;
-  return (
-    <div ref={ref} className="relative" data-testid={testId}>
-      <button
-        type="button"
-        aria-haspopup="menu"
-        aria-expanded={open}
-        onClick={() => setOpen((v) => !v)}
-        className={`${CHIP_BASE} ${CHIP_OFF} gap-1`}
-        data-testid={`${testId}-button`}
-      >
-        {label}
-        <ChevronDown className="h-3.5 w-3.5" aria-hidden />
-      </button>
-      <div
-        role="menu"
-        aria-label={label}
-        data-open={open}
-        className="gt-pop absolute right-0 top-full z-40 mt-2 min-w-[190px] rounded-xl border border-border bg-card p-1.5 shadow-2xl"
-      >
-        {items.map((it) => (
-          <Link
-            key={it.href}
-            href={it.href}
-            role="menuitem"
-            tabIndex={open ? 0 : -1}
-            onClick={() => setOpen(false)}
-            className="flex min-h-[40px] items-center justify-between gap-4 rounded-lg px-3 text-[13px] font-medium text-muted-foreground no-underline hover:bg-muted/40 hover:text-foreground"
-          >
-            {it.label}
-            {it.hint && <span className="font-mono text-[11px] text-muted-foreground/60">{it.hint}</span>}
-          </Link>
-        ))}
-      </div>
     </div>
   );
 }

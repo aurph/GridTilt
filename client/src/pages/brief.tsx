@@ -28,7 +28,7 @@ const SECTION_LINK: Record<string, string> = {
   // A state's section links to its page through the registry, not this map.
   "What changed": "/grid?tab=timeline",
   Agreements: "/grid?tab=deals",
-  "Next public dates": "/states",
+  "Next public dates": "/grid?tab=timeline",
 };
 
 // `params` keeps the signature compatible with wouter's RouteComponentProps:

@@ -92,11 +92,6 @@ const STATIC_PAGES: Record<string, { title: string; description: string; slug: s
     description: "GridTilt shows what is being built on your power grid, who is behind it, and what is known about the cost. Choose your state, or explore projects, power agreements and the companies behind them.",
     slug: "",
   },
-  "/states": {
-    title: "State Pages: Grid Decisions and Public Dates by State | GridTilt",
-    description: "The states GridTilt covers, each with its dated grid decisions, the documents behind them, and the next public dates.",
-    slug: "",
-  },
   "/grid?tab=queue": {
     title: "Interconnection Queue: Power Projects Waiting on the Grid | GridTilt",
     description: "Named US power projects and data center campuses waiting for a grid connection, with the queue totals by grid operator from Lawrence Berkeley National Laboratory.",

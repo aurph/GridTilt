@@ -117,7 +117,7 @@ export function HomeRecord() {
   return (
     <div className="border-b border-dashed border-border" data-testid="home-record">
       <div className="mx-auto grid max-w-[1200px] gap-10 px-6 py-14 md:grid-cols-3 md:gap-8">
-        <Column title="Next public dates" href="/states" linkLabel="All state pages" testId="home-next-dates">
+        <Column title="Next public dates" href={chipHref("grid", "timeline")} linkLabel="The full timeline" testId="home-next-dates">
           {states.isLoading ? (
             <Loading />
           ) : dates.length === 0 ? (

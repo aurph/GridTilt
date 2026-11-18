@@ -29,7 +29,6 @@ const CATEGORY_RANK: Record<PaletteCategory, number> = {
 };
 
 export const PAGE_ENTRIES: PaletteEntry[] = [
-  { id: "page-states", label: "States", hint: "state pages", category: "page", href: "/states", keywords: "state pages decisions public dates maryland virginia texas" },
   { id: "page-power-map", label: "Power Map", hint: "Grid", category: "page", href: "/grid", keywords: "data centers map facilities campuses grid" },
   { id: "page-queue", label: "Interconnection queue", hint: "Grid", category: "page", href: "/grid?tab=queue", keywords: "backlog interconnection queue lbnl" },
   { id: "page-deals", label: "Power agreements", hint: "Grid", category: "page", href: "/grid?tab=deals", keywords: "deals nuclear ppa agreements" },

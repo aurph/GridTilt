@@ -10,19 +10,16 @@
  * level below the section's) so a deep link reads right on arrival.
  */
 import { lazy, Suspense, useMemo, type ComponentType, type LazyExoticComponent } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { useSearch } from "wouter";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { HeadingLevelProvider } from "@/components/section-heading";
-import { ChipMenu, SectionChips, type ChipItem } from "@/components/section-chips";
+import { SectionChips, type ChipItem } from "@/components/section-chips";
 import { Skeleton } from "@/components/ui/skeleton";
-import { STATE_GRID } from "@/data/state-grid";
 import { chipFromSearch, chipHref, sectionById, type Section } from "@/lib/sections";
-import { statePageLinks, type PublishedStatePage } from "@/lib/state-pages";
 
 type Feature = LazyExoticComponent<ComponentType<any>>;
 
-const FEATURES: Record<Exclude<Section["id"], "states">, Record<string, Feature>> = {
+const FEATURES: Record<Section["id"], Record<string, Feature>> = {
   grid: {
     map: lazy(() => import("@/pages/PowerMap")),
     queue: lazy(() => import("@/pages/Queue")),
@@ -76,20 +73,7 @@ function FeatureLoading() {
   );
 }
 
-/** The Grid section's scope control: jump from the national view to one state's record. */
-function StateScope() {
-  const { data } = useQuery<PublishedStatePage[]>({ queryKey: ["/api/state-pages"] });
-  const links = statePageLinks(data, STATE_GRID);
-  return (
-    <ChipMenu
-      label="State"
-      testId="grid-state-scope"
-      items={links.map((l) => ({ label: l.name, href: l.href, hint: l.code }))}
-    />
-  );
-}
-
-export default function SectionPage({ id }: { id: Exclude<Section["id"], "states"> }) {
+export default function SectionPage({ id }: { id: Section["id"] }) {
   const section = sectionById(id);
   const search = useSearch();
   const active = chipFromSearch(section, search);
@@ -105,12 +89,7 @@ export default function SectionPage({ id }: { id: Exclude<Section["id"], "states
     <div data-testid={`section-${id}`}>
       <SectionStatement statement={section.statement} dek={section.dek} />
       <div className="border-b border-dashed border-border px-4 pb-3 sm:px-6">
-        <SectionChips
-          chips={chips}
-          active={active}
-          label={`${section.label} features`}
-          right={id === "grid" ? <StateScope /> : undefined}
-        />
+        <SectionChips chips={chips} active={active} label={`${section.label} features`} />
       </div>
       <HeadingLevelProvider level={2}>
         <ErrorBoundary label="This view failed to render." resetKey={`${id}:${active}`}>

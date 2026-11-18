@@ -7,7 +7,7 @@ import { SectionLinks } from "@/components/section-links";
 import { SECTIONS, sectionForPath } from "@/lib/sections";
 
 /**
- * The top bar: wordmark, the four sections, a centered search pill and one
+ * The top bar: wordmark, the three sections, a centered search pill and one
  * primary button, Get the Brief. Nothing else.
  *
  * Every feature lives inside a section as a chip (lib/sections.ts), so the
@@ -66,7 +66,7 @@ export function TopNav() {
 
 /**
  * Phones only: a floating pill at the bottom center with Search and a menu
- * button. The menu opens a sheet listing the four sections, Research and Get
+ * button. The menu opens a sheet listing the three sections, Research and Get
  * the Brief. The page pads its bottom so the pill never covers the last row
  * (App.tsx).
  */
@@ -117,7 +117,7 @@ export function MobileBar() {
           <SheetTitle className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/70">
             Sections
           </SheetTitle>
-          <SheetDescription className="sr-only">The four sections of GridTilt, Research and the Brief.</SheetDescription>
+          <SheetDescription className="sr-only">The three sections of GridTilt, Research and the Brief.</SheetDescription>
           <nav aria-label="Sections" className="mt-2 flex flex-col">
             {SECTIONS.map((s) => (
               <Link
