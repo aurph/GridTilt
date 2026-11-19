@@ -8,6 +8,7 @@ import {
   totalTrackedMW,
   shareOfTotal,
   byYear,
+  inScope,
   parseOpenYear,
   type FacilityLike,
 } from "../facility-aggregates";
@@ -25,6 +26,17 @@ function fac(over: Partial<FacilityLike> & { id: number }): FacilityLike {
     ...over,
   } as FacilityLike;
 }
+
+test("a region scope keeps the facilities inside it, and no scope keeps them all", () => {
+  const all = [fac({ id: 1 }), fac({ id: 2, company: "Meta" }), fac({ id: 3 })];
+  const pjm = { name: "PJM", ids: new Set([1, 3]) };
+  assert.deepEqual(inScope(all, pjm).map((f) => f.id), [1, 3]);
+  assert.equal(inScope(all, null), all, "no scope: the same list, not a copy");
+  assert.equal(inScope(all, undefined), all);
+  assert.deepEqual(inScope(all, { name: "Empty", ids: new Set<number>() }), [], "a region with no campus shows none, not the whole country");
+  // The rollups then describe the region alone.
+  assert.deepEqual(byCompany(inScope(all, pjm)).map((r) => r.key), ["Amazon"]);
+});
 
 test("groups by state, biggest total first", () => {
   const rows = byState([

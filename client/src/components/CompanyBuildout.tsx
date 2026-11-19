@@ -4,7 +4,7 @@ import { Building2 } from "lucide-react";
 import { ErrorState } from "@/components/Freshness";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BRAND } from "@/lib/tokens";
-import { byCompany, totalTrackedMW, shareOfTotal, type FacilityLike } from "@/lib/facility-aggregates";
+import { byCompany, inScope, totalTrackedMW, shareOfTotal, type FacilityLike, type FacilityScope } from "@/lib/facility-aggregates";
 import { filterTrackedFacilities } from "@/lib/real-gauges";
 import { BarRow, ExplainerSection } from "@/components/BarRow";
 
@@ -13,16 +13,19 @@ import { BarRow, ExplainerSection } from "@/components/BarRow";
  *
  * Every bar carries the running / being-built split: for several of these
  * companies the total is mostly announcement, which a single bar would hide.
+ *
+ * With a grid region selected on the map, `scope` narrows the list to the
+ * campuses inside it, and the title and the footer say so.
  */
 
 type Facility = FacilityLike;
 
-export function CompanyBuildout() {
+export function CompanyBuildout({ scope }: { scope?: FacilityScope | null }) {
   const { data, isLoading, isError, refetch } = useQuery<Facility[]>({
     queryKey: ["/api/datacenters"],
   });
 
-  const all = useMemo(() => filterTrackedFacilities(data ?? []), [data]);
+  const all = useMemo(() => inScope(filterTrackedFacilities(data ?? []), scope), [data, scope]);
   const rows = useMemo(() => byCompany(all), [all]);
   const total = useMemo(() => totalTrackedMW(all), [all]);
   const max = rows[0]?.totalMW ?? 0;
@@ -32,7 +35,7 @@ export function CompanyBuildout() {
   return (
     <ExplainerSection
       icon={<Building2 />}
-      title="Who is building the most?"
+      title={scope ? `Who is building the most in ${scope.name}?` : "Who is building the most?"}
       testid="company-buildout"
       aside={
         <span className="flex flex-wrap items-center gap-x-3 text-10 text-muted-foreground/70">
@@ -57,7 +60,9 @@ export function CompanyBuildout() {
           <Skeleton className="h-7 w-full rounded" />
         </div>
       ) : rows.length === 0 ? (
-        <p className="text-xs text-muted-foreground py-4">No facilities in the tracked set.</p>
+        <p className="text-xs text-muted-foreground py-4">
+          No facilities of 400 MW and up {scope ? `inside ${scope.name} as drawn` : "in the tracked set"}.
+        </p>
       ) : (
         <>
           <ol>
@@ -70,7 +75,7 @@ export function CompanyBuildout() {
               const detail = `${Math.round(r.runningMW).toLocaleString()} MW running · ${Math.round(
                 r.buildingMW,
               ).toLocaleString()} MW being built${
-                share !== null ? ` · ${share.toFixed(share < 10 ? 1 : 0)}% of tracked` : ""
+                share !== null ? ` · ${share.toFixed(share < 10 ? 1 : 0)}% of tracked${scope ? ` in ${scope.name}` : ""}` : ""
               }`;
               return (
                 <li key={r.key}>
@@ -117,7 +122,7 @@ export function CompanyBuildout() {
           <p className="mt-2 text-10 leading-relaxed text-muted-foreground/70">
             Rated power of the sites GridTilt tracks at 400 MW and above, grouped by the company
             operating them. Leased sites are attributed to the operator, so this reads as who runs
-            the capacity, not who paid for it.
+            the capacity, not who paid for it.{scope ? ` Only sites inside ${scope.name} as drawn.` : ""}
           </p>
         </>
       )}

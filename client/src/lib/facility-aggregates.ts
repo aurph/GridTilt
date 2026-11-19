@@ -173,3 +173,14 @@ export function byYear(facilities: FacilityLike[]): YearBucket[] {
   }
   return out;
 }
+
+/** A subset of the registry to roll up: a grid region's name and the ids of the campuses inside it. */
+export interface FacilityScope {
+  name: string;
+  ids: ReadonlySet<number>;
+}
+
+/** The facilities inside a scope, or all of them when there is none. */
+export function inScope<T extends { id: number }>(facilities: T[], scope: FacilityScope | null | undefined): T[] {
+  return scope ? facilities.filter((f) => scope.ids.has(f.id)) : facilities;
+}

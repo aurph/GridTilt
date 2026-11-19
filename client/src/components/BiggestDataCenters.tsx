@@ -5,6 +5,7 @@ import { Trophy } from "lucide-react";
 import { ErrorState } from "@/components/Freshness";
 import { Skeleton } from "@/components/ui/skeleton";
 import { STATUS_COLORS } from "@/lib/tokens";
+import { inScope, type FacilityScope } from "@/lib/facility-aggregates";
 import { filterTrackedFacilities } from "@/lib/real-gauges";
 import { BarRow, ExplainerSection } from "@/components/BarRow";
 
@@ -14,6 +15,9 @@ import { BarRow, ExplainerSection } from "@/components/BarRow";
  * Reads the same /api/datacenters payload as the map, filtered to the same
  * >= 400 MW floor. The largest sites in the country are not built yet, so a single
  * "biggest" number would be misleading; both are shown.
+ *
+ * With a grid region selected on the map, `scope` narrows the ranking to the
+ * campuses inside it, and the title and the footer say so.
  */
 
 interface DataCenter {
@@ -34,14 +38,14 @@ const MODES: Array<{ id: Mode; label: string }> = [
   { id: "building", label: "Being built" },
 ];
 
-export function BiggestDataCenters() {
+export function BiggestDataCenters({ scope }: { scope?: FacilityScope | null }) {
   const [mode, setMode] = useState<Mode>("running");
   const { data, isLoading, isError, refetch } = useQuery<DataCenter[]>({
     // Same key the map uses, so react-query serves both from one fetch.
     queryKey: ["/api/datacenters"],
   });
 
-  const all = filterTrackedFacilities(data ?? []);
+  const all = inScope(filterTrackedFacilities(data ?? []), scope);
   const pool = all.filter((d) =>
     mode === "running" ? d.status === "operational" : d.status !== "operational",
   );
@@ -52,7 +56,7 @@ export function BiggestDataCenters() {
   return (
     <ExplainerSection
       icon={<Trophy />}
-      title="Biggest in America"
+      title={scope ? `Biggest in ${scope.name}` : "Biggest in America"}
       testid="biggest-datacenters"
       aside={
         <div className="flex rounded-md overflow-hidden border border-subtle text-11" role="group" aria-label="Which sites to rank">
@@ -85,7 +89,7 @@ export function BiggestDataCenters() {
         </div>
       ) : !leader ? (
         <p className="text-xs text-muted-foreground py-4">
-          No {mode === "running" ? "operational" : "planned"} facilities in the tracked set.
+          No {mode === "running" ? "operational" : "planned"} facilities of 400 MW and up {scope ? `inside ${scope.name} as drawn` : "in the tracked set"}.
         </p>
       ) : (
         <>
@@ -125,7 +129,7 @@ export function BiggestDataCenters() {
 
           <p className="mt-2 text-10 leading-relaxed text-muted-foreground/70">
             Ranked by rated power across the {all.length} facilities GridTilt tracks at 400 MW and
-            above.{" "}
+            above{scope ? ` inside ${scope.name} as drawn` : ""}.{" "}
             <span data-testid="biggest-source">
               Source: GridTilt's facility registry, campuses of 400 MW and up with a published rating.{" "}
               <Link href="/data-status" className="underline-offset-2 hover:underline">Data status</Link>.

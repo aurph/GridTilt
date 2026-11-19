@@ -528,6 +528,15 @@ export default function PowerMap() {
     layers,
   );
   const activeRegionMeta = activeRegion ? gridRegion(activeRegion) : null;
+  // The two lists under the map follow the selected region: the campuses inside it, whatever the filters say.
+  const regionScope = useMemo(() => {
+    if (!activeRegion || !shapes) return null;
+    const r = gridRegion(activeRegion);
+    return {
+      name: r.kind === "no-market" ? `the ${r.name}` : r.name,
+      ids: new Set(campuses.filter((d) => campusRegion.get(d.id) === activeRegion).map((d) => d.id)),
+    };
+  }, [activeRegion, shapes, campuses, campusRegion]);
 
   // ── Actions ──────────────────────────────────────────────────────────────
   const hoverSetter = useRef<(h: Hover | null) => void>(() => {});
@@ -1240,8 +1249,8 @@ export default function PowerMap() {
       {/* Read from payloads the page already fetches. Two columns on desktop
           so the stack reads in about one screen; the source mix spans both. */}
       <div className="lg:grid lg:grid-cols-2" data-testid="map-explainers">
-        <BiggestDataCenters />
-        <CompanyBuildout />
+        <BiggestDataCenters scope={regionScope} />
+        <CompanyBuildout scope={regionScope} />
         <StateBuildout />
         <BuildoutTimeline />
         <PowerSourceMix />
