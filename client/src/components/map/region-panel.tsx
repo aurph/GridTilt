@@ -475,6 +475,15 @@ export function RegionPanel({
         onPointerUp={(e) => {
           const moved = dragFrom.current === null ? 0 : e.clientY - dragFrom.current;
           dragFrom.current = null;
+          // The browser sends a click once the touch ends. By then the sheet
+          // has moved out from under the finger, so that click would land on
+          // the map and close the region. Swallow the one click that follows.
+          const swallow = (ev: MouseEvent) => {
+            ev.stopPropagation();
+            ev.preventDefault();
+          };
+          window.addEventListener("click", swallow, { capture: true, once: true });
+          window.setTimeout(() => window.removeEventListener("click", swallow, { capture: true }), 400);
           // A drag sets the state it points at; a tap flips it.
           setFolded(Math.abs(moved) > 12 ? moved > 0 : !folded);
         }}
