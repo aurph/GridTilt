@@ -279,6 +279,28 @@
         "url": "https://gridtilt.com/supply-chain",
         "why": "The Q2 2025 average was sixteen months old; no 2026 published average exists, so the analyst's dated figure is used and labeled."
       }
+    },
+    {
+      "id": "2026-11-18-power-map-energy-figure",
+      "kind": "correction",
+      "entity": "site/power-map-overlay",
+      "field": "Annual energy shown beside the tracked gigawatts on the map",
+      "before": "191.0 TWh/yr, which also counted announced campuses the gigawatt figure leaves out",
+      "after": "157.5 TWh/yr, for the same campuses as the 18.0 GW beside it (400 MW and up, operational or under construction)",
+      "source": "GridTilt facility registry, nameplate megawatts times 8,760 hours",
+      "sourceUrl": "https://gridtilt.com/data-status",
+      "sourceDate": "2026-10-30",
+      "reviewed": "2026-11-18",
+      "scope": "Power Map overlay and its phone summary",
+      "rationale": "The two figures sat side by side but described different sets of campuses, so the energy implied more power than the gigawatts stated. Both now cover the campuses of 400 MW and up that are operational or under construction. The energy figure is a year at full rating, not metered use, and the map now says so.",
+      "short": {
+        "label": "Annual energy beside the tracked gigawatts on the map",
+        "before": "191.0 TWh/yr with announced campuses",
+        "after": "157.5 TWh/yr, same campuses as the GW",
+        "source": "GridTilt facility registry",
+        "url": "https://gridtilt.com/grid",
+        "why": "The energy figure counted announced campuses that the gigawatt figure beside it leaves out."
+      }
     }
   ]
 }
