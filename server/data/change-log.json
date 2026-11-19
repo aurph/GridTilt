@@ -281,28 +281,6 @@
       }
     },
     {
-      "id": "2026-11-19-power-map-energy-and-load-by-region",
-      "kind": "correction",
-      "entity": "site/power-map",
-      "field": "Annual energy beside the tracked gigawatts, and tracked load by region, on the map",
-      "before": "191.0 TWh/yr, and a load-by-region table (PJM 5,050 MW, MISO 4,615, ERCOT 3,780, SERC 5,790, WECC 2,020, SPP 550), both counting announced campuses the gigawatt figure leaves out",
-      "after": "157.5 TWh/yr for the same campuses as the 18.0 GW beside it, and the table by the region each of those campuses is in: PJM 5,850 MW, ERCOT 3,780, MISO 3,115, Southeast 2,270, West 1,620, SPP 1,350",
-      "source": "GridTilt facility registry, nameplate megawatts times 8,760 hours",
-      "sourceUrl": "https://gridtilt.com/data-status",
-      "sourceDate": "2026-10-30",
-      "reviewed": "2026-11-19",
-      "scope": "Power Map overlay and its phone summary, the load-by-region table under the map, region panels and region pages",
-      "rationale": "The energy figure and the table sat beside an 18.0 GW figure but counted announced campuses that it leaves out, so they implied more power than the gigawatts stated. All three now cover the campuses of 400 MW and up that are operational or under construction, and the table's rows add up to the headline. The table also grouped campuses by a free-text operator field that was wrong for several of them; each campus is now placed by where it sits on the grid regions, with eight checked against the utility that serves them. The energy figure is a year at full rating, not metered use, and the map now says so.",
-      "short": {
-        "label": "Energy and load-by-region figures on the map",
-        "before": "191.0 TWh/yr, incl. announced campuses",
-        "after": "157.5 TWh/yr at full rating",
-        "source": "GridTilt facility registry",
-        "url": "https://gridtilt.com/grid",
-        "why": "The energy figure and the load-by-region table counted announced campuses that the gigawatt figure beside them leaves out."
-      }
-    },
-    {
       "id": "2026-11-19-power-deals-november-refresh",
       "kind": "update",
       "entity": "site/power-deals",
@@ -314,33 +292,12 @@
       "sourceDate": "2026-11-17",
       "reviewed": "2026-11-19",
       "scope": "Power agreements tab, the home page's signed agreements figure, the brief's power agreements section, the Timeline, region panels and cluster deal links",
-      "rationale": "A check of announcements from October 20 to November 19, 2026 against the parties' own documents. Four agreements were added: Google with Quaise Energy (50 MW of geothermal in Oregon), Google with Entergy Arkansas for the West Memphis expansion (load not disclosed, so no megawatts are booked), Google with DTE Energy (1 GW in Michigan, which DTE counts as executed and approved) and Sabey Data Centers with the Greasewood solar project (43.5 MW). AEP's 10-Q says the 20-year offtake for the Cheyenne fuel cell plant was executed in January 2026, and Google says the project is contracted with AEP, so that 702 MW row moves from no status to signed. DTE now names Oracle as the 1.4 GW customer, and Fervo states its Google contract is 15 years and take-or-pay. The NiSource agreement with Microsoft is corrected from 1,100 MW to 788 MW (its own entry). The Queue tab's count of named projects is recomputed from the rows: it read 70 and the file held 79 before this refresh; it now reads 83. Deals seen but not added, and why, are listed in the pull request.",
+      "rationale": "A check of announcements from October 20 to November 19, 2026 against the parties' own documents. Four agreements were added: Google with Quaise Energy (50 MW of geothermal in Oregon), Google with Entergy Arkansas for the West Memphis expansion (load not disclosed, so no megawatts are booked), Google with DTE Energy (1 GW in Michigan, which DTE counts as executed and approved) and Sabey Data Centers with the Greasewood solar project (43.5 MW). AEP's 10-Q says the 20-year offtake for the Cheyenne fuel cell plant was executed in January 2026, and Google says the project is contracted with AEP, so that 702 MW row moves from no status to signed. DTE now names Oracle as the 1.4 GW customer, and Fervo states its Google contract is 15 years and take-or-pay. The NiSource agreement with Microsoft now books the 788 MW contracted in NiSource's 10-Q, not the 1,100 MW of new generation from its release. The Queue tab's count of named projects is recomputed from the rows: it read 70 and the file held 79 before this refresh; it now reads 83. Deals seen but not added, and why, are listed in the pull request.",
       "short": {
         "label": "Signed AI power agreements tracked",
         "before": "40 agreements, 35.8 GW disclosed",
         "after": "45 agreements, 37.3 GW disclosed",
         "source": "Party releases and SEC filings, Oct to Nov 2026",
-        "url": "https://gridtilt.com/grid?tab=deals"
-      }
-    },
-    {
-      "id": "2026-11-19-nisource-microsoft-contract-capacity",
-      "kind": "correction",
-      "entity": "interconnection-queue/ms-nisource-genco",
-      "field": "Capacity of NiSource's agreement with Microsoft in northwest Indiana",
-      "before": "1,100 MW, the new generation NiSource said it would add",
-      "after": "788 MW, Microsoft's contracted capacity from 2031",
-      "source": "NiSource Form 10-Q for the quarter ended September 30, 2026",
-      "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1111711/000111171126000100/nix-20260930.htm",
-      "sourceDate": "2026-10-28",
-      "reviewed": "2026-11-19",
-      "scope": "Power agreements tab, the signed subtotal and Microsoft's signed total",
-      "rationale": "The row booked the approximately 1,100 MW of new generation from NiSource's October 16 release as the size of the agreement. NiSource's 10-Q gives the contract itself: a capacity commitment beginning in 2028 that increases to 788 MW from 2031, for 20 years from the data center's initial energization, subject to IURC approval. Other utility service rows book the contracted load, so this one now does too.",
-      "short": {
-        "label": "NiSource agreement with Microsoft",
-        "before": "1,100 MW (new generation)",
-        "after": "788 MW contracted from 2031",
-        "source": "NiSource 10-Q, October 28, 2026",
         "url": "https://gridtilt.com/grid?tab=deals"
       }
     }

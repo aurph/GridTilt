@@ -205,7 +205,7 @@ describe("change card and post", () => {
 
   it("takes the newest change with a short form, never a no-change record", () => {
     const checked: ChangeRecord = { ...changes[0], id: "2026-10-01-checked", kind: "checked-no-change", before: undefined, after: undefined, checked: "x", reviewed: "2026-10-01" };
-    assert.equal(latestChange([checked, ...changes])?.id, "2026-11-19-power-map-energy-and-load-by-region");
+    assert.equal(latestChange([checked, ...changes])?.id, "2026-11-19-power-deals-november-refresh");
     assert.equal(latestChange([]), null);
     assert.equal(changeInputFrom(null), null);
   });
