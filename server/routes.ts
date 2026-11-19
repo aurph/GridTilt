@@ -2854,9 +2854,11 @@ export async function registerRoutes(
   // does not compress API responses, so these two send gzip themselves, built
   // once per content key (server/json-gzip.ts).
   const mapLayerJson = jsonGzipCache();
-  function sendMapLayer(req: Request, res: Response, name: string, key: string, build: () => unknown): void {
+  /** `hold`: let a browser keep the answer for an hour. Right for a file a script writes; wrong for one edited by hand. */
+  function sendMapLayer(req: Request, res: Response, name: string, key: string, build: () => unknown, hold = true): void {
     const body = mapLayerJson(name, key, build);
-    res.set("Cache-Control", "public, max-age=3600").set("Vary", "Accept-Encoding").type("application/json");
+    if (hold) res.set("Cache-Control", "public, max-age=3600");
+    res.set("Vary", "Accept-Encoding").type("application/json");
     if (acceptsGzip(req.headers["accept-encoding"])) res.set("Content-Encoding", "gzip").send(body.gz);
     else res.send(body.json);
   }
@@ -3797,7 +3799,8 @@ ${rssItems}
   app.get("/api/clusters", (req, res) => {
     try {
       const stat = statSync(CLUSTERS_FILE);
-      sendMapLayer(req, res, "clusters", `${stat.mtimeMs}:${stat.size}`, () => readClusterRoot().clusters ?? []);
+      // Not held by the browser: cluster records are edited by commit and looked at right after a deploy.
+      sendMapLayer(req, res, "clusters", `${stat.mtimeMs}:${stat.size}`, () => readClusterRoot().clusters ?? [], false);
     } catch (err) {
       console.error("Clusters read error:", err);
       res.status(500).json({ error: "Failed to load clusters" });

@@ -134,6 +134,9 @@ test("the cluster list, which the map now loads by default, travels gzipped too"
     const rows = (await gz.json()) as Array<{ id: string }>;
     assert.deepEqual(rows, await plain.json(), "the same rows either way");
     assert.ok(rows.length > 200 && rows.every((r) => typeof r.id === "string"));
+    // Cluster records are edited by commit and checked by eye after a deploy, so a browser must not hold the list for an hour.
+    assert.ok(!/max-age=[1-9]/.test(gz.headers.get("cache-control") ?? ""), `cache-control: ${gz.headers.get("cache-control")}`);
+    assert.ok(gz.headers.get("etag"), "it can still be revalidated");
   } finally {
     await close();
   }
