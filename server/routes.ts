@@ -16,7 +16,7 @@ import {
   rejectPending as rejectPendingDatacenter,
   stampFreshness as stampDatacenterFreshness,
 } from "./datacenter-ingester";
-import { ALIAS_REDIRECTS, BASE_URL, buildSitemap, getPageMeta, robotsTxt, ogNameKnown } from "./seo";
+import { ALIAS_REDIRECTS, BASE_URL, REGION_SLUG_REDIRECTS, buildSitemap, getPageMeta, robotsTxt, ogNameKnown } from "./seo";
 import { currentAddress, legacyRedirect } from "../client/src/lib/sections";
 import {
   computeAiPowerIndex,
@@ -3044,6 +3044,15 @@ export async function registerRoutes(
       const i = req.originalUrl.indexOf("?");
       const to = legacyRedirect(from, i >= 0 ? req.originalUrl.slice(i) : "");
       res.redirect(301, to ?? ALIAS_REDIRECTS[from]);
+    });
+  }
+
+  // Two region pages were renamed (SERC to Southeast, WECC to West): one 301
+  // each, with the query string along.
+  for (const [from, to] of Object.entries(REGION_SLUG_REDIRECTS)) {
+    app.get(`/region/${from}`, (req, res) => {
+      const i = req.originalUrl.indexOf("?");
+      res.redirect(301, `/region/${to}${i >= 0 ? req.originalUrl.slice(i) : ""}`);
     });
   }
 

@@ -4,10 +4,12 @@ import {
   PAGE_ENTRIES,
   clusterEntries,
   rankEntries,
+  regionEntries,
   stateEntries,
   stockEntries,
   type PaletteEntry,
 } from "../palette";
+import { GRID_REGIONS } from "../../data/grid-regions";
 import { STATE_GRID } from "../../data/state-grid";
 import { supplyNodes } from "../../data/supply-chain-config";
 
@@ -90,6 +92,29 @@ describe("stateEntries", () => {
 
   it("skips a page whose code names no known state", () => {
     assert.deepEqual(stateEntries([{ slug: "atlantis", code: "ZZ" }], STATE_GRID), []);
+  });
+});
+
+describe("regionEntries", () => {
+  const regions = regionEntries(GRID_REGIONS);
+
+  it("offers each of the nine grid regions by its short and its full name", () => {
+    assert.equal(regions.length, 9);
+    const pjm = rankEntries([...ALL, ...regions], "pjm")[0];
+    assert.equal(pjm.href, "/region/pjm");
+    assert.equal(pjm.category, "region");
+    assert.equal(rankEntries([...ALL, ...regions], "midcontinent")[0]?.href, "/region/miso");
+    assert.equal(rankEntries([...ALL, ...regions], "southeast")[0]?.href, "/region/southeast");
+  });
+
+  it("finds a region by the names people used for it before", () => {
+    assert.equal(rankEntries(regions, "serc")[0]?.href, "/region/southeast");
+    assert.equal(rankEntries(regions, "wecc")[0]?.href, "/region/west");
+    assert.equal(rankEntries(regions, "new england")[0]?.href, "/region/isone");
+  });
+
+  it("stays out of the list an empty search shows", () => {
+    assert.ok(rankEntries([...ALL, ...regions], "").every((e) => e.category === "page"));
   });
 });
 

@@ -60,6 +60,14 @@ test("aliases, API 404s, the ticker list and the sitemap", async () => {
     r = await fetch(`${url}/states?utm_source=brief`, { redirect: "manual" });
     assert.equal(r.status, 301, "the retired States index forwards");
     assert.equal(r.headers.get("location"), "/grid?utm_source=brief");
+    r = await fetch(`${url}/region/wecc?utm_source=x`, { redirect: "manual" });
+    assert.equal(r.status, 301, "a region that was renamed forwards");
+    assert.equal(r.headers.get("location"), "/region/west?utm_source=x");
+    r = await fetch(`${url}/region/serc`, { redirect: "manual" });
+    assert.equal(r.status, 301);
+    assert.equal(r.headers.get("location"), "/region/southeast");
+    r = await fetch(`${url}/region/pjm`, { redirect: "manual" });
+    assert.notEqual(r.status, 301, "a region that kept its address is not forwarded");
     r = await fetch(`${url}/compute-frontier/methodology`, { redirect: "manual" });
     assert.notEqual(r.status, 301, "cluster pages keep their addresses");
     assert.equal(r.headers.get("location"), null);

@@ -1,81 +1,34 @@
-import { useState } from "react";
-import { useParams, Link } from "wouter";
-import { useQuery } from "@tanstack/react-query";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, MapPin, Zap } from "lucide-react";
-import { NERC_LTRA } from "@/data/nerc-reserve-margins";
-import { areasForRegion, regionMarginText, regionRisk, regionRiskText } from "@/lib/reserve-margins";
+/**
+ * One grid region's page: /region/<id>, the address a search result or a
+ * shared link lands on. Its content is the map panel's (RegionContent), so
+ * the page and the panel can never disagree. Around it: where the region sits
+ * among the nine, the tracked campuses inside it, and the way to the others.
+ *
+ * The regions are the client's list (data/grid-regions.ts); the server's
+ * REGION_SLUGS mirrors it (a parity test). SERC and WECC were renamed, so
+ * those addresses forward. NPCC covered two of today's regions and keeps a
+ * short note that points at both.
+ */
+import { useMemo, useState } from "react";
+import { Link, Redirect, useParams } from "wouter";
+import { AlertTriangle, ArrowRight } from "lucide-react";
 import { ErrorState } from "@/components/Freshness";
+import { RegionLocator } from "@/components/map/region-locator";
+import { RegionContent } from "@/components/map/region-panel";
 import { SortableTh } from "@/components/sortable-table";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { GRID_REGIONS, gridRegion, type GridRegionId } from "@/data/grid-regions";
+import { regionAt, regionIdForSlug } from "@/lib/grid-regions";
+import { useRegionData, type RegionCampus } from "@/lib/region-data";
 import { nextSort, sortBy, type SortState } from "@/lib/table-sort";
-import { filterTrackedFacilities } from "@/lib/real-gauges";
-import { SourceFooter } from "@/components/SourceFooter";
-import { FuelMixBars } from "@/components/GridLiveCard";
-import { aiSharePct, fmtGW, fmtPeriodET, useGridLive } from "@/lib/grid-live";
-
-// Descriptions say what each organization is, as it describes itself (PJM's
-// and MISO's own pages, checked 2026-10-01). Dated figures do not go here:
-// the NERC section below reads the reviewed table, and a number in this text
-// would go stale beside it (MISO's said 13.4% after NERC's 11.0% replaced it).
-const REGION_META: Record<string, { name: string; fullName: string; states: string; description: string }> = {
-  "pjm": {
-    name: "PJM", fullName: "PJM Interconnection",
-    states: "PA, NJ, DE, MD, VA, WV, OH, IN, IL, MI, KY, NC, TN, DC",
-    description: "PJM Interconnection runs the high-voltage grid and a wholesale electricity market in all or parts of 13 states and the District of Columbia. It does not own power lines or power plants; it directs their operation for many owners.",
-  },
-  "ercot": {
-    name: "ERCOT", fullName: "Electric Reliability Council of Texas",
-    states: "TX (most of state)",
-    description: "ERCOT runs the grid and wholesale electricity market for most of Texas. Its grid is a separate interconnection from the rest of the country's.",
-  },
-  "miso": {
-    name: "MISO", fullName: "Midcontinent Independent System Operator",
-    states: "ND, SD, NE, MN, IA, WI, IL, IN, MI, AR, MS, LA, TX (part)",
-    description: "MISO runs the high-voltage grid and a wholesale electricity market across 15 US states and the Canadian province of Manitoba.",
-  },
-  "wecc": {
-    name: "WECC", fullName: "Western Electricity Coordinating Council",
-    states: "WA, OR, CA, NV, AZ, UT, CO, WY, MT, ID, NM",
-    description: "WECC is the reliability organization for the Western Interconnection. Most of the West has no single market operator: CAISO runs California's market, and many utilities run their own systems.",
-  },
-  "serc": {
-    name: "SERC", fullName: "SERC Reliability Corporation",
-    states: "VA, NC, SC, GA, AL, FL, TN, MS",
-    description: "SERC is the reliability organization for much of the Southeast, where utilities such as Southern Company, Duke Energy and TVA run their own systems rather than a regional market.",
-  },
-  "spp": {
-    name: "SPP", fullName: "Southwest Power Pool",
-    states: "KS, OK, NE, NM, TX (panhandle), AR, MO, ND, SD, MT, WY, IA, MN, LA",
-    description: "Southwest Power Pool runs the high-voltage grid and a wholesale electricity market across the central United States.",
-  },
-  "npcc": {
-    name: "NPCC", fullName: "Northeast Power Coordinating Council",
-    states: "NY, CT, MA, ME, NH, RI, VT",
-    description: "NPCC is the reliability organization for New York and New England, whose grids and markets are run by NYISO and ISO New England.",
-  },
-};
-
-const ALL_REGIONS = Object.keys(REGION_META);
-
-interface Datacenter {
-  id: number;
-  name: string;
-  company: string;
-  city: string;
-  state: string;
-  powerMW: number;
-  status: "operational" | "construction" | "announced";
-  gridOperator: string;
-  openDate: string;
-}
 
 type FacilitySortKey = "company" | "name" | "location" | "powerMW" | "status";
 
 const FACILITY_COLS: Array<{ key: FacilitySortKey; label: string; align?: "right"; title?: string }> = [
   { key: "company", label: "Company" },
-  { key: "name", label: "Facility" },
+  { key: "name", label: "Campus" },
   { key: "location", label: "Location" },
   { key: "powerMW", label: "Power", align: "right" },
   { key: "status", label: "Status", align: "right", title: "Sorts by build progress, not alphabetically" },
@@ -87,293 +40,225 @@ const FACILITY_TEXT_COLS: FacilitySortKey[] = ["company", "name", "location"];
 /** Status is a build-progress ramp, so it sorts by progress rather than by name. */
 const STATUS_RANK: Record<string, number> = { operational: 3, construction: 2, announced: 1 };
 
-function facilityCell(d: Datacenter, key: FacilitySortKey): unknown {
+function facilityCell(d: RegionCampus, key: FacilitySortKey): unknown {
   if (key === "location") return `${d.city}, ${d.state}`;
   if (key === "status") return STATUS_RANK[d.status] ?? 0;
   return d[key];
 }
 
-// Mirrors PowerMap.tsx's gridOpToRTO exactly (each page re-declares its own
-// copy per house convention) so a region's facility count and capacity here
-// match what the same RTO filter shows on the Power map.
-function gridOpToRTO(op: string): string {
-  const o = op.toLowerCase();
-  if (o.includes("pjm") || o.includes("ppl") || o.includes("aep")) return "PJM";
-  if (o.includes("miso") || o.includes("nipsco") || o.includes("kcp")) return "MISO";
-  if (o.includes("ercot")) return "ERCOT";
-  if (o.includes("tva") || o.includes("southern") || o.includes("duke") || o.includes("serc") ||
-      o.includes("dominion") || o.includes("entergy") || o.includes("santee")) return "SERC";
-  if (o.includes("spp") || o.includes("seci")) return "SPP";
-  if (o.includes("bpa") || o.includes("wecc") || o.includes("nv energy") || o.includes("rocky") ||
-      o.includes("aps") || o.includes("srp") || o.includes("westconnect") || o.includes("caiso") ||
-      o.includes("pacificorp") || o.includes("idaho power") || o.includes("el paso")) return "WECC";
-  if (o.includes("npcc") || o.includes("iso-ne") || o.includes("nyiso")) return "NPCC";
-  return "WECC";
-}
-
-const STATUS_BADGE: Record<Datacenter["status"], { label: string; className: string }> = {
+const STATUS_BADGE: Record<RegionCampus["status"], { label: string; className: string }> = {
   operational: { label: "Operational", className: "bg-positive-deep/15 text-positive" },
   construction: { label: "Construction", className: "bg-warning/15 text-warning" },
   announced: { label: "Announced", className: "bg-muted text-muted-foreground" },
 };
 
-/** NERC's 2026 risk levels; a region whose areas differ gets the neutral style. */
-const RISK_BADGE: Record<string, string> = {
-  High: "bg-negative-deep/15 text-negative border-negative-deep/30",
-  Elevated: "bg-warning/15 text-warning border-warning/30",
-  Normal: "bg-positive-deep/15 text-positive border-positive-deep/30",
-  mixed: "bg-muted/30 text-muted-foreground border-border",
-};
-
 export default function RegionPage() {
   const { slug } = useParams<{ slug: string }>();
-  const region = slug ? REGION_META[slug] : null;
+  if (slug === "npcc") return <NpccNote />;
+  const id = regionIdForSlug(slug);
+  if (!id) return <NotFound />;
+  // A renamed region (serc, wecc): the server answers a direct visit with a 301; this covers a link followed inside the app.
+  if (slug !== id) return <Redirect to={`/region/${id}`} replace />;
+  return <RegionBody key={id} id={id} />;
+}
+
+function RegionBody({ id }: { id: GridRegionId }) {
+  const region = gridRegion(id);
+  const { shapes, stats, campuses, sites, sources, campusesLoading, campusesError, refetchCampuses } = useRegionData();
   const [sort, setSort] = useState<SortState<FacilitySortKey>>({ key: "powerMW", dir: "desc" });
 
-  const { data: datacenters, isLoading, isError, refetch } = useQuery<Datacenter[]>({
-    queryKey: ["/api/datacenters"],
-  });
-  const { live: gridLive, isLoading: gridLiveLoading } = useGridLive();
-
-  if (!region) {
-    return (
-      <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-6">
-        <Card className="p-8 border-card-border text-center">
-          <AlertTriangle className="h-8 w-8 text-negative mx-auto mb-3" />
-          <h1 className="text-lg font-semibold mb-2">Region Not Found</h1>
-          <p className="text-sm text-muted-foreground">
-            <Link href="/grid" className="text-brand">View Power</Link> to see all grid regions.
-          </p>
-        </Card>
-      </div>
-    );
-  }
-
-  // Same >= 400 MW floor as the Power map this page drills down from.
-  const all = filterTrackedFacilities(datacenters ?? []);
-  const facilities = all.filter((d) => gridOpToRTO(d.gridOperator) === region.name);
-  const sorted = sortBy(facilities, (d) => facilityCell(d, sort.key), sort.dir, (d) => d.name);
-  const trackedMW = facilities.filter((d) => d.status !== "announced").reduce((t, d) => t + d.powerMW, 0);
-  const announcedMW = facilities.filter((d) => d.status === "announced").reduce((t, d) => t + d.powerMW, 0);
-  const statusCounts = facilities.reduce(
-    (acc, d) => ({ ...acc, [d.status]: (acc[d.status] ?? 0) + 1 }),
-    {} as Record<string, number>,
-  );
-  const nercAreas = areasForRegion(region.name);
-  const regionDemand = gridLive?.demand[region.name] ?? null;
-  const regionMix = gridLive?.mixByOperator?.[region.name] ?? null;
-  const trackedShare = regionDemand && !isLoading ? aiSharePct(trackedMW, regionDemand.latestMw) : null;
-
-  const regionCounts: Record<string, number> = {};
-  for (const d of all) {
-    const rto = gridOpToRTO(d.gridOperator);
-    regionCounts[rto] = (regionCounts[rto] ?? 0) + 1;
-  }
+  // Inside the region as drawn: the same rule the map and its panel count by.
+  const inside = useMemo(() => (shapes && campuses ? campuses.filter((d) => regionAt(shapes, d.lat, d.lng) === id) : null), [shapes, campuses, id]);
+  const sorted = sortBy(inside ?? [], (d) => facilityCell(d, sort.key), sort.dir, (d) => d.name);
+  const count = (s: RegionCampus["status"]) => (inside ?? []).filter((d) => d.status === s).length;
+  const title = region.kind === "market" ? `${region.fullName} (${region.name})` : region.fullName;
 
   return (
-    <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-6 space-y-6">
+    <div className="mx-auto max-w-[1200px] space-y-5 px-4 py-6 md:px-8">
       <nav className="flex items-center gap-2 text-xs text-muted-foreground" data-testid="breadcrumb">
-        <Link href="/" className="hover:text-foreground">GridTilt</Link>
+        <Link href="/" className="hover:text-foreground">
+          GridTilt
+        </Link>
         <span>/</span>
-        <Link href="/grid" className="hover:text-foreground">Power</Link>
+        <Link href="/grid" className="hover:text-foreground">
+          Grid
+        </Link>
         <span>/</span>
-        <span className="text-foreground font-medium">{region.name}</span>
+        <span className="font-medium text-foreground">{region.name}</span>
       </nav>
 
-      <div>
-        <div className="flex items-center gap-3 mb-2">
-          <MapPin className="h-5 w-5 text-brand" />
-          <h1 className="text-2xl font-bold" data-testid="region-heading">{region.fullName} ({region.name})</h1>
+      <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+        <div className="flex items-center gap-3">
+          <span className="h-4 w-4 shrink-0 rounded-sm" style={{ backgroundColor: region.color }} aria-hidden />
+          <h1 className="text-2xl font-bold" data-testid="region-heading">
+            {title}
+          </h1>
         </div>
-        <p className="text-xs text-muted-foreground mb-4">Coverage: {region.states}</p>
-        <p className="text-sm text-muted-foreground max-w-3xl">{region.description}</p>
-      </div>
-
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-        <Card className="p-4 border-card-border col-span-2 sm:col-span-1" data-testid="stat-demand-now">
-          <p className="text-[11px] text-muted-foreground mb-1">Demand now (EIA)</p>
-          {gridLiveLoading ? <Skeleton className="h-7 w-16" /> : regionDemand ? (
-            <>
-              <p className="text-xl font-bold font-mono text-foreground" title={regionDemand.note}>
-                {fmtGW(regionDemand.latestMw)} GW
-                {regionDemand.composed && <span className="ml-1 text-11 font-sans font-normal text-muted-foreground">sum</span>}
-              </p>
-              <p className="text-10 text-muted-foreground leading-snug mt-0.5">
-                {fmtPeriodET(regionDemand.latestPeriodUtc)} · 7-day peak {fmtGW(regionDemand.peakMw)} GW
-                {trackedShare !== null && <> · tracked AI {trackedShare}% of demand</>}
-              </p>
-            </>
-          ) : (
-            <p className="text-xs text-muted-foreground">not available</p>
-          )}
-        </Card>
-        <Card className="p-4 border-card-border" data-testid="stat-facility-count">
-          <p className="text-[11px] text-muted-foreground mb-1">Tracked Facilities</p>
-          {isLoading ? <Skeleton className="h-7 w-12" /> : (
-            <p className="text-xl font-bold font-mono text-foreground">{facilities.length}</p>
-          )}
-        </Card>
-        <Card className="p-4 border-card-border" data-testid="stat-tracked-capacity">
-          <p className="text-[11px] text-muted-foreground mb-1">Tracked Capacity</p>
-          {isLoading ? <Skeleton className="h-7 w-16" /> : (
-            <p className="text-xl font-bold font-mono text-brand-2" title="operational + construction; announced excluded">
-              {(trackedMW / 1000).toFixed(1)} GW
-            </p>
-          )}
-        </Card>
-        <Card className="p-4 border-card-border" data-testid="stat-reserve-margin">
-          <p className="text-[11px] text-muted-foreground mb-1">Reserve margin, summer 2026</p>
-          {nercAreas.length === 1 ? (
-            <p className="text-xl font-bold font-mono text-foreground">
-              {nercAreas[0].margin.toFixed(1)}%
-              <span className="ml-1.5 text-11 font-sans font-normal text-muted-foreground">reference {nercAreas[0].reference}%</span>
-            </p>
-          ) : (
-            // SERC, WECC and NPCC are reported only by sub-area.
-            <p className="text-xs text-muted-foreground leading-snug">{regionMarginText(region.name)}</p>
-          )}
-        </Card>
-        <Card className="p-4 border-card-border" data-testid="stat-nerc-risk">
-          <p className="text-[11px] text-muted-foreground mb-1">NERC risk, 2026</p>
-          <Badge className={RISK_BADGE[regionRisk(region.name) ?? "mixed"]}>{regionRiskText(region.name)}</Badge>
-        </Card>
-      </div>
-      <p className="text-9 text-muted-foreground/50 -mt-4">
-        Reserve margin and risk:{" "}
-        <a href={NERC_LTRA.url} target="_blank" rel="noopener noreferrer" className="underline decoration-dotted underline-offset-2">{NERC_LTRA.label}</a>.
-        NERC rates each area against its own reference margin.
-      </p>
-      {regionDemand && (
-        <SourceFooter
-          className="-mt-4"
-          source="EIA Hourly Electric Grid Monitor"
-          href={gridLive?.sourceUrl}
-          asOf={fmtPeriodET(regionDemand.latestPeriodUtc)}
-          cadence={regionDemand.composed ? regionDemand.note : "tracked AI share is nameplate over this hour's demand, not metered load"}
-          stale={gridLive?.stale ?? false}
-          testid="region-demand-source"
-        />
-      )}
-
-      {regionMix && (
-        <Card className="p-5 border-card-border" data-testid="region-fuel-mix">
-          <div className="mb-2 flex flex-wrap items-baseline gap-x-2">
-            <h2 className="text-[13px] font-semibold text-foreground">Generation by fuel in {region.name}</h2>
-            <span className="font-mono text-10 text-muted-foreground/70 tabular-nums">
-              {fmtGW(regionMix.totalMw, 0)} GW at {fmtPeriodET(regionMix.periodUtc)}
-            </span>
-          </div>
-          <FuelMixBars fuels={regionMix.fuels} limit={6} />
-          <SourceFooter
-            className="mt-2"
-            source="EIA Hourly Electric Grid Monitor"
-            href={gridLive?.sourceUrl}
-            cadence="fuel data posts later than demand"
-            stale={gridLive?.stale ?? false}
-            testid="region-fuel-source"
-          />
-        </Card>
-      )}
-
-      <Card className="p-5 border-card-border" data-testid="region-facilities">
-        <div className="flex items-baseline justify-between gap-3 mb-3 flex-wrap">
-          <h2 className="text-[13px] font-semibold text-foreground">Facilities in {region.name}</h2>
-          {facilities.length > 0 && (
-            <span className="text-10 text-muted-foreground">
-              {statusCounts.operational ?? 0} operational &middot; {statusCounts.construction ?? 0} under construction
-              {statusCounts.announced ? ` · ${statusCounts.announced} announced (+${(announcedMW / 1000).toFixed(1)} GW, excluded above)` : ""}
-            </span>
-          )}
-        </div>
-        {isLoading ? (
-          <div className="space-y-2">
-            {[1, 2, 3].map((i) => <Skeleton key={i} className="h-10 w-full" />)}
-          </div>
-        ) : isError ? (
-          // A failed fetch must not read as "nothing is being built in this RTO".
-          <ErrorState label="Facility registry failed to load." onRetry={() => refetch()} />
-        ) : sorted.length === 0 ? (
-          <p className="text-sm text-muted-foreground py-4" data-testid="region-facilities-empty">
-            No facilities in the tracked dataset carry this RTO yet.
-          </p>
-        ) : (
-          <div className="overflow-x-auto -mx-1">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-10 text-muted-foreground border-b border-border">
-                  {FACILITY_COLS.map((c) => (
-                    <SortableTh
-                      key={c.key}
-                      label={c.label}
-                      title={c.title}
-                      align={c.align ?? "left"}
-                      active={sort.key === c.key}
-                      dir={sort.dir}
-                      onSort={() => setSort((s) => nextSort(s, c.key, FACILITY_TEXT_COLS))}
-                      className="py-1.5 px-1"
-                      testId={`region-sort-${c.key}`}
-                    />
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {sorted.map((d) => {
-                  const badge = STATUS_BADGE[d.status];
-                  return (
-                    <tr key={d.id} className="border-b border-border/50 last:border-0" data-testid={`region-facility-${d.id}`}>
-                      <td className="py-2 px-1 font-medium text-foreground whitespace-nowrap">{d.company}</td>
-                      <td className="py-2 px-1 text-muted-foreground">{d.name}</td>
-                      <td className="py-2 px-1 text-muted-foreground whitespace-nowrap">{d.city}, {d.state}</td>
-                      <td className="py-2 px-1 text-right font-mono text-foreground whitespace-nowrap">{d.powerMW.toLocaleString()} MW</td>
-                      <td className="py-2 px-1 text-right">
-                        <Badge className={`text-10 font-mono ${badge.className}`}>{badge.label}</Badge>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </Card>
-
-      <Card className="p-5 border-card-border" data-testid="region-map-link">
-        <h2 className="text-[13px] font-semibold text-foreground mb-3 flex items-center gap-1.5">
-          <Zap className="h-3.5 w-3.5 text-brand" /> Interactive Map
-        </h2>
-        <p className="text-sm text-muted-foreground mb-3">
-          View every facility in {region.name} plotted on the interactive Power map.
-        </p>
         <Link
-          href={`/grid?rtos=${region.name}`}
-          className="inline-flex items-center gap-1.5 text-sm text-brand hover:text-brand-2 font-medium"
-          data-testid="link-filtered-map"
+          href={`/grid?region=${id}`}
+          className="inline-flex items-center gap-1.5 rounded-md bg-brand px-3.5 py-2 text-sm font-semibold text-black no-underline hover:opacity-90"
+          data-testid="link-region-map"
         >
-          Open Power filtered to {region.name}
+          Open {region.name} on the map <ArrowRight className="h-3.5 w-3.5" aria-hidden />
         </Link>
-      </Card>
+      </div>
 
-      <Card className="p-5 border-card-border" data-testid="related-regions">
-        <h2 className="text-[13px] font-semibold text-foreground mb-3">Other Grid Regions</h2>
-        <div className="flex flex-wrap gap-2">
-          {ALL_REGIONS.filter((r) => r !== slug).map((r) => (
-            <Link key={r} href={`/region/${r}`}>
-              <Badge className="bg-muted/50 text-muted-foreground hover:bg-muted/70 cursor-pointer" data-testid={`link-region-${r}`}>
-                {REGION_META[r].name}
-                {!isLoading && <span className="opacity-50 ml-1">{regionCounts[REGION_META[r].name] ?? 0}</span>}
-              </Badge>
-            </Link>
-          ))}
+      {/* Phone: the locator, then the region, then the lists. Desktop: the region on the left, the rest beside it. */}
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,420px)_minmax(0,1fr)] lg:grid-rows-[auto_1fr]">
+        <Card className="border-card-border p-4 lg:col-start-2 lg:row-start-1" data-testid="region-locator-card">
+          {shapes ? <RegionLocator shapes={shapes} id={id} sites={sites} campuses={inside ?? []} /> : <Skeleton className="aspect-[460/290] w-full" />}
+          <p className="mt-2 text-10 leading-snug text-muted-foreground/70">
+            {region.name} among the nine grid regions. Pale dots are mapped data center sites, locations only (PNNL IM3 atlas
+            {sources.sitesVersion ? ` ${sources.sitesVersion}` : ""}, © OpenStreetMap contributors). Larger dots are the tracked campuses in this region. Click
+            another region to open its page.
+          </p>
+        </Card>
+
+        <Card className="self-start overflow-hidden border-card-border pt-4 lg:col-start-1 lg:row-span-2 lg:row-start-1" data-testid="region-summary">
+          <RegionContent id={id} stats={stats ? stats[id] : null} sources={sources} />
+        </Card>
+
+        <div className="space-y-5 lg:col-start-2 lg:row-start-2">
+          <Card className="border-card-border p-5" data-testid="region-facilities">
+            <div className="mb-3 flex flex-wrap items-baseline justify-between gap-3">
+              <h2 className="text-[13px] font-semibold text-foreground">Tracked campuses in {region.name}</h2>
+              {inside && inside.length > 0 && (
+                <span className="text-10 text-muted-foreground">
+                  {count("operational")} operational · {count("construction")} under construction
+                  {count("announced") > 0 ? ` · ${count("announced")} announced` : ""}
+                </span>
+              )}
+            </div>
+            {campusesError ? (
+              // A failed fetch must not read as "nothing is being built in this region".
+              <ErrorState label="Campus registry failed to load." onRetry={refetchCampuses} />
+            ) : campusesLoading || !inside ? (
+              <div className="space-y-2">
+                {[1, 2, 3].map((i) => (
+                  <Skeleton key={i} className="h-10 w-full" />
+                ))}
+              </div>
+            ) : sorted.length === 0 ? (
+              <p className="py-4 text-sm text-muted-foreground" data-testid="region-facilities-empty">
+                No tracked campus sits inside this region as drawn.
+              </p>
+            ) : (
+              <div className="-mx-1 overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border text-left text-10 text-muted-foreground">
+                      {FACILITY_COLS.map((c) => (
+                        <SortableTh
+                          key={c.key}
+                          label={c.label}
+                          title={c.title}
+                          align={c.align ?? "left"}
+                          active={sort.key === c.key}
+                          dir={sort.dir}
+                          onSort={() => setSort((s) => nextSort(s, c.key, FACILITY_TEXT_COLS))}
+                          className="px-1 py-1.5"
+                          testId={`region-sort-${c.key}`}
+                        />
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sorted.map((d) => {
+                      const badge = STATUS_BADGE[d.status];
+                      return (
+                        <tr key={d.id} className="border-b border-border/50 last:border-0" data-testid={`region-facility-${d.id}`}>
+                          <td className="whitespace-nowrap px-1 py-2 font-medium text-foreground">{d.company}</td>
+                          <td className="px-1 py-2 text-muted-foreground">
+                            {d.clusterId ? (
+                              <Link href={`/compute-frontier/${d.clusterId}`} className="text-foreground underline decoration-dotted underline-offset-2 hover:text-brand">
+                                {d.name}
+                              </Link>
+                            ) : (
+                              d.name
+                            )}
+                          </td>
+                          <td className="whitespace-nowrap px-1 py-2 text-muted-foreground">
+                            {d.city}, {d.state}
+                          </td>
+                          <td className="whitespace-nowrap px-1 py-2 text-right font-mono text-foreground">{d.powerMW.toLocaleString("en-US")} MW</td>
+                          <td className="px-1 py-2 text-right">
+                            <Badge className={`font-mono text-10 ${badge.className}`}>{badge.label}</Badge>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            <p className="mt-3 text-10 leading-snug text-muted-foreground/70">
+              Every tracked campus inside the region as drawn, at any size. The megawatt figure beside the region counts only those of 400 MW and up that are
+              operational or under construction.
+            </p>
+          </Card>
+
+          <Card className="border-card-border p-5" data-testid="related-regions">
+            <h2 className="mb-3 text-[13px] font-semibold text-foreground">The other grid regions</h2>
+            <div className="flex flex-wrap gap-2">
+              {GRID_REGIONS.filter((r) => r.id !== id).map((r) => {
+                const n = stats?.[r.id].campuses?.count;
+                return (
+                  <Link key={r.id} href={`/region/${r.id}`}>
+                    <Badge className="cursor-pointer gap-1.5 bg-muted/50 text-muted-foreground hover:bg-muted/70" data-testid={`link-region-${r.id}`}>
+                      <span className="h-1.5 w-1.5 rounded-sm" style={{ backgroundColor: r.color }} aria-hidden />
+                      {r.name}
+                      {typeof n === "number" && (
+                        <span className="opacity-50" title="Tracked campuses inside the region">
+                          {n}
+                        </span>
+                      )}
+                    </Badge>
+                  </Link>
+                );
+              })}
+            </div>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** /region/npcc: NPCC covered what are now two regions, so it points at both. */
+function NpccNote() {
+  return (
+    <div className="mx-auto max-w-[720px] px-4 py-10 md:px-8">
+      <Card className="border-card-border p-6" data-testid="region-npcc-note">
+        <h1 className="text-xl font-bold">NPCC: New York and New England</h1>
+        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+          NPCC is the reliability organization for New York and New England, whose grids and markets are run by NYISO and ISO New England. GridTilt maps each
+          by its operator.
+        </p>
+        <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm font-semibold">
+          <Link href="/region/nyiso" className="inline-flex items-center gap-1.5 text-brand hover:text-brand-2" data-testid="link-region-nyiso">
+            NYISO, New York <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+          </Link>
+          <Link href="/region/isone" className="inline-flex items-center gap-1.5 text-brand hover:text-brand-2" data-testid="link-region-isone">
+            ISO-NE, New England <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+          </Link>
         </div>
       </Card>
+    </div>
+  );
+}
 
-      <Card className="p-5 border-card-border">
-        <h2 className="text-[13px] font-semibold text-foreground mb-3">Related Tools</h2>
-        <div className="space-y-2 text-sm">
-          <Link href="/grid" className="block text-brand hover:text-brand-2">Power</Link>
-          <Link href="/markets?tab=analyze&sub=scenario" className="block text-brand hover:text-brand-2">Analyze</Link>
-          <Link href="/markets?tab=equities" className="block text-brand hover:text-brand-2">Equities</Link>
-        </div>
+function NotFound() {
+  return (
+    <div className="mx-auto max-w-[1200px] px-4 py-6 md:px-8">
+      <Card className="border-card-border p-8 text-center">
+        <AlertTriangle className="mx-auto mb-3 h-8 w-8 text-negative" />
+        <h1 className="mb-2 text-lg font-semibold">Region not found</h1>
+        <p className="text-sm text-muted-foreground">
+          <Link href="/grid" className="text-brand">
+            Open the map
+          </Link>{" "}
+          to see the nine grid regions.
+        </p>
       </Card>
     </div>
   );

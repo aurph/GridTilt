@@ -7,16 +7,10 @@
 import { Link } from "wouter";
 import { SectionHeading } from "@/components/section-heading";
 import { GridLiveCard } from "@/components/GridLiveCard";
+import { GRID_REGIONS } from "@/data/grid-regions";
 
-const REGIONS: [string, string][] = [
-  ["PJM", "/region/pjm"],
-  ["ERCOT", "/region/ercot"],
-  ["MISO", "/region/miso"],
-  ["SPP", "/region/spp"],
-  ["SERC", "/region/serc"],
-  ["WECC", "/region/wecc"],
-  ["NPCC", "/region/npcc"],
-];
+/** The nine grid regions, each with a page of its own. */
+const REGIONS: [string, string][] = GRID_REGIONS.map((r) => [r.name, `/region/${r.id}`]);
 
 export default function GridLive() {
   return (

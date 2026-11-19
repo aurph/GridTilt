@@ -5,6 +5,7 @@ import { Search } from "lucide-react";
 import {
   PAGE_ENTRIES,
   clusterEntries,
+  regionEntries,
   rankEntries,
   researchEntries,
   stateEntries,
@@ -14,6 +15,7 @@ import {
   type PaletteEntry,
   type StatePageLike,
 } from "@/lib/palette";
+import { GRID_REGIONS } from "@/data/grid-regions";
 import { STATE_GRID } from "@/data/state-grid";
 import { supplyNodes } from "@/data/supply-chain-config";
 
@@ -30,6 +32,7 @@ import { supplyNodes } from "@/data/supply-chain-config";
 
 const CATEGORY_TAG: Record<PaletteEntry["category"], string> = {
   page: "page",
+  region: "grid region",
   state: "state",
   stock: "stock",
   cluster: "cluster",
@@ -117,6 +120,7 @@ export function CommandPalette() {
   const entries = useMemo(
     () => [
       ...PAGE_ENTRIES,
+      ...regionEntries(GRID_REGIONS),
       ...stateEntries(statePages ?? [], STATE_GRID),
       ...stockEntries(supplyNodes, withPage),
       ...clusterEntries(clusters ?? []),

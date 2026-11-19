@@ -97,6 +97,21 @@ test("the retired States index must answer one 301 to /grid, and a page there is
   assert.equal(temporary.level, "fail", "a temporary redirect fails: crawlers keep the old address");
 });
 
+test("region pages: a region is a page, and a renamed region answers one 301 to its new address", async () => {
+  const names = ["page /region/southeast", "renamed region /region/wecc forwards to /region/west"];
+  const checks = CHECKS.filter((c) => names.includes(c.name));
+  assert.equal(checks.length, 2, "the smoke list carries both region checks");
+  const { base, close } = await start();
+  try {
+    for (const r of await runSmoke({ base, today: "2026-11-18" }, checks)) assert.equal(r.level, "pass", `${r.name}: ${r.detail}`);
+  } finally {
+    await close();
+  }
+  const stale = (async () => new Response('<div id="root"></div>', { status: 200, headers: { "content-type": "text/html" } })) as unknown as typeof fetch;
+  const [, moved] = await runSmoke({ base: "http://x", today: "2026-11-18", fetchFn: stale }, checks);
+  assert.equal(moved.level, "fail", "a 200 at the old address means an old build");
+});
+
 test("the GPU check fails when the sweep is on without permission, passes when permitted", async () => {
   process.env.GPU_LIVE_SWEEP_ENABLED = "true";
   const { base, close } = await start();

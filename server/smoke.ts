@@ -158,7 +158,10 @@ export const CHECKS: Check[] = [
     "/markets?tab=catalysts",
     "/blog",
     "/data-status",
+    "/region/southeast",
   ].map(page),
+  // SERC and WECC became Southeast and West with the grid regions (2026-11). A 200 here means an old build.
+  movedCheck("renamed region /region/wecc forwards to /region/west", "/region/wecc", "/region/west"),
   // The States index was retired 2026-11-18. A 200 here means an old build.
   movedCheck("retired /states forwards to /grid", "/states", "/grid"),
   {
