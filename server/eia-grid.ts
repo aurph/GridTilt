@@ -399,20 +399,34 @@ function demandUrl(key: string): URL {
   return url;
 }
 
-function fuelUrl(key: string): URL {
-  const url = new URL("electricity/rto/fuel-type-data/data/", eiaBase());
-  url.searchParams.set("api_key", key);
-  url.searchParams.set("frequency", "hourly");
-  url.searchParams.set("data[0]", "value");
+/**
+ * Respondents per fuel request. EIA caps a request at 5,000 rows and a
+ * respondent-hour is about eight fuel rows, so 14 respondents reach back
+ * about a day and a half: enough to find one complete hour even with the lag
+ * on fuel rows. Asking for all of them at once (23 since the grid regions)
+ * would shorten that to about a day and blank the mix whenever a member
+ * posts late, so the respondents are asked for in groups of this size.
+ */
+export const FUEL_RESPONDENTS_PER_CALL = 14;
+
+function fuelUrls(key: string): URL[] {
   const respondents = new Set<string>();
   for (const spec of Object.values(OPERATOR_RESPONDENTS)) spec.respondents.forEach((r) => respondents.add(r));
-  respondents.forEach((r) => url.searchParams.append("facets[respondent][]", r));
-  url.searchParams.set("sort[0][column]", "period");
-  url.searchParams.set("sort[0][direction]", "desc");
-  // EIA's cap. About a day and a half of every fuel for every respondent, enough
-  // to find one complete hour even with the lag on fuel rows.
-  url.searchParams.set("length", "5000");
-  return url;
+  const all = Array.from(respondents);
+  const urls: URL[] = [];
+  for (let i = 0; i < all.length; i += FUEL_RESPONDENTS_PER_CALL) {
+    const url = new URL("electricity/rto/fuel-type-data/data/", eiaBase());
+    url.searchParams.set("api_key", key);
+    url.searchParams.set("frequency", "hourly");
+    url.searchParams.set("data[0]", "value");
+    all.slice(i, i + FUEL_RESPONDENTS_PER_CALL).forEach((r) => url.searchParams.append("facets[respondent][]", r));
+    url.searchParams.set("sort[0][column]", "period");
+    url.searchParams.set("sort[0][direction]", "desc");
+    // EIA's cap.
+    url.searchParams.set("length", "5000");
+    urls.push(url);
+  }
+  return urls;
 }
 
 function readRows(fetchImpl: FetchLike, url: URL): Promise<EiaRow[]> {
@@ -443,7 +457,7 @@ export async function getGridLive(
     return { ...cache.payload, stale: true };
   }
   // Single-flight: a burst of page loads after the cache expires makes one
-  // pair of EIA calls, not one pair per visitor.
+  // set of EIA calls (demand, then the fuel groups), not one set per visitor.
   if (inflight) return inflight;
 
   inflight = (async () => {
@@ -455,7 +469,8 @@ export async function getGridLive(
 
       let mixByOperator: Record<string, GenerationMix> = {};
       try {
-        mixByOperator = operatorMixes(await readRows(fetchImpl, fuelUrl(key)));
+        const parts = await Promise.all(fuelUrls(key).map((url) => readRows(fetchImpl, url)));
+        mixByOperator = operatorMixes(([] as EiaRow[]).concat(...parts));
       } catch {
         // Demand still serves; the mix card says it has nothing rather than
         // the whole block going dark.

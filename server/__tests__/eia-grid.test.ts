@@ -1,6 +1,7 @@
 import { describe, it, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import {
+  FUEL_RESPONDENTS_PER_CALL,
   OPERATOR_RESPONDENTS,
   composeOperators,
   getGridLive,
@@ -228,6 +229,55 @@ describe("getGridLive", () => {
     return Promise.resolve({ ok: true, status: 200, json: async () => body });
   };
 
+  it("keeps each fuel request to about a day and a half of rows, however many regions are served", async () => {
+    // EIA caps a request at 5,000 rows and a respondent-hour is about eight fuel rows. One call for all 23
+    // respondents would reach back about 27 hours, too short to find a complete hour when a member posts late.
+    const urls: URL[] = [];
+    await getGridLive({
+      env: { EIA_API_KEY: "k" } as NodeJS.ProcessEnv,
+      now: () => 1_000_000,
+      fetchImpl: (url: URL) => {
+        urls.push(url);
+        return okFetch(url);
+      },
+    });
+    const fuel = urls.filter((u) => u.pathname.includes("fuel-type-data"));
+    const all = new Set(Object.values(OPERATOR_RESPONDENTS).flatMap((s) => s.respondents));
+    assert.equal(FUEL_RESPONDENTS_PER_CALL, 14, "the number one call carried when a day and a half was measured");
+    assert.equal(fuel.length, Math.ceil(all.size / FUEL_RESPONDENTS_PER_CALL));
+    const asked = fuel.flatMap((u) => u.searchParams.getAll("facets[respondent][]"));
+    assert.equal(asked.length, all.size, "each respondent is asked for once");
+    assert.deepEqual(new Set(asked), all);
+    for (const u of fuel) {
+      assert.ok(u.searchParams.getAll("facets[respondent][]").length <= FUEL_RESPONDENTS_PER_CALL);
+      assert.equal(u.searchParams.get("length"), "5000");
+    }
+  });
+
+  it("puts the fuel rows of every call together", async () => {
+    const caiso = [
+      { period: "2026-11-03T16", respondent: "CISO", fueltype: "NG", value: 10000 },
+      { period: "2026-11-03T16", respondent: "CISO", fueltype: "SUN", value: 15000 },
+      { period: "2026-11-03T16", respondent: "CISO", fueltype: "WND", value: 5000 },
+    ];
+    const r = await getGridLive({
+      env: { EIA_API_KEY: "k" } as NodeJS.ProcessEnv,
+      now: () => 1_000_000,
+      fetchImpl: (url: URL) => {
+        if (!url.pathname.includes("fuel-type-data")) return okFetch(url);
+        // Each call answers only for the respondents it asked about, as EIA does.
+        const asked = url.searchParams.getAll("facets[respondent][]");
+        const data = [...fuelBody.response.data, ...caiso].filter((row) => asked.includes(row.respondent));
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ response: { data } }) });
+      },
+    });
+    assert.equal(r.configured, true);
+    if (!r.configured) return;
+    assert.equal(r.mixByOperator.PJM.totalMw, 90000);
+    assert.equal(r.mixByOperator.CAISO.totalMw, 30000);
+    assert.equal(r.mix?.fuels[0].code, "NG");
+  });
+
   it("reports unconfigured without a key and never calls out", async () => {
     let calls = 0;
     const r = await getGridLive({ env: {} as NodeJS.ProcessEnv, fetchImpl: () => { calls++; return okFetch(new URL("https://x")); } });
@@ -252,7 +302,7 @@ describe("getGridLive", () => {
     assert.equal(r.mix?.fuels[0].code, "NG");
     assert.equal(r.mixByOperator.PJM.totalMw, 90000);
     assert.equal(r.stale, false);
-    assert.equal(urls.length, 2);
+    assert.equal(urls.length, 3, "one demand call and two fuel calls");
     const demandReq = urls.find((u) => u.pathname.includes("region-data"))!;
     assert.deepEqual(demandReq.searchParams.getAll("facets[type][]"), ["D"]);
     assert.ok(demandReq.searchParams.getAll("facets[respondent][]").includes("US48"));
@@ -264,7 +314,7 @@ describe("getGridLive", () => {
 
     t += 5 * 60 * 1000;
     await getGridLive(opts);
-    assert.equal(urls.length, 2, "second call inside the cache window must not hit EIA");
+    assert.equal(urls.length, 3, "second call inside the cache window must not hit EIA");
 
     const stamp = gridLiveStamp();
     assert.equal(stamp.lastRefreshed, "2026-11-03T16:00:00Z");
