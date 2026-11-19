@@ -383,11 +383,12 @@ const AUTHORITY_REGION: Record<string, GridRegionId> = (() => {
  * place a record the same way. In order:
  *
  * 1. A power plant whose balancing authority is an operator's own belongs to
- *    that operator, wherever its dot falls (footprints interleave: 88 plants
- *    of an operator are drawn inside a neighbor's lines). One that reports a
- *    utility with no market operator belongs to the Southeast or the West,
- *    not to the operator drawn around it. An authority from the other side
- *    of the country than the plant is not believed.
+ *    that operator, wherever its dot falls (footprints interleave: 68 plants
+ *    of an operator, 50 GW, are drawn inside another region's lines). One
+ *    that reports a utility with no market operator belongs to the Southeast
+ *    or the West, not to the operator drawn around it (37 plants, 38 GW). An
+ *    authority from the other side of the country than the plant is not
+ *    believed.
  * 2. Otherwise the region whose drawn boundary holds the point.
  * 3. Otherwise, for a point just off a clipped coast, lakeshore or river (21
  *    plants were, four of them nuclear), the region that runs most of its

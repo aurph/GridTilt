@@ -1143,6 +1143,7 @@ export default function PowerMap() {
           )}
           <LayerAttribution text={on("sites") && sitesQuery.data ? "Sites: IM3 Data Center Atlas (PNNL), &copy; OpenStreetMap contributors" : null} />
           <LayerAttribution text={on("plants") && plantsQuery.data ? "Plants: EIA-860M" : null} />
+          <LayerAttribution text={on("regions") && shapes ? "Regions: HIFLD (ORNL, 2020), approximate" : null} />
           <MapClickHandler
             onMapClick={() => {
               clearCards();
