@@ -8,9 +8,10 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { GRID_REGIONS, GRID_REGION_IDS } from "../../data/grid-regions";
 import { MAP_LAYERS } from "../map-layers";
-import { buildTourSteps, tourFacts, type TourFacts } from "../grid-tour";
+import { buildTourSteps, numberWord, tourFacts, type TourFacts } from "../grid-tour";
 
 const FULL: TourFacts = {
+  high: [],
   elevated: [
     { id: "pjm", name: "PJM" },
     { id: "ercot", name: "ERCOT" },
@@ -23,7 +24,7 @@ const FULL: TourFacts = {
   topSiteRegion: { id: "pjm", name: "PJM", count: 402 },
   queue: { gw: 2061, asOf: "End of 2025 (LBNL Queued Up 2026)" },
 };
-const BARE: TourFacts = { elevated: [], nercSource: "NERC 2025 LTRA (2026-01)", sites: null, campuses: null, topSiteRegion: null, queue: null };
+const BARE: TourFacts = { high: [], elevated: [], nercSource: "NERC 2025 LTRA (2026-01)", sites: null, campuses: null, topSiteRegion: null, queue: null };
 
 const sentences = (s: string) => s.split(/(?<=[.!?])\s+/).filter(Boolean).length;
 
@@ -105,6 +106,34 @@ describe("the tour", () => {
     assert.match(queue.source, /End of 2025/);
   });
 
+  it("says what the queue figure counts, and that the plants drawn are already running", () => {
+    // LBNL's total is generation and storage waiting to connect. It does not count data centers or other loads.
+    const queue = steps.find((s) => s.id === "queue")!;
+    assert.match(queue.caption, /power plants and batteries/i);
+    assert.ok(!/loads?/i.test(queue.caption), queue.caption);
+    assert.match(queue.caption, /already running/);
+    assert.equal(queue.source, "End of 2025 (LBNL Queued Up 2026)", "the dataset is named once");
+    const plain = buildTourSteps({ ...FULL, queue: { gw: 2061, asOf: "End of 2025" } }).find((s) => s.id === "queue")!;
+    assert.equal(plain.source, "LBNL Queued Up, End of 2025");
+    assert.equal(buildTourSteps(BARE).find((s) => s.id === "queue")!.source, "LBNL Queued Up");
+  });
+
+  it("calls a region high when NERC rates it high, not elevated", () => {
+    const stress = buildTourSteps({ ...FULL, high: [{ id: "miso", name: "MISO" }] }).find((s) => s.id === "stress")!;
+    assert.match(stress.caption, /NERC rates MISO high and PJM, ERCOT, SPP and NYISO elevated for 2026\./);
+    assert.deepEqual(stress.spotlight, ["miso", "pjm", "ercot", "spp", "nyiso"]);
+    const onlyHigh = buildTourSteps({ ...FULL, high: [{ id: "miso", name: "MISO" }], elevated: [] }).find((s) => s.id === "stress")!;
+    assert.match(onlyHigh.caption, /NERC rates MISO high for 2026\./);
+  });
+
+  it("counts the market operators from the region list instead of typing the number", () => {
+    const n = GRID_REGIONS.filter((r) => r.kind === "market").length;
+    assert.equal(numberWord(n), "Seven");
+    assert.ok(steps.find((s) => s.id === "operators")!.caption.startsWith(`${numberWord(n)} operators`));
+    assert.equal(numberWord(1), "One");
+    assert.equal(numberWord(40), "40");
+  });
+
   it("states no figure it was not given", () => {
     const bare = buildTourSteps(BARE);
     assert.equal(bare.length, steps.length);
@@ -122,6 +151,7 @@ describe("tour facts", () => {
   it("reads the elevated regions from the NERC table in the site's region order, leaving out mixed ones", () => {
     const facts = tourFacts({});
     assert.deepEqual(facts.elevated.map((r) => r.id), ["pjm", "ercot", "spp", "nyiso"]);
+    assert.deepEqual(facts.high, [], "NERC rates no region high for 2026");
     assert.match(facts.nercSource, /NERC 2025 LTRA/);
     assert.equal(facts.sites, null);
     assert.equal(facts.topSiteRegion, null);

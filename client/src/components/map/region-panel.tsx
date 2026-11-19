@@ -18,7 +18,7 @@ import { LayerSwatch } from "@/components/map/map-controls";
 import { RISK_COLOR } from "@/components/map/region-layer";
 import { SourceFooter } from "@/components/SourceFooter";
 import { Skeleton } from "@/components/ui/skeleton";
-import { BOUNDARY_NOTE, REGIONS_CHECKED, gridRegion, type GridRegionId } from "@/data/grid-regions";
+import { BOUNDARY_NOTE, BOUNDARY_SOURCE, REGIONS_CHECKED, gridRegion, type GridRegionId } from "@/data/grid-regions";
 import { NERC_LTRA, type NercArea } from "@/data/nerc-reserve-margins";
 import { STATE_GRID } from "@/data/state-grid";
 import { fmtGW, fmtPeriodET, useGridLive } from "@/lib/grid-live";
@@ -101,6 +101,13 @@ export interface RegionPanelSources {
   sitesVersion?: string;
   /** "2026-09", when the plants layer has loaded. */
   plantsMonth?: string;
+  /** The size floor of the plants file, in MW. */
+  plantsFloorMw?: number;
+}
+
+/** "49 MW" or "28.6 GW": a megawatt total at the scale it reads best. */
+function power(mw: number): string {
+  return mw >= 1000 ? `${fmtGW(mw)} GW` : `${Math.round(mw).toLocaleString("en-US")} MW`;
 }
 
 export function RegionContent({
@@ -130,7 +137,7 @@ export function RegionContent({
   }>({ queryKey: ["/api/queue"] });
   const q = queue?.headline;
 
-  const { data: statePages } = useQuery<PublishedStatePage[]>({ queryKey: ["/api/state-pages"] });
+  const { data: statePages, isError: statePagesFailed } = useQuery<PublishedStatePage[]>({ queryKey: ["/api/state-pages"] });
   const states = statePageLinks(statePages, STATE_GRID).filter((s) => regionForState(s.code) === id);
   const details = useQueries({
     queries: states.map((s) => ({ queryKey: [`/api/state-pages/${s.slug}`] })),
@@ -227,20 +234,26 @@ export function RegionContent({
             <BuiltRow layer="campuses" label="Tracked campuses" count={stats.campuses?.count ?? null} onShow={onShowLayer}>
               {!stats.campuses
                 ? undefined
-                : stats.campuses.count400 > 0
-                  ? `${fmtGW(stats.campuses.builtMw400)} GW built or building at the ${stats.campuses.count400} of 400 MW and up`
-                  : stats.campuses.count > 0
-                    ? "none of 400 MW and up"
-                    : undefined}
+                : stats.campuses.built400 > 0
+                  ? `${fmtGW(stats.campuses.builtMw400)} GW built or building at the ${stats.campuses.built400} of 400 MW and up${
+                      stats.campuses.count400 > stats.campuses.built400 ? `; ${stats.campuses.count400 - stats.campuses.built400} more announced` : ""
+                    }`
+                  : stats.campuses.count400 > 0
+                    ? `none of 400 MW and up built or building yet; ${stats.campuses.count400} announced`
+                    : stats.campuses.count > 0
+                      ? "none of 400 MW and up"
+                      : undefined}
             </BuiltRow>
             <BuiltRow layer="sites" label="Data center sites" count={stats.sites} onShow={onShowLayer}>
               locations only; size is not published
             </BuiltRow>
             <BuiltRow layer="clusters" label="AI clusters" count={stats.clusters?.count ?? null} onShow={onShowLayer}>
-              {stats.clusters && stats.clusters.count > 0 ? `${fmtGW(stats.clusters.plannedMw)} GW planned, an estimate for most` : undefined}
+              {stats.clusters && stats.clusters.count > 0 ? `${power(stats.clusters.plannedMw)} planned, an estimate for most` : undefined}
             </BuiltRow>
             <BuiltRow layer="plants" label="Power plants" count={stats.plants?.count ?? null} onShow={onShowLayer}>
-              {stats.plants && stats.plants.count > 0 ? `${fmtGW(stats.plants.mw)} GW nameplate, plants of 250 MW and up` : undefined}
+              {stats.plants && stats.plants.count > 0
+                ? `${power(stats.plants.mw)} nameplate${sources?.plantsFloorMw ? `, plants of ${sources.plantsFloorMw} MW and up plus all nuclear` : ""}`
+                : undefined}
             </BuiltRow>
             <Link
               href="/grid?tab=deals"
@@ -251,9 +264,13 @@ export function RegionContent({
               <span className="min-w-0 flex-1">
                 <span className="flex items-baseline gap-2">
                   <span className="text-xs text-white/85">Signed power agreements</span>
-                  <span className="ml-auto font-mono text-[13px] font-bold tabular-nums text-white">{signed.count}</span>
+                  {signed ? (
+                    <span className="ml-auto font-mono text-[13px] font-bold tabular-nums text-white">{signed.count}</span>
+                  ) : (
+                    <Skeleton className="ml-auto h-4 w-8" aria-label="loading" />
+                  )}
                 </span>
-                {signed.count > 0 && (
+                {signed && signed.count > 0 && (
                   <span className="block text-10 leading-snug text-white/45">
                     {signed.mw > 0 ? `${signed.mw.toLocaleString("en-US")} MW` : "capacity not disclosed"}
                     {signed.mw > 0 && signed.undisclosed > 0 ? `, ${signed.undisclosed} undisclosed` : ""}
@@ -297,7 +314,13 @@ export function RegionContent({
       </Section>
 
       <Section title="Decisions on the record" testid="region-decisions">
-        {states.length === 0 ? (
+        {!statePages ? (
+          statePagesFailed ? (
+            <p className="text-xs text-white/50">The record of public decisions did not load. Reload the page to try again.</p>
+          ) : (
+            <Skeleton className="h-10 w-full" />
+          )
+        ) : states.length === 0 ? (
           <p className="text-xs text-white/50">GridTilt does not keep a dated record of public decisions for a state in this region yet.</p>
         ) : (
           <div className="space-y-3">
@@ -333,7 +356,11 @@ export function RegionContent({
       </Section>
 
       <p className="border-t border-subtle px-4 py-3 text-10 leading-snug text-white/35" data-testid="region-boundary-note">
-        {BOUNDARY_NOTE}
+        {BOUNDARY_NOTE} Lines:{" "}
+        <a href={BOUNDARY_SOURCE.url} target="_blank" rel="noopener noreferrer" className="underline decoration-dotted underline-offset-2 hover:text-white/60">
+          {BOUNDARY_SOURCE.label}
+        </a>
+        .
       </p>
     </div>
   );
@@ -406,9 +433,13 @@ export function RegionPanel({
 }) {
   const region = gridRegion(id);
   const scroller = useRef<HTMLDivElement>(null);
-  // A new region starts at its top.
+  // Phone: the sheet can be folded down to its title, so the map behind it can be read and moved.
+  const [folded, setFolded] = useState(false);
+  const dragFrom = useRef<number | null>(null);
+  // A new region starts at its top, unfolded.
   useEffect(() => {
     scroller.current?.scrollTo({ top: 0 });
+    setFolded(false);
   }, [id]);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -421,11 +452,37 @@ export function RegionPanel({
   return (
     <aside
       key={id}
-      className="gt-panel-in pointer-events-auto absolute inset-x-0 bottom-0 z-[1050] flex max-h-[68%] flex-col rounded-t-xl border border-subtle bg-surface-raised shadow-2xl sm:inset-x-auto sm:bottom-3 sm:right-3 sm:top-3 sm:max-h-none sm:w-[372px] sm:rounded-lg"
+      className={`gt-panel-in pointer-events-auto absolute inset-x-0 bottom-0 z-[1050] flex flex-col rounded-t-xl border border-subtle bg-surface-raised shadow-2xl sm:inset-x-auto sm:bottom-3 sm:right-3 sm:top-3 sm:max-h-none sm:w-[372px] sm:rounded-lg ${
+        folded ? "max-h-[92px] sm:max-h-none" : "max-h-[68%]"
+      }`}
       aria-label={`${region.fullName}`}
       data-testid="region-panel"
     >
-      <div className="mx-auto mt-2 h-1 w-9 shrink-0 rounded-full bg-white/20 sm:hidden" aria-hidden />
+      {/* The handle: tap to fold or unfold, or drag it down and up. */}
+      <button
+        type="button"
+        className="flex h-6 w-full shrink-0 touch-none items-center justify-center sm:hidden"
+        aria-expanded={!folded}
+        aria-label={folded ? `Show ${region.name}` : `Fold ${region.name} down to see the map`}
+        onPointerDown={(e) => {
+          dragFrom.current = e.clientY;
+        }}
+        onPointerUp={(e) => {
+          const moved = dragFrom.current === null ? 0 : e.clientY - dragFrom.current;
+          dragFrom.current = null;
+          // A drag sets the state it points at; a tap flips it.
+          setFolded(Math.abs(moved) > 12 ? moved > 0 : !folded);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            setFolded(!folded);
+          }
+        }}
+        data-testid="region-panel-handle"
+      >
+        <span className="block h-1 w-9 rounded-full bg-white/25" aria-hidden />
+      </button>
       <div className="flex shrink-0 items-start gap-3 px-4 pb-2 pt-3">
         <span className="mt-1.5 h-3 w-3 shrink-0 rounded-sm" style={{ backgroundColor: region.color }} aria-hidden />
         <div className="min-w-0">

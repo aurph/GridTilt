@@ -10,9 +10,9 @@ import type { GridRegionId } from "../data/grid-regions";
 import { regionShapes, regionStats, type RegionShape, type RegionStats } from "./grid-regions";
 import { hasCoords, type ClusterPoint } from "./power-map-clusters";
 
-/** The nine regions' shapes: one small file, fetched once and cached. */
-export function useRegionShapes(): RegionShape[] | null {
-  const { data } = useQuery<RegionShape[]>({
+/** The nine regions' shapes, with the query's state for a page that shows a failed load. */
+export function useRegionShapesQuery() {
+  return useQuery<RegionShape[]>({
     queryKey: ["/geo/grid-regions.json"],
     queryFn: async () => {
       const res = await fetch("/geo/grid-regions.json?v=1");
@@ -24,7 +24,11 @@ export function useRegionShapes(): RegionShape[] | null {
       return regionShapes(feature(topology, topology.objects.regions) as never);
     },
   });
-  return data ?? null;
+}
+
+/** The nine regions' shapes: one small file, fetched once and cached. */
+export function useRegionShapes(): RegionShape[] | null {
+  return useRegionShapesQuery().data ?? null;
 }
 
 /** A tracked campus, as /api/datacenters answers (the fields a region page reads). */
@@ -50,6 +54,7 @@ interface SitesPayload {
 
 interface PlantsPayload {
   dataMonth: string;
+  floorMw: number;
   plants: Array<{ id: number; lat: number; lng: number; mw: number; fuel: string; state: string; ba: string | null }>;
 }
 
@@ -59,7 +64,7 @@ export interface RegionData {
   stats: Record<GridRegionId, RegionStats> | null;
   campuses: RegionCampus[] | undefined;
   sites: SitesPayload["sites"] | null;
-  sources: { sitesVersion?: string; plantsMonth?: string };
+  sources: { sitesVersion?: string; plantsMonth?: string; plantsFloorMw?: number };
   campusesLoading: boolean;
   campusesError: boolean;
   refetchCampuses: () => void;
@@ -93,7 +98,7 @@ export function useRegionData(): RegionData {
     stats,
     campuses,
     sites: sites?.sites ?? null,
-    sources: { sitesVersion: sites?.source.version, plantsMonth: plants?.dataMonth },
+    sources: { sitesVersion: sites?.source.version, plantsMonth: plants?.dataMonth, plantsFloorMw: plants?.floorMw },
     campusesLoading: campusQuery.isLoading,
     campusesError: campusQuery.isError,
     refetchCampuses: () => {

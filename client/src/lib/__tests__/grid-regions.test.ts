@@ -329,6 +329,13 @@ describe("old addresses and deal rows", () => {
     assert.deepEqual(REGION_SLUG_ALIASES, { serc: "southeast", wecc: "west" });
   });
 
+  it("reads a region name however it is capitalized, since people type links", () => {
+    assert.equal(regionIdForSlug("PJM"), "pjm");
+    assert.equal(regionIdForSlug("Southeast"), "southeast");
+    assert.equal(regionIdForSlug("WECC"), "west");
+    assert.equal(regionIdForSlug("Atlantis"), null);
+  });
+
   it("file a power agreement under a region only when its row names one", () => {
     assert.equal(dealRegion("PJM"), "pjm");
     assert.equal(dealRegion("ERCOT"), "ercot");
@@ -361,9 +368,10 @@ describe("what is in a region", () => {
 
   it("counts every campus but sums megawatts only for built or building campuses of 400 MW and up", () => {
     // Same definition as the site's tracked-power gauge, so the regions add up to it.
-    assert.deepEqual(stats.pjm.campuses, { count: 3, count400: 2, builtMw400: 900 });
-    assert.deepEqual(stats.ercot.campuses, { count: 1, count400: 1, builtMw400: 1200 });
-    assert.deepEqual(stats.miso.campuses, { count: 0, count400: 0, builtMw400: 0 });
+    // built400 counts the campuses the megawatts cover, so a sentence never says "at the 2" when one is only announced.
+    assert.deepEqual(stats.pjm.campuses, { count: 3, count400: 2, built400: 1, builtMw400: 900 });
+    assert.deepEqual(stats.ercot.campuses, { count: 1, count400: 1, built400: 1, builtMw400: 1200 });
+    assert.deepEqual(stats.miso.campuses, { count: 0, count400: 0, built400: 0, builtMw400: 0 });
   });
 
   it("counts mapped sites, never megawatts, and leaves out a point in no region", () => {
@@ -374,7 +382,7 @@ describe("what is in a region", () => {
 
   it("says nothing about a layer that has not loaded, so an unknown count is never shown as zero", () => {
     const partial = regionStats(shapes, { campuses: [], sites: null, plants: undefined });
-    assert.deepEqual(partial.pjm.campuses, { count: 0, count400: 0, builtMw400: 0 });
+    assert.deepEqual(partial.pjm.campuses, { count: 0, count400: 0, built400: 0, builtMw400: 0 });
     assert.equal(partial.pjm.sites, null);
     assert.equal(partial.pjm.clusters, null);
     assert.equal(partial.pjm.plants, null);
@@ -412,6 +420,7 @@ describe("states and agreements by region", () => {
     assert.deepEqual(regionDeals(rows, "pjm"), { count: 3, mw: 2835, undisclosed: 1 });
     assert.deepEqual(regionDeals(rows, "ercot"), { count: 1, mw: 1200, undisclosed: 0 });
     assert.deepEqual(regionDeals(rows, "west"), { count: 0, mw: 0, undisclosed: 0 });
-    assert.deepEqual(regionDeals(undefined, "pjm"), { count: 0, mw: 0, undisclosed: 0 });
+    assert.equal(regionDeals(undefined, "pjm"), null, "agreements that have not loaded are unknown, not zero");
+    assert.deepEqual(regionDeals([], "pjm"), { count: 0, mw: 0, undisclosed: 0 });
   });
 });

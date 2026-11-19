@@ -106,5 +106,5 @@ test("the function the region data delegates to keeps megawatts to campuses of 4
       { lat: 40, lng: -79, powerMW: 1200, status: "announced" },
     ],
   });
-  assert.deepEqual(stats.pjm.campuses, { count: 3, count400: 2, builtMw400: 900 });
+  assert.deepEqual(stats.pjm.campuses, { count: 3, count400: 2, built400: 1, builtMw400: 900 });
 });

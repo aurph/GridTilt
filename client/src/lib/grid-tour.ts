@@ -17,7 +17,9 @@ import type { MapLayer } from "./map-layers";
 import { SERIES } from "./tokens";
 
 export interface TourFacts {
-  /** Regions NERC rates Elevated or High for 2026 in every area it assesses there. */
+  /** Regions NERC rates High for 2026 in every area it assesses there. */
+  high: Array<{ id: GridRegionId; name: string }>;
+  /** Regions NERC rates Elevated for 2026 in every area it assesses there. */
   elevated: Array<{ id: GridRegionId; name: string }>;
   nercSource: string;
   sites: { count: number; version: string } | null;
@@ -67,10 +69,9 @@ export function tourFacts(input: {
   siteCounts?: Record<GridRegionId, { sites: number | null }> | null;
   queue?: { gw: number; asOf: string } | null;
 }): TourFacts {
-  const elevated = GRID_REGIONS.filter((r) => {
-    const level = regionRiskLevel(r.id);
-    return level === "Elevated" || level === "High";
-  }).map((r) => ({ id: r.id, name: r.name }));
+  const rated = (level: "High" | "Elevated") => GRID_REGIONS.filter((r) => regionRiskLevel(r.id) === level).map((r) => ({ id: r.id, name: r.name }));
+  const high = rated("High");
+  const elevated = rated("Elevated");
 
   let top: TourFacts["topSiteRegion"] = null;
   if (input.siteCounts) {
@@ -80,6 +81,7 @@ export function tourFacts(input: {
     }
   }
   return {
+    high,
     elevated,
     nercSource: `${NERC_LTRA.short} (${NERC_LTRA.published})`,
     sites: typeof input.siteCount === "number" && input.sitesVersion ? { count: input.siteCount, version: input.sitesVersion } : null,
@@ -91,6 +93,13 @@ export function tourFacts(input: {
 
 const n = (v: number) => v.toLocaleString("en-US");
 
+const NUMBER_WORDS = ["Zero", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve"];
+
+/** A small count as a word to open a sentence with ("Seven operators"); digits past twelve. */
+export function numberWord(count: number): string {
+  return NUMBER_WORDS[count] ?? String(count);
+}
+
 /** The three grids, in the order a reader scans the map: west to east, then Texas. */
 const INTERCONNECTIONS: Array<{ label: Interconnection; color: string; at: [number, number] }> = [
   { label: "Western", color: SERIES[3], at: [41.2, -113.5] },
@@ -101,6 +110,14 @@ const INTERCONNECTIONS: Array<{ label: Interconnection; color: string; at: [numb
 export function buildTourSteps(facts: TourFacts): TourStep[] {
   const operators = GRID_REGIONS.filter((r) => r.kind === "market").map((r) => r.id);
   const noMarket = GRID_REGIONS.filter((r) => r.kind === "no-market").map((r) => r.id);
+
+  // "A high and B elevated": a region NERC rates high is never called elevated.
+  const clauses = [
+    facts.high.length > 0 ? `${listOf(facts.high.map((r) => r.name))} high` : null,
+    facts.elevated.length > 0 ? `${listOf(facts.elevated.map((r) => r.name))} elevated` : null,
+  ].filter((c): c is string => c !== null);
+  const ratings = clauses.length > 0 ? clauses.join(" and ") : "no region elevated";
+  const tight = facts.high.concat(facts.elevated).map((r) => r.id);
 
   const dataCenters =
     facts.sites && facts.campuses !== null
@@ -130,7 +147,7 @@ export function buildTourSteps(facts: TourFacts): TourStep[] {
     {
       id: "operators",
       title: "Market operators",
-      caption: "Seven operators, like PJM and MISO, run a wholesale market and direct power plants they do not own. Their lines follow utility territories, so they are approximate.",
+      caption: `${numberWord(operators.length)} operators, like PJM and MISO, run a wholesale market and direct power plants they do not own. Their lines follow utility territories, so they are approximate.`,
       source: "Each operator's own description",
       spotlight: operators,
       focus: "all",
@@ -151,12 +168,10 @@ export function buildTourSteps(facts: TourFacts): TourStep[] {
     {
       id: "stress",
       title: "Where the grid is tight",
-      caption: `A reserve margin is the spare capacity an area expects above its peak demand. NERC rates ${
-        facts.elevated.length > 0 ? listOf(facts.elevated.map((r) => r.name)) : "no region"
-      } elevated for 2026.`,
+      caption: `A reserve margin is the spare capacity an area expects above its peak demand. NERC rates ${ratings} for 2026.`,
       source: facts.nercSource,
       sourceHref: NERC_LTRA.url,
-      spotlight: facts.elevated.length > 0 ? facts.elevated.map((r) => r.id) : null,
+      spotlight: tight.length > 0 ? tight : null,
       focus: "all",
       layers: ["regions"],
       stress: true,
@@ -176,10 +191,12 @@ export function buildTourSteps(facts: TourFacts): TourStep[] {
     {
       id: "queue",
       title: "The line to plug in",
-      caption: `New plants and large loads wait in an interconnection queue before they can connect.${
-        facts.queue ? ` ${n(facts.queue.gw)} GW of projects were waiting nationwide.` : ""
-      }`,
-      source: facts.queue ? `LBNL Queued Up, ${facts.queue.asOf}` : "LBNL Queued Up",
+      // LBNL's total is generation and storage waiting to connect; it does not
+      // count data centers or other loads. The layer drawn is operating plants.
+      caption: facts.queue
+        ? `New power plants and batteries wait in an interconnection queue before they can connect: ${n(facts.queue.gw)} GW nationwide. The diamonds are plants already running.`
+        : "New power plants and batteries wait in an interconnection queue before they can connect. The diamonds are plants already running.",
+      source: !facts.queue ? "LBNL Queued Up" : /LBNL/i.test(facts.queue.asOf) ? facts.queue.asOf : `LBNL Queued Up, ${facts.queue.asOf}`,
       sourceHref: "https://emp.lbl.gov/queues",
       spotlight: null,
       focus: "all",

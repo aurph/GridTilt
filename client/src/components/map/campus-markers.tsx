@@ -214,6 +214,7 @@ function useLabels<T>(items: T[], place: (item: T) => [number, number], name: (i
         L.marker(place(item), {
           icon: L.divIcon({ html: `<div class="map-label">${escapeHtml(label)}</div>`, className: "leaflet-label-icon", iconSize: [120, 16], iconAnchor: [-8, 20] }),
           interactive: false,
+          keyboard: false,
           zIndexOffset: -10,
         }).addTo(group);
       }

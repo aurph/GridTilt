@@ -58,7 +58,7 @@ import { buildTourSteps, tourFacts } from "@/lib/grid-tour";
 import { isFarOut, layerSummary, mapViewQuery, parseMapView, toggleLayer, trackedHeadline, type MapLayer, type MapView } from "@/lib/map-layers";
 import { formatClusterMW, hasCoords, isEstimated, knownChip, type ClusterPoint } from "@/lib/power-map-clusters";
 import { MIN_TRACKED_MW } from "@/lib/real-gauges";
-import { useRegionShapes } from "@/lib/region-data";
+import { useRegionShapesQuery } from "@/lib/region-data";
 import { withSectionParams } from "@/lib/sections";
 import { BORDER, BRAND, FONT, INK, STATUS_COLORS, SURFACE } from "@/lib/tokens";
 
@@ -249,7 +249,7 @@ function PointBody({ info, sites, plants }: { info: PointInfo; sites?: SitesPayl
         <p className="text-[13px] font-semibold leading-tight text-white">{s.name ?? s.operator ?? "Unnamed site"}</p>
         {s.operator && s.operator !== s.name && <p className="mt-0.5 text-[11px] text-white/70">{s.operator}</p>}
         <p className="mt-1.5 text-[11px] text-white/50">
-          Data center site, {s.state}. Location only, size not published.
+          Mapped as a data center in OpenStreetMap, {s.state}. Location only, size not published.
           {s.n ? ` ${s.n} mapped buildings.` : ""}
         </p>
         <p className="mt-1 text-10 text-white/35">
@@ -417,7 +417,8 @@ export default function PowerMap() {
   const plantsQuery = useQuery<PlantsPayload>({ queryKey: ["/api/map/plants"], enabled: painted && (view.layers.includes("plants") || needAll) });
   const sites = sitesQuery.data?.sites ?? null;
   const plants = plantsQuery.data?.plants ?? null;
-  const shapes = useRegionShapes();
+  const shapesQuery = useRegionShapesQuery();
+  const shapes = shapesQuery.data ?? null;
   const { live: gridLive, isLoading: gridLiveLoading } = useGridLive();
   const { data: queue } = useQuery<{ headline?: { queueOverallGW?: number; queueOverallAsOf?: string } }>({ queryKey: ["/api/queue"], enabled: tour !== null });
 
@@ -472,9 +473,12 @@ export default function PowerMap() {
   const on = (l: MapLayer) => layers.includes(l);
 
   // ── What draws ───────────────────────────────────────────────────────────
+  const touring = step !== null;
   const campusList = useMemo(
-    () => campuses.filter((d) => (filterCompanies.length === 0 || filterCompanies.includes(d.company)) && passesCapacity(d.powerMW, filterCapacity)),
-    [campuses, filterCompanies, filterCapacity],
+    () =>
+      // The tour's captions count every campus, so the filters wait until it ends.
+      touring ? campuses : campuses.filter((d) => (filterCompanies.length === 0 || filterCompanies.includes(d.company)) && passesCapacity(d.powerMW, filterCapacity)),
+    [campuses, filterCompanies, filterCapacity, touring],
   );
   const campusesOn = layers.includes("campuses");
   // A cluster that a review has tied to a tracked campus is that campus: one
@@ -518,15 +522,20 @@ export default function PowerMap() {
   // record, so this count matches the Layers control, the region panel and
   // Compute. With a region selected the three layer counts are the panel's.
   const inRegion = activeRegion && stats ? stats[activeRegion] : null;
-  const summary = layerSummary(
-    {
-      sites: inRegion ? inRegion.sites ?? undefined : sites ? sites.length : undefined,
-      campuses: dcLoading || dcError ? undefined : scopeCampuses.length,
-      clusters: inRegion ? inRegion.clusters?.count : fetchedClusters ? clusters.length : undefined,
-      plants: inRegion ? inRegion.plants?.count : plants ? plants.length : undefined,
-    },
-    layers,
-  );
+  // A selected region's numbers need the shapes. Until they arrive nothing national is shown under its name.
+  const regionPending = activeRegion !== null && !shapes;
+  const summaryCounts = {
+    sites: inRegion ? inRegion.sites ?? undefined : sites ? sites.length : undefined,
+    campuses: dcLoading || dcError ? undefined : scopeCampuses.length,
+    clusters: inRegion ? inRegion.clusters?.count : fetchedClusters ? clusters.length : undefined,
+    plants: inRegion ? inRegion.plants?.count : plants ? plants.length : undefined,
+  };
+  // With an operator or size filter on, the campus count says how many of the region's (or the country's) it is showing.
+  const campusTotal = activeRegion && shapes ? campuses.filter((d) => campusRegion.get(d.id) === activeRegion).length : campuses.length;
+  const summary = layerSummary(summaryCounts, layers, { campusTotal });
+  const failed = { sites: sitesQuery.isError, campuses: dcError, clusters: clError, plants: plantsQuery.isError };
+  /** A layer that is switched on and has neither arrived nor failed. */
+  const pending = (["sites", "campuses", "clusters", "plants"] as const).some((l) => layers.includes(l) && summaryCounts[l] === undefined && !failed[l]);
   const activeRegionMeta = activeRegion ? gridRegion(activeRegion) : null;
   // The two lists under the map follow the selected region: the campuses inside it, whatever the filters say.
   const regionScope = useMemo(() => {
@@ -544,7 +553,7 @@ export default function PowerMap() {
     hoverSetter.current = set;
   }, []);
 
-  function clearCards() {
+  const clearCards = useCallback(() => {
     setSelected(null);
     setTooltipDC(null);
     setHoveredId(null);
@@ -554,7 +563,11 @@ export default function PowerMap() {
     setTooltipPos(null);
     setPicked(null);
     hoverSetter.current(null);
-  }
+  }, []);
+
+  // What the map's handlers read at the moment of an event. They are bound once, so they read refs.
+  const now = useRef({ view, companies: filterCompanies, capacity: filterCapacity, pinned: false, touring: false });
+  now.current = { view, companies: filterCompanies, capacity: filterCapacity, pinned: Boolean(selected || selectedCluster || picked), touring };
 
   function applyView(next: MapView) {
     setView(next);
@@ -564,18 +577,28 @@ export default function PowerMap() {
     clearCards();
     applyView({ ...view, layers: toggleLayer(view.layers, layer) });
   }
-  const selectRegion = useCallback(
-    (id: GridRegionId | null) => {
-      setPicked(null);
-      hoverSetter.current(null);
-      setView((cur) => {
-        if (cur.region === id) return cur;
-        const next = { ...cur, region: id };
-        writeUrl(filterCompanies, filterCapacity, next);
-        return next;
-      });
+  const selectRegion = useCallback((id: GridRegionId | null) => {
+    setPicked(null);
+    hoverSetter.current(null);
+    const cur = now.current;
+    if (cur.view.region === id) return;
+    const next = { ...cur.view, region: id };
+    setView(next);
+    writeUrl(cur.companies, cur.capacity, next);
+  }, []);
+  /**
+   * A click on a region. Regions cover the whole lower 48, so this is also
+   * the "click away": with a card pinned, the click only puts it away. During
+   * the tour a click does nothing, since the tour is driving the map.
+   */
+  const onRegionClick = useCallback(
+    (id: GridRegionId) => {
+      if (now.current.touring) return;
+      const hadCard = now.current.pinned;
+      clearCards();
+      if (!hadCard) selectRegion(id);
     },
-    [filterCompanies, filterCapacity],
+    [clearCards, selectRegion],
   );
   /** From the region panel: this region's campuses (or sites, plants, clusters) alone on the map. */
   function showOnly(layer: MapLayer) {
@@ -601,11 +624,37 @@ export default function PowerMap() {
     setMobileFiltersOpen(false);
   }
 
-  const onRegionHover = useCallback((id: GridRegionId | null, at?: { x: number; y: number }) => {
-    setHoveredRegion((cur) => (cur === id ? cur : id));
-    hoverSetter.current(id && at ? { kind: "region", id, ...at } : null);
+  // Leaving a region for a dot inside it fires "out" and then "over" on the
+  // dot. The region stays lit across that gap, or it would flicker every time
+  // the mouse crossed a dot.
+  const unhover = useRef<number | undefined>(undefined);
+  const dropHover = useCallback(() => {
+    window.clearTimeout(unhover.current);
+    unhover.current = window.setTimeout(() => setHoveredRegion(null), 90);
   }, []);
-  const onPointHover = useCallback((info: PointInfo | null) => hoverSetter.current(info), []);
+  useEffect(() => () => window.clearTimeout(unhover.current), []);
+  const onRegionHover = useCallback(
+    (id: GridRegionId | null, at?: { x: number; y: number }) => {
+      if (now.current.touring) return;
+      if (!id) {
+        hoverSetter.current(null);
+        dropHover();
+        return;
+      }
+      window.clearTimeout(unhover.current);
+      setHoveredRegion((cur) => (cur === id ? cur : id));
+      hoverSetter.current(at ? { kind: "region", id, ...at } : null);
+    },
+    [dropHover],
+  );
+  const onPointHover = useCallback(
+    (info: PointInfo | null) => {
+      hoverSetter.current(info);
+      if (info) window.clearTimeout(unhover.current);
+      else dropHover();
+    },
+    [dropHover],
+  );
   const onPointPick = useCallback((info: PointInfo) => {
     hoverSetter.current(null);
     setSelected(null);
@@ -616,6 +665,8 @@ export default function PowerMap() {
 
   function startTour() {
     clearCards();
+    window.clearTimeout(unhover.current);
+    setHoveredRegion(null);
     setFiltersExpanded(false);
     setTour(0);
   }
@@ -691,26 +742,43 @@ export default function PowerMap() {
     return id ? gridRegion(id) : null;
   };
 
+  // A layer that failed says so and offers a retry: with no automatic retry, one dropped request would otherwise stick.
+  const layerErrors = [
+    { label: "Grid regions", failed: shapesQuery.isError && (on("regions") || view.region !== null), retry: () => void shapesQuery.refetch() },
+    { label: "Data center sites", failed: sitesQuery.isError && (on("sites") || needAll), retry: () => void sitesQuery.refetch() },
+    { label: "AI clusters", failed: clError && (on("clusters") || needAll), retry: () => void refetchClusters() },
+    { label: "Power plants", failed: plantsQuery.isError && (on("plants") || needAll), retry: () => void plantsQuery.refetch() },
+  ].filter((e) => e.failed);
+
   const overlayStats = (
     <>
       <p className="text-11 leading-relaxed text-white/60" data-testid="layer-summary">
-        {summary.length > 0
-          ? summary.join(" · ")
-          : dcLoading
-            ? "loading…"
-            : on("regions")
-              ? "Grid regions only. Click a region to open it."
-              : "Every layer is off. Turn one on under Layers."}
+        {regionPending
+          ? "loading…"
+          : summary.length > 0
+            ? `${summary.join(" · ")}${pending ? " · loading…" : ""}`
+            : pending
+              ? "loading…"
+              : layers.length === 0
+                ? "Every layer is off. Turn one on under Layers."
+                : on("regions") && layers.length === 1
+                  ? "Grid regions only. Click a region to open it."
+                  : "Nothing to count here."}
       </p>
-      {on("campuses") && !dcLoading && !dcError && (
+      {on("campuses") && !dcLoading && !dcError && !regionPending && (
         <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-11">
           <span
             className="font-bold text-brand-2"
-            title={`Operational plus under construction at the ${headline.count400} tracked campuses of 400 MW and up. Announced (+${headline.announcedGw} GW) and smaller campuses are drawn but not added.`}
+            title={`Operational plus under construction at the ${headline.built400} tracked campuses of 400 MW and up. Announced (+${headline.announcedGw} GW) and smaller campuses are drawn but not added.`}
             data-testid="tracked-gw"
           >
             {headline.gw} GW tracked
           </span>
+          {anyFilterActive && !touring && (
+            <span className="font-sans text-10 text-white/40" title="The operator and size filters are on, so these figures cover the campuses shown.">
+              filtered
+            </span>
+          )}
           <span className="text-white/20">|</span>
           <span
             className="text-white/50"
@@ -898,8 +966,9 @@ export default function PowerMap() {
                   <p className="mb-1.5 text-[11px] font-semibold text-brand">What is counted, and what is not</p>
                   <p className="text-11 leading-snug text-white/70">
                     Tracked campuses and AI clusters are GridTilt's own records, with megawatts and sources. Data center sites are locations from PNNL's atlas of
-                    OpenStreetMap: their size is not published, so they are counted and never added to a megawatt figure. Power plants are EIA-860M, 250 MW and up
-                    plus all nuclear. For the compute layer see <Link href="/compute" className="text-brand hover:text-brand-2">Compute</Link>.
+                    OpenStreetMap: their size is not published, so they are counted and never added to a megawatt figure. Power plants are EIA-860M
+                    {plantsQuery.data ? `, ${plantsQuery.data.floorMw} MW and up plus all nuclear` : ""}. For the compute layer see{" "}
+                    <Link href="/compute" className="text-brand hover:text-brand-2">Compute</Link>.
                   </p>
                 </TooltipContent>
               </UITooltip>
@@ -923,7 +992,7 @@ export default function PowerMap() {
               layers={layers}
               stress={stress}
               counts={{
-                campuses: dcLoading ? undefined : campuses.length,
+                campuses: dcLoading || dcError ? undefined : campuses.length,
                 sites: sitesQuery.data?.sites.length,
                 clusters: fetchedClusters ? clusters.length : undefined,
                 plants: plantsQuery.data?.plants.length,
@@ -949,7 +1018,7 @@ export default function PowerMap() {
               <SlidersHorizontal className="h-3 w-3" />
               <span>Filters</span>
               {anyFilterActive && <span className="rounded-full bg-brand px-1.5 py-0.5 text-10 font-bold leading-none text-black">{activeFilterCount}</span>}
-              <span className="ml-1 text-10 text-white/40">{anyFilterActive ? `${campusList.length}/${campuses.length}` : campuses.length}</span>
+              {!dcLoading && !dcError && <span className="ml-1 text-10 text-white/40">{anyFilterActive ? `${campusList.length}/${campuses.length}` : campuses.length}</span>}
               <ChevronDown className={`h-3 w-3 transition-transform ${filtersExpanded ? "rotate-180" : ""}`} />
             </button>
           )}
@@ -991,7 +1060,7 @@ export default function PowerMap() {
           </div>
         )}
 
-        {!step && (
+        {(!step || step.stress) && (
           <div className="absolute bottom-12 left-3 z-[1000] max-w-[270px] sm:bottom-3">
             <MapLegend layers={layers} stress={stress} plantFuels={plantFuels} defaultOpen={!belowSm} key={belowSm ? "phone" : "desk"} />
           </div>
@@ -1021,7 +1090,7 @@ export default function PowerMap() {
               spotlight={step ? step.spotlight : null}
               groups={step?.groups ?? null}
               onHover={onRegionHover}
-              onSelect={selectRegion}
+              onSelect={onRegionClick}
             />
           )}
           <PointsLayer
@@ -1090,10 +1159,14 @@ export default function PowerMap() {
             </div>
           </div>
         )}
-        {on("clusters") && clError && !dcError && (
-          <div className="pointer-events-none absolute inset-x-0 top-16 z-[1010] flex justify-center">
+        {layerErrors.length > 0 && !dcError && (
+          <div className="pointer-events-none absolute inset-x-0 top-16 z-[1010] flex justify-center" data-testid="layer-errors">
             <div className="pointer-events-auto rounded-lg border border-subtle bg-surface-raised/95 px-6 shadow-2xl backdrop-blur-md">
-              <ErrorState label="Cluster data failed to load." onRetry={() => refetchClusters()} className="py-3" />
+              <ErrorState
+                label={`${layerErrors.map((e) => e.label).join(", ")} failed to load.`}
+                onRetry={() => layerErrors.forEach((e) => e.retry())}
+                className="py-3"
+              />
             </div>
           </div>
         )}
@@ -1237,7 +1310,7 @@ export default function PowerMap() {
           <RegionPanel
             id={activeRegion}
             stats={stats ? stats[activeRegion] : null}
-            sources={{ sitesVersion: sitesQuery.data?.source.version, plantsMonth: plantsQuery.data?.dataMonth }}
+            sources={{ sitesVersion: sitesQuery.data?.source.version, plantsMonth: plantsQuery.data?.dataMonth, plantsFloorMw: plantsQuery.data?.floorMw }}
             onClose={closeRegion}
             onShowLayer={showOnly}
           />
@@ -1371,13 +1444,28 @@ export default function PowerMap() {
                     <td className="py-2 pr-6">
                       <div className="flex items-center gap-1.5">
                         <span className="h-2 w-2 rounded-sm" style={{ backgroundColor: r.color, opacity: 0.9 }} />
-                        <span className="font-semibold text-foreground">{r.name}</span>
+                        {/* A real button, so the keyboard can open a region: the regions on the map are a canvas. */}
+                        <button
+                          type="button"
+                          className="font-semibold text-foreground underline-offset-2 hover:underline focus-visible:underline"
+                          aria-pressed={active}
+                          aria-label={`${active ? "Close" : "Open"} ${r.name} on the map`}
+                          data-testid={`rto-open-${r.id}`}
+                        >
+                          {r.name}
+                        </button>
                         {r.kind === "no-market" && <span className="font-sans text-9 text-muted-foreground/60">no market operator</span>}
                         {active && <span className="font-sans text-9 text-brand">on map</span>}
                       </div>
                     </td>
                     <td className="py-2 pr-6 text-right text-foreground">
-                      {dcLoading || loadMW === null ? <Skeleton className="ml-auto inline-block h-3 w-16" aria-hidden="true" /> : dcError ? "n/a" : `${loadMW.toLocaleString()} MW`}
+                      {dcError || shapesQuery.isError ? (
+                        "n/a"
+                      ) : dcLoading || loadMW === null ? (
+                        <Skeleton className="ml-auto inline-block h-3 w-16" aria-hidden="true" />
+                      ) : (
+                        `${loadMW.toLocaleString()} MW`
+                      )}
                     </td>
                     <td className="whitespace-nowrap py-2 pr-6 text-right text-foreground" data-testid={`rto-demand-${r.id}`}>
                       {gridLiveLoading ? (

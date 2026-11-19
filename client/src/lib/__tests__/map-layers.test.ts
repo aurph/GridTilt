@@ -119,8 +119,20 @@ describe("what the overlay says it is counting", () => {
       { powerMW: 1500, status: "announced" },
       { powerMW: 300, status: "operational" },
     ];
-    assert.deepEqual(trackedHeadline(campuses), { gw: "1.5", count400: 3, countAll: 4, announcedGw: "1.5" });
-    assert.deepEqual(trackedHeadline([]), { gw: "0.0", count400: 0, countAll: 0, announcedGw: "0.0" });
+    // built400 is the number of campuses the gigawatts cover: two, not the three of 400 MW and up.
+    assert.deepEqual(trackedHeadline(campuses), { gw: "1.5", count400: 3, built400: 2, countAll: 4, announcedGw: "1.5" });
+    assert.deepEqual(trackedHeadline([]), { gw: "0.0", count400: 0, built400: 0, countAll: 0, announcedGw: "0.0" });
+  });
+
+  it("opens a region from a link that capitalizes its name", () => {
+    assert.equal(parseMapView("?region=PJM").region, "pjm");
+    assert.equal(parseMapView("?region=ERCOT&layers=regions").region, "ercot");
+  });
+
+  it("says so when a campus filter is hiding some of them", () => {
+    assert.deepEqual(layerSummary({ campuses: 3, sites: 392 }, ["campuses", "sites"], { campusTotal: 11 }), ["392 data center sites", "3 of 11 tracked campuses"]);
+    assert.deepEqual(layerSummary({ campuses: 11 }, ["campuses"], { campusTotal: 11 }), ["11 tracked campuses"], "nothing hidden, nothing to say");
+    assert.deepEqual(layerSummary({ campuses: 1 }, ["campuses"], { campusTotal: 1 }), ["1 tracked campus"]);
   });
 
   it("rounds the way the region panel and the table do, so one set of campuses never shows two figures", () => {

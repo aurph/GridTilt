@@ -97,11 +97,20 @@ const NOUN: Array<[Exclude<MapLayer, "regions">, string, string]> = [
  * whose data has arrived. Counts only; megawatts are said separately, and
  * only for tracked campuses (trackedHeadline).
  */
-export function layerSummary(counts: Partial<Record<Exclude<MapLayer, "regions">, number>>, layers: readonly MapLayer[]): string[] {
+export function layerSummary(
+  counts: Partial<Record<Exclude<MapLayer, "regions">, number>>,
+  layers: readonly MapLayer[],
+  /** `campusTotal`: how many campuses there are before the operator and size filters; said when the filters hide some. */
+  opts: { campusTotal?: number } = {},
+): string[] {
   const out: string[] = [];
   for (const [layer, one, many] of NOUN) {
     const n = counts[layer];
     if (!layers.includes(layer) || typeof n !== "number") continue;
+    if (layer === "campuses" && typeof opts.campusTotal === "number" && opts.campusTotal !== n) {
+      out.push(`${n.toLocaleString("en-US")} of ${opts.campusTotal.toLocaleString("en-US")} ${many}`);
+      continue;
+    }
     out.push(`${n.toLocaleString("en-US")} ${n === 1 ? one : many}`);
   }
   return out;
@@ -116,22 +125,29 @@ export function layerSummary(counts: Partial<Record<Exclude<MapLayer, "regions">
  */
 export function trackedHeadline(campuses: Array<{ powerMW: number; status: string }>): {
   gw: string;
+  /** Campuses of 400 MW and up, announced ones included. */
   count400: number;
+  /** The ones the gigawatts cover: 400 MW and up, operational or under construction. */
+  built400: number;
   countAll: number;
   announcedGw: string;
 } {
   let mw = 0;
   let announced = 0;
   let count400 = 0;
+  let built400 = 0;
   for (const c of campuses) {
     if (!(typeof c.powerMW === "number" && Number.isFinite(c.powerMW) && c.powerMW >= MIN_TRACKED_MW)) continue;
     count400 += 1;
     if (c.status === "announced") announced += c.powerMW;
-    else mw += c.powerMW;
+    else {
+      mw += c.powerMW;
+      built400 += 1;
+    }
   }
   // fmtGW, not toFixed: the region panel and the table format the same
   // megawatts with it, and toFixed rounds a half the other way (5,850 MW).
-  return { gw: fmtGW(mw), count400, countAll: campuses.length, announcedGw: fmtGW(announced) };
+  return { gw: fmtGW(mw), count400, built400, countAll: campuses.length, announcedGw: fmtGW(announced) };
 }
 
 /**

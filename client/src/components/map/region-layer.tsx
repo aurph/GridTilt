@@ -24,6 +24,9 @@ export const RISK_COLOR: Record<NercRisk | "mixed", string> = {
   mixed: INK.faint,
 };
 
+/** How long a single click waits for a second one before it opens a region. */
+const CLICK_HOLD_MS = 200;
+
 /** How long a region's fill takes to reach its new strength. */
 const FADE_MS = 170;
 
@@ -80,6 +83,7 @@ export function RegionLayer({ shapes, renderer, stress, selected, hovered, spotl
   const map = useMap();
   const layersRef = useRef<Partial<Record<GridRegionId, L.GeoJSON>>>({});
   const labelsRef = useRef<L.LayerGroup | null>(null);
+  const clickTimer = useRef<number | undefined>(undefined);
   const handlers = useRef({ onHover, onSelect });
   handlers.current = { onHover, onSelect };
   const state = useRef<StyleState>({ stress, selected, hovered, spotlight, groups });
@@ -100,7 +104,18 @@ export function RegionLayer({ shapes, renderer, stress, selected, hovered, spotl
         handlers.current.onHover(shape.id, { x: p.x, y: p.y });
       });
       layer.on("mouseout", () => handlers.current.onHover(null));
-      layer.on("click", () => handlers.current.onSelect(shape.id));
+      // A region does not pass its clicks up to the map, so the map never sees
+      // a double-click over land. Zoom here instead, and hold a single click a
+      // moment so the first half of a double-click does not open a region.
+      layer.on("click", () => {
+        window.clearTimeout(clickTimer.current);
+        clickTimer.current = window.setTimeout(() => handlers.current.onSelect(shape.id), CLICK_HOLD_MS);
+      });
+      layer.on("dblclick", (e: L.LeafletMouseEvent) => {
+        window.clearTimeout(clickTimer.current);
+        const step = map.options.zoomDelta ?? 1;
+        map.setZoomAround(e.containerPoint, map.getZoom() + (e.originalEvent.shiftKey ? -step : step));
+      });
       layer.addTo(group);
       byId[shape.id] = layer;
     }
@@ -108,6 +123,7 @@ export function RegionLayer({ shapes, renderer, stress, selected, hovered, spotl
     // Under the points: the regions are the ground the dots sit on.
     Object.values(byId).forEach((l) => l?.bringToBack());
     return () => {
+      window.clearTimeout(clickTimer.current);
       map.removeLayer(group);
       layersRef.current = {};
     };

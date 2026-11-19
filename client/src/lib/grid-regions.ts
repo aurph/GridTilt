@@ -110,8 +110,10 @@ export interface RegionStats {
   campuses: {
     /** Every tracked campus in the region. */
     count: number;
-    /** The ones of 400 MW and up: the campuses the site's tracked-power gauge counts. */
+    /** The ones of 400 MW and up, announced ones included. */
     count400: number;
+    /** The ones the megawatts cover: 400 MW and up, operational or under construction. */
+    built400: number;
     /** Megawatts at those, operational or under construction. Announced campuses are not steel. */
     builtMw400: number;
   } | null;
@@ -139,7 +141,7 @@ export function regionStats(
   const out = {} as Record<GridRegionId, RegionStats>;
   for (const id of GRID_REGION_IDS) {
     out[id] = {
-      campuses: layers.campuses ? { count: 0, count400: 0, builtMw400: 0 } : null,
+      campuses: layers.campuses ? { count: 0, count400: 0, built400: 0, builtMw400: 0 } : null,
       sites: layers.sites ? 0 : null,
       clusters: layers.clusters ? { count: 0, plannedMw: 0 } : null,
       plants: layers.plants ? { count: 0, mw: 0, byFuel: {} } : null,
@@ -152,7 +154,10 @@ export function regionStats(
     s.count += 1;
     if (finite(c.powerMW) >= MIN_TRACKED_MW) {
       s.count400 += 1;
-      if (c.status !== "announced") s.builtMw400 += c.powerMW;
+      if (c.status !== "announced") {
+        s.built400 += 1;
+        s.builtMw400 += c.powerMW;
+      }
     }
   }
   for (const p of layers.sites ?? []) {
@@ -200,8 +205,9 @@ export function regionMarginText(id: GridRegionId): string {
 /** The region a page address names: its own id, or the page a retired NERC-style slug moved to. */
 export function regionIdForSlug(slug: string | undefined | null): GridRegionId | null {
   if (!slug) return null;
-  if ((GRID_REGION_IDS as readonly string[]).includes(slug)) return slug as GridRegionId;
-  return REGION_SLUG_ALIASES[slug] ?? null;
+  const s = slug.toLowerCase();
+  if ((GRID_REGION_IDS as readonly string[]).includes(s)) return s as GridRegionId;
+  return REGION_SLUG_ALIASES[s] ?? null;
 }
 
 const DEAL_ISO: Record<string, GridRegionId> = {
@@ -257,8 +263,10 @@ export interface DealLike {
  * aggregate row is not an agreement, and a row nested inside another (a plant
  * inside its framework) is not counted twice.
  */
-export function regionDeals(rows: DealLike[] | undefined, id: GridRegionId): { count: number; mw: number; undisclosed: number } {
-  const signed = (rows ?? []).filter((r) => r.firmness === "signed" && !r.aggregate && dealRegion(r.iso) === id);
+export function regionDeals(rows: DealLike[] | undefined, id: GridRegionId): { count: number; mw: number; undisclosed: number } | null {
+  // Not loaded is unknown, never zero.
+  if (!rows) return null;
+  const signed = rows.filter((r) => r.firmness === "signed" && !r.aggregate && dealRegion(r.iso) === id);
   const nested = new Set(signed.flatMap((r) => r.includes ?? []));
   const unique = signed.filter((r) => !nested.has(r.id));
   let mw = 0;
