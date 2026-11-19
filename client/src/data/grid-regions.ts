@@ -20,6 +20,9 @@ import { SERIES } from "../lib/tokens";
 export const GRID_REGION_IDS = ["pjm", "ercot", "miso", "spp", "caiso", "nyiso", "isone", "southeast", "west"] as const;
 export type GridRegionId = (typeof GRID_REGION_IDS)[number];
 
+/** The three grids of the lower 48. Texas is ERCOT's. */
+export type Interconnection = "Eastern" | "Western" | "Texas";
+
 export interface GridRegion {
   /** Also the page address: /region/<id>. */
   id: GridRegionId;
@@ -28,6 +31,13 @@ export interface GridRegion {
   fullName: string;
   /** A market operator runs a wholesale market here, or none does. */
   kind: "market" | "no-market";
+  /**
+   * Which of the three grids of the lower 48 it is on (EIA, Energy Explained:
+   * how electricity is delivered). SPP is filed under Eastern, where nearly
+   * all of it is; the western part it began operating in April 2026 is not in
+   * the drawn shape (BOUNDARY_NOTE).
+   */
+  interconnection: Interconnection;
   /** The states it covers, in words. */
   states: string;
   description: string;
@@ -54,6 +64,7 @@ export const GRID_REGIONS: GridRegion[] = [
     name: "PJM",
     fullName: "PJM Interconnection",
     kind: "market",
+    interconnection: "Eastern",
     states: "Delaware, Maryland, New Jersey, Ohio, Pennsylvania, Virginia, West Virginia and DC, and parts of Illinois, Indiana, Kentucky, Michigan, North Carolina and Tennessee",
     description:
       "PJM Interconnection runs the high-voltage grid and a wholesale electricity market in all or parts of 13 states and the District of Columbia. It does not own power lines or power plants; it directs their operation for many owners.",
@@ -68,6 +79,7 @@ export const GRID_REGIONS: GridRegion[] = [
     name: "ERCOT",
     fullName: "Electric Reliability Council of Texas",
     kind: "market",
+    interconnection: "Texas",
     states: "Most of Texas",
     description:
       "ERCOT runs the grid and wholesale electricity market for most of Texas. Its grid is a separate interconnection from the rest of the country's, with only small ties to its neighbors.",
@@ -82,6 +94,7 @@ export const GRID_REGIONS: GridRegion[] = [
     name: "MISO",
     fullName: "Midcontinent Independent System Operator",
     kind: "market",
+    interconnection: "Eastern",
     states: "All or parts of Arkansas, Illinois, Indiana, Iowa, Kentucky, Louisiana, Michigan, Minnesota, Mississippi, Missouri, Montana, North Dakota, South Dakota, Texas and Wisconsin",
     description:
       "MISO runs the high-voltage grid and a wholesale electricity market across 15 US states, from Minnesota to Louisiana, and the Canadian province of Manitoba.",
@@ -96,6 +109,7 @@ export const GRID_REGIONS: GridRegion[] = [
     name: "SPP",
     fullName: "Southwest Power Pool",
     kind: "market",
+    interconnection: "Eastern",
     states: "Kansas, Nebraska, Oklahoma, the Dakotas and parts of the neighboring states; since April 2026, parts of the West as well",
     description:
       "Southwest Power Pool runs the high-voltage grid and a wholesale electricity market across the central United States. Since April 2026 it also operates part of the western grid, the first operator to work in both.",
@@ -110,6 +124,7 @@ export const GRID_REGIONS: GridRegion[] = [
     name: "CAISO",
     fullName: "California Independent System Operator",
     kind: "market",
+    interconnection: "Western",
     states: "Most of California and a small part of Nevada",
     description:
       "The California ISO manages the flow of electricity on the high-voltage lines serving most of California and runs a wholesale electricity market. Los Angeles, Sacramento and a few other areas run their own grids outside it.",
@@ -125,6 +140,7 @@ export const GRID_REGIONS: GridRegion[] = [
     name: "NYISO",
     fullName: "New York Independent System Operator",
     kind: "market",
+    interconnection: "Eastern",
     states: "New York",
     description:
       "The New York ISO operates New York State's high-voltage grid and runs its wholesale electricity markets. It does not own power lines or power plants.",
@@ -139,6 +155,7 @@ export const GRID_REGIONS: GridRegion[] = [
     name: "ISO-NE",
     fullName: "ISO New England",
     kind: "market",
+    interconnection: "Eastern",
     states: "Connecticut, Maine, Massachusetts, New Hampshire, Rhode Island and Vermont",
     description:
       "ISO New England keeps electricity flowing across the six New England states. It operates the grid, runs the wholesale electricity markets and plans the power system.",
@@ -153,6 +170,7 @@ export const GRID_REGIONS: GridRegion[] = [
     name: "Southeast",
     fullName: "The Southeast",
     kind: "no-market",
+    interconnection: "Eastern",
     states: "Alabama, Florida, Georgia, South Carolina and Tennessee, and parts of Kentucky, Mississippi, Missouri and North Carolina",
     description:
       "The Southeast has no regional market operator. Utilities and public power such as Southern Company, Duke Energy, the Tennessee Valley Authority and Florida Power & Light plan and run their own grids, and trade with their neighbors directly.",
@@ -168,6 +186,7 @@ export const GRID_REGIONS: GridRegion[] = [
     name: "West",
     fullName: "The West outside CAISO",
     kind: "no-market",
+    interconnection: "Western",
     states: "Arizona, Colorado, Idaho, Montana, Nevada, New Mexico, Oregon, Utah, Washington and Wyoming, and the parts of California outside CAISO",
     description:
       "Outside California, most of the West has no regional market operator. Utilities and federal power agencies such as the Bonneville Power Administration, PacifiCorp and Arizona Public Service run their own grids. In April 2026 Southwest Power Pool began operating part of it.",
