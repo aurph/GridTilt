@@ -9,7 +9,7 @@ import assert from "node:assert/strict";
 import { readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { feature } from "topojson-client";
-import { GRID_REGIONS, GRID_REGION_IDS, REGIONS_CHECKED, REGION_SLUG_ALIASES, gridRegion, type GridRegionId } from "../../data/grid-regions";
+import { GRID_REGIONS, GRID_REGION_IDS, REGIONS_CHECKED, REGION_AUTHORITIES, REGION_SLUG_ALIASES, gridRegion, type GridRegionId } from "../../data/grid-regions";
 import { NERC_AREAS } from "../../data/nerc-reserve-margins";
 import {
   dealRegion,
@@ -21,6 +21,7 @@ import {
   regionIdForSlug,
   regionLocator,
   regionNercAreas,
+  regionOf,
   regionRiskLevel,
   regionRiskText,
   regionShapes,
@@ -114,6 +115,93 @@ describe("the regions file", () => {
     }
     const [[, ercotWest], [, ercotEast]] = regionBounds(shapes.find((s) => s.id === "ercot")!);
     assert.ok(ercotWest > -107 && ercotEast < -93, "ERCOT's box is Texas");
+  });
+});
+
+describe("placing a record: its balancing authority, then the lines as drawn, then its state", () => {
+  const data = (name: string) => JSON.parse(readFileSync(join(process.cwd(), "server", "data", name), "utf-8"));
+
+  it("keeps a record on a clipped shoreline in the region that runs its state", () => {
+    // The shapes are cut to a coarse land outline, so a lakefront campus or a site on an island sits just off them.
+    assert.equal(regionAt(shapes, 42.73, -87.78), null, "Racine sits off the drawn shore of Lake Michigan");
+    assert.equal(regionOf(shapes, { lat: 42.73, lng: -87.78, state: "WI" }), "miso");
+    // Staten Island is New York's, though the nearest drawn land is New Jersey.
+    assert.equal(regionOf(shapes, { lat: 40.60738, lng: -74.17318, state: "NY" }), "nyiso");
+    // Hammond, Indiana, half a kilometer from the Illinois line.
+    assert.equal(regionOf(shapes, { lat: 41.70742, lng: -87.52019, state: "IN" }), "miso");
+    assert.equal(regionOf(shapes, { lat: 61.2, lng: -149.9, state: "AK" }), null);
+    assert.equal(regionOf(shapes, { lat: 36.0, lng: -70.0 }), null, "no state and no shape: nowhere");
+  });
+
+  it("puts a power plant in the operator its own balancing authority names, wherever the dot falls", () => {
+    // Ravenswood is on the East River; Vineyard Wind 1 is 56 km out to sea.
+    assert.equal(regionOf(shapes, { lat: 40.7592, lng: -73.9461, state: "NY", ba: "NYIS" }), "nyiso");
+    assert.equal(regionOf(shapes, { lat: 41.0471, lng: -70.4874, state: "MA", ba: "ISNE" }), "isone");
+    // Operator footprints interleave: a MISO plant inside the lines drawn for SPP is still MISO's.
+    const sioux = { lat: 42.5, lng: -96.4, state: "IA" };
+    assert.equal(regionAt(shapes, sioux.lat, sioux.lng), "spp", "Sioux City is drawn inside SPP");
+    assert.equal(regionOf(shapes, { ...sioux, ba: "MISO" }), "miso");
+  });
+
+  it("files a plant of a utility with no market operator under the Southeast or the West, not the operator drawn around it", () => {
+    // Ghent, Kentucky (LG&E and KU) is drawn inside PJM; Haynes in Long Beach (Los Angeles DWP) inside CAISO.
+    assert.equal(regionOf(shapes, { lat: 38.7497, lng: -85.0347, state: "KY", ba: "LGEE" }), "southeast");
+    assert.equal(regionOf(shapes, { lat: 33.7647, lng: -118.0992, state: "CA", ba: "LDWP" }), "west");
+    assert.equal(regionOf(shapes, { lat: 33.39, lng: -112.86, state: "AZ", ba: "AZPS" }), "west");
+  });
+
+  it("places a plant as drawn when its authority is from the other side of the country, or is in no list", () => {
+    // One Texas solar farm reports a Washington utility district as its authority.
+    assert.equal(regionOf(shapes, { lat: 33.1, lng: -95.5, state: "TX", ba: "DOPD" }), "ercot");
+    assert.equal(regionOf(shapes, { lat: 36.36, lng: -92.57, state: "AR", ba: "SPA" }), regionAt(shapes, 36.36, -92.57));
+    assert.equal(regionOf(shapes, { lat: 39.04, lng: -77.49, state: "VA", ba: null }), "pjm");
+  });
+
+  it("places every tracked campus, mapped site and power plant of the lower 48", () => {
+    const lost: string[] = [];
+    const check = (kind: string, label: string, p: { state: string; lat: number; lng: number; ba?: string | null }) => {
+      if (p.state === "AK" || p.state === "HI") return;
+      if (!regionOf(shapes, p)) lost.push(`${kind} ${label} (${p.state} ${p.lat},${p.lng})`);
+    };
+    for (const c of data("datacenters.json") as Array<{ name: string; state: string; lat: number; lng: number }>) check("campus", c.name, c);
+    for (const s of data("datacenter-sites.json").sites as Array<{ id: string; state: string; lat: number; lng: number }>) check("site", s.id, s);
+    for (const p of data("power-plants.json").plants as Array<{ name: string; state: string; lat: number; lng: number; ba: string | null }>) check("plant", p.name, p);
+    assert.deepEqual(lost, [], `${lost.length} records sit in no region`);
+  });
+
+  it("knows every balancing authority the plant file names, each in one region at most", () => {
+    const where = new Map<string, GridRegionId>();
+    for (const id of GRID_REGION_IDS) {
+      for (const code of REGION_AUTHORITIES[id]) {
+        assert.equal(where.has(code), false, `${code} is listed twice`);
+        where.set(code, id);
+      }
+    }
+    for (const id of ["pjm", "ercot", "miso", "spp", "caiso", "nyiso", "isone"] as const) assert.equal(REGION_AUTHORITIES[id].length, 1, id);
+    // The live demand feed sums the same authorities (server/eia-grid.ts).
+    for (const code of ["LGEE", "AECI", "SOCO", "TVA", "DUK", "FPL"]) assert.equal(where.get(code), "southeast", code);
+    for (const code of ["BANC", "LDWP", "IID", "TIDC", "BPAT", "AZPS", "PACE"]) assert.equal(where.get(code), "west", code);
+    // In EIA's table but in neither list: small authorities inside an operator's footprint, placed as drawn.
+    const AS_DRAWN = ["SPA", "SIKE", "GLHB"];
+    const unknown = new Set<string>();
+    for (const p of data("power-plants.json").plants as Array<{ ba: string | null }>) {
+      if (p.ba && !where.has(p.ba) && !AS_DRAWN.includes(p.ba)) unknown.add(p.ba);
+    }
+    assert.deepEqual(Array.from(unknown), [], "a new authority code needs a region");
+  });
+
+  it("counts a region's plants by that rule, so New York keeps its waterfront fleet", () => {
+    const stats = regionStats(shapes, {
+      plants: [
+        { lat: 40.7592, lng: -73.9461, mw: 2096, fuel: "NG", state: "NY", ba: "NYIS" },
+        { lat: 38.7497, lng: -85.0347, mw: 1900, fuel: "COL", state: "KY", ba: "LGEE" },
+      ],
+      campuses: [{ lat: 42.73, lng: -87.78, powerMW: 450, status: "announced", state: "WI" }],
+    });
+    assert.deepEqual(stats.nyiso.plants, { count: 1, mw: 2096, byFuel: { NG: 1 } });
+    assert.equal(stats.pjm.plants?.count, 0);
+    assert.equal(stats.southeast.plants?.count, 1);
+    assert.equal(stats.miso.campuses?.count, 1);
   });
 });
 

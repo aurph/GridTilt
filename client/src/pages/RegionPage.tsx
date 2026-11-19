@@ -20,7 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { GRID_REGIONS, gridRegion, type GridRegionId } from "@/data/grid-regions";
-import { regionAt, regionIdForSlug } from "@/lib/grid-regions";
+import { regionIdForSlug, regionOf } from "@/lib/grid-regions";
 import { useRegionData, type RegionCampus } from "@/lib/region-data";
 import { nextSort, sortBy, type SortState } from "@/lib/table-sort";
 
@@ -67,8 +67,8 @@ function RegionBody({ id }: { id: GridRegionId }) {
   const { shapes, stats, campuses, sites, sources, campusesLoading, campusesError, refetchCampuses } = useRegionData();
   const [sort, setSort] = useState<SortState<FacilitySortKey>>({ key: "powerMW", dir: "desc" });
 
-  // Inside the region as drawn: the same rule the map and its panel count by.
-  const inside = useMemo(() => (shapes && campuses ? campuses.filter((d) => regionAt(shapes, d.lat, d.lng) === id) : null), [shapes, campuses, id]);
+  // The same placement rule the map and its panel count by (lib/grid-regions regionOf).
+  const inside = useMemo(() => (shapes && campuses ? campuses.filter((d) => regionOf(shapes, d) === id) : null), [shapes, campuses, id]);
   const sorted = sortBy(inside ?? [], (d) => facilityCell(d, sort.key), sort.dir, (d) => d.name);
   const count = (s: RegionCampus["status"]) => (inside ?? []).filter((d) => d.status === s).length;
   const title = region.kind === "market" ? `${region.fullName} (${region.name})` : region.fullName;

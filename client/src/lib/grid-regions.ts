@@ -7,7 +7,7 @@
  * approximate; see BOUNDARY_NOTE in data/grid-regions.ts), so the counts in a
  * region's panel match the dots the reader sees inside the shape.
  */
-import { GRID_REGION_IDS, REGION_SLUG_ALIASES, gridRegion, type GridRegionId } from "../data/grid-regions";
+import { GRID_REGION_IDS, REGION_AUTHORITIES, REGION_SLUG_ALIASES, gridRegion, type GridRegionId } from "../data/grid-regions";
 import { NERC_AREAS, type NercArea, type NercRisk } from "../data/nerc-reserve-margins";
 import { STATE_GRID } from "../data/state-grid";
 import { MIN_TRACKED_MW } from "./real-gauges";
@@ -121,14 +121,12 @@ export interface RegionStats {
   plants: { count: number; mw: number; byFuel: Record<string, number> } | null;
 }
 
-interface Point {
-  lat: number;
-  lng: number;
-}
+/** A record regionStats places: its position, plus its state and balancing authority where it has them. */
+type Point = Placeable;
 
 const finite = (n: unknown) => (typeof n === "number" && Number.isFinite(n) && n > 0 ? n : 0);
 
-/** What sits inside each region's boundary as drawn. Points in no region are left out. */
+/** What belongs to each region (regionOf). A record in no region is left out. */
 export function regionStats(
   shapes: RegionShape[],
   layers: {
@@ -148,7 +146,7 @@ export function regionStats(
     };
   }
   for (const c of layers.campuses ?? []) {
-    const id = regionAt(shapes, c.lat, c.lng);
+    const id = regionOf(shapes, c);
     const s = id ? out[id].campuses : null;
     if (!s) continue;
     s.count += 1;
@@ -158,18 +156,18 @@ export function regionStats(
     }
   }
   for (const p of layers.sites ?? []) {
-    const id = regionAt(shapes, p.lat, p.lng);
+    const id = regionOf(shapes, p);
     if (id) out[id].sites = (out[id].sites ?? 0) + 1;
   }
   for (const c of layers.clusters ?? []) {
-    const id = regionAt(shapes, c.lat, c.lng);
+    const id = regionOf(shapes, c);
     const s = id ? out[id].clusters : null;
     if (!s) continue;
     s.count += 1;
     s.plannedMw += finite(c.plannedPowerMW);
   }
   for (const p of layers.plants ?? []) {
-    const id = regionAt(shapes, p.lat, p.lng);
+    const id = regionOf(shapes, p);
     const s = id ? out[id].plants : null;
     if (!s) continue;
     s.count += 1;
@@ -354,4 +352,46 @@ export function regionLocator(shapes: RegionShape[], width: number, height: numb
       return place(x, y);
     },
   };
+}
+
+/** A record to place: where it is, its state where known, and (power plants) the balancing authority it reports. */
+export interface Placeable {
+  lat: number;
+  lng: number;
+  state?: string | null;
+  ba?: string | null;
+}
+
+const AUTHORITY_REGION: Record<string, GridRegionId> = (() => {
+  const out: Record<string, GridRegionId> = {};
+  GRID_REGION_IDS.forEach((id) => REGION_AUTHORITIES[id].forEach((code) => (out[code] = id)));
+  return out;
+})();
+
+/**
+ * The region a record belongs to. Every count and every megawatt by region
+ * goes through this, so the map, the panel, the table and the region page
+ * place a record the same way. In order:
+ *
+ * 1. A power plant whose balancing authority is an operator's own belongs to
+ *    that operator, wherever its dot falls (footprints interleave: 88 plants
+ *    of an operator are drawn inside a neighbor's lines). One that reports a
+ *    utility with no market operator belongs to the Southeast or the West,
+ *    not to the operator drawn around it. An authority from the other side
+ *    of the country than the plant is not believed.
+ * 2. Otherwise the region whose drawn boundary holds the point.
+ * 3. Otherwise, for a point just off a clipped coast, lakeshore or river (21
+ *    plants were, four of them nuclear), the region that runs most of its
+ *    state.
+ *
+ * Null for Alaska, Hawaii and a point with neither a shape nor a state.
+ */
+export function regionOf(shapes: RegionShape[], p: Placeable): GridRegionId | null {
+  const drawn = regionAt(shapes, p.lat, p.lng);
+  const here = drawn ?? (p.state ? regionForState(p.state) : null);
+  const named = p.ba ? AUTHORITY_REGION[p.ba] : undefined;
+  if (!named) return here;
+  if (gridRegion(named).kind === "market") return named;
+  const western = (id: GridRegionId) => gridRegion(id).interconnection === "Western";
+  return !here || western(here) === (named === "west") ? named : here;
 }

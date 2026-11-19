@@ -288,7 +288,7 @@ export function RegionContent({
           cadence={[
             sources?.sitesVersion ? `sites: PNNL IM3 atlas ${sources.sitesVersion}, © OpenStreetMap contributors` : null,
             sources?.plantsMonth ? `plants: EIA-860M ${sources.plantsMonth}` : null,
-            "counted inside the region as drawn",
+            "plants are placed by the balancing authority each reports to EIA, everything else by the region as drawn",
           ]
             .filter(Boolean)
             .join(" · ")}

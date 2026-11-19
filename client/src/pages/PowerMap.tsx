@@ -46,7 +46,7 @@ import { NERC_LTRA } from "@/data/nerc-reserve-margins";
 import { PLANT_FUEL_LABEL, fuelColor } from "@/lib/fuel-colors";
 import { aiSharePct, fmtGW, fmtPeriodET, useGridLive, type GridLiveConfigured } from "@/lib/grid-live";
 import {
-  regionAt,
+  regionOf,
   regionBounds,
   regionMarginText,
   regionNercAreas,
@@ -428,7 +428,7 @@ export default function PowerMap() {
   // ── Regions: who is where ────────────────────────────────────────────────
   const campusRegion = useMemo(() => {
     const m = new Map<number, GridRegionId | null>();
-    if (shapes) for (const d of campuses) m.set(d.id, regionAt(shapes, d.lat, d.lng));
+    if (shapes) for (const d of campuses) m.set(d.id, regionOf(shapes, d));
     return m;
   }, [shapes, campuses]);
 
@@ -439,7 +439,7 @@ export default function PowerMap() {
             // A layer that has not loaded is passed as null, so its count reads as unknown and not as zero.
             campuses: fetchedCampuses ?? null,
             sites,
-            clusters: fetchedClusters ? clusters.map((c) => ({ lat: c.location.lat, lng: c.location.lng, plannedPowerMW: c.plannedPowerMW })) : null,
+            clusters: fetchedClusters ? clusters.map((c) => ({ lat: c.location.lat, lng: c.location.lng, state: c.location.state, plannedPowerMW: c.plannedPowerMW })) : null,
             plants,
           })
         : null,
@@ -486,11 +486,11 @@ export default function PowerMap() {
   }, [clusters, campusList, campusesOn]);
 
   const siteFocus = useMemo(
-    () => (activeRegion && shapes && sites ? new Set(sites.filter((s) => regionAt(shapes, s.lat, s.lng) === activeRegion).map((s) => s.id)) : null),
+    () => (activeRegion && shapes && sites ? new Set(sites.filter((s) => regionOf(shapes, s) === activeRegion).map((s) => s.id)) : null),
     [activeRegion, shapes, sites],
   );
   const plantFocus = useMemo(
-    () => (activeRegion && shapes && plants ? new Set(plants.filter((p) => regionAt(shapes, p.lat, p.lng) === activeRegion).map((p) => p.id)) : null),
+    () => (activeRegion && shapes && plants ? new Set(plants.filter((p) => regionOf(shapes, p) === activeRegion).map((p) => p.id)) : null),
     [activeRegion, shapes, plants],
   );
   const dimmedCampuses = useMemo(
@@ -499,7 +499,7 @@ export default function PowerMap() {
   );
   const dimmedClusters = useMemo(
     () =>
-      activeRegion && shapes ? new Set(clusterList.filter((c) => regionAt(shapes, c.location.lat, c.location.lng) !== activeRegion).map((c) => c.id)) : null,
+      activeRegion && shapes ? new Set(clusterList.filter((c) => regionOf(shapes, c.location) !== activeRegion).map((c) => c.id)) : null,
     [activeRegion, shapes, clusterList],
   );
 

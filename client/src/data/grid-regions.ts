@@ -220,3 +220,37 @@ export const BOUNDARY_SOURCE = {
   label: "HIFLD Independent System Operators (Oak Ridge National Laboratory, 2020)",
   url: "https://services8.arcgis.com/Rl9BjEMrBgxxeBfh/arcgis/rest/services/Independent_System_Operator/FeatureServer/0",
 } as const;
+
+/**
+ * The EIA balancing authorities behind each region. A power plant reports
+ * one (Form EIA-860M), and that says whose grid it is on better than where
+ * its dot falls on approximate lines. The seven operators are one authority
+ * each. The Southeast is EIA's Southeast, Carolinas, Florida and Tennessee
+ * regions plus LG&E and KU and Associated Electric Cooperative; the West is
+ * EIA's Northwest and Southwest regions plus the California authorities
+ * outside CAISO. The live demand feed sums the same ones (server/eia-grid.ts).
+ *
+ * Source: EIA-930 reference tables, the "BAs" sheet, retrieved 2026-11-19
+ * (https://www.eia.gov/electricity/930-content/EIA930_Reference_Tables.xlsx),
+ * retired authorities included because an older plant record can still name
+ * one. An authority in no list here (SPA, SIKE, GLHB: small ones inside an
+ * operator's footprint) is placed as drawn.
+ */
+export const REGION_AUTHORITIES: Record<GridRegionId, readonly string[]> = {
+  pjm: ["PJM"],
+  ercot: ["ERCO"],
+  miso: ["MISO"],
+  spp: ["SWPP"],
+  caiso: ["CISO"],
+  nyiso: ["NYIS"],
+  isone: ["ISNE"],
+  southeast: [
+    "AEC", "AECI", "CPLE", "CPLW", "DUK", "FMPP", "FPC", "FPL", "GVL", "HST", "JEA", "LGEE", "NSB", "SC", "SCEG", "SEC", "SEPA", "SOCO", "TAL",
+    "TEC", "TVA", "YAD",
+  ],
+  west: [
+    "AVA", "AVRN", "AZPS", "BANC", "BHBA", "BPAT", "CHPD", "DEAA", "DOPD", "EPE", "GCPD", "GRID", "GRIF", "GRMA", "GWA", "HGMA", "IID", "IPCO",
+    "LDWP", "NEVP", "NWMT", "PACE", "PACW", "PGE", "PNM", "PSCO", "PSEI", "SCL", "SRP", "SWPW", "TEPC", "TIDC", "TPWR", "WACM", "WALC", "WAUE",
+    "WAUW", "WWA",
+  ],
+};

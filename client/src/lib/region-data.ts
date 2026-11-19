@@ -45,12 +45,12 @@ export interface RegionCampus {
 
 interface SitesPayload {
   source: { version: string };
-  sites: Array<{ id: string; lat: number; lng: number }>;
+  sites: Array<{ id: string; lat: number; lng: number; state: string }>;
 }
 
 interface PlantsPayload {
   dataMonth: string;
-  plants: Array<{ id: number; lat: number; lng: number; mw: number; fuel: string }>;
+  plants: Array<{ id: number; lat: number; lng: number; mw: number; fuel: string; state: string; ba: string | null }>;
 }
 
 export interface RegionData {
@@ -80,7 +80,7 @@ export function useRegionData(): RegionData {
             campuses: campuses ?? null,
             sites: sites?.sites ?? null,
             clusters: clusters
-              ? clusters.filter(hasCoords).map((c) => ({ lat: c.location.lat, lng: c.location.lng, plannedPowerMW: c.plannedPowerMW }))
+              ? clusters.filter(hasCoords).map((c) => ({ lat: c.location.lat, lng: c.location.lng, state: c.location.state, plannedPowerMW: c.plannedPowerMW }))
               : null,
             plants: plants?.plants ?? null,
           })
