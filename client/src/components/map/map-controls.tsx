@@ -4,6 +4,7 @@
  * phone the Layers list opens as a bottom sheet and the legend starts closed.
  */
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { ChevronDown, Layers, X } from "lucide-react";
 import { NERC_LTRA } from "@/data/nerc-reserve-margins";
 import { RISK_COLOR } from "@/components/map/region-layer";
@@ -176,19 +177,24 @@ export function LayersControl({
           >
             {list}
           </div>
-          {/* Phone: a bottom sheet. */}
-          <div className="fixed inset-0 z-[1200] sm:hidden" role="dialog" aria-label="Layers" data-testid="layers-sheet">
-            <div className="absolute inset-0 bg-black/60" onClick={() => setOpen(false)} aria-hidden />
-            <div className="absolute inset-x-0 bottom-0 max-h-[80vh] overflow-y-auto rounded-t-xl border-t border-subtle bg-surface-raised p-4 pb-8">
-              <div className="mb-2 flex items-center justify-between">
-                <span className="text-sm font-semibold text-white">Layers</span>
-                <button type="button" onClick={() => setOpen(false)} className="rounded p-2 hover:bg-white/10" aria-label="Close layers">
-                  <X className="h-4 w-4 text-white/60" />
-                </button>
+          {/* Phone: a bottom sheet. Portaled to the body, because the page
+              sits in an isolated layer under the phone's floating bar and a
+              sheet inside it would open underneath that bar. */}
+          {createPortal(
+            <div className="fixed inset-0 z-[60] sm:hidden" role="dialog" aria-label="Layers" data-testid="layers-sheet">
+              <div className="absolute inset-0 bg-black/60" onClick={() => setOpen(false)} aria-hidden />
+              <div className="absolute inset-x-0 bottom-0 max-h-[80vh] overflow-y-auto rounded-t-xl border-t border-subtle bg-surface-raised p-4 pb-8">
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="text-sm font-semibold text-white">Layers</span>
+                  <button type="button" onClick={() => setOpen(false)} className="rounded p-2 hover:bg-white/10" aria-label="Close layers">
+                    <X className="h-4 w-4 text-white/60" />
+                  </button>
+                </div>
+                {list}
               </div>
-              {list}
-            </div>
-          </div>
+            </div>,
+            document.body,
+          )}
         </>
       )}
     </div>

@@ -704,6 +704,7 @@ export const CRAWLABLE_API_PREFIXES = [
   "/api/gpu-prices/metrics",
   "/api/hyperscaler-capex",
   "/api/inference-prices",
+  "/api/map/",
   "/api/news",
   "/api/og",
   "/api/page-meta",

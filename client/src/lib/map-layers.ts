@@ -10,6 +10,7 @@
  *
  * Pure, so it is unit-tested (this repo has no DOM tests).
  */
+import { fmtGW } from "./grid-live";
 import type { GridRegionId } from "../data/grid-regions";
 import { regionIdForSlug } from "./grid-regions";
 import { MIN_TRACKED_MW } from "./real-gauges";
@@ -128,11 +129,23 @@ export function trackedHeadline(campuses: Array<{ powerMW: number; status: strin
     if (c.status === "announced") announced += c.powerMW;
     else mw += c.powerMW;
   }
-  return { gw: (mw / 1000).toFixed(1), count400, countAll: campuses.length, announcedGw: (announced / 1000).toFixed(1) };
+  // fmtGW, not toFixed: the region panel and the table format the same
+  // megawatts with it, and toFixed rounds a half the other way (5,850 MW).
+  return { gw: fmtGW(mw), count400, countAll: campuses.length, announcedGw: fmtGW(announced) };
+}
+
+/**
+ * Far out: the whole country in a phone's width (it opens at zoom 3; a
+ * desktop opens near 4.5). Marks are drawn smaller there, or the East turns
+ * into one smear.
+ */
+export function isFarOut(zoom: number): boolean {
+  return zoom < 3.75;
 }
 
 /** Dots grow a little as you zoom in, so a metro reads as buildings rather than a smear. */
 export function zoomScale(zoom: number): number {
+  if (isFarOut(zoom)) return 0.7;
   if (zoom >= 9) return 2.1;
   if (zoom >= 7.5) return 1.7;
   if (zoom >= 6) return 1.35;

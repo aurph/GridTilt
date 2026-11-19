@@ -145,6 +145,7 @@ export function RegionContent({
       <div className="px-4 pb-3.5">
         <p className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: region.color }}>
           {region.kind === "market" ? "Market operator" : "No market operator"}
+          <span className="font-normal text-white/40"> · {region.interconnection === "Texas" ? "the Texas grid" : `${region.interconnection} grid`}</span>
         </p>
         <p className="mt-1 text-[13px] leading-relaxed text-white/80">{region.description}</p>
         <p className="mt-2 text-[11px] leading-snug text-white/45">
@@ -243,12 +244,14 @@ export function RegionContent({
               className="flex items-baseline gap-2.5 rounded px-2 py-1.5 no-underline transition-colors hover:bg-white/[0.06]"
               data-testid="region-built-deals"
             >
-              <span className="w-3.5" />
-              <span className="text-xs text-white/85">Signed power agreements</span>
-              <span className="ml-auto text-right">
-                <span className="font-mono text-[13px] font-bold tabular-nums text-white">{signed.count}</span>
+              <span className="w-3.5 shrink-0" />
+              <span className="min-w-0 flex-1">
+                <span className="flex items-baseline gap-2">
+                  <span className="text-xs text-white/85">Signed power agreements</span>
+                  <span className="ml-auto font-mono text-[13px] font-bold tabular-nums text-white">{signed.count}</span>
+                </span>
                 {signed.count > 0 && (
-                  <span className="block text-10 text-white/45">
+                  <span className="block text-10 leading-snug text-white/45">
                     {signed.mw > 0 ? `${signed.mw.toLocaleString("en-US")} MW` : "capacity not disclosed"}
                     {signed.mw > 0 && signed.undisclosed > 0 ? `, ${signed.undisclosed} undisclosed` : ""}
                   </span>
@@ -346,13 +349,16 @@ function BuiltRow({
   onShow?: (layer: MapLayer) => void;
   children?: ReactNode;
 }) {
+  // Name and count on one line, the detail under them: a long detail never squeezes the name.
   const body = (
     <>
       <LayerSwatch layer={layer} />
-      <span className="text-xs text-white/85">{label}</span>
-      <span className="ml-auto text-right">
-        <span className="font-mono text-[13px] font-bold tabular-nums text-white">{count.toLocaleString("en-US")}</span>
-        {children && <span className="block text-10 text-white/45">{children}</span>}
+      <span className="min-w-0 flex-1">
+        <span className="flex items-baseline gap-2">
+          <span className="text-xs text-white/85">{label}</span>
+          <span className="ml-auto font-mono text-[13px] font-bold tabular-nums text-white">{count.toLocaleString("en-US")}</span>
+        </span>
+        {children && <span className="block text-10 leading-snug text-white/45">{children}</span>}
       </span>
     </>
   );
@@ -430,7 +436,8 @@ export function RegionPanel({
           <X className="h-4 w-4" />
         </button>
       </div>
-      <div ref={scroller} className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+      {/* Phone: room under the last line, so it scrolls clear of the site's floating bar. */}
+      <div ref={scroller} className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-20 sm:pb-0">
         <RegionContent id={id} stats={stats} sources={sources} onShowLayer={onShowLayer} />
         <div className="border-t border-subtle px-4 py-3">
           <Link href={`/region/${id}`} className="inline-flex items-center gap-1.5 text-xs font-semibold text-brand no-underline hover:text-brand-2" data-testid="region-panel-page">

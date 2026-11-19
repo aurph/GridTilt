@@ -13,6 +13,7 @@ import L from "leaflet";
 import { GRID_REGIONS, gridRegion, type GridRegionId } from "@/data/grid-regions";
 import type { NercRisk } from "@/data/nerc-reserve-margins";
 import { regionRiskLevel, type RegionShape } from "@/lib/grid-regions";
+import type { TourGroup } from "@/lib/grid-tour";
 import { INK, SEMANTIC } from "@/lib/tokens";
 
 /** NERC's risk levels, the one ramp every stress surface reads. */
@@ -23,6 +24,9 @@ export const RISK_COLOR: Record<NercRisk | "mixed", string> = {
   mixed: INK.faint,
 };
 
+/** Above the marker pane (600), below Leaflet's tooltips (650). */
+const LABEL_PANE = "gt-region-labels";
+
 export interface RegionLayerProps {
   shapes: RegionShape[];
   renderer: L.Renderer;
@@ -32,14 +36,25 @@ export interface RegionLayerProps {
   hovered: GridRegionId | null;
   /** Regions a tour step points at; the rest dim. */
   spotlight?: GridRegionId[] | null;
+  /** A tour step that draws the regions as a few bodies (the three grids), each in one color under one name. */
+  groups?: TourGroup[] | null;
   onHover: (id: GridRegionId | null, at?: { x: number; y: number }) => void;
   onSelect: (id: GridRegionId) => void;
 }
 
-function styleFor(
-  id: GridRegionId,
-  s: { stress: boolean; selected: GridRegionId | null; hovered: GridRegionId | null; spotlight?: GridRegionId[] | null },
-): L.PathOptions {
+interface StyleState {
+  stress: boolean;
+  selected: GridRegionId | null;
+  hovered: GridRegionId | null;
+  spotlight?: GridRegionId[] | null;
+  groups?: TourGroup[] | null;
+}
+
+function styleFor(id: GridRegionId, s: StyleState): L.PathOptions {
+  // Grouped: one flat color per body, and the lines between its members fade
+  // into it, so nine regions read as three grids.
+  const group = s.groups?.find((g) => g.regions.includes(id));
+  if (group) return { fillColor: group.color, fillOpacity: 0.34, color: group.color, weight: 0.7, opacity: 0.5 };
   const fillColor = s.stress ? RISK_COLOR[regionRiskLevel(id)] : gridRegion(id).color;
   const base = s.stress ? 0.26 : 0.11;
   const focus = s.spotlight && s.spotlight.length > 0 ? s.spotlight : s.selected ? [s.selected] : null;
@@ -58,14 +73,14 @@ function styleFor(
   };
 }
 
-export function RegionLayer({ shapes, renderer, stress, selected, hovered, spotlight, onHover, onSelect }: RegionLayerProps) {
+export function RegionLayer({ shapes, renderer, stress, selected, hovered, spotlight, groups, onHover, onSelect }: RegionLayerProps) {
   const map = useMap();
   const layersRef = useRef<Partial<Record<GridRegionId, L.GeoJSON>>>({});
   const labelsRef = useRef<L.LayerGroup | null>(null);
   const handlers = useRef({ onHover, onSelect });
   handlers.current = { onHover, onSelect };
-  const state = useRef({ stress, selected, hovered, spotlight });
-  state.current = { stress, selected, hovered, spotlight };
+  const state = useRef<StyleState>({ stress, selected, hovered, spotlight, groups });
+  state.current = { stress, selected, hovered, spotlight, groups };
 
   // Build once per shapes file.
   useEffect(() => {
@@ -97,27 +112,46 @@ export function RegionLayer({ shapes, renderer, stress, selected, hovered, spotl
 
   // Restyle in place.
   useEffect(() => {
-    for (const r of GRID_REGIONS) layersRef.current[r.id]?.setStyle(styleFor(r.id, { stress, selected, hovered, spotlight }));
-  }, [stress, selected, hovered, spotlight, shapes]);
+    for (const r of GRID_REGIONS) layersRef.current[r.id]?.setStyle(styleFor(r.id, { stress, selected, hovered, spotlight, groups }));
+  }, [stress, selected, hovered, spotlight, groups, shapes]);
 
   // Short names at a national zoom; they get in the way once you are in.
+  // They sit in a pane of their own above the markers, so a name is never
+  // buried under a campus, and they take no clicks.
   useEffect(() => {
+    if (!map.getPane(LABEL_PANE)) {
+      const pane = map.createPane(LABEL_PANE);
+      pane.style.zIndex = "640";
+      pane.style.pointerEvents = "none";
+    }
     const group = L.layerGroup().addTo(map);
     labelsRef.current = group;
+    const name = (text: string, at: [number, number], big: boolean) =>
+      L.marker(at, {
+        icon: L.divIcon({
+          html: `<span>${text}</span>`,
+          className: big ? "region-label region-label-lg" : "region-label",
+          iconSize: [big ? 160 : 90, big ? 22 : 16],
+          iconAnchor: [big ? 80 : 45, big ? 11 : 8],
+        }),
+        interactive: false,
+        keyboard: false,
+        pane: LABEL_PANE,
+      }).addTo(group);
     const draw = () => {
       group.clearLayers();
+      // A grouped stop names its bodies, not the regions inside them.
+      if (groups && groups.length > 0) {
+        for (const g of groups) name(g.label, g.at, true);
+        return;
+      }
       const zoom = map.getZoom();
       if (zoom > 6) return;
       for (const r of GRID_REGIONS) {
         if (!shapes.some((s) => s.id === r.id)) continue;
         // ISO-NE and NYISO sit too close to both be named when the whole country is in view.
         if (zoom < 4 && (r.id === "isone" || r.id === "nyiso")) continue;
-        L.marker(r.labelAt, {
-          icon: L.divIcon({ html: `<span>${r.name}</span>`, className: "region-label", iconSize: [90, 16], iconAnchor: [45, 8] }),
-          interactive: false,
-          keyboard: false,
-          zIndexOffset: -500,
-        }).addTo(group);
+        name(r.name, r.labelAt, false);
       }
     };
     draw();
@@ -127,7 +161,7 @@ export function RegionLayer({ shapes, renderer, stress, selected, hovered, spotl
       map.removeLayer(group);
       labelsRef.current = null;
     };
-  }, [map, shapes]);
+  }, [map, shapes, groups]);
 
   return null;
 }

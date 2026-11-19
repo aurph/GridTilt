@@ -5,12 +5,14 @@
  */
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { fmtGW } from "../grid-live";
 import {
   DEFAULT_LAYERS,
   MAP_LAYERS,
   layerSummary,
   mapViewQuery,
   parseMapView,
+  isFarOut,
   plantRadius,
   zoomScale,
   toggleLayer,
@@ -120,6 +122,14 @@ describe("what the overlay says it is counting", () => {
     assert.deepEqual(trackedHeadline(campuses), { gw: "1.5", count400: 3, countAll: 4, announcedGw: "1.5" });
     assert.deepEqual(trackedHeadline([]), { gw: "0.0", count400: 0, countAll: 0, announcedGw: "0.0" });
   });
+
+  it("rounds the way the region panel and the table do, so one set of campuses never shows two figures", () => {
+    // 5,850 MW is PJM's total. toFixed reads the binary value and says 5.8; the site's formatter says 5.9.
+    const pjm = [{ powerMW: 5850, status: "operational" }];
+    assert.equal(trackedHeadline(pjm).gw, fmtGW(5850));
+    assert.equal(trackedHeadline(pjm).gw, "5.9");
+    assert.equal(trackedHeadline([{ powerMW: 1250, status: "announced" }]).announcedGw, fmtGW(1250));
+  });
 });
 
 describe("marker sizes", () => {
@@ -132,10 +142,21 @@ describe("marker sizes", () => {
   });
 
   it("scale up in steps as the map zooms in, never down", () => {
-    assert.equal(zoomScale(3), 1);
+    assert.equal(zoomScale(4), 1);
     assert.equal(zoomScale(4.9), 1);
-    const steps = [3, 5, 6, 7.5, 9, 12].map(zoomScale);
+    const steps = [3, 4, 5, 6, 7.5, 9, 12].map(zoomScale);
     for (let i = 1; i < steps.length; i++) assert.ok(steps[i] >= steps[i - 1], String(steps));
     assert.ok(zoomScale(12) <= 2.2);
+  });
+
+  it("shrink when the whole country fits a phone, so the East is not one smear", () => {
+    // A phone opens at zoom 3, a desktop at about 4.5.
+    assert.equal(isFarOut(3), true);
+    assert.equal(isFarOut(3.5), true);
+    assert.equal(isFarOut(3.75), false);
+    assert.equal(isFarOut(4.5), false);
+    assert.ok(zoomScale(3) < 1 && zoomScale(3) >= 0.6, "smaller, still visible");
+    assert.equal(zoomScale(3.5), zoomScale(3));
+    assert.equal(zoomScale(3.75), 1);
   });
 });
