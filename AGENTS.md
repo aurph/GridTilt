@@ -11,7 +11,8 @@ around them. Tagline: "Equities, infrastructure, and power data for the AI power
 economy." Live at gridtilt.com. Built and directed by Jack Schwartz (aurph). Audience:
 the citizen-investor researching the AI power economy, not fund analysts or day traders.
 
-Site map (2026-11): three sections in the top bar, each holding several features as chips. The one
+Site map (2026-11): three sections in the top bar, each holding several features ("chips" in the code
+and the address; on the page, the tabs under the section heading). The one
 source is client/src/lib/sections.ts (SECTIONS, LEGACY_ROUTES); the top bar, phone menu, footer, 404,
 search palette, client redirects, server 301s (seo.ts ALIAS_REDIRECTS) and page metadata all read it.
 It is the one client module the server imports.
@@ -36,9 +37,17 @@ published state pages keep /state/:slug, their prerender and their sitemap rows,
 timeline, the brief and the OG cards; nothing in the navigation links them (search does). Smoke
 expects the 301 (`retired /states forwards to /grid`).
 
-Section header (client/src/pages/section-page.tsx SectionStatement): one left-aligned line on the
-chips' edge, the dek beside it from 640px up, chips right under it. Keep it short: the feature
-should start near the top of the screen (the map's top edge is about 180px down at 1440x900). A
+Section header (client/src/pages/section-page.tsx SectionStatement): one left-aligned line, the dek
+beside it from 640px up, the feature tabs right under it. Keep it short: the feature should start
+near the top of the screen (the map's top edge is about 190px down at 1440x900).
+
+Feature tabs (components/feature-tabs.tsx, 2026-11-19; they replaced the pill row, which hid
+features behind "+N more" on a phone): every feature of the section shows on every screen, each
+with an icon, its name and one line saying what it holds (`blurb` in lib/sections.ts: 30 characters
+at most, never a figure). The open feature has a filled orange icon and an orange rule. Layout is
+CSS only (index.css, .gt-tabs): equal columns, and each tab arranges itself by its own width with
+container queries (icon over name under 150px, beside it from 150px, the line from 232px). A new
+feature needs a `blurb` and an icon in FEATURE_ICONS; sections.test.tsx fails without either. A
 feature whose chip already names it keeps its heading for the outline only (`sr-only`: the map,
 Live grid); a feature strip that carries stats or controls (PageHeader) stays.
 

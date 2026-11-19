@@ -800,29 +800,68 @@ html {
   }
 }
 
-/* Section chips and their popovers (components/section-chips.tsx). The only
-   motion the navigation adds: about 150ms, ease-out, and none at all for a
-   visitor who asked for reduced motion. */
-.gt-chip {
+/* Feature tabs (components/feature-tabs.tsx): one tab per feature of a section,
+   in equal columns. Each tab is laid out by the width its column gives it, not
+   by the screen, so three tabs and five tabs both come out right:
+     under 150px   icon over the name (a phone)
+     150px and up  icon beside the name
+     232px and up  the line that says what the feature holds (the longest
+                   is 175px wide, beside a 28px icon)
+   A browser without container queries keeps the first layout. The only motion
+   is a 150ms color change, and none for a visitor who asked for reduced motion. */
+.gt-tabs {
+  display: grid;
+  grid-template-columns: repeat(var(--gt-tabs, 5), minmax(0, 320px));
+  column-gap: 4px;
+}
+.gt-tab {
+  container-type: inline-size;
+}
+.gt-tab-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: 58px;
+  padding: 0 2px;
+  text-align: center;
+}
+.gt-tab-icon,
+.gt-tab-name {
   transition: color 150ms ease-out, background-color 150ms ease-out, border-color 150ms ease-out;
 }
-.gt-pop {
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(-4px);
-  transition: opacity 150ms ease-out, transform 150ms ease-out, visibility 0s linear 150ms;
+.gt-tab-name {
+  font-size: 11px;
 }
-.gt-pop[data-open="true"] {
-  opacity: 1;
-  visibility: visible;
-  transform: none;
-  transition: opacity 150ms ease-out, transform 150ms ease-out, visibility 0s;
+.gt-tab-blurb {
+  display: none;
+}
+@container (min-width: 150px) {
+  .gt-tab-body {
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 10px;
+    height: 46px;
+    /* No left padding: the first icon sits on the heading's left edge. */
+    padding: 0 12px 0 0;
+    text-align: left;
+  }
+  .gt-tab-name {
+    font-size: 13.5px;
+  }
+}
+@container (min-width: 232px) {
+  .gt-tab-body {
+    height: 54px;
+  }
+  .gt-tab-blurb {
+    display: block;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
-  .gt-chip,
-  .gt-pop,
-  .gt-pop[data-open="true"] {
+  .gt-tab-icon,
+  .gt-tab-name {
     transition: none !important;
-    transform: none;
   }
 }

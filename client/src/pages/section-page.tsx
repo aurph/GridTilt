@@ -13,7 +13,7 @@ import { lazy, Suspense, useMemo, type ComponentType, type LazyExoticComponent }
 import { useSearch } from "wouter";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { HeadingLevelProvider } from "@/components/section-heading";
-import { SectionChips, type ChipItem } from "@/components/section-chips";
+import { FeatureTabs, type FeatureTab } from "@/components/feature-tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { chipFromSearch, chipHref, sectionById, type Section } from "@/lib/sections";
 
@@ -77,8 +77,8 @@ export default function SectionPage({ id }: { id: Section["id"] }) {
   const section = sectionById(id);
   const search = useSearch();
   const active = chipFromSearch(section, search);
-  const chips: ChipItem[] = useMemo(
-    () => section.chips.map((c) => ({ id: c.id, label: c.label, href: chipHref(id, c.id) })),
+  const tabs: FeatureTab[] = useMemo(
+    () => section.chips.map((c) => ({ id: c.id, label: c.label, blurb: c.blurb, href: chipHref(id, c.id) })),
     [section, id],
   );
   const Feature = FEATURES[id][active];
@@ -88,8 +88,8 @@ export default function SectionPage({ id }: { id: Section["id"] }) {
   return (
     <div data-testid={`section-${id}`}>
       <SectionStatement statement={section.statement} dek={section.dek} />
-      <div className="border-b border-dashed border-border px-4 pb-3 sm:px-6">
-        <SectionChips chips={chips} active={active} label={`${section.label} features`} />
+      <div className="border-b border-dashed border-border px-4 sm:px-6">
+        <FeatureTabs tabs={tabs} active={active} label={`${section.label} features`} />
       </div>
       <HeadingLevelProvider level={2}>
         <ErrorBoundary label="This view failed to render." resetKey={`${id}:${active}`}>
