@@ -281,6 +281,11 @@ Schedulers (no node-cron anywhere):
   serving rule), carries no valid or a future date, or cannot support its total; a project
   without a recent review posts only from a fresh list. An unchanged post is not repeated.
   Kill switch X_POSTING_ENABLED defaults OFF.
+- Power agreements (interconnection-queue.json agreement rows), weekly since 2026-11-19: a scheduled
+  cloud research run on Mondays at 11:00 UTC (the routine "GridTilt weekly power agreements check" on
+  Jack's account) checks the parties' own documents, then opens one draft PR from
+  `deals/refresh-<date>` against main, with every quote in the body. It never merges; nothing reaches
+  the site until Jack merges and redeploys. It waits until main's lastChecked is 2026-11-19 or later.
 - Curated GPU prices (gpu-rental-prices.json) are refreshed by hand: a research pass against
   provider and aggregator pages, then an adversarial check of every number, then a PR. The
   retired n8n model-API flows (2026-10-27) are gone; ops/n8n keeps only the history backup.
