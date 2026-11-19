@@ -421,7 +421,7 @@ export function RegionPanel({
   return (
     <aside
       key={id}
-      className="gt-panel-in pointer-events-auto absolute inset-x-0 bottom-0 z-[1050] flex max-h-[68%] flex-col rounded-t-xl border border-subtle bg-surface-raised/[0.97] shadow-2xl backdrop-blur-md sm:inset-x-auto sm:bottom-3 sm:right-3 sm:top-3 sm:max-h-none sm:w-[372px] sm:rounded-lg"
+      className="gt-panel-in pointer-events-auto absolute inset-x-0 bottom-0 z-[1050] flex max-h-[68%] flex-col rounded-t-xl border border-subtle bg-surface-raised shadow-2xl sm:inset-x-auto sm:bottom-3 sm:right-3 sm:top-3 sm:max-h-none sm:w-[372px] sm:rounded-lg"
       aria-label={`${region.fullName}`}
       data-testid="region-panel"
     >
