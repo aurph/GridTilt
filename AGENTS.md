@@ -94,8 +94,20 @@ links with the old `?view=dc|clusters|stress` or `?rtos=` still land on the near
   the NERC areas behind its stress reading). Shapes: client/public/geo/grid-regions.json, written
   by scripts/build-grid-regions.mjs from the HIFLD Independent System Operators layer (2020, via
   PNNL's public copy), never by hand. They are approximate and predate SPP's April 2026 expansion
-  into the West; BOUNDARY_NOTE says so wherever they are drawn. "In a region" means inside the
-  boundary as drawn (lib/grid-regions.ts), so a count matches the dots a reader sees.
+  into the West; BOUNDARY_NOTE and BOUNDARY_SOURCE say so wherever they are drawn. After a rebuild,
+  bump the `?v=` on the fetch in lib/region-data.ts (static files are immutable for a year).
+- Placing a record in a region is ONE function, lib/grid-regions.ts regionOf, used by the map, the
+  panel, the table and the region page. In order: a power plant goes where the balancing authority
+  it reports to EIA says (an operator's own code, or the Southeast or West lists in
+  data/grid-regions.ts REGION_AUTHORITIES, from EIA's EIA-930 reference table); otherwise the region
+  whose drawn line holds it; otherwise, just off a clipped coast or lakeshore, the region that runs
+  its state. A tracked campus first consults data/campus-regions.ts: campuses a person checked
+  against the utility that serves them, each with a source (regionOfCampus). Megawatts by region
+  follow it. Tests place every lower-48 campus, site and plant, fail on a balancing authority code
+  no list knows, and fail when a campus lands in a different region than the operator its registry
+  row names until someone adds a reviewed row. Never place by the lines alone.
+- Region descriptions carry the day their own sources were read (`checked`) and, for a claim that
+  is not on the organization's page, the page it is on (`also`). Say only what a cited page says.
 - A region opens a panel over the map (components/map/region-panel.tsx: a drawer on a desktop, a
   bottom sheet on a phone), and the same content is its page, /region/<id> (RegionContent is
   shared, so the two never disagree). The two lists under the map follow the selected region.
@@ -104,9 +116,18 @@ links with the old `?view=dc|clusters|stress` or `?rtos=` still land on the near
   caption.
 - Rendering: sites, plants and regions draw on one shared Leaflet canvas (components/map/
   points-layer.tsx, region-layer.tsx); campuses and clusters are DOM markers above it. The dense
-  layers load after first paint. The attribution line must credit OpenStreetMap while sites are
-  drawn (ODbL). Phone sheets are portaled to the body, because the app shell isolates the page
-  under the phone's floating bar. All motion is off under prefers-reduced-motion.
+  layers load after first paint, and /api/clusters is gzipped like the map's own layers. The
+  attribution line must credit OpenStreetMap while sites are drawn (ODbL). On a phone the Layers
+  and Filters sheets are portaled to the body, because the app shell isolates the page under the
+  phone's floating bar; the region sheet stays in the map frame and its handle folds it to its
+  title. All motion is off under prefers-reduced-motion.
+- Clicks: regions cover the lower 48 and do not pass clicks up to the map. A region click with a
+  card pinned only closes the card; a single click waits 200 ms so a double-click can zoom; the
+  tour takes no map clicks. A count that has not loaded is a placeholder and a failed layer says
+  so with a retry: never render an unknown as zero.
+- The live feed asks EIA for fuel rows in groups of 14 authorities (server/eia-grid.ts
+  FUEL_RESPONDENTS_PER_CALL): more per call shortens the window below the day and a half it takes
+  to find one complete hour.
 
 Off-nav: "/" (marketing landing, bare layout, lazy Home.tsx), /subscribe, /admin/datacenters,
 /admin/social, /stock/:ticker, /sector/:slug, /region/:slug, /operator/:slug, /blog/:slug,
