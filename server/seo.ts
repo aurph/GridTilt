@@ -208,7 +208,7 @@ const SECTOR_SLUGS: Record<string, { name: string; description: string }> = {
  * dated figure.
  */
 const REGION_SLUGS: Record<string, { name: string; description: string }> = {
-  pjm: { name: "PJM", description: "PJM Interconnection, the grid operator for 13 states and DC: hourly demand, NERC's risk rating, and the data centers and power plants inside it." },
+  pjm: { name: "PJM", description: "PJM Interconnection, the grid operator in all or parts of 13 states and DC: hourly demand, NERC's risk rating, and the data centers and power plants inside it." },
   ercot: { name: "ERCOT", description: "ERCOT, the grid operator for most of Texas: hourly demand, NERC's risk rating, and the data centers and power plants inside it." },
   miso: { name: "MISO", description: "MISO, the grid operator from the Upper Midwest to the Gulf Coast: hourly demand, NERC's risk rating, and the data centers and power plants inside it." },
   spp: { name: "SPP", description: "Southwest Power Pool, the grid operator for the Plains states: hourly demand, NERC's risk rating, and the data centers and power plants inside it." },

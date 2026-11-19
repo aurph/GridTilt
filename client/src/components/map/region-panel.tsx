@@ -18,7 +18,7 @@ import { LayerSwatch } from "@/components/map/map-controls";
 import { RISK_COLOR } from "@/components/map/region-layer";
 import { SourceFooter } from "@/components/SourceFooter";
 import { Skeleton } from "@/components/ui/skeleton";
-import { BOUNDARY_NOTE, BOUNDARY_SOURCE, REGIONS_CHECKED, gridRegion, type GridRegionId } from "@/data/grid-regions";
+import { BOUNDARY_NOTE, BOUNDARY_SOURCE, gridRegion, type GridRegionId } from "@/data/grid-regions";
 import { NERC_LTRA, type NercArea } from "@/data/nerc-reserve-margins";
 import { STATE_GRID } from "@/data/state-grid";
 import { fmtGW, fmtPeriodET, useGridLive } from "@/lib/grid-live";
@@ -160,10 +160,15 @@ export function RegionContent({
         </p>
         <p className="mt-1 text-10 text-white/35">
           As described by{" "}
-          <a href={region.about.url} target="_blank" rel="noopener noreferrer" className="underline decoration-dotted underline-offset-2 hover:text-white/60">
-            {region.about.label}
-          </a>
-          , checked {longDay(REGIONS_CHECKED)}.
+          {[region.about, ...(region.also ?? [])].map((s, i, all) => (
+            <span key={s.url + s.label}>
+              {i > 0 && (i === all.length - 1 ? " and " : ", ")}
+              <a href={s.url} target="_blank" rel="noopener noreferrer" className="underline decoration-dotted underline-offset-2 hover:text-white/60">
+                {s.label}
+              </a>
+            </span>
+          ))}
+          , read {longDay(region.checked)}.
         </p>
       </div>
 

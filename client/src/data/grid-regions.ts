@@ -8,7 +8,8 @@
  * region's stress reading (`nercAreas`).
  *
  * Descriptions say what each organization is, as it describes itself on its
- * own "about" page (each checked on REGIONS_CHECKED). Dated figures do not go
+ * own page (`about`), with a second source (`also`) for any claim that page
+ * does not make, and the day they were read (`checked`). Dated figures do not go
  * here: live demand, reserve margins and counts are read beside the text from
  * their own sources, and a number in this prose would go stale next to them.
  *
@@ -19,6 +20,11 @@ import { SERIES } from "../lib/tokens";
 
 export const GRID_REGION_IDS = ["pjm", "ercot", "miso", "spp", "caiso", "nyiso", "isone", "southeast", "west"] as const;
 export type GridRegionId = (typeof GRID_REGION_IDS)[number];
+
+export interface RegionSource {
+  label: string;
+  url: string;
+}
 
 /** The three grids of the lower 48. Texas is ERCOT's. */
 export type Interconnection = "Eastern" | "Western" | "Texas";
@@ -41,8 +47,12 @@ export interface GridRegion {
   /** The states it covers, in words. */
   states: string;
   description: string;
-  /** The organization's own page the description was checked against. */
-  about: { label: string; url: string };
+  /** The page the description was checked against: the organization's own where it has one. */
+  about: RegionSource;
+  /** Where a claim that is not on that page is stated. */
+  also?: RegionSource[];
+  /** The day the description was last read against those pages: YYYY-MM-DD. */
+  checked: string;
   /** The key this region's hourly demand and fuel mix are served under (server/eia-grid.ts). */
   liveKey: string;
   /** NERC assessment areas whose reserve margins and risk levels cover it. */
@@ -55,8 +65,17 @@ export interface GridRegion {
   labelAt: [number, number];
 }
 
-/** The day every description below was last checked against the organization's own page. */
-export const REGIONS_CHECKED = "2026-11-18";
+/**
+ * The latest day a description below was read against its sources. Each
+ * region carries its own `checked` date, and that is the one shown.
+ *
+ * 2026-11-19 pass: six descriptions were re-read claim by claim and reworded
+ * to what their pages state. PJM retired the page first cited
+ * (pjm.com/about-pjm/who-we-are now answers "not found"); FERC's regional
+ * text is at /electric-power-markets, read from an Internet Archive capture
+ * of 2026-10-22 because ferc.gov refuses scripted requests.
+ */
+export const REGIONS_CHECKED = "2026-11-19";
 
 export const GRID_REGIONS: GridRegion[] = [
   {
@@ -67,8 +86,9 @@ export const GRID_REGIONS: GridRegion[] = [
     interconnection: "Eastern",
     states: "Delaware, Maryland, New Jersey, Ohio, Pennsylvania, Virginia, West Virginia and DC, and parts of Illinois, Indiana, Kentucky, Michigan, North Carolina and Tennessee",
     description:
-      "PJM Interconnection runs the high-voltage grid and a wholesale electricity market in all or parts of 13 states and the District of Columbia. It does not own power lines or power plants; it directs their operation for many owners.",
-    about: { label: "pjm.com: Who we are", url: "https://www.pjm.com/about-pjm/who-we-are" },
+      "PJM Interconnection coordinates and directs the flow of electricity in all or parts of 13 states and the District of Columbia, and runs competitive wholesale electricity markets. It does not own power lines or power plants; it directs their operation for many owners.",
+    about: { label: "learn.pjm.com: Who is PJM?", url: "https://learn.pjm.com/who-is-pjm" },
+    checked: "2026-11-19",
     liveKey: "PJM",
     nercAreas: ["PJM"],
     color: SERIES[0],
@@ -82,8 +102,10 @@ export const GRID_REGIONS: GridRegion[] = [
     interconnection: "Texas",
     states: "Most of Texas",
     description:
-      "ERCOT runs the grid and wholesale electricity market for most of Texas. Its grid is a separate interconnection from the rest of the country's, with only small ties to its neighbors.",
+      "ERCOT schedules power on the grid that serves most of Texas and settles the state's competitive wholesale power market. Its grid is an interconnection of its own: the balancing authority, the interconnection and the regional transmission organization are one and the same.",
     about: { label: "ercot.com: About ERCOT", url: "https://www.ercot.com/about" },
+    also: [{ label: "eia.gov: how electricity is delivered", url: "https://www.eia.gov/energyexplained/electricity/delivery-to-consumers.php" }],
+    checked: "2026-11-19",
     liveKey: "ERCOT",
     nercAreas: ["Texas RE-ERCOT"],
     color: SERIES[2],
@@ -97,8 +119,9 @@ export const GRID_REGIONS: GridRegion[] = [
     interconnection: "Eastern",
     states: "All or parts of Arkansas, Illinois, Indiana, Iowa, Kentucky, Louisiana, Michigan, Minnesota, Mississippi, Missouri, Montana, North Dakota, South Dakota, Texas and Wisconsin",
     description:
-      "MISO runs the high-voltage grid and a wholesale electricity market across 15 US states, from Minnesota to Louisiana, and the Canadian province of Manitoba.",
+      "MISO manages the high-voltage power grid and operates wholesale electricity markets across 15 US states and the Canadian province of Manitoba.",
     about: { label: "misoenergy.org: About MISO", url: "https://www.misoenergy.org/meet-miso/about-miso/" },
+    checked: "2026-11-19",
     liveKey: "MISO",
     nercAreas: ["MISO"],
     color: SERIES[1],
@@ -112,8 +135,10 @@ export const GRID_REGIONS: GridRegion[] = [
     interconnection: "Eastern",
     states: "Kansas, Nebraska, Oklahoma, the Dakotas and parts of the neighboring states; since April 2026, parts of the West as well",
     description:
-      "Southwest Power Pool runs the high-voltage grid and a wholesale electricity market across the central United States. Since April 2026 it also operates part of the western grid, the first operator to work in both.",
+      "Southwest Power Pool is a regional transmission organization for the central United States. It is the balancing authority for its members and runs their wholesale electricity markets. In April 2026 it expanded into the Western Interconnection, the first such organization with services in two interconnections.",
     about: { label: "spp.org: About us", url: "https://www.spp.org/about-us/" },
+    also: [{ label: "spp.org: RTO expansion", url: "https://www.spp.org/western-services/rto-expansion/" }, { label: "spp.org: western expansion complete, April 2, 2026", url: "https://www.spp.org/news-list/spp-and-member-utilities-successfully-complete-historic-western-expansion/" }],
+    checked: "2026-11-19",
     liveKey: "SPP",
     nercAreas: ["MRO-SPP"],
     color: SERIES[5],
@@ -129,6 +154,7 @@ export const GRID_REGIONS: GridRegion[] = [
     description:
       "The California ISO manages the flow of electricity on the high-voltage lines serving most of California and runs a wholesale electricity market. Los Angeles, Sacramento and a few other areas run their own grids outside it.",
     about: { label: "caiso.com: About", url: "https://www.caiso.com/about" },
+    checked: "2026-11-18",
     liveKey: "CAISO",
     nercAreas: ["WECC-California"],
     nercNote: "NERC assesses California as one area, which includes the utilities outside CAISO.",
@@ -145,6 +171,7 @@ export const GRID_REGIONS: GridRegion[] = [
     description:
       "The New York ISO operates New York State's high-voltage grid and runs its wholesale electricity markets. It does not own power lines or power plants.",
     about: { label: "nyiso.com: What we do", url: "https://www.nyiso.com/what-we-do" },
+    checked: "2026-11-18",
     liveKey: "NYISO",
     nercAreas: ["NPCC-New York"],
     color: SERIES[6],
@@ -160,6 +187,7 @@ export const GRID_REGIONS: GridRegion[] = [
     description:
       "ISO New England keeps electricity flowing across the six New England states. It operates the grid, runs the wholesale electricity markets and plans the power system.",
     about: { label: "iso-ne.com: About us", url: "https://www.iso-ne.com/about" },
+    checked: "2026-11-18",
     liveKey: "ISO-NE",
     nercAreas: ["NPCC-New England"],
     color: SERIES[7],
@@ -173,8 +201,10 @@ export const GRID_REGIONS: GridRegion[] = [
     interconnection: "Eastern",
     states: "Alabama, Florida, Georgia, South Carolina and Tennessee, and parts of Kentucky, Mississippi, Missouri and North Carolina",
     description:
-      "The Southeast has no regional market operator. Utilities and public power such as Southern Company, Duke Energy, the Tennessee Valley Authority and Florida Power & Light plan and run their own grids, and trade with their neighbors directly.",
-    about: { label: "ferc.gov: Electric power markets, Southeast", url: "https://www.ferc.gov/industries-data/electric/electric-power-markets" },
+      "The Southeast has no regional market operator. Utilities there are responsible for operating their own systems, among them Southern Company, Duke Energy, Florida Power & Light and the federal Tennessee Valley Authority, and nearly all power is sold directly between two parties.",
+    about: { label: "ferc.gov: Electric power markets", url: "https://www.ferc.gov/electric-power-markets" },
+    also: [{ label: "EIA-930 reference tables: balancing authorities", url: "https://www.eia.gov/electricity/930-content/EIA930_Reference_Tables.xlsx" }],
+    checked: "2026-11-19",
     liveKey: "SOUTHEAST",
     nercAreas: ["SERC-Central", "SERC-East", "SERC-Florida Peninsula", "SERC-Southeast"],
     nercNote: "NERC assesses the Southeast in four areas, each against its own reference margin.",
@@ -189,8 +219,10 @@ export const GRID_REGIONS: GridRegion[] = [
     interconnection: "Western",
     states: "Arizona, Colorado, Idaho, Montana, Nevada, New Mexico, Oregon, Utah, Washington and Wyoming, and the parts of California outside CAISO",
     description:
-      "Outside California, most of the West has no regional market operator. Utilities and federal power agencies such as the Bonneville Power Administration, PacifiCorp and Arizona Public Service run their own grids. In April 2026 Southwest Power Pool began operating part of it.",
-    about: { label: "ferc.gov: Electric power markets, West", url: "https://www.ferc.gov/industries-data/electric/electric-power-markets" },
+      "Outside California, most of the West has no regional market operator. Utilities and federal agencies such as the Bonneville Power Administration, PacifiCorp and Arizona Public Service each run their own system, and some also trade in the imbalance market CAISO runs. In April 2026 Southwest Power Pool began operating part of it.",
+    about: { label: "ferc.gov: Electric power markets", url: "https://www.ferc.gov/electric-power-markets" },
+    also: [{ label: "EIA-930 reference tables: balancing authorities", url: "https://www.eia.gov/electricity/930-content/EIA930_Reference_Tables.xlsx" }, { label: "spp.org: western expansion complete, April 2, 2026", url: "https://www.spp.org/news-list/spp-and-member-utilities-successfully-complete-historic-western-expansion/" }],
+    checked: "2026-11-19",
     liveKey: "WEST",
     nercAreas: ["WECC-Basin", "WECC-Northwest", "WECC-Rocky Mountain", "WECC-Southwest"],
     nercNote: "NERC assesses the West outside California in four areas, each against its own reference margin.",

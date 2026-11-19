@@ -7,6 +7,7 @@
  * approximate; see BOUNDARY_NOTE in data/grid-regions.ts), so the counts in a
  * region's panel match the dots the reader sees inside the shape.
  */
+import { CAMPUS_REGION_REVIEWED } from "../data/campus-regions";
 import { GRID_REGION_IDS, REGION_AUTHORITIES, REGION_SLUG_ALIASES, gridRegion, type GridRegionId } from "../data/grid-regions";
 import { NERC_AREAS, type NercArea, type NercRisk } from "../data/nerc-reserve-margins";
 import { STATE_GRID } from "../data/state-grid";
@@ -132,7 +133,7 @@ const finite = (n: unknown) => (typeof n === "number" && Number.isFinite(n) && n
 export function regionStats(
   shapes: RegionShape[],
   layers: {
-    campuses?: Array<Point & { powerMW: number; status: string }> | null;
+    campuses?: Array<Point & { id?: number; powerMW: number; status: string }> | null;
     sites?: Point[] | null;
     clusters?: Array<Point & { plannedPowerMW: number }> | null;
     plants?: Array<Point & { mw: number; fuel: string }> | null;
@@ -148,7 +149,7 @@ export function regionStats(
     };
   }
   for (const c of layers.campuses ?? []) {
-    const id = regionOf(shapes, c);
+    const id = regionOfCampus(shapes, c);
     const s = id ? out[id].campuses : null;
     if (!s) continue;
     s.count += 1;
@@ -402,4 +403,15 @@ export function regionOf(shapes: RegionShape[], p: Placeable): GridRegionId | nu
   if (gridRegion(named).kind === "market") return named;
   const western = (id: GridRegionId) => gridRegion(id).interconnection === "Western";
   return !here || western(here) === (named === "west") ? named : here;
+}
+
+/**
+ * The region a tracked campus belongs to: the one a person recorded after
+ * reading who serves it (data/campus-regions.ts), or else regionOf. Megawatts
+ * by region follow this, so a campus the approximate lines put in a
+ * neighbor's footprint is still counted where its utility belongs.
+ */
+export function regionOfCampus(shapes: RegionShape[], campus: Placeable & { id?: number }): GridRegionId | null {
+  const reviewed = typeof campus.id === "number" ? CAMPUS_REGION_REVIEWED[campus.id] : undefined;
+  return reviewed ? reviewed.region : regionOf(shapes, campus);
 }

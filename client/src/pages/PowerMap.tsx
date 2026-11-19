@@ -47,6 +47,7 @@ import { PLANT_FUEL_LABEL, fuelColor } from "@/lib/fuel-colors";
 import { aiSharePct, fmtGW, fmtPeriodET, useGridLive, type GridLiveConfigured } from "@/lib/grid-live";
 import {
   regionOf,
+  regionOfCampus,
   regionBounds,
   regionMarginText,
   regionNercAreas,
@@ -429,7 +430,7 @@ export default function PowerMap() {
   // ── Regions: who is where ────────────────────────────────────────────────
   const campusRegion = useMemo(() => {
     const m = new Map<number, GridRegionId | null>();
-    if (shapes) for (const d of campuses) m.set(d.id, regionOf(shapes, d));
+    if (shapes) for (const d of campuses) m.set(d.id, regionOfCampus(shapes, d));
     return m;
   }, [shapes, campuses]);
 
@@ -737,7 +738,7 @@ export default function PowerMap() {
   const clusterChip = displayCluster ? knownChip(displayCluster.chipType) : null;
   const panelOpen = Boolean(activeRegion) && !step;
   const plantFuels = useMemo(() => Array.from(new Set((plants ?? []).map((p) => p.fuel))), [plants]);
-  const regionOfCampus = (d: DataCenter) => {
+  const campusRegionMeta = (d: DataCenter) => {
     const id = campusRegion.get(d.id);
     return id ? gridRegion(id) : null;
   };
@@ -1215,7 +1216,7 @@ export default function PowerMap() {
                 <Row label="Capacity">
                   <span className="font-mono text-13 font-bold tabular-nums text-brand-2">{displayDC.powerMW} MW</span>
                 </Row>
-                <Row label="Grid region">{regionOfCampus(displayDC)?.name ?? "not in a mapped region"}</Row>
+                <Row label="Grid region">{campusRegionMeta(displayDC)?.name ?? "not in a mapped region"}</Row>
                 {selected && (
                   <>
                     <Row label="Annual power">
@@ -1352,7 +1353,7 @@ export default function PowerMap() {
         {dcError && <p className="py-2 text-xs text-muted-foreground">Unavailable: campus data failed to load.</p>}
         <div className={showAllUpcoming ? "flex flex-wrap gap-3" : "upcoming-scroll flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2"}>
           {announced.map((dc) => {
-            const region = regionOfCampus(dc);
+            const region = campusRegionMeta(dc);
             const cColor = companyColors[dc.company] ?? INK.faint;
             return (
               <button

@@ -10,6 +10,7 @@ import { readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { feature } from "topojson-client";
 import { GRID_REGIONS, GRID_REGION_IDS, REGIONS_CHECKED, REGION_AUTHORITIES, REGION_SLUG_ALIASES, gridRegion, type GridRegionId } from "../../data/grid-regions";
+import { CAMPUS_REGION_REVIEWED } from "../../data/campus-regions";
 import { NERC_AREAS } from "../../data/nerc-reserve-margins";
 import {
   dealRegion,
@@ -22,6 +23,7 @@ import {
   regionLocator,
   regionNercAreas,
   regionOf,
+  regionOfCampus,
   regionRiskLevel,
   regionRiskText,
   regionShapes,
@@ -205,6 +207,71 @@ describe("placing a record: its balancing authority, then the lines as drawn, th
   });
 });
 
+describe("tracked campuses whose region a person checked", () => {
+  const campuses = JSON.parse(readFileSync(join(process.cwd(), "server", "data", "datacenters.json"), "utf-8")) as Array<{
+    id: number;
+    name: string;
+    state: string;
+    lat: number;
+    lng: number;
+    gridOperator: string;
+  }>;
+  /** The operator a registry row names outright, if it names one. */
+  const named = (text: string): GridRegionId | null => {
+    const t = text.toUpperCase();
+    const hits = (["PJM", "MISO", "ERCOT", "SPP", "CAISO", "NYISO", "ISO-NE"] as const).filter((k) => t.includes(k));
+    if (hits.length !== 1) return null;
+    return ({ PJM: "pjm", MISO: "miso", ERCOT: "ercot", SPP: "spp", CAISO: "caiso", NYISO: "nyiso", "ISO-NE": "isone" } as const)[hits[0]];
+  };
+
+  it("puts the two campuses the drawn lines get wrong in the operator their utility belongs to", () => {
+    const at = (id: number) => regionOfCampus(shapes, campuses.find((c) => c.id === id)!);
+    // MidAmerican Energy and Montana-Dakota Utilities are MISO members, inside lines drawn for SPP.
+    assert.equal(regionAt(shapes, 41.26, -95.86), "spp");
+    assert.equal(at(30), "miso", "Google Council Bluffs");
+    assert.equal(at(46), "miso", "CoreWeave Ellendale");
+    // The lakefront campus the shapes leave in the water.
+    assert.equal(at(32), "miso", "Microsoft Racine");
+    // Drawn right; the registry's own field is what is off.
+    assert.equal(at(4), "pjm", "Meta DeKalb is ComEd");
+    assert.equal(at(45), "pjm", "AWS New Carlisle is Indiana Michigan Power");
+    assert.equal(at(43), "spp", "Nebius Independence is Independence Power & Light");
+    assert.equal(at(44), "miso", "Meta Hyperion is Entergy Louisiana");
+  });
+
+  it("names each reviewed campus as the registry does, with a source that can be opened", () => {
+    for (const [id, row] of Object.entries(CAMPUS_REGION_REVIEWED)) {
+      const campus = campuses.find((c) => c.id === Number(id));
+      assert.ok(campus, `campus ${id} is in the registry`);
+      assert.equal(row.name, campus!.name, `row ${id} still names the same campus`);
+      assert.ok((GRID_REGION_IDS as readonly string[]).includes(row.region), id);
+      assert.match(row.sourceUrl, /^https:\/\//, id);
+      assert.ok(row.utility.length > 3 && row.source.length > 5, id);
+      assert.match(row.checked, /^\d{4}-\d{2}-\d{2}$/, id);
+    }
+  });
+
+  it("fails when a campus lands in a different region than the operator its registry row names, until someone checks it", () => {
+    const unreviewed: string[] = [];
+    for (const c of campuses) {
+      const says = named(c.gridOperator ?? "");
+      const placed = regionOfCampus(shapes, c);
+      if (says && placed && says !== placed && !CAMPUS_REGION_REVIEWED[c.id]) unreviewed.push(`${c.name}: registry says ${says}, placed in ${placed}`);
+    }
+    assert.deepEqual(unreviewed, []);
+  });
+
+  it("counts megawatts by the reviewed region", () => {
+    const stats = regionStats(shapes, { campuses: campuses as never });
+    const ellendale = campuses.find((c) => c.id === 46)!;
+    assert.equal(regionOf(shapes, ellendale), "spp", "the lines alone would say SPP");
+    // The same campuses, the same megawatts, wherever they are filed.
+    const total = GRID_REGION_IDS.reduce((n, id) => n + (stats[id].campuses?.builtMw400 ?? 0), 0);
+    assert.equal(total, 17985);
+    assert.equal(GRID_REGION_IDS.reduce((n, id) => n + (stats[id].campuses?.count ?? 0), 0), 55, "every campus is in a region");
+  });
+});
+
 describe("the locator: the regions drawn small, without a map library", () => {
   const W = 420;
   const H = 260;
@@ -279,13 +346,37 @@ describe("the regions, as described", () => {
     for (const r of GRID_REGIONS) {
       assert.ok(r.description.length > 60 && r.description.length < 330, `${r.id}: ${r.description.length} characters`);
       assert.ok(!/\d+(\.\d+)?\s?(%|GW|MW|million|percent)/i.test(r.description), `${r.id} carries a figure`);
-      assert.ok(!r.description.includes("—"), `${r.id} has an em dash`);
+      assert.ok(!r.description.includes("\u2014"), `${r.id} has an em dash`);
       assert.match(r.about.url, /^https:\/\//, r.id);
       assert.ok(r.states.length > 3, r.id);
     }
     for (const r of GRID_REGIONS.filter((x) => x.kind === "no-market")) {
       assert.match(r.description, /no regional market operator/, r.id);
     }
+  });
+
+  it("date each description by the day its own sources were read, and cite addresses that answer", () => {
+    const today = new Date().toISOString().slice(0, 10);
+    for (const r of GRID_REGIONS) {
+      assert.match(r.checked, /^\d{4}-\d{2}-\d{2}$/, r.id);
+      assert.ok(r.checked <= today && r.checked >= "2026-11-18", `${r.id} checked ${r.checked}`);
+      for (const s of [r.about, ...(r.also ?? [])]) {
+        assert.match(s.url, /^https:\/\//, `${r.id}: ${s.url}`);
+        assert.ok(s.label.length > 5, r.id);
+      }
+    }
+    // The three read on the first day, and the six re-read the next.
+    assert.deepEqual(GRID_REGIONS.filter((r) => r.checked === "2026-11-18").map((r) => r.id), ["caiso", "nyiso", "isone"]);
+    // PJM retired the page this used to cite, and FERC's regional text is not at the address it had.
+    const urls = GRID_REGIONS.flatMap((r) => [r.about.url, ...(r.also ?? []).map((s) => s.url)]);
+    assert.ok(!urls.some((u) => u.includes("pjm.com/about-pjm")), "the dead PJM address is gone");
+    assert.ok(!urls.some((u) => u.includes("ferc.gov/industries-data/")), "FERC's regional page is /electric-power-markets");
+    // A claim that is not on the operator's own page names the page it is on.
+    for (const id of ["ercot", "spp", "southeast", "west"] as const) assert.ok((gridRegion(id).also ?? []).length > 0, `${id} cites its second source`);
+    // What the sources do not say is not said: no adjective for ERCOT's ties, no "plan" for the Southeast's utilities.
+    assert.ok(!/small ties/.test(gridRegion("ercot").description));
+    assert.ok(!/\bplan\b/.test(gridRegion("southeast").description));
+    assert.ok(!/from Minnesota to Louisiana/.test(gridRegion("miso").description));
   });
 
   it("put each label inside its own region", () => {

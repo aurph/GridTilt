@@ -157,9 +157,9 @@ export function buildTourSteps(facts: TourFacts): TourStep[] {
     {
       id: "no-market",
       title: "No market operator",
-      caption: "The Southeast and most of the West have none. Utilities there plan and run their own grids and trade with neighbors directly.",
+      caption: "The Southeast and most of the West have none. There each utility is responsible for operating its own system.",
       source: "FERC, electric power markets",
-      sourceHref: "https://www.ferc.gov/industries-data/electric/electric-power-markets",
+      sourceHref: "https://www.ferc.gov/electric-power-markets",
       spotlight: noMarket,
       focus: "all",
       layers: ["regions"],
