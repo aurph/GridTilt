@@ -212,7 +212,7 @@ function FlyTo({ target }: { target: FlyTarget | null }) {
   useEffect(() => {
     if (!target) return;
     const opts = { paddingTopLeft: target.topLeft, paddingBottomRight: target.bottomRight };
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) map.fitBounds(target.bounds, opts);
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) map.fitBounds(target.bounds, { ...opts, animate: false });
     else map.flyToBounds(target.bounds, { ...opts, duration: 0.9 });
     // The key names the target; the object itself is rebuilt on every render.
     // eslint-disable-next-line react-hooks/exhaustive-deps

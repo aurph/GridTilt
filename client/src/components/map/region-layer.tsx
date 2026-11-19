@@ -24,6 +24,9 @@ export const RISK_COLOR: Record<NercRisk | "mixed", string> = {
   mixed: INK.faint,
 };
 
+/** How long a region's fill takes to reach its new strength. */
+const FADE_MS = 170;
+
 /** Above the marker pane (600), below Leaflet's tooltips (650). */
 const LABEL_PANE = "gt-region-labels";
 
@@ -110,9 +113,36 @@ export function RegionLayer({ shapes, renderer, stress, selected, hovered, spotl
     };
   }, [map, shapes, renderer]);
 
-  // Restyle in place.
+  // Restyle in place. A fill eases to its new strength (hover, selection, a
+  // tour stop), so a region brightens rather than snaps. It is immediate on
+  // the first paint and under reduced motion.
+  const shown = useRef<Partial<Record<GridRegionId, number>>>({});
   useEffect(() => {
-    for (const r of GRID_REGIONS) layersRef.current[r.id]?.setStyle(styleFor(r.id, { stress, selected, hovered, spotlight, groups }));
+    const targets = GRID_REGIONS.map((r) => ({ id: r.id, style: styleFor(r.id, { stress, selected, hovered, spotlight, groups }) }));
+    const from = { ...shown.current };
+    const paint = (t: number) => {
+      for (const { id, style } of targets) {
+        const layer = layersRef.current[id];
+        if (!layer) continue;
+        const to = style.fillOpacity ?? 0;
+        const start = from[id] ?? to;
+        const now = start + (to - start) * t;
+        shown.current[id] = now;
+        layer.setStyle({ ...style, fillOpacity: now });
+      }
+    };
+    const still = Object.keys(from).length === 0 || window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (still) {
+      paint(1);
+      return;
+    }
+    const t0 = performance.now();
+    let raf = requestAnimationFrame(function tick(ts) {
+      const p = Math.min(1, (ts - t0) / FADE_MS);
+      paint(1 - (1 - p) * (1 - p));
+      if (p < 1) raf = requestAnimationFrame(tick);
+    });
+    return () => cancelAnimationFrame(raf);
   }, [stress, selected, hovered, spotlight, groups, shapes]);
 
   // Short names at a national zoom; they get in the way once you are in.
