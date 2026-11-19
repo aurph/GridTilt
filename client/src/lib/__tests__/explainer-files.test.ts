@@ -45,4 +45,11 @@ describe("explainer files", () => {
     assert.ok(existsSync(onDisk(LAUNCH_FILM.poster)));
     assert.ok(readFileSync(onDisk(LAUNCH_FILM.captions), "utf-8").startsWith("WEBVTT"));
   });
+
+  it("the film's still for the home page is a light image, not the poster", () => {
+    assert.ok(LAUNCH_FILM.still, "the film names a still");
+    assert.notEqual(LAUNCH_FILM.still, LAUNCH_FILM.poster);
+    const bytes = statSync(onDisk(LAUNCH_FILM.still as string)).size;
+    assert.ok(bytes <= 60_000, `${(bytes / 1000).toFixed(1)} KB: the home page loads this for every reader who scrolls down`);
+  });
 });

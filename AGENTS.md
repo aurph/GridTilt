@@ -223,6 +223,9 @@ Derived from the code; starred rules confirmed by Jack 2026-07-02.
 - Site media lives in client/public/media and is served with a one-year immutable cache
   (server/static.ts), so a changed file needs a new name, never an overwrite. Video opens through
   components/video-trigger.tsx: a page adds one small line and nothing downloads until it is opened.
+  The home page ends with the one large still (components/home/home-film.tsx, "Why GridTilt exists",
+  2026-11-19): a light webp of its own, lazy-loaded, never the poster. The site does not call that
+  video a film, and the hero carries no video link (owner's call).
   Video files stay under 60 MB in total (client/src/lib/__tests__/explainer-files.test.ts).
 - Commits: imperative subject prefixed by area ("Social: ...", "docs: ..."). NO Co-Authored-By
   lines, ever. Product copy and commits: plain voice, no em dashes, no marketing language.

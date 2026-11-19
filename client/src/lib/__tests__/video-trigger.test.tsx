@@ -13,9 +13,11 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Router } from "wouter";
 import { TooltipProvider } from "../../components/ui/tooltip";
 import { Hero } from "../../components/home/Hero";
+import { HomeFilm } from "../../components/home/home-film";
 import { VideoTrigger } from "../../components/video-trigger";
-import { EXPLAINERS, WHAT_IS_THE_QUEUE } from "../../data/explainers";
+import { EXPLAINERS, LAUNCH_FILM, WHAT_IS_THE_QUEUE } from "../../data/explainers";
 import BlogIndex from "../../pages/BlogIndex";
+import Home from "../../pages/Home";
 import Queue from "../../pages/Queue";
 
 describe("video trigger", () => {
@@ -66,7 +68,17 @@ describe("video trigger", () => {
     }
   });
 
-  it("Home's hero offers the film as one quiet trigger, with no player", () => {
+  it("takes a large still when a section of its own features the video", () => {
+    const html = renderToStaticMarkup(<VideoTrigger video={WHAT_IS_THE_QUEUE} label="Play the video" still="/y.webp" testId="t" />);
+    assert.match(html, /<img[^>]*src="\/y\.webp"/);
+    assert.match(html, /<img[^>]*loading="lazy"/, "below the fold, so it loads only when the reader gets there");
+    assert.match(html, /<img[^>]*alt=""/, "the button's words already name it");
+    assert.ok(html.includes("Play the video"));
+    assert.ok(html.includes(WHAT_IS_THE_QUEUE.duration));
+    assert.ok(!html.includes("<video"));
+  });
+
+  it("Home's hero carries no video link", () => {
     const html = renderToStaticMarkup(
       <QueryClientProvider client={new QueryClient()}>
         <Router ssrPath="/">
@@ -74,7 +86,41 @@ describe("video trigger", () => {
         </Router>
       </QueryClientProvider>,
     );
-    assert.ok(html.includes("Watch the film"));
+    assert.ok(!html.includes("hero-film"));
+    assert.doesNotMatch(html.replace(/<[^>]+>/g, " "), /\bfilm\b/i);
     assert.ok(!html.includes("<video"));
+  });
+
+  it("Home closes with the video: a still, plain words, and no player until it is opened", () => {
+    const html = renderToStaticMarkup(<HomeFilm />);
+    assert.match(html, /data-testid="home-film"/);
+    assert.match(html, /<h2[^>]*>Why GridTilt exists<\/h2>/);
+    assert.match(html, /<button[^>]*data-testid="home-film-trigger"/);
+    assert.match(html, /<button[^>]*aria-haspopup="dialog"/);
+    assert.ok(LAUNCH_FILM.still, "the video has a still");
+    assert.ok(html.includes(`src="${LAUNCH_FILM.still}"`));
+    assert.ok(html.includes("Play the video"));
+    assert.ok(html.includes(LAUNCH_FILM.duration));
+    assert.ok(!html.includes("<video"), "no player, so the video itself does not download");
+    assert.ok(!html.includes(LAUNCH_FILM.poster), "the full-size poster stays out of the page");
+    assert.doesNotMatch(html.replace(/<[^>]+>/g, " "), /\bfilm\b/i, "the page does not call it a film");
+  });
+
+  it("the home page puts the video last, under the chart", () => {
+    const html = renderToStaticMarkup(
+      <QueryClientProvider client={new QueryClient()}>
+        <TooltipProvider>
+          <Router ssrPath="/">
+            <Home />
+          </Router>
+        </TooltipProvider>
+      </QueryClientProvider>,
+    );
+    const hero = html.indexOf('data-testid="home-hero"');
+    const chart = html.indexOf('data-testid="home-demand-chart"');
+    const film = html.indexOf('data-testid="home-film"');
+    assert.ok(hero >= 0 && chart > hero, "hero, then the chart");
+    assert.ok(film > chart, "then the video");
+    assert.equal((html.match(/aria-haspopup="dialog"/g) ?? []).length, 1, "one way into the video on the page");
   });
 });

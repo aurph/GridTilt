@@ -4,8 +4,8 @@ import { Play, X } from "lucide-react";
 import type { Explainer } from "@/data/explainers";
 
 /**
- * A quiet way into a video: a play glyph or a small thumbnail, a title and a
- * length. The video opens in an overlay, so the page never moves. Nothing downloads
+ * A quiet way into a video: a play glyph, a small thumbnail or a large still,
+ * with a title and a length. The video opens in an overlay, so the page never moves. Nothing downloads
  * until it opens, and nothing plays until the reader presses play. Esc or a click on
  * the backdrop closes it, which stops it and puts focus back on the trigger.
  *
@@ -18,6 +18,7 @@ export function VideoTrigger({
   video,
   label,
   thumb,
+  still,
   className = "",
   testId,
 }: {
@@ -26,6 +27,8 @@ export function VideoTrigger({
   label?: string;
   /** A small image for a row of thumbnails. Without it the trigger is one line of text. */
   thumb?: string;
+  /** A large still, for a section that features the video. The image is the button. */
+  still?: string;
   className?: string;
   testId: string;
 }) {
@@ -54,10 +57,25 @@ export function VideoTrigger({
         type="button"
         onClick={() => setOpen(true)}
         aria-haspopup="dialog"
-        className={`${thumb ? "flex items-center gap-3 text-left" : "inline-flex items-center gap-1.5 whitespace-nowrap"} focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${className}`}
+        className={`${still ? "group block w-full text-left" : thumb ? "flex items-center gap-3 text-left" : "inline-flex items-center gap-1.5 whitespace-nowrap"} focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${className}`}
         data-testid={testId}
       >
-        {thumb ? (
+        {still ? (
+          <>
+            <span className="relative block aspect-video w-full overflow-hidden rounded-lg border border-card-border bg-background">
+              <img src={still} alt="" width={1200} height={675} loading="lazy" decoding="async" className="block h-full w-full object-cover" />
+              <span className="absolute inset-0 flex items-center justify-center">
+                <span className="flex h-14 w-14 items-center justify-center rounded-full bg-brand text-black transition-transform duration-150 ease-out group-hover:scale-105 motion-reduce:transition-none motion-reduce:group-hover:scale-100">
+                  <Play className="ml-0.5 h-5 w-5 fill-current" aria-hidden />
+                </span>
+              </span>
+            </span>
+            <span className="mt-3 flex items-baseline gap-2">
+              <span className="text-[14px] font-semibold text-foreground group-hover:text-brand">{label ?? video.title}</span>
+              <span className="font-mono text-11 tabular-nums text-muted-foreground">{video.duration}</span>
+            </span>
+          </>
+        ) : thumb ? (
           <>
             <span className="relative block h-[54px] w-24 shrink-0 overflow-hidden rounded bg-background">
               <img src={thumb} alt="" width={96} height={54} loading="lazy" decoding="async" className="block h-full w-full object-cover" />

@@ -22,6 +22,8 @@ export interface Explainer {
   captions: string;
   /** A small image for a row of triggers. */
   thumb?: string;
+  /** A larger still, for a section that features the video. Lighter than the poster. */
+  still?: string;
   sources: ExplainerSource[];
 }
 
@@ -105,13 +107,17 @@ export const WHAT_IS_THE_QUEUE: Explainer = {
 
 export const EXPLAINERS: Explainer[] = [WHO_RUNS_YOUR_GRID, THREE_MEGAWATT_NUMBERS, WHAT_IS_THE_QUEUE];
 
-/** The launch film. It makes no figures or named claims, so it lists no sources. */
+/**
+ * The launch film. It makes no figures or named claims, so it lists no sources.
+ * The site does not call it a film: its title is what it says.
+ */
 export const LAUNCH_FILM: Explainer = {
   id: "launch-film",
-  title: "The film",
+  title: "Why GridTilt exists",
   duration: "0:34",
   video: "/media/film/gridtilt-film-v1.mp4",
   poster: "/media/film/gridtilt-film-v1.jpg",
   captions: "/media/film/gridtilt-film-v1.vtt",
+  still: "/media/film/gridtilt-film-still-v1.webp",
   sources: [],
 };
