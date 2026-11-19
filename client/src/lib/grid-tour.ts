@@ -64,7 +64,7 @@ export function tourFacts(input: {
   sitesVersion?: string | null;
   campusCount?: number | null;
   /** Mapped sites per region (lib/grid-regions regionStats). */
-  siteCounts?: Record<GridRegionId, { sites: number }> | null;
+  siteCounts?: Record<GridRegionId, { sites: number | null }> | null;
   queue?: { gw: number; asOf: string } | null;
 }): TourFacts {
   const elevated = GRID_REGIONS.filter((r) => {

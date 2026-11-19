@@ -22,7 +22,6 @@ import { Link } from "wouter";
 import { MapContainer, ZoomControl, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { feature } from "topojson-client";
 import { Calendar, ChevronDown, Compass, Info, Network, SlidersHorizontal, X, Zap } from "lucide-react";
 import { BasemapTiles } from "@/components/basemap-tiles";
 import { BiggestDataCenters } from "@/components/BiggestDataCenters";
@@ -53,14 +52,13 @@ import {
   regionNercAreas,
   regionRiskLevel,
   regionRiskText,
-  regionShapes,
   regionStats,
-  type RegionShape,
 } from "@/lib/grid-regions";
 import { buildTourSteps, tourFacts } from "@/lib/grid-tour";
 import { isFarOut, layerSummary, mapViewQuery, parseMapView, toggleLayer, trackedHeadline, type MapLayer, type MapView } from "@/lib/map-layers";
 import { formatClusterMW, hasCoords, isEstimated, knownChip, type ClusterPoint } from "@/lib/power-map-clusters";
 import { MIN_TRACKED_MW } from "@/lib/real-gauges";
+import { useRegionShapes } from "@/lib/region-data";
 import { withSectionParams } from "@/lib/sections";
 import { BORDER, BRAND, FONT, INK, STATUS_COLORS, SURFACE } from "@/lib/tokens";
 
@@ -198,23 +196,6 @@ function useBelowSm(): boolean {
     return () => mql.removeEventListener("change", onChange);
   }, []);
   return below;
-}
-
-/** The nine regions' shapes: one small file, fetched once and cached. */
-function useRegionShapes(): RegionShape[] | null {
-  const { data } = useQuery<RegionShape[]>({
-    queryKey: ["/geo/grid-regions.json"],
-    queryFn: async () => {
-      const res = await fetch("/geo/grid-regions.json?v=1");
-      if (!res.ok) throw new Error(`grid regions ${res.status}`);
-      const topology = await res.json();
-      // feature() is generic over topojson's own Topology type; declaring the
-      // nested shape of this file buys nothing, since the result goes straight
-      // to regionShapes, which reads only ids and geometries.
-      return regionShapes(feature(topology, topology.objects.regions) as never);
-    },
-  });
-  return data ?? null;
 }
 
 interface FlyTarget {
@@ -413,13 +394,6 @@ export default function PowerMap() {
   }, [mobileFiltersOpen]);
 
   // ── Data ─────────────────────────────────────────────────────────────────
-  const tourSteps = useRef(buildTourSteps(tourFacts({})));
-  const step = tour !== null ? tourSteps.current[tour] ?? null : null;
-  const layers: readonly MapLayer[] = step ? step.layers : view.layers;
-  const stress = step ? step.stress : view.stress;
-  const activeRegion = step ? null : view.region;
-  const on = (l: MapLayer) => layers.includes(l);
-
   const {
     data: fetchedCampuses,
     isLoading: dcLoading,
@@ -428,16 +402,19 @@ export default function PowerMap() {
   } = useQuery<DataCenter[]>({ queryKey: ["/api/datacenters"] });
   const campuses = useMemo(() => fetchedCampuses ?? [], [fetchedCampuses]);
 
+  // A layer loads when it is drawn. An open region panel or the tour counts
+  // every layer, drawn or not, so either one loads the rest.
+  const needAll = view.region !== null || tour !== null;
   // The Compute Frontier record set; the query key is the one that page uses.
   const {
     data: fetchedClusters,
     isError: clError,
     refetch: refetchClusters,
-  } = useQuery<ClusterPoint[]>({ queryKey: ["/api/clusters"], enabled: painted && view.layers.includes("clusters") });
+  } = useQuery<ClusterPoint[]>({ queryKey: ["/api/clusters"], enabled: painted && (view.layers.includes("clusters") || needAll) });
   const clusters = useMemo(() => (fetchedClusters ?? []).filter(hasCoords), [fetchedClusters]);
 
-  const sitesQuery = useQuery<SitesPayload>({ queryKey: ["/api/map/sites"], enabled: painted && view.layers.includes("sites") });
-  const plantsQuery = useQuery<PlantsPayload>({ queryKey: ["/api/map/plants"], enabled: painted && view.layers.includes("plants") });
+  const sitesQuery = useQuery<SitesPayload>({ queryKey: ["/api/map/sites"], enabled: painted && (view.layers.includes("sites") || needAll) });
+  const plantsQuery = useQuery<PlantsPayload>({ queryKey: ["/api/map/plants"], enabled: painted && (view.layers.includes("plants") || needAll) });
   const sites = sitesQuery.data?.sites ?? null;
   const plants = plantsQuery.data?.plants ?? null;
   const shapes = useRegionShapes();
@@ -459,14 +436,40 @@ export default function PowerMap() {
     () =>
       shapes
         ? regionStats(shapes, {
-            campuses,
-            sites: sites ?? [],
-            clusters: clusters.map((c) => ({ lat: c.location.lat, lng: c.location.lng, plannedPowerMW: c.plannedPowerMW })),
-            plants: plants ?? [],
+            // A layer that has not loaded is passed as null, so its count reads as unknown and not as zero.
+            campuses: fetchedCampuses ?? null,
+            sites,
+            clusters: fetchedClusters ? clusters.map((c) => ({ lat: c.location.lat, lng: c.location.lng, plannedPowerMW: c.plannedPowerMW })) : null,
+            plants,
           })
         : null,
-    [shapes, campuses, sites, clusters, plants],
+    [shapes, fetchedCampuses, sites, fetchedClusters, clusters, plants],
   );
+
+  // ── The tour, and what it overrides while it plays ───────────────────────
+  // The stops read what the page has loaded, so a figure that arrives while
+  // the tour is open (the queue total, the site counts) appears in its stop.
+  const queueGw = queue?.headline?.queueOverallGW;
+  const queueAsOf = queue?.headline?.queueOverallAsOf;
+  const sitesVersion = sitesQuery.data?.source.version ?? null;
+  const tourSteps = useMemo(
+    () =>
+      buildTourSteps(
+        tourFacts({
+          siteCount: sites ? sites.length : null,
+          sitesVersion,
+          campusCount: fetchedCampuses ? fetchedCampuses.length : null,
+          siteCounts: sites && stats ? stats : null,
+          queue: typeof queueGw === "number" && queueAsOf ? { gw: queueGw, asOf: queueAsOf } : null,
+        }),
+      ),
+    [sites, sitesVersion, fetchedCampuses, stats, queueGw, queueAsOf],
+  );
+  const step = tour !== null ? tourSteps[tour] ?? null : null;
+  const layers: readonly MapLayer[] = step ? step.layers : view.layers;
+  const stress = step ? step.stress : view.stress;
+  const activeRegion = step ? null : view.region;
+  const on = (l: MapLayer) => layers.includes(l);
 
   // ── What draws ───────────────────────────────────────────────────────────
   const campusList = useMemo(
@@ -511,12 +514,16 @@ export default function PowerMap() {
   const builtTracked = scopeCampuses.filter((d) => d.powerMW >= MIN_TRACKED_MW && d.status !== "announced");
   const totalTWh = fmtGW(builtTracked.reduce((s, d) => s + d.annualMWh, 0) / 1000); // MWh to TWh, rounded like the GW beside it
   const statusCount = (s: DataCenter["status"]) => scopeCampuses.filter((d) => d.status === s).length;
+  // Records, not marks: a cluster drawn as its campus is still one cluster
+  // record, so this count matches the Layers control, the region panel and
+  // Compute. With a region selected the three layer counts are the panel's.
+  const inRegion = activeRegion && stats ? stats[activeRegion] : null;
   const summary = layerSummary(
     {
-      sites: sites ? (siteFocus ? siteFocus.size : sites.length) : undefined,
+      sites: inRegion ? inRegion.sites ?? undefined : sites ? sites.length : undefined,
       campuses: dcLoading || dcError ? undefined : scopeCampuses.length,
-      clusters: fetchedClusters ? (dimmedClusters ? clusterList.length - dimmedClusters.size : clusterList.length) : undefined,
-      plants: plants ? (plantFocus ? plantFocus.size : plants.length) : undefined,
+      clusters: inRegion ? inRegion.clusters?.count : fetchedClusters ? clusters.length : undefined,
+      plants: inRegion ? inRegion.plants?.count : plants ? plants.length : undefined,
     },
     layers,
   );
@@ -598,23 +605,9 @@ export default function PowerMap() {
     setPicked(info);
   }, []);
 
-  /** The tour's figures, read from what the page has loaded at that moment. */
-  function currentTourSteps() {
-    const q = queue?.headline;
-    return buildTourSteps(
-      tourFacts({
-        siteCount: sitesQuery.data?.sites.length ?? null,
-        sitesVersion: sitesQuery.data?.source.version ?? null,
-        campusCount: campuses.length || null,
-        siteCounts: sites && stats ? stats : null,
-        queue: typeof q?.queueOverallGW === "number" && q.queueOverallAsOf ? { gw: q.queueOverallGW, asOf: q.queueOverallAsOf } : null,
-      }),
-    );
-  }
   function startTour() {
     clearCards();
     setFiltersExpanded(false);
-    tourSteps.current = currentTourSteps();
     setTour(0);
   }
   /** Back out to the whole country. */
@@ -634,13 +627,6 @@ export default function PowerMap() {
     // With a region still selected the map returns to it (the effect below); otherwise to the country.
     if (!hasRegion) goHome();
   }, [hasRegion, goHome]);
-  // The queue total is fetched for the tour, so it lands after the tour opens: fold it in then.
-  const queueGw = queue?.headline?.queueOverallGW;
-  useEffect(() => {
-    if (tour !== null && typeof queueGw === "number") tourSteps.current = currentTourSteps();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [queueGw]);
-
   // ── Where the map goes ───────────────────────────────────────────────────
   // The map follows the tour stop, or else the selected region. Clearing a
   // region with a click on open map changes nothing here, so the view stays
@@ -930,7 +916,7 @@ export default function PowerMap() {
               counts={{
                 campuses: dcLoading ? undefined : campuses.length,
                 sites: sitesQuery.data?.sites.length,
-                clusters: fetchedClusters ? clusterList.length : undefined,
+                clusters: fetchedClusters ? clusters.length : undefined,
                 plants: plantsQuery.data?.plants.length,
                 regions: shapes?.length,
               }}
@@ -1248,7 +1234,7 @@ export default function PowerMap() {
           />
         )}
 
-        {step && tour !== null && <GridTourCard steps={tourSteps.current} index={tour} onIndex={setTour} onClose={endTour} />}
+        {step && tour !== null && <GridTourCard steps={tourSteps} index={tour} onIndex={setTour} onClose={endTour} />}
       </div>
 
       {/* Read from payloads the page already fetches. Two columns on desktop
@@ -1355,7 +1341,7 @@ export default function PowerMap() {
             <tbody>
               {GRID_REGIONS.map((r) => {
                 const areas = regionNercAreas(r.id);
-                const loadMW = stats ? stats[r.id].campuses.builtMw400 : null;
+                const loadMW = stats?.[r.id].campuses?.builtMw400 ?? null;
                 const demand = gridLive?.demand[r.liveKey] ?? null;
                 const share = demand && loadMW !== null ? aiSharePct(loadMW, demand.latestMw) : null;
                 const sColor = RISK_COLOR[regionRiskLevel(r.id)];

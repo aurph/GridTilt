@@ -102,6 +102,10 @@ export function regionBounds(shape: RegionShape): [[number, number], [number, nu
   ];
 }
 
+/**
+ * What sits inside one region. A layer that has not loaded is null, never
+ * zero: an unknown count must not read as "none".
+ */
 export interface RegionStats {
   campuses: {
     /** Every tracked campus in the region. */
@@ -110,11 +114,11 @@ export interface RegionStats {
     count400: number;
     /** Megawatts at those, operational or under construction. Announced campuses are not steel. */
     builtMw400: number;
-  };
+  } | null;
   /** Mapped sites: a count only. A site has no megawatts. */
-  sites: number;
-  clusters: { count: number; plannedMw: number };
-  plants: { count: number; mw: number; byFuel: Record<string, number> };
+  sites: number | null;
+  clusters: { count: number; plannedMw: number } | null;
+  plants: { count: number; mw: number; byFuel: Record<string, number> } | null;
 }
 
 interface Point {
@@ -128,25 +132,25 @@ const finite = (n: unknown) => (typeof n === "number" && Number.isFinite(n) && n
 export function regionStats(
   shapes: RegionShape[],
   layers: {
-    campuses?: Array<Point & { powerMW: number; status: string }>;
-    sites?: Point[];
-    clusters?: Array<Point & { plannedPowerMW: number }>;
-    plants?: Array<Point & { mw: number; fuel: string }>;
+    campuses?: Array<Point & { powerMW: number; status: string }> | null;
+    sites?: Point[] | null;
+    clusters?: Array<Point & { plannedPowerMW: number }> | null;
+    plants?: Array<Point & { mw: number; fuel: string }> | null;
   },
 ): Record<GridRegionId, RegionStats> {
   const out = {} as Record<GridRegionId, RegionStats>;
   for (const id of GRID_REGION_IDS) {
     out[id] = {
-      campuses: { count: 0, count400: 0, builtMw400: 0 },
-      sites: 0,
-      clusters: { count: 0, plannedMw: 0 },
-      plants: { count: 0, mw: 0, byFuel: {} },
+      campuses: layers.campuses ? { count: 0, count400: 0, builtMw400: 0 } : null,
+      sites: layers.sites ? 0 : null,
+      clusters: layers.clusters ? { count: 0, plannedMw: 0 } : null,
+      plants: layers.plants ? { count: 0, mw: 0, byFuel: {} } : null,
     };
   }
   for (const c of layers.campuses ?? []) {
     const id = regionAt(shapes, c.lat, c.lng);
-    if (!id) continue;
-    const s = out[id].campuses;
+    const s = id ? out[id].campuses : null;
+    if (!s) continue;
     s.count += 1;
     if (finite(c.powerMW) >= MIN_TRACKED_MW) {
       s.count400 += 1;
@@ -155,18 +159,19 @@ export function regionStats(
   }
   for (const p of layers.sites ?? []) {
     const id = regionAt(shapes, p.lat, p.lng);
-    if (id) out[id].sites += 1;
+    if (id) out[id].sites = (out[id].sites ?? 0) + 1;
   }
   for (const c of layers.clusters ?? []) {
     const id = regionAt(shapes, c.lat, c.lng);
-    if (!id) continue;
-    out[id].clusters.count += 1;
-    out[id].clusters.plannedMw += finite(c.plannedPowerMW);
+    const s = id ? out[id].clusters : null;
+    if (!s) continue;
+    s.count += 1;
+    s.plannedMw += finite(c.plannedPowerMW);
   }
   for (const p of layers.plants ?? []) {
     const id = regionAt(shapes, p.lat, p.lng);
-    if (!id) continue;
-    const s = out[id].plants;
+    const s = id ? out[id].plants : null;
+    if (!s) continue;
     s.count += 1;
     s.mw = Math.round((s.mw + finite(p.mw)) * 10) / 10;
     s.byFuel[p.fuel] = (s.byFuel[p.fuel] ?? 0) + 1;
@@ -265,4 +270,88 @@ export function regionDeals(rows: DealLike[] | undefined, id: GridRegionId): { c
     else undisclosed += 1;
   }
   return { count: unique.length, mw, undisclosed };
+}
+
+const RAD = Math.PI / 180;
+
+/** Albers equal-area conic for the lower 48 (standard parallels 29.5 and 45.5), as plain arithmetic. */
+const ALBERS = (() => {
+  const phi1 = 29.5 * RAD;
+  const phi2 = 45.5 * RAD;
+  const n = (Math.sin(phi1) + Math.sin(phi2)) / 2;
+  const c = Math.pow(Math.cos(phi1), 2) + 2 * n * Math.sin(phi1);
+  return { n, c, rho0: Math.sqrt(c - 2 * n * Math.sin(37.5 * RAD)) / n, lam0: -96 * RAD };
+})();
+
+/** [x east, y north], in the projection's own units. */
+function albers(lng: number, lat: number): [number, number] {
+  const rho = Math.sqrt(ALBERS.c - 2 * ALBERS.n * Math.sin(lat * RAD)) / ALBERS.n;
+  const theta = ALBERS.n * (lng * RAD - ALBERS.lam0);
+  return [rho * Math.sin(theta), ALBERS.rho0 - rho * Math.cos(theta)];
+}
+
+export interface RegionLocator {
+  /** SVG path data per region, in the box's pixels. */
+  paths: Array<{ id: GridRegionId; d: string }>;
+  /** Where a point falls in the same box: [x, y]. */
+  point: (lat: number, lng: number) => [number, number];
+}
+
+/**
+ * The regions drawn small, for a page with no map on it: one SVG outline per
+ * region fitted into a width by height box, and the function that places a
+ * point the same way. No map library loads for it.
+ */
+export function regionLocator(shapes: RegionShape[], width: number, height: number, pad = 4): RegionLocator {
+  const projected = shapes.map((s) => ({
+    id: s.id,
+    polygons: polygonsOf(s.geometry).map((rings) => rings.map((ring) => ring.map((p) => albers(p[0], p[1])))),
+  }));
+  let minX = Infinity;
+  let maxX = -Infinity;
+  let minY = Infinity;
+  let maxY = -Infinity;
+  projected.forEach((s) =>
+    s.polygons.forEach((rings) =>
+      rings.forEach((ring) =>
+        ring.forEach(([x, y]) => {
+          if (x < minX) minX = x;
+          if (x > maxX) maxX = x;
+          if (y < minY) minY = y;
+          if (y > maxY) maxY = y;
+        }),
+      ),
+    ),
+  );
+  if (!Number.isFinite(minX)) return { paths: [], point: () => [0, 0] };
+
+  const scale = Math.min((width - 2 * pad) / (maxX - minX), (height - 2 * pad) / (maxY - minY));
+  const left = (width - (maxX - minX) * scale) / 2;
+  const top = (height - (maxY - minY) * scale) / 2;
+  const place = (x: number, y: number): [number, number] => [left + (x - minX) * scale, top + (maxY - y) * scale];
+
+  const paths = projected.map((s) => {
+    let d = "";
+    s.polygons.forEach((rings) =>
+      rings.forEach((ring) => {
+        // Drop points that land within half a pixel of the last one kept: the outline is drawn small.
+        const kept: Array<[number, number]> = [];
+        ring.forEach(([x, y]) => {
+          const p = place(x, y);
+          const last = kept[kept.length - 1];
+          if (!last || Math.abs(p[0] - last[0]) + Math.abs(p[1] - last[1]) >= 0.5) kept.push(p);
+        });
+        if (kept.length < 3) return;
+        d += `M${kept.map((p) => `${p[0].toFixed(1)},${p[1].toFixed(1)}`).join("L")}Z`;
+      }),
+    );
+    return { id: s.id, d };
+  });
+  return {
+    paths,
+    point: (lat, lng) => {
+      const [x, y] = albers(lng, lat);
+      return place(x, y);
+    },
+  };
 }

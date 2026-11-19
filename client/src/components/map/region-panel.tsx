@@ -223,21 +223,24 @@ export function RegionContent({
       <Section title="What is being built here" testid="region-built">
         {stats ? (
           <div className="-mx-2">
-            <BuiltRow layer="campuses" label="Tracked campuses" count={stats.campuses.count} onShow={onShowLayer}>
-              {stats.campuses.count400 > 0
-                ? `${fmtGW(stats.campuses.builtMw400)} GW built or building at the ${stats.campuses.count400} of 400 MW and up`
-                : stats.campuses.count > 0
-                  ? "none of 400 MW and up"
-                  : undefined}
+            {/* A layer still loading shows a placeholder, never a zero. */}
+            <BuiltRow layer="campuses" label="Tracked campuses" count={stats.campuses?.count ?? null} onShow={onShowLayer}>
+              {!stats.campuses
+                ? undefined
+                : stats.campuses.count400 > 0
+                  ? `${fmtGW(stats.campuses.builtMw400)} GW built or building at the ${stats.campuses.count400} of 400 MW and up`
+                  : stats.campuses.count > 0
+                    ? "none of 400 MW and up"
+                    : undefined}
             </BuiltRow>
             <BuiltRow layer="sites" label="Data center sites" count={stats.sites} onShow={onShowLayer}>
               locations only; size is not published
             </BuiltRow>
-            <BuiltRow layer="clusters" label="AI clusters" count={stats.clusters.count} onShow={onShowLayer}>
-              {stats.clusters.count > 0 ? `${fmtGW(stats.clusters.plannedMw)} GW planned, an estimate for most` : undefined}
+            <BuiltRow layer="clusters" label="AI clusters" count={stats.clusters?.count ?? null} onShow={onShowLayer}>
+              {stats.clusters && stats.clusters.count > 0 ? `${fmtGW(stats.clusters.plannedMw)} GW planned, an estimate for most` : undefined}
             </BuiltRow>
-            <BuiltRow layer="plants" label="Power plants" count={stats.plants.count} onShow={onShowLayer}>
-              {stats.plants.count > 0 ? `${fmtGW(stats.plants.mw)} GW nameplate, plants of 250 MW and up` : undefined}
+            <BuiltRow layer="plants" label="Power plants" count={stats.plants?.count ?? null} onShow={onShowLayer}>
+              {stats.plants && stats.plants.count > 0 ? `${fmtGW(stats.plants.mw)} GW nameplate, plants of 250 MW and up` : undefined}
             </BuiltRow>
             <Link
               href="/grid?tab=deals"
@@ -345,7 +348,8 @@ function BuiltRow({
 }: {
   layer: MapLayer;
   label: string;
-  count: number;
+  /** Null while the layer loads. */
+  count: number | null;
   onShow?: (layer: MapLayer) => void;
   children?: ReactNode;
 }) {
@@ -356,7 +360,11 @@ function BuiltRow({
       <span className="min-w-0 flex-1">
         <span className="flex items-baseline gap-2">
           <span className="text-xs text-white/85">{label}</span>
-          <span className="ml-auto font-mono text-[13px] font-bold tabular-nums text-white">{count.toLocaleString("en-US")}</span>
+          {count === null ? (
+            <Skeleton className="ml-auto h-4 w-8" aria-label="loading" />
+          ) : (
+            <span className="ml-auto font-mono text-[13px] font-bold tabular-nums text-white">{count.toLocaleString("en-US")}</span>
+          )}
         </span>
         {children && <span className="block text-10 leading-snug text-white/45">{children}</span>}
       </span>

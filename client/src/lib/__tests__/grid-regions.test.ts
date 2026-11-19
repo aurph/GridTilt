@@ -19,6 +19,7 @@ import {
   regionDeals,
   regionForState,
   regionIdForSlug,
+  regionLocator,
   regionNercAreas,
   regionRiskLevel,
   regionRiskText,
@@ -113,6 +114,59 @@ describe("the regions file", () => {
     }
     const [[, ercotWest], [, ercotEast]] = regionBounds(shapes.find((s) => s.id === "ercot")!);
     assert.ok(ercotWest > -107 && ercotEast < -93, "ERCOT's box is Texas");
+  });
+});
+
+describe("the locator: the regions drawn small, without a map library", () => {
+  const W = 420;
+  const H = 260;
+  const drawn = regionLocator(shapes, W, H);
+  const numbers = (d: string) => (d.match(/-?\d+(\.\d+)?/g) ?? []).map(Number);
+  const center = (id: GridRegionId) => {
+    const n = numbers(drawn.paths.find((p) => p.id === id)!.d);
+    const xs = n.filter((_, i) => i % 2 === 0);
+    const ys = n.filter((_, i) => i % 2 === 1);
+    return { x: (Math.min(...xs) + Math.max(...xs)) / 2, y: (Math.min(...ys) + Math.max(...ys)) / 2 };
+  };
+
+  it("gives one closed outline per region, all inside the box", () => {
+    assert.deepEqual(drawn.paths.map((p) => p.id).sort(), [...GRID_REGION_IDS].sort());
+    for (const p of drawn.paths) {
+      assert.match(p.d, /^M[\d.-]+,[\d.-]+/, p.id);
+      assert.ok(p.d.endsWith("Z"), p.id);
+      const n = numbers(p.d);
+      assert.ok(n.length >= 8, `${p.id} has a shape`);
+      for (let i = 0; i < n.length; i += 2) {
+        assert.ok(n[i] >= 0 && n[i] <= W, `${p.id} x ${n[i]}`);
+        assert.ok(n[i + 1] >= 0 && n[i + 1] <= H, `${p.id} y ${n[i + 1]}`);
+      }
+    }
+  });
+
+  it("keeps the country the right way up: California left, New England right, Texas low", () => {
+    assert.ok(center("caiso").x < center("spp").x && center("spp").x < center("isone").x);
+    assert.ok(center("ercot").y > center("miso").y, "south is down");
+    assert.ok(center("isone").y < center("southeast").y);
+  });
+
+  it("fills most of the box without distorting it", () => {
+    const all = drawn.paths.flatMap((p) => numbers(p.d));
+    const xs = all.filter((_, i) => i % 2 === 0);
+    const ys = all.filter((_, i) => i % 2 === 1);
+    const w = Math.max(...xs) - Math.min(...xs);
+    const h = Math.max(...ys) - Math.min(...ys);
+    assert.ok(w > W * 0.85 || h > H * 0.85, `${w} x ${h}`);
+    // The lower 48 are about 1.6 times as wide as tall in an equal-area view.
+    assert.ok(w / h > 1.4 && w / h < 1.9, String(w / h));
+  });
+
+  it("places a point with the same projection as the outlines", () => {
+    const ashburn = drawn.point(39.04, -77.49);
+    const pjm = center("pjm");
+    assert.ok(Math.abs(ashburn[0] - pjm.x) < W * 0.12 && Math.abs(ashburn[1] - pjm.y) < H * 0.2, "Ashburn sits in PJM");
+    const la = drawn.point(34.05, -118.24);
+    assert.ok(la[0] < W * 0.25 && la[1] > H * 0.4);
+    assert.deepEqual(regionLocator([], W, H).paths, []);
   });
 });
 
@@ -228,6 +282,15 @@ describe("what is in a region", () => {
     assert.equal(stats.pjm.sites, 2);
     assert.equal(Object.values(stats).reduce((n, s) => n + s.sites, 0), 2);
     assert.equal("mw" in (stats.pjm as unknown as Record<string, unknown>), false);
+  });
+
+  it("says nothing about a layer that has not loaded, so an unknown count is never shown as zero", () => {
+    const partial = regionStats(shapes, { campuses: [], sites: null, plants: undefined });
+    assert.deepEqual(partial.pjm.campuses, { count: 0, count400: 0, builtMw400: 0 });
+    assert.equal(partial.pjm.sites, null);
+    assert.equal(partial.pjm.clusters, null);
+    assert.equal(partial.pjm.plants, null);
+    assert.equal(regionStats(shapes, {}).ercot.campuses, null);
   });
 
   it("sums cluster and plant megawatts by region, plants by fuel", () => {
