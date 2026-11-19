@@ -72,18 +72,50 @@ unless GPU_LIVE_SWEEP_ENABLED records written permission. Titles are templates; 
 them. Reverse links: deals tab ?deal=<id>, cluster pages and the catalyst detail link to
 /timeline?record=<kind>:<id>.
 
-Power Map (/power-map, Map tab) draws one Leaflet map in three views, round-tripped as `?view=`:
-DC Locations (the tracked facilities, >= 400 MW, /api/datacenters, with the operator, region and
-capacity filters), AI Clusters (2026-10: every /api/clusters row with coordinates, no size floor,
-the same records as /compute-frontier; marker area = planned MW, status chips filter, the detail
-card links to the record) and NERC Risk. The pure helpers (view param, region bucket, radius,
-filters, overlay sums) live in client/src/lib/power-map-clusters.ts and are tested; the two
-marker layers never draw at once.
+The Grid map (/grid, Map chip; client/src/pages/PowerMap.tsx) draws five layers together, all on
+by default (2026-11): tracked campuses (every /api/datacenters row, glow markers), mapped data
+center sites (/api/map/sites, location only), AI clusters (every /api/clusters row with
+coordinates, rings), power plants (/api/map/plants, diamonds by fuel, nuclear ringed) and the nine
+grid regions. A compact Layers control turns each off. State lives in the address bar: `?layers=`
+(absent when all are on), `?stress=1` (regions colored by NERC's 2026 risk) and `?region=<id>`;
+links with the old `?view=dc|clusters|stress` or `?rtos=` still land on the nearest layer set
+(client/src/lib/map-layers.ts, tested).
+
+- Megawatts: the map draws all 55 campuses, but megawatts keep the site's standing floor (400 MW
+  and up, operational or under construction). trackedHeadline and regionStats apply it; the
+  overlay's TWh covers the same campuses. Mapped sites are counted and never summed. A layer that
+  has not loaded is null, never zero (regionStats), and an open region panel or the tour loads
+  every layer. The floor guard (facility-filter-consistency.test.ts) lets one file,
+  lib/region-data.ts, hand every row to regionStats, and runs that function.
+- Grid regions: seven market operators (PJM, ERCOT, MISO, SPP, CAISO, NYISO, ISO-NE) plus the
+  Southeast and the West outside CAISO, so the map has no holes; Florida sits in the Southeast.
+  The list is client/src/data/grid-regions.ts (descriptions checked against each organization's
+  own page, REGIONS_CHECKED; which of the three interconnections each is on; the live feed key;
+  the NERC areas behind its stress reading). Shapes: client/public/geo/grid-regions.json, written
+  by scripts/build-grid-regions.mjs from the HIFLD Independent System Operators layer (2020, via
+  PNNL's public copy), never by hand. They are approximate and predate SPP's April 2026 expansion
+  into the West; BOUNDARY_NOTE says so wherever they are drawn. "In a region" means inside the
+  boundary as drawn (lib/grid-regions.ts), so a count matches the dots a reader sees.
+- A region opens a panel over the map (components/map/region-panel.tsx: a drawer on a desktop, a
+  bottom sheet on a phone), and the same content is its page, /region/<id> (RegionContent is
+  shared, so the two never disagree). The two lists under the map follow the selected region.
+- "How the grid works" is a six-stop tour (lib/grid-tour.ts, tested). A stop states only what the
+  site already sources, and every figure comes in from loaded data; never type a number into a
+  caption.
+- Rendering: sites, plants and regions draw on one shared Leaflet canvas (components/map/
+  points-layer.tsx, region-layer.tsx); campuses and clusters are DOM markers above it. The dense
+  layers load after first paint. The attribution line must credit OpenStreetMap while sites are
+  drawn (ODbL). Phone sheets are portaled to the body, because the app shell isolates the page
+  under the phone's floating bar. All motion is off under prefers-reduced-motion.
 
 Off-nav: "/" (marketing landing, bare layout, lazy Home.tsx), /subscribe, /admin/datacenters,
 /admin/social, /stock/:ticker, /sector/:slug, /region/:slug, /operator/:slug, /blog/:slug,
 /state/:slug (published states only, from server/data/state-pages.json: maryland, virginia, texas;
-any other slug is a real 404). /state/:slug is the one indexable address for a state. My Grid was retired
+any other slug is a real 404). /region/:slug is one page per grid region (the nine ids above, in
+the sitemap and the search palette); /region/serc and /region/wecc 301 to /region/southeast and
+/region/west (seo.ts REGION_SLUG_REDIRECTS, mirrored by the client's REGION_SLUG_ALIASES), and
+/region/npcc is a short noindex note pointing at NYISO and ISO-NE.
+/state/:slug is the one indexable address for a state. My Grid was retired
 (2026-10); /my-grid 301s to /power-map. server/state-page.ts composes the page once for
 the JSON (/api/state-pages/:slug), the metadata and the facts written into the HTML.
 Every route except "/" gets the dashboard shell (AppSidebar + header + NewsTicker).
@@ -105,7 +137,7 @@ handler); keep in sync. G+1 Grid, G+2 Compute, G+3 Markets, G+4 Research.
   d3 ^7.9.0 (Supply Chain force graph only).
 - Server libs: yahoo-finance2 ^3.13.1, rss-parser, satori + @resvg/resvg-js (OG cards),
   helmet, express-rate-limit.
-- Tests: Node's built-in runner. `npm test` = server/__tests__ + client/src/lib/__tests__ (300 tests). No component/DOM tests.
+- Tests: Node's built-in runner. `npm test` = server/__tests__ + client/src/lib/__tests__ (about 1,150 tests). No component/DOM tests.
 - Scripts: `dev` (tsx), `build` (script/build.ts: vite client + esbuild server to dist/index.cjs),
   `start`, `check` (tsc), `test`, `backtest:indices`.
 - Persistence: JSON in server/data/ plus content/blog/articles.json, except subscribers: Postgres
@@ -255,7 +287,8 @@ server/data custody (the fragility map):
   production subscribers live in Postgres, and a legacy list is imported only with
   scripts/subscribers.ts.
 - Script-written from a named source, never hand-edit: datacenter-sites.json, power-plants.json
-  (see "Map layer data" above). Refresh by rerunning the script and reviewing its printed report.
+  (see "Map layer data" above), and client/public/geo/grid-regions.json (the nine region shapes,
+  scripts/build-grid-regions.mjs). Refresh by rerunning the script and reviewing its printed report.
 - Shared custody, be careful: interconnection-queue.json (curated projects; news scanner and
   admin routes write into it). gpu-rental-prices.json is refreshed by hand (see Schedulers);
   keep its schema stable because the page, the index math and the tests read it.
@@ -314,7 +347,9 @@ a copy of the client's state and NERC tables kept equal by a parity test.
   Tickers are judged by server/company-registry.ts (the list the stock API answers from).
   ALIAS_REDIRECTS mirrors App.tsx's <Redirect> routes and the server answers each with one 301.
   server/__tests__/seo-truth.test.ts holds the client parity checks (sectors, regions,
-  operators, redirects); change both sides together.
+  operators, redirects); change both sides together. REGION_SLUGS mirrors the client's region
+  list (data/grid-regions.ts), not a table in RegionPage.tsx. A read-only endpoint a public page
+  fetches must be on CRAWLABLE_API_PREFIXES, or robots.test.ts fails.
 - social-format.ts: public tweet copy locked character-for-character by tests; change copy and
   test in the same commit, on purpose.
 - News scanner regexes + sanity ranges (routes.ts ~659-741, ~866-871): they auto-write curated
