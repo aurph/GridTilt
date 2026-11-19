@@ -119,6 +119,26 @@ test("both layers travel gzipped when the client accepts it, and plain when it d
   }
 });
 
+test("the cluster list, which the map now loads by default, travels gzipped too", async () => {
+  const { url, close } = await start();
+  try {
+    const gz = await fetch(`${url}/api/clusters`, { headers: { "Accept-Encoding": "gzip" } });
+    assert.equal(gz.status, 200);
+    assert.equal(gz.headers.get("content-encoding"), "gzip");
+    assert.match(gz.headers.get("vary") ?? "", /Accept-Encoding/i);
+    const plain = await fetch(`${url}/api/clusters`, { headers: { "Accept-Encoding": "identity" } });
+    assert.equal(plain.headers.get("content-encoding"), null);
+    const wire = Number(gz.headers.get("content-length"));
+    const full = Number(plain.headers.get("content-length"));
+    assert.ok(wire > 1000 && wire < full / 3, `${wire} bytes on the wire against ${full} plain`);
+    const rows = (await gz.json()) as Array<{ id: string }>;
+    assert.deepEqual(rows, await plain.json(), "the same rows either way");
+    assert.ok(rows.length > 200 && rows.every((r) => typeof r.id === "string"));
+  } finally {
+    await close();
+  }
+});
+
 test("both layers are on Data status with a date", async () => {
   const { url, close } = await start();
   try {

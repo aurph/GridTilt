@@ -3,7 +3,7 @@ import { ALL_STACK_TICKERS, COMPANY_DATABASE, STACK_TICKERS, knownTicker } from 
 import { fetchWithTimeout } from "./fetch-timeout";
 import type { Express, Request, Response } from "express";
 import { type Server } from "http";
-import { readFileSync, writeFileSync, existsSync } from "fs";
+import { readFileSync, writeFileSync, existsSync, statSync } from "fs";
 import { join } from "path";
 import { createHmac, randomBytes, timingSafeEqual } from "crypto";
 import rateLimit from "express-rate-limit";
@@ -3792,9 +3792,12 @@ ${rssItems}
     };
   }
 
-  app.get("/api/clusters", (_req, res) => {
+  // The map loads this list by default (about 270 KB of JSON), so it goes
+  // out gzipped like the map's own layers. The file changes only with a commit.
+  app.get("/api/clusters", (req, res) => {
     try {
-      res.json(readClusterRoot().clusters ?? []);
+      const stat = statSync(CLUSTERS_FILE);
+      sendMapLayer(req, res, "clusters", `${stat.mtimeMs}:${stat.size}`, () => readClusterRoot().clusters ?? []);
     } catch (err) {
       console.error("Clusters read error:", err);
       res.status(500).json({ error: "Failed to load clusters" });

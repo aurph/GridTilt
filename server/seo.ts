@@ -89,7 +89,7 @@ const BASE_URL = "https://gridtilt.com";
 const STATIC_PAGES: Record<string, { title: string; description: string; slug: string; ogImage?: string }> = {
   "/": {
     title: "GridTilt: Power projects, grid conditions, electricity costs",
-    description: "GridTilt shows what is being built on your power grid, who is behind it, and what is known about the cost. Choose your state, or explore projects, power agreements and the companies behind them.",
+    description: "GridTilt shows what is being built on your power grid, who is behind it, and what is known about the cost. Open the map, or explore projects, power agreements and the companies behind them.",
     slug: "",
   },
   "/grid?tab=queue": {

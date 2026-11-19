@@ -263,7 +263,7 @@ export function MapLegend({
               <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 pl-6 text-9 text-white/45">
                 {fuels.map((g) => (
                   <span key={g.label} className="flex items-center gap-1.5 whitespace-nowrap">
-                    <span className="h-1.5 w-1.5 rotate-45" style={{ backgroundColor: g.codes[0] === "COL" ? INK.secondary : fuelColor(g.codes[0]) }} />
+                    <span className="h-1.5 w-1.5 rotate-45" style={{ backgroundColor: fuelColor(g.codes[0]) }} />
                     {g.label}
                   </span>
                 ))}

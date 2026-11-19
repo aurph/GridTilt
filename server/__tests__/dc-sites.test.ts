@@ -251,7 +251,7 @@ describe("the sites file", () => {
 
   it("says in its method that a site is a location only", () => {
     assert.ok(file.method.some((line) => /location only/i.test(line)));
-    assert.ok(file.method.every((line) => !line.includes("—")), "no em dashes");
+    assert.ok(file.method.every((line) => !line.includes("\u2014")), "no em dashes");
   });
 
   it("counts sites, the lower 48, and how many carry an operator or a name", () => {

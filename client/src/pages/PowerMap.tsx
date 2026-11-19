@@ -1516,7 +1516,7 @@ export default function PowerMap() {
           source="EIA Hourly Electric Grid Monitor"
           href={gridLive?.sourceUrl ?? "https://www.eia.gov/electricity/gridmonitor/"}
           asOf={gridLive?.latestPeriodUtc ? fmtPeriodET(gridLive.latestPeriodUtc) : null}
-          cadence="demand is the latest reported hour; Southeast and West are sums of EIA regions and utilities; campuses are counted inside each region as drawn"
+          cadence="demand is the latest reported hour; Southeast and West are sums of EIA regions and utilities; a campus counts in the region it sits in as drawn, or the one its utility belongs to where that was checked"
           stale={gridLive?.stale ?? false}
           testid="grid-stress-source"
         />

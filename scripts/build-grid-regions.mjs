@@ -25,6 +25,10 @@
 //      Texas, is "west". What is left of the other states is "southeast".
 //   5. Simplify, and write one TopoJSON whose features carry `id`.
 //
+// After a rebuild, bump the "?v=" on the fetch in client/src/lib/region-data.ts:
+// static files are served immutable for a year, so a returning visitor would
+// otherwise keep the old shapes.
+//
 // The lines are approximate, and say so on the site: operator footprints
 // follow utility service territories and interleave at the edges, and the
 // source predates SPP's 2026 western expansion.
