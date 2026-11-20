@@ -39,6 +39,29 @@ describe("groupByRespondent", () => {
     ]);
     assert.deepEqual(grouped, { US48: [{ t: "2026-11-03T16", mw: 459058 }] });
   });
+
+  it("drops a zero demand hour: EIA posts 0 for an hour a balancing authority has not reported", () => {
+    // Seen live 2026-11-19: NYIS read 0 MW at 23:00 UTC, an hour after 17,590 MW.
+    const grouped = groupByRespondent([
+      { period: "2026-11-19T22", respondent: "NYIS", type: "D", value: 17590 },
+      { period: "2026-11-19T23", respondent: "NYIS", type: "D", value: 0 },
+      { period: "2026-11-19T23", respondent: "CISO", type: "D", value: "0" },
+    ]);
+    assert.deepEqual(grouped, { NYIS: [{ t: "2026-11-19T22", mw: 17590 }] });
+  });
+
+  it("so a region's newest reading and its low are real loads, never zero", () => {
+    const ops = composeOperators(
+      groupByRespondent([
+        { period: "2026-11-19T21", respondent: "NYIS", type: "D", value: 16298 },
+        { period: "2026-11-19T22", respondent: "NYIS", type: "D", value: 17590 },
+        { period: "2026-11-19T23", respondent: "NYIS", type: "D", value: 0 },
+      ]),
+    );
+    assert.equal(ops.NYISO.latestMw, 17590);
+    assert.equal(ops.NYISO.latestPeriodUtc, "2026-11-19T22");
+    assert.equal(ops.NYISO.minMw, 16298);
+  });
 });
 
 describe("composeOperators", () => {

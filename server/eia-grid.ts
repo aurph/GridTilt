@@ -172,7 +172,8 @@ function readMw(raw: number | string | null | undefined): number | null {
 /**
  * Exported for unit tests: group EIA rows into per-respondent hourly series,
  * oldest first. A row counts only when it carries a real period and a
- * finite megawatt value; the first of any duplicate respondent-hour is kept.
+ * finite megawatt value above zero; the first of any duplicate respondent-hour
+ * is kept.
  */
 export function groupByRespondent(rows: EiaRow[]): Record<string, HourPoint[]> {
   const out: Record<string, HourPoint[]> = {};
@@ -182,7 +183,10 @@ export function groupByRespondent(rows: EiaRow[]): Record<string, HourPoint[]> {
     if (typeof r.period !== "string" || !PERIOD.test(r.period)) continue;
     if (r.type !== undefined && r.type !== "D") continue;
     const mw = readMw(r.value);
-    if (mw === null) continue;
+    // EIA posts 0 for an hour a balancing authority has not reported yet (NYIS
+    // read 0 MW at 23:00 UTC on 2026-11-19). No served region has zero load, so
+    // a zero is a missing hour, never a reading. Fuel rows keep their zeros.
+    if (mw === null || mw === 0) continue;
     const key = `${r.respondent}|${r.period}`;
     if (seen.has(key)) continue;
     seen.add(key);
