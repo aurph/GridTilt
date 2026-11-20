@@ -5,27 +5,21 @@
  * only gives it an address inside the Grid section.
  */
 import { Link } from "wouter";
-import { PageHeader } from "@/components/PageHeader";
+import { SectionHeading } from "@/components/section-heading";
 import { GridLiveCard } from "@/components/GridLiveCard";
+import { GRID_REGIONS } from "@/data/grid-regions";
 
-const REGIONS: [string, string][] = [
-  ["PJM", "/region/pjm"],
-  ["ERCOT", "/region/ercot"],
-  ["MISO", "/region/miso"],
-  ["SPP", "/region/spp"],
-  ["SERC", "/region/serc"],
-  ["WECC", "/region/wecc"],
-  ["NPCC", "/region/npcc"],
-];
+/** The nine grid regions, each with a page of its own. */
+const REGIONS: [string, string][] = GRID_REGIONS.map((r) => [r.name, `/region/${r.id}`]);
 
 export default function GridLive() {
   return (
     <div className="flex flex-col" data-testid="grid-live-page">
-      <PageHeader
-        title="Live grid"
-        testId="grid-live-header"
-        about="Hourly electricity demand and generation by fuel, as reported by grid operators to the EIA."
-      />
+      {/* The Live grid chip already names this view and the card states its
+          own source, so the heading is kept for the document outline only. */}
+      <SectionHeading className="sr-only" testId="grid-live-header">
+        Live grid
+      </SectionHeading>
       <div className="space-y-4 p-4 sm:p-6">
         <GridLiveCard />
         <nav aria-label="Grid regions" className="flex flex-wrap items-baseline gap-x-3 gap-y-2" data-testid="grid-live-regions">

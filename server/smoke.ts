@@ -39,6 +39,8 @@ interface Got {
   text: string;
   ms: number;
   json?: any;
+  /** The Location header of a redirect; redirects are never followed. */
+  location?: string | null;
 }
 
 const SLOW_MS = 3000;
@@ -68,7 +70,7 @@ async function get(o: SmokeOptions, path: string, headers: Record<string, string
         json = JSON.parse(text);
       } catch {}
     }
-    return { status: res.status, type, text, ms: Date.now() - t0, json };
+    return { status: res.status, type, text, ms: Date.now() - t0, json, location: res.headers.get("location") };
   } finally {
     clearTimeout(t);
   }
@@ -90,6 +92,18 @@ function page(path: string): Check {
       : !g.type.includes("text/html") ? fail(`content-type ${g.type}`)
       : !g.text.includes('id="root"') ? fail("no app root in the HTML")
       : /<meta name="robots"[^>]*noindex/.test(g.text) ? fail("page is marked noindex")
+      : ok(),
+  };
+}
+
+/** A retired address: one permanent redirect to where it lives now, never a page. */
+function movedCheck(name: string, path: string, to: string): Check {
+  return {
+    name,
+    path,
+    judge: (g) =>
+      g.status !== 301 ? fail(`HTTP ${g.status}, expected a 301 to ${to}`)
+      : g.location !== to ? fail(`redirects to ${g.location ?? "nowhere"}, expected ${to}`)
       : ok(),
   };
 }
@@ -126,11 +140,10 @@ function keyedFeed(name: string, path: string): Check {
 }
 
 export const CHECKS: Check[] = [
-  // The four sections and every chip (client/src/lib/sections.ts). Old
+  // The three sections and every chip (client/src/lib/sections.ts). Old
   // addresses are 301s, covered by server/__tests__/redirects.test.ts.
   ...[
     "/",
-    "/states",
     "/grid",
     "/grid?tab=queue",
     "/grid?tab=deals",
@@ -145,7 +158,12 @@ export const CHECKS: Check[] = [
     "/markets?tab=catalysts",
     "/blog",
     "/data-status",
+    "/region/southeast",
   ].map(page),
+  // SERC and WECC became Southeast and West with the grid regions (2026-11). A 200 here means an old build.
+  movedCheck("renamed region /region/wecc forwards to /region/west", "/region/wecc", "/region/west"),
+  // The States index was retired 2026-11-18. A 200 here means an old build.
+  movedCheck("retired /states forwards to /grid", "/states", "/grid"),
   {
     name: "state page /state/maryland",
     path: "/state/maryland",
@@ -197,6 +215,19 @@ export const CHECKS: Check[] = [
   }),
   jsonCheck("frontier models", "/api/frontier-models", (j) => (Array.isArray(j?.models) && j.models.length > 0 ? ok() : fail("no models"))),
   jsonCheck("Maryland state data", "/api/state-pages/maryland", (j) => (j?.code === "MD" ? ok() : fail("no MD payload"))),
+  jsonCheck("mapped data center sites", "/api/map/sites", (j) => {
+    const n = Array.isArray(j?.sites) ? j.sites.length : 0;
+    if (n < 1000) return fail(`${n} sites, expected over 1,000`);
+    if (!/OpenStreetMap contributors/.test(String(j?.attribution))) return fail("the OpenStreetMap credit is missing (ODbL)");
+    if (j.sites.some((s: any) => "mw" in s || "powerMW" in s || "status" in s)) return fail("a mapped site carries a size or status; sites are locations only");
+    return ok(`${n} sites, atlas ${j?.source?.version ?? "version unknown"}`);
+  }),
+  jsonCheck("power plants", "/api/map/plants", (j) => {
+    const n = Array.isArray(j?.plants) ? j.plants.length : 0;
+    if (n < 800 || n > 1500) return fail(`${n} plants, expected 800 to 1,500`);
+    if (!/^\d{4}-\d{2}$/.test(String(j?.dataMonth))) return fail("no data month");
+    return ok(`${n} plants, EIA-860M ${j.dataMonth}`);
+  }),
   keyedFeed("retail electricity rates (EIA)", "/api/physical/retail-rates"),
   keyedFeed("hourly demand (EIA)", "/api/physical/load-hourly"),
   keyedFeed("live grid by operator (EIA)", "/api/physical/grid-live"),

@@ -1,10 +1,10 @@
 /**
- * Quick-open search over what already exists: pages, states, tracked
- * tickers, clusters, and research posts. Pure ranking over static or
+ * Quick-open search over what already exists: pages, grid regions, states,
+ * tracked tickers, clusters, and research posts. Pure ranking over static or
  * file-backed lists; the palette never fans out to quote APIs.
  */
 
-export type PaletteCategory = "page" | "state" | "stock" | "cluster" | "research";
+export type PaletteCategory = "page" | "region" | "state" | "stock" | "cluster" | "research";
 
 export interface PaletteEntry {
   id: string;
@@ -22,14 +22,14 @@ export interface PaletteEntry {
 /** Order shown between equal scores: destinations before entities. */
 const CATEGORY_RANK: Record<PaletteCategory, number> = {
   page: 0,
-  state: 1,
-  stock: 2,
-  cluster: 3,
-  research: 4,
+  region: 1,
+  state: 2,
+  stock: 3,
+  cluster: 4,
+  research: 5,
 };
 
 export const PAGE_ENTRIES: PaletteEntry[] = [
-  { id: "page-states", label: "States", hint: "state pages", category: "page", href: "/states", keywords: "state pages decisions public dates maryland virginia texas" },
   { id: "page-power-map", label: "Power Map", hint: "Grid", category: "page", href: "/grid", keywords: "data centers map facilities campuses grid" },
   { id: "page-queue", label: "Interconnection queue", hint: "Grid", category: "page", href: "/grid?tab=queue", keywords: "backlog interconnection queue lbnl" },
   { id: "page-deals", label: "Power agreements", hint: "Grid", category: "page", href: "/grid?tab=deals", keywords: "deals nuclear ppa agreements" },
@@ -67,6 +67,33 @@ export function stateEntries(pages: StatePageLike[], states: Record<string, Stat
       href: `/state/${p.slug}`,
       keywords: p.code,
     }));
+}
+
+export interface RegionLike {
+  id: string;
+  name: string;
+  fullName: string;
+  states: string;
+}
+
+/** What people called a region before the map moved to the operators; matched, not shown. */
+const REGION_FORMER_NAMES: Record<string, string> = {
+  southeast: "SERC",
+  west: "WECC",
+  nyiso: "NPCC",
+  isone: "NPCC",
+};
+
+/** The nine grid regions, found by short name, full name, a state they cover, or a former name. */
+export function regionEntries(regions: RegionLike[]): PaletteEntry[] {
+  return regions.map((r) => ({
+    id: `region-${r.id}`,
+    label: r.name,
+    hint: r.fullName === r.name ? "grid region" : `grid region · ${r.fullName}`,
+    category: "region" as const,
+    href: `/region/${r.id}`,
+    keywords: [r.states, REGION_FORMER_NAMES[r.id]].filter(Boolean).join(" "),
+  }));
 }
 
 export interface SupplyNodeLike {

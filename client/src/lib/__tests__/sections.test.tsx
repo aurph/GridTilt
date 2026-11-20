@@ -1,5 +1,5 @@
 /**
- * The site map: four sections, their chips, and where every old address
+ * The site map: three sections, their chips, and where every old address
  * lands. Old routes are permalinks someone may have bookmarked or linked,
  * and both the chip reader and the view reader fall back silently on an
  * unknown id, so a renamed chip would keep answering 200 on the wrong view.
@@ -13,29 +13,26 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { Router } from "wouter";
 import { SectionLinks } from "../../components/section-links";
-import { SectionChips } from "../../components/section-chips";
+import { FEATURE_ICONS, FeatureTabs } from "../../components/feature-tabs";
 import {
   LEGACY_ROUTES,
   SECTIONS,
   chipFromSearch,
   chipHref,
-  fitCount,
   legacyRedirect,
   metaAddress,
   sectionById,
   sectionForPath,
-  splitChips,
   withSectionParams,
 } from "../sections";
 
 const read = (...p: string[]) => readFileSync(join(process.cwd(), ...p), "utf-8");
 
-describe("the four sections", () => {
-  it("are States, Grid, Compute, Markets, in that order, at these addresses", () => {
+describe("the three sections", () => {
+  it("are Grid, Compute, Markets, in that order, at these addresses", () => {
     assert.deepEqual(
       SECTIONS.map((s) => [s.label, s.href]),
       [
-        ["States", "/states"],
         ["Grid", "/grid"],
         ["Compute", "/compute"],
         ["Markets", "/markets"],
@@ -47,8 +44,6 @@ describe("the four sections", () => {
     assert.deepEqual(
       Object.fromEntries(SECTIONS.map((s) => [s.id, s.chips.map((c) => `${c.id}:${c.label}`)])),
       {
-        // The States chips are the published state pages, read from the registry.
-        states: [],
         grid: ["map:Map", "queue:Queue", "deals:Deals", "live:Live grid", "timeline:Timeline"],
         compute: ["clusters:Clusters", "supply-chain:Supply Chain", "gpu-prices:GPU Prices"],
         markets: ["overview:Overview", "equities:Equities", "analyze:Analyze", "catalysts:Catalysts"],
@@ -73,7 +68,6 @@ describe("the four sections", () => {
     );
     const links = Array.from(html.matchAll(/<a[^>]*href="([^"]+)"[^>]*>([^<]+)/g)).map((m) => [m[2], m[1]]);
     assert.deepEqual(links, [
-      ["States", "/states"],
       ["Grid", "/grid"],
       ["Compute", "/compute"],
       ["Markets", "/markets"],
@@ -87,12 +81,13 @@ describe("the four sections", () => {
     assert.equal(metaAddress("/grid", "?tab=timeline&range=90d&type=deal"), "/grid?tab=timeline");
     assert.equal(metaAddress("/markets", "tab=analyze&sub=scenario"), "/markets?tab=analyze");
     assert.equal(metaAddress("/grid", "?tab=nope"), "/grid");
-    assert.equal(metaAddress("/states", "?x=1"), "/states");
     assert.equal(metaAddress("/state/maryland", ""), "/state/maryland");
   });
 
   it("light up for the pages reached from them", () => {
-    assert.equal(sectionForPath("/state/maryland"), "states");
+    // State pages left the top bar with the States section (2026-11); they are reached from Grid.
+    assert.equal(sectionForPath("/state/maryland"), "grid");
+    assert.equal(sectionForPath("/states"), null, "the old index is a redirect, not a page");
     assert.equal(sectionForPath("/compute-frontier/some-cluster"), "compute");
     assert.equal(sectionForPath("/stock/CEG"), "markets");
     assert.equal(sectionForPath("/region/pjm"), "grid");
@@ -128,6 +123,8 @@ describe("old addresses", () => {
     "/neocloud-intel": "/compute?tab=gpu-prices",
     "/gpu-economics": "/compute?tab=gpu-prices&sub=economics",
     "/brief": "/blog",
+    // The States index was retired 2026-11-18; the state pages keep their own addresses.
+    "/states": "/grid",
   };
 
   it("each land on the right section and chip", () => {
@@ -147,6 +144,7 @@ describe("old addresses", () => {
     assert.equal(legacyRedirect("/trade", "?utm_source=newsletter"), "/markets?tab=analyze&sub=scenario&utm_source=newsletter");
     assert.equal(legacyRedirect("/power-deals", "?tab=queue"), "/grid?tab=deals", "a fixed alias keeps its own target");
     assert.equal(legacyRedirect("/brief", "?utm_source=x"), "/blog?utm_source=x");
+    assert.equal(legacyRedirect("/states", "?utm_source=brief"), "/grid?utm_source=brief");
   });
 
   it("are not invented for addresses that never were pages", () => {
@@ -187,66 +185,59 @@ describe("old addresses", () => {
   });
 });
 
-describe("chip overflow", () => {
-  // Measured chip widths for the Grid row, in px, with an 8px gap.
-  const GRID = [62, 76, 70, 92, 92];
-  const MORE = 96;
-
-  it("shows every chip on a wide row", () => {
-    assert.equal(fitCount(GRID, 1200, MORE, 8), 5);
-  });
-
-  it("keeps room for the +N more chip on a phone row", () => {
-    // 390px screen, 16px gutters, a 90px scope pill and its gap.
-    const available = 390 - 32 - 90 - 8;
-    const n = fitCount(GRID, available, MORE, 8);
-    assert.equal(n, 2);
-    const used = GRID.slice(0, n).reduce((a, w) => a + w, 0) + 8 * (n - 1) + 8 + MORE;
-    assert.ok(used <= available, "the row with its +N more chip fits");
-  });
-
-  it("always shows at least one chip", () => {
-    assert.equal(fitCount(GRID, 40, MORE, 8), 1);
-    assert.equal(fitCount([], 40, MORE, 8), 0);
-  });
-
-  it("keeps the active chip on the row", () => {
-    const chips = sectionById("grid").chips;
-    const first = splitChips(chips, "map", 2);
-    assert.deepEqual(first.visible.map((c) => c.id), ["map", "queue"]);
-    assert.deepEqual(first.overflow.map((c) => c.id), ["deals", "live", "timeline"]);
-    const deep = splitChips(chips, "timeline", 2);
-    assert.deepEqual(deep.visible.map((c) => c.id), ["map", "timeline"]);
-    assert.deepEqual(deep.overflow.map((c) => c.id), ["queue", "deals", "live"]);
-    assert.deepEqual(splitChips(chips, "map", 9).overflow, []);
-  });
-
-  it("renders the overflow as a +N more chip with the rest as links", () => {
-    const section = sectionById("grid");
-    const chips = section.chips.map((c) => ({ id: c.id, label: c.label, href: chipHref("grid", c.id) }));
-    const html = renderToStaticMarkup(
-      <Router ssrPath="/grid">
-        <SectionChips chips={chips} active="live" label="Grid features" visibleCount={2} />
+describe("feature tabs", () => {
+  const tabsFor = (id: "grid" | "compute" | "markets") =>
+    sectionById(id).chips.map((c) => ({ id: c.id, label: c.label, blurb: c.blurb, href: chipHref(id, c.id) }));
+  const render = (id: "grid" | "compute" | "markets", active: string) =>
+    renderToStaticMarkup(
+      <Router ssrPath={`/${id}`}>
+        <FeatureTabs tabs={tabsFor(id)} active={active} label={`${id} features`} />
       </Router>,
     );
-    assert.match(html, /\+3 more/);
-    assert.match(html, /data-testid="chip-map"/);
-    assert.match(html, /aria-selected="true"[^>]*data-testid="chip-live"|data-testid="chip-live"[^>]*aria-selected="true"/);
-    for (const id of ["queue", "deals", "timeline"]) {
-      assert.match(html, new RegExp(`data-testid="chip-more-${id}"`));
-      assert.doesNotMatch(html, new RegExp(`data-testid="chip-${id}"`));
+
+  it("say what each feature holds in one short line, with no figures", () => {
+    for (const s of SECTIONS) {
+      for (const c of s.chips) {
+        assert.ok(typeof c.blurb === "string" && c.blurb.length >= 12, `${s.id}/${c.id} has a line`);
+        // 30 characters is what fits beside the icon when five tabs share a laptop screen.
+        assert.ok(c.blurb.length <= 30, `${s.id}/${c.id}: "${c.blurb}" is ${c.blurb.length} characters`);
+        // A figure in the navigation would need a date and a source of its own.
+        assert.doesNotMatch(c.blurb, /\d/, `${s.id}/${c.id} carries a figure`);
+        assert.doesNotMatch(c.blurb, /[\u2013\u2014]|\.$/, `${s.id}/${c.id}: plain, no dash, no full stop`);
+        assert.notEqual(c.blurb.toLowerCase(), c.label.toLowerCase(), `${s.id}/${c.id} only repeats its name`);
+      }
     }
-    assert.match(html, /href="\/grid\?tab=timeline"/, "every chip is a link with its own address");
   });
 
-  it("renders every chip and no +N more when all fit", () => {
-    const chips = sectionById("markets").chips.map((c) => ({ id: c.id, label: c.label, href: chipHref("markets", c.id) }));
-    const html = renderToStaticMarkup(
-      <Router ssrPath="/markets">
-        <SectionChips chips={chips} active="overview" label="Markets features" visibleCount={4} />
-      </Router>,
-    );
-    assert.doesNotMatch(html, /more</);
-    assert.equal((html.match(/role="tab"/g) ?? []).length, 4);
+  it("show every feature of a section at once, each a link with its own address", () => {
+    for (const s of SECTIONS) {
+      const html = render(s.id, s.chips[0].id);
+      assert.equal((html.match(/role="tab"/g) ?? []).length, s.chips.length, `${s.id}: one tab per feature`);
+      assert.doesNotMatch(html, /more</, `${s.id}: nothing is folded into a menu`);
+      for (const c of s.chips) {
+        assert.ok(html.includes(`data-testid="feature-tab-${c.id}"`), `${s.id}/${c.id}`);
+        assert.ok(html.includes(`href="${chipHref(s.id, c.id)}"`), `${s.id}/${c.id} has its own address`);
+        assert.ok(html.includes(c.label), `${s.id}/${c.id} shows its name`);
+        assert.ok(html.includes(c.blurb), `${s.id}/${c.id} shows its line`);
+      }
+    }
+  });
+
+  it("mark the open feature and keep one tab stop", () => {
+    const html = render("grid", "live");
+    const selected = html.match(/<a [^>]*aria-selected="true"[^>]*>/g) ?? [];
+    assert.equal(selected.length, 1);
+    assert.match(selected[0], /data-testid="feature-tab-live"/);
+    assert.match(selected[0], /tabindex="0"/);
+    assert.equal((html.match(/tabindex="0"/g) ?? []).length, 1, "arrow keys move between tabs, Tab leaves the row");
+    assert.equal((html.match(/tabindex="-1"/g) ?? []).length, 4);
+  });
+
+  it("draw an icon for every feature", () => {
+    for (const s of SECTIONS) {
+      for (const c of s.chips) assert.ok(FEATURE_ICONS[c.id], `${s.id}/${c.id} has no icon`);
+      const html = render(s.id, s.chips[0].id);
+      assert.equal((html.match(/<svg/g) ?? []).length, s.chips.length, `${s.id}: one icon per tab`);
+    }
   });
 });

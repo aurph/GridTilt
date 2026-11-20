@@ -4,10 +4,12 @@ import {
   PAGE_ENTRIES,
   clusterEntries,
   rankEntries,
+  regionEntries,
   stateEntries,
   stockEntries,
   type PaletteEntry,
 } from "../palette";
+import { GRID_REGIONS } from "../../data/grid-regions";
 import { STATE_GRID } from "../../data/state-grid";
 import { supplyNodes } from "../../data/supply-chain-config";
 
@@ -93,10 +95,33 @@ describe("stateEntries", () => {
   });
 });
 
+describe("regionEntries", () => {
+  const regions = regionEntries(GRID_REGIONS);
+
+  it("offers each of the nine grid regions by its short and its full name", () => {
+    assert.equal(regions.length, 9);
+    const pjm = rankEntries([...ALL, ...regions], "pjm")[0];
+    assert.equal(pjm.href, "/region/pjm");
+    assert.equal(pjm.category, "region");
+    assert.equal(rankEntries([...ALL, ...regions], "midcontinent")[0]?.href, "/region/miso");
+    assert.equal(rankEntries([...ALL, ...regions], "southeast")[0]?.href, "/region/southeast");
+  });
+
+  it("finds a region by the names people used for it before", () => {
+    assert.equal(rankEntries(regions, "serc")[0]?.href, "/region/southeast");
+    assert.equal(rankEntries(regions, "wecc")[0]?.href, "/region/west");
+    assert.equal(rankEntries(regions, "new england")[0]?.href, "/region/isone");
+  });
+
+  it("stays out of the list an empty search shows", () => {
+    assert.ok(rankEntries([...ALL, ...regions], "").every((e) => e.category === "page"));
+  });
+});
+
 describe("page entries", () => {
   it("go straight to final routes, never to a redirect alias", () => {
     // Redirects in App.tsx: each of these only forwards somewhere else.
-    const aliases = ["/power-deals", "/queue", "/brief", "/trade", "/portfolio", "/gpu-economics", "/my-grid"];
+    const aliases = ["/power-deals", "/queue", "/brief", "/trade", "/portfolio", "/gpu-economics", "/my-grid", "/states"];
     for (const e of PAGE_ENTRIES) {
       const path = e.href.split("?")[0];
       assert.ok(!aliases.includes(path), `${e.label} points at the alias ${e.href}`);

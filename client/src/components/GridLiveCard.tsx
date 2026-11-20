@@ -6,25 +6,12 @@ import { BarRow } from "@/components/BarRow";
 import { SourceFooter } from "@/components/SourceFooter";
 import { SrChartTable } from "@/components/Freshness";
 import { seriesMotion, tooltipContentStyle, tooltipItemStyle, tooltipLabelStyle } from "@/lib/chart-theme";
-import { CATEGORY_COLORS, INK, SERIES } from "@/lib/tokens";
+import { fuelColor as colorForFuel } from "@/lib/fuel-colors";
+import { SERIES } from "@/lib/tokens";
 import { fmtGW, fmtPeriodET, sparkAxis, useGridLive, type FuelShare } from "@/lib/grid-live";
 
-const FUEL_COLOR: Record<string, string> = {
-  NG: CATEGORY_COLORS.gas,
-  COL: CATEGORY_COLORS.coal,
-  NUC: CATEGORY_COLORS.nuclear,
-  WND: CATEGORY_COLORS.wind,
-  SUN: CATEGORY_COLORS.solar,
-  SNB: CATEGORY_COLORS.solar,
-  WAT: CATEGORY_COLORS.hydro,
-  BAT: CATEGORY_COLORS.storage,
-  PS: CATEGORY_COLORS.storage,
-  UES: CATEGORY_COLORS.storage,
-  GEO: CATEGORY_COLORS.renewables,
-  BIO: CATEGORY_COLORS.renewables,
-};
-
-const fuelColor = (f: FuelShare) => FUEL_COLOR[f.code] ?? INK.muted;
+// The fuel palette is shared with the power plants on the map (lib/fuel-colors.ts).
+const fuelColor = (f: FuelShare) => colorForFuel(f.code);
 
 /** One BarRow per fuel, largest first, with the MW on hover. */
 export function FuelMixBars({ fuels, limit = 8 }: { fuels: FuelShare[]; limit?: number }) {

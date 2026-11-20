@@ -1,6 +1,8 @@
 import { describe, it, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import {
+  FUEL_RESPONDENTS_PER_CALL,
+  OPERATOR_RESPONDENTS,
   composeOperators,
   getGridLive,
   gridLiveStamp,
@@ -124,6 +126,39 @@ describe("latestMix", () => {
   });
 });
 
+describe("the nine grid regions", () => {
+  it("each have a live key: operators as their own balancing authority, the rest as named sums", () => {
+    const spec = (k: string) => ({ respondents: OPERATOR_RESPONDENTS[k]?.respondents, composed: OPERATOR_RESPONDENTS[k]?.composed });
+    assert.deepEqual(spec("CAISO"), { respondents: ["CISO"], composed: false });
+    assert.deepEqual(spec("NYISO"), { respondents: ["NYIS"], composed: false });
+    assert.deepEqual(spec("ISO-NE"), { respondents: ["ISNE"], composed: false });
+    assert.deepEqual(spec("SOUTHEAST"), { respondents: ["SE", "CAR", "FLA", "TEN", "LGEE", "AECI"], composed: true });
+    assert.deepEqual(spec("WEST"), { respondents: ["NW", "SW", "BANC", "LDWP", "IID", "TIDC"], composed: true });
+    for (const k of ["PJM", "MISO", "ERCOT", "SPP"]) assert.equal(OPERATOR_RESPONDENTS[k].composed, false, k);
+    // The note is shown beside a summed figure, so it has to name what was summed.
+    assert.match(OPERATOR_RESPONDENTS.SOUTHEAST.note, /Southeast, Carolinas, Florida and Tennessee/);
+    assert.match(OPERATOR_RESPONDENTS.WEST.note, /Northwest and Southwest/);
+    assert.match(OPERATOR_RESPONDENTS.WEST.note, /outside CAISO/);
+  });
+
+  it("stay under EIA's 5,000-row cap for a week of hourly demand", () => {
+    const respondents = new Set(Object.values(OPERATOR_RESPONDENTS).flatMap((s) => s.respondents));
+    assert.ok(respondents.size * 168 <= 5000, `${respondents.size} respondents need ${respondents.size * 168} rows`);
+  });
+
+  it("sum the West only when every part of it reported the hour", () => {
+    const at = (mw: number) => [{ t: "2026-11-03T16", mw }];
+    const parts = { NW: at(40000), SW: at(20000), BANC: at(2000), LDWP: at(3000), IID: at(500), TIDC: at(300), CISO: at(25000) };
+    const ops = composeOperators(parts);
+    assert.equal(ops.WEST.latestMw, 65800);
+    assert.equal(ops.WEST.composed, true);
+    assert.equal(ops.CAISO.latestMw, 25000);
+    assert.equal(ops.CAISO.composed, false);
+    const { TIDC: _missing, ...partial } = parts;
+    assert.equal(composeOperators(partial).WEST, undefined, "a missing utility never reads as lower demand");
+  });
+});
+
 describe("operatorMixes", () => {
   const hour = (period: string, respondent: string, fuels: Record<string, number>) =>
     Object.entries(fuels).map(([fueltype, value]) => ({ period, respondent, fueltype, value }));
@@ -138,6 +173,22 @@ describe("operatorMixes", () => {
     assert.equal(mixes.NPCC.periodUtc, "2026-11-03T03");
     assert.equal(mixes.NPCC.totalMw, 800);
     assert.deepEqual(mixes.NPCC.fuels[0], { code: "NG", label: "Natural gas", mw: 400, sharePct: 50 });
+  });
+
+  it("counts a small utility that only ever reports two fuels as complete when both are in", () => {
+    // Without this the West's mix could never be built: one member (a small
+    // irrigation district) reports fewer fuels than the three-fuel floor.
+    const west = (period: string, tidc: Record<string, number>) => [
+      ...hour(period, "NW", { WAT: 500, NG: 200, WND: 100 }),
+      ...hour(period, "SW", { NG: 300, SUN: 200, NUC: 100 }),
+      ...hour(period, "BANC", { NG: 30, WAT: 20, SUN: 10 }),
+      ...hour(period, "LDWP", { NG: 40, SUN: 30, WAT: 10 }),
+      ...hour(period, "IID", { NG: 5, SUN: 5, GEO: 5 }),
+      ...hour(period, "TIDC", tidc),
+    ];
+    const mixes = operatorMixes([...west("2026-11-03T05", { NG: 4 }), ...west("2026-11-03T04", { NG: 4, WAT: 6 })]);
+    assert.equal(mixes.WEST.periodUtc, "2026-11-03T04", "the newer hour is missing one of that utility's two fuels");
+    assert.equal(mixes.WEST.totalMw, 1565);
   });
 
   it("leaves negative charging out of generation and omits an operator with no rows", () => {
@@ -178,6 +229,55 @@ describe("getGridLive", () => {
     return Promise.resolve({ ok: true, status: 200, json: async () => body });
   };
 
+  it("keeps each fuel request to about a day and a half of rows, however many regions are served", async () => {
+    // EIA caps a request at 5,000 rows and a respondent-hour is about eight fuel rows. One call for all 23
+    // respondents would reach back about 27 hours, too short to find a complete hour when a member posts late.
+    const urls: URL[] = [];
+    await getGridLive({
+      env: { EIA_API_KEY: "k" } as NodeJS.ProcessEnv,
+      now: () => 1_000_000,
+      fetchImpl: (url: URL) => {
+        urls.push(url);
+        return okFetch(url);
+      },
+    });
+    const fuel = urls.filter((u) => u.pathname.includes("fuel-type-data"));
+    const all = new Set(Object.values(OPERATOR_RESPONDENTS).flatMap((s) => s.respondents));
+    assert.equal(FUEL_RESPONDENTS_PER_CALL, 14, "the number one call carried when a day and a half was measured");
+    assert.equal(fuel.length, Math.ceil(all.size / FUEL_RESPONDENTS_PER_CALL));
+    const asked = fuel.flatMap((u) => u.searchParams.getAll("facets[respondent][]"));
+    assert.equal(asked.length, all.size, "each respondent is asked for once");
+    assert.deepEqual(new Set(asked), all);
+    for (const u of fuel) {
+      assert.ok(u.searchParams.getAll("facets[respondent][]").length <= FUEL_RESPONDENTS_PER_CALL);
+      assert.equal(u.searchParams.get("length"), "5000");
+    }
+  });
+
+  it("puts the fuel rows of every call together", async () => {
+    const caiso = [
+      { period: "2026-11-03T16", respondent: "CISO", fueltype: "NG", value: 10000 },
+      { period: "2026-11-03T16", respondent: "CISO", fueltype: "SUN", value: 15000 },
+      { period: "2026-11-03T16", respondent: "CISO", fueltype: "WND", value: 5000 },
+    ];
+    const r = await getGridLive({
+      env: { EIA_API_KEY: "k" } as NodeJS.ProcessEnv,
+      now: () => 1_000_000,
+      fetchImpl: (url: URL) => {
+        if (!url.pathname.includes("fuel-type-data")) return okFetch(url);
+        // Each call answers only for the respondents it asked about, as EIA does.
+        const asked = url.searchParams.getAll("facets[respondent][]");
+        const data = [...fuelBody.response.data, ...caiso].filter((row) => asked.includes(row.respondent));
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ response: { data } }) });
+      },
+    });
+    assert.equal(r.configured, true);
+    if (!r.configured) return;
+    assert.equal(r.mixByOperator.PJM.totalMw, 90000);
+    assert.equal(r.mixByOperator.CAISO.totalMw, 30000);
+    assert.equal(r.mix?.fuels[0].code, "NG");
+  });
+
   it("reports unconfigured without a key and never calls out", async () => {
     let calls = 0;
     const r = await getGridLive({ env: {} as NodeJS.ProcessEnv, fetchImpl: () => { calls++; return okFetch(new URL("https://x")); } });
@@ -202,15 +302,19 @@ describe("getGridLive", () => {
     assert.equal(r.mix?.fuels[0].code, "NG");
     assert.equal(r.mixByOperator.PJM.totalMw, 90000);
     assert.equal(r.stale, false);
-    assert.equal(urls.length, 2);
+    assert.equal(urls.length, 3, "one demand call and two fuel calls");
     const demandReq = urls.find((u) => u.pathname.includes("region-data"))!;
     assert.deepEqual(demandReq.searchParams.getAll("facets[type][]"), ["D"]);
     assert.ok(demandReq.searchParams.getAll("facets[respondent][]").includes("US48"));
     assert.ok(demandReq.searchParams.getAll("facets[respondent][]").includes("ERCO"));
+    const asked = demandReq.searchParams.getAll("facets[respondent][]");
+    for (const r of ["CISO", "NYIS", "ISNE", "BANC", "LDWP", "IID", "TIDC", "LGEE", "AECI"]) assert.ok(asked.includes(r), `${r} is requested`);
+    assert.equal(new Set(asked).size, asked.length, "each respondent is asked for once");
+    assert.equal(demandReq.searchParams.get("length"), String(asked.length * 168));
 
     t += 5 * 60 * 1000;
     await getGridLive(opts);
-    assert.equal(urls.length, 2, "second call inside the cache window must not hit EIA");
+    assert.equal(urls.length, 3, "second call inside the cache window must not hit EIA");
 
     const stamp = gridLiveStamp();
     assert.equal(stamp.lastRefreshed, "2026-11-03T16:00:00Z");

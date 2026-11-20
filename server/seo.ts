@@ -89,12 +89,7 @@ const BASE_URL = "https://gridtilt.com";
 const STATIC_PAGES: Record<string, { title: string; description: string; slug: string; ogImage?: string }> = {
   "/": {
     title: "GridTilt: Power projects, grid conditions, electricity costs",
-    description: "GridTilt shows what is being built on your power grid, who is behind it, and what is known about the cost. Choose your state, or explore projects, power agreements and the companies behind them.",
-    slug: "",
-  },
-  "/states": {
-    title: "State Pages: Grid Decisions and Public Dates by State | GridTilt",
-    description: "The states GridTilt covers, each with its dated grid decisions, the documents behind them, and the next public dates.",
+    description: "GridTilt shows what is being built on your power grid, who is behind it, and what is known about the cost. Open the map, or explore projects, power agreements and the companies behind them.",
     slug: "",
   },
   "/grid?tab=queue": {
@@ -206,15 +201,38 @@ const SECTOR_SLUGS: Record<string, { name: string; description: string }> = {
   "crypto-ai-hosting": { name: "Crypto & AI Hosting", description: "Bitcoin miners and hosts converting power capacity to AI compute: live prices and sector context." },
 };
 
+/**
+ * The nine grid regions, one page each (/region/<id>). Ids and names are the
+ * client's (client/src/data/grid-regions.ts GRID_REGIONS); a parity test keeps
+ * the two lists equal. A description says what the page holds and carries no
+ * dated figure.
+ */
 const REGION_SLUGS: Record<string, { name: string; description: string }> = {
-  "pjm": { name: "PJM", description: "AI data center facilities in the PJM Interconnection grid region covering the Mid-Atlantic and Midwest." },
-  "ercot": { name: "ERCOT", description: "AI data center facilities in the ERCOT grid region covering Texas." },
-  "miso": { name: "MISO", description: "AI data center facilities in the MISO grid region covering the central United States." },
-  "wecc": { name: "WECC", description: "AI data center facilities in the WECC grid region covering the western United States." },
-  "serc": { name: "SERC", description: "AI data center facilities in the SERC grid region covering the southeastern United States." },
-  "spp": { name: "SPP", description: "AI data center facilities in the SPP grid region covering the south-central United States." },
-  "npcc": { name: "NPCC", description: "AI data center facilities in the NPCC grid region covering the northeastern United States." },
+  pjm: { name: "PJM", description: "PJM Interconnection, the grid operator in all or parts of 13 states and DC: hourly demand, NERC's risk rating, and the data centers and power plants inside it." },
+  ercot: { name: "ERCOT", description: "ERCOT, the grid operator for most of Texas: hourly demand, NERC's risk rating, and the data centers and power plants inside it." },
+  miso: { name: "MISO", description: "MISO, the grid operator from the Upper Midwest to the Gulf Coast: hourly demand, NERC's risk rating, and the data centers and power plants inside it." },
+  spp: { name: "SPP", description: "Southwest Power Pool, the grid operator for the Plains states: hourly demand, NERC's risk rating, and the data centers and power plants inside it." },
+  caiso: { name: "CAISO", description: "California ISO, the grid operator for most of California: hourly demand, NERC's risk rating, and the data centers and power plants inside it." },
+  nyiso: { name: "NYISO", description: "New York ISO, the grid operator for New York State: hourly demand, NERC's risk rating, and the data centers and power plants inside it." },
+  isone: { name: "ISO-NE", description: "ISO New England, the grid operator for the six New England states: hourly demand, NERC's risk rating, and the data centers and power plants inside it." },
+  southeast: {
+    name: "Southeast",
+    description: "The Southeast, where utilities run their own grids with no market operator: hourly demand, NERC's risk ratings, and the data centers and power plants there.",
+  },
+  west: {
+    name: "West",
+    description: "The West outside California, where utilities run their own grids: hourly demand, NERC's risk ratings, and the data centers and power plants there.",
+  },
 };
+
+/**
+ * Two regions were renamed when the map moved from NERC's regions to the
+ * operators: one 301 each (routes.ts). The client forwards the same way
+ * (client/src/data/grid-regions.ts REGION_SLUG_ALIASES; a test keeps them
+ * equal). NPCC covered two of today's regions, so /region/npcc stays a short
+ * note that points at both.
+ */
+export const REGION_SLUG_REDIRECTS: Record<string, string> = { serc: "southeast", wecc: "west" };
 
 const OPERATOR_SLUGS: Record<string, string> = {
   "google": "Google",
@@ -485,10 +503,23 @@ export function getPageMeta(pathname: string, search = ""): PageMeta {
   const regionMatch = pathname.match(/^\/region\/([a-z]+)$/);
   if (regionMatch) {
     const slug = regionMatch[1];
+    // Reached only where the server's 301 did not run: describe the destination.
+    if (REGION_SLUG_REDIRECTS[slug]) return getPageMeta(`/region/${REGION_SLUG_REDIRECTS[slug]}`, search);
+    if (slug === "npcc") {
+      return {
+        title: "NPCC: New York and New England | GridTilt",
+        description: "NPCC is the reliability organization for New York and New England. GridTilt maps the two by their grid operators, NYISO and ISO New England.",
+        canonical: null,
+        ogImage: `${BASE_URL}/api/og?page=home`,
+        ogType: "website",
+        jsonLd: [],
+        robots: "noindex, follow",
+      };
+    }
     const region = REGION_SLUGS[slug];
     if (region) {
       return {
-        title: `${region.name} Grid Region: AI Data Center Locations | GridTilt`,
+        title: `${region.name} grid region: demand, stress and data centers | GridTilt`,
         description: region.description,
         canonical: `${BASE_URL}/region/${slug}`,
         ogImage: `${BASE_URL}/api/og?page=region&name=${encodeURIComponent(region.name)}`,
@@ -709,6 +740,7 @@ export const CRAWLABLE_API_PREFIXES = [
   "/api/gpu-prices/metrics",
   "/api/hyperscaler-capex",
   "/api/inference-prices",
+  "/api/map/",
   "/api/news",
   "/api/og",
   "/api/page-meta",

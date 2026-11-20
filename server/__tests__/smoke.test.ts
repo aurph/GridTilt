@@ -55,13 +55,17 @@ test("API checks pass on this build: deals, clusters, GPU switch, robots, sitema
     // Only checks served from local data. /api/news would fetch RSS through
     // rss-parser, which bypasses the fetch stub and holds the test process
     // open on a CI runner until its sockets time out.
-    const LOCAL = ["power deals", "clusters", "GPU price sweep stays off without permission", "Maryland state data", "robots.txt", "sitemap.xml", "unknown API path is a JSON 404", "frontier models", "retail electricity rates (EIA)", "admin freshness report", "timeline", "data status"];
+    const LOCAL = ["power deals", "clusters", "GPU price sweep stays off without permission", "Maryland state data", "mapped data center sites", "power plants", "robots.txt", "sitemap.xml", "unknown API path is a JSON 404", "frontier models", "retail electricity rates (EIA)", "admin freshness report", "timeline", "data status"];
     const apiChecks = CHECKS.filter((c) => LOCAL.includes(c.name));
     const results = await runSmoke({ base, today: "2026-10-15" }, apiChecks);
     const byName = new Map(results.map((r) => [r.name, r]));
     for (const name of ["power deals", "clusters", "GPU price sweep stays off without permission", "Maryland state data", "robots.txt", "sitemap.xml", "unknown API path is a JSON 404", "frontier models", "timeline", "data status"]) {
       assert.notEqual(byName.get(name)?.level, "fail", `${name}: ${byName.get(name)?.detail}`);
     }
+    // The map layers must pass outright: both are files in the repository.
+    assert.equal(byName.get("mapped data center sites")?.level, "pass", byName.get("mapped data center sites")?.detail);
+    assert.match(byName.get("mapped data center sites")?.detail ?? "", /^\d[\d,]* sites, atlas v\d{4}\.\d{2}\.\d{2}$/);
+    assert.equal(byName.get("power plants")?.level, "pass", byName.get("power plants")?.detail);
     // Keyless EIA feeds warn, not fail.
     assert.equal(byName.get("retail electricity rates (EIA)")?.level, "warn");
     // The admin check is skipped without a key.
@@ -70,6 +74,42 @@ test("API checks pass on this build: deals, clusters, GPU switch, robots, sitema
   } finally {
     await close();
   }
+});
+
+test("the retired States index must answer one 301 to /grid, and a page there is a failure", async () => {
+  const check = CHECKS.filter((c) => c.name === "retired /states forwards to /grid");
+  assert.equal(check.length, 1, "the smoke list carries the redirect check");
+  assert.equal(CHECKS.some((c) => c.name === "page /states"), false, "/states is no longer checked as a page");
+  const { base, close } = await start();
+  try {
+    const [live] = await runSmoke({ base, today: "2026-11-18" }, check);
+    assert.equal(live.level, "pass", live.detail);
+  } finally {
+    await close();
+  }
+  const answer = (status: number, location?: string) =>
+    (async () => new Response("<div id=\"root\"></div>", { status, headers: { "content-type": "text/html", ...(location ? { location } : {}) } })) as unknown as typeof fetch;
+  const [page] = await runSmoke({ base: "http://x", today: "2026-11-18", fetchFn: answer(200) }, check);
+  assert.equal(page.level, "fail", "a 200 at /states means the old page is back");
+  const [elsewhere] = await runSmoke({ base: "http://x", today: "2026-11-18", fetchFn: answer(301, "/markets") }, check);
+  assert.equal(elsewhere.level, "fail", "a redirect to the wrong place fails");
+  const [temporary] = await runSmoke({ base: "http://x", today: "2026-11-18", fetchFn: answer(302, "/grid") }, check);
+  assert.equal(temporary.level, "fail", "a temporary redirect fails: crawlers keep the old address");
+});
+
+test("region pages: a region is a page, and a renamed region answers one 301 to its new address", async () => {
+  const names = ["page /region/southeast", "renamed region /region/wecc forwards to /region/west"];
+  const checks = CHECKS.filter((c) => names.includes(c.name));
+  assert.equal(checks.length, 2, "the smoke list carries both region checks");
+  const { base, close } = await start();
+  try {
+    for (const r of await runSmoke({ base, today: "2026-11-18" }, checks)) assert.equal(r.level, "pass", `${r.name}: ${r.detail}`);
+  } finally {
+    await close();
+  }
+  const stale = (async () => new Response('<div id="root"></div>', { status: 200, headers: { "content-type": "text/html" } })) as unknown as typeof fetch;
+  const [, moved] = await runSmoke({ base: "http://x", today: "2026-11-18", fetchFn: stale }, checks);
+  assert.equal(moved.level, "fail", "a 200 at the old address means an old build");
 });
 
 test("the GPU check fails when the sweep is on without permission, passes when permitted", async () => {

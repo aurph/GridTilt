@@ -23,7 +23,6 @@ import { X, Keyboard } from "lucide-react";
 // that fails to load.
 const Home = lazy(() => import("@/pages/Home"));
 const SectionPage = lazy(() => import("@/pages/section-page"));
-const States = lazy(() => import("@/pages/states"));
 const StatePage = lazy(() => import("@/pages/state-page"));
 const ComputeFrontierMethodology = lazy(() => import("@/pages/ComputeFrontierMethodology"));
 const ComputeFrontierCompare = lazy(() => import("@/pages/ComputeFrontierCompare"));
@@ -45,11 +44,10 @@ const AdminSocial = lazy(() => import("@/pages/AdminSocial"));
 const MARKETING_ROUTES: string[] = [];
 
 const SHORTCUTS = [
-  { keys: ["G", "1"], description: "Go to States", path: "/states" },
-  { keys: ["G", "2"], description: "Go to Grid", path: "/grid" },
-  { keys: ["G", "3"], description: "Go to Compute", path: "/compute" },
-  { keys: ["G", "4"], description: "Go to Markets", path: "/markets" },
-  { keys: ["G", "5"], description: "Go to Research", path: "/blog" },
+  { keys: ["G", "1"], description: "Go to Grid", path: "/grid" },
+  { keys: ["G", "2"], description: "Go to Compute", path: "/compute" },
+  { keys: ["G", "3"], description: "Go to Markets", path: "/markets" },
+  { keys: ["G", "4"], description: "Go to Research", path: "/blog" },
   { keys: ["⌘", "K"], description: "Search pages, states, tickers, clusters", path: null },
   { keys: ["?"], description: "Show this keyboard shortcuts panel", path: null },
 ];
@@ -121,7 +119,6 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
-      <Route path="/states" component={States} />
       <Route path="/state/:slug" component={StatePage} />
       <Route path="/grid">{() => <SectionPage id="grid" />}</Route>
       <Route path="/compute">{() => <SectionPage id="compute" />}</Route>
@@ -273,7 +270,7 @@ function App() {
       }
       if (gPressed) {
         const routes: Record<string, string> = {
-          "1": "/states", "2": "/grid", "3": "/compute", "4": "/markets", "5": "/blog",
+          "1": "/grid", "2": "/compute", "3": "/markets", "4": "/blog",
         };
         if (routes[e.key]) {
           navigate(routes[e.key]);

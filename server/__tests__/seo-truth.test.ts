@@ -7,7 +7,8 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { ALIAS_REDIRECTS, buildSitemap, getPageMeta, injectMetaTags, SECTOR_SLUGS, REGION_SLUGS, OPERATOR_SLUGS } from "../seo";
+import { ALIAS_REDIRECTS, buildSitemap, getPageMeta, injectMetaTags, SECTOR_SLUGS, REGION_SLUGS, REGION_SLUG_REDIRECTS, OPERATOR_SLUGS } from "../seo";
+import { GRID_REGIONS, GRID_REGION_IDS, REGION_SLUG_ALIASES } from "../../client/src/data/grid-regions";
 import { COMPANY_DATABASE } from "../company-registry";
 import { pageResponse } from "../static";
 
@@ -49,6 +50,26 @@ describe("entity pages: real ones keep their page, invented ones are 404", () =>
     const slug = JSON.parse(read("content", "blog", "articles.json"))[0].slug;
     assert.equal(getPageMeta(`/blog/${slug}`).status ?? 200, 200);
     assert.equal(getPageMeta("/blog/not-a-post").status, 404);
+  });
+
+  it("the nine grid regions each have a page, and the three older region addresses still answer", () => {
+    for (const id of GRID_REGION_IDS) {
+      const meta = getPageMeta(`/region/${id}`);
+      assert.equal(meta.status ?? 200, 200, id);
+      assert.equal(meta.canonical, `https://gridtilt.com/region/${id}`);
+      assert.ok(meta.description.length >= 70 && meta.description.length <= 165, `${id}: ${meta.description.length} characters`);
+      assert.ok(!meta.description.includes("\u2014") && !/\d/.test(meta.description.replace(/\b13 states\b/, "")), `${id}: no dated figure in a description`);
+    }
+    // SERC and WECC became Southeast and West: one 301 each, the same way the client forwards.
+    assert.deepEqual(REGION_SLUG_REDIRECTS, { serc: "southeast", wecc: "west" });
+    assert.deepEqual(REGION_SLUG_REDIRECTS, REGION_SLUG_ALIASES);
+    assert.equal(getPageMeta("/region/wecc").canonical, "https://gridtilt.com/region/west", "described as its destination where the 301 did not run");
+    // NPCC covered two of today's regions, so it stays a short note that points at both, out of the index.
+    const npcc = getPageMeta("/region/npcc");
+    assert.equal(npcc.status ?? 200, 200);
+    assert.equal(npcc.canonical, null);
+    assert.match(npcc.robots ?? "", /noindex/);
+    assert.match(npcc.title, /NPCC/);
   });
 
   it("a cluster's description states its status in words and never prints a missing value", () => {
@@ -111,6 +132,9 @@ describe("sitemap", () => {
     }
     assert.ok(locs.includes("https://gridtilt.com/sector/natural-gas"));
     assert.ok(!locs.includes("https://gridtilt.com/stock/NLR"));
+    assert.ok(!locs.includes("https://gridtilt.com/states"), "the retired States index is a redirect and stays out of the sitemap");
+    for (const id of GRID_REGION_IDS) assert.ok(locs.includes(`https://gridtilt.com/region/${id}`), id);
+    for (const old of ["serc", "wecc", "npcc"]) assert.ok(!locs.includes(`https://gridtilt.com/region/${old}`), `${old} is not a page of its own`);
   });
 
   it("dates only what has a known change date, never today's", () => {
@@ -139,7 +163,9 @@ describe("parity with the client", () => {
 
   it("sector, region and operator pages match the server's lists", () => {
     assert.deepEqual(keysOf("SectorPage.tsx", "SECTOR_META"), Object.keys(SECTOR_SLUGS).sort());
-    assert.deepEqual(keysOf("RegionPage.tsx", "REGION_META"), Object.keys(REGION_SLUGS).sort());
+    // Region pages read the client's region list (data/grid-regions.ts), so that is the other side.
+    assert.deepEqual(Object.keys(REGION_SLUGS).sort(), [...GRID_REGION_IDS].sort());
+    for (const r of GRID_REGIONS) assert.equal(REGION_SLUGS[r.id].name, r.name, r.id);
     assert.deepEqual(keysOf("OperatorPage.tsx", "OPERATOR_META"), Object.keys(OPERATOR_SLUGS).sort());
   });
 
@@ -153,7 +179,8 @@ describe("parity with the client", () => {
       ...Array.from(app.matchAll(/<Route path="([^":]+)" component=/g)).map((m) => m[1]),
       ...Array.from(app.matchAll(/<Route path="([^":]+)">\{\(\) => <SectionPage/g)).map((m) => m[1]),
     ];
-    assert.ok(pages.includes("/grid") && pages.includes("/states"), "the section routes are visible to this test");
+    assert.ok(pages.includes("/grid") && pages.includes("/markets"), "the section routes are visible to this test");
+    assert.ok(!pages.includes("/states"), "the States index is a redirect now, not a page");
     for (const p of pages) assert.notEqual(getPageMeta(p).status, 404, p);
   });
 
@@ -170,7 +197,8 @@ describe("parity with the client", () => {
         seen.set(meta.title, href);
       }
     }
-    assert.equal(getPageMeta("/states").canonical, "https://gridtilt.com/states");
+    // The retired States index describes the page it forwards to.
+    assert.equal(getPageMeta("/states").canonical, "https://gridtilt.com/grid");
     // An old address describes the page it forwards to.
     assert.equal(getPageMeta("/queue").canonical, "https://gridtilt.com/grid?tab=queue");
     assert.equal(getPageMeta("/analyze", "?tab=scenario").canonical, "https://gridtilt.com/markets?tab=analyze");

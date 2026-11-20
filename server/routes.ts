@@ -3,7 +3,7 @@ import { ALL_STACK_TICKERS, COMPANY_DATABASE, STACK_TICKERS, knownTicker } from 
 import { fetchWithTimeout } from "./fetch-timeout";
 import type { Express, Request, Response } from "express";
 import { type Server } from "http";
-import { readFileSync, writeFileSync, existsSync } from "fs";
+import { readFileSync, writeFileSync, existsSync, statSync } from "fs";
 import { join } from "path";
 import { createHmac, randomBytes, timingSafeEqual } from "crypto";
 import rateLimit from "express-rate-limit";
@@ -16,7 +16,7 @@ import {
   rejectPending as rejectPendingDatacenter,
   stampFreshness as stampDatacenterFreshness,
 } from "./datacenter-ingester";
-import { ALIAS_REDIRECTS, BASE_URL, buildSitemap, getPageMeta, robotsTxt, ogNameKnown } from "./seo";
+import { ALIAS_REDIRECTS, BASE_URL, REGION_SLUG_REDIRECTS, buildSitemap, getPageMeta, robotsTxt, ogNameKnown } from "./seo";
 import { currentAddress, legacyRedirect } from "../client/src/lib/sections";
 import {
   computeAiPowerIndex,
@@ -49,6 +49,9 @@ import { buildTimeline, earningsDateStatus, type EarningsDate } from "./timeline
 import { readThrough } from "./swr";
 import { durableDocs, notifyDocWritten, setActiveDurableDocs } from "./durable-docs";
 import { publicDataStatus } from "./data-status";
+import { loadDcSites, sitesPayload } from "./dc-sites";
+import { loadPowerPlants, plantsPayload } from "./power-plants";
+import { acceptsGzip, jsonGzipCache } from "./json-gzip";
 import { buildSupplyChainPayload, type StagesFile } from "./supply-chain";
 import { getUraniumCorrelation } from "./uranium-correlation";
 import { footerBlockers, renderWeeklyEmail, renderWeeklyText, weeklyDateLabel, type NewsletterFooter } from "./weekly-digest";
@@ -2842,6 +2845,47 @@ export async function registerRoutes(
     res.json(loadDatacenters().map((d) => (links.has(d.id) ? { ...d, clusterId: links.get(d.id) } : d)));
   });
 
+  // ─── Map layers: mapped data center sites and power plants ────────────────
+  // Public, read from server/data. Sites are location-only dots from PNNL's
+  // IM3 atlas (OpenStreetMap, ODbL); the ones that are a tracked campus right
+  // now are left out, because datacenters.json changes at runtime
+  // (server/dc-sites.ts). Plants are EIA-860M (server/power-plants.ts). The
+  // files change only with a commit, so an hour of caching is safe. The host
+  // does not compress API responses, so these two send gzip themselves, built
+  // once per content key (server/json-gzip.ts).
+  const mapLayerJson = jsonGzipCache();
+  /** `hold`: let a browser keep the answer for an hour. Right for a file a script writes; wrong for one edited by hand. */
+  function sendMapLayer(req: Request, res: Response, name: string, key: string, build: () => unknown, hold = true): void {
+    const body = mapLayerJson(name, key, build);
+    if (hold) res.set("Cache-Control", "public, max-age=3600");
+    res.set("Vary", "Accept-Encoding").type("application/json");
+    if (acceptsGzip(req.headers["accept-encoding"])) res.set("Content-Encoding", "gzip").send(body.gz);
+    else res.send(body.json);
+  }
+
+  app.get("/api/map/sites", (req, res) => {
+    try {
+      const file = loadDcSites();
+      const tracked = loadDatacenters();
+      // The payload changes when the atlas file or the tracked list does.
+      const key = `${file.retrieved}:${file.sites.length}:${tracked.map((t) => `${t.id},${t.lat},${t.lng},${t.company},${t.status}`).join(";")}`;
+      sendMapLayer(req, res, "sites", key, () => sitesPayload(file, tracked));
+    } catch (err) {
+      console.error("Map sites error:", err);
+      res.status(500).json({ error: "Failed to load mapped data center sites" });
+    }
+  });
+
+  app.get("/api/map/plants", (req, res) => {
+    try {
+      const file = loadPowerPlants();
+      sendMapLayer(req, res, "plants", `${file.dataMonth}:${file.retrieved}:${file.plants.length}`, () => plantsPayload(file));
+    } catch (err) {
+      console.error("Map plants error:", err);
+      res.status(500).json({ error: "Failed to load power plants" });
+    }
+  });
+
   app.post("/api/admin/datacenters", (req, res) => {
     if (!requireAdmin(req, res)) return;
     const parsed = validateDatacenter(req.body);
@@ -3002,6 +3046,15 @@ export async function registerRoutes(
       const i = req.originalUrl.indexOf("?");
       const to = legacyRedirect(from, i >= 0 ? req.originalUrl.slice(i) : "");
       res.redirect(301, to ?? ALIAS_REDIRECTS[from]);
+    });
+  }
+
+  // Two region pages were renamed (SERC to Southeast, WECC to West): one 301
+  // each, with the query string along.
+  for (const [from, to] of Object.entries(REGION_SLUG_REDIRECTS)) {
+    app.get(`/region/${from}`, (req, res) => {
+      const i = req.originalUrl.indexOf("?");
+      res.redirect(301, `/region/${to}${i >= 0 ? req.originalUrl.slice(i) : ""}`);
     });
   }
 
@@ -3741,9 +3794,13 @@ ${rssItems}
     };
   }
 
-  app.get("/api/clusters", (_req, res) => {
+  // The map loads this list by default (about 270 KB of JSON), so it goes
+  // out gzipped like the map's own layers. The file changes only with a commit.
+  app.get("/api/clusters", (req, res) => {
     try {
-      res.json(readClusterRoot().clusters ?? []);
+      const stat = statSync(CLUSTERS_FILE);
+      // Not held by the browser: cluster records are edited by commit and looked at right after a deploy.
+      sendMapLayer(req, res, "clusters", `${stat.mtimeMs}:${stat.size}`, () => readClusterRoot().clusters ?? [], false);
     } catch (err) {
       console.error("Clusters read error:", err);
       res.status(500).json({ error: "Failed to load clusters" });

@@ -1,5 +1,7 @@
 /**
- * The site map: four sections, each holding several features as chips.
+ * The site map: three sections, each holding several features. A feature is
+ * a "chip" in this file and in the address (`?tab=`); on the page it is one
+ * tab of the row under the section heading (components/feature-tabs.tsx).
  *
  * One source for the top bar, the phone menu, the footer, the 404, the search
  * palette and the old-route redirects. A feature's address is its section plus
@@ -7,17 +9,24 @@
  * parameter. A feature that has views of its own (Analyze, GPU Prices) keeps
  * them one level down in `?sub=`, so the two never collide.
  *
- * States is the one section whose chips are not listed here: they are the
- * published state pages, read from the registry at /api/state-pages.
+ * The States section was retired 2026-11-18: /states forwards to /grid, and
+ * the published state pages keep their own addresses (/state/:slug) outside
+ * the navigation.
  */
 
 export interface SectionChip {
   id: string;
   label: string;
+  /**
+   * What the feature holds, in one short line under its name. Plain words,
+   * 30 characters at most, and never a figure: a number here would need a
+   * date and a source of its own.
+   */
+  blurb: string;
 }
 
 export interface Section {
-  id: "states" | "grid" | "compute" | "markets";
+  id: "grid" | "compute" | "markets";
   label: string;
   href: string;
   /** The line above the section's content. Names the data, nothing else. */
@@ -33,25 +42,17 @@ export const SUB_PARAM = "sub";
 
 export const SECTIONS: Section[] = [
   {
-    id: "states",
-    label: "States",
-    href: "/states",
-    statement: "What gets decided and built on each state's power grid.",
-    dek: "Dated decisions, the documents behind them, and the next public dates.",
-    chips: [],
-  },
-  {
     id: "grid",
     label: "Grid",
     href: "/grid",
     statement: "Data center campuses, power agreements and the interconnection queue.",
     dek: "Mapped by operator and grid region, with hourly demand and a dated record of what changed.",
     chips: [
-      { id: "map", label: "Map" },
-      { id: "queue", label: "Queue" },
-      { id: "deals", label: "Deals" },
-      { id: "live", label: "Live grid" },
-      { id: "timeline", label: "Timeline" },
+      { id: "map", label: "Map", blurb: "Campuses, plants, grid regions" },
+      { id: "queue", label: "Queue", blurb: "Waiting for a grid connection" },
+      { id: "deals", label: "Deals", blurb: "Who buys power, and from whom" },
+      { id: "live", label: "Live grid", blurb: "Hourly demand and fuel mix" },
+      { id: "timeline", label: "Timeline", blurb: "Dated events, newest first" },
     ],
   },
   {
@@ -61,9 +62,9 @@ export const SECTIONS: Section[] = [
     statement: "Named compute clusters, the supply chain behind them, and GPU rental prices.",
     dek: "Sourced figures, with estimates labeled.",
     chips: [
-      { id: "clusters", label: "Clusters" },
-      { id: "supply-chain", label: "Supply Chain" },
-      { id: "gpu-prices", label: "GPU Prices" },
+      { id: "clusters", label: "Clusters", blurb: "AI sites by GPUs and power" },
+      { id: "supply-chain", label: "Supply Chain", blurb: "Raw materials to data centers" },
+      { id: "gpu-prices", label: "GPU Prices", blurb: "What a GPU rents for per hour" },
     ],
   },
   {
@@ -73,10 +74,10 @@ export const SECTIONS: Section[] = [
     statement: "The public companies behind the buildout.",
     dek: "Prices by sector, dated catalysts, and illustrative baskets and scenarios.",
     chips: [
-      { id: "overview", label: "Overview" },
-      { id: "equities", label: "Equities" },
-      { id: "analyze", label: "Analyze" },
-      { id: "catalysts", label: "Catalysts" },
+      { id: "overview", label: "Overview", blurb: "The buildout at a glance" },
+      { id: "equities", label: "Equities", blurb: "Stock prices by sector" },
+      { id: "analyze", label: "Analyze", blurb: "Try a basket or a scenario" },
+      { id: "catalysts", label: "Catalysts", blurb: "Earnings and event dates" },
     ],
   },
 ];
@@ -121,8 +122,14 @@ export function metaAddress(pathname: string, search = ""): string {
  * Entity pages light up the section they are reached from.
  */
 export function sectionForPath(pathname: string): Section["id"] | null {
-  if (pathname === "/states" || pathname.startsWith("/state/")) return "states";
-  if (pathname === "/grid" || pathname.startsWith("/region/") || pathname.startsWith("/operator/")) return "grid";
+  if (
+    pathname === "/grid" ||
+    pathname.startsWith("/region/") ||
+    pathname.startsWith("/operator/") ||
+    pathname.startsWith("/state/")
+  ) {
+    return "grid";
+  }
   if (pathname === "/compute" || pathname.startsWith("/compute-frontier")) return "compute";
   if (pathname === "/markets" || pathname.startsWith("/stock/") || pathname.startsWith("/sector/")) return "markets";
   return null;
@@ -162,6 +169,8 @@ export const LEGACY_ROUTES: Record<string, LegacyRoute> = {
   "/neocloud-intel": { section: "compute", chip: "gpu-prices", tabToSub: ["prices", "economics", "frontier"] },
   "/gpu-economics": { section: "compute", chip: "gpu-prices", sub: "economics" },
   "/brief": { section: null, to: "/blog" },
+  // The States index (retired 2026-11-18). State pages keep /state/:slug.
+  "/states": { section: "grid", chip: "map" },
 };
 
 /**
@@ -229,44 +238,4 @@ export function withSectionParams(currentSearch: string, featureQuery: string): 
   });
   const qs = out.toString();
   return qs ? `?${qs}` : "";
-}
-
-// ── Chip overflow ("+N more") ────────────────────────────────────────────────
-
-/**
- * How many chips fit on one row. `widths` are the chips' measured widths in
- * order; when not all fit, room is kept for the "+N more" chip. At least one
- * chip always shows.
- */
-export function fitCount(widths: number[], available: number, moreWidth: number, gap: number): number {
-  if (widths.length === 0) return 0;
-  const total = widths.reduce((a, w) => a + w, 0) + gap * (widths.length - 1);
-  if (total <= available) return widths.length;
-  let used = 0;
-  let n = 0;
-  for (const w of widths) {
-    const next = used + (n > 0 ? gap : 0) + w;
-    if (next + gap + moreWidth > available) break;
-    used = next;
-    n += 1;
-  }
-  return Math.max(1, n);
-}
-
-/**
- * Split chips into the row and the overflow list. The active chip is always
- * on the row: when it would fall into the overflow it takes the last slot.
- */
-export function splitChips<T extends { id: string }>(
-  chips: T[],
-  activeId: string,
-  visibleCount: number,
-): { visible: T[]; overflow: T[] } {
-  const n = Math.max(1, Math.min(visibleCount, chips.length));
-  if (n >= chips.length) return { visible: chips, overflow: [] };
-  const activeIndex = chips.findIndex((c) => c.id === activeId);
-  if (activeIndex < n) return { visible: chips.slice(0, n), overflow: chips.slice(n) };
-  const visible = [...chips.slice(0, n - 1), chips[activeIndex]];
-  const overflow = chips.filter((c) => !visible.includes(c));
-  return { visible, overflow };
 }

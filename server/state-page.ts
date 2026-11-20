@@ -176,7 +176,7 @@ export function statePageSlugs(curated: CuratedStates): Array<{ slug: string; co
   return curated.states.map((s) => ({ slug: s.slug, code: s.code, reviewed: s.reviewed }));
 }
 
-/** One row of the /states index: a published page with its counts from the registry. */
+/** One row of /api/state-pages: a published page with its counts from the registry. */
 export interface StateIndexRow {
   slug: string;
   code: string;
@@ -443,7 +443,7 @@ export function loadStatePageSlugs(today: string = easternToday()): Array<{ slug
   return curated ? statePageSlugs(curated) : [];
 }
 
-/** The published pages with their decision counts and next dates, for /states. */
+/** The published pages with their decision counts and next dates (/api/state-pages). */
 export function loadStatePageIndex(today: string = easternToday()): StateIndexRow[] {
   const curated = readCurated(today);
   return curated ? statePageIndex(curated, today) : [];

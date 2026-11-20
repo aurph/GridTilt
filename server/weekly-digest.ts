@@ -219,7 +219,7 @@ ${moversHtml}
 <tr><td style="padding:20px 32px;">
 <div style="font-size:13px;line-height:1.6;color:${C.inkMuted};border-top:1px solid ${C.border};padding-top:16px;">${esc(brief.takeaway)}</div>
 <div style="padding:18px 0 6px;">
-<a href="${siteUrl}/states" style="display:inline-block;background:${C.brand};color:#ffffff;text-decoration:none;font-size:13px;font-weight:700;padding:10px 18px;border-radius:6px;">Open the state pages</a>
+<a href="${siteUrl}/grid" style="display:inline-block;background:${C.brand};color:#ffffff;text-decoration:none;font-size:13px;font-weight:700;padding:10px 18px;border-radius:6px;">Open the map</a>
 </div>
 </td></tr>
 
@@ -262,7 +262,7 @@ export function renderWeeklyText(input: WeeklyDigestInput): string {
     for (const m of input.movers) lines.push(`${m.ticker} ${m.name}: ${m.changePercent > 0 ? "+" : ""}${m.changePercent.toFixed(2)}%`);
     lines.push(`Percent moves as of ${input.asOf}.`);
   }
-  lines.push("", input.brief.takeaway, "", `State pages: ${input.siteUrl}/states`, "");
+  lines.push("", input.brief.takeaway, "", `The map: ${input.siteUrl}/grid`, "");
   if (input.figureSources.length > 0) {
     lines.push(`Sources and dates: ${input.figureSources.map((f) => `${f.figure}: ${f.source}, ${f.asOf}`).join("; ")}.`, "");
   }

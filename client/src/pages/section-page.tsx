@@ -1,27 +1,25 @@
 /**
- * Grid, Buildout and Markets: one section page holding several features.
+ * Grid, Compute and Markets: one section page holding several features.
  *
- * Anatomy: a centered statement naming the section's data, the chip row, then
- * the selected feature's existing page. Each feature is its own chunk, so a
- * section downloads only the feature being read; data already fetched stays
- * cached by react-query, so switching chips does not refetch it. The feature
- * keeps its own heading (one level below the section's) so a deep link reads
- * right on arrival.
+ * Anatomy: one tight line naming the section's data, the chip row right under
+ * it, then the selected feature's existing page. The header stays small on
+ * purpose so the feature (the map, a table) starts near the top of the
+ * screen. Each feature is its own chunk, so a section downloads only the
+ * feature being read; data already fetched stays cached by react-query, so
+ * switching chips does not refetch it. The feature keeps its own heading (one
+ * level below the section's) so a deep link reads right on arrival.
  */
 import { lazy, Suspense, useMemo, type ComponentType, type LazyExoticComponent } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { useSearch } from "wouter";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { HeadingLevelProvider } from "@/components/section-heading";
-import { ChipMenu, SectionChips, type ChipItem } from "@/components/section-chips";
+import { FeatureTabs, type FeatureTab } from "@/components/feature-tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import { STATE_GRID } from "@/data/state-grid";
 import { chipFromSearch, chipHref, sectionById, type Section } from "@/lib/sections";
-import { statePageLinks, type PublishedStatePage } from "@/lib/state-pages";
 
 type Feature = LazyExoticComponent<ComponentType<any>>;
 
-const FEATURES: Record<Exclude<Section["id"], "states">, Record<string, Feature>> = {
+const FEATURES: Record<Section["id"], Record<string, Feature>> = {
   grid: {
     map: lazy(() => import("@/pages/PowerMap")),
     queue: lazy(() => import("@/pages/Queue")),
@@ -42,14 +40,20 @@ const FEATURES: Record<Exclude<Section["id"], "states">, Record<string, Feature>
   },
 };
 
-/** The centered line above a section's content: one bold line and one dek. */
+/**
+ * The line above a section's chips: the statement as the page's h1, with the
+ * dek as one quiet line beside it on a wide screen. Left-aligned on the chips'
+ * edge and short, so the content below starts high on the page. The dek is
+ * dropped on phones, where the chips already say it.
+ */
 export function SectionStatement({ statement, dek }: { statement: string; dek: string }) {
   return (
-    <div className="mx-auto max-w-[640px] px-4 pb-6 pt-9 text-center sm:pt-12" data-testid="section-statement">
-      <h1 className="text-balance text-[22px] font-bold leading-tight tracking-tight text-foreground sm:text-[26px]">
-        {statement}
-      </h1>
-      <p className="mx-auto mt-2.5 max-w-[52ch] text-[14px] leading-relaxed text-muted-foreground">{dek}</p>
+    <div
+      className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 px-4 pb-2.5 pt-3.5 sm:px-6 sm:pt-4"
+      data-testid="section-statement"
+    >
+      <h1 className="text-[17px] font-bold leading-snug tracking-tight text-foreground sm:text-[19px]">{statement}</h1>
+      <p className="hidden text-[13px] leading-snug text-muted-foreground sm:block">{dek}</p>
     </div>
   );
 }
@@ -69,25 +73,12 @@ function FeatureLoading() {
   );
 }
 
-/** The Grid section's scope control: jump from the national view to one state's record. */
-function StateScope() {
-  const { data } = useQuery<PublishedStatePage[]>({ queryKey: ["/api/state-pages"] });
-  const links = statePageLinks(data, STATE_GRID);
-  return (
-    <ChipMenu
-      label="State"
-      testId="grid-state-scope"
-      items={links.map((l) => ({ label: l.name, href: l.href, hint: l.code }))}
-    />
-  );
-}
-
-export default function SectionPage({ id }: { id: Exclude<Section["id"], "states"> }) {
+export default function SectionPage({ id }: { id: Section["id"] }) {
   const section = sectionById(id);
   const search = useSearch();
   const active = chipFromSearch(section, search);
-  const chips: ChipItem[] = useMemo(
-    () => section.chips.map((c) => ({ id: c.id, label: c.label, href: chipHref(id, c.id) })),
+  const tabs: FeatureTab[] = useMemo(
+    () => section.chips.map((c) => ({ id: c.id, label: c.label, blurb: c.blurb, href: chipHref(id, c.id) })),
     [section, id],
   );
   const Feature = FEATURES[id][active];
@@ -97,13 +88,8 @@ export default function SectionPage({ id }: { id: Exclude<Section["id"], "states
   return (
     <div data-testid={`section-${id}`}>
       <SectionStatement statement={section.statement} dek={section.dek} />
-      <div className="border-b border-dashed border-border px-4 pb-4 sm:px-6">
-        <SectionChips
-          chips={chips}
-          active={active}
-          label={`${section.label} features`}
-          right={id === "grid" ? <StateScope /> : undefined}
-        />
+      <div className="border-b border-dashed border-border px-4 sm:px-6">
+        <FeatureTabs tabs={tabs} active={active} label={`${section.label} features`} />
       </div>
       <HeadingLevelProvider level={2}>
         <ErrorBoundary label="This view failed to render." resetKey={`${id}:${active}`}>

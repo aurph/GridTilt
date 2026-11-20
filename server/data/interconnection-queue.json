@@ -1,9 +1,9 @@
 {
-  "lastRefreshed": "2026-10-30",
-  "lastChecked": "2026-10-30",
+  "lastRefreshed": "2026-11-19",
+  "lastChecked": "2026-11-19",
   "headline": {
-    "trackedProjects": 70,
-    "trackedCapacityGW": 91.5,
+    "trackedProjects": 83,
+    "trackedCapacityGW": 98.8,
     "queueOverallGW": 2061,
     "queueOverallProjects": 8244,
     "medianWaitMonths": 61,
@@ -804,7 +804,7 @@
     },
     {
       "id": "dte-mi-hyperscaler",
-      "projectName": "DTE Energy hyperscaler agreement",
+      "projectName": "DTE Energy power supply agreement with Oracle (MI)",
       "sponsor": "DTE Energy",
       "capacityMW": 1400,
       "type": "utility",
@@ -812,19 +812,20 @@
       "state": "MI",
       "status": "active",
       "category": "ppa",
-      "expectedOnline": "Ramps over 2-3 years from late 2025",
-      "offtaker": "Green Chile Ventures LLC (reported as an Oracle subsidiary; Related Digital is the developer)",
+      "expectedOnline": "Load ramps up in 2027; construction underway",
+      "offtaker": "Oracle (19-year power supply agreement; contract counterparty Green Chile Ventures LLC)",
       "dcRelevant": true,
       "sources": [
         "https://www.sec.gov/Archives/edgar/data/936340/000093634025000219/exhibit991-093025.htm",
         "Utility Dive",
         "DTE earnings call",
-        "Epoch AI"
+        "Epoch AI",
+        "https://www.sec.gov/Archives/edgar/data/936340/000093634026000166/q326presentationfinal8k.htm"
       ],
-      "notes": "DTE's first data-center supply contract (Q3 2025 release): 1.4 GW of load that 'will ramp up over the next two to three years', served from existing capacity plus new energy storage paid for by the customer. The Michigan PSC approved the special contracts on Dec 18, 2025 (Case U-21990) and names the counterparty as Green Chile Ventures LLC; ENR and Bridge Michigan report it is an Oracle subsidiary building the Saline Township campus with Related Digital. The 19-year term is from press coverage.",
+      "notes": "DTE's first data-center supply contract (Q3 2025 release): 1.4 GW of load that 'will ramp up over the next two to three years', served from existing capacity plus new energy storage paid for by the customer. The Michigan PSC approved the special contracts on Dec 18, 2025 (Case U-21990) and names the counterparty as Green Chile Ventures LLC; ENR and Bridge Michigan report it is an Oracle subsidiary building the Saline Township campus with Related Digital. DTE's third-quarter 2026 presentation (November 5, 2026, 8-K exhibit) names the customer: a 1.4 GW Oracle agreement, approved and with construction underway, under a 19-year power supply agreement with minimum monthly charges; load is expected to ramp up in 2027.",
       "firmness": "signed",
-      "firmnessSource": "https://www.sec.gov/Archives/edgar/data/936340/000093634025000219/exhibit991-093025.htm",
-      "reviewed": "2026-09-28",
+      "firmnessSource": "https://www.sec.gov/Archives/edgar/data/936340/000093634026000166/q326presentationfinal8k.htm",
+      "reviewed": "2026-11-19",
       "asset": "mixed",
       "announced": "2025-10-30",
       "announcedSource": "https://www.sec.gov/Archives/edgar/data/936340/000093634025000219/exhibit991-093025.htm"
@@ -2140,16 +2141,17 @@
       "state": "UT",
       "status": "active",
       "category": "ppa",
-      "expectedOnline": "2028",
-      "offtaker": "Google (PPA; term not disclosed)",
+      "expectedOnline": "First power mid-2028; full capacity targeted by end of 2028",
+      "offtaker": "Google (15-year take-or-pay PPA)",
       "dcRelevant": true,
       "sources": [
-        "https://www.sec.gov/Archives/edgar/data/0001853868/000162828026059707/exhibit991pressrelease9126.htm"
+        "https://www.sec.gov/Archives/edgar/data/0001853868/000162828026059707/exhibit991pressrelease9126.htm",
+        "https://www.sec.gov/Archives/edgar/data/1853868/000162828026071911/exhibit991earningsrelease1.htm"
       ],
-      "notes": "Fervo's September 1, 2026 release (filed as an 8-K exhibit): a 396 MW power purchase agreement with Google to support the Cape Station GeoCluster in Beaver County, Utah, expected online in 2028, as a building block for a potential Google data center in Utah. Google holds an option to add about 600 MW by June 2030; the option is not counted. The data center plans are subject to engineering feasibility, approvals and commercial conditions, and direct-to-load contracting under Utah SB132 is subject to regulatory approval.",
+      "notes": "Fervo's September 1, 2026 release (filed as an 8-K exhibit): a 396 MW power purchase agreement with Google to support the Cape Station GeoCluster in Beaver County, Utah, expected online in 2028, as a building block for a potential Google data center in Utah. Google holds an option to add about 600 MW by June 2030; the option is not counted. The data center plans are subject to engineering feasibility, approvals and commercial conditions, and direct-to-load contracting under Utah SB132 is subject to regulatory approval. Fervo's November 9, 2026 results (8-K exhibit): the agreement is a 15-year, grid-connected, take-or-pay contract for 396 MW across eight GeoBlocks, with fixed terms; first power is expected in mid-2028, with full capacity targeted by the end of 2028.",
       "firmness": "signed",
-      "firmnessSource": "https://www.sec.gov/Archives/edgar/data/0001853868/000162828026059707/exhibit991pressrelease9126.htm",
-      "reviewed": "2026-10-30",
+      "firmnessSource": "https://www.sec.gov/Archives/edgar/data/1853868/000162828026071911/exhibit991earningsrelease1.htm",
+      "reviewed": "2026-11-19",
       "asset": "new-build",
       "announced": "2026-09-01",
       "announcedSource": "https://www.sec.gov/Archives/edgar/data/0001853868/000162828026059707/exhibit991pressrelease9126.htm"
@@ -2158,22 +2160,23 @@
       "id": "ms-nisource-genco",
       "projectName": "NiSource GenCo supply for Microsoft's northwest Indiana campus",
       "sponsor": "NiSource (NIPSCO and NiSource Generation Company)",
-      "capacityMW": 1100,
+      "capacityMW": 788,
       "type": "utility",
       "iso": "MISO",
       "state": "IN",
       "status": "active",
       "category": "ppa",
-      "expectedOnline": "2028",
+      "expectedOnline": "2028, rising to 788 MW in 2031",
       "offtaker": "Microsoft (20-year electric service)",
       "dcRelevant": true,
       "sources": [
-        "https://investors.nisource.com/financial-news/news-details/2026/NiSource-announces-long-term-agreement-with-Microsoft-expected-to-increase-customer-savings-and-support-Indianas-economic-growth/default.aspx"
+        "https://investors.nisource.com/financial-news/news-details/2026/NiSource-announces-long-term-agreement-with-Microsoft-expected-to-increase-customer-savings-and-support-Indianas-economic-growth/default.aspx",
+        "https://www.sec.gov/Archives/edgar/data/1111711/000111171126000100/nix-20260930.htm"
       ],
-      "notes": "NiSource's October 16, 2026 release announces a new long-term energy agreement with Microsoft for its previously announced northwest Indiana campus: approximately 1,100 MW of new generation resources under a 20-year agreement beginning in 2028, with Microsoft expected to begin taking service in 2028. GenCo has contracted 600 MW of battery storage under a long-term tolling agreement with an AGP Group affiliate. The release uses the word announced, not executed; NiSource's Q3 2026 10-Q lists the Microsoft contract among its current data center contracts. Regulatory approvals are a listed risk.",
+      "notes": "NiSource's October 16, 2026 release announces a new long-term energy agreement with Microsoft for its previously announced northwest Indiana campus: approximately 1,100 MW of new generation resources under a 20-year agreement beginning in 2028, with Microsoft expected to begin taking service in 2028. GenCo has contracted 600 MW of battery storage under a long-term tolling agreement with an AGP Group affiliate. NiSource's 10-Q (filed October 28, 2026) gives the contract itself: in October 2026 NIPSCO entered into an agreement to provide capacity and electricity to Microsoft's data center under a capacity commitment beginning in 2028 that increases to 788 MW from 2031, for 20 years from the data center's initial energization. It will be submitted to the IURC for approval, and either party may terminate if the IURC and FERC approvals are not obtained. The row books the 788 MW contracted (corrected November 19, 2026; it booked the 1,100 MW of new generation before).",
       "firmness": "signed",
-      "firmnessSource": "https://investors.nisource.com/financial-news/news-details/2026/NiSource-announces-long-term-agreement-with-Microsoft-expected-to-increase-customer-savings-and-support-Indianas-economic-growth/default.aspx",
-      "reviewed": "2026-10-30",
+      "firmnessSource": "https://www.sec.gov/Archives/edgar/data/1111711/000111171126000100/nix-20260930.htm",
+      "reviewed": "2026-11-19",
       "asset": "new-build",
       "announced": "2026-10-16",
       "announcedSource": "https://investors.nisource.com/financial-news/news-details/2026/NiSource-announces-long-term-agreement-with-Microsoft-expected-to-increase-customer-savings-and-support-Indianas-economic-growth/default.aspx"
@@ -2217,9 +2220,10 @@
       "offtaker": "TeraWulf (amended and restated electric service agreement)",
       "dcRelevant": true,
       "sources": [
-        "https://www.sec.gov/Archives/edgar/data/1083301/000162828026064757/muskieexpansionpr.htm"
+        "https://www.sec.gov/Archives/edgar/data/1083301/000162828026064757/muskieexpansionpr.htm",
+        "https://www.kentuckypower.com/company/news/view?releaseID=12384"
       ],
-      "notes": "TeraWulf's October 5, 2026 release (8-K exhibit): an amended and restated electric service agreement executed with Kentucky Power raises contracted capacity at the Muskie campus in eastern Kentucky from 500 MW to 1 GW. The first 500 MW is targeted to begin ramping in 2028; the second 500 MW moves from 2030 to 2029, subject to Kentucky PSC approval and Kentucky Power's construction schedule. The campus is described as AI and high-performance computing; no tenant is named. The original agreement's date is not in the release, so no announcement date is recorded.",
+      "notes": "TeraWulf's October 5, 2026 release (8-K exhibit): an amended and restated electric service agreement executed with Kentucky Power raises contracted capacity at the Muskie campus in eastern Kentucky from 500 MW to 1 GW. The first 500 MW is targeted to begin ramping in 2028; the second 500 MW moves from 2030 to 2029, subject to Kentucky PSC approval and Kentucky Power's construction schedule. The campus is described as AI and high-performance computing; no tenant is named. The original agreement's date is not in the release, so no announcement date is recorded. Kentucky Power's November 13, 2026 release: it filed with the Kentucky Public Service Commission for the agreement, a new 760 MW combined-cycle gas plant next to its Big Sandy unit in Louisa, and a new transmission substation; TeraWulf has agreed to pay the estimated financing costs of building the Big Sandy plant. The campus is in Grayson, Kentucky, and is expected to reach up to 1 GW of contracted demand in phases by 2029. Decisions could come as early as mid-2027.",
       "firmness": "signed",
       "firmnessSource": "https://www.sec.gov/Archives/edgar/data/1083301/000162828026064757/muskieexpansionpr.htm",
       "reviewed": "2026-10-30",
@@ -2263,12 +2267,110 @@
       "offtaker": "Google (20-year PPA)",
       "dcRelevant": true,
       "sources": [
-        "https://www.aep.com/news/stories/view/12314/"
+        "https://www.aep.com/news/stories/view/12314/",
+        "https://www.sec.gov/Archives/edgar/data/4904/000000490426000072/aep-20260930.htm",
+        "https://blog.google/innovation-and-ai/infrastructure-and-cloud/global-network/wyoming-data-center/"
       ],
-      "notes": "AEP's October 14, 2026 release: a new 702 MW fuel cell generation project near Cheyenne, Wyoming, using Bloom Energy solid oxide fuel cells, about $4 billion of AEP investment, with plans to integrate carbon capture, expected to be fully operational by the end of 2028. Under a 20-year power purchase agreement Google will acquire the power. The release does not say the PPA is executed, so no status is recorded until a document does.",
+      "notes": "AEP's October 14, 2026 release: a new 702 MW fuel cell generation project near Cheyenne, Wyoming, using Bloom Energy solid oxide fuel cells, about $4 billion of AEP investment, with plans to integrate carbon capture, expected to be fully operational by the end of 2028. Under a 20-year power purchase agreement Google will acquire the power. AEP's 10-Q (filed October 28, 2026) says that in January 2026 an unregulated AEP subsidiary executed a 20-year offtake arrangement with a high investment grade third-party customer for 100% of the output of the fuel cell facility near Cheyenne; it does not name the customer. Google's November 5, 2026 post announcing its first Wyoming data center says the project is contracted with AEP for the 702 MW fuel cell development. The status is signed on those two documents.",
       "asset": "new-build",
       "announced": "2026-10-14",
-      "announcedSource": "https://www.aep.com/news/stories/view/12314/"
+      "announcedSource": "https://www.aep.com/news/stories/view/12314/",
+      "firmness": "signed",
+      "firmnessSource": "https://www.sec.gov/Archives/edgar/data/4904/000000490426000072/aep-20260930.htm",
+      "reviewed": "2026-11-19"
+    },
+    {
+      "id": "google-quaise-obsidian",
+      "projectName": "Project Obsidian superhot geothermal 50 MW (Google PPA)",
+      "sponsor": "Quaise Energy",
+      "capacityMW": 50,
+      "type": "geothermal",
+      "iso": "WECC",
+      "state": "OR",
+      "status": "active",
+      "category": "ppa",
+      "expectedOnline": "As early as 2030",
+      "offtaker": "Google (PPA; term not disclosed)",
+      "dcRelevant": true,
+      "sources": [
+        "https://www.quaise.com/news/quaise-energy-signs-50-mw-geothermal-power-purchase-agreement-with-google"
+      ],
+      "notes": "Quaise Energy's November 17, 2026 release: Google signed a power purchase agreement for 50 MW of superhot geothermal power from Project Obsidian, Quaise's flagship project in Central Oregon, to support Google's existing data center operations in The Dalles, Oregon. Google will buy the power beginning as early as 2030. The first phase of development uses conventional drilling; the second is expected to use millimeter wave drilling. The release states no term and no construction date.",
+      "firmness": "signed",
+      "firmnessSource": "https://www.quaise.com/news/quaise-energy-signs-50-mw-geothermal-power-purchase-agreement-with-google",
+      "reviewed": "2026-11-19",
+      "asset": "new-build",
+      "announced": "2026-11-17",
+      "announcedSource": "https://www.quaise.com/news/quaise-energy-signs-50-mw-geothermal-power-purchase-agreement-with-google"
+    },
+    {
+      "id": "google-entergy-ar-west-memphis",
+      "projectName": "Entergy Arkansas service for Google's West Memphis campus (2026 expansion)",
+      "sponsor": "Entergy Arkansas",
+      "capacityMW": null,
+      "type": "utility",
+      "iso": "MISO",
+      "state": "AR",
+      "status": "active",
+      "category": "ppa",
+      "expectedOnline": "2028, pending Arkansas PSC approval",
+      "offtaker": "Google (new contract with Entergy Arkansas; 20-year term)",
+      "dcRelevant": true,
+      "sources": [
+        "https://www.entergy.com/news/entergy-arkansas-announces-enhanced-partnership-at-google-west-memphis-campus-delivering-at-least-500m-in-new-savings-for-all-customers"
+      ],
+      "notes": "Entergy Arkansas's October 19, 2026 release: an expansion of service to Google's West Memphis data center campus, which Google is paying for under a new contract. Google pays the full cost of the new resources through the 20-year term of its contract: a 440 MW (ac) solar power purchase agreement from the Big Island solar facility being built in Mississippi County, a 1,000 MWh battery at Driver Solar near Osceola, a 400 MWh battery near Hot Springs (Jones Mill), and transmission. The expansion will be submitted to the Arkansas Public Service Commission for approval; the expected in-service date is 2028. The release does not state the size of Google's load, so no capacity is booked. The original West Memphis agreement is not a separate row.",
+      "firmness": "signed",
+      "firmnessSource": "https://www.entergy.com/news/entergy-arkansas-announces-enhanced-partnership-at-google-west-memphis-campus-delivering-at-least-500m-in-new-savings-for-all-customers",
+      "reviewed": "2026-11-19",
+      "asset": "mixed",
+      "announced": "2026-10-19",
+      "announcedSource": "https://www.entergy.com/news/entergy-arkansas-announces-enhanced-partnership-at-google-west-memphis-campus-delivering-at-least-500m-in-new-savings-for-all-customers"
+    },
+    {
+      "id": "dte-mi-google",
+      "projectName": "DTE Energy power supply agreement with Google (MI)",
+      "sponsor": "DTE Energy",
+      "capacityMW": 1000,
+      "type": "utility",
+      "iso": "MISO",
+      "state": "MI",
+      "status": "active",
+      "category": "ppa",
+      "expectedOnline": "Load ramps up in 2028",
+      "offtaker": "Google (20-year power supply agreement)",
+      "dcRelevant": true,
+      "sources": [
+        "https://www.sec.gov/Archives/edgar/data/936340/000093634026000166/q326presentationfinal8k.htm"
+      ],
+      "notes": "DTE's third-quarter 2026 earnings presentation (November 5, 2026, filed as an 8-K exhibit): a 1 GW Google agreement recently approved by the Michigan PSC, a 20-year power supply agreement with minimum monthly charges, with load expected to ramp up in 2028. DTE counts it with the 1.4 GW Oracle agreement as 2.4 GW of executed agreements. The presentation does not name the site or the day the agreement was signed, so no announcement date is recorded.",
+      "firmness": "signed",
+      "firmnessSource": "https://www.sec.gov/Archives/edgar/data/936340/000093634026000166/q326presentationfinal8k.htm",
+      "reviewed": "2026-11-19"
+    },
+    {
+      "id": "sabey-greasewood-vppa",
+      "projectName": "Greasewood solar 43.5 MW virtual PPA (Sabey Data Centers)",
+      "sponsor": "Greasewood solar project (owner not stated)",
+      "capacityMW": 43.5,
+      "type": "solar",
+      "iso": "Undisclosed",
+      "state": "TX",
+      "status": "active",
+      "category": "ppa",
+      "expectedOnline": "Operating",
+      "offtaker": "Sabey Data Centers (10-year virtual PPA)",
+      "dcRelevant": true,
+      "sources": [
+        "https://sabey.com/news/sabey-data-centers-enters-10-year-solar-agreement-for-130-gwh-of-renewable-energy-annually"
+      ],
+      "notes": "Sabey Data Centers' November 17, 2026 release: a 10-year virtual power purchase agreement with the operating Greasewood solar project in Texas, for 43.5 MW of solar capacity. The agreement gives Sabey the environmental attributes of its contracted share of the generation. The release names no county, owner or grid operator.",
+      "firmness": "signed",
+      "firmnessSource": "https://sabey.com/news/sabey-data-centers-enters-10-year-solar-agreement-for-130-gwh-of-renewable-energy-annually",
+      "reviewed": "2026-11-19",
+      "asset": "existing",
+      "announced": "2026-11-17",
+      "announcedSource": "https://sabey.com/news/sabey-data-centers-enters-10-year-solar-agreement-for-130-gwh-of-renewable-energy-annually"
     }
   ]
 }
