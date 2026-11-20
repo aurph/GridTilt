@@ -32,6 +32,11 @@ const CARDS: Array<{ file: string; card: () => Promise<OgCard | null> | OgCard }
   { file: "page-compute-frontier-abilene", card: () => pageOgCard("compute-frontier", undefined, "Stargate Abilene (OpenAI/Oracle)") },
   { file: "page-queue", card: () => pageOgCard("queue") },
   { file: "page-ticker-NVDA", card: () => pageOgCard("stack", "NVDA") },
+  // The section pages and a grid region page, as seo.ts names their cards.
+  { file: "page-grid", card: () => pageOgCard("power-map") },
+  { file: "page-region-pjm", card: () => pageOgCard("region", undefined, "PJM") },
+  { file: "page-compute", card: () => pageOgCard("compute-frontier") },
+  { file: "page-markets", card: () => pageOgCard("overview") },
 ];
 
 async function main() {
