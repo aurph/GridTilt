@@ -19,7 +19,7 @@ import {
   type QueueInput,
   type StateDecisionInput,
 } from "./social-format";
-import { NERC_LTRA, STATES, STATE_GRID_SOURCE, STATE_NERC_NOTE, REGION_AREAS, NERC_AREAS, areaForState, cushion } from "./state-facts";
+import { GRID_REGION_FACTS, NERC_LTRA, STATES, STATE_GRID_SOURCE, STATE_NERC_NOTE, REGION_AREAS, NERC_AREAS, areaForState, cushion } from "./state-facts";
 
 const SITE = "https://gridtilt.com";
 
@@ -37,6 +37,11 @@ const withCommas = (n: number) => n.toLocaleString("en-US");
 /** GW with one decimal from MW, formatted exactly as the Compute Frontier page formats it. */
 const gw = (mw: number) => (mw / 1000).toLocaleString("en-US", { maximumFractionDigits: 1 });
 const capitalize = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s);
+/** Up to the first sentence end that is not inside a number ("1.4 GW") or an initial. */
+export function firstSentence(s: string): string {
+  const m = /^.*?[.!?](?=\s+[A-Z(])/.exec(s);
+  return m ? m[0] : s;
+}
 
 export interface ClusterEvidence {
   field: string;
@@ -145,7 +150,8 @@ export function homeCard(root: ClusterRoot): OgCard {
   const m = computeClusterMetrics(clusters as ClusterLite[]);
   return {
     title: "GridTilt",
-    subtitle: "Equities, infrastructure, and power data for the AI power economy.",
+    // The home page's own tagline (client/src/components/home/Hero.tsx).
+    subtitle: "Energy infrastructure, in plain sight.",
     stats: [
       { label: "Tracked clusters", value: withCommas(m.clusterCount) },
       { label: "Operational power", value: `${gw(m.operationalMW)} GW` },
@@ -155,6 +161,86 @@ export function homeCard(root: ClusterRoot): OgCard {
     source: clusterSourceLine(clusters),
     visual: { kind: "map", dots: clusterDots(clusters), legend: true },
   };
+}
+
+// ── Grid map (link previews for /grid) ──────────────────────────────────────
+
+export interface GridMapInput {
+  root: ClusterRoot;
+  /** Every row of /api/datacenters, as the map draws them. */
+  campuses: Array<{ lat?: number; lng?: number; powerMW?: number | null; status?: string }>;
+  sites: { count: number; version: string };
+  plants: { count: number; dataMonth: string };
+}
+
+/**
+ * The map's own card: the four point layers by count, as the map's layer line
+ * labels them, with the clusters and campuses drawn. Counts only: megawatts by
+ * campus carry the 400 MW floor the page applies, and sites are never summed.
+ */
+export function gridMapCard(i: GridMapInput): OgCard {
+  const clusters = i.root.clusters ?? [];
+  const campusDots: MapDot[] = i.campuses
+    .filter((c) => typeof c.lat === "number" && typeof c.lng === "number")
+    .map((c) => ({ lat: c.lat as number, lng: c.lng as number, mw: c.powerMW ?? null, status: c.status }));
+  return {
+    title: "Data centers and power plants, on one map",
+    subtitle: `${withCommas(i.campuses.length)} tracked campuses, mapped data center sites, AI clusters and power plants, over the nine grid regions of the lower 48. Sites are locations only.`,
+    stats: [
+      { label: "Data center sites", value: withCommas(i.sites.count) },
+      { label: "AI clusters", value: withCommas(clusters.length) },
+      { label: "Power plants", value: withCommas(i.plants.count) },
+    ],
+    asOf: formatAsOf(i.root.lastRefreshed),
+    source: `GridTilt registries · sites: PNNL IM3 atlas ${i.sites.version}, © OpenStreetMap contributors · plants: EIA-860M ${i.plants.dataMonth}`,
+    visual: { kind: "map", dots: [...clusterDots(clusters), ...campusDots], legend: true },
+  };
+}
+
+// ── Grid region (link previews for /region/<id>) ────────────────────────────
+
+/**
+ * NERC's 2026 reading for a region, worded as the region page words it:
+ * "Elevated", "Normal in all 4 areas", "Elevated in WECC-Basin; Normal elsewhere".
+ */
+export function regionRiskText(areas: Array<{ key: string; risk: string }>): string {
+  if (areas.length === 0) return "not assessed";
+  const levels = Array.from(new Set(areas.map((a) => a.risk)));
+  if (levels.length === 1) return areas.length > 1 ? `${levels[0]} in all ${areas.length} areas` : levels[0];
+  const count = (l: string) => areas.filter((a) => a.risk === l).length;
+  const common = levels.reduce((a, b) => (count(b) > count(a) ? b : a));
+  const others = levels.filter((l) => l !== common).map((l) => `${l} in ${areas.filter((a) => a.risk === l).map((a) => a.key).join(", ")}`);
+  return `${others.join("; ")}; ${common} elsewhere`;
+}
+
+/** A grid region's card: what kind of region it is and NERC's 2026 reading. Null for an unknown id. */
+export function regionCard(id: string): OgCard | null {
+  const r = GRID_REGION_FACTS.find((x) => x.id === id);
+  if (!r) return null;
+  const areas = r.nercAreas.map((k) => NERC_AREAS[k]).filter(Boolean);
+  const one = areas.length === 1 ? areas[0] : null;
+  const kind = `${r.kind === "market" ? "Market operator" : "No market operator"} on the ${r.interconnection} grid`;
+  const later = one?.outlook ? ` Later years: ${one.outlook}.` : "";
+  const stats: OgStat[] = one
+    ? [
+        { label: `Reserve margin, ${one.season}`, value: `${one.margin.toFixed(1)}%` },
+        { label: one.referenceDefault ? "NERC default reference" : "NERC reference", value: `${one.reference}%` },
+        { label: "Versus reference", value: `${cushion(one) >= 0 ? "+" : ""}${cushion(one).toFixed(1)} pts` },
+      ]
+    : areas.map((a) => ({ label: a.label.replace(/^(WECC|SERC)-/, ""), value: `${a.margin.toFixed(1)}%` }));
+  return {
+    title: r.fullName,
+    subtitle: `${kind}. NERC risk for 2026: ${regionRiskText(areas)}.${later}${r.nercNote ? ` ${r.nercNote}` : ""}${one ? "" : " Figures are each area's reserve margin."}`,
+    stats,
+    asOf: formatAsOf(NERC_LTRA.published),
+    source: `${NERC_LTRA.label} · gridtilt.com/region/${r.id}`,
+    visual: { kind: "none" },
+  };
+}
+
+/** The region whose short name seo.ts writes into og:image (?page=region&name=PJM). */
+export function regionIdForName(name: string): string | null {
+  return GRID_REGION_FACTS.find((r) => r.name === name)?.id ?? null;
 }
 
 // ── Tuesday: observed GPU rental prices ────────────────────────────────────
@@ -468,7 +554,8 @@ export function changeCard(c: ChangeRecord): OgCard | null {
   return {
     title: capitalize(c.short.label),
     // The short form's own reason when the entry covers more than this one figure.
-    subtitle: `${c.kind === "correction" ? "Corrected" : "Updated"} ${shortDate(c.reviewed)}. ${c.short.why ?? c.rationale}`,
+    // A full rationale is a paragraph; on a card only its first sentence fits.
+    subtitle: `${c.kind === "correction" ? "Corrected" : "Updated"} ${shortDate(c.reviewed)}. ${c.short.why ?? firstSentence(c.rationale)}`,
     stats: [
       { label: "Before", value: c.short.before },
       { label: "Now", value: c.short.after },

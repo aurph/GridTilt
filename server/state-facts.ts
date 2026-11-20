@@ -113,6 +113,46 @@ export const NERC_AREAS: Record<string, NercAreaFact> = {
   "WECC-Northwest": { key: "WECC-Northwest", label: "WECC-Northwest", season: "winter 2026-27", margin: 30.2, reference: 17.8, risk: "Normal", outlook: "High from 2029" },
 };
 
+/**
+ * The nine grid regions of the map (client/src/data/grid-regions.ts GRID_REGIONS),
+ * reduced to what the region share card prints: names, whether a market
+ * operator runs it, its interconnection, and the NERC areas behind its stress
+ * reading. The parity test in state-facts.test.ts keeps it equal to the client.
+ * No region figures here: counts by region come from the client's regionOf.
+ */
+export interface GridRegionFact {
+  id: string;
+  name: string;
+  fullName: string;
+  kind: "market" | "no-market";
+  interconnection: "Eastern" | "Western" | "Texas";
+  nercAreas: string[];
+  nercNote?: string;
+}
+
+export const GRID_REGION_FACTS: GridRegionFact[] = [
+  { id: "pjm", name: "PJM", fullName: "PJM Interconnection", kind: "market", interconnection: "Eastern", nercAreas: ["PJM"] },
+  { id: "ercot", name: "ERCOT", fullName: "Electric Reliability Council of Texas", kind: "market", interconnection: "Texas", nercAreas: ["Texas RE-ERCOT"] },
+  { id: "miso", name: "MISO", fullName: "Midcontinent Independent System Operator", kind: "market", interconnection: "Eastern", nercAreas: ["MISO"] },
+  { id: "spp", name: "SPP", fullName: "Southwest Power Pool", kind: "market", interconnection: "Eastern", nercAreas: ["MRO-SPP"] },
+  {
+    id: "caiso", name: "CAISO", fullName: "California Independent System Operator", kind: "market", interconnection: "Western", nercAreas: ["WECC-California"],
+    nercNote: "NERC assesses California as one area, which includes the utilities outside CAISO.",
+  },
+  { id: "nyiso", name: "NYISO", fullName: "New York Independent System Operator", kind: "market", interconnection: "Eastern", nercAreas: ["NPCC-New York"] },
+  { id: "isone", name: "ISO-NE", fullName: "ISO New England", kind: "market", interconnection: "Eastern", nercAreas: ["NPCC-New England"] },
+  {
+    id: "southeast", name: "Southeast", fullName: "The Southeast", kind: "no-market", interconnection: "Eastern",
+    nercAreas: ["SERC-Central", "SERC-East", "SERC-Florida Peninsula", "SERC-Southeast"],
+    nercNote: "NERC assesses the Southeast in four areas, each against its own reference margin.",
+  },
+  {
+    id: "west", name: "West", fullName: "The West outside CAISO", kind: "no-market", interconnection: "Western",
+    nercAreas: ["WECC-Basin", "WECC-Northwest", "WECC-Rocky Mountain", "WECC-Southwest"],
+    nercNote: "NERC assesses the West outside California in four areas, each against its own reference margin.",
+  },
+];
+
 export const REGION_AREAS: Record<string, string[]> = {
   PJM: ["PJM"],
   MISO: ["MISO"],
