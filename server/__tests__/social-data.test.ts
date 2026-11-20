@@ -8,6 +8,11 @@ import { join } from "node:path";
 import {
   basisWords,
   homeCard,
+  firstSentence,
+  gridMapCard,
+  regionCard,
+  regionIdForName,
+  regionRiskText,
   buildoutCard,
   buildoutInputFrom,
   changeCard,
@@ -37,6 +42,10 @@ import { cardFits, formatAsOf } from "../og-card";
 import { STATE_GRID as ALL_STATES } from "../../client/src/data/state-grid";
 import type { ChangeRecord } from "../change-log";
 import { areaForState as clientAreaForState, cushion as clientCushion } from "../../client/src/lib/reserve-margins";
+import { GRID_REGIONS } from "../../client/src/data/grid-regions";
+import { regionNercAreas, regionRiskText as clientRegionRiskText } from "../../client/src/lib/grid-regions";
+import { loadDcSites, sitesPayload } from "../dc-sites";
+import { loadPowerPlants, plantsPayload } from "../power-plants";
 
 const data = (file: string) => JSON.parse(readFileSync(join(process.cwd(), "server", "data", file), "utf-8"));
 
@@ -320,5 +329,67 @@ describe("state card", () => {
       const v = stateCard(code)!.stats[2]?.value ?? "";
       assert.match(v, /^[+-]\d+\.\d pts$/, code);
     }
+  });
+});
+
+describe("grid map card", () => {
+  it("counts the four point layers as the map's own routes serve them, and fits", () => {
+    const campuses = data("datacenters.json");
+    const sites = sitesPayload(loadDcSites(), campuses);
+    const plants = plantsPayload(loadPowerPlants());
+    const root = data("clusters.json") as ClusterRoot;
+    const card = gridMapCard({ root, campuses, sites: { count: sites.counts.sites, version: sites.source.version }, plants: { count: plants.counts.plants, dataMonth: plants.dataMonth } });
+    const n = (v: number) => v.toLocaleString("en-US");
+    assert.deepEqual(card.stats, [
+      { label: "Data center sites", value: n(sites.counts.sites) },
+      { label: "AI clusters", value: n((root.clusters ?? []).length) },
+      { label: "Power plants", value: n(plants.counts.plants) },
+    ]);
+    assert.ok(card.subtitle.startsWith(`${n(campuses.length)} tracked campuses`));
+    assert.notEqual(sites.counts.sites, loadDcSites().sites.length, "sites the registry tracks are left out, as on the map");
+    assert.equal(card.asOf, formatAsOf(root.lastRefreshed));
+    assert.match(card.source, /OpenStreetMap contributors/, "the site count carries the ODbL credit");
+    assert.ok(!/\bMW\b|GW/.test(card.stats.map((s) => s.value).join(" ")), "counts only: no summed megawatts");
+    const fit = cardFits(card);
+    assert.ok(fit.stats, `stats row ${fit.statsWidth}px does not fit`);
+    assert.ok(fit.footer, "footer source does not fit");
+  });
+});
+
+describe("region card", () => {
+  it("exists for each of the nine regions, by the short name seo.ts writes, and fits", () => {
+    for (const r of GRID_REGIONS) {
+      assert.equal(regionIdForName(r.name), r.id);
+      const card = regionCard(r.id)!;
+      assert.ok(card, r.id);
+      assert.equal(card.title, r.fullName);
+      assert.ok(card.asOf, `${r.id}: dated by the NERC report`);
+      const fit = cardFits(card);
+      assert.ok(fit.stats, `${r.id}: stats row ${fit.statsWidth}px does not fit`);
+      assert.ok(fit.footer, `${r.id}: footer source does not fit`);
+    }
+    assert.equal(regionCard("npcc"), null);
+    assert.equal(regionIdForName("Nowhere"), null);
+  });
+  it("words NERC's reading exactly as the region page does", () => {
+    for (const r of GRID_REGIONS) {
+      const areas = regionNercAreas(r.id).map((a) => ({ key: a.key, risk: a.risk }));
+      assert.equal(regionRiskText(areas), clientRegionRiskText(r.id), r.id);
+      assert.ok(regionCard(r.id)!.subtitle.includes(`NERC risk for 2026: ${clientRegionRiskText(r.id)}.`), r.id);
+    }
+  });
+  it("shows a single area's margin against its reference, and each area's margin where there are several", () => {
+    const pjm = regionCard("pjm")!;
+    assert.deepEqual(pjm.stats.map((s) => s.value), ["29.7%", "18.6%", "+11.1 pts"]);
+    const west = regionCard("west")!;
+    assert.equal(west.stats.length, 4);
+    assert.ok(west.stats.every((s) => /^\d+\.\d%$/.test(s.value)));
+  });
+});
+
+describe("change card text", () => {
+  it("keeps the first sentence of a long rationale, without cutting inside a number", () => {
+    assert.equal(firstSentence("Four agreements were added, 1.4 GW in all. The rest was checked."), "Four agreements were added, 1.4 GW in all.");
+    assert.equal(firstSentence("One sentence only"), "One sentence only");
   });
 });

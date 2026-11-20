@@ -103,6 +103,9 @@ import {
   buildoutCard,
   buildoutInputFrom,
   homeCard,
+  gridMapCard,
+  regionCard,
+  regionIdForName,
   changeCard,
   changeInputFrom,
   gpuCard,
@@ -1159,8 +1162,19 @@ export function pageOgCard(page: string, ticker?: string, name?: string): OgCard
       return pageCard("Compare AI compute clusters", "Two tracked clusters side by side", "GridTilt cluster records");
     case "stack":
       return pageCard("AI power stocks", "Public companies across the AI power stack, grouped by GridTilt", `${classification}; quotes from Yahoo Finance`);
-    case "power-map":
-      return pageCard("US AI data center map", "Tracked campuses of 400 MW and up, by operator, grid region and capacity", "GridTilt facility registry");
+    case "power-map": {
+      // The same four counts the map's layer line shows: sites as /api/map/sites serves them
+      // (campuses the registry tracks are left out of the sites), plants as /api/map/plants does.
+      const campuses = readDataJson("datacenters.json");
+      const sites = sitesPayload(loadDcSites(), campuses);
+      const plants = plantsPayload(loadPowerPlants());
+      return gridMapCard({
+        root: readDataJson("clusters.json") as ClusterRoot,
+        campuses,
+        sites: { count: sites.counts.sites, version: sites.source.version },
+        plants: { count: plants.counts.plants, dataMonth: plants.dataMonth },
+      });
+    }
     case "compute-frontier": {
       const root = readDataJson("clusters.json") as ClusterRoot;
       if (!name) return buildoutCard(root);
@@ -1184,8 +1198,10 @@ export function pageOgCard(page: string, ticker?: string, name?: string): OgCard
       return pageCard("The GridTilt brief", "Power projects and grid changes, by email", "GridTilt");
     case "sector":
       return name && ogNameKnown("sector", name) ? pageCard(`${name} sector`, "AI power infrastructure stocks, grouped by GridTilt", classification) : null;
-    case "region":
-      return name && ogNameKnown("region", name) ? pageCard(`${name} grid region`, "Tracked AI data center campuses in the region", "GridTilt facility registry") : null;
+    case "region": {
+      const id = name && ogNameKnown("region", name) ? regionIdForName(name) : null;
+      return id ? regionCard(id) : null;
+    }
     case "operator":
       return name && ogNameKnown("operator", name) ? pageCard(`${name} AI data centers`, "Tracked campuses and their capacity", "GridTilt facility registry") : null;
   }

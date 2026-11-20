@@ -3,6 +3,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { STATE_GRID, STATE_GRID_SOURCE as CLIENT_GRID_SOURCE } from "../../client/src/data/state-grid";
+import { GRID_REGIONS } from "../../client/src/data/grid-regions";
 import {
   NERC_AREAS as CLIENT_AREAS,
   REGION_AREAS as CLIENT_REGIONS,
@@ -11,7 +12,7 @@ import {
   NERC_LTRA as CLIENT_LTRA,
 } from "../../client/src/data/nerc-reserve-margins";
 import { areaForState as clientAreaForState, cushion as clientCushion } from "../../client/src/lib/reserve-margins";
-import { NERC_AREAS, NERC_LTRA, REGION_AREAS, STATES, STATE_GRID_SOURCE, STATE_NERC_AREA, STATE_NERC_NOTE, areaForState, cushion } from "../state-facts";
+import { GRID_REGION_FACTS, NERC_AREAS, NERC_LTRA, REGION_AREAS, STATES, STATE_GRID_SOURCE, STATE_NERC_AREA, STATE_NERC_NOTE, areaForState, cushion } from "../state-facts";
 
 describe("state facts (server copy)", () => {
   it("covers every state the state grid table covers, with the same name, region, operator and note", () => {
@@ -52,5 +53,16 @@ describe("state facts (server copy)", () => {
     assert.equal(areaForState("MD")?.key, "PJM");
     assert.equal(areaForState("AK"), null);
     assert.equal(areaForState("ZZ"), null);
+  });
+});
+
+describe("grid region facts (server copy for the region share card)", () => {
+  it("match the client's nine regions field for field", () => {
+    const client = GRID_REGIONS.map((r) => ({
+      id: r.id, name: r.name, fullName: r.fullName, kind: r.kind, interconnection: r.interconnection, nercAreas: r.nercAreas,
+      ...(r.nercNote ? { nercNote: r.nercNote } : {}),
+    }));
+    assert.deepEqual(GRID_REGION_FACTS, client);
+    for (const r of GRID_REGION_FACTS) for (const k of r.nercAreas) assert.ok(NERC_AREAS[k], `${r.id}: ${k} has no NERC reading`);
   });
 });

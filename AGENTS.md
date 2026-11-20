@@ -340,6 +340,13 @@ for an unknown template or id (a 404, never a stand-in card). Share cards:
 `/api/og?template=state_fact&state=MD`, `template=project_status&id=<cluster id>`,
 `template=correction&id=<change-log id>`. The state card reads server/state-facts.ts,
 a copy of the client's state and NERC tables kept equal by a parity test.
+Page cards (2026-11-19): `/grid` (`?page=power-map`) is gridMapCard, the map's four
+point layers by count exactly as /api/map/sites and /api/map/plants serve them
+(counts only, never summed megawatts). `/region/<id>` (`?page=region&name=<short
+name>`) is regionCard: the region's kind, grid and NERC 2026 reading from
+GRID_REGION_FACTS (state-facts.ts, parity-tested against client grid-regions.ts).
+It carries no per-region counts, because placing a record in a region belongs to
+the client's regionOf alone. The home card's line is the home page's tagline.
 
 - Every card MUST carry `asOf` and `source`. They are required fields, not
   optional decoration: the product claim is "tracked with sourced numbers", so a
